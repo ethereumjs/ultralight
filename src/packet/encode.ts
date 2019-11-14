@@ -1,4 +1,4 @@
-import RLP = require("rlp");
+import * as RLP from "rlp";
 import {
   IAuthHeader,
   IAuthMessagePacket,
