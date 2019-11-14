@@ -1,0 +1,61 @@
+{
+  "name": "discv5",
+  "version": "0.0.1",
+  "description": "Discovery V5",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "build": "tsc --declaration --outDir lib",
+    "lint": "eslint --color --ext .ts src/",
+    "test": "mocha -r ts-node/register test/**/*.test.ts"
+  },
+  "pre-push": [
+    "lint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChainSafe/discv5.git"
+  },
+  "keywords": [
+    "discovery",
+    "discv5",
+    "ethereum",
+    "p2p"
+  ],
+  "author": "ChainSafe Systems",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ChainSafe/discv5/issues"
+  },
+  "homepage": "https://github.com/ChainSafe/discv5#readme",
+  "devDependencies": {
+    "@types/chai": "^4.2.0",
+    "@types/eslint": "^6.1.3",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.0.10",
+    "@types/randombytes": "^2.0.0",
+    "@types/secp256k1": "^3.5.0",
+    "@typescript-eslint/eslint-plugin": "^2.7.0",
+    "@typescript-eslint/parser": "^2.7.0",
+    "chai": "^4.2.0",
+    "eslint": "^6.6.0",
+    "karma": "^4.3.0",
+    "mocha": "^6.2.0",
+    "nyc": "^14.1.1",
+    "ts-node": "^8.3.0",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "bcrypto": "^4.2.8",
+    "bigint-buffer": "^1.1.5",
+    "dgram": "^1.0.1",
+    "js-sha256": "^0.9.0",
+    "keccakjs": "^0.2.3",
+    "randombytes": "^2.1.0",
+    "rlp": "^2.2.4",
+    "secp256k1": "^3.7.1"
+  }
+}
