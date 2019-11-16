@@ -2,7 +2,7 @@ import assert = require("assert");
 import { toBufferBE } from "bigint-buffer";
 import * as RLP from "rlp";
 
-import { MAX_RECORD_SIZE } from "../constants";
+import { MAX_RECORD_SIZE } from "./constants";
 import { publicKey, sign, verify } from "./crypto";
 import { ENR, ENRKey, ENRValue, PrivateKey, SequenceNumber } from "./types";
 
