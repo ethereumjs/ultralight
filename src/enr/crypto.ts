@@ -1,7 +1,7 @@
 // @ts-ignore
-import keccak from "keccakjs";
-import randomBytes from "randombytes";
-import * as secp256k1 from "secp256k1";
+import keccak from "bcrypto/lib/keccak";
+// @ts-ignore
+import secp256k1 from "bcrypto/lib/secp256k1";
 
 import {
   NodeId,
@@ -10,17 +10,11 @@ import {
 } from "./types";
 
 export function hash(input: Buffer): Buffer {
-  const h = new keccak(256);
-  h.update(input);
-  return Buffer.from(h.digest(), "binary");
+  return keccak.digest(input);
 }
 
 export function createPrivateKey(): PrivateKey {
-  let privKey;
-  do {
-    privKey = randomBytes(32);
-  } while (!secp256k1.privateKeyVerify(privKey));
-  return privKey;
+  return secp256k1.privateKeyGenerate();
 }
 
 export function publicKey(privKey: PrivateKey): PublicKey {
@@ -31,7 +25,7 @@ export function sign(privKey: PrivateKey, msg: Buffer): Buffer {
   return secp256k1.sign(
     hash(msg),
     privKey,
-  ).signature;
+  );
 }
 
 export function verify(pubKey: PublicKey, msg: Buffer, sig: Buffer): boolean {
