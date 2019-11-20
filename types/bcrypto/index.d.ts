@@ -46,6 +46,7 @@ declare module "bcrypto/lib/keccak" {
 
 declare module "bcrypto/lib/secp256k1" {
   export function privateKeyGenerate(): Buffer;
+  export function privateKeyVerify(key: Buffer): boolean;
   export function publicKeyCreate(key: Buffer, compress?: boolean): Buffer;
   export function publicKeyConvert(pub: Buffer, compress?: boolean): Buffer;
   export function sign(msg: Buffer, key: Buffer): Buffer;

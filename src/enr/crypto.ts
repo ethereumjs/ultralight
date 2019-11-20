@@ -1,3 +1,4 @@
+import assert = require("assert");
 import keccak = require("bcrypto/lib/keccak");
 import secp256k1 = require("bcrypto/lib/secp256k1");
 
@@ -39,8 +40,11 @@ export class ENRKeyPair {
   public readonly privateKey: PrivateKey;
   public readonly publicKey: PublicKey;
 
-  public constructor() {
-    this.privateKey = createPrivateKey();
+  public constructor(privateKey?: PrivateKey) {
+    if (privateKey) {
+      assert(secp256k1.privateKeyVerify(privateKey));
+    }
+    this.privateKey = privateKey || createPrivateKey();
     this.publicKey = publicKey(this.privateKey);
     this.nodeId = nodeId(this.publicKey);
   }
