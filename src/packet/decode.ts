@@ -23,6 +23,8 @@ import {
 /**
  * Decode raw bytes into a packet. The `magic` value (SHA2256(node-id, b"WHOAREYOU")) is passed as a parameter to check
  * for the magic byte sequence.
+ *
+ * Note: this function will modify the input data
  */
 export function decode(data: Buffer, magic: Magic): [PacketType, Packet] {
   if (data.length > MAX_PACKET_SIZE) {
