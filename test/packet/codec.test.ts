@@ -5,7 +5,6 @@ import {
   decode,
   encode,
   IAuthMessagePacket,
-  IRandomPacket,
   IWhoAreYouPacket,
   PacketType,
   IMessagePacket,
@@ -13,24 +12,22 @@ import {
 
 
 describe("Packet - known test vectors", () => {
-  it("should correctly encode/decode IRandomPacket", () => {
+  it("should correctly encode/decode random IMessagePacket", () => {
     const magic = Buffer.from("1101010101010101010101010101010101010101010101010101010101010101", "hex");
     const tag = Buffer.from("0101010101010101010101010101010101010101010101010101010101010101", "hex");
     const authTag = Buffer.from("020202020202020202020202", "hex");
-    const randomData = Buffer.from("0404040404040404040404040404040404040404040404040404040404040404040404040404040404040404", "hex");
-    const p0: IRandomPacket = {
+    const message = Buffer.from("0404040404040404040404040404040404040404040404040404040404040404040404040404040404040404", "hex");
+    const p0: IMessagePacket = {
       tag,
       authTag,
-      randomData,
+      message,
     };
     const expected = Buffer.from("01010101010101010101010101010101010101010101010101010101010101018c0202020202020202020202020404040404040404040404040404040404040404040404040404040404040404040404040404040404040404", "hex");
-    const b0 = encode(PacketType.Random, p0);
+    const typ0 = PacketType.Message;
+    const b0 = encode(typ0, p0);
     expect(b0).to.deep.equal(expected);
-    const p1 = decode(b0, magic) as IRandomPacket;
-    // @ts-ignore
-    p1.randomData = p1.message;
-    // @ts-ignore
-    delete p1.message;
+    const [typ1, p1] = decode(b0, magic);
+    expect(typ1).to.equal(typ0);
     expect(p1).to.deep.equal(p0);
   });
 
@@ -46,9 +43,11 @@ describe("Packet - known test vectors", () => {
       enrSeq,
     };
     const expected = Buffer.from("0101010101010101010101010101010101010101010101010101010101010101ef8c020202020202020202020202a0030303030303030303030303030303030303030303030303030303030303030301", "hex");
-    const b0 = encode(PacketType.WhoAreYou, p0);
+    const typ0 = PacketType.WhoAreYou;
+    const b0 = encode(typ0, p0);
     expect(b0).to.deep.equal(expected);
-    const p1 = decode(b0, magic);
+    const [typ1, p1] = decode(b0, magic);
+    expect(typ1).to.equal(typ0);
     expect(p1).to.deep.equal(p0);
   });
 
@@ -72,9 +71,11 @@ describe("Packet - known test vectors", () => {
       message,
     };
     const expected = Buffer.from("93a7400fa0d6a694ebc24d5cf570f65d04215b6ac00757875e3f3a5f42107903f8cc8c27b5af763c446acd2749fe8ea0e551b1c44264ab92bc0b3c9b26293e1ba4fed9128f3c3645301e8e119f179c658367636db840b35608c01ee67edff2cffa424b219940a81cf2fb9b66068b1cf96862a17d353e22524fbdcdebc609f85cbd58ebe7a872b01e24a3829b97dd5875e8ffbc4eea81b856570fbf23885c674867ab00320294a41732891457969a0f14d11c995668858b2ad731aa7836888020e2ccc6e0e5776d0d4bc4439161798565a4159aa8620992fb51dcb275c4f755c8b8030c82918898f1ac387f606852a5d12a2d94b8ccb3ba55558229867dc13bfa3648", "hex");
-    const b0 = encode(PacketType.AuthMessage, p0);
+    const typ0 = PacketType.AuthMessage;
+    const b0 = encode(typ0, p0);
     expect(b0).to.deep.equal(expected);
-    const p1 = decode(b0, magic);
+    const [typ1, p1] = decode(b0, magic);
+    expect(typ1).to.equal(typ0);
     expect(p1).to.deep.equal(p0);
   });
 
@@ -89,9 +90,11 @@ describe("Packet - known test vectors", () => {
       message,
     };
     const expected = Buffer.from("93a7400fa0d6a694ebc24d5cf570f65d04215b6ac00757875e3f3a5f421079038c27b5af763c446acd2749fe8ea5d12a2d94b8ccb3ba55558229867dc13bfa3648", "hex");
-    const b0 = encode(PacketType.Message, p0);
+    const typ0 = PacketType.Message;
+    const b0 = encode(typ0, p0);
     expect(b0).to.deep.equal(expected);
-    const p1 = decode(b0, magic);
+    const [typ1, p1] = decode(b0, magic);
+    expect(typ1).to.equal(typ0);
     expect(p1).to.deep.equal(p0);
   });
 });

@@ -3,7 +3,6 @@ import {
   IAuthHeader,
   IAuthMessagePacket,
   IMessagePacket,
-  IRandomPacket,
   IWhoAreYouPacket,
   Packet,
   PacketType,
@@ -11,8 +10,6 @@ import {
 
 export function encode(type: PacketType, packet: Packet): Buffer {
   switch (type) {
-    case PacketType.Random:
-      return encodeRandomPacket(packet as IRandomPacket);
     case PacketType.WhoAreYou:
       return encodeWhoAreYouPacket(packet as IWhoAreYouPacket);
     case PacketType.AuthMessage:
@@ -29,14 +26,6 @@ export function encodeAuthHeader(h: IAuthHeader): Buffer {
     h.authSchemeName,
     h.ephemeralPubkey,
     h.authResponse,
-  ]);
-}
-
-function encodeRandomPacket(p: IRandomPacket): Buffer {
-  return Buffer.concat([
-    p.tag,
-    RLP.encode(p.authTag),
-    p.randomData,
   ]);
 }
 

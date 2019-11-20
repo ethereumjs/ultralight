@@ -6,13 +6,12 @@ export type AuthTag = Buffer; // AUTH_TAG_LENGTH
 export type Magic = Buffer; // MAGIC_LENGTH
 
 export enum PacketType {
-  Random = 1,
-  WhoAreYou,
+  WhoAreYou = 1,
   AuthMessage,
   Message,
 }
 
-export type Packet = IRandomPacket | IWhoAreYouPacket | IAuthMessagePacket | IMessagePacket;
+export type Packet = IWhoAreYouPacket | IAuthMessagePacket | IMessagePacket;
 
 export interface IAuthHeader {
   authTag: Buffer;
@@ -32,13 +31,6 @@ export interface IRegularPacket {
 /**
  * Packets
  */
-
-export interface IRandomPacket extends IRegularPacket {
-  // Random auth_tag formatted as rlp_bytes(bytes).
-  authTag: AuthTag;
-  // At least 44 bytes of random data.
-  randomData: Buffer;
-}
 
 export interface IWhoAreYouPacket {
   // SHA256(`dest-node-id` || "WHOAREYOU").

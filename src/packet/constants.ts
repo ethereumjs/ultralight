@@ -10,6 +10,10 @@ export const MAGIC_LENGTH = 32;
 // length of nonce
 export const ID_NONCE_LENGTH = 32;
 
+export const MAX_PACKET_SIZE = 1280;
+
 export const ERR_TOO_SMALL = "packet too small";
+export const ERR_TOO_LARGE = "packet too large";
 export const ERR_UNKNOWN_FORMAT = "unknown format";
 export const ERR_INVALID_BYTE_SIZE = "invalid byte size";
+
