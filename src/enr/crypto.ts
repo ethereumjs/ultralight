@@ -1,7 +1,5 @@
-// @ts-ignore
-import keccak from "bcrypto/lib/keccak";
-// @ts-ignore
-import secp256k1 from "bcrypto/lib/secp256k1";
+import keccak = require("bcrypto/lib/keccak");
+import secp256k1 = require("bcrypto/lib/secp256k1");
 
 import {
   NodeId,
