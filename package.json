@@ -52,8 +52,8 @@
   },
   "dependencies": {
     "assert": "^2.0.0",
+    "base64url": "^3.0.1",
     "bcrypto": "^4.2.8",
-    "bigint-buffer": "^1.1.5",
     "dgram": "^1.0.1",
     "rlp": "^2.2.4"
   }

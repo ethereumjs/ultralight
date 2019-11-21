@@ -1,5 +1,5 @@
 import assert = require("assert");
-import { toBufferBE } from "bigint-buffer";
+import base64url from "base64url";
 import * as RLP from "rlp";
 
 import { MAX_RECORD_SIZE } from "./constants";
@@ -30,12 +30,16 @@ export function decode(encoded: Buffer): ENR {
 
 export function decodeTxt(encoded: string): ENR {
   assert(encoded.startsWith("enr:"), "string encoded ENR must start with 'enr:'");
-  return decode(Buffer.from(encoded.slice(4), "base64"));
+  return decode(base64url.toBuffer(encoded.slice(4)));
 }
 
 export function encode(record: ENR, privateKey: PrivateKey, seq: SequenceNumber): Buffer {
-  const content: Array<ENRKey | ENRValue> = Array.from(record.entries()).flat();
-  content.unshift(toBufferBE(seq, 8));
+  // sort keys and flatten into [k, v, k, v, ...]
+  const content: Array<ENRKey | ENRValue> = Array.from(record.keys())
+    .sort((a, b) => a.localeCompare(b))
+    .map((k) => ([k, record.get(k)] as [ENRKey, ENRValue]))
+    .flat();
+  content.unshift(Number(seq));
   // assume v4 scheme
   content.unshift(sign(privateKey, RLP.encode(content)));
   const encoded = RLP.encode(content);
@@ -44,5 +48,5 @@ export function encode(record: ENR, privateKey: PrivateKey, seq: SequenceNumber)
 }
 
 export function encodeTxt(record: ENR, privateKey: PrivateKey, seq: SequenceNumber): string {
-  return "enr:" + Buffer.from(encode(record, privateKey, seq)).toString("base64");
+  return "enr:" + base64url.encode(Buffer.from(encode(record, privateKey, seq)));
 }

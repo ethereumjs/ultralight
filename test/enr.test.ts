@@ -15,23 +15,19 @@ describe("ENR", () => {
     record.set("udp", Buffer.from((30303).toString(16), "hex"));
   });
 
-  it("should encode to RLP encoding", () => {
+  it("should encode/decode to RLP encoding", () => {
     const decoded = decode(encode(record, privateKey, seq));
     for (const [k, v] of decoded.entries()) {
       expect(v).to.deep.equal(record.get(k));
     }
   });
 
-  it("should encode to text encoding", () => {
-  });
-
-  it("should decode from RLP encoding", () => {
-  });
-
-  it("should decode to text encoding", () => {
-    const testRecord = decodeTxt("enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8");
+  it("should encode/decode to text encoding", () => {
+    const testTxt = "enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
+    const testRecord = decodeTxt(testTxt);
     for (const [k, v] of testRecord.entries()) {
       expect(v).to.deep.equal(record.get(k));
     }
+    expect(encodeTxt(record, privateKey, seq)).to.equal(testTxt);
   });
 });
