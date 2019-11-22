@@ -16,7 +16,8 @@ describe("ENR", () => {
   });
 
   it("should encode/decode to RLP encoding", () => {
-    const decoded = decode(encode(record, privateKey, seq));
+    const [decoded, seq2] = decode(encode(record, privateKey, seq));
+    expect(seq2).to.equal(seq);
     for (const [k, v] of decoded.entries()) {
       expect(v).to.deep.equal(record.get(k));
     }
@@ -24,7 +25,8 @@ describe("ENR", () => {
 
   it("should encode/decode to text encoding", () => {
     const testTxt = "enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
-    const testRecord = decodeTxt(testTxt);
+    const [testRecord, seq2] = decodeTxt(testTxt);
+    expect(seq2).to.equal(seq);
     for (const [k, v] of testRecord.entries()) {
       expect(v).to.deep.equal(record.get(k));
     }

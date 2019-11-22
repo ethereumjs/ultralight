@@ -1,5 +1,6 @@
 import assert = require("assert");
 import base64url from "base64url";
+import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
 
 import { MAX_RECORD_SIZE } from "./constants";
@@ -14,7 +15,7 @@ export function createENR(privateKey: PrivateKey): ENR {
   return record;
 }
 
-export function decode(encoded: Buffer): ENR {
+export function decode(encoded: Buffer): [ENR, SequenceNumber] {
   const record = new Map();
   const decoded = RLP.decode(encoded) as unknown as Buffer[];
   assert(Array.isArray(decoded), "Decoded ENR must be an array");
@@ -25,10 +26,10 @@ export function decode(encoded: Buffer): ENR {
   }
   // assume v4 scheme
   assert(verify(record.get("secp256k1"), RLP.encode([seq, ...kvs]), signature));
-  return record;
+  return [record, toBigIntBE(seq)];
 }
 
-export function decodeTxt(encoded: string): ENR {
+export function decodeTxt(encoded: string): [ENR, SequenceNumber] {
   assert(encoded.startsWith("enr:"), "string encoded ENR must start with 'enr:'");
   return decode(base64url.toBuffer(encoded.slice(4)));
 }
