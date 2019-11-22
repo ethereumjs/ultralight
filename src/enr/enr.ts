@@ -4,14 +4,19 @@ import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
 
 import { MAX_RECORD_SIZE } from "./constants";
-import { publicKey, sign, verify } from "./crypto";
+import * as v4 from "./v4";
 import { ENR, ENRKey, ENRValue, PrivateKey, SequenceNumber } from "./types";
 
-export function createENR(privateKey: PrivateKey): ENR {
+export function createENR(privateKey: PrivateKey, id = "v4"): ENR {
   const record = new Map();
-  // assume v4 scheme
-  record.set("id", Buffer.from("v4"));
-  record.set("secp256k1", publicKey(privateKey));
+  record.set("id", Buffer.from(id));
+  switch (id) {
+    case "v4":
+      record.set("secp256k1", v4.publicKey(privateKey));
+      break;
+    default:
+      assert.fail("invalid id");
+  }
   return record;
 }
 
@@ -24,8 +29,13 @@ export function decode(encoded: Buffer): [ENR, SequenceNumber] {
   for (let i = 0; i < kvs.length; i += 2) {
     record.set(kvs[i].toString(), Buffer.from(kvs[i + 1]));
   }
-  // assume v4 scheme
-  assert(verify(record.get("secp256k1"), RLP.encode([seq, ...kvs]), signature));
+  switch (record.get("id").toString("utf8")) {
+    case "v4":
+      assert(v4.verify(record.get("secp256k1"), RLP.encode([seq, ...kvs]), signature));
+      break;
+    default:
+      assert.fail("invalid record id");
+  }
   return [record, toBigIntBE(seq)];
 }
 
@@ -41,8 +51,13 @@ export function encode(record: ENR, privateKey: PrivateKey, seq: SequenceNumber)
     .map((k) => ([k, record.get(k)] as [ENRKey, ENRValue]))
     .flat();
   content.unshift(Number(seq));
-  // assume v4 scheme
-  content.unshift(sign(privateKey, RLP.encode(content)));
+  switch ((record.get("id") as Buffer).toString("utf8")) {
+    case "v4":
+      content.unshift(v4.sign(privateKey, RLP.encode(content)));
+      break;
+    default:
+      assert.fail("invalid record id");
+  }
   const encoded = RLP.encode(content);
   assert(encoded.length < MAX_RECORD_SIZE, "ENR must be less than 300 bytes");
   return encoded;
