@@ -4,43 +4,41 @@ import secp256k1 = require("bcrypto/lib/secp256k1");
 
 import {
   NodeId,
-  PrivateKey,
-  PublicKey,
 } from "./types";
 
 export function hash(input: Buffer): Buffer {
   return keccak.digest(input);
 }
 
-export function createPrivateKey(): PrivateKey {
+export function createPrivateKey(): Buffer {
   return secp256k1.privateKeyGenerate();
 }
 
-export function publicKey(privKey: PrivateKey): PublicKey {
+export function publicKey(privKey: Buffer): Buffer {
   return secp256k1.publicKeyCreate(privKey);
 }
 
-export function sign(privKey: PrivateKey, msg: Buffer): Buffer {
+export function sign(privKey: Buffer, msg: Buffer): Buffer {
   return secp256k1.sign(
     hash(msg),
     privKey,
   );
 }
 
-export function verify(pubKey: PublicKey, msg: Buffer, sig: Buffer): boolean {
+export function verify(pubKey: Buffer, msg: Buffer, sig: Buffer): boolean {
   return secp256k1.verify(hash(msg), sig, pubKey);
 }
 
-export function nodeId(pubKey: PublicKey): NodeId {
+export function nodeId(pubKey: Buffer): NodeId {
   return hash(secp256k1.publicKeyConvert(pubKey, false));
 }
 
 export class ENRKeyPair {
   public readonly nodeId: NodeId;
-  public readonly privateKey: PrivateKey;
-  public readonly publicKey: PublicKey;
+  public readonly privateKey: Buffer;
+  public readonly publicKey: Buffer;
 
-  public constructor(privateKey?: PrivateKey) {
+  public constructor(privateKey?: Buffer) {
     if (privateKey) {
       assert(secp256k1.privateKeyVerify(privateKey));
     }
