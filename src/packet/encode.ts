@@ -6,6 +6,7 @@ import {
   IWhoAreYouPacket,
   Packet,
   PacketType,
+  IAuthResponse,
 } from "./types";
 
 export function encode(type: PacketType, packet: Packet): Buffer {
@@ -53,5 +54,13 @@ function encodeMessagePacket(p: IMessagePacket): Buffer {
     p.tag,
     RLP.encode(p.authTag),
     p.message,
+  ]);
+}
+
+export function encodeAuthResponse(authResponse: IAuthResponse, privateKey: Buffer): Buffer {
+  return RLP.encode([
+    authResponse.version,
+    authResponse.signature,
+    authResponse.nodeRecord ? authResponse.nodeRecord.encode(privateKey) : []
   ]);
 }

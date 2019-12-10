@@ -1,3 +1,5 @@
+import { ENR } from "../enr";
+
 // DISCV5 message packet types
 
 export type Tag = Buffer; // TAG_LENGTH
@@ -19,6 +21,12 @@ export interface IAuthHeader {
   authSchemeName: "gcm" | string;
   ephemeralPubkey: Buffer;
   authResponse: Buffer;
+}
+
+export interface IAuthResponse {
+  version: number;
+  signature: Buffer;
+  nodeRecord?: ENR;
 }
 
 // Packet format
