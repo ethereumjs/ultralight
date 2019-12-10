@@ -4,4 +4,4 @@ export type NodeId = Buffer;
 export type SequenceNumber = bigint;
 
 export type ENRKey = string;
-export type ENRValue = number | string | Buffer;
+export type ENRValue = Buffer;
