@@ -3,15 +3,18 @@ import base64url from "base64url";
 import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
 
-import { MAX_RECORD_SIZE } from "./constants";
+import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
 import { ENRKey, ENRValue, SequenceNumber } from "./types";
 
 export class ENR extends Map<ENRKey, ENRValue> {
   public seq: SequenceNumber;
-  constructor(kvs: Record<ENRKey, ENRValue> = {}, seq: SequenceNumber = 0n) {
+  public signature: Buffer | null;
+
+  constructor(kvs: Record<ENRKey, ENRValue> = {}, seq: SequenceNumber = 0n, signature: Buffer | null = null) {
     super(Object.entries(kvs));
     this.seq = seq;
+    this.signature = signature;
   }
   static createV4(publicKey: Buffer, kvs: Record<ENRKey, ENRValue> = {}): ENR {
     return new ENR({
@@ -29,7 +32,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     for (let i = 0; i < kvs.length; i += 2) {
       obj[kvs[i].toString()] = Buffer.from(kvs[i + 1]);
     }
-    const enr = new ENR(obj, toBigIntBE(seq));
+    const enr = new ENR(obj, toBigIntBE(seq), signature);
     assert(
       enr.verify(RLP.encode([seq, ...kvs]), signature),
       "Unable to verify enr signature"
@@ -41,19 +44,27 @@ export class ENR extends Map<ENRKey, ENRValue> {
     return ENR.decode(base64url.toBuffer(encoded.slice(4)));
   }
   set(k: ENRKey, v: ENRValue): this {
+    this.signature = null;
     this.seq++;
     return super.set(k, v);
   }
   get id(): string {
     return (this.get("id") as Buffer).toString("utf8");
   }
-  // eslint-disable-next-line getter-return
   get publicKey(): Buffer {
     switch (this.id) {
       case "v4":
         return this.get("secp256k1") as Buffer;
       default:
-        assert.fail("invalid record id");
+        throw new Error(ERR_INVALID_ID);
+    }
+  }
+  get nodeId(): Buffer {
+    switch (this.id) {
+      case "v4":
+        return v4.nodeId(this.publicKey);
+      default:
+        throw new Error(ERR_INVALID_ID);
     }
   }
   verify(data: Buffer, signature: Buffer): boolean {
@@ -61,22 +72,33 @@ export class ENR extends Map<ENRKey, ENRValue> {
       case "v4":
         return v4.verify(this.publicKey, data, signature);
       default:
-        return false;
+        throw new Error(ERR_INVALID_ID);
     }
   }
-  encode(privateKey: Buffer): Buffer {
+  sign(data: Buffer, privateKey: Buffer): Buffer {
+    switch (this.id) {
+      case "v4":
+        this.signature = v4.sign(privateKey, RLP.encode(data));
+        break;
+      default:
+        throw new Error(ERR_INVALID_ID);
+    }
+    return this.signature;
+  }
+  encode(privateKey?: Buffer): Buffer {
     // sort keys and flatten into [k, v, k, v, ...]
-    const content: Array<ENRKey | ENRValue> = Array.from(this.keys())
+    const content: Array<ENRKey | ENRValue| number> = Array.from(this.keys())
       .sort((a, b) => a.localeCompare(b))
       .map((k) => ([k, this.get(k)] as [ENRKey, ENRValue]))
       .flat();
     content.unshift(Number(this.seq));
-    switch (this.id) {
-      case "v4":
-        content.unshift(v4.sign(privateKey, RLP.encode(content)));
-        break;
-      default:
-        assert.fail("invalid record id");
+    if (privateKey) {
+      content.unshift(this.sign(RLP.encode(content), privateKey));
+    } else {
+      if (!this.signature) {
+        throw new Error(ERR_NO_SIGNATURE);
+      }
+      content.unshift(this.signature);
     }
     const encoded = RLP.encode(content);
     assert(encoded.length < MAX_RECORD_SIZE, "ENR must be less than 300 bytes");
