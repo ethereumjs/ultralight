@@ -1,4 +1,5 @@
 import * as RLP from "rlp";
+import { ENR } from "../enr";
 import {
   IAuthMessagePacket,
   IMessagePacket,
@@ -7,6 +8,7 @@ import {
   Packet,
   PacketType,
   Tag,
+  IAuthResponse,
 } from "./types";
 
 import {
@@ -110,4 +112,22 @@ export function decodeAuthHeader(tag: Tag, data: Buffer[], remainder: Buffer): I
     },
     message: remainder,
   };
+}
+
+export function decodeAuthResponse(data: Buffer): IAuthResponse {
+  const responseRaw = RLP.decode(data) as unknown as RLP.Decoded;
+  if (
+    !Array.isArray(responseRaw) ||
+    responseRaw.length !== 3
+  ) {
+    throw new Error(ERR_UNKNOWN_FORMAT);
+  }
+  const response: IAuthResponse = {
+    version: responseRaw[0].readUint8(0),
+    signature: responseRaw[1],
+  };
+  if (!Array.isArray(responseRaw[2])) {
+    response.nodeRecord = ENR.decode(responseRaw[2]);
+  }
+  return response;
 }
