@@ -10,6 +10,8 @@ export const MAGIC_LENGTH = 32;
 // length of nonce
 export const ID_NONCE_LENGTH = 32;
 
+export const RANDOM_DATA_LENGTH = 44;
+
 export const MAX_PACKET_SIZE = 1280;
 
 export const WHOAREYOU_STRING = "WHOAREYOU";
