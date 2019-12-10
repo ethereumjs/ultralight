@@ -49,8 +49,10 @@ declare module "bcrypto/lib/secp256k1" {
   export function privateKeyVerify(key: Buffer): boolean;
   export function publicKeyCreate(key: Buffer, compress?: boolean): Buffer;
   export function publicKeyConvert(pub: Buffer, compress?: boolean): Buffer;
+  export function publicKeyVerify(pub: Buffer): boolean;
   export function sign(msg: Buffer, key: Buffer): Buffer;
   export function verify(msg: Buffer, sig: Buffer, key: Buffer): boolean;
+  export function derive(pub: Buffer, priv: Buffer, compress?: boolean): Buffer;
 }
 declare module "bcrypto/lib/sha256" {
   export function digest(data: Buffer): Buffer;
