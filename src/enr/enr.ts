@@ -78,7 +78,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   sign(data: Buffer, privateKey: Buffer): Buffer {
     switch (this.id) {
       case "v4":
-        this.signature = v4.sign(privateKey, RLP.encode(data));
+        this.signature = v4.sign(privateKey, data);
         break;
       default:
         throw new Error(ERR_INVALID_ID);
