@@ -52,3 +52,9 @@ declare module "bcrypto/lib/secp256k1" {
   export function sign(msg: Buffer, key: Buffer): Buffer;
   export function verify(msg: Buffer, sig: Buffer, key: Buffer): boolean;
 }
+declare module "bcrypto/lib/sha256" {
+  export function digest(data: Buffer): Buffer;
+}
+declare module "bcrypto/lib/random" {
+  export function randomBytes(size: number): Buffer;
+}
