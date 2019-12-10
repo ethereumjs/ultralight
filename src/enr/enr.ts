@@ -6,7 +6,7 @@ import * as RLP from "rlp";
 import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
 import { ENRKey, ENRValue, SequenceNumber } from "./types";
-import { KeypairType } from "../keypair";
+import { createKeypair, KeypairType, IKeypair } from "../keypair";
 
 export class ENR extends Map<ENRKey, ENRValue> {
   public seq: SequenceNumber;
@@ -67,6 +67,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
       default:
         throw new Error(ERR_INVALID_ID);
     }
+  }
+  get keypair(): IKeypair {
+    return createKeypair(this.keypairType, undefined, this.publicKey);
   }
   get nodeId(): Buffer {
     switch (this.id) {
