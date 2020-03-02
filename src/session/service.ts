@@ -25,27 +25,33 @@ import { IKeypair } from "../keypair";
  */
 export class SessionService extends EventEmitter {
   private enr: ENR;
-  private keypair: IKeypair;
   private transport: ITransportService;
   private sessions: Map<NodeId, Session>;
-  constructor(enr: ENR, keypair: IKeypair, transport: ITransportService) {
+  constructor(enr: ENR, transport: ITransportService) {
     super();
     this.enr = enr;
-    this.keypair = keypair;
     this.transport = transport;
     this.sessions = new Map();
   }
+
+  /**
+   * Starts the session service, starting the underlying UDP transport service.
+   */
   public async start(): Promise<void> {
-    // @ts-ignore
     this.transport.on("packet", this.onPacket);
     await this.transport.start();
   }
+
+  /**
+   * Closes the session service, stopping the underlying UDP transport service.
+   */
   public async close(): Promise<void> {
-    // @ts-ignore
     this.transport.removeListener("packet", this.onPacket);
     await this.transport.close();
   }
+
   public onWhoAreYou(from: ISocketAddr, packet: IWhoAreYouPacket): void {
+
   }
   public onAuthMessage(from: ISocketAddr, packet: IAuthMessagePacket): void {
   }
