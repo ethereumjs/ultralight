@@ -1,6 +1,5 @@
 import {
   Packet,
-  PacketType,
 } from "../packet";
 
 export interface ISocketAddr {
@@ -18,9 +17,5 @@ export interface IRemoteInfo {
 export interface ITransportService {
   start(): Promise<void>;
   close(): Promise<void>;
-  send(to: ISocketAddr, type: PacketType, packet: Packet): Promise<void>;
-
-  on(packet: string, onPacket: (from: ISocketAddr, type: PacketType, packet: Packet) => void): void;
-
-  removeListener(packet: string, onPacket: (from: ISocketAddr, type: PacketType, packet: Packet) => void): void;
+  send(to: ISocketAddr, packet: Packet): Promise<void>;
 }

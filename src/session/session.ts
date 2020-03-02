@@ -1,6 +1,6 @@
 import assert = require("assert");
 
-import { NodeId, ENR, SequenceNumber } from "../enr";
+import { NodeId, ENR, SequenceNumber, getUDPSocketAddr } from "../enr";
 import { ISocketAddr } from "../transport";
 import { SessionState, TrustedState, IKeys, ISessionState } from "./types";
 import {
@@ -16,6 +16,7 @@ import {
   IWhoAreYouPacket,
   Nonce,
   Tag,
+  PacketType,
 } from "../packet";
 import {
   generateSessionKeys,
@@ -28,7 +29,6 @@ import {
   encryptMessage,
 } from "./crypto";
 import { IKeypair } from "../keypair";
-
 
 // The `Session` struct handles the stages of creating and establishing a handshake with a
 // peer.
@@ -235,6 +235,7 @@ export class Session {
         };
     }
     return {
+      type: PacketType.AuthMessage,
       tag,
       authHeader,
       message: messageCiphertext,
@@ -264,6 +265,7 @@ export class Session {
         assert.fail("Session not established");
     }
     return {
+      type: PacketType.Message,
       tag,
       authTag,
       message: ciphertext,
@@ -325,6 +327,9 @@ export class Session {
     return result;
   }
 
+  /**
+   * Returns true if the Session has been promoted
+   */
   updateEnr(enr: ENR): boolean {
     if (this.remoteEnr) {
       if (this.remoteEnr.seq < enr.seq) {
@@ -341,10 +346,17 @@ export class Session {
    * This value returns true if the Session has been promoted.
    */
   updateTrusted(): boolean {
-    // TODO make this check more robust
-    const hasSameSocket = (socket: ISocketAddr, enr: ENR): boolean =>
-      socket.address === enr.get("ip")!.toString() &&
-      socket.port === Number(enr.get("udp")!.toString());
+    const hasSameSocket = (socket: ISocketAddr, enr: ENR): boolean => {
+      try {
+        const enrSocket = getUDPSocketAddr(enr);
+        return (
+          socket.address === enrSocket.address &&
+          socket.port === enrSocket.port
+        );
+      } catch (e) {
+        return false;
+      }
+    };
     switch (this.trusted) {
       case TrustedState.Untrusted:
         if (this.remoteEnr) {

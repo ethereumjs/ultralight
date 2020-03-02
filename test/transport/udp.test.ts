@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-import {PacketType, TAG_LENGTH, AUTH_TAG_LENGTH, MAGIC_LENGTH} from "../../src/packet";
+import {PacketType, TAG_LENGTH, AUTH_TAG_LENGTH, MAGIC_LENGTH, IMessagePacket} from "../../src/packet";
 import {UDPTransportService} from "../../src/transport";
 import { expect } from "chai";
 
@@ -24,23 +24,22 @@ describe("UDP transport", () => {
   });
 
   it("should send and receive messages", async () => {
-    const messagePacket = {
+    const messagePacket: IMessagePacket = {
+      type: PacketType.Message,
       tag: Buffer.alloc(TAG_LENGTH),
       authTag: Buffer.alloc(AUTH_TAG_LENGTH),
       message: Buffer.alloc(44, 1),
     };
     const received = new Promise((resolve) =>
-      a.once("packet", (sender, type, packet) =>
-        resolve([sender, type, packet])));
+      a.once("packet", (sender, packet) =>
+        resolve([sender, packet])));
     await b.send(
       {port: portA, address},
-      PacketType.Message,
       messagePacket,
     );
     // @ts-ignore
-    const [rSender, rType, rPacket] = await received;
+    const [rSender, rPacket] = await received;
     expect(rSender).to.deep.equal({port: portB, address});
-    expect(rType).to.equal(PacketType.Message);
     expect(rPacket).to.deep.equal(messagePacket);
   });
 });

@@ -41,6 +41,7 @@ export interface IRegularPacket {
  */
 
 export interface IWhoAreYouPacket {
+  type: PacketType.WhoAreYou;
   // SHA256(`dest-node-id` || "WHOAREYOU").
   magic: Magic;
   // The auth-tag of the request.
@@ -52,6 +53,7 @@ export interface IWhoAreYouPacket {
 }
 
 export interface IAuthMessagePacket extends IRegularPacket {
+  type: PacketType.AuthMessage;
   // Authentication header.
   authHeader: IAuthHeader;
   // The encrypted message including the authentication header.
@@ -59,6 +61,7 @@ export interface IAuthMessagePacket extends IRegularPacket {
 }
 
 export interface IMessagePacket extends IRegularPacket {
+  type: PacketType.Message;
   // 12 byte Authentication nonce.
   authTag: AuthTag;
   // The encrypted message as raw bytes.

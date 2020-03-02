@@ -45,8 +45,8 @@ export class UDPTransportService extends EventEmitter implements ITransportServi
     return new Promise((resolve) => this.socket.close(resolve));
   }
 
-  public async send(to: ISocketAddr, type: PacketType, packet: Packet): Promise<void> {
-    return new Promise((resolve) => this.socket.send(encode(type, packet), to.port, to.address, () => resolve()));
+  public async send(to: ISocketAddr, packet: Packet): Promise<void> {
+    return new Promise((resolve) => this.socket.send(encode(packet), to.port, to.address, () => resolve()));
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
@@ -55,8 +55,8 @@ export class UDPTransportService extends EventEmitter implements ITransportServi
       port: rinfo.port,
     };
     try {
-      const [type, packet] = decode(data, this.whoAreYouMagic);
-      this.emit("packet", sender, type, packet);
+      const packet = decode(data, this.whoAreYouMagic);
+      this.emit("packet", sender, packet);
     } catch (e) {
       this.emit("error", e, sender);
     }

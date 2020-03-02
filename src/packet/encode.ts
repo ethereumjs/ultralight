@@ -9,8 +9,8 @@ import {
   IAuthResponse,
 } from "./types";
 
-export function encode(type: PacketType, packet: Packet): Buffer {
-  switch (type) {
+export function encode(packet: Packet): Buffer {
+  switch (packet.type) {
     case PacketType.WhoAreYou:
       return encodeWhoAreYouPacket(packet as IWhoAreYouPacket);
     case PacketType.AuthMessage:
