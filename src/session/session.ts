@@ -343,8 +343,8 @@ export class Session {
   updateTrusted(): boolean {
     // TODO make this check more robust
     const hasSameSocket = (socket: ISocketAddr, enr: ENR): boolean =>
-      socket.address === enr.get("ip")?.toString() &&
-      socket.port === Number(enr.get("udp")?.toString());
+      socket.address === enr.get("ip")!.toString() &&
+      socket.port === Number(enr.get("udp")!.toString());
     switch (this.trusted) {
       case TrustedState.Untrusted:
         if (this.remoteEnr) {

@@ -33,17 +33,36 @@ export default class Service {
    * @param port the port to which the UDP transport binds.
    * @param networkInterface the network interface to which the UDP transport binds.
    * @param bootstrapURLs the initial peers the discovery service should attempt to connect to. Each peer is an ENR URI.
+   * @param sessionService the service managing sessions underneath.
    */
-  constructor(enr: ENR, port = 30303, networkInterface = "0.0.0.0", bootstrapURLs: string[] = []) {
+  constructor(enr: ENR,
+    port = 30303,
+    networkInterface = "0.0.0.0",
+    bootstrapURLs: string[] = [],
+    sessionService: SessionService) {
+
     if (port < 1 || port > 65535) {
       throw `Invalid port number ${port}. It should be between 1 and 65535.`;
     }
     this.port = port;
     this.networkInterface = networkInterface;
-    const magic = randomBytes(MAGIC_LENGTH);
-    const udpTransport = new UDPTransportService({port: this.port, address: this.networkInterface}, magic);
-    this.sessionService = new SessionService(enr, udpTransport);
+    this.sessionService = sessionService;
     this.bootstrapURLs = bootstrapURLs;
+  }
+
+  /**
+   * Create a new discv5 service, creating a session service to serve connections to the network.
+   *
+   * @param enr the ENR record identifying the current node.
+   * @param port the port to which the UDP transport binds.
+   * @param networkInterface the network interface to which the UDP transport binds.
+   * @param bootstrapURLs the initial peers the discovery service should attempt to connect to. Each peer is an ENR URI.
+   */
+  static create(enr: ENR, port = 30303, networkInterface = "0.0.0.0", bootstrapURLs: string[] = []): Service {
+    const magic = randomBytes(MAGIC_LENGTH);
+    const udpTransport = new UDPTransportService({port: port, address: networkInterface}, magic);
+    const sessionService = new SessionService(enr, udpTransport);
+    return new Service(enr, port, networkInterface, bootstrapURLs, sessionService);
   }
 
   /**
@@ -52,7 +71,7 @@ export default class Service {
    * @param enr the new peer to consider for discovery
    */
   async addPeer(enr: ENR): Promise<void> {
-    this.sessionService.addPeer(enr);
+    await this.sessionService.addPeer(enr);
   }
 
   /**

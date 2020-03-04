@@ -88,7 +88,7 @@ export class SessionService extends EventEmitter {
 
       this.sessions.set(enr.nodeId, session);
       await this.transport.send({
-        port: +enr.get("tcp")!.toString(),
+        port: +enr.get("udp")!.toString(),
         address: enr.get("ip")!.toString()
       }, PacketType.AuthMessage, randomPacket);
     }
