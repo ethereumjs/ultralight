@@ -1,9 +1,16 @@
-import { EventEmitter } from "events";
-import { ITransportService, ISocketAddr } from "../transport";
-import { PacketType, Packet, IWhoAreYouPacket, IAuthMessagePacket, IMessagePacket } from "../packet";
-import { NodeId, ENR } from "../enr";
-import { Session } from "./session";
-import { IKeypair } from "../keypair";
+import {EventEmitter} from "events";
+import {ISocketAddr, ITransportService} from "../transport";
+import {
+  createAuthTag,
+  IAuthHeader,
+  IAuthMessagePacket,
+  IMessagePacket,
+  IWhoAreYouPacket,
+  Packet,
+  PacketType
+} from "../packet";
+import {ENR, NodeId} from "../enr";
+import {Session} from "./session";
 
 
 /**
@@ -67,4 +74,24 @@ export class SessionService extends EventEmitter {
         return this.onMessage(from, packet as IMessagePacket);
     }
   };
+
+  /**
+   * Contact a peer.
+   * @param enr the peer to contact.
+   */
+  public async addPeer(enr: ENR): Promise<void> {
+
+    const existingSession = this.sessions.get(enr.nodeId);
+    if (existingSession == null) {
+      const tag = createAuthTag();
+      const [session, randomPacket] = Session.createWithRandom(tag, enr);
+
+      this.sessions.set(enr.nodeId, session);
+      await this.transport.send({
+        port: +enr.get("tcp")!.toString(),
+        address: enr.get("ip")!.toString()
+      }, PacketType.AuthMessage, randomPacket);
+    }
+
+  }
 }

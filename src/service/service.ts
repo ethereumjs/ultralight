@@ -3,6 +3,9 @@ import {MAGIC_LENGTH} from "../packet";
 import {randomBytes} from "crypto";
 import {SessionService} from "../session/service";
 import {ENR} from "../enr";
+import debug from "debug";
+
+const LOG = debug("discv5/service");
 
 /**
  * User-facing service one can use to set up, start and use Discv5.
@@ -44,6 +47,15 @@ export default class Service {
   }
 
   /**
+   * Add a peer to the nodes to consult for discovery.
+   *
+   * @param enr the new peer to consider for discovery
+   */
+  async addPeer(enr: ENR): Promise<void> {
+    this.sessionService.addPeer(enr);
+  }
+
+  /**
    * Starts the service and adds all initial bootstrap peers to be considered.
    */
   async start(): Promise<void> {
@@ -52,11 +64,9 @@ export default class Service {
       for (const bootstrapURL of this.bootstrapURLs) {
         try {
           const peerENR = ENR.decodeTxt(bootstrapURL);
-          console.log(peerENR);
-          // TODO add to session service.
-          // this.sessionService.addPeer(peerENR);
+          this.sessionService.addPeer(peerENR);
         } catch(e) {
-          console.log(e); // TODO replace with proper log lib.
+          LOG.log("Ignoring invalid bootstrap ENR record %s: %s", bootstrapURL, e);
         }
       }
       this.started = true;
