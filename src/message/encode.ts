@@ -13,8 +13,8 @@ import {
   MessageType,
 } from "./types";
 
-export function encode(type: MessageType, message: Message): Buffer {
-  switch (type) {
+export function encode(message: Message): Buffer {
+  switch (message.type) {
     case MessageType.PING:
       return encodePingMessage(message as IPingMessage);
     case MessageType.PONG:

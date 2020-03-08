@@ -28,11 +28,13 @@ export type ResponseMessage =
   IRegConfirmationMessage;
 
 export interface IPingMessage {
+  type: MessageType.PING;
   id: RequestId;
   enrSeq: SequenceNumber;
 }
 
 export interface IPongMessage {
+  type: MessageType.PONG;
   id: RequestId;
   enrSeq: SequenceNumber;
   recipientIp: string;
@@ -40,17 +42,20 @@ export interface IPongMessage {
 }
 
 export interface IFindNodeMessage {
+  type: MessageType.FINDNODE;
   id: RequestId;
   distance: number;
 }
 
 export interface INodesMessage {
+  type: MessageType.NODES;
   id: RequestId;
   total: number;
   enrs: ENR[];
 }
 
 export interface IRegTopicMessage {
+  type: MessageType.REGTOPIC;
   id: RequestId;
   topic: Buffer;
   enr: ENR;
@@ -58,17 +63,20 @@ export interface IRegTopicMessage {
 }
 
 export interface ITicketMessage {
+  type: MessageType.TICKET;
   id: RequestId;
   ticket: Buffer;
   waitTime: number;
 }
 
 export interface IRegConfirmationMessage {
+  type: MessageType.REGCONFIRMATION;
   id: RequestId;
   topic: Buffer;
 }
 
 export interface ITopicQueryMessage {
+  type: MessageType.TOPICQUERY;
   id: RequestId;
   topic: Buffer;
 }

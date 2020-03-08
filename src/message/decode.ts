@@ -17,25 +17,25 @@ import { ENR } from "../enr";
 
 const ERR_INVALID_MESSAGE = "invalid message";
 
-export function decode(data: Buffer): [MessageType, Message] {
+export function decode(data: Buffer): Message {
   const type = data[0];
   switch (type) {
     case MessageType.PING:
-      return [MessageType.PING, decodePing(data)];
+      return decodePing(data);
     case MessageType.PONG:
-      return [MessageType.PONG, decodePong(data)];
+      return decodePong(data);
     case MessageType.FINDNODE:
-      return [MessageType.FINDNODE, decodeFindNode(data)];
+      return decodeFindNode(data);
     case MessageType.NODES:
-      return [MessageType.NODES, decodeNodes(data)];
+      return decodeNodes(data);
     case MessageType.REGTOPIC:
-      return [MessageType.REGTOPIC, decodeRegTopic(data)];
+      return decodeRegTopic(data);
     case MessageType.TICKET:
-      return [MessageType.TICKET, decodeTicket(data)];
+      return decodeTicket(data);
     case MessageType.REGCONFIRMATION:
-      return [MessageType.REGCONFIRMATION, decodeRegConfirmation(data)];
+      return decodeRegConfirmation(data);
     case MessageType.TOPICQUERY:
-      return [MessageType.TOPICQUERY, decodeTopicQuery(data)];
+      return decodeTopicQuery(data);
     default:
       throw new Error(ERR_INVALID_MESSAGE);
   }
@@ -47,6 +47,7 @@ function decodePing(data: Buffer): IPingMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.PING,
     id: toBigIntBE(rlpRaw[0]),
     enrSeq: toBigIntBE(rlpRaw[1]),
   };
@@ -58,6 +59,7 @@ function decodePong(data: Buffer): IPongMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.PONG,
     id: toBigIntBE(rlpRaw[0]),
     enrSeq: toBigIntBE(rlpRaw[1]),
     recipientIp: ip.toString(rlpRaw[2]),
@@ -71,6 +73,7 @@ function decodeFindNode(data: Buffer): IFindNodeMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.FINDNODE,
     id: toBigIntBE(rlpRaw[0]),
     distance: rlpRaw[1].readUIntBE(0, rlpRaw[1].length),
   };
@@ -84,6 +87,7 @@ function decodeNodes(data: Buffer): INodesMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.NODES,
     id: toBigIntBE(rlpRaw[0]),
     total: rlpRaw[1].readUIntBE(0, rlpRaw[1].length),
     enrs: rlpRaw[2].map(enrRaw => ENR.decode(enrRaw)),
@@ -96,6 +100,7 @@ function decodeRegTopic(data: Buffer): IRegTopicMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.REGTOPIC,
     id: toBigIntBE(rlpRaw[0]),
     topic: rlpRaw[1],
     enr: ENR.decode(rlpRaw[2]),
@@ -109,6 +114,7 @@ function decodeTicket(data: Buffer): ITicketMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.TICKET,
     id: toBigIntBE(rlpRaw[0]),
     ticket: rlpRaw[1],
     waitTime: rlpRaw[2].readUIntBE(0, rlpRaw[2].length),
@@ -121,6 +127,7 @@ function decodeRegConfirmation(data: Buffer): IRegConfirmationMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.REGCONFIRMATION,
     id: toBigIntBE(rlpRaw[0]),
     topic: rlpRaw[1],
   };
@@ -132,7 +139,8 @@ function decodeTopicQuery(data: Buffer): ITopicQueryMessage {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
+    type: MessageType.TOPICQUERY,
     id: toBigIntBE(rlpRaw[0]),
     topic: rlpRaw[1],
-  };}
-
+  };
+}
