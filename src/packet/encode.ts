@@ -15,6 +15,7 @@ export function encode(packet: Packet): Buffer {
       return encodeWhoAreYouPacket(packet as IWhoAreYouPacket);
     case PacketType.AuthMessage:
       return encodeAuthMessagePacket(packet as IAuthMessagePacket);
+    case PacketType.Random:
     case PacketType.Message:
       return encodeMessagePacket(packet as IMessagePacket);
   }

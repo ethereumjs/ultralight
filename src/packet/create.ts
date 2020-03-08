@@ -2,12 +2,12 @@ import { randomBytes } from "bcrypto/lib/random";
 import sha256 = require("bcrypto/lib/sha256");
 
 import { AUTH_TAG_LENGTH, ID_NONCE_LENGTH, RANDOM_DATA_LENGTH, WHOAREYOU_STRING } from "./constants";
-import { IMessagePacket, Tag, AuthTag, IWhoAreYouPacket, IAuthResponse, Nonce, IAuthHeader, PacketType } from "./types";
+import { Tag, AuthTag, IWhoAreYouPacket, IAuthResponse, Nonce, IAuthHeader, PacketType, IRandomPacket } from "./types";
 import { NodeId, SequenceNumber, ENR } from "../enr";
 
-export function createRandomPacket(tag: Tag): IMessagePacket {
+export function createRandomPacket(tag: Tag): IRandomPacket {
   return {
-    type: PacketType.Message,
+    type: PacketType.Random,
     tag,
     authTag: randomBytes(AUTH_TAG_LENGTH),
     message: randomBytes(RANDOM_DATA_LENGTH),

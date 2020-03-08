@@ -11,9 +11,10 @@ export enum PacketType {
   WhoAreYou = 1,
   AuthMessage,
   Message,
+  Random,
 }
 
-export type Packet = IWhoAreYouPacket | IAuthMessagePacket | IMessagePacket;
+export type Packet = IWhoAreYouPacket | IAuthMessagePacket | IMessagePacket | IRandomPacket;
 
 export interface IAuthHeader {
   authTag: Buffer;
@@ -65,5 +66,13 @@ export interface IMessagePacket extends IRegularPacket {
   // 12 byte Authentication nonce.
   authTag: AuthTag;
   // The encrypted message as raw bytes.
+  message: Buffer;
+}
+
+export interface IRandomPacket extends IRegularPacket {
+  type: PacketType.Random;
+  // 12 byte Authentication nonce.
+  authTag: AuthTag;
+  // random data
   message: Buffer;
 }
