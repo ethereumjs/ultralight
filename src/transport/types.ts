@@ -1,3 +1,6 @@
+import { EventEmitter } from "events";
+import StrictEventEmitter from "strict-event-emitter-types";
+
 import {
   Packet,
 } from "../packet";
@@ -14,7 +17,13 @@ export interface IRemoteInfo {
   size: number;
 }
 
-export interface ITransportService {
+export interface ITransportEvents {
+  packet: (src: ISocketAddr, packet: Packet) => void;
+  error: (err: Error, src: ISocketAddr) => void;
+}
+export type TransportEventEmitter = StrictEventEmitter<EventEmitter, ITransportEvents>;
+
+export interface ITransportService extends TransportEventEmitter {
   start(): Promise<void>;
   close(): Promise<void>;
   send(to: ISocketAddr, packet: Packet): Promise<void>;

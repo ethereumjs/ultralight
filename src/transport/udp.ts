@@ -5,20 +5,22 @@ import {
   decode,
   encode,
   Packet,
-  PacketType,
   MAX_PACKET_SIZE,
 } from "../packet";
 import {
   ISocketAddr,
   IRemoteInfo,
   ITransportService,
+  TransportEventEmitter,
 } from "./types";
 
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
  */
-export class UDPTransportService extends EventEmitter implements ITransportService {
+export class UDPTransportService
+  extends (EventEmitter as { new(): TransportEventEmitter })
+  implements ITransportService {
 
   private socketAddr: ISocketAddr;
   private socket: dgram.Socket;
