@@ -10,6 +10,8 @@ export interface ISocketAddr {
   address: string;
 }
 
+export type SocketAddrStr = string;
+
 export interface IRemoteInfo {
   address: string;
   family: "IPv4" | "IPv6";
