@@ -32,7 +32,6 @@ export function setUDPSocketAddr(enr: ENR, udpSocketAddr: ISocketAddr): void {
 // calculate node id / tag
 
 export function getSrcId(enr: ENR, tag: Tag): NodeId {
-  const nodeId = enr.nodeId;
   const hash = sha256.digest(enr.nodeId);
   // reuse `hash` buffer for output
   for (let i = 0; i < 32; i++) {
