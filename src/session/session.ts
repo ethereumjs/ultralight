@@ -17,6 +17,7 @@ import {
   Nonce,
   Tag,
   PacketType,
+  IRandomPacket,
 } from "../packet";
 import {
   generateSessionKeys,
@@ -93,7 +94,7 @@ export class Session {
    * Creates a new `Session` instance and generates a RANDOM packet to be sent along with this
    * session being established. This session is set to `RandomSent` state.
    */
-  static createWithRandom(tag: Tag, remoteEnr: ENR): [Session, IMessagePacket] {
+  static createWithRandom(tag: Tag, remoteEnr: ENR): [Session, IRandomPacket] {
     return [
       new Session({
         state: {state: SessionState.RandomSent},
