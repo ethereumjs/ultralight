@@ -32,3 +32,42 @@ function numberOfLeadingZeros(i: number): number {
   if (i >= 1 <<  2) { n -=  2; i >>>=  2; }
   return n - (i >>> 1);
 }
+
+/**
+ * A Kademlia routing table, organized with an identity and a number of buckets.
+ *
+ * Entities are assigned to buckets based on the distance function associated with Kademlia.
+ */
+export class KademliaRoutingTable<T> {
+
+  selfId: Buffer;
+  k: number;
+  maxReplacements: number;
+  nodeId: (entry: T) => Buffer;
+
+  /**
+   * Create a new routing table.
+   *
+   * @param selfId the ID of the local node
+   * @param k the size of each bucket (k value)
+   * @param maxReplacements the maximum number of replacements to cache in each bucket
+   * @param nodeId a function for obtaining the id of a network node
+   * @return A new routing table
+   */
+  constructor(selfId: Buffer, k: number, maxReplacements: number, nodeId: (entry: T) => Buffer) {
+    if (selfId.length == 0) {
+      throw "selfId cannot be empty";
+    }
+    if (k <= 0) {
+      throw "k must be positive";
+    }
+    if (maxReplacements < 0) {
+      throw "maxReplacements must be positive or zero";
+    }
+    this.selfId = selfId;
+    this.k = k;
+    this.maxReplacements = maxReplacements;
+    this.nodeId = nodeId;
+  }
+
+}
