@@ -14,19 +14,19 @@ describe("Service", () => {
   it("should start and stop", async () => {
     const service = Service.create(enr);
     await service.start();
-    expect(service.started).to.true;
+    expect(service.started).to.be.true;
     await service.stop();
-    expect(service.started).to.false;
+    expect(service.started).to.be.false;
   });
 
   it("should stop twice without problems", async () => {
     const service = Service.create(enr);
     await service.start();
-    expect(service.started).to.true;
+    expect(service.started).to.be.true;
     await service.stop();
-    expect(service.started).to.false;
+    expect(service.started).to.be.false;
     await service.stop();
-    expect(service.started).to.false;
+    expect(service.started).to.be.false;
   });
 
   it("should bind to 0.0.0.0 by default", () => {
