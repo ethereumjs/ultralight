@@ -1,4 +1,4 @@
-import {KademliaRoutingTable, xorDist} from "../../src/kademlia/kademlia";
+import {KademliaRoutingTable, xorDist, xorDistCmp} from "../../src/kademlia/kademlia";
 import { expect } from "chai";
 import {ENR, v4} from "../../src/enr";
 
@@ -19,6 +19,17 @@ describe("Kademlia xor function", () => {
     const a = Buffer.from([0x0f, 0x0f, 0x0f, 0x0f]);
     const b = Buffer.from([0xf0, 0xf0, 0xf0, 0xf0]);
     expect(xorDist(a, b)).eq(32);
+  });
+});
+
+describe("Kademlia xorDistCmp function", () => {
+  it("should throw an error if the byte arrays are of different size", () => {
+    expect(() => xorDistCmp(Buffer.from("abc"), Buffer.from("abc"), Buffer.from("abcd"))).throw("arrays are of different lengths");
+  });
+  it("should compare distances", () => {
+    expect( xorDistCmp(Buffer.from("0"), Buffer.from("1"), Buffer.from("2"))).to.eq(-1);
+    expect( xorDistCmp(Buffer.from("0"), Buffer.from("2"), Buffer.from("1"))).to.eq(1);
+    expect( xorDistCmp(Buffer.from("0"), Buffer.from("5"), Buffer.from("5"))).to.eq(0);
   });
 });
 
@@ -80,8 +91,8 @@ describe("Kademlia routing table",  () => {
     const oldValue = table.propose("5");
     expect(oldValue).to.eql("2");
     expect(table.size).eq(2);
-    expect(table.delete("22")).to.be.false;
-    expect(table.delete(oldValue!)).to.be.true;
+    expect(table.evict("22")).to.be.false;
+    expect(table.evict(oldValue!)).to.be.true;
     expect(table.propose("5")).to.be.undefined;
     expect(table.size).eq(2);
   });
@@ -105,7 +116,28 @@ describe("Kademlia routing table",  () => {
     table.add("g");
     table.add("f");
     expect(table.size).to.eq(4);
-    expect(table.nearest("2")).to.deep.eq(["2", "3"]);
-    expect(table.nearest("g")).to.deep.eq(["g", "f"]);
+    expect(table.nearest("2", 2)).to.deep.eq(["2", "3"]);
+    expect(table.nearest("g", 2)).to.deep.eq(["g", "f"]);
+    expect(table.nearest("2", 4)).to.deep.eq(["2", "3", "f", "g"]);
+  });
+  it("should provide peers at a given distance", () => {
+    const table = new KademliaRoutingTable<string>(Buffer.from("1"), 2, 2,
+      (rec: string) => Buffer.from(rec));
+    table.add("2");
+    table.add("3");
+    table.add("g");
+    table.add("f");
+    expect(table.size).to.eq(4);
+    expect(table.peersOfDistance(2)).to.deep.eq(["2", "3"]);
+    expect(table.peersOfDistance(7)).to.deep.eq(["g", "f"]);
+  });
+  it("should provide peers at random", () => {
+    const table = new KademliaRoutingTable<string>(Buffer.from("1"), 2, 2,
+      (rec: string) => Buffer.from(rec));
+    table.add("2");
+    table.add("3");
+    table.add("g");
+    table.add("f");
+    expect(table.random()).to.be.oneOf(["2", "3", "g", "f"]);
   });
 });

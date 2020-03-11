@@ -1,11 +1,11 @@
 import * as Collections from "typescript-collections";
+import {LinkedList} from "typescript-collections";
 
 /**
  * Computes the number of zero bits of the XOR computation between two byte arrays.
  * @param a the first byte array
  * @param b the second byte array
  */
-
 export function xorDist(a: Buffer, b: Buffer): number {
   if (a.length != b.length) {
     throw "arrays are of different lengths";
@@ -14,7 +14,7 @@ export function xorDist(a: Buffer, b: Buffer): number {
   let i = 0;
   while (i < a.length) {
     const xor = a[i] ^ b[i];
-    if (xor == 0 ) {
+    if (xor == 0) {
       distance -= 8;
     } else {
       distance -= (numberOfLeadingZeros(xor) - 24);
@@ -23,6 +23,31 @@ export function xorDist(a: Buffer, b: Buffer): number {
     i++;
   }
   return distance;
+}
+
+/**
+ * Compare two equal-length byte arrays for their XOR-distance to a target array.
+ *
+ * @param target the target array to compare against.
+ * @param a the first byte array
+ * @param b the second byte array
+ * @return -1 if [a] is closer, +1 if [b] is closer, or 0 if they are the same distance to the target array
+ * @throws if [a] or [b] are not the same length as the target array
+ */
+export function xorDistCmp(target: Buffer, a: Buffer, b: Buffer): number {
+  if (target.length != a.length || a.length != b.length) {
+    throw "arrays are of different lengths";
+  }
+  for (let i = 0 ; i < a.length ; i++) {
+    const distA = target[i] ^ a[i];
+    const distB = target[i] ^ b[i];
+    if (distA > distB) {
+      return 1;
+    } else if (distA < distB) {
+      return -1;
+    }
+  }
+  return 0;
 }
 
 function numberOfLeadingZeros(i: number): number {
@@ -106,7 +131,7 @@ export class KademliaRoutingTable<T> {
     this.size = 0;
   }
 
-  delete(value: T): boolean {
+  evict(value: T): boolean {
     const bucket = this.bucketFor(value);
     if (!bucket.remove(value)) {
       return false;
@@ -120,9 +145,30 @@ export class KademliaRoutingTable<T> {
     return bucket.indexOf(value) != -1;
   }
 
-  nearest(value: T) : T[] {
-    const bucket = this.bucketFor(value);
-    return bucket.toArray();
+  nearest(value: T, limit: number): T[] {
+    const results = new Array<T>();
+    this.buckets.forEach(bucket => {
+      results.push(...bucket.toArray());
+    });
+    const valueId = this.nodeId(value);
+    results.sort((a: T, b: T) => {
+      return xorDistCmp(valueId, this.nodeId(a), this.nodeId((b)));
+    });
+    return results.slice(0, limit);
+  }
+
+  peersOfDistance(value: number): T[] {
+    const bucket = this.buckets[value];
+    return bucket === undefined ? [] : bucket.toArray();
+  }
+
+  random(): (T | undefined) {
+    const nonEmptyBuckets = this.buckets.filter(bucket => !bucket.isEmpty());
+    if (nonEmptyBuckets.length == 0) {
+      return undefined;
+    }
+    const selectedBucket = nonEmptyBuckets[Math.floor(Math.random() * nonEmptyBuckets.length)];
+    return selectedBucket.elementAtIndex(Math.floor(Math.random() * selectedBucket.size()));
   }
 
   private bucketFor(value: T): Collections.LinkedList<T> {
