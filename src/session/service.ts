@@ -10,8 +10,9 @@ import {
 } from "../packet";
 import {ENR, NodeId} from "../enr";
 import {Session} from "./session";
+import {KademliaRoutingTable} from "../kademlia/kademlia";
 
-
+const ENTRIES_PER_BUCKET = 16;
 /**
  * Session management for the Discv5 Discovery service.
  *
@@ -33,11 +34,13 @@ export class SessionService extends EventEmitter {
   private enr: ENR;
   private transport: ITransportService;
   private sessions: Map<NodeId, Session>;
+  private routingTable: KademliaRoutingTable<ENR>;
   constructor(enr: ENR, transport: ITransportService) {
     super();
     this.enr = enr;
     this.transport = transport;
     this.sessions = new Map();
+    this.routingTable = new KademliaRoutingTable<ENR>(enr.nodeId, ENTRIES_PER_BUCKET, (entry: ENR) => entry.nodeId);
   }
 
   /**

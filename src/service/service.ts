@@ -4,11 +4,10 @@ import {randomBytes} from "crypto";
 import {SessionService} from "../session/service";
 import {ENR} from "../enr";
 import debug from "debug";
-import {KademliaRoutingTable} from "../kademlia/kademlia";
 
 const LOG = debug("discv5/service");
 
-const ENTRIES_PER_BUCKET = 16;
+
 
 /**
  * User-facing service one can use to set up, start and use Discv5.
@@ -29,7 +28,6 @@ export default class Service {
   port: number;
   sessionService: SessionService;
   bootstrapURLs: string[];
-  routingTable: KademliaRoutingTable;
 
   /**
    * Default constructor.
@@ -52,7 +50,6 @@ export default class Service {
     this.networkInterface = networkInterface;
     this.sessionService = sessionService;
     this.bootstrapURLs = bootstrapURLs;
-    this.routingTable = new KademliaRoutingTable<ENR>(enr.nodeId, ENTRIES_PER_BUCKET, ENTRIES_PER_BUCKET);
   }
 
   /**
