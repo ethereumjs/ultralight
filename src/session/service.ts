@@ -2,7 +2,6 @@ import {EventEmitter} from "events";
 import {ISocketAddr, ITransportService} from "../transport";
 import {
   createAuthTag,
-  IAuthHeader,
   IAuthMessagePacket,
   IMessagePacket,
   IWhoAreYouPacket,
@@ -57,11 +56,16 @@ export class SessionService extends EventEmitter {
     await this.transport.close();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
   public onWhoAreYou(from: ISocketAddr, packet: IWhoAreYouPacket): void {
 
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
   public onAuthMessage(from: ISocketAddr, packet: IAuthMessagePacket): void {
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
   public onMessage(from: ISocketAddr, packet: IMessagePacket): void {
   }
   public onPacket = (from: ISocketAddr, type: PacketType, packet: Packet): void => {

@@ -70,7 +70,6 @@ export class KademliaRoutingTable<T> {
 
   selfId: Buffer;
   k: number;
-  maxReplacements: number;
   nodeId: (entry: T) => Buffer;
   readonly [Symbol.toStringTag]: string;
   size: number;
@@ -82,24 +81,19 @@ export class KademliaRoutingTable<T> {
    *
    * @param selfId the ID of the local node
    * @param k the size of each bucket (k value)
-   * @param maxReplacements the maximum number of replacements to cache in each bucket
    * @param nodeId a function for obtaining the id of a network node
    * @param distanceFn a function dictating the distance between nodes
    * @return A new routing table
    */
-  constructor(selfId: Buffer, k: number, maxReplacements: number, nodeId: (entry: T) => Buffer, distanceFn = xorDist) {
+  constructor(selfId: Buffer, k: number,  nodeId: (entry: T) => Buffer, distanceFn = xorDist) {
     if (selfId.length == 0) {
       throw "selfId cannot be empty";
     }
     if (k <= 0) {
       throw "k must be positive";
     }
-    if (maxReplacements < 0) {
-      throw "maxReplacements must be positive or zero";
-    }
     this.selfId = selfId;
     this.k = k;
-    this.maxReplacements = maxReplacements;
     this.nodeId = nodeId;
     this.size = 0;
     this.buckets = new Array<Collections.LinkedList<T>>(selfId.length + 1);
