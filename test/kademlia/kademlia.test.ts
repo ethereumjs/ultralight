@@ -85,4 +85,16 @@ describe("Kademlia routing table",  () => {
     expect(table.propose("5")).to.be.undefined;
     expect(table.size).eq(2);
   });
+  it("should clear values", () => {
+    const table = new KademliaRoutingTable<string>(Buffer.from("1"), 2, 2,
+      (rec: string) => Buffer.from(rec));
+    table.add("2");
+    table.add("3");
+    table.add("g");
+    table.add("f");
+    expect(table.size).to.eq(4);
+    table.clear();
+    expect(table.size).to.eq(0);
+    expect(table.has("2")).to.be.false;
+  });
 });

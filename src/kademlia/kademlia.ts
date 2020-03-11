@@ -41,7 +41,7 @@ function numberOfLeadingZeros(i: number): number {
  *
  * Entities are assigned to buckets based on the distance function associated with Kademlia.
  */
-export class KademliaRoutingTable<T> implements Set<T> {
+export class KademliaRoutingTable<T> {
 
   selfId: Buffer;
   k: number;
@@ -49,7 +49,6 @@ export class KademliaRoutingTable<T> implements Set<T> {
   nodeId: (entry: T) => Buffer;
   readonly [Symbol.toStringTag]: string;
   size: number;
-  fakeArray: Set<T> = new Set<T>();
   buckets: Collections.LinkedList<T>[];
   distanceFn: (a: Buffer, b: Buffer) => number;
 
@@ -86,10 +85,6 @@ export class KademliaRoutingTable<T> implements Set<T> {
     return this.size == 0;
   }
 
-  [Symbol.iterator](): IterableIterator<T> {
-    return this.fakeArray[Symbol.iterator]();
-  }
-
   propose(value: T): (T | undefined) {
     const bucket = this.bucketFor(value);
     if (bucket.size() < this.k) {
@@ -107,7 +102,8 @@ export class KademliaRoutingTable<T> implements Set<T> {
   }
 
   clear(): void {
-    this.fakeArray.clear();
+    this.buckets = new Array<Collections.LinkedList<T>>(this.selfId.length + 1);
+    this.size = 0;
   }
 
   delete(value: T): boolean {
@@ -119,25 +115,9 @@ export class KademliaRoutingTable<T> implements Set<T> {
     return true;
   }
 
-  entries(): IterableIterator<[T, T]> {
-    return this.fakeArray.entries();
-  }
-
-  forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void {
-    return this.fakeArray.forEach(callbackfn, thisArg);
-  }
-
   has(value: T): boolean {
     const bucket = this.bucketFor(value);
     return bucket.indexOf(value) != -1;
-  }
-
-  keys(): IterableIterator<T> {
-    return this.fakeArray.keys();
-  }
-
-  values(): IterableIterator<T> {
-    return this.fakeArray.values();
   }
 
   private bucketFor(value: T): Collections.LinkedList<T> {
