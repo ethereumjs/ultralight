@@ -3,7 +3,7 @@
  * @param a the first byte array
  * @param b the second byte array
  */
-export function xorDist(a : Buffer, b : Buffer): number {
+export function xorDist(a: Buffer, b: Buffer): number {
   if (a.length != b.length) {
     throw "arrays are of different lengths";
   }
@@ -22,13 +22,13 @@ export function xorDist(a : Buffer, b : Buffer): number {
   return distance;
 }
 
-function numberOfLeadingZeros(i : number) {
-    if (i <= 0)
-      return i == 0 ? 32 : 0;
-    let n = 31;
-    if (i >= 1 << 16) { n -= 16; i >>>= 16; }
-    if (i >= 1 <<  8) { n -=  8; i >>>=  8; }
-    if (i >= 1 <<  4) { n -=  4; i >>>=  4; }
-    if (i >= 1 <<  2) { n -=  2; i >>>=  2; }
-    return n - (i >>> 1);
+function numberOfLeadingZeros(i: number): number {
+  if (i <= 0)
+    return i == 0 ? 32 : 0;
+  let n = 31;
+  if (i >= 1 << 16) { n -= 16; i >>>= 16; }
+  if (i >= 1 <<  8) { n -=  8; i >>>=  8; }
+  if (i >= 1 <<  4) { n -=  4; i >>>=  4; }
+  if (i >= 1 <<  2) { n -=  2; i >>>=  2; }
+  return n - (i >>> 1);
 }
