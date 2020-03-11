@@ -50,8 +50,8 @@ describe("Kademlia routing table",  () => {
     expect(table.size).eq(0);
   });
   it("should add items", () => {
-    const table = new KademliaRoutingTable<ENR>(Buffer.of(1,2,3), 1, 2,
-      (enr: ENR) => Buffer.from(enr.id));
+    const table = new KademliaRoutingTable<ENR>(ENR.createV4(v4.publicKey(v4.createPrivateKey())).nodeId, 1, 2,
+      (enr: ENR) => enr.nodeId);
     const sk = v4.createPrivateKey();
     table.add(ENR.createV4(v4.publicKey(sk)));
     expect(table.isEmpty()).to.be.false;
