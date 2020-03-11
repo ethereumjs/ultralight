@@ -120,6 +120,11 @@ export class KademliaRoutingTable<T> {
     return bucket.indexOf(value) != -1;
   }
 
+  nearest(value: T) : T[] {
+    const bucket = this.bucketFor(value);
+    return bucket.toArray();
+  }
+
   private bucketFor(value: T): Collections.LinkedList<T> {
     const bucketId = this.distanceFn(this.selfId, this.nodeId(value));
     const bucket = this.buckets[bucketId];

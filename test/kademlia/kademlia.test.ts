@@ -97,4 +97,15 @@ describe("Kademlia routing table",  () => {
     expect(table.size).to.eq(0);
     expect(table.has("2")).to.be.false;
   });
+  it("should provide nearest values", () => {
+    const table = new KademliaRoutingTable<string>(Buffer.from("1"), 2, 2,
+      (rec: string) => Buffer.from(rec));
+    table.add("2");
+    table.add("3");
+    table.add("g");
+    table.add("f");
+    expect(table.size).to.eq(4);
+    expect(table.nearest("2")).to.deep.eq(["2", "3"]);
+    expect(table.nearest("g")).to.deep.eq(["g", "f"]);
+  });
 });
