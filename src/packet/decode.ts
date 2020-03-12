@@ -28,7 +28,7 @@ import {
  *
  * Note: this function will modify the input data
  */
-export function decode(data: Buffer, magic: Magic): [PacketType, Packet] {
+export function decode(data: Buffer, magic: Magic): Packet {
   if (data.length > MAX_PACKET_SIZE) {
     throw new Error(ERR_TOO_LARGE);
   }
@@ -44,20 +44,11 @@ export function decode(data: Buffer, magic: Magic): [PacketType, Packet] {
   //   tag   ++ rlp_bytes(...) ++ message
   //   tag   ++ rlp_list(...)  ++ message
   if (tag.equals(magic)) {
-    return [
-      PacketType.WhoAreYou,
-      decodeWhoAreYou(tag, decoded.data as Buffer[], decoded.remainder)
-    ];
+    return decodeWhoAreYou(tag, decoded.data as Buffer[], decoded.remainder);
   } else if (!Array.isArray(decoded.data)) {
-    return [
-      PacketType.Message,
-      decodeStandardMessage(tag, decoded.data, decoded.remainder),
-    ];
+    return decodeStandardMessage(tag, decoded.data, decoded.remainder);
   } else {
-    return [
-      PacketType.AuthMessage,
-      decodeAuthHeader(tag, decoded.data, decoded.remainder),
-    ];
+    return decodeAuthHeader(tag, decoded.data, decoded.remainder);
   }
 }
 
@@ -74,6 +65,7 @@ export function decodeWhoAreYou(magic: Magic, data: Buffer[], remainder: Buffer)
   }
   const enrSeq = Number(`0x${enrSeqBytes.toString("hex")}`);
   return {
+    type: PacketType.WhoAreYou,
     token,
     magic,
     idNonce,
@@ -83,6 +75,7 @@ export function decodeWhoAreYou(magic: Magic, data: Buffer[], remainder: Buffer)
 
 export function decodeStandardMessage(tag: Tag, data: Buffer, remainder: Buffer): IMessagePacket {
   return {
+    type: PacketType.Message,
     tag,
     authTag: data,
     message: remainder,
@@ -102,6 +95,7 @@ export function decodeAuthHeader(tag: Tag, data: Buffer[], remainder: Buffer): I
     authResponse,
   ] = data;
   return {
+    type: PacketType.AuthMessage,
     tag,
     authHeader: {
       authTag,

@@ -1,3 +1,8 @@
+import { NodeId, ENR } from "../enr";
+import { Packet, AuthTag } from "../packet";
+import { Message, RequestMessage } from "../message";
+import { ISocketAddr } from "../transport";
+
 export enum SessionState {
   /**
    * A WHOAREYOU packet has been sent, and the Session is awaiting an Authentication response.
@@ -60,4 +65,50 @@ export enum TrustedState {
    * connected until the IP is updated to match the source IP.
    */
   Untrusted,
+}
+
+/**
+ * A request to a node that we are waiting for a response
+ */
+export interface IPendingRequest {
+  /**
+   * The destination NodeId
+   */
+  dstId: NodeId;
+  /**
+   * The destination ISocketAddr
+   */
+  dst: ISocketAddr;
+  /**
+   * The raw packet sent
+   */
+  packet: Packet;
+  /**
+   * The unencrypted message. Required if we need to re-encrypt and re-send
+   */
+  message?: RequestMessage;
+  /**
+   * The number if times this request has been re-sent
+   */
+  retries: number;
+}
+
+export interface ISessionEvents {
+  /**
+   * A session has been established with a node
+   */
+  established: (enr: ENR) => void;
+  /**
+   * A message was received
+   */
+  message: (srcId: NodeId, src: ISocketAddr, message: Message) => void;
+  /**
+   * A WHOAREYOU packet needs to be sent.
+   * This requests the protocol layer to send back the highest known ENR.
+   */
+  whoAreYouRequest: (srcId: NodeId, src: ISocketAddr, authTag: AuthTag) => void;
+  /**
+   * An RPC request failed.
+   */
+  requestFailed: (srcId: NodeId, rpcId: bigint) => void;
 }
