@@ -82,6 +82,7 @@ export default class Service {
    *
    * @param enr the new peer to consider for discovery
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
   async addPeer(enr: ENR): Promise<void> {
   }
 
@@ -94,6 +95,7 @@ export default class Service {
       for (const bootstrapURL of this.bootstrapURLs) {
         try {
           const peerENR = ENR.decodeTxt(bootstrapURL);
+          this.addPeer(peerENR);
         } catch(e) {
           LOG.log("Ignoring invalid bootstrap ENR record %s: %s", bootstrapURL, e);
         }
