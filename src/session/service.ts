@@ -71,6 +71,7 @@ export class SessionService extends EventEmitter {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,@typescript-eslint/no-empty-function
   public onMessage(from: ISocketAddr, packet: IMessagePacket): void {
   }
+
   public onPacket = (from: ISocketAddr, type: PacketType, packet: Packet): void => {
     switch (type) {
       case PacketType.WhoAreYou:
@@ -84,9 +85,17 @@ export class SessionService extends EventEmitter {
 
   /**
    * Contact a peer.
+   *
+   * The peer is also added to the routing table, evicting an existing peer if needed.
+   *
    * @param enr the peer to contact.
    */
   public async addPeer(enr: ENR): Promise<void> {
+    const toEvict = this.routingTable.propose(enr);
+    if (toEvict != undefined) {
+      this.routingTable.evict(toEvict);
+      this.routingTable.propose(enr);
+    }
 
     const existingSession = this.sessions.get(enr.nodeId);
     if (existingSession == null) {
@@ -99,6 +108,13 @@ export class SessionService extends EventEmitter {
         address: enr.get("ip")!.toString()
       }, PacketType.AuthMessage, randomPacket);
     }
+  }
 
+  /**
+   * Get a random peer.
+   * @return peer, or undefined if the peer table is empty.
+   */
+  public randomPeer(): ENR | undefined {
+    return this.routingTable.random();
   }
 }
