@@ -19,6 +19,7 @@ describe("ENR", () => {
     const decoded = ENR.decode(record.encode(privateKey));
     expect(decoded).to.deep.equal(record);
   });
+
   it("should encode/decode to text encoding", () => {
     const testTxt = "enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
     const decoded = ENR.decodeTxt(testTxt);

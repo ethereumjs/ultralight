@@ -54,8 +54,30 @@ declare module "bcrypto/lib/secp256k1" {
   export function verify(msg: Buffer, sig: Buffer, key: Buffer): boolean;
   export function derive(pub: Buffer, priv: Buffer, compress?: boolean): Buffer;
 }
+
+declare module "bcrypto/lib/hkdf" {
+  export function extract(hash: any, ikm: Buffer, salt?: Buffer): Buffer;
+  export function expand(hash: any, prk: Buffer, info: Buffer, length: number): Buffer;
+}
+
 declare module "bcrypto/lib/sha256" {
   export function digest(data: Buffer): Buffer;
+}
+declare module "bcrypto/lib/cipher" {
+  class CipherBase {
+    init(key: Buffer, iv: Buffer): this;
+    update(data: Buffer): Buffer;
+    final(): Buffer;
+    setAAD(data: Buffer): this;
+    setAuthTag(data: Buffer): this;
+    getAuthTag(): Buffer;
+  }
+  export class Cipher extends CipherBase {
+    constructor(name: string);
+  }
+  export class Decipher extends CipherBase {
+    constructor(name: string);
+  }
 }
 declare module "bcrypto/lib/random" {
   export function randomBytes(size: number): Buffer;
