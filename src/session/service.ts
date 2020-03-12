@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
+import debug from "debug";
 
 import { ITransportService, ISocketAddr } from "../transport";
 import { PacketType, Packet, IWhoAreYouPacket, IAuthMessagePacket, IMessagePacket, AuthTag } from "../packet";
@@ -10,6 +11,8 @@ import { TimeoutMap, toHex, fromHex } from "../util";
 import { Message, RequestMessage, encode, decode, ResponseMessage, RequestId } from "../message";
 import { IPendingRequest, SessionState, ISessionEvents } from "./types";
 import { SESSION_TIMEOUT, REQUEST_TIMEOUT, REQUEST_RETRIES } from "./constants";
+
+const log = debug("discv5:sessionService");
 
 /**
  * Session management for the Discv5 Discovery service.
@@ -61,6 +64,10 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
 
   constructor(enr: ENR, keypair: IKeypair, transport: ITransportService) {
     super();
+    // ensure the keypair matches the one that signed the ENR
+    if (!keypair.publicKey.equals(enr.publicKey)) {
+      throw new Error("Provided keypair does not match the provided ENR keypair");
+    }
     this.enr = enr;
     this.keypair = keypair;
     this.transport = transport;
@@ -91,246 +98,6 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.sessions.clear();
   }
 
-  public onWhoAreYou(from: ISocketAddr, packet: IWhoAreYouPacket): void {
-    const pendingRequests = this.pendingRequests.get(from);
-    if (!pendingRequests) {
-      // Received a WHOAREYOU packet that references an unknown or expired request.
-      return;
-    }
-    const request = Array.from(pendingRequests.values()).find((r) =>
-      packet.token.equals((r.packet as IMessagePacket).authTag || Buffer.alloc(0)));
-    if (!request) {
-      // Received a WHOAREYOU packet that references an unknown or expired request.
-      return;
-    }
-    if (pendingRequests.size === 1) {
-      this.pendingRequests.delete(from);
-    } else {
-      pendingRequests.delete(request.message ? request.message.id : 0n);
-    }
-
-    // This is an assumed NodeId. We sent the packet to this NodeId and can only verify it against the
-    // originating IP address. We assume it comes from this NodeId.
-    const srcId = request.dstId;
-    const srcIdHex = toHex(srcId);
-    const tag = getTag(this.enr, srcId);
-
-    const session = this.sessions.get(srcIdHex);
-    if (!session) {
-      // Received a WhoAreYou packet without having an established session
-      return;
-    }
-
-    // Determine which message to send back. A WhoAreYou could refer to the random packet
-    // sent during establishing a connection, or their session has expired on one of our
-    // send messages and we need to re-encrypt it
-    let message: RequestMessage;
-    if (request.packet.type === PacketType.Random) {
-      // get the messages that are waiting for an established session
-      const messages = this.pendingMessages.get(srcIdHex);
-      if (!messages || !messages.length) {
-        throw new Error("No pending messages found for WHOAREYOU request.");
-      }
-      message = messages.shift() as RequestMessage;
-      this.pendingMessages.set(srcIdHex, messages);
-    } else {
-      if (!request.message) {
-        throw new Error("All non-random requests must have an unencrypted message");
-      }
-      // re-send the original message
-      message = request.message as RequestMessage;
-    }
-    // Update the session (this must be the socket that we sent the referenced request to)
-    session.lastSeenSocket = from;
-
-    // Update the ENR record if necessary
-    let updatedEnr: ENR | null = null;
-    if (packet.enrSeq < this.enr.seq) {
-      updatedEnr = this.enr;
-    }
-
-    // Generate session keys and encrypt the earliest packet with the authentication header
-    try {
-      const authPacket = session.encryptWithHeader(
-        tag,
-        this.keypair,
-        updatedEnr,
-        this.enr.nodeId,
-        packet.idNonce,
-        encode(message)
-      );
-
-      // send the response
-      this.processRequest(srcId, from, authPacket, message);
-
-      // flush the message cache
-      this.flushMessages(srcId, from);
-    } catch (e) {
-      // insert the message back into the pending queue
-      let messages = this.pendingMessages.get(srcIdHex);
-      if (!messages) {
-        messages = [];
-      }
-      messages.unshift(message);
-      this.pendingMessages.set(srcIdHex, messages);
-      throw new Error("Could not generate a session");
-    }
-  }
-
-  public onAuthMessage(from: ISocketAddr, packet: IAuthMessagePacket): void {
-    // Needs to match an outgoing WHOAREYOU packet (so we have the required nonce to be signed).
-    // If it doesn't we drop the packet.
-    // This will lead to future outgoing WHOAREYOU packets if they proceed to send further encrypted packets
-    const srcId = getSrcId(this.enr, packet.tag);
-    const srcIdHex = toHex(srcId);
-
-    const session = this.sessions.get(srcIdHex);
-    if (!session) {
-      throw new Error("Received an authenticated header without a known session");
-    }
-
-    if (session.state.state !== SessionState.WhoAreYouSent) {
-      throw new Error("Received an authenticated header without a known WHOAREYOU session");
-    }
-
-    const pendingRequests = this.pendingRequests.get(from);
-    if (!pendingRequests) {
-      throw new Error("Received an authenticated header without a matching WHOAREYOU request");
-    }
-    const request = Array.from(pendingRequests.values()).find((r) =>
-      r.packet.type === PacketType.WhoAreYou && r.dstId.equals(srcId));
-    if (!request) {
-      throw new Error("Received an authenticated header without a matching WHOAREYOU request");
-    }
-    if (pendingRequests.size === 1) {
-      this.pendingRequests.delete(from);
-    } else {
-      pendingRequests.delete(request.message ? request.message.id : 0n);
-    }
-
-    const idNonce = (request.packet as IWhoAreYouPacket).idNonce;
-
-    // update the sessions last seen socket
-    session.lastSeenSocket = from;
-
-    // establish the session
-    try {
-      const trusted = session.establishFromHeader(this.keypair, this.enr.nodeId, srcId, idNonce, packet.authHeader);
-      if (trusted) {
-        // session is trusted, notify the protocol
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this.emit("established", session.remoteEnr!);
-        // flush messages
-        this.flushMessages(srcId, from);
-      }
-    } catch (e) {
-      this.sessions.delete(srcIdHex);
-      this.pendingMessages.delete(srcIdHex);
-      throw new Error("Invalid Authentication header. Dropping session.");
-    }
-
-    // session has been established, update the timeout
-    this.sessions.setTimeout(srcIdHex, SESSION_TIMEOUT);
-
-    // decrypt the message
-    this.onMessage(
-      from,
-      {
-        type: PacketType.Message,
-        authTag: packet.authHeader.authTag,
-        message: packet.message,
-        tag: packet.tag,
-      }
-    );
-  }
-
-  public onMessage(from: ISocketAddr, packet: IMessagePacket): void {
-    const srcId = getSrcId(this.enr, packet.tag);
-    const srcIdHex = toHex(srcId);
-
-    // check if we have an available session
-    const session = this.sessions.get(srcIdHex);
-    if (!session) {
-      // Received a message without a session.
-
-      // spawn a WHOAREYOU event to check for highest known ENR
-      this.emit("whoAreYouRequest", srcId, from, packet.authTag);
-      throw new Error();
-    }
-    // if we have sent a random packet, upgrade to a WHOAREYOU request
-    if (session.state.state === SessionState.RandomSent) {
-      this.emit("whoAreYouRequest", srcId, from, packet.authTag);
-    } else if (session.state.state === SessionState.WhoAreYouSent) {
-      // Waiting for a session to be generated
-
-      // potentially store and decrypt once we receive the packet
-      // drop it for now
-      return;
-    }
-    // We could be in the AwaitingResponse state. If so, this message could establish a new
-    // session with a node. We keep track to see if the decryption uupdates the session. If so,
-    // we notify the user and flush all cached messages.
-    const sessionWasAwaiting = session.state.state === SessionState.AwaitingResponse;
-
-    // attempt to decrypt and process the message
-    let encodedMessage;
-    try {
-      encodedMessage = session.decryptMessage(packet.authTag, packet.message, packet.tag);
-    } catch (e) {
-      // We have a session but the message could not be decrypted.
-      // It is likely the node sending this message has dropped their session.
-      // In this case, this message is a random packet and we should reply with a WHOAREYOU.
-      // This means we need to drop the current session and re-establish.
-      this.sessions.delete(srcIdHex);
-      this.emit("whoAreYouRequest", srcId, from, packet.authTag);
-      return;
-    }
-    let message: Message;
-    try {
-      message = decode(encodedMessage);
-    } catch (e) {
-      throw new Error(`Failed to decode message. Error: ${e.message}`);
-    }
-
-    // Remove any associated request from pendingRequests
-    const pendingRequests = this.pendingRequests.get(from);
-    if (pendingRequests) {
-      pendingRequests.delete(message.id);
-    }
-
-    // We have received a new message. Notify the protocol
-    this.emit("message", srcId, from, message);
-
-    // update the lastSeenSocket and check if we need to promote the sesison to trusted
-    session.lastSeenSocket = from;
-
-    // There are two possibilities as session could have been established.
-    // The lastest message matches the known ENR and upgrades the session to an established state,
-    // or, we were awaiting a message to be decrypted with new session keys,
-    // this just arrived and now we consider the session established.
-    // In both cases, we notify the user and fllush the cahced messages
-    if (
-      (session.updateTrusted() &&  session.trustedEstablished()) ||
-      (session.trustedEstablished() && sessionWasAwaiting)
-    ) {
-      // session has been established, notify the protocol
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.emit("established", session.remoteEnr!);
-      // flush messages
-      this.flushMessages(srcId, from);
-    }
-  }
-  public onPacket = (src: ISocketAddr, packet: Packet): void => {
-    switch (packet.type) {
-      case PacketType.WhoAreYou:
-        return this.onWhoAreYou(src, packet as IWhoAreYouPacket);
-      case PacketType.AuthMessage:
-        return this.onAuthMessage(src, packet as IAuthMessagePacket);
-      case PacketType.Message:
-        return this.onMessage(src, packet as IMessagePacket);
-    }
-  };
-
   public updateEnr(enr: ENR): void {
     const session = this.sessions.get(toHex(enr.nodeId));
     if (session) {
@@ -351,6 +118,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const dst = getUDPSocketAddr(dstEnr);
     const session = this.sessions.get(dstIdHex);
     if (!session) {
+      log("No session established, sending a random packet to: %s", dstIdHex);
       // cache message
       const msgs = this.pendingMessages.get(dstIdHex);
       if (msgs) {
@@ -383,7 +151,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // session should be established
     const session = this.sessions.get(toHex(dstId));
     if (!session) {
-      throw new Error("Session not established");
+      throw new Error("Request without an ENR could not be sent, no session exists");
     }
 
     const packet = session.encryptMessage(getTag(this.enr, dstId), encode(message));
@@ -399,7 +167,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // session should be established
     const session = this.sessions.get(toHex(dstId));
     if (!session) {
-      throw new Error("Session not established");
+      throw new Error("Response could not be sent, no session exists");
     }
     const packet = session.encryptMessage(getTag(this.enr, dstId), encode(message));
     this.transport.send(dst, packet);
@@ -413,13 +181,289 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       // If a WHOAREYOU is already sent or a session is already established, ignore this request
       if (_session.trustedEstablished() || _session.state.state === SessionState.WhoAreYouSent) {
         // session exists, WhoAreYou packet not sent
+        log("Session exists, WHOAREYOU packet not sent");
         return;
       }
     }
+    log("Sending WHOAREYOU packet to: %s", dstIdHex);
     const [session, packet] = Session.createWithWhoAreYou(dstId, enrSeq, remoteEnr, authTag);
     this.sessions.set(dstIdHex, session);
     this.processRequest(dstId, dst, packet);
   }
+
+  public onWhoAreYou(from: ISocketAddr, packet: IWhoAreYouPacket): void {
+    const pendingRequests = this.pendingRequests.get(from);
+    if (!pendingRequests) {
+      // Received a WHOAREYOU packet that references an unknown or expired request.
+      log(
+        "Received a WHOAREYOU packet that references an unknown or expired request. source: %o, token: %s",
+        from,
+        packet.token.toString("hex"),
+      );
+      return;
+    }
+    const request = Array.from(pendingRequests.values()).find((r) =>
+      packet.token.equals((r.packet as IMessagePacket).authTag || Buffer.alloc(0)));
+    if (!request) {
+      // Received a WHOAREYOU packet that references an unknown or expired request.
+      log(
+        "Received a WHOAREYOU packet that references an unknown or expired request. source: %o, token: %s",
+        from,
+        packet.token.toString("hex"),
+      );
+      return;
+    }
+    if (pendingRequests.size === 1) {
+      this.pendingRequests.delete(from);
+    } else {
+      pendingRequests.delete(request.message ? request.message.id : 0n);
+    }
+
+    log("Received a WHOAREYOU packet. source: %o", from);
+
+    // This is an assumed NodeId. We sent the packet to this NodeId and can only verify it against the
+    // originating IP address. We assume it comes from this NodeId.
+    const srcId = request.dstId;
+    const srcIdHex = toHex(srcId);
+    const tag = getTag(this.enr, srcId);
+
+    const session = this.sessions.get(srcIdHex);
+    if (!session) {
+      // Received a WhoAreYou packet without having an established session
+      log("Received a WHOAREYOU packet without having an established session.");
+      return;
+    }
+
+    // Determine which message to send back. A WhoAreYou could refer to the random packet
+    // sent during establishing a connection, or their session has expired on one of our
+    // send messages and we need to re-encrypt it
+    let message: RequestMessage;
+    if (request.packet.type === PacketType.Random) {
+      // get the messages that are waiting for an established session
+      const messages = this.pendingMessages.get(srcIdHex);
+      if (!messages || !messages.length) {
+        log("No pending messages found for WHOAREYOU request.");
+        return;
+      }
+      message = messages.shift() as RequestMessage;
+      this.pendingMessages.set(srcIdHex, messages);
+    } else {
+      // re-send the original message
+      if (!request.message) {
+        log("All non-random requests must have an unencrypted message");
+        return;
+      }
+      message = request.message as RequestMessage;
+    }
+    // Update the session (this must be the socket that we sent the referenced request to)
+    session.lastSeenSocket = from;
+
+    // Update the ENR record if necessary
+    let updatedEnr: ENR | null = null;
+    if (packet.enrSeq < this.enr.seq) {
+      updatedEnr = this.enr;
+    }
+
+    // Generate session keys and encrypt the earliest packet with the authentication header
+    let authPacket: IAuthMessagePacket;
+    try {
+      authPacket = session.encryptWithHeader(
+        tag,
+        this.keypair,
+        updatedEnr,
+        this.enr.nodeId,
+        packet.idNonce,
+        encode(message)
+      );
+    } catch (e) {
+      // insert the message back into the pending queue
+      let messages = this.pendingMessages.get(srcIdHex);
+      if (!messages) {
+        messages = [];
+      }
+      messages.unshift(message);
+      this.pendingMessages.set(srcIdHex, messages);
+      log("Could not generate a session: error: %O", e);
+      return;
+    }
+
+    log("Sending authentication response to node: %s", srcIdHex);
+
+    // send the response
+    this.processRequest(srcId, from, authPacket, message);
+
+    // flush the message cache
+    this.flushMessages(srcId, from);
+  }
+
+  public onAuthMessage(from: ISocketAddr, packet: IAuthMessagePacket): void {
+    // Needs to match an outgoing WHOAREYOU packet (so we have the required nonce to be signed).
+    // If it doesn't we drop the packet.
+    // This will lead to future outgoing WHOAREYOU packets if they proceed to send further encrypted packets
+    const srcId = getSrcId(this.enr, packet.tag);
+    const srcIdHex = toHex(srcId);
+    log("Received an authentication header message from: %s", srcIdHex);
+
+    const session = this.sessions.get(srcIdHex);
+    if (!session) {
+      log("Received an authenticated header without a known session, dropping.");
+      return;
+    }
+
+    if (session.state.state !== SessionState.WhoAreYouSent) {
+      log("Received an authenticated header without a known WHOAREYOU session, dropping.");
+      return;
+    }
+
+    const pendingRequests = this.pendingRequests.get(from);
+    if (!pendingRequests) {
+      log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
+      return;
+    }
+    const request = Array.from(pendingRequests.values()).find((r) =>
+      r.packet.type === PacketType.WhoAreYou && r.dstId.equals(srcId));
+    if (!request) {
+      log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
+      return;
+    }
+    if (pendingRequests.size === 1) {
+      this.pendingRequests.delete(from);
+    } else {
+      pendingRequests.delete(request.message ? request.message.id : 0n);
+    }
+
+    const idNonce = (request.packet as IWhoAreYouPacket).idNonce;
+
+    // update the sessions last seen socket
+    session.lastSeenSocket = from;
+
+    // establish the session
+    try {
+      const trusted = session.establishFromHeader(this.keypair, this.enr.nodeId, srcId, idNonce, packet.authHeader);
+      if (trusted) {
+        log("Session established with node: %s", srcIdHex);
+        // session is trusted, notify the protocol
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        this.emit("established", session.remoteEnr!);
+        // flush messages
+        this.flushMessages(srcId, from);
+      }
+    } catch (e) {
+      log("Invalid Authentication header. Dropping session. Error: %O", e);
+      this.sessions.delete(srcIdHex);
+      this.pendingMessages.delete(srcIdHex);
+      return;
+    }
+
+    // session has been established, update the timeout
+    this.sessions.setTimeout(srcIdHex, SESSION_TIMEOUT);
+
+    // decrypt the message
+    this.onMessage(
+      from,
+      {
+        type: PacketType.Message,
+        authTag: packet.authHeader.authTag,
+        message: packet.message,
+        tag: packet.tag,
+      }
+    );
+  }
+
+  public onMessage(from: ISocketAddr, packet: IMessagePacket): void {
+    const srcId = getSrcId(this.enr, packet.tag);
+    const srcIdHex = toHex(srcId);
+
+    // check if we have an available session
+    const session = this.sessions.get(srcIdHex);
+    if (!session) {
+      // Received a message without a session.
+      log("Received a message without a session. from: %o, nodeId: %s", from, srcIdHex);
+      log("Requesting a WHOAREYOU packet to be sent.");
+
+      // spawn a WHOAREYOU event to check for highest known ENR
+      this.emit("whoAreYouRequest", srcId, from, packet.authTag);
+      return;
+    }
+    // if we have sent a random packet, upgrade to a WHOAREYOU request
+    if (session.state.state === SessionState.RandomSent) {
+      this.emit("whoAreYouRequest", srcId, from, packet.authTag);
+    } else if (session.state.state === SessionState.WhoAreYouSent) {
+      // Waiting for a session to be generated
+      log("Waiting for a session to be generated.");
+
+      // potentially store and decrypt once we receive the packet
+      // drop it for now
+      return;
+    }
+    // We could be in the AwaitingResponse state. If so, this message could establish a new
+    // session with a node. We keep track to see if the decryption uupdates the session. If so,
+    // we notify the user and flush all cached messages.
+    const sessionWasAwaiting = session.state.state === SessionState.AwaitingResponse;
+
+    // attempt to decrypt and process the message
+    let encodedMessage;
+    try {
+      encodedMessage = session.decryptMessage(packet.authTag, packet.message, packet.tag);
+    } catch (e) {
+      // We have a session but the message could not be decrypted.
+      // It is likely the node sending this message has dropped their session.
+      // In this case, this message is a random packet and we should reply with a WHOAREYOU.
+      // This means we need to drop the current session and re-establish.
+      log("Message from node: %s is not encrypted with known session keys. Requesting a WHOAREYOU packet", srcIdHex);
+      this.sessions.delete(srcIdHex);
+      this.emit("whoAreYouRequest", srcId, from, packet.authTag);
+      return;
+    }
+    let message: Message;
+    try {
+      message = decode(encodedMessage);
+    } catch (e) {
+      throw new Error(`Failed to decode message. Error: ${e.message}`);
+    }
+
+    // Remove any associated request from pendingRequests
+    const pendingRequests = this.pendingRequests.get(from);
+    if (pendingRequests) {
+      log("Removing request id: %s", message.id);
+      pendingRequests.delete(message.id);
+    }
+
+    // We have received a new message. Notify the protocol
+    log("Message received: %O from: %s", message, srcIdHex);
+    this.emit("message", srcId, from, message);
+
+    // update the lastSeenSocket and check if we need to promote the sesison to trusted
+    session.lastSeenSocket = from;
+
+    // There are two possibilities as session could have been established.
+    // The lastest message matches the known ENR and upgrades the session to an established state,
+    // or, we were awaiting a message to be decrypted with new session keys,
+    // this just arrived and now we consider the session established.
+    // In both cases, we notify the user and fllush the cahced messages
+    if (
+      (session.updateTrusted() &&  session.trustedEstablished()) ||
+      (session.trustedEstablished() && sessionWasAwaiting)
+    ) {
+      // session has been established, notify the protocol
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      log("Session established with node: %s", srcIdHex);
+      this.emit("established", session.remoteEnr!);
+      // flush messages
+      this.flushMessages(srcId, from);
+    }
+  }
+
+  public onPacket = (src: ISocketAddr, packet: Packet): void => {
+    switch (packet.type) {
+      case PacketType.WhoAreYou:
+        return this.onWhoAreYou(src, packet as IWhoAreYouPacket);
+      case PacketType.AuthMessage:
+        return this.onAuthMessage(src, packet as IAuthMessagePacket);
+      case PacketType.Message:
+        return this.onMessage(src, packet as IMessagePacket);
+    }
+  };
 
   private processRequest(dstId: NodeId, dst: ISocketAddr, packet: Packet, message?: RequestMessage): void {
     const request: IPendingRequest = {
@@ -453,6 +497,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const messages = this.pendingMessages.get(dstIdHex) || [];
     this.pendingMessages.delete(dstIdHex);
     messages.forEach((message) => {
+      log("Sending cached message");
       const packet = session.encryptMessage(tag, encode(message));
       this.processRequest(dstId, dst, packet, message);
     });
@@ -462,8 +507,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    * Remove timed-out requests
    */
   private onPendingRequestTimeout = (requestId: RequestId, request: IPendingRequest): void => {
+    const dstIdHex = toHex(request.dstId);
     if (request.retries >= REQUEST_RETRIES) {
-      const dstIdHex = toHex(request.dstId);
       if (request.packet.type === PacketType.Random || request.packet.type === PacketType.WhoAreYou) {
         // no response from peer, flush all pending messages and drop session
         const pendingMessages = this.pendingMessages.get(dstIdHex);
@@ -472,12 +517,16 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
           pendingMessages.forEach((message) =>
             this.emit("requestFailed", request.dstId, message.id));
         }
+        // drop the session
+        log("Session couldn't be established with node: %s", dstIdHex);
         this.sessions.delete(dstIdHex);
       } else if (request.packet.type === PacketType.AuthMessage || request.packet.type === PacketType.Message) {
+        log("Message timed out with node: %s", dstIdHex);
         this.emit("requestFailed", request.dstId, requestId);
       }
     } else {
       // Increment the request retry count and restart the timeout
+      log("Resending message: %O to node: %s", request.message, dstIdHex);
       this.transport.send(request.dst, request.packet);
       request.retries += 1;
       let requests = this.pendingRequests.get(request.dst);
@@ -506,5 +555,6 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     (this.pendingMessages.get(nodeIdHex) || [])
       .forEach((message) => this.emit("requestFailed", nodeId, message.id));
     this.pendingMessages.delete(nodeIdHex);
+    log("Session timed out for node: %s", nodeIdHex);
   };
 }
