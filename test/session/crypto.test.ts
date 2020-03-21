@@ -1,11 +1,17 @@
+/* eslint-env mocha */
 import {expect} from "chai";
 import secp256k1 = require("bcrypto/lib/secp256k1");
 import {randomBytes} from "bcrypto/lib/random";
 
-import { IKeys, deriveKey, generateSessionKeys, deriveKeysFromPubkey, signNonce, verifyNonce, encryptMessage, decryptMessage, encryptAuthResponse } from "../../src/session";
+import {
+  IKeys, deriveKey, generateSessionKeys, deriveKeysFromPubkey, signNonce,
+  verifyNonce, encryptMessage, decryptMessage, encryptAuthResponse,
+} from "../../src/session";
 import { v4, ENR } from "../../src/enr";
 import { KeypairType, createKeypair } from "../../src/keypair";
-import { encodeAuthResponse, createAuthResponse, createAuthHeader, encodeAuthHeader, encode, PacketType } from "../../src/packet";
+import {
+  encodeAuthResponse, createAuthResponse, createAuthHeader, encodeAuthHeader, encode, PacketType,
+} from "../../src/packet";
 
 describe("session crypto", () => {
   it("ecdh should produce expected secret", () => {
@@ -25,8 +31,8 @@ describe("session crypto", () => {
     };
 
     const secret = Buffer.from("02a77e3aa0c144ae7c0a3af73692b7d6e5b7a2fdc0eda16e8d5e6cb0d08e88dd04", "hex");
-    const firstNodeId = Buffer.from("a448f24c6d18e575453db13171562b71999873db5b286df957af199ec94617f7", "hex");
-    const secondNodeId = Buffer.from("885bba8dfeddd49855459df852ad5b63d13a3fae593f3f9fa7e317fd43651409", "hex");
+    const firstNodeId = "a448f24c6d18e575453db13171562b71999873db5b286df957af199ec94617f7";
+    const secondNodeId = "885bba8dfeddd49855459df852ad5b63d13a3fae593f3f9fa7e317fd43651409";
     const idNonce = Buffer.alloc(32, 1);
 
     expect(deriveKey(secret, firstNodeId, secondNodeId, idNonce)).to.deep.equal(expected);

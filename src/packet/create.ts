@@ -4,6 +4,7 @@ import sha256 = require("bcrypto/lib/sha256");
 import { AUTH_TAG_LENGTH, ID_NONCE_LENGTH, RANDOM_DATA_LENGTH, WHOAREYOU_STRING } from "./constants";
 import { Tag, AuthTag, IWhoAreYouPacket, IAuthResponse, Nonce, IAuthHeader, PacketType, IRandomPacket } from "./types";
 import { NodeId, SequenceNumber, ENR } from "../enr";
+import { fromHex } from "../util";
 
 export function createRandomPacket(tag: Tag): IRandomPacket {
   return {
@@ -15,7 +16,7 @@ export function createRandomPacket(tag: Tag): IRandomPacket {
 }
 
 export function createMagic(nodeId: NodeId): Buffer {
-  return sha256.digest(Buffer.concat([nodeId, Buffer.from(WHOAREYOU_STRING)]));
+  return sha256.digest(Buffer.concat([fromHex(nodeId), Buffer.from(WHOAREYOU_STRING)]));
 }
 
 export function createWhoAreYouPacket(

@@ -2,9 +2,8 @@ import assert = require("assert");
 import keccak = require("bcrypto/lib/keccak");
 import secp256k1 = require("bcrypto/lib/secp256k1");
 
-import {
-  NodeId,
-} from "./types";
+import { NodeId } from "./types";
+import { createNodeId } from "./create";
 
 export function hash(input: Buffer): Buffer {
   return keccak.digest(input);
@@ -30,7 +29,7 @@ export function verify(pubKey: Buffer, msg: Buffer, sig: Buffer): boolean {
 }
 
 export function nodeId(pubKey: Buffer): NodeId {
-  return hash(secp256k1.publicKeyConvert(pubKey, false));
+  return createNodeId(hash(secp256k1.publicKeyConvert(pubKey, false)));
 }
 
 export class ENRKeyPair {

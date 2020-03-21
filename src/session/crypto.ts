@@ -15,6 +15,7 @@ import {
 } from "../packet";
 import { IKeys } from "./types";
 import { generateKeypair, IKeypair, createKeypair } from "../keypair";
+import { fromHex } from "../util";
 
 // Implementation for generating session keys in the Discv5 protocol.
 // Currently, Diffie-Hellman key agreement is performed with known public key types. Session keys
@@ -40,7 +41,7 @@ export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: No
 }
 
 export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): IKeys {
-  const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), firstId, secondId]);
+  const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), fromHex(firstId), fromHex(secondId)]);
   const output = hkdf.expand(sha256, hkdf.extract(sha256, secret, idNonce), info, 3 * KEY_LENGTH);
   return {
     encryptionKey: output.slice(0, KEY_LENGTH),

@@ -2,8 +2,11 @@ import * as ip from "ip";
 import sha256 = require("bcrypto/lib/sha256");
 
 import { ISocketAddr } from "../transport";
-import { ENR, NodeId } from "../enr";
 import { Tag } from "../packet";
+import { ENR } from "./enr";
+import { NodeId } from "./types";
+import { fromHex } from "../util";
+import { createNodeId } from "./create";
 
 // get/set socket addrs
 
@@ -32,17 +35,17 @@ export function setUDPSocketAddr(enr: ENR, udpSocketAddr: ISocketAddr): void {
 // calculate node id / tag
 
 export function getSrcId(enr: ENR, tag: Tag): NodeId {
-  const hash = sha256.digest(enr.nodeId);
+  const hash = sha256.digest(fromHex(enr.nodeId));
   // reuse `hash` buffer for output
   for (let i = 0; i < 32; i++) {
     hash[i] = hash[i] ^ tag[i];
   }
-  return hash;
+  return createNodeId(hash);
 }
 
 export function getTag(enr: ENR, dstId: NodeId): Tag {
-  const nodeId = enr.nodeId;
-  const hash = sha256.digest(dstId);
+  const nodeId = fromHex(enr.nodeId);
+  const hash = sha256.digest(fromHex(dstId));
   // reuse `hash` buffer for output
   for (let i = 0; i < 32; i++) {
     hash[i] = hash[i] ^ nodeId[i];
