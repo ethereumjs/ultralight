@@ -27,6 +27,6 @@ export type TransportEventEmitter = StrictEventEmitter<EventEmitter, ITransportE
 
 export interface ITransportService extends TransportEventEmitter {
   start(): Promise<void>;
-  close(): Promise<void>;
+  stop(): Promise<void>;
   send(to: ISocketAddr, packet: Packet): Promise<void>;
 }

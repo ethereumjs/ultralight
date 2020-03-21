@@ -85,11 +85,11 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
   }
 
   /**
-   * Closes the session service, stopping the underlying UDP transport service.
+   * Stops the session service, stopping the underlying UDP transport service.
    */
-  public async close(): Promise<void> {
+  public async stop(): Promise<void> {
     this.transport.removeListener("packet", this.onPacket);
-    await this.transport.close();
+    await this.transport.stop();
     for (const requestMap of this.pendingRequests.values()) {
       requestMap.clear();
     }

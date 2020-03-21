@@ -29,7 +29,7 @@ describe("session service", () => {
   const magic0 = createMagic(enr0.nodeId);
   const magic1 = createMagic(enr1.nodeId);
 
-  it("start/close service", async () => {
+  it("start/stop service", async () => {
     const transport0 = new UDPTransportService(addr0, magic0);
     const transport1 = new UDPTransportService(addr1, magic1);
 
@@ -39,7 +39,7 @@ describe("session service", () => {
     await service0.start();
     await service1.start();
 
-    await service0.close();
-    await service1.close();
+    await service0.stop();
+    await service1.stop();
   });
 });

@@ -38,11 +38,16 @@ export class UDPTransportService
   }
 
   public async start(): Promise<void> {
+    this.socket = dgram.createSocket({
+      recvBufferSize: MAX_PACKET_SIZE,
+      sendBufferSize: MAX_PACKET_SIZE,
+      type: "udp4",
+    });
     this.socket.on("message", this.handleIncoming);
     return new Promise((resolve) => this.socket.bind(this.socketAddr.port, resolve));
   }
 
-  public async close(): Promise<void> {
+  public async stop(): Promise<void> {
     this.socket.off("message", this.handleIncoming);
     return new Promise((resolve) => this.socket.close(resolve));
   }

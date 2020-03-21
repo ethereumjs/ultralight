@@ -19,8 +19,8 @@ describe("UDP transport", () => {
   });
 
   after(async () => {
-    await a.close();
-    await b.close();
+    await a.stop();
+    await b.stop();
   });
 
   it("should send and receive messages", async () => {
