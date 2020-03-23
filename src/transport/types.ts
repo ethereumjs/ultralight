@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
+import Multiaddr = require("multiaddr");
 
 import {
   Packet,
@@ -20,13 +21,13 @@ export interface IRemoteInfo {
 }
 
 export interface ITransportEvents {
-  packet: (src: ISocketAddr, packet: Packet) => void;
-  error: (err: Error, src: ISocketAddr) => void;
+  packet: (src: Multiaddr, packet: Packet) => void;
+  error: (err: Error, src: Multiaddr) => void;
 }
 export type TransportEventEmitter = StrictEventEmitter<EventEmitter, ITransportEvents>;
 
 export interface ITransportService extends TransportEventEmitter {
   start(): Promise<void>;
   stop(): Promise<void>;
-  send(to: ISocketAddr, packet: Packet): Promise<void>;
+  send(to: Multiaddr, packet: Packet): Promise<void>;
 }

@@ -1,4 +1,5 @@
 import assert = require("assert");
+import Multiaddr = require("multiaddr");
 import base64url from "base64url";
 import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
@@ -78,6 +79,83 @@ export class ENR extends Map<ENRKey, ENRValue> {
       default:
         throw new Error(ERR_INVALID_ID);
     }
+  }
+  get multiaddrUDP(): Multiaddr | undefined {
+    // First try IPv4
+    const ip4 = this.get("ip");
+    if (ip4) {
+      const udp4 = this.get("udp");
+      if (udp4) {
+        return Multiaddr(`/ip4/${Array.from(ip4).join(".")}/udp/${udp4.readUInt16BE(0)}`);
+      }
+    }
+    // Then try IPv6
+    const ip6 = this.get("ip6");
+    if (ip6) {
+      const udp6 = this.get("udp6");
+      if (udp6) {
+        const ip6Str = Array.from(Uint16Array.from(ip6)).map((n) => n.toString(16)).join(":");
+        return Multiaddr(`/ip6/${ip6Str}/udp/${udp6.readUInt16BE(0)}`);
+      }
+    }
+    return undefined;
+  }
+  set multiaddrUDP(multiaddr: Multiaddr | undefined) {
+    if (!multiaddr) {
+      return;
+    }
+    const protoNames = multiaddr.protoNames();
+    if (protoNames.length !== 2 && protoNames[1] !== "udp") {
+      throw new Error("Invalid udp multiaddr");
+    }
+    const tuples = multiaddr.tuples();
+    // IPv4
+    if (tuples[0][0] === 4) {
+      this.set("ip", tuples[0][1]);
+      this.set("udp", tuples[1][1]);
+    } else {
+      this.set("ip6", tuples[0][1]);
+      this.set("udp6", tuples[1][1]);
+    }
+  }
+  get multiaddrTCP(): Multiaddr | undefined {
+    // First try IPv4
+    const ip4 = this.get("ip");
+    if (ip4) {
+      const tcp4 = this.get("tcp");
+      if (tcp4) {
+        return Multiaddr(`/ip4/${Array.from(ip4).join(".")}/tcp/${tcp4.readUInt16BE(0)}`);
+      }
+    }
+    // Then try IPv6
+    const ip6 = this.get("ip6");
+    if (ip6) {
+      const tcp6 = this.get("tcp6");
+      if (tcp6) {
+        const ip6Str = Array.from(Uint16Array.from(ip6)).map((n) => n.toString(16)).join(":");
+        return Multiaddr(`/ip6/${ip6Str}/tcp/${tcp6.readUInt16BE(0)}`);
+      }
+    }
+    return undefined;
+  }
+  set multiaddrTCP(multiaddr: Multiaddr | undefined) {
+    if (!multiaddr) {
+      return;
+    }
+    const protoNames = multiaddr.protoNames();
+    if (protoNames.length !== 2 && protoNames[1] !== "tcp") {
+      throw new Error("Invalid udp multiaddr");
+    }
+    const tuples = multiaddr.tuples();
+    // IPv4
+    if (tuples[0][0] === 4) {
+      this.set("ip", tuples[0][1]);
+      this.set("tcp", tuples[1][1]);
+    } else {
+      this.set("ip6", tuples[0][1]);
+      this.set("tcp6", tuples[1][1]);
+    }
+
   }
   verify(data: Buffer, signature: Buffer): boolean {
     switch (this.id) {

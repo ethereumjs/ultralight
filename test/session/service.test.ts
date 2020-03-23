@@ -1,6 +1,8 @@
 /* eslint-env mocha */
+import Multiaddr = require("multiaddr");
+
 import { createKeypair, KeypairType } from "../../src/keypair";
-import { ENR, setUDPSocketAddr } from "../../src/enr";
+import { ENR } from "../../src/enr";
 import { createMagic } from "../../src/packet";
 import { UDPTransportService } from "../../src/transport";
 import { SessionService } from "../../src/session";
@@ -17,14 +19,14 @@ describe("session service", () => {
     Buffer.from("03eae9945b354e9212566bc3f2740f3a62b3e1eb227dbed809f6dc2d3ea848c82e", "hex"),
   );
 
-  const addr0 = { address: "127.0.0.1", port: 49020 };
-  const addr1 = { address: "127.0.0.1", port: 49021 };
+  const addr0 = Multiaddr("/ip4/127.0.0.1/udp/49020");
+  const addr1 = Multiaddr("/ip4/127.0.0.1/udp/49021");
 
   const enr0 = ENR.createV4(kp0.publicKey);
   const enr1 = ENR.createV4(kp1.publicKey);
 
-  setUDPSocketAddr(enr0, addr0);
-  setUDPSocketAddr(enr1, addr1);
+  enr0.multiaddrUDP = addr0;
+  enr1.multiaddrUDP = addr1;
 
   const magic0 = createMagic(enr0.nodeId);
   const magic1 = createMagic(enr1.nodeId);

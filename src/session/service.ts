@@ -1,10 +1,11 @@
 import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
 import debug from "debug";
+import Multiaddr = require("multiaddr");
 
-import { ITransportService, ISocketAddr } from "../transport";
+import { ITransportService } from "../transport";
 import { PacketType, Packet, IWhoAreYouPacket, IAuthMessagePacket, IMessagePacket, AuthTag } from "../packet";
-import { ENR, getUDPSocketAddr, getTag, NodeId, getSrcId } from "../enr";
+import { ENR, getTag, NodeId, getSrcId } from "../enr";
 import { Session } from "./session";
 import { IKeypair } from "../keypair";
 import { TimeoutMap } from "../util";
@@ -47,11 +48,11 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
   /**
    * Pending raw requests
    * A collection of request objects we are awaiting a response from the remote.
-   * These are indexed by ISocketAddr as WHOAREYOU packets do not return a source node id to
+   * These are indexed by multiaddr string as WHOAREYOU packets do not return a source node id to
    * match against.
    * We need to keep pending requests for sessions not yet fully connected.
    */
-  private pendingRequests: Map<ISocketAddr, TimeoutMap<RequestId, IPendingRequest>>;
+  private pendingRequests: Map<string, TimeoutMap<RequestId, IPendingRequest>>;
   /**
    * Messages awaiting to be sent once a handshake has been established
    */
@@ -114,7 +115,10 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    */
   public sendRequest(dstEnr: ENR, message: RequestMessage): void {
     const dstId = dstEnr.nodeId;
-    const dst = getUDPSocketAddr(dstEnr);
+    const dst = dstEnr.multiaddrUDP;
+    if (!dst) {
+      throw new Error("ENR must have udp socket data");
+    }
     const session = this.sessions.get(dstId);
     if (!session) {
       log("No session established, sending a random packet to: %s", dstId);
@@ -146,7 +150,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    * Similar to `sendRequest` but for requests which an ENR may be unknown.
    * A session is therefore assumed to be valid
    */
-  public sendRequestUnknownEnr(dst: ISocketAddr, dstId: NodeId, message: RequestMessage): void {
+  public sendRequestUnknownEnr(dst: Multiaddr, dstId: NodeId, message: RequestMessage): void {
     // session should be established
     const session = this.sessions.get(dstId);
     if (!session) {
@@ -162,7 +166,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    * This differs from `sendRequest` as responses do not require a known ENR to send messages
    * and sessions should already be established
    */
-  public sendResponse(dst: ISocketAddr, dstId: NodeId, message: ResponseMessage): void {
+  public sendResponse(dst: Multiaddr, dstId: NodeId, message: ResponseMessage): void {
     // session should be established
     const session = this.sessions.get(dstId);
     if (!session) {
@@ -172,7 +176,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.transport.send(dst, packet);
   }
 
-  public sendWhoAreYou(dst: ISocketAddr, dstId: NodeId, enrSeq: bigint, remoteEnr: ENR | null, authTag: AuthTag): void {
+  public sendWhoAreYou(dst: Multiaddr, dstId: NodeId, enrSeq: bigint, remoteEnr: ENR | null, authTag: AuthTag): void {
     // _session will be overwritten if not trusted-established or state.whoareyousent
     const _session = this.sessions.get(dstId);
     if (_session) {
@@ -189,8 +193,9 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.processRequest(dstId, dst, packet);
   }
 
-  public onWhoAreYou(from: ISocketAddr, packet: IWhoAreYouPacket): void {
-    const pendingRequests = this.pendingRequests.get(from);
+  public onWhoAreYou(from: Multiaddr, packet: IWhoAreYouPacket): void {
+    const fromStr = from.toString();
+    const pendingRequests = this.pendingRequests.get(fromStr);
     if (!pendingRequests) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
@@ -212,7 +217,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       return;
     }
     if (pendingRequests.size === 1) {
-      this.pendingRequests.delete(from);
+      this.pendingRequests.delete(fromStr);
     } else {
       pendingRequests.delete(request.message ? request.message.id : 0n);
     }
@@ -253,7 +258,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       message = request.message as RequestMessage;
     }
     // Update the session (this must be the socket that we sent the referenced request to)
-    session.lastSeenSocket = from;
+    session.lastSeenMultiaddr = from;
 
     // Update the ENR record if necessary
     let updatedEnr: ENR | null = null;
@@ -293,7 +298,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.flushMessages(srcId, from);
   }
 
-  public onAuthMessage(from: ISocketAddr, packet: IAuthMessagePacket): void {
+  public onAuthMessage(from: Multiaddr, packet: IAuthMessagePacket): void {
+    const fromStr = from.toString();
     // Needs to match an outgoing WHOAREYOU packet (so we have the required nonce to be signed).
     // If it doesn't we drop the packet.
     // This will lead to future outgoing WHOAREYOU packets if they proceed to send further encrypted packets
@@ -311,7 +317,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       return;
     }
 
-    const pendingRequests = this.pendingRequests.get(from);
+    const pendingRequests = this.pendingRequests.get(fromStr);
     if (!pendingRequests) {
       log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
       return;
@@ -324,7 +330,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       return;
     }
     if (pendingRequests.size === 1) {
-      this.pendingRequests.delete(from);
+      this.pendingRequests.delete(fromStr);
     } else {
       pendingRequests.delete(request.message ? request.message.id : 0n);
     }
@@ -332,7 +338,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const idNonce = (request.packet as IWhoAreYouPacket).idNonce;
 
     // update the sessions last seen socket
-    session.lastSeenSocket = from;
+    session.lastSeenMultiaddr = from;
 
     // establish the session
     try {
@@ -367,7 +373,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     );
   }
 
-  public onMessage(from: ISocketAddr, packet: IMessagePacket): void {
+  public onMessage(from: Multiaddr, packet: IMessagePacket): void {
     const srcId = getSrcId(this.enr, packet.tag);
 
     // check if we have an available session
@@ -419,7 +425,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
 
     // Remove any associated request from pendingRequests
-    const pendingRequests = this.pendingRequests.get(from);
+    const pendingRequests = this.pendingRequests.get(from.toString());
     if (pendingRequests) {
       log("Removing request id: %s", message.id);
       pendingRequests.delete(message.id);
@@ -430,7 +436,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.emit("message", srcId, from, message);
 
     // update the lastSeenSocket and check if we need to promote the sesison to trusted
-    session.lastSeenSocket = from;
+    session.lastSeenMultiaddr = from;
 
     // There are two possibilities as session could have been established.
     // The lastest message matches the known ENR and upgrades the session to an established state,
@@ -450,7 +456,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
   }
 
-  public onPacket = (src: ISocketAddr, packet: Packet): void => {
+  public onPacket = (src: Multiaddr, packet: Packet): void => {
     switch (packet.type) {
       case PacketType.WhoAreYou:
         return this.onWhoAreYou(src, packet as IWhoAreYouPacket);
@@ -461,7 +467,11 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
   };
 
-  private processRequest(dstId: NodeId, dst: ISocketAddr, packet: Packet, message?: RequestMessage): void {
+  /**
+   * Send the request over the transport, storing the pending request
+   */
+  private processRequest(dstId: NodeId, dst: Multiaddr, packet: Packet, message?: RequestMessage): void {
+    const dstStr = dst.toString();
     const request: IPendingRequest = {
       dstId,
       dst,
@@ -470,10 +480,10 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       retries: 1,
     };
     this.transport.send(dst, packet);
-    let requests = this.pendingRequests.get(dst);
+    let requests = this.pendingRequests.get(dstStr);
     if (!requests) {
       requests = new TimeoutMap(REQUEST_TIMEOUT, this.onPendingRequestTimeout);
-      this.pendingRequests.set(dst, requests);
+      this.pendingRequests.set(dstStr, requests);
     }
     requests.set(message ? message.id : 0n, request);
   }
@@ -481,7 +491,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
   /**
    * Encrypts and sends any messages (for a specific destination) that were waiting for a session to be established
    */
-  private flushMessages(dstId: NodeId, dst: ISocketAddr): void {
+  private flushMessages(dstId: NodeId, dst: Multiaddr): void {
     const session = this.sessions.get(dstId);
     if (!session || !session.trustedEstablished()) {
       // No adequate session
@@ -524,10 +534,11 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       log("Resending message: %O to node: %s", request.message, dstId);
       this.transport.send(request.dst, request.packet);
       request.retries += 1;
-      let requests = this.pendingRequests.get(request.dst);
+      const dstStr = request.dst.toString();
+      let requests = this.pendingRequests.get(dstStr);
       if (!requests) {
         requests = new TimeoutMap(REQUEST_TIMEOUT, this.onPendingRequestTimeout);
-        this.pendingRequests.set(request.dst, requests);
+        this.pendingRequests.set(dstStr, requests);
       }
       requests.set(requestId, request);
     }

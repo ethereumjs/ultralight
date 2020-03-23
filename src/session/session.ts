@@ -1,7 +1,7 @@
 import assert = require("assert");
+import Multiaddr = require("multiaddr");
 
-import { NodeId, ENR, SequenceNumber, getUDPSocketAddr } from "../enr";
-import { ISocketAddr } from "../transport";
+import { NodeId, ENR, SequenceNumber } from "../enr";
 import { SessionState, TrustedState, IKeys, ISessionState } from "./types";
 import {
   AuthTag,
@@ -47,7 +47,7 @@ interface ISessionOpts {
   state: ISessionState;
   trusted: TrustedState;
   remoteEnr?: ENR;
-  lastSeenSocket: ISocketAddr;
+  lastSeenMultiaddr: Multiaddr;
 }
 
 const ERR_NO_ENR = "No available session ENR";
@@ -77,16 +77,16 @@ export class Session {
   /**
    * Last seen IP address and port. This is used to determine if the session is trusted or not.
    */
-  lastSeenSocket: ISocketAddr;
+  lastSeenMultiaddr: Multiaddr;
   /**
    * The delay when this session expires
    */
   timeout: number;
-  constructor({state, trusted, remoteEnr, lastSeenSocket}: ISessionOpts) {
+  constructor({state, trusted, remoteEnr, lastSeenMultiaddr}: ISessionOpts) {
     this.state = state;
     this.trusted = trusted;
     this.remoteEnr = remoteEnr;
-    this.lastSeenSocket = lastSeenSocket;
+    this.lastSeenMultiaddr = lastSeenMultiaddr;
     this.timeout = 0;
   }
 
@@ -100,10 +100,7 @@ export class Session {
         state: {state: SessionState.RandomSent},
         trusted: TrustedState.Untrusted,
         remoteEnr,
-        lastSeenSocket: {
-          address: "0.0.0.0",
-          port: 0,
-        },
+        lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
       }),
       createRandomPacket(tag),
     ];
@@ -124,10 +121,7 @@ export class Session {
         state: {state: SessionState.WhoAreYouSent},
         trusted: TrustedState.Untrusted,
         remoteEnr: remoteEnr as ENR,
-        lastSeenSocket: {
-          address: "0.0.0.0",
-          port: 0,
-        },
+        lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
       }),
       createWhoAreYouPacket(nodeId, authTag, enrSeq),
     ];
@@ -347,21 +341,14 @@ export class Session {
    * This value returns true if the Session has been promoted.
    */
   updateTrusted(): boolean {
-    const hasSameSocket = (socket: ISocketAddr, enr: ENR): boolean => {
-      try {
-        const enrSocket = getUDPSocketAddr(enr);
-        return (
-          socket.address === enrSocket.address &&
-          socket.port === enrSocket.port
-        );
-      } catch (e) {
-        return false;
-      }
+    const hasSameMultiaddr = (multiaddr: Multiaddr, enr: ENR): boolean => {
+      const enrMultiaddr = enr.multiaddrUDP;
+      return enrMultiaddr ? enrMultiaddr.equals(multiaddr) : false;
     };
     switch (this.trusted) {
       case TrustedState.Untrusted:
         if (this.remoteEnr) {
-          if (hasSameSocket(this.lastSeenSocket, this.remoteEnr)) {
+          if (hasSameMultiaddr(this.lastSeenMultiaddr, this.remoteEnr)) {
             this.trusted = TrustedState.Trusted;
             return true;
           }
@@ -369,7 +356,7 @@ export class Session {
         break;
       case TrustedState.Trusted:
         if (this.remoteEnr) {
-          if (!hasSameSocket(this.lastSeenSocket, this.remoteEnr)) {
+          if (!hasSameMultiaddr(this.lastSeenMultiaddr, this.remoteEnr)) {
             this.trusted = TrustedState.Untrusted;
           }
         }

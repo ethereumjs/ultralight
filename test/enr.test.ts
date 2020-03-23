@@ -1,4 +1,6 @@
+/* eslint-env mocha */
 import { expect } from "chai";
+import Multiaddr = require("multiaddr");
 import { ENR, v4 } from "../src/enr";
 
 describe("ENR", () => {
@@ -25,5 +27,53 @@ describe("ENR", () => {
     const decoded = ENR.decodeTxt(testTxt);
     expect(decoded).to.deep.equal(record);
     expect(record.encodeTxt(privateKey)).to.equal(testTxt);
+  });
+});
+describe("ENR Multiformats support", () => {
+  let seq: bigint;
+  let privateKey: Buffer;
+  let record: ENR;
+
+  beforeEach(() => {
+    seq = 1n;
+    privateKey = Buffer.from("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291", "hex");
+    record = ENR.createV4(v4.publicKey(privateKey));
+  });
+
+  it("should get / set UDP multiaddr", () => {
+    const multi0 = Multiaddr("/ip4/127.0.0.1/udp/30303");
+    const tuples0 = multi0.tuples();
+    // set underlying records
+    record.set("ip", tuples0[0][1]);
+    record.set("udp", tuples0[1][1]);
+    // and get the multiaddr
+    expect(record.multiaddrUDP!.toString()).to.equal(multi0.toString());
+    // set the multiaddr
+    const multi1 = Multiaddr("/ip4/0.0.0.0/udp/30300");
+    record.multiaddrUDP = multi1;
+    // and get the multiaddr
+    expect(record.multiaddrUDP!.toString()).to.equal(multi1.toString());
+    // and get the underlying records
+    const tuples1 = multi1.tuples();
+    expect(record.get("ip")).to.deep.equal(tuples1[0][1]);
+    expect(record.get("udp")).to.deep.equal(tuples1[1][1]);
+  });
+  it("should get / set TCP multiaddr", () => {
+    const multi0 = Multiaddr("/ip4/127.0.0.1/tcp/30303");
+    const tuples0 = multi0.tuples();
+    // set underlying records
+    record.set("ip", tuples0[0][1]);
+    record.set("tcp", tuples0[1][1]);
+    // and get the multiaddr
+    expect(record.multiaddrTCP!.toString()).to.equal(multi0.toString());
+    // set the multiaddr
+    const multi1 = Multiaddr("/ip4/0.0.0.0/tcp/30300");
+    record.multiaddrTCP = multi1;
+    // and get the multiaddr
+    expect(record.multiaddrTCP!.toString()).to.equal(multi1.toString());
+    // and get the underlying records
+    const tuples1 = multi1.tuples();
+    expect(record.get("ip")).to.deep.equal(tuples1[0][1]);
+    expect(record.get("tcp")).to.deep.equal(tuples1[1][1]);
   });
 });
