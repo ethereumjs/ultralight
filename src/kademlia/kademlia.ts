@@ -1,178 +1,154 @@
-import * as Collections from "typescript-collections";
-import {LinkedList} from "typescript-collections";
+import { EventEmitter } from "events";
+
+import { Bucket } from "./bucket";
+import { EntryStatus, IEntryFull, BucketEventEmitter }  from "./types";
+import { NodeId, ENR } from "../enr";
+import { NUM_BUCKETS, PENDING_TIMEOUT } from "./constants";
+import { log2Distance } from "./util";
 
 /**
- * Computes the number of zero bits of the XOR computation between two byte arrays.
- * @param a the first byte array
- * @param b the second byte array
- */
-export function xorDist(a: Buffer, b: Buffer): number {
-  if (a.length != b.length) {
-    throw "arrays are of different lengths";
-  }
-  let distance = a.length * 8;
-  let i = 0;
-  while (i < a.length) {
-    const xor = a[i] ^ b[i];
-    if (xor == 0) {
-      distance -= 8;
-    } else {
-      distance -= (numberOfLeadingZeros(xor) - 24);
-      break;
-    }
-    i++;
-  }
-  return distance;
-}
-
-/**
- * Compare two equal-length byte arrays for their XOR-distance to a target array.
+ * A Kademlia routing table, for storing ENRs based on their NodeIds
  *
- * @param target the target array to compare against.
- * @param a the first byte array
- * @param b the second byte array
- * @return -1 if [a] is closer, +1 if [b] is closer, or 0 if they are the same distance to the target array
- * @throws if [a] or [b] are not the same length as the target array
+ * ENRs are assigned to buckets based on their distance to the local NodeId
+ * Each entry maintains a 'status', either connected or disconnected
+ * Each bucket maintains a pending entry which may either
+ * take the place of the oldest disconnected entry in the bucket
+ * or be dropped after a timeout.
  */
-export function xorDistCmp(target: Buffer, a: Buffer, b: Buffer): number {
-  if (target.length != a.length || a.length != b.length) {
-    throw "arrays are of different lengths";
-  }
-  for (let i = 0 ; i < a.length ; i++) {
-    const distA = target[i] ^ a[i];
-    const distB = target[i] ^ b[i];
-    if (distA > distB) {
-      return 1;
-    } else if (distA < distB) {
-      return -1;
-    }
-  }
-  return 0;
-}
+export class KademliaRoutingTable extends (EventEmitter as { new(): BucketEventEmitter }) {
 
-function numberOfLeadingZeros(i: number): number {
-  if (i <= 0)
-    return i == 0 ? 32 : 0;
-  let n = 31;
-  if (i >= 1 << 16) { n -= 16; i >>>= 16; }
-  if (i >= 1 <<  8) { n -=  8; i >>>=  8; }
-  if (i >= 1 <<  4) { n -=  4; i >>>=  4; }
-  if (i >= 1 <<  2) { n -=  2; i >>>=  2; }
-  return n - (i >>> 1);
-}
-
-/**
- * A Kademlia routing table, organized with an identity and a number of buckets.
- *
- * Entities are assigned to buckets based on the distance function associated with Kademlia.
- */
-export class KademliaRoutingTable<T> {
-
-  selfId: Buffer;
+  localId: NodeId;
   k: number;
-  nodeId: (entry: T) => Buffer;
-  readonly [Symbol.toStringTag]: string;
   size: number;
-  buckets: Collections.LinkedList<T>[];
-  distanceFn: (a: Buffer, b: Buffer) => number;
+  buckets: Bucket[];
 
   /**
    * Create a new routing table.
    *
-   * @param selfId the ID of the local node
+   * @param localId the ID of the local node
    * @param k the size of each bucket (k value)
-   * @param nodeId a function for obtaining the id of a network node
-   * @param distanceFn a function dictating the distance between nodes
-   * @return A new routing table
    */
-  constructor(selfId: Buffer, k: number,  nodeId: (entry: T) => Buffer, distanceFn = xorDist) {
-    if (selfId.length == 0) {
-      throw "selfId cannot be empty";
-    }
+  constructor(localId: NodeId, k: number) {
+    super();
     if (k <= 0) {
-      throw "k must be positive";
+      throw new Error("k must be positive");
     }
-    this.selfId = selfId;
+    this.localId = localId;
     this.k = k;
-    this.nodeId = nodeId;
     this.size = 0;
-    this.buckets = new Array<Collections.LinkedList<T>>(selfId.length + 1);
-    this.distanceFn = distanceFn;
+    this.buckets = Array.from({ length: NUM_BUCKETS }, () => new Bucket(this.k, PENDING_TIMEOUT));
+    this.buckets.forEach((bucket) => {
+      bucket.on("pendingEviction", (enr: ENR) => this.emit("pendingEviction", enr));
+      bucket.on("appliedEviction", (inserted: ENR, evicted?: ENR) => this.emit("appliedEviction", inserted, evicted));
+    });
   }
 
   isEmpty(): boolean {
     return this.size == 0;
   }
 
-  propose(value: T): (T | undefined) {
-    const bucket = this.bucketFor(value);
-    if (bucket.size() < this.k) {
-      bucket.add(value);
-      this.size +=1;
-      return undefined;
-    } else {
-      return bucket.first();
+  add(value: ENR, status: EntryStatus = EntryStatus.Disconnected): boolean {
+    const bucket = this.bucketForValue(value);
+    const added = bucket.add(value, status);
+    if (added) {
+      this.size += 1;
     }
-  }
-
-  add(value: T): this {
-    this.propose(value);
-    return this;
+    return added;
   }
 
   clear(): void {
-    this.buckets = new Array<Collections.LinkedList<T>>(this.selfId.length + 1);
+    this.buckets.forEach((bucket) => bucket && bucket.clear());
     this.size = 0;
   }
 
-  evict(value: T): boolean {
-    const bucket = this.bucketFor(value);
-    if (!bucket.remove(value)) {
-      return false;
+  removeById(id: NodeId): ENR | undefined {
+    const bucket = this.bucketForId(id);
+    const removed = bucket.removeById(id);
+    if (removed) {
+      this.size -= 1;
     }
-    this.size -= 1;
-    return true;
+    return removed;
   }
 
-  has(value: T): boolean {
-    const bucket = this.bucketFor(value);
-    return bucket.indexOf(value) != -1;
+  remove(value: ENR): ENR | undefined {
+    const bucket = this.bucketForValue(value);
+    const removed = bucket.remove(value);
+    if (removed) {
+      this.size -= 1;
+    }
+    return removed;
   }
 
-  nearest(value: T, limit: number): T[] {
-    const results = new Array<T>();
+  updateValue(value: ENR): boolean {
+    const bucket = this.bucketForValue(value);
+    return bucket.updateValue(value);
+  }
+
+  updateStatus(id: NodeId, status: EntryStatus): boolean {
+    const bucket = this.bucketForId(id);
+    return bucket.updateStatus(id, status);
+  }
+
+  update(value: ENR, status: EntryStatus): boolean {
+    const bucket = this.bucketForValue(value);
+    return bucket.update(value, status);
+  }
+
+
+  /**
+   * Gets the ENR if stored, does not include pending values
+   */
+  getValue(id: NodeId): ENR | undefined {
+    const bucket = this.bucketForId(id);
+    return bucket.getValue(id);
+  }
+
+  /**
+   * Gets the IEntryFull if stored, includes pending values
+   */
+  getWithPending(id: NodeId): IEntryFull<ENR> | undefined {
+    const bucket = this.bucketForId(id);
+    return bucket.getWithPending(id);
+  }
+
+  nearest(id: NodeId, limit: number): ENR[] {
+    const results: ENR[] = [];
     this.buckets.forEach(bucket => {
-      results.push(...bucket.toArray());
+      results.push(...bucket.values());
     });
-    const valueId = this.nodeId(value);
-    results.sort((a: T, b: T) => {
-      return xorDistCmp(valueId, this.nodeId(a), this.nodeId((b)));
+    results.sort((a, b) => {
+      return log2Distance(id, a.nodeId) - log2Distance(id, b.nodeId);
     });
     return results.slice(0, limit);
   }
 
-  peersOfDistance(value: number): T[] {
+  valuesOfDistance(value: number): ENR[] {
     const bucket = this.buckets[value];
-    return bucket === undefined ? [] : bucket.toArray();
+    return bucket === undefined ? [] : bucket.values();
   }
 
-  random(): (T | undefined) {
+  values(): ENR[] {
+    return this.buckets
+      .filter(bucket => !bucket.isEmpty())
+      .map(bucket => bucket.values())
+      .flat();
+  }
+
+  random(): ENR | undefined {
     const nonEmptyBuckets = this.buckets.filter(bucket => !bucket.isEmpty());
     if (nonEmptyBuckets.length == 0) {
       return undefined;
     }
     const selectedBucket = nonEmptyBuckets[Math.floor(Math.random() * nonEmptyBuckets.length)];
-    return selectedBucket.elementAtIndex(Math.floor(Math.random() * selectedBucket.size()));
+    return selectedBucket.getValueByIndex(Math.floor(Math.random() * selectedBucket.size()));
   }
 
-  private bucketFor(value: T): Collections.LinkedList<T> {
-    const bucketId = this.distanceFn(this.selfId, this.nodeId(value));
-    const bucket = this.buckets[bucketId];
-    if (bucket === undefined) {
-      const newBucket = new Collections.LinkedList<T>();
-      this.buckets[bucketId] = newBucket;
-      return newBucket;
-    }
-    return bucket;
+  private bucketForValue(value: ENR): Bucket {
+    return this.bucketForId(value.nodeId);
+  }
+
+  private bucketForId(id: NodeId): Bucket {
+    const bucketId = log2Distance(this.localId, id) - 1;
+    return this.buckets[bucketId];
   }
 }
