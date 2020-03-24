@@ -111,7 +111,7 @@ export class Bucket extends (EventEmitter as { new(): BucketEventEmitter }) {
    * Update the status of an existing entry
    */
   updateStatus(id: NodeId, status: EntryStatus): boolean {
-    const index = this.bucket.findIndex((entry) => entry.value.nodeId === value.nodeId);
+    const index = this.bucket.findIndex((entry) => entry.value.nodeId === id);
     if (index === -1) {
       if (this.pending && this.pending.value.nodeId === id) {
         this.pending.status = status;

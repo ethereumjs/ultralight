@@ -69,7 +69,7 @@ export class Lookup extends (EventEmitter as { new(): LookupEventEmitter }) {
   }
 
   start(): void {
-    while (!this.atCapacity() && this.state !== LookupState.Finished) {
+    for (let i = 0; i < this.closestPeers.size; i++) {
       this.nextPeer();
     }
   }
@@ -83,9 +83,9 @@ export class Lookup extends (EventEmitter as { new(): LookupEventEmitter }) {
   }
 
   /**
-   * Checks if the query is at capacity w.r.t. the permitted parallelism.
+   * Checks if the lookup is at capacity w.r.t. the permitted parallelism.
    *
-   * While the query is stalled, up to `numResults` parallel requests are allowed.
+   * While the lookup is stalled, up to `numResults` parallel requests are allowed.
    * This is a slightly more permissive variant of the requirement that the initiator
    * resends the FINDNODE to all of the k closest nodes it has not already queried
    */

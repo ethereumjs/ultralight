@@ -236,10 +236,8 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       knownClosestPeers,
     );
     this.activeLookups.set(lookupId, lookup);
-    lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
-
-    return new Promise((resolve) => {
-
+    return await new Promise((resolve) => {
+      lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
       lookup.on("finished", (closest: NodeId[]) => {
         resolve(
           closest
@@ -309,11 +307,12 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       log("Request not sent. Failed to find an ENR for node: %s", nodeId);
       return;
     }
+    log("Sending request to node: %s", nodeId);
     try {
       this.sessionService.sendRequest(dstEnr, req);
       this.activeRequests.set(req.id, [req, lookupId]);
     } catch (e) {
-      log("Sending request to node: %s failed", nodeId);
+      log("Sending request to node: %s failed: error: %s", nodeId, e.message);
     }
   }
 

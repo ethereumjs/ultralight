@@ -516,6 +516,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     if (request.retries >= REQUEST_RETRIES) {
       if (request.packet.type === PacketType.Random || request.packet.type === PacketType.WhoAreYou) {
         // no response from peer, flush all pending messages and drop session
+        log("Session couldn't be established with node: %s", dstId);
         const pendingMessages = this.pendingMessages.get(dstId);
         if (pendingMessages) {
           this.pendingMessages.delete(dstId);
@@ -523,7 +524,6 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
             this.emit("requestFailed", request.dstId, message.id));
         }
         // drop the session
-        log("Session couldn't be established with node: %s", dstId);
         this.sessions.delete(dstId);
       } else if (request.packet.type === PacketType.AuthMessage || request.packet.type === PacketType.Message) {
         log("Message timed out with node: %s", dstId);
