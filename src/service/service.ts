@@ -205,10 +205,6 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return this.sessionService.enr;
   }
 
-  public set enr(enr: ENR) {
-    this.sessionService.updateEnr(enr);
-  }
-
   /**
    * Return all ENRs of nodes currently contained in buckets of the kad routing table
    */
@@ -377,8 +373,6 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     const others = enrs.filter((enr) => enr.nodeId !== localId);
 
     for (const enr of others) {
-      this.emit("discovered", enr);
-
       // If any of the discovered nodes are in the routing table, and there contains an older ENR, update it
       const entry = this.kbuckets.getWithPending(enr.nodeId);
       if (entry) {
@@ -392,6 +386,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         // is established or not.
         this.sessionService.updateEnr(enr);
       }
+      this.emit("discovered", enr);
     }
     // If this is part of a lookup, update the lookup
     if (lookupId) {

@@ -29,7 +29,7 @@ describe("message", () => {
       message: {
         type: MessageType.FINDNODE,
         id: 1n,
-        distance: 256,
+        distance: 250,
       },
       expected: Buffer.from("03c401820100", "hex"),
     },

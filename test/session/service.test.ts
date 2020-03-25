@@ -1,11 +1,13 @@
 /* eslint-env mocha */
+import { expect } from "chai";
 import Multiaddr = require("multiaddr");
 
 import { createKeypair, KeypairType } from "../../src/keypair";
 import { ENR } from "../../src/enr";
-import { createMagic } from "../../src/packet";
+import { createMagic, createWhoAreYouPacket, Packet, PacketType } from "../../src/packet";
 import { UDPTransportService } from "../../src/transport";
 import { SessionService } from "../../src/session";
+import { createFindNodeMessage } from "../../src/message";
 
 describe("session service", () => {
   const kp0 = createKeypair(
@@ -31,17 +33,62 @@ describe("session service", () => {
   const magic0 = createMagic(enr0.nodeId);
   const magic1 = createMagic(enr1.nodeId);
 
-  it("start/stop service", async () => {
-    const transport0 = new UDPTransportService(addr0, magic0);
-    const transport1 = new UDPTransportService(addr1, magic1);
+  let transport0: UDPTransportService;
+  let transport1: UDPTransportService;
 
-    const service0 = new SessionService(enr0, kp0, transport0);
-    const service1 = new SessionService(enr1, kp1, transport1);
+  let service0: SessionService;
+  let service1: SessionService;
+
+  beforeEach(async () => {
+    transport0 = new UDPTransportService(addr0, magic0);
+    transport1 = new UDPTransportService(addr1, magic1);
+
+    service0 = new SessionService(enr0, kp0, transport0);
+    service1 = new SessionService(enr1, kp1, transport1);
 
     await service0.start();
     await service1.start();
+  });
 
+  afterEach(async () => {
     await service0.stop();
     await service1.stop();
+  });
+
+  it("should negotiate a session and receive a message from a cold sender (a->RandomPacket -> b->WhoAreYou -> a->AuthMessage)", async () => {
+    const receivedRandom = new Promise(resolve => transport1.once("packet", (sender: Multiaddr, data: Packet) => {
+      expect(sender.toString()).to.equal(addr0.toString());
+      expect(data.type).to.equal(PacketType.Message);
+      resolve();
+    }));
+    const receivedWhoAreYou = new Promise(resolve => transport0.once("packet", (sender: Multiaddr, data: Packet) => {
+      expect(sender.toString()).to.equal(addr1.toString());
+      expect(data.type).to.equal(PacketType.WhoAreYou);
+      resolve();
+    }));
+    // send a who are you when requested
+    service1.on("whoAreYouRequest", (srcId, src, authTag) => {
+      service1.sendWhoAreYou(src, srcId, BigInt(0), enr0, authTag);
+    });
+    const establishedSession = new Promise(resolve => service1.once("established", (enr) => {
+      expect(enr).to.deep.equal(enr0);
+      resolve();
+    }));
+    const receivedMsg = new Promise(resolve => service1.once("message", (srcId, src, message) => {
+      resolve();
+    }));
+    service0.sendRequest(enr1, createFindNodeMessage(0));
+    await Promise.all([
+      receivedRandom,
+      receivedWhoAreYou,
+      establishedSession,
+      receivedMsg,
+    ]);
+  });
+  it("receiver should drop WhoAreYou packets from destinations without existing pending requests", async () => {
+    transport0.send(addr1, createWhoAreYouPacket(enr1.nodeId, Buffer.alloc(12), BigInt(0)));
+    transport0.on("packet", () => expect.fail("transport0 should not receive any packets"))
+  });
+  it("should only accept WhoAreYou packets from destinations with existing pending requests", async () => {
   });
 });

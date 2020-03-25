@@ -117,11 +117,9 @@ export function decodeAuthResponse(data: Buffer): IAuthResponse {
     throw new Error(ERR_UNKNOWN_FORMAT);
   }
   const response: IAuthResponse = {
-    version: responseRaw[0].readUint8(0),
+    version: responseRaw[0].readInt8(0),
     signature: responseRaw[1],
   };
-  if (!Array.isArray(responseRaw[2])) {
-    response.nodeRecord = ENR.decode(responseRaw[2]);
-  }
+  response.nodeRecord = !Array.isArray(responseRaw[2]) ? ENR.decode(responseRaw[2]) : undefined;
   return response;
 }

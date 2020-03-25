@@ -139,13 +139,16 @@ export class Session {
     idNonce: Nonce,
     authHeader: IAuthHeader
   ): boolean {
-    const keys = deriveKeysFromPubkey(
+    const [
+      decryptionKey, encryptionKey, authRespKey,
+    ] = deriveKeysFromPubkey(
       kpriv,
       localId,
       remoteId,
       idNonce,
       authHeader.ephemeralPubkey
     );
+    const keys =  { encryptionKey, decryptionKey, authRespKey };
     const authResponse = decryptAuthHeader(keys.authRespKey, authHeader);
 
     // update ENR if applicable
@@ -153,7 +156,7 @@ export class Session {
       if (this.remoteEnr) {
         if (this.remoteEnr.seq < authResponse.nodeRecord.seq) {
           this.remoteEnr = authResponse.nodeRecord;
-        }
+        }// else don't update
       } else {
         this.remoteEnr = authResponse.nodeRecord;
       }
@@ -192,7 +195,10 @@ export class Session {
   ): IAuthMessagePacket {
     assert(this.remoteEnr);
     // generate session keys
-    const [keys, ephemeralPubkey] = generateSessionKeys(localNodeId, this.remoteEnr as ENR, idNonce);
+    const [
+      encryptionKey, decryptionKey, authRespKey, ephemeralPubkey,
+    ] = generateSessionKeys(localNodeId, this.remoteEnr as ENR, idNonce);
+    const keys = { encryptionKey, decryptionKey, authRespKey };
     // create auth header
     const signature = signNonce(kpriv, idNonce, ephemeralPubkey);
     const authHeader = createAuthHeader(

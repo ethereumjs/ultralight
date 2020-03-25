@@ -13,7 +13,6 @@ import {
   IAuthResponse,
   Nonce,
 } from "../packet";
-import { IKeys } from "./types";
 import { generateKeypair, IKeypair, createKeypair } from "../keypair";
 import { fromHex } from "../util";
 
@@ -33,21 +32,25 @@ export const MAC_LENGTH = 16;
 
 // Generates session and auth-response keys for a nonce and remote ENR. This currently only
 // supports Secp256k1 signed ENR's.
-export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: Nonce): [IKeys, Buffer] {
+// Returns [initiatorKey, responderKey, authRespKey, ephemPK]
+export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: Nonce): [Buffer, Buffer, Buffer, Buffer] {
   const remoteKeypair = remoteEnr.keypair;
   const ephemKeypair = generateKeypair(remoteKeypair.type);
   const secret = ephemKeypair.deriveSecret(remoteKeypair);
-  return [deriveKey(secret, localId, remoteEnr.nodeId, idNonce), ephemKeypair.publicKey];
+  return [
+    ...deriveKey(secret, localId, remoteEnr.nodeId, idNonce),
+    ephemKeypair.publicKey,
+  ] as [Buffer, Buffer, Buffer, Buffer];
 }
 
-export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): IKeys {
+export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): [Buffer, Buffer, Buffer] {
   const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), fromHex(firstId), fromHex(secondId)]);
   const output = hkdf.expand(sha256, hkdf.extract(sha256, secret, idNonce), info, 3 * KEY_LENGTH);
-  return {
-    encryptionKey: output.slice(0, KEY_LENGTH),
-    decryptionKey: output.slice(KEY_LENGTH, 2 * KEY_LENGTH),
-    authRespKey: output.slice(2 * KEY_LENGTH),
-  };
+  return [
+    output.slice(0, KEY_LENGTH),
+    output.slice(KEY_LENGTH, 2 * KEY_LENGTH),
+    output.slice(2 * KEY_LENGTH),
+  ];
 }
 
 export function deriveKeysFromPubkey(
@@ -56,7 +59,7 @@ export function deriveKeysFromPubkey(
   remoteId: NodeId,
   idNonce: Nonce,
   ephemPK: Buffer,
-): IKeys {
+): [Buffer,Buffer, Buffer] {
   const secret = kpriv.deriveSecret(createKeypair(kpriv.type, undefined, ephemPK));
   return deriveKey(secret, remoteId, localId, idNonce);
 }

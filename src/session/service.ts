@@ -218,9 +218,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
     if (pendingRequests.size === 1) {
       this.pendingRequests.delete(fromStr);
-    } else {
-      pendingRequests.delete(request.message ? request.message.id : 0n);
     }
+    pendingRequests.delete(request.message ? request.message.id : 0n);
 
     log("Received a WHOAREYOU packet. source: %o", from);
 
@@ -331,9 +330,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
     if (pendingRequests.size === 1) {
       this.pendingRequests.delete(fromStr);
-    } else {
-      pendingRequests.delete(request.message ? request.message.id : 0n);
     }
+    pendingRequests.delete(request.message ? request.message.id : 0n);
 
     const idNonce = (request.packet as IWhoAreYouPacket).idNonce;
 
@@ -342,7 +340,13 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
 
     // establish the session
     try {
-      const trusted = session.establishFromHeader(this.keypair, this.enr.nodeId, srcId, idNonce, packet.authHeader);
+      const trusted = session.establishFromHeader(
+        this.keypair,
+        this.enr.nodeId,
+        srcId,
+        idNonce,
+        packet.authHeader
+      );
       if (trusted) {
         log("Session established with node: %s", srcId);
         // session is trusted, notify the protocol
@@ -448,8 +452,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       (session.trustedEstablished() && sessionWasAwaiting)
     ) {
       // session has been established, notify the protocol
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       log("Session established with node: %s", srcId);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.emit("established", session.remoteEnr!);
       // flush messages
       this.flushMessages(srcId, from);

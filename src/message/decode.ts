@@ -75,7 +75,7 @@ function decodeFindNode(data: Buffer): IFindNodeMessage {
   return {
     type: MessageType.FINDNODE,
     id: toBigIntBE(rlpRaw[0]),
-    distance: rlpRaw[1].readUIntBE(0, rlpRaw[1].length),
+    distance: rlpRaw[1].length ? rlpRaw[1].readUInt8(0) : 0,
   };
 }
 
