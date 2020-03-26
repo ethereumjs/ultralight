@@ -1,5 +1,7 @@
 import * as RLP from "rlp";
-import * as ip from "ip";
+import Multiaddr = require("multiaddr");
+import isIp = require("is-ip");
+
 import {
   IPingMessage,
   IPongMessage,
@@ -54,12 +56,13 @@ export function encodePingMessage(m: IPingMessage): Buffer {
 }
 
 export function encodePongMessage(m: IPongMessage): Buffer {
+  const ipMultiaddr = Multiaddr(`/${isIp.v4(m.recipientIp) ? "ip4" : "ip6"}/${m.recipientIp}`);
   return Buffer.concat([
     Buffer.from([MessageType.PONG]),
     RLP.encode([
       toBuffer(m.id),
       toBuffer(m.enrSeq),
-      ip.toBuffer(m.recipientIp),
+      ipMultiaddr.tuples()[0][1],
       m.recipientPort,
     ]),
   ]);

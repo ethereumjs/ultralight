@@ -22,7 +22,7 @@ export class UDPTransportService
   extends (EventEmitter as { new(): TransportEventEmitter })
   implements ITransportService {
 
-  private multiaddr: Multiaddr;
+  public multiaddr: Multiaddr;
   private socket!: dgram.Socket;
   private whoAreYouMagic: Buffer;
 

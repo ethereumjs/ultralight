@@ -1,5 +1,5 @@
 import * as RLP from "rlp";
-import * as ip from "ip";
+import { toString as ipBufferToString } from "multiaddr/src/ip";
 import { toBigIntBE } from "bigint-buffer";
 import {
   IPingMessage,
@@ -62,8 +62,8 @@ function decodePong(data: Buffer): IPongMessage {
     type: MessageType.PONG,
     id: toBigIntBE(rlpRaw[0]),
     enrSeq: toBigIntBE(rlpRaw[1]),
-    recipientIp: ip.toString(rlpRaw[2]),
-    recipientPort: rlpRaw[3].readUIntBE(0, rlpRaw[3].length),
+    recipientIp: ipBufferToString(rlpRaw[2]),
+    recipientPort: rlpRaw[3].length ? rlpRaw[3].readUIntBE(0, rlpRaw[3].length) : 0,
   };
 }
 
@@ -89,7 +89,7 @@ function decodeNodes(data: Buffer): INodesMessage {
   return {
     type: MessageType.NODES,
     id: toBigIntBE(rlpRaw[0]),
-    total: rlpRaw[1].readUIntBE(0, rlpRaw[1].length),
+    total: rlpRaw[1].length ? rlpRaw[1].readUIntBE(0, rlpRaw[1].length) : 0,
     enrs: rlpRaw[2].map(enrRaw => ENR.decode(enrRaw)),
   };
 }
@@ -117,7 +117,7 @@ function decodeTicket(data: Buffer): ITicketMessage {
     type: MessageType.TICKET,
     id: toBigIntBE(rlpRaw[0]),
     ticket: rlpRaw[1],
-    waitTime: rlpRaw[2].readUIntBE(0, rlpRaw[2].length),
+    waitTime: rlpRaw[2].length ? rlpRaw[2].readUIntBE(0, rlpRaw[2].length) : 0,
   };
 }
 

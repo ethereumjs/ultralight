@@ -79,7 +79,7 @@ export class Lookup extends (EventEmitter as { new(): LookupEventEmitter }) {
       return;
     }
     this.state = LookupState.Finished;
-    this.emit("finished", this.closestNodesByDistance());
+    this.emit("finished", this.closestNodesByDistance().slice(this.config.numResults));
   }
 
   /**

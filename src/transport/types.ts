@@ -27,6 +27,7 @@ export interface ITransportEvents {
 export type TransportEventEmitter = StrictEventEmitter<EventEmitter, ITransportEvents>;
 
 export interface ITransportService extends TransportEventEmitter {
+  multiaddr: Multiaddr;
   start(): Promise<void>;
   stop(): Promise<void>;
   send(to: Multiaddr, packet: Packet): Promise<void>;

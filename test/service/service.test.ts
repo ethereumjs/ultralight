@@ -2,6 +2,7 @@
 /* eslint-disable max-len */
 import { expect } from "chai";
 import { capture, instance, mock } from "ts-mockito";
+import Multiaddr = require("multiaddr");
 
 import { Discv5 } from "../../src/service/service";
 import { ENR, v4 } from "../../src/enr";
@@ -11,62 +12,53 @@ import { IAuthMessagePacket, PacketType } from "../../src/packet";
 import { generateKeypair, KeypairType } from "../../src/keypair";
 
 describe("Discv5", () => {
-/*
-  const kp = generateKeypair(KeypairType.secp256k1);
-  const enr = ENR.createV4(kp.publicKey);
+  const kp0 = generateKeypair(KeypairType.secp256k1);
+  const enr0 = ENR.createV4(kp0.publicKey);
+  const mu0 = Multiaddr("/ip4/127.0.0.1/udp/40000");
+  const addr0 = mu0.toOptions();
+
+  const service0 = Discv5.create(enr0, kp0, mu0);
+
+  beforeEach(async () => {
+    await service0.start();
+  });
+
+  afterEach(async () => {
+    await service0.stop();
+  });
+
   it("should start and stop", async () => {
-    const service = Discv5.create(enr, kp);
-    await service.start();
-    expect(service.started).to.be.true;
-    await service.stop();
-    expect(service.started).to.be.false;
   });
 
-  it("should stop twice without problems", async () => {
-    const service = Discv5.create(enr, kp);
-    await service.start();
-    expect(service.started).to.be.true;
-    await service.stop();
-    expect(service.started).to.be.false;
-    await service.stop();
-    expect(service.started).to.be.false;
+  it("should allow to pick a port and network interface as a multiaddr", async () => {
+    expect(service0.transportMultiaddr.toString()).eq(mu0.toString());
   });
 
-  it("should bind to 0.0.0.0 by default", () => {
-    const service = Discv5.create(enr, kp);
-    expect(service.networkInterface).eq("0.0.0.0");
+  it("should add new enrs", async () => {
+    const kp1 = generateKeypair(KeypairType.secp256k1);
+    const enr1 = ENR.createV4(kp1.publicKey);
+    service0.addEnr(enr1);
+    expect(service0.kadValues().length).eq(1);
   });
 
-  it("should use port 30303 by default", () => {
-    const service = Discv5.create(enr, kp);
-    expect(service.port).eq(30303);
+  it("should complete a lookup to another node", async () => {
+    const kp1 = generateKeypair(KeypairType.secp256k1);
+    const enr1 = ENR.createV4(kp1.publicKey);
+    const mu1 = Multiaddr("/ip4/127.0.0.1/udp/10360");
+    const addr1 = mu1.tuples();
+    enr1.set("ip", addr1[0][1]);
+    enr1.set("udp", addr1[1][1]);
+    enr1.encode(kp1.privateKey);
+    const service1 = Discv5.create(enr1, kp1, mu1);
+    await service1.start();
+    for (let i =0; i < 100; i++) {
+      const kp = generateKeypair(KeypairType.secp256k1);
+      const enr = ENR.createV4(kp.publicKey);
+      enr.encode(kp.privateKey);
+      service1.addEnr(enr);
+    }
+    service0.addEnr(enr1);
+    await service0.findNode(Buffer.alloc(32).toString("hex"));
+    await service1.stop();
   });
-
-  it("should validate ports", () => {
-    expect(() => { Discv5.create(enr, kp, 0); }).to.throw("Invalid port number 0. It should be between 1 and 65535.");
-    expect(() => { Discv5.create(enr, kp, 100000); }).to.throw("Invalid port number 100000. It should be between 1 and 65535.");
-  });
-
-  it("should allow to pick a port and network interface", () => {
-    const service = Discv5.create(enr, kp, 300, "127.0.0.1");
-    expect(service.port).eq(300);
-    expect(service.networkInterface).eq("127.0.0.1");
-  });
-*/
-
-  /*
-  it("should add new peers", async () => {
-    const mockTransportService = mock(UDPTransportService);
-    const serviceMock: UDPTransportService = instance(mockTransportService);
-    const service = new Service(enr, kp, 15000, "0.0.0.0", [], new SessionService(enr, serviceMock));
-    const sk = v4.createPrivateKey();
-    const peerENR = ENR.createV4(v4.publicKey(sk), {"ip": Buffer.from("127.0.0.1"), "udp": Buffer.from("10000")});
-    await service.addPeer(peerENR);
-
-    const [to, type, _] = capture(mockTransportService.send).last();
-    expect(to.address).eq("127.0.0.1");
-    expect(to.port).eq(10000);
-    expect(type).eq(PacketType.AuthMessage);
-  });
-   */
 });

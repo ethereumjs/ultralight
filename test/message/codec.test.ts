@@ -17,6 +17,14 @@ describe("message", () => {
     },
     {
       message: {
+        type: MessageType.PING,
+        id: 1n,
+        enrSeq: 0n, // < test 0 enrSeq
+      },
+      expected: Buffer.from("01c20101", "hex"),
+    },
+    {
+      message: {
         type: MessageType.PONG,
         id: 1n,
         enrSeq: 1n,

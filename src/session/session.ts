@@ -347,25 +347,23 @@ export class Session {
    * This value returns true if the Session has been promoted.
    */
   updateTrusted(): boolean {
-    const hasSameMultiaddr = (multiaddr: Multiaddr, enr: ENR): boolean => {
-      const enrMultiaddr = enr.multiaddrUDP;
-      return enrMultiaddr ? enrMultiaddr.equals(multiaddr) : false;
-    };
-    switch (this.trusted) {
-      case TrustedState.Untrusted:
-        if (this.remoteEnr) {
+    if (this.remoteEnr) {
+      const hasSameMultiaddr = (multiaddr: Multiaddr, enr: ENR): boolean => {
+        const enrMultiaddr = enr.multiaddrUDP;
+        return enrMultiaddr ? enrMultiaddr.equals(multiaddr) : false;
+      };
+      switch (this.trusted) {
+        case TrustedState.Untrusted:
           if (hasSameMultiaddr(this.lastSeenMultiaddr, this.remoteEnr)) {
             this.trusted = TrustedState.Trusted;
             return true;
           }
-        }
-        break;
-      case TrustedState.Trusted:
-        if (this.remoteEnr) {
+          break;
+        case TrustedState.Trusted:
           if (!hasSameMultiaddr(this.lastSeenMultiaddr, this.remoteEnr)) {
             this.trusted = TrustedState.Untrusted;
           }
-        }
+      }
     }
     return false;
   }

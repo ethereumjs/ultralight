@@ -63,7 +63,7 @@ export function decodeWhoAreYou(magic: Magic, data: Buffer[], remainder: Buffer)
   ) {
     throw new Error(ERR_INVALID_BYTE_SIZE);
   }
-  const enrSeq = Number(`0x${enrSeqBytes.toString("hex")}`);
+  const enrSeq = enrSeqBytes.length ? Number(`0x${enrSeqBytes.toString("hex")}`) : 0;
   return {
     type: PacketType.WhoAreYou,
     token,

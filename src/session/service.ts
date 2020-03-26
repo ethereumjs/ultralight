@@ -44,7 +44,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
   /**
    * The underlying packet transport
    */
-  private transport: ITransportService;
+  public transport: ITransportService;
   /**
    * Pending raw requests
    * A collection of request objects we are awaiting a response from the remote.
@@ -435,10 +435,6 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       pendingRequests.delete(message.id);
     }
 
-    // We have received a new message. Notify the protocol
-    log("Message received: %O from: %s", message, srcId);
-    this.emit("message", srcId, from, message);
-
     // update the lastSeenSocket and check if we need to promote the sesison to trusted
     session.lastSeenMultiaddr = from;
 
@@ -458,6 +454,9 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       // flush messages
       this.flushMessages(srcId, from);
     }
+    // We have received a new message. Notify the protocol
+    log("Message received: %O from: %s", message, srcId);
+    this.emit("message", srcId, from, message);
   }
 
   public onPacket = (src: Multiaddr, packet: Packet): void => {

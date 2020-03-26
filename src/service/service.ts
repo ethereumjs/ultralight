@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import debug from "debug";
 import Multiaddr = require("multiaddr");
+import isIp = require("is-ip");
 
 import { UDPTransportService } from "../transport";
 import { createMagic, AuthTag, MAX_PACKET_SIZE } from "../packet";
@@ -14,9 +15,8 @@ import {
   Message, RequestMessage, ResponseMessage, createPingMessage, createFindNodeMessage, createNodesMessage, MessageType,
   IFindNodeMessage, INodesMessage, IPongMessage, IPingMessage, requestMatchesResponse, createPongMessage,
 } from "../message";
-import { TimeoutMap } from "../util";
 import { Discv5EventEmitter } from "./types";
-import { IP_VOTE_TIMEOUT } from "./constants";
+import { AddrVotes } from "./addrVotes";
 
 const log = debug("discv5:service");
 
@@ -99,7 +99,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   /**
    * A map of votes that nodes have made about our external IP address
    */
-  private ipVotes: TimeoutMap<NodeId, Multiaddr>;
+  private addrVotes: AddrVotes;
 
   /**
    * Default constructor.
@@ -117,10 +117,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.connectedPeers = new Map();
     this.lookupConfig = {
       parallelism: 3,
-      numResults: 16,
+      numResults: 15,
     };
     this.nextLookupId = 1;
-    this.ipVotes = new TimeoutMap(IP_VOTE_TIMEOUT);
+    this.addrVotes = new AddrVotes();
   }
 
   /**
@@ -173,6 +173,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.nextLookupId = 1;
     this.activeRequests.clear();
     this.activeNodesResponses.clear();
+    this.addrVotes.clear();
     this.connectedPeers.forEach((intervalId) => clearInterval(intervalId));
     this.connectedPeers.clear();
     this.sessionService.off("established", this.onEstablished);
@@ -199,6 +200,13 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     if (this.kbuckets.add(enr, EntryStatus.Disconnected)) {
       this.emit("enrAdded", enr);
     }
+  }
+
+  public get transportMultiaddr(): Multiaddr {
+    return this.sessionService.transport.multiaddr;
+  }
+  public get keypair(): IKeypair {
+    return this.sessionService.keypair;
   }
 
   public get enr(): ENR {
@@ -270,7 +278,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   private requestEnr(nodeId: NodeId, src: Multiaddr): void {
     try {
       log("Sending ENR request to node: %s", nodeId);
-      this.sessionService.sendRequestUnknownEnr(src, nodeId, createFindNodeMessage(0));
+      const message = createFindNodeMessage(0);
+      this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
+      this.activeRequests.set(message.id, [message, undefined]);
     } catch(e) {
       log("Requesting ENR failed. Error: %s", e.message);
     }
@@ -298,7 +308,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * Each request gets added to known outputs, awaiting a response
    */
   private sendRequest(nodeId: NodeId, req: RequestMessage, lookupId?: number): void {
-    const dstEnr = this.kbuckets.getValue(nodeId);
+    const dstEnr = this.findEnr(nodeId);
     if (!dstEnr) {
       log("Request not sent. Failed to find an ENR for node: %s", nodeId);
       return;
@@ -361,7 +371,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       return;
     }
     this.activeRequests.delete(message.id);
-    if (requestMatchesResponse(activeRequest[0], message)) {
+    if (!requestMatchesResponse(activeRequest[0], message)) {
       log("Node gave an incorrect response type. Ignoring response from node: %s", srcId);
       return;
     }
@@ -469,20 +479,23 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   }
 
   private onPong(srcId: NodeId, src: Multiaddr, message: IPongMessage): void {
-    const activeRequest = this.retrieveRequest(srcId, message);
-    if (!activeRequest) {
+    if (!this.retrieveRequest(srcId, message)) {
       return;
     }
-    /*
-    const [request, lookupId] = activeRequest;
-    this.ipVotes.set(srcId, Multiaddr(`${true ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`));
+    this.addrVotes.addVote(
+      srcId,
+      Multiaddr(`/${isIp.v4(message.recipientIp) ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`)
+    );
     const currentAddr = this.enr.multiaddrUDP;
-    if (currentAddr) {
-      // set majority
-      const occuranceMap
-      //Array.from(this.ipVotes.values()).map((addr) => addr.toString())
+    const votedAddr = this.addrVotes.best(currentAddr);
+    if (
+      (currentAddr && votedAddr && !votedAddr.equals(currentAddr)) ||
+      (!currentAddr && votedAddr)
+    ) {
+      log("Local ENR (IP & UDP) updated: %s", votedAddr);
+      this.enr.multiaddrUDP = votedAddr;
+      this.emit("multiaddrUpdated", votedAddr);
     }
-     */
 
     // Check if we need to request a new ENR
     const enr = this.findEnr(srcId);
@@ -510,8 +523,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       } catch (e) {
         log("Failed to send a Nodes response. Error: %s", e.message);
       }
+      return;
     }
-    const nodes = this.kbuckets.valuesOfDistance(distance);
+    const nodes = this.kbuckets.valuesOfDistance(distance).slice(15);
     if (nodes.length === 0) {
       log("Sending empty NODES response to %s", srcId);
       try {
@@ -550,7 +564,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // Datagrams have a max size of 1280 and ENRs have a max size of 300 bytes.
     // There should be no more than 5 responses to return 16 peers
     if (message.total > 5) {
-      log("Nodes response has a total larget than 5, nodes will be truncated");
+      log("Nodes response has a total larger than 5, nodes will be truncated");
     }
 
     // Filter out any nodes that are not of the coorect distance

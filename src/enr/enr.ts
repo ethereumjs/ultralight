@@ -13,7 +13,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   public seq: SequenceNumber;
   public signature: Buffer | null;
 
-  constructor(kvs: Record<ENRKey, ENRValue> = {}, seq: SequenceNumber = 0n, signature: Buffer | null = null) {
+  constructor(kvs: Record<ENRKey, ENRValue> = {}, seq: SequenceNumber = 1n, signature: Buffer | null = null) {
     super(Object.entries(kvs));
     this.seq = seq;
     this.signature = signature;
