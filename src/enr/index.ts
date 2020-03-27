@@ -4,5 +4,4 @@ export * from "./constants";
 export * from "./enr";
 export * from "./types";
 export * from "./create";
-export * from "./util";
 

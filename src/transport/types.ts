@@ -22,7 +22,7 @@ export interface IRemoteInfo {
 
 export interface ITransportEvents {
   packet: (src: Multiaddr, packet: Packet) => void;
-  error: (err: Error, src: Multiaddr) => void;
+  decodeError: (err: Error, src: Multiaddr) => void;
 }
 export type TransportEventEmitter = StrictEventEmitter<EventEmitter, ITransportEvents>;
 

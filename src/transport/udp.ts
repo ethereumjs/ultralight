@@ -72,7 +72,7 @@ export class UDPTransportService
       const packet = decode(data, this.whoAreYouMagic);
       this.emit("packet", multiaddr, packet);
     } catch (e) {
-      this.emit("error", e, multiaddr);
+      this.emit("decodeError", e, multiaddr);
     }
   };
 }

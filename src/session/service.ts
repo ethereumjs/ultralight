@@ -4,8 +4,8 @@ import debug from "debug";
 import Multiaddr = require("multiaddr");
 
 import { ITransportService } from "../transport";
-import { PacketType, Packet, IWhoAreYouPacket, IAuthMessagePacket, IMessagePacket, AuthTag } from "../packet";
-import { ENR, getTag, NodeId, getSrcId } from "../enr";
+import { PacketType, Packet, IWhoAreYouPacket, IAuthMessagePacket, IMessagePacket, AuthTag, createTag, createSrcId } from "../packet";
+import { ENR, NodeId } from "../enr";
 import { Session } from "./session";
 import { IKeypair } from "../keypair";
 import { TimeoutMap } from "../util";
@@ -130,9 +130,9 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
         this.pendingMessages.set(dstId, [message]);
       }
       // need to establish a new session, send a random packet
-      const [session, packet] = Session.createWithRandom(getTag(this.enr, dstId), dstEnr);
-      this.processRequest(dstId, dst, packet, message);
+      const [session, packet] = Session.createWithRandom(createTag(this.enr.nodeId, dstId), dstEnr);
       this.sessions.set(dstId, session);
+      this.processRequest(dstId, dst, packet, message);
       return;
     }
     if (!session.trustedEstablished()) {
@@ -142,7 +142,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       throw new Error("Tried to send a request to an untrusted node");
     }
     // encrypt the message and send
-    const packet = session.encryptMessage(getTag(this.enr, dstId), encode(message));
+    const packet = session.encryptMessage(createTag(this.enr.nodeId, dstId), encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
 
@@ -157,7 +157,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       throw new Error("Request without an ENR could not be sent, no session exists");
     }
 
-    const packet = session.encryptMessage(getTag(this.enr, dstId), encode(message));
+    const packet = session.encryptMessage(createTag(this.enr.nodeId, dstId), encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
 
@@ -172,7 +172,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     if (!session) {
       throw new Error("Response could not be sent, no session exists");
     }
-    const packet = session.encryptMessage(getTag(this.enr, dstId), encode(message));
+    const packet = session.encryptMessage(createTag(this.enr.nodeId, dstId), encode(message));
     this.transport.send(dst, packet);
   }
 
@@ -226,7 +226,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // This is an assumed NodeId. We sent the packet to this NodeId and can only verify it against the
     // originating IP address. We assume it comes from this NodeId.
     const srcId = request.dstId;
-    const tag = getTag(this.enr, srcId);
+    const tag = createTag(this.enr.nodeId, srcId);
 
     const session = this.sessions.get(srcId);
     if (!session) {
@@ -302,7 +302,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // Needs to match an outgoing WHOAREYOU packet (so we have the required nonce to be signed).
     // If it doesn't we drop the packet.
     // This will lead to future outgoing WHOAREYOU packets if they proceed to send further encrypted packets
-    const srcId = getSrcId(this.enr, packet.tag);
+    const srcId = createSrcId(this.enr.nodeId, packet.tag);
     log("Received an authentication header message from: %s", srcId);
 
     const session = this.sessions.get(srcId);
@@ -378,7 +378,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
   }
 
   public onMessage(from: Multiaddr, packet: IMessagePacket): void {
-    const srcId = getSrcId(this.enr, packet.tag);
+    const srcId = createSrcId(this.enr.nodeId, packet.tag);
 
     // check if we have an available session
     const session = this.sessions.get(srcId);
@@ -500,7 +500,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       // No adequate session
       return;
     }
-    const tag = getTag(this.enr, dstId);
+    const tag = createTag(this.enr.nodeId, dstId);
 
     const messages = this.pendingMessages.get(dstId) || [];
     this.pendingMessages.delete(dstId);

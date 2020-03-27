@@ -4,7 +4,7 @@ import sha256 = require("bcrypto/lib/sha256");
 import { AUTH_TAG_LENGTH, ID_NONCE_LENGTH, RANDOM_DATA_LENGTH, WHOAREYOU_STRING } from "./constants";
 import { Tag, AuthTag, IWhoAreYouPacket, IAuthResponse, Nonce, IAuthHeader, PacketType, IRandomPacket } from "./types";
 import { NodeId, SequenceNumber, ENR } from "../enr";
-import { fromHex } from "../util";
+import { fromHex, toHex } from "../util";
 
 export function createRandomPacket(tag: Tag): IRandomPacket {
   return {
@@ -16,7 +16,7 @@ export function createRandomPacket(tag: Tag): IRandomPacket {
 }
 
 export function createMagic(nodeId: NodeId): Buffer {
-  return sha256.digest(Buffer.concat([fromHex(nodeId), Buffer.from(WHOAREYOU_STRING)]));
+  return sha256.digest(Buffer.concat([fromHex(nodeId), Buffer.from(WHOAREYOU_STRING, "utf-8")]));
 }
 
 export function createWhoAreYouPacket(
@@ -58,4 +58,25 @@ export function createAuthResponse(signature: Buffer, enr?: ENR): IAuthResponse 
     signature,
     nodeRecord: enr,
   };
+}
+
+// calculate node id / tag
+
+export function createSrcId(dstId: NodeId, tag: Tag): NodeId {
+  const hash = sha256.digest(fromHex(dstId));
+  // reuse `hash` buffer for output
+  for (let i = 0; i < 32; i++) {
+    hash[i] = hash[i] ^ tag[i];
+  }
+  return toHex(hash);
+}
+
+export function createTag(srcId: NodeId, dstId: NodeId): Tag {
+  const nodeId = fromHex(srcId);
+  const hash = sha256.digest(fromHex(dstId));
+  // reuse `hash` buffer for output
+  for (let i = 0; i < 32; i++) {
+    hash[i] = hash[i] ^ nodeId[i];
+  }
+  return hash;
 }
