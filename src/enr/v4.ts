@@ -29,7 +29,7 @@ export function verify(pubKey: Buffer, msg: Buffer, sig: Buffer): boolean {
 }
 
 export function nodeId(pubKey: Buffer): NodeId {
-  return createNodeId(hash(secp256k1.publicKeyConvert(pubKey, false)));
+  return createNodeId(hash(secp256k1.publicKeyConvert(pubKey, false).slice(1)));
 }
 
 export class ENRKeyPair {
