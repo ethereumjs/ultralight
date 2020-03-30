@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 /* eslint-disable max-len */
 import { expect } from "chai";
-import { capture, instance, mock } from "ts-mockito";
 import Multiaddr = require("multiaddr");
 
 import { Discv5 } from "../../src/service/service";
