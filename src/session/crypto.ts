@@ -1,4 +1,3 @@
-import assert = require("assert");
 import hkdf = require("bcrypto/lib/hkdf");
 import sha256 = require("bcrypto/lib/sha256");
 import cipher = require("bcrypto/lib/cipher");
@@ -104,7 +103,9 @@ export function encryptAuthResponse(
 }
 
 export function decryptAuthHeader(authRespKey: Buffer, header: IAuthHeader): IAuthResponse {
-  assert(header.authSchemeName === KNOWN_SCHEME);
+  if (header.authSchemeName !== KNOWN_SCHEME) {
+    throw new Error(`auth header scheme name must be: ${KNOWN_SCHEME}, found: ${header.authSchemeName}`);
+  }
   return decodeAuthResponse(
     decryptMessage(
       authRespKey,
@@ -115,7 +116,9 @@ export function decryptAuthHeader(authRespKey: Buffer, header: IAuthHeader): IAu
 }
 
 export function decryptMessage(key: Buffer, nonce: AuthTag, data: Buffer, aad: Buffer): Buffer {
-  assert(data.length >= MAC_LENGTH);
+  if (data.length < MAC_LENGTH) {
+    throw new Error("message data not long enough");
+  }
   const ctx = new cipher.Decipher("AES-128-GCM");
   ctx.init(key, nonce);
   ctx.setAAD(aad);

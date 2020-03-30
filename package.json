@@ -32,7 +32,6 @@
   },
   "homepage": "https://github.com/ChainSafe/discv5#readme",
   "devDependencies": {
-    "@types/assert": "^1.4.3",
     "@types/bn.js": "^4.11.5",
     "@types/chai": "^4.2.0",
     "@types/debug": "^4.1.5",
@@ -50,7 +49,6 @@
     "typescript": "^3.7.2"
   },
   "dependencies": {
-    "assert": "^2.0.0",
     "base64url": "^3.0.1",
     "bcrypto": "^4.2.8",
     "bigint-buffer": "^1.1.5",

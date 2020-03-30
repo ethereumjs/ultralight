@@ -1,4 +1,3 @@
-import assert = require("assert");
 import Multiaddr = require("multiaddr");
 
 import { NodeId, ENR, SequenceNumber } from "../enr";
@@ -193,7 +192,9 @@ export class Session {
     idNonce: Nonce,
     message: Buffer
   ): IAuthMessagePacket {
-    assert(this.remoteEnr);
+    if (!this.remoteEnr) {
+      throw new Error(ERR_NO_ENR);
+    }
     // generate session keys
     const [
       encryptionKey, decryptionKey, authRespKey, ephemeralPubkey,
@@ -227,8 +228,7 @@ export class Session {
         };
         break;
       case SessionState.Poisoned:
-        assert.fail("Coding error if this is possible");
-        break;
+        throw new Error("Coding error if this is possible");
       default:
         this.state = {
           state: SessionState.AwaitingResponse,
@@ -263,7 +263,7 @@ export class Session {
         );
         break;
       default:
-        assert.fail("Session not established");
+        throw new Error("Session not established");
     }
     return {
       type: PacketType.Message,
@@ -280,7 +280,9 @@ export class Session {
    * the session keys are updated along with the Session state.
    */
   decryptMessage(nonce: AuthTag, message: Buffer, aad: Buffer): Buffer {
-    assert(this.remoteEnr);
+    if (!this.remoteEnr) {
+      throw new Error(ERR_NO_ENR);
+    }
     let result: Buffer;
     let keys: IKeys;
     switch (this.state.state) {
@@ -316,10 +318,9 @@ export class Session {
         break;
       case SessionState.RandomSent:
       case SessionState.WhoAreYouSent:
-        assert.fail("Session not established");
-        break;
+        throw new Error("Session not established");
       default:
-        assert.fail("Unreachable");
+        throw new Error("Unreachable");
     }
     this.state = {
       state: SessionState.Established,
@@ -386,7 +387,7 @@ export class Session {
       case SessionState.EstablishedAwaitingResponse:
         return true;
       default:
-        assert.fail("Unreachable");
+        throw new Error("Unreachable");
     }
   }
 }

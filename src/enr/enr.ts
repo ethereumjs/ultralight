@@ -1,4 +1,3 @@
-import assert = require("assert");
 import Multiaddr = require("multiaddr");
 import base64url from "base64url";
 import { toBigIntBE } from "bigint-buffer";
@@ -26,18 +25,21 @@ export class ENR extends Map<ENRKey, ENRValue> {
     });
   }
   static decodeFromValues(decoded: Buffer[]): ENR {
-    assert(Array.isArray(decoded), "Decoded ENR must be an array");
-    assert(decoded.length % 2 === 0, "Decoded ENR must have an even number of elements");
+    if (!Array.isArray(decoded)) {
+      throw new Error("Decoded ENR must be an array");
+    }
+    if (decoded.length % 2 !== 0) {
+      throw new Error("Decoded ENR must have an even number of elements");
+    }
     const [signature, seq, ...kvs] = decoded;
     const obj: Record<ENRKey, ENRValue> = {};
     for (let i = 0; i < kvs.length; i += 2) {
       obj[kvs[i].toString()] = Buffer.from(kvs[i + 1]);
     }
     const enr = new ENR(obj, toBigIntBE(seq), signature);
-    assert(
-      enr.verify(RLP.encode([seq, ...kvs]), signature),
-      "Unable to verify enr signature"
-    );
+    if (!enr.verify(RLP.encode([seq, ...kvs]), signature)) {
+      throw new Error("Unable to verify enr signature");
+    }
     return enr;
   }
   static decode(encoded: Buffer): ENR {
@@ -45,7 +47,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
     return ENR.decodeFromValues(decoded);
   }
   static decodeTxt(encoded: string): ENR {
-    assert(encoded.startsWith("enr:"), "string encoded ENR must start with 'enr:'");
+    if (!encoded.startsWith("enr:")) {
+      throw new Error("string encoded ENR must start with 'enr:'");
+    }
     return ENR.decode(base64url.toBuffer(encoded.slice(4)));
   }
   set(k: ENRKey, v: ENRValue): this {
@@ -197,7 +201,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
   }
   encode(privateKey?: Buffer): Buffer {
     const encoded = RLP.encode(this.encodeToValues(privateKey));
-    assert(encoded.length < MAX_RECORD_SIZE, "ENR must be less than 300 bytes");
+    if (encoded.length >= MAX_RECORD_SIZE) {
+      throw new Error("ENR must be less than 300 bytes");
+    }
     return encoded;
   }
   encodeTxt(privateKey: Buffer): string {
