@@ -243,6 +243,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return await new Promise((resolve) => {
       lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
       lookup.on("finished", (closest: NodeId[]) => {
+        log("Lookup %d finished", lookupId);
         resolve(
           closest
             .map((nodeId) => this.findEnr(nodeId) as ENR)
@@ -291,7 +292,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   private sendLookup(lookupId: number, target: NodeId, peer: ILookupPeer): void {
     const peerId = peer.nodeId;
-    log("Sending lookup. Iteration: %d, Node: %s", peer.iteration, peerId);
+    log("Sending lookup. Id: %d, Iteration: %d, Node: %s", lookupId, peer.iteration, peerId);
     const distance = findNodeLog2Distance(target, peer);
     if (!distance) {
       const lookup = this.activeLookups.get(lookupId);
@@ -519,6 +520,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     if (distance === 0) {
       log("Sending our ENR to node: %s", srcId);
       try {
+        this.enr.encodeToValues(this.keypair.privateKey);
         this.sessionService.sendResponse(src, srcId, createNodesMessage(id, 1, [this.enr]));
       } catch (e) {
         log("Failed to send a Nodes response. Error: %s", e.message);
