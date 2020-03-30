@@ -25,8 +25,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
       "secp256k1": publicKey,
     });
   }
-  static decode(encoded: Buffer): ENR {
-    const decoded = RLP.decode(encoded) as unknown as Buffer[];
+  static decodeFromValues(decoded: Buffer[]): ENR {
     assert(Array.isArray(decoded), "Decoded ENR must be an array");
     assert(decoded.length % 2 === 0, "Decoded ENR must have an even number of elements");
     const [signature, seq, ...kvs] = decoded;
@@ -40,6 +39,10 @@ export class ENR extends Map<ENRKey, ENRValue> {
       "Unable to verify enr signature"
     );
     return enr;
+  }
+  static decode(encoded: Buffer): ENR {
+    const decoded = RLP.decode(encoded) as unknown as Buffer[];
+    return ENR.decodeFromValues(decoded);
   }
   static decodeTxt(encoded: string): ENR {
     assert(encoded.startsWith("enr:"), "string encoded ENR must start with 'enr:'");
@@ -175,9 +178,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
     }
     return this.signature;
   }
-  encode(privateKey?: Buffer): Buffer {
+  encodeToValues(privateKey?: Buffer): (ENRKey | ENRValue | number)[] {
     // sort keys and flatten into [k, v, k, v, ...]
-    const content: Array<ENRKey | ENRValue| number> = Array.from(this.keys())
+    const content: Array<ENRKey | ENRValue | number> = Array.from(this.keys())
       .sort((a, b) => a.localeCompare(b))
       .map((k) => ([k, this.get(k)] as [ENRKey, ENRValue]))
       .flat();
@@ -190,7 +193,10 @@ export class ENR extends Map<ENRKey, ENRValue> {
       }
       content.unshift(this.signature);
     }
-    const encoded = RLP.encode(content);
+    return content;
+  }
+  encode(privateKey?: Buffer): Buffer {
+    const encoded = RLP.encode(this.encodeToValues(privateKey));
     assert(encoded.length < MAX_RECORD_SIZE, "ENR must be less than 300 bytes");
     return encoded;
   }

@@ -84,7 +84,7 @@ export function encodeNodesMessage(m: INodesMessage): Buffer {
     RLP.encode([
       toBuffer(m.id),
       m.total,
-      m.enrs.map(enr => enr.encode()),
+      m.enrs.map(enr => enr.encodeToValues()),
     ]),
   ]);
 }
@@ -95,7 +95,7 @@ export function encodeRegTopicMessage(m: IRegTopicMessage): Buffer {
     RLP.encode([
       toBuffer(m.id),
       m.topic,
-      m.enr.encode(),
+      m.enr.encodeToValues(),
       m.ticket,
     ]),
   ]);

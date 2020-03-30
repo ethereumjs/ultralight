@@ -90,20 +90,20 @@ function decodeNodes(data: Buffer): INodesMessage {
     type: MessageType.NODES,
     id: toBigIntBE(rlpRaw[0]),
     total: rlpRaw[1].length ? rlpRaw[1].readUIntBE(0, rlpRaw[1].length) : 0,
-    enrs: rlpRaw[2].map(enrRaw => ENR.decode(enrRaw)),
+    enrs: rlpRaw[2].map(enrRaw => ENR.decodeFromValues(enrRaw)),
   };
 }
 
 function decodeRegTopic(data: Buffer): IRegTopicMessage {
   const rlpRaw = RLP.decode(data.slice(1)) as unknown as Buffer[];
-  if (!Array.isArray(rlpRaw) || rlpRaw.length !== 4) {
+  if (!Array.isArray(rlpRaw) || rlpRaw.length !== 4 || !Array.isArray(rlpRaw[2])) {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
     type: MessageType.REGTOPIC,
     id: toBigIntBE(rlpRaw[0]),
     topic: rlpRaw[1],
-    enr: ENR.decode(rlpRaw[2]),
+    enr: ENR.decodeFromValues(rlpRaw[2] as unknown as Buffer[]),
     ticket: rlpRaw[3],
   };
 }

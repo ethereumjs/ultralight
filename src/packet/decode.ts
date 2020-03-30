@@ -112,7 +112,8 @@ export function decodeAuthResponse(data: Buffer): IAuthResponse {
   const responseRaw = RLP.decode(data) as unknown as RLP.Decoded;
   if (
     !Array.isArray(responseRaw) ||
-    responseRaw.length !== 3
+    responseRaw.length !== 3 ||
+    !Array.isArray(responseRaw[2])
   ) {
     throw new Error(ERR_UNKNOWN_FORMAT);
   }
@@ -120,6 +121,6 @@ export function decodeAuthResponse(data: Buffer): IAuthResponse {
     version: responseRaw[0].readInt8(0),
     signature: responseRaw[1],
   };
-  response.nodeRecord = !Array.isArray(responseRaw[2]) ? ENR.decode(responseRaw[2]) : undefined;
+  response.nodeRecord = responseRaw[2].length ? ENR.decodeFromValues(responseRaw[2]) : undefined;
   return response;
 }
