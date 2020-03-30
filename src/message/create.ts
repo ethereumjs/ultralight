@@ -6,7 +6,7 @@ import { SequenceNumber, ENR } from "../enr";
 
 
 export function createRequestId(): RequestId {
-  return toBigIntBE(randomBytes(64));
+  return toBigIntBE(randomBytes(8));
 }
 
 export function createPingMessage(enrSeq: SequenceNumber): IPingMessage {
