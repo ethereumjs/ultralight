@@ -211,6 +211,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return this.sessionService.enr;
   }
 
+  public get connectedPeerCount(): number {
+    return this.connectedPeers.size;
+  }
+
   /**
    * Return all ENRs of nodes currently contained in buckets of the kad routing table
    */
