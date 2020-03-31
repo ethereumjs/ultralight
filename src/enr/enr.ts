@@ -206,7 +206,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     }
     return encoded;
   }
-  encodeTxt(privateKey: Buffer): string {
+  encodeTxt(privateKey?: Buffer): string {
     return "enr:" + base64url.encode(Buffer.from(this.encode(privateKey)));
   }
 }
