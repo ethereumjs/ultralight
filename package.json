@@ -1,5 +1,5 @@
 {
-  "name": "discv5",
+  "name": "@chainsafe/discv5",
   "version": "0.0.1",
   "description": "Discovery V5",
   "main": "lib/index.js",
