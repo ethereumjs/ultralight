@@ -39,7 +39,7 @@ export class UDPTransportService
   public async start(): Promise<void> {
     const opts = this.multiaddr.toOptions();
     this.socket = dgram.createSocket({
-      recvBufferSize: MAX_PACKET_SIZE,
+      recvBufferSize: 6 * MAX_PACKET_SIZE,
       sendBufferSize: MAX_PACKET_SIZE,
       type: opts.family === "ipv4" ? "udp4" : "udp6",
     });
