@@ -5,7 +5,7 @@ import isIp = require("is-ip");
 
 import { UDPTransportService } from "../transport";
 import { createMagic, AuthTag, MAX_PACKET_SIZE } from "../packet";
-import { SessionService } from "../session";
+import { REQUEST_TIMEOUT, SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
 import { IKeypair } from "../keypair";
 import {
@@ -15,15 +15,11 @@ import {
   Message, RequestMessage, ResponseMessage, createPingMessage, createFindNodeMessage, createNodesMessage, MessageType,
   IFindNodeMessage, INodesMessage, IPongMessage, IPingMessage, requestMatchesResponse, createPongMessage,
 } from "../message";
-import { Discv5EventEmitter } from "./types";
+import { Discv5EventEmitter, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
+import { TimeoutMap } from "../util";
 
 const log = debug("discv5:service");
-
-interface INodesResponse {
-  count: number;
-  enrs: ENR[];
-}
 
 /**
  * Discovery v5 is a protocol designed for encrypted peer discovery and topic advertisement. Each peer/node
@@ -70,7 +66,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * RPC requests that have been sent and are awaiting a response.
    * Some requests are linked to a lookup (spanning multiple req/resp trips)
    */
-  private activeRequests: Map<bigint, [RequestMessage, number | undefined]>;
+  private activeRequests: TimeoutMap<bigint, IActiveRequest>;
 
   /**
    * Tracks responses received across NODES responses.
@@ -112,7 +108,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.sessionService = sessionService;
     this.kbuckets = new KademliaRoutingTable(this.sessionService.enr.nodeId, 16);
     this.activeLookups = new Map();
-    this.activeRequests = new Map();
+    this.activeRequests = new TimeoutMap(REQUEST_TIMEOUT,
+      (requestId, activeRequest) => this.onActiveRequestFailed(activeRequest)
+    );
     this.activeNodesResponses = new Map();
     this.connectedPeers = new Map();
     this.lookupConfig = {
@@ -243,7 +241,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return await new Promise((resolve) => {
       lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
       lookup.on("finished", (closest: NodeId[]) => {
-        log("Lookup %d finished", lookupId);
+        log("Lookup Id: %d finished, %d total found", lookupId, closest.length);
         resolve(
           closest
             .map((nodeId) => this.findEnr(nodeId) as ENR)
@@ -281,7 +279,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       log("Sending ENR request to node: %s", nodeId);
       const message = createFindNodeMessage(0);
       this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
-      this.activeRequests.set(message.id, [message, undefined]);
+      this.activeRequests.set(message.id, { request: message, dstId: nodeId });
     } catch(e) {
       log("Requesting ENR failed. Error: %s", e.message);
     }
@@ -314,10 +312,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       log("Request not sent. Failed to find an ENR for node: %s", nodeId);
       return;
     }
-    log("Sending request to node: %s", nodeId);
+    log("Sending request: %O to node: %s", req, nodeId);
     try {
       this.sessionService.sendRequest(dstEnr, req);
-      this.activeRequests.set(req.id, [req, lookupId]);
+      this.activeRequests.set(req.id, { request: req, dstId: nodeId, lookupId });
     } catch (e) {
       log("Sending request to node: %s failed: error: %s", nodeId, e.message);
     }
@@ -364,7 +362,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return undefined;
   }
 
-  private retrieveRequest(srcId: NodeId, message: ResponseMessage): [RequestMessage, number | undefined] | undefined {
+  private retrieveRequest(srcId: NodeId, message: ResponseMessage): IActiveRequest | undefined {
     // verify we know of the rpcId
     const activeRequest = this.activeRequests.get(message.id);
     if (!activeRequest) {
@@ -372,7 +370,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       return;
     }
     this.activeRequests.delete(message.id);
-    if (!requestMatchesResponse(activeRequest[0], message)) {
+    if (!requestMatchesResponse(activeRequest.request, message)) {
       log("Node gave an incorrect response type. Ignoring response from node: %s", srcId);
       return;
     }
@@ -409,7 +407,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
             lookup.untrustedEnrs.push(enr);
           }
         }
-        log("%d peers found for lookup id %d", others.length, lookupId);
+        log("%d peers found for lookup Id: %d", others.length, lookupId);
         lookup.onSuccess(srcId, others.map((enr) => enr.nodeId));
       }
     }
@@ -561,7 +559,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     if (!activeRequest) {
       return;
     }
-    const [request, lookupId] = activeRequest as [IFindNodeMessage, number | undefined];
+    const { request, lookupId } = activeRequest as { request: IFindNodeMessage; lookupId: number };
     // Currently a maximum of 16 peers can be returned.
     // Datagrams have a max size of 1280 and ENRs have a max size of 300 bytes.
     // There should be no more than 5 responses to return 16 peers
@@ -580,7 +578,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       const currentResponse = this.activeNodesResponses.get(message.id) || { count: 1, enrs: [] };
       this.activeNodesResponses.delete(message.id);
       log("Nodes response: %d of %d received", currentResponse.count, message.total);
-      // If there are more requests coming, store the nodes and wair for another response
+      // If there are more requests coming, store the nodes and wait for another response
       if (currentResponse.count < 5 && currentResponse.count < message.total) {
         currentResponse.count += 1;
         this.activeRequests.set(message.id, activeRequest);
@@ -616,33 +614,36 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
   };
 
+  private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {
+    const { request, dstId, lookupId } = activeRequest;
+    // If a failed FindNodes Request, ensure we haven't partially received responses.
+    // If so, process the partially found nodes
+    if (request.type === MessageType.FINDNODE) {
+      const nodesResponse = this.activeNodesResponses.get(request.id);
+      if (nodesResponse) {
+        this.activeNodesResponses.delete(request.id);
+        log("FindNode request failed, but was partially processed from Node: %s", dstId);
+        // If its a query, mark it as a success, to process the partial collection of its peers
+        this.discovered(dstId, nodesResponse.enrs, lookupId);
+      } else {
+        // There was no partially downloaded nodes, inform the lookup of the failure if its part of a query
+        const lookup = this.activeLookups.get(lookupId as number);
+        if (lookup) {
+          lookup.onFailure(dstId);
+        } else {
+          log("Failed FindNode request for node: %s", dstId);
+        }
+      }
+    }
+  };
+
   /**
    * A session could not be established or an RPC request timed out
    */
   private onRequestFailed = (srcId: NodeId, rpcId: bigint): void => {
     const req = this.activeRequests.get(rpcId);
     if (req) {
-      const [request, lookupId] = req;
-      // If a failed FindNodes Request, ensure we haven't partially received responses.
-      // If so, process the partially found nodes
-      if (request.type === MessageType.FINDNODE) {
-        const nodesResponse = this.activeNodesResponses.get(rpcId);
-        if (nodesResponse) {
-          this.activeNodesResponses.delete(rpcId);
-          log("FindNode request failed, but was partially processed from Node: %s", srcId);
-          // If its a query, mark it as a success, to process the partial collection of its peers
-          this.discovered(srcId, nodesResponse.enrs, lookupId);
-        } else {
-          // There was no partially downloaded nodes, inform the lookup of the failure if its part of a query
-          const lookup = this.activeLookups.get(lookupId as number);
-          if (lookup) {
-            lookup.onFailure(srcId);
-          } else {
-            log("Failed FindNode request for node: %s", srcId);
-          }
-        }
-
-      }
+      this.onActiveRequestFailed(req);
     }
     // report the node as being disconnected
     log("Session dropped with Node: %s", srcId);

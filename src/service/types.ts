@@ -3,6 +3,7 @@ import StrictEventEmitter from "strict-event-emitter-types";
 import Multiaddr = require("multiaddr");
 
 import { ENR, NodeId } from "../enr";
+import { RequestMessage } from "../message";
 
 export interface IDiscv5Events {
   /**
@@ -26,3 +27,14 @@ export interface IDiscv5Events {
 }
 
 export type Discv5EventEmitter = StrictEventEmitter<EventEmitter, IDiscv5Events>;
+
+export interface INodesResponse {
+  count: number;
+  enrs: ENR[];
+}
+
+export interface IActiveRequest {
+  request: RequestMessage;
+  dstId: NodeId;
+  lookupId?: number;
+}
