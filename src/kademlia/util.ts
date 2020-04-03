@@ -41,5 +41,8 @@ export function findNodeLog2Distance(a: NodeId, b: ILookupPeer): number {
     }
     difference += 1;
   }
+  if (iteration % 2 === 1) {
+    results.pop();
+  }
   return results.pop() as number;
 }
