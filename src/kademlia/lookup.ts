@@ -229,16 +229,6 @@ export class Lookup extends (EventEmitter as { new(): LookupEventEmitter }) {
     // Check if the query is at capacity w.r.t. the allowed parallelism
     const atCapacity = this.atCapacity();
 
-    console.log("at capacity", atCapacity)
-    console.log(Object.keys(this.untrustedEnrs).length, "untrusted enrs length")
-    console.log(this.closestPeers.size, "total peers")
-    console.log(this.closestPeersByDistance().map(p => String(p.state)).join(""), "peers")
-    console.log(this.closestPeersByDistance().filter(p => p.state === LookupPeerState.Waiting).length, "waiting peers")
-    console.log(this.closestPeersByDistance().filter(p => p.state === LookupPeerState.Succeeded).length, "succeeded peers")
-    console.log(this.closestPeersByDistance().filter(p => p.state === LookupPeerState.Failed).length, "Failed peers")
-    console.log(this.closestPeersByDistance().filter(p => p.state === LookupPeerState.PendingIteration).length, "pending iteration peers")
-    console.log(this.closestPeersByDistance().filter(p => p.state === LookupPeerState.NotContacted).length, "not contacted peers")
-
     for (const peer of this.closestPeersByDistance()) {
       if (peer.state === LookupPeerState.NotContacted || peer.state === LookupPeerState.PendingIteration) {
         if (atCapacity) {
