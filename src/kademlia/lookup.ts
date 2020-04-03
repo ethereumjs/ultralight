@@ -278,18 +278,14 @@ export class Lookup extends (EventEmitter as { new(): LookupEventEmitter }) {
       }
       // Skip over unresponsive or failed peers
     }
-    if (this.numPeersWaiting > 0) {
-      // The lookup is still waiting for results and not at capacity w.r.t.
-      // the allowed parallelism, but there are no new peers to contact
-      console.log("numPeersWaiting", this.numPeersWaiting);
-      console.log(this.closestPeersByDistance().filter(peer => peer.state === LookupPeerState.Waiting));
-      return;
-    } else {
+    // after iterating through peers
+    if (this.numPeersWaiting === 0) {
       // The lookup is finished because all available peers have been contacted
       // and the lookup is not waiting for any more results
       this.state = LookupState.Finished;
       this.emit("finished", this.closestNodesByDistance());
-      return;
-    }
+    } // else 
+    // The lookup is still waiting for results and/or not at capacity w.r.t.
+    // the allowed parallelism, but there are no new peers to contact
   }
 }
