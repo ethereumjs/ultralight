@@ -11,7 +11,7 @@ import { ENR, NodeId } from "../enr";
 import { Session } from "./session";
 import { IKeypair } from "../keypair";
 import { TimeoutMap } from "../util";
-import { Message, RequestMessage, encode, decode, ResponseMessage, RequestId } from "../message";
+import { Message, RequestMessage, encode, decode, ResponseMessage, RequestId, MessageType } from "../message";
 import { IPendingRequest, SessionState, ISessionEvents } from "./types";
 import { SESSION_TIMEOUT, REQUEST_TIMEOUT, REQUEST_RETRIES } from "./constants";
 
@@ -105,7 +105,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const session = this.sessions.get(enr.nodeId);
     if (session) {
       if (session.updateEnr(enr)) {
-        // A session has be been promited to established.
+        // A session has be been promoted to established.
         this.emit("established", enr);
       }
     }
@@ -123,7 +123,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
     const session = this.sessions.get(dstId);
     if (!session) {
-      log("No session established, sending a random packet to: %s", dstId);
+      log("No session established, sending a random packet to: %s on %s", dstId, dst);
       // cache message
       const msgs = this.pendingMessages.get(dstId);
       if (msgs) {
@@ -144,6 +144,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       throw new Error("Tried to send a request to an untrusted node");
     }
     // encrypt the message and send
+    log("Sending request: %O to %s on %s", message, dstId, dst);
     const packet = session.encryptMessage(createTag(this.enr.nodeId, dstId), encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
@@ -159,6 +160,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       throw new Error("Request without an ENR could not be sent, no session exists");
     }
 
+    log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst);
     const packet = session.encryptMessage(createTag(this.enr.nodeId, dstId), encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
@@ -174,6 +176,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     if (!session) {
       throw new Error("Response could not be sent, no session exists");
     }
+    log("Sending %s response to %s at %s", MessageType[message.type], dstId, dst);
     const packet = session.encryptMessage(createTag(this.enr.nodeId, dstId), encode(message));
     this.transport.send(dst, packet);
   }
@@ -189,7 +192,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
         return;
       }
     }
-    log("Sending WHOAREYOU packet to: %s", dstId);
+    log("Sending WHOAREYOU to: %s on %s", dstId, dst);
     const [session, packet] = Session.createWithWhoAreYou(dstId, enrSeq, remoteEnr, authTag);
     this.sessions.set(dstId, session);
     this.processRequest(dstId, dst, packet);
@@ -290,7 +293,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       return;
     }
 
-    log("Sending authentication response to node: %s", srcId);
+    log("Sending authentication message: %O to node: %s on %s", message, srcId, src);
 
     // send the response
     this.processRequest(srcId, src, authPacket, message);
@@ -305,7 +308,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // If it doesn't we drop the packet.
     // This will lead to future outgoing WHOAREYOU packets if they proceed to send further encrypted packets
     const srcId = createSrcId(this.enr.nodeId, packet.tag);
-    log("Received an authentication header message from: %s", srcId);
+    log("Received an authentication message from: %s on %s", srcId, src);
 
     const session = this.sessions.get(srcId);
     if (!session) {
@@ -350,7 +353,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
         packet.authHeader
       );
       if (trusted) {
-        log("Session established with node: %s", srcId);
+        log("Session established with node from header: %s", srcId);
         // session is trusted, notify the protocol
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.emit("established", session.remoteEnr!);
@@ -386,7 +389,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const session = this.sessions.get(srcId);
     if (!session) {
       // Received a message without a session.
-      log("Received a message without a session. from: %s, nodeId: %s", src, srcId);
+      log("Received a message without a session. from: %s at %s", srcId, src);
       log("Requesting a WHOAREYOU packet to be sent.");
 
       // spawn a WHOAREYOU event to check for highest known ENR
@@ -398,7 +401,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       this.emit("whoAreYouRequest", srcId, src, packet.authTag);
     } else if (session.state.state === SessionState.WhoAreYouSent) {
       // Waiting for a session to be generated
-      log("Waiting for a session to be generated.");
+      log("Waiting for a session to be generated. from: %s at %s", srcId, src);
 
       // potentially store and decrypt once we receive the packet
       // drop it for now
@@ -433,31 +436,30 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // Remove any associated request from pendingRequests
     const pendingRequests = this.pendingRequests.get(src.toString());
     if (pendingRequests) {
-      log("Removing request id: %s", message.id);
       pendingRequests.delete(message.id);
     }
 
-    // update the lastSeenSocket and check if we need to promote the sesison to trusted
+    // update the lastSeenSocket and check if we need to promote the session to trusted
     session.lastSeenMultiaddr = src;
 
     // There are two possibilities as session could have been established.
-    // The lastest message matches the known ENR and upgrades the session to an established state,
+    // The lastest message addr matches the addr in the known ENR and upgrades the session to an established state,
     // or, we were awaiting a message to be decrypted with new session keys,
     // this just arrived and now we consider the session established.
-    // In both cases, we notify the user and fllush the cahced messages
+    // In both cases, we notify the user and flush the cached messages
     if (
-      (session.updateTrusted() &&  session.trustedEstablished()) ||
+      (session.updateTrusted() && session.trustedEstablished()) ||
       (session.trustedEstablished() && sessionWasAwaiting)
     ) {
       // session has been established, notify the protocol
-      log("Session established with node: %s", srcId);
+      log("Session established with node from updated: %s", srcId);
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.emit("established", session.remoteEnr!);
       // flush messages
       this.flushMessages(srcId, src);
     }
     // We have received a new message. Notify the protocol
-    log("Message received: %O from: %s", message, srcId);
+    log("Message received: %s from: %s on %s", MessageType[message.type], srcId, src);
     this.emit("message", srcId, src, message);
   }
 
@@ -521,7 +523,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     if (request.retries >= REQUEST_RETRIES) {
       if (request.packet.type === PacketType.Random || request.packet.type === PacketType.WhoAreYou) {
         // no response from peer, flush all pending messages and drop session
-        log("Session couldn't be established with node: %s", dstId);
+        log("Session couldn't be established with node: %s at %s", dstId, request.dst);
         const pendingMessages = this.pendingMessages.get(dstId);
         if (pendingMessages) {
           this.pendingMessages.delete(dstId);
