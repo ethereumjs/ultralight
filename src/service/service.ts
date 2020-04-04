@@ -2,12 +2,13 @@ import { EventEmitter } from "events";
 import debug from "debug";
 import Multiaddr = require("multiaddr");
 import isIp = require("is-ip");
+import PeerId = require("peer-id");
 
 import { UDPTransportService } from "../transport";
 import { createMagic, AuthTag, MAX_PACKET_SIZE } from "../packet";
 import { REQUEST_TIMEOUT, SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
-import { IKeypair } from "../keypair";
+import { IKeypair, createKeypairFromPeerId } from "../keypair";
 import {
   EntryStatus, KademliaRoutingTable, ILookupConfig, log2Distance, ILookupPeer, findNodeLog2Distance, Lookup,
 } from "../kademlia";
@@ -32,7 +33,7 @@ const log = debug("discv5:service");
  * Nodes return the external IP address that they have received and a simple majority is chosen as our external
  * IP address.
  *
- * This section containe protocol-level logic. In particular it manages the routing table of known ENRs, topic
+ * This section contains protocol-level logic. In particular it manages the routing table of known ENRs, topic
  * registration/advertisement and performs lookups
  */
 
@@ -125,17 +126,17 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * Convenience method to create a new discv5 service.
    *
    * @param enr the ENR record identifying the current node.
-   * @param keypair the keypair that signed the enr
+   * @param peerId the PeerId with the keypair that identifies the enr
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
   public static create(
     enr: ENR,
-    keypair: IKeypair,
+    peerId: PeerId,
     multiaddr: Multiaddr,
   ): Discv5 {
     const magic = createMagic(enr.nodeId);
     const udpTransport = new UDPTransportService(multiaddr, magic);
-    const sessionService = new SessionService(enr, keypair, udpTransport);
+    const sessionService = new SessionService(enr, createKeypairFromPeerId(peerId), udpTransport);
     return new Discv5(sessionService);
   }
 
@@ -144,8 +145,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   public async start(): Promise<void> {
     if (this.started) {
+      log("Starting discv5 service failed -- already started");
       return;
     }
+    log("Starting discv5 service");
     this.kbuckets.on("pendingEviction", this.onPendingEviction);
     this.kbuckets.on("appliedEviction", this.onAppliedEviction);
     this.sessionService.on("established", this.onEstablished);
@@ -161,8 +164,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   public async stop(): Promise<void> {
     if (!this.started) {
+      log("Stopping discv5 service -- already stopped");
       return;
     }
+    log("Stopping discv5 service");
     this.kbuckets.off("pendingEviction", this.onPendingEviction);
     this.kbuckets.off("appliedEviction", this.onAppliedEviction);
     this.kbuckets.clear();

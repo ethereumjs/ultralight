@@ -2,11 +2,12 @@ import Multiaddr = require("multiaddr");
 import base64url from "base64url";
 import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
+import PeerId = require("peer-id");
 
 import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
 import { ENRKey, ENRValue, SequenceNumber, NodeId } from "./types";
-import { createKeypair, KeypairType, IKeypair } from "../keypair";
+import { createKeypair, KeypairType, IKeypair, createPeerIdFromKeypair, createKeypairFromPeerId } from "../keypair";
 
 export class ENR extends Map<ENRKey, ENRValue> {
   public seq: SequenceNumber;
@@ -23,6 +24,15 @@ export class ENR extends Map<ENRKey, ENRValue> {
       "id": Buffer.from("v4"),
       "secp256k1": publicKey,
     });
+  }
+  static createFromPeerId(peerId: PeerId, kvs: Record<ENRKey, ENRValue> = {}): ENR {
+    const keypair = createKeypairFromPeerId(peerId);
+    switch (keypair.type) {
+      case KeypairType.secp256k1:
+        return ENR.createV4(keypair.publicKey, kvs);
+      default:
+        throw new Error();
+    }
   }
   static decodeFromValues(decoded: Buffer[]): ENR {
     if (!Array.isArray(decoded)) {
@@ -78,6 +88,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
   }
   get keypair(): IKeypair {
     return createKeypair(this.keypairType, undefined, this.publicKey);
+  }
+  async peerId(): Promise<PeerId> {
+    return createPeerIdFromKeypair(this.keypair);
   }
   get nodeId(): NodeId {
     switch (this.id) {
@@ -151,7 +164,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     }
     const protoNames = multiaddr.protoNames();
     if (protoNames.length !== 2 && protoNames[1] !== "tcp") {
-      throw new Error("Invalid udp multiaddr");
+      throw new Error("Invalid tcp multiaddr");
     }
     const tuples = multiaddr.tuples();
     // IPv4

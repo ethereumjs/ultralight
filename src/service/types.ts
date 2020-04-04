@@ -20,10 +20,6 @@ export interface IDiscv5Events {
    * Our local ENR IP address has been updated
    */
   multiaddrUpdated: (addr: Multiaddr) => void;
-  /**
-   * Result of a FINDNODES iterative query
-   */
-  findNodeResult: (key: NodeId, closestPeers: Buffer[]) => void;
 }
 
 export type Discv5EventEmitter = StrictEventEmitter<EventEmitter, IDiscv5Events>;

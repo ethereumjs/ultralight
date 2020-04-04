@@ -83,6 +83,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    * Starts the session service, starting the underlying UDP transport service.
    */
   public async start(): Promise<void> {
+    log("Starting session service");
     this.transport.on("packet", this.onPacket);
     await this.transport.start();
   }
@@ -99,6 +100,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.pendingRequests.clear();
     this.pendingMessages.clear();
     this.sessions.clear();
+    log("Stopping session service");
   }
 
   public updateEnr(enr: ENR): void {

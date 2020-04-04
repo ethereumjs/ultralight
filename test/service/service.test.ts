@@ -8,15 +8,16 @@ import { ENR, v4 } from "../../src/enr";
 import { SessionService } from "../../src/session/service";
 import { ISocketAddr, UDPTransportService } from "../../src/transport";
 import { IAuthMessagePacket, PacketType } from "../../src/packet";
-import { generateKeypair, KeypairType } from "../../src/keypair";
+import { generateKeypair, KeypairType, createPeerIdFromKeypair } from "../../src/keypair";
 
-describe("Discv5", () => {
+describe("Discv5", async () => {
   const kp0 = generateKeypair(KeypairType.secp256k1);
+  const peerId0 = await createPeerIdFromKeypair(kp0);
   const enr0 = ENR.createV4(kp0.publicKey);
   const mu0 = Multiaddr("/ip4/127.0.0.1/udp/40000");
   const addr0 = mu0.toOptions();
 
-  const service0 = Discv5.create(enr0, kp0, mu0);
+  const service0 = Discv5.create(enr0, peerId0, mu0);
 
   beforeEach(async () => {
     await service0.start();
@@ -42,13 +43,14 @@ describe("Discv5", () => {
 
   it("should complete a lookup to another node", async () => {
     const kp1 = generateKeypair(KeypairType.secp256k1);
+    const peerId1 = await createPeerIdFromKeypair(kp1);
     const enr1 = ENR.createV4(kp1.publicKey);
     const mu1 = Multiaddr("/ip4/127.0.0.1/udp/10360");
     const addr1 = mu1.tuples();
     enr1.set("ip", addr1[0][1]);
     enr1.set("udp", addr1[1][1]);
     enr1.encode(kp1.privateKey);
-    const service1 = Discv5.create(enr1, kp1, mu1);
+    const service1 = Discv5.create(enr1, peerId1, mu1);
     await service1.start();
     for (let i =0; i < 100; i++) {
       const kp = generateKeypair(KeypairType.secp256k1);
