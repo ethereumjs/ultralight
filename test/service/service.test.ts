@@ -31,7 +31,7 @@ describe("Discv5", async () => {
   });
 
   it("should allow to pick a port and network interface as a multiaddr", async () => {
-    expect(service0.transportMultiaddr.toString()).eq(mu0.toString());
+    expect(service0.bindAddress.toString()).eq(mu0.toString());
   });
 
   it("should add new enrs", async () => {

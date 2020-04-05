@@ -202,7 +202,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
   }
 
-  public get transportMultiaddr(): Multiaddr {
+  public get bindAddress(): Multiaddr {
     return this.sessionService.transport.multiaddr;
   }
   public get keypair(): IKeypair {
