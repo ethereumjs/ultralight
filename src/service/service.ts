@@ -8,7 +8,7 @@ import { UDPTransportService } from "../transport";
 import { createMagic, AuthTag, MAX_PACKET_SIZE } from "../packet";
 import { REQUEST_TIMEOUT, SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
-import { IKeypair, createKeypairFromPeerId } from "../keypair";
+import { IKeypair, createKeypairFromPeerId, createPeerIdFromKeypair } from "../keypair";
 import {
   EntryStatus, KademliaRoutingTable, ILookupConfig, log2Distance, ILookupPeer, findNodeLog2Distance, Lookup,
 } from "../kademlia";
@@ -187,6 +187,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.started = false;
   }
 
+  public isStarted(): boolean {
+    return this.started;
+  }
+
   /**
    * Adds a known ENR of a peer participating in Discv5 to the routing table.
    *
@@ -205,8 +209,13 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   public get bindAddress(): Multiaddr {
     return this.sessionService.transport.multiaddr;
   }
+
   public get keypair(): IKeypair {
     return this.sessionService.keypair;
+  }
+
+  public peerId(): Promise<PeerId> {
+    return createPeerIdFromKeypair(this.keypair);
   }
 
   public get enr(): ENR {
