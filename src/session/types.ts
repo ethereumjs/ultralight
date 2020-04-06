@@ -1,7 +1,8 @@
+import Multiaddr = require("multiaddr");
+
 import { NodeId, ENR } from "../enr";
 import { Packet, AuthTag } from "../packet";
 import { Message, RequestMessage } from "../message";
-import { ISocketAddr } from "../transport";
 
 export enum SessionState {
   /**
@@ -76,9 +77,9 @@ export interface IPendingRequest {
    */
   dstId: NodeId;
   /**
-   * The destination ISocketAddr
+   * The destination Multiaddr
    */
-  dst: ISocketAddr;
+  dst: Multiaddr;
   /**
    * The raw packet sent
    */
@@ -101,12 +102,12 @@ export interface ISessionEvents {
   /**
    * A message was received
    */
-  message: (srcId: NodeId, src: ISocketAddr, message: Message) => void;
+  message: (srcId: NodeId, src: Multiaddr, message: Message) => void;
   /**
    * A WHOAREYOU packet needs to be sent.
    * This requests the protocol layer to send back the highest known ENR.
    */
-  whoAreYouRequest: (srcId: NodeId, src: ISocketAddr, authTag: AuthTag) => void;
+  whoAreYouRequest: (srcId: NodeId, src: Multiaddr, authTag: AuthTag) => void;
   /**
    * An RPC request failed.
    */

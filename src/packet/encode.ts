@@ -62,6 +62,6 @@ export function encodeAuthResponse(authResponse: IAuthResponse, privateKey: Buff
   return RLP.encode([
     authResponse.version,
     authResponse.signature,
-    authResponse.nodeRecord ? authResponse.nodeRecord.encode(privateKey) : []
+    authResponse.nodeRecord ? authResponse.nodeRecord.encodeToValues(privateKey) : []
   ]);
 }

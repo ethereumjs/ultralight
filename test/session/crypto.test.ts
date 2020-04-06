@@ -1,11 +1,17 @@
+/* eslint-env mocha */
 import {expect} from "chai";
 import secp256k1 = require("bcrypto/lib/secp256k1");
 import {randomBytes} from "bcrypto/lib/random";
 
-import { IKeys, deriveKey, generateSessionKeys, deriveKeysFromPubkey, signNonce, verifyNonce, encryptMessage, decryptMessage, encryptAuthResponse } from "../../src/session";
+import {
+  IKeys, deriveKey, generateSessionKeys, deriveKeysFromPubkey, signNonce,
+  verifyNonce, encryptMessage, decryptMessage, encryptAuthResponse, decryptAuthHeader,
+} from "../../src/session";
 import { v4, ENR } from "../../src/enr";
 import { KeypairType, createKeypair } from "../../src/keypair";
-import { encodeAuthResponse, createAuthResponse, createAuthHeader, encodeAuthHeader, encode, PacketType } from "../../src/packet";
+import {
+  encodeAuthResponse, createAuthResponse, createAuthHeader, encodeAuthHeader, encode, PacketType,
+} from "../../src/packet";
 
 describe("session crypto", () => {
   it("ecdh should produce expected secret", () => {
@@ -18,15 +24,15 @@ describe("session crypto", () => {
   });
 
   it("key derivation should produce expected keys", () => {
-    const expected: IKeys = {
-      encryptionKey: Buffer.from("238d8b50e4363cf603a48c6cc3542967", "hex"),
-      decryptionKey: Buffer.from("bebc0183484f7e7ca2ac32e3d72c8891", "hex"),
-      authRespKey: Buffer.from("e987ad9e414d5b4f9bfe4ff1e52f2fae", "hex"),
-    };
+    const expected = [
+      Buffer.from("238d8b50e4363cf603a48c6cc3542967", "hex"),
+      Buffer.from("bebc0183484f7e7ca2ac32e3d72c8891", "hex"),
+      Buffer.from("e987ad9e414d5b4f9bfe4ff1e52f2fae", "hex"),
+    ];
 
     const secret = Buffer.from("02a77e3aa0c144ae7c0a3af73692b7d6e5b7a2fdc0eda16e8d5e6cb0d08e88dd04", "hex");
-    const firstNodeId = Buffer.from("a448f24c6d18e575453db13171562b71999873db5b286df957af199ec94617f7", "hex");
-    const secondNodeId = Buffer.from("885bba8dfeddd49855459df852ad5b63d13a3fae593f3f9fa7e317fd43651409", "hex");
+    const firstNodeId = "a448f24c6d18e575453db13171562b71999873db5b286df957af199ec94617f7";
+    const secondNodeId = "885bba8dfeddd49855459df852ad5b63d13a3fae593f3f9fa7e317fd43651409";
     const idNonce = Buffer.alloc(32, 1);
 
     expect(deriveKey(secret, firstNodeId, secondNodeId, idNonce)).to.deep.equal(expected);
@@ -38,8 +44,8 @@ describe("session crypto", () => {
     const enr1 = ENR.createV4(v4.publicKey(sk1));
     const enr2 = ENR.createV4(v4.publicKey(sk2));
     const nonce = randomBytes(32);
-    const [keys1, pk] = generateSessionKeys(enr1.nodeId, enr2, nonce);
-    const keys2 = deriveKeysFromPubkey(
+    const [a1, b1, c1, pk] = generateSessionKeys(enr1.nodeId, enr2, nonce);
+    const [a2, b2, c2] = deriveKeysFromPubkey(
       createKeypair(KeypairType.secp256k1, sk2),
       enr2.nodeId,
       enr1.nodeId,
@@ -47,7 +53,9 @@ describe("session crypto", () => {
       pk
     );
 
-    expect(keys1).to.deep.equal(keys2);
+    expect(a1).to.deep.equal(a2);
+    expect(b1).to.deep.equal(b2);
+    expect(c1).to.deep.equal(c2);
   });
 
   it("signature of nonce should match expected value", () => {
@@ -94,18 +102,35 @@ describe("session crypto", () => {
 
     const authResp = createAuthResponse(signNonce(kpriv, idNonce, ephemPK));
 
-    expect(encodeAuthResponse(authResp, key)).to.deep.equal(expectedAuthPt);
+    expect(
+      encodeAuthResponse(authResp, key)
+    ).to.deep.equal(
+      expectedAuthPt
+    );
 
     const authRespKey = Buffer.from("8c7caa563cebc5c06bb15fc1a2d426c3", "hex");
     const expectedAuthRespCiphertext = Buffer.from("570fbf23885c674867ab00320294a41732891457969a0f14d11c995668858b2ad731aa7836888020e2ccc6e0e5776d0d4bc4439161798565a4159aa8620992fb51dcb275c4f755c8b8030c82918898f1ac387f606852", "hex");
 
-    expect(encryptAuthResponse(authRespKey, authResp, kpriv.privateKey)).to.deep.equal(expectedAuthRespCiphertext);
+    expect(
+      encryptAuthResponse(authRespKey, authResp, kpriv.privateKey)
+    ).to.deep.equal(
+      expectedAuthRespCiphertext
+    );
 
     const authTag = Buffer.from("27b5af763c446acd2749fe8e", "hex");
     const expectedAuthHeaderRlp = Buffer.from("f8cc8c27b5af763c446acd2749fe8ea0e551b1c44264ab92bc0b3c9b26293e1ba4fed9128f3c3645301e8e119f179c658367636db840b35608c01ee67edff2cffa424b219940a81cf2fb9b66068b1cf96862a17d353e22524fbdcdebc609f85cbd58ebe7a872b01e24a3829b97dd5875e8ffbc4eea81b856570fbf23885c674867ab00320294a41732891457969a0f14d11c995668858b2ad731aa7836888020e2ccc6e0e5776d0d4bc4439161798565a4159aa8620992fb51dcb275c4f755c8b8030c82918898f1ac387f606852", "hex");
 
     const authHeader = createAuthHeader(idNonce, ephemPK, expectedAuthRespCiphertext, authTag);
-    expect(encodeAuthHeader(authHeader)).to.deep.equal(expectedAuthHeaderRlp);
+    expect(
+      encodeAuthHeader(authHeader)
+    ).to.deep.equal(
+      expectedAuthHeaderRlp
+    );
+    expect(
+      decryptAuthHeader(authRespKey, authHeader)
+    ).to.deep.equal(
+      authResp
+    );
 
     const tag = Buffer.from("93a7400fa0d6a694ebc24d5cf570f65d04215b6ac00757875e3f3a5f42107903", "hex");
     const encryptionKey = Buffer.from("9f2d77db7004bf8a1a85107ac686990b", "hex");
@@ -113,16 +138,20 @@ describe("session crypto", () => {
 
     const expectedAuthMessageRlp = Buffer.from("93a7400fa0d6a694ebc24d5cf570f65d04215b6ac00757875e3f3a5f42107903f8cc8c27b5af763c446acd2749fe8ea0e551b1c44264ab92bc0b3c9b26293e1ba4fed9128f3c3645301e8e119f179c658367636db840b35608c01ee67edff2cffa424b219940a81cf2fb9b66068b1cf96862a17d353e22524fbdcdebc609f85cbd58ebe7a872b01e24a3829b97dd5875e8ffbc4eea81b856570fbf23885c674867ab00320294a41732891457969a0f14d11c995668858b2ad731aa7836888020e2ccc6e0e5776d0d4bc4439161798565a4159aa8620992fb51dcb275c4f755c8b8030c82918898f1ac387f606852a5d12a2d94b8ccb3ba55558229867dc13bfa3648", "hex");
 
-    expect(encode({
-      type: PacketType.AuthMessage,
-      tag,
-      authHeader,
-      message: encryptMessage(
-        encryptionKey,
-        authTag,
-        messagePlaintext,
-        tag
-      ),
-    })).to.deep.equal(expectedAuthMessageRlp);
+    expect(
+      encode({
+        type: PacketType.AuthMessage,
+        tag,
+        authHeader,
+        message: encryptMessage(
+          encryptionKey,
+          authTag,
+          messagePlaintext,
+          tag
+        ),
+      })
+    ).to.deep.equal(
+      expectedAuthMessageRlp
+    );
   });
 });

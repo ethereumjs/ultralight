@@ -17,6 +17,14 @@ describe("message", () => {
     },
     {
       message: {
+        type: MessageType.PING,
+        id: 1n,
+        enrSeq: 0n, // < test 0 enrSeq
+      },
+      expected: Buffer.from("01c20101", "hex"),
+    },
+    {
+      message: {
         type: MessageType.PONG,
         id: 1n,
         enrSeq: 1n,
@@ -29,7 +37,7 @@ describe("message", () => {
       message: {
         type: MessageType.FINDNODE,
         id: 1n,
-        distance: 256,
+        distance: 250,
       },
       expected: Buffer.from("03c401820100", "hex"),
     },

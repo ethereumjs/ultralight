@@ -1,5 +1,6 @@
 import * as dgram from "dgram";
 import { EventEmitter } from "events";
+import Multiaddr = require("multiaddr");
 
 import {
   decode,
@@ -8,7 +9,6 @@ import {
   MAX_PACKET_SIZE,
 } from "../packet";
 import {
-  ISocketAddr,
   IRemoteInfo,
   ITransportService,
   TransportEventEmitter,
@@ -22,45 +22,57 @@ export class UDPTransportService
   extends (EventEmitter as { new(): TransportEventEmitter })
   implements ITransportService {
 
-  private socketAddr: ISocketAddr;
-  private socket: dgram.Socket;
+  public multiaddr: Multiaddr;
+  private socket!: dgram.Socket;
   private whoAreYouMagic: Buffer;
 
-  public constructor(socketAddr: ISocketAddr, whoAreYouMagic: Buffer) {
+  public constructor(multiaddr: Multiaddr, whoAreYouMagic: Buffer) {
     super();
-    this.socketAddr = socketAddr;
+    const opts = multiaddr.toOptions();
+    if (opts.transport !== "udp") {
+      throw new Error("Local multiaddr must use UDP");
+    }
+    this.multiaddr = multiaddr;
     this.whoAreYouMagic = whoAreYouMagic;
-    this.socket = dgram.createSocket({
-      recvBufferSize: MAX_PACKET_SIZE,
-      sendBufferSize: MAX_PACKET_SIZE,
-      type: "udp4",
-    });
   }
 
   public async start(): Promise<void> {
+    const opts = this.multiaddr.toOptions();
+    this.socket = dgram.createSocket({
+      recvBufferSize: 16 * MAX_PACKET_SIZE,
+      sendBufferSize: MAX_PACKET_SIZE,
+      type: opts.family === "ipv4" ? "udp4" : "udp6",
+    });
     this.socket.on("message", this.handleIncoming);
-    return new Promise((resolve) => this.socket.bind(this.socketAddr.port, resolve));
+    return new Promise((resolve) => this.socket.bind(opts.port, opts.host, resolve));
   }
 
-  public async close(): Promise<void> {
+  public async stop(): Promise<void> {
     this.socket.off("message", this.handleIncoming);
     return new Promise((resolve) => this.socket.close(resolve));
   }
 
-  public async send(to: ISocketAddr, packet: Packet): Promise<void> {
-    return new Promise((resolve) => this.socket.send(encode(packet), to.port, to.address, () => resolve()));
+  public async send(to: Multiaddr, packet: Packet): Promise<void> {
+    const nodeAddr = to.toOptions();
+    return new Promise((resolve) =>
+      this.socket.send(
+        encode(packet),
+        nodeAddr.port,
+        nodeAddr.host,
+        () => resolve()
+      )
+    );
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    const sender = {
-      address: rinfo.address,
-      port: rinfo.port,
-    };
+    const multiaddr = Multiaddr(
+      `/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/udp/${rinfo.port}`
+    );
     try {
       const packet = decode(data, this.whoAreYouMagic);
-      this.emit("packet", sender, packet);
+      this.emit("packet", multiaddr, packet);
     } catch (e) {
-      this.emit("error", e, sender);
+      this.emit("decodeError", e, multiaddr);
     }
   };
 }

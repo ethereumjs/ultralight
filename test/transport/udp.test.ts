@@ -1,17 +1,21 @@
 /* eslint-env mocha */
+import { expect } from "chai";
+import Multiaddr = require("multiaddr");
+
 import {PacketType, TAG_LENGTH, AUTH_TAG_LENGTH, MAGIC_LENGTH, IMessagePacket} from "../../src/packet";
 import {UDPTransportService} from "../../src/transport";
-import { expect } from "chai";
 
 describe("UDP transport", () => {
   const address = "127.0.0.1";
   const magicA = Buffer.alloc(MAGIC_LENGTH, 1);
   const portA = 49523;
-  const a = new UDPTransportService({port: portA, address}, magicA);
+  const multiaddrA = Multiaddr(`/ip4/${address}/udp/${portA}`);
+  const a = new UDPTransportService(multiaddrA, magicA);
 
   const magicB = Buffer.alloc(MAGIC_LENGTH, 2);
   const portB = portA + 1;
-  const b = new UDPTransportService({port: portB, address}, magicB);
+  const multiaddrB = Multiaddr(`/ip4/${address}/udp/${portB}`);
+  const b = new UDPTransportService(multiaddrB, magicB);
 
   before(async () => {
     await a.start();
@@ -19,8 +23,8 @@ describe("UDP transport", () => {
   });
 
   after(async () => {
-    await a.close();
-    await b.close();
+    await a.stop();
+    await b.stop();
   });
 
   it("should send and receive messages", async () => {
@@ -34,12 +38,12 @@ describe("UDP transport", () => {
       a.once("packet", (sender, packet) =>
         resolve([sender, packet])));
     await b.send(
-      {port: portA, address},
+      multiaddrA,
       messagePacket,
     );
     // @ts-ignore
     const [rSender, rPacket] = await received;
-    expect(rSender).to.deep.equal({port: portB, address});
+    expect(rSender.toString()).to.deep.equal(multiaddrB.toString());
     expect(rPacket).to.deep.equal(messagePacket);
   });
 });

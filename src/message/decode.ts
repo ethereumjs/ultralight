@@ -1,5 +1,5 @@
 import * as RLP from "rlp";
-import * as ip from "ip";
+import { toString as ipBufferToString } from "multiaddr/src/ip";
 import { toBigIntBE } from "bigint-buffer";
 import {
   IPingMessage,
@@ -62,8 +62,8 @@ function decodePong(data: Buffer): IPongMessage {
     type: MessageType.PONG,
     id: toBigIntBE(rlpRaw[0]),
     enrSeq: toBigIntBE(rlpRaw[1]),
-    recipientIp: ip.toString(rlpRaw[2]),
-    recipientPort: rlpRaw[3].readUIntBE(0, rlpRaw[3].length),
+    recipientIp: ipBufferToString(rlpRaw[2]),
+    recipientPort: rlpRaw[3].length ? rlpRaw[3].readUIntBE(0, rlpRaw[3].length) : 0,
   };
 }
 
@@ -75,7 +75,7 @@ function decodeFindNode(data: Buffer): IFindNodeMessage {
   return {
     type: MessageType.FINDNODE,
     id: toBigIntBE(rlpRaw[0]),
-    distance: rlpRaw[1].readUIntBE(0, rlpRaw[1].length),
+    distance: rlpRaw[1].length ? rlpRaw[1].readUInt8(0) : 0,
   };
 }
 
@@ -89,21 +89,21 @@ function decodeNodes(data: Buffer): INodesMessage {
   return {
     type: MessageType.NODES,
     id: toBigIntBE(rlpRaw[0]),
-    total: rlpRaw[1].readUIntBE(0, rlpRaw[1].length),
-    enrs: rlpRaw[2].map(enrRaw => ENR.decode(enrRaw)),
+    total: rlpRaw[1].length ? rlpRaw[1].readUIntBE(0, rlpRaw[1].length) : 0,
+    enrs: rlpRaw[2].map(enrRaw => ENR.decodeFromValues(enrRaw)),
   };
 }
 
 function decodeRegTopic(data: Buffer): IRegTopicMessage {
   const rlpRaw = RLP.decode(data.slice(1)) as unknown as Buffer[];
-  if (!Array.isArray(rlpRaw) || rlpRaw.length !== 4) {
+  if (!Array.isArray(rlpRaw) || rlpRaw.length !== 4 || !Array.isArray(rlpRaw[2])) {
     throw new Error(ERR_INVALID_MESSAGE);
   }
   return {
     type: MessageType.REGTOPIC,
     id: toBigIntBE(rlpRaw[0]),
     topic: rlpRaw[1],
-    enr: ENR.decode(rlpRaw[2]),
+    enr: ENR.decodeFromValues(rlpRaw[2] as unknown as Buffer[]),
     ticket: rlpRaw[3],
   };
 }
@@ -117,7 +117,7 @@ function decodeTicket(data: Buffer): ITicketMessage {
     type: MessageType.TICKET,
     id: toBigIntBE(rlpRaw[0]),
     ticket: rlpRaw[1],
-    waitTime: rlpRaw[2].readUIntBE(0, rlpRaw[2].length),
+    waitTime: rlpRaw[2].length ? rlpRaw[2].readUIntBE(0, rlpRaw[2].length) : 0,
   };
 }
 

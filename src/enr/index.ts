@@ -3,5 +3,5 @@ export const v4 = v4Crypto;
 export * from "./constants";
 export * from "./enr";
 export * from "./types";
-export * from "./util";
+export * from "./create";
 

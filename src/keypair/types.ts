@@ -1,7 +1,7 @@
 export enum KeypairType {
-  rsa,
-  ed25519,
-  secp256k1,
+  rsa = 0,
+  ed25519 = 1,
+  secp256k1 = 2,
 }
 
 export interface IKeypair {
@@ -21,11 +21,21 @@ export interface IKeypairClass {
 }
 
 export abstract class AbstractKeypair {
-  readonly _privateKey: Buffer | null;
-  readonly _publicKey: Buffer | null;
+  readonly _privateKey?: Buffer;
+  readonly _publicKey?: Buffer;
   constructor(privateKey?: Buffer, publicKey?: Buffer) {
-    this._privateKey = privateKey || null;
-    this._publicKey = publicKey || null;
+    if (
+      (this._privateKey = privateKey) &&
+      !this.privateKeyVerify()
+    ) {
+      throw new Error("Invalid private key");
+    }
+    if (
+      (this._publicKey = publicKey) &&
+      !this.publicKeyVerify()
+    ) {
+      throw new Error("Invalid private key");
+    }
   }
   get privateKey(): Buffer {
     if (!this._privateKey) {
@@ -38,5 +48,11 @@ export abstract class AbstractKeypair {
       throw new Error();
     }
     return this._publicKey;
+  }
+  privateKeyVerify(): boolean {
+    return true;
+  }
+  publicKeyVerify(): boolean {
+    return true;
   }
 }

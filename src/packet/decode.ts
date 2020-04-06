@@ -63,7 +63,7 @@ export function decodeWhoAreYou(magic: Magic, data: Buffer[], remainder: Buffer)
   ) {
     throw new Error(ERR_INVALID_BYTE_SIZE);
   }
-  const enrSeq = Number(`0x${enrSeqBytes.toString("hex")}`);
+  const enrSeq = enrSeqBytes.length ? Number(`0x${enrSeqBytes.toString("hex")}`) : 0;
   return {
     type: PacketType.WhoAreYou,
     token,
@@ -112,16 +112,15 @@ export function decodeAuthResponse(data: Buffer): IAuthResponse {
   const responseRaw = RLP.decode(data) as unknown as RLP.Decoded;
   if (
     !Array.isArray(responseRaw) ||
-    responseRaw.length !== 3
+    responseRaw.length !== 3 ||
+    !Array.isArray(responseRaw[2])
   ) {
     throw new Error(ERR_UNKNOWN_FORMAT);
   }
   const response: IAuthResponse = {
-    version: responseRaw[0].readUint8(0),
+    version: responseRaw[0].readInt8(0),
     signature: responseRaw[1],
   };
-  if (!Array.isArray(responseRaw[2])) {
-    response.nodeRecord = ENR.decode(responseRaw[2]);
-  }
+  response.nodeRecord = responseRaw[2].length ? ENR.decodeFromValues(responseRaw[2]) : undefined;
   return response;
 }

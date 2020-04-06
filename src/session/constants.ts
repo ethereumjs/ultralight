@@ -1,5 +1,5 @@
 // 4 sec
-export const REQUEST_TIMEOUT = 4000;
+export const REQUEST_TIMEOUT = 1000;
 
 export const REQUEST_RETRIES = 1;
 

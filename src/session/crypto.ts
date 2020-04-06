@@ -1,4 +1,3 @@
-import assert = require("assert");
 import hkdf = require("bcrypto/lib/hkdf");
 import sha256 = require("bcrypto/lib/sha256");
 import cipher = require("bcrypto/lib/cipher");
@@ -13,8 +12,8 @@ import {
   IAuthResponse,
   Nonce,
 } from "../packet";
-import { IKeys } from "./types";
 import { generateKeypair, IKeypair, createKeypair } from "../keypair";
+import { fromHex } from "../util";
 
 // Implementation for generating session keys in the Discv5 protocol.
 // Currently, Diffie-Hellman key agreement is performed with known public key types. Session keys
@@ -32,21 +31,25 @@ export const MAC_LENGTH = 16;
 
 // Generates session and auth-response keys for a nonce and remote ENR. This currently only
 // supports Secp256k1 signed ENR's.
-export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: Nonce): [IKeys, Buffer] {
+// Returns [initiatorKey, responderKey, authRespKey, ephemPK]
+export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: Nonce): [Buffer, Buffer, Buffer, Buffer] {
   const remoteKeypair = remoteEnr.keypair;
   const ephemKeypair = generateKeypair(remoteKeypair.type);
   const secret = ephemKeypair.deriveSecret(remoteKeypair);
-  return [deriveKey(secret, localId, remoteEnr.nodeId, idNonce), ephemKeypair.publicKey];
+  return [
+    ...deriveKey(secret, localId, remoteEnr.nodeId, idNonce),
+    ephemKeypair.publicKey,
+  ] as [Buffer, Buffer, Buffer, Buffer];
 }
 
-export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): IKeys {
-  const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), firstId, secondId]);
+export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): [Buffer, Buffer, Buffer] {
+  const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), fromHex(firstId), fromHex(secondId)]);
   const output = hkdf.expand(sha256, hkdf.extract(sha256, secret, idNonce), info, 3 * KEY_LENGTH);
-  return {
-    encryptionKey: output.slice(0, KEY_LENGTH),
-    decryptionKey: output.slice(KEY_LENGTH, 2 * KEY_LENGTH),
-    authRespKey: output.slice(2 * KEY_LENGTH),
-  };
+  return [
+    output.slice(0, KEY_LENGTH),
+    output.slice(KEY_LENGTH, 2 * KEY_LENGTH),
+    output.slice(2 * KEY_LENGTH),
+  ];
 }
 
 export function deriveKeysFromPubkey(
@@ -55,7 +58,7 @@ export function deriveKeysFromPubkey(
   remoteId: NodeId,
   idNonce: Nonce,
   ephemPK: Buffer,
-): IKeys {
+): [Buffer,Buffer, Buffer] {
   const secret = kpriv.deriveSecret(createKeypair(kpriv.type, undefined, ephemPK));
   return deriveKey(secret, remoteId, localId, idNonce);
 }
@@ -100,7 +103,9 @@ export function encryptAuthResponse(
 }
 
 export function decryptAuthHeader(authRespKey: Buffer, header: IAuthHeader): IAuthResponse {
-  assert(header.authSchemeName === KNOWN_SCHEME);
+  if (header.authSchemeName !== KNOWN_SCHEME) {
+    throw new Error(`auth header scheme name must be: ${KNOWN_SCHEME}, found: ${header.authSchemeName}`);
+  }
   return decodeAuthResponse(
     decryptMessage(
       authRespKey,
@@ -111,7 +116,9 @@ export function decryptAuthHeader(authRespKey: Buffer, header: IAuthHeader): IAu
 }
 
 export function decryptMessage(key: Buffer, nonce: AuthTag, data: Buffer, aad: Buffer): Buffer {
-  assert(data.length >= MAC_LENGTH);
+  if (data.length < MAC_LENGTH) {
+    throw new Error("message data not long enough");
+  }
   const ctx = new cipher.Decipher("AES-128-GCM");
   ctx.init(key, nonce);
   ctx.setAAD(aad);
