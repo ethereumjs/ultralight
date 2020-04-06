@@ -56,7 +56,6 @@
     "dgram": "^1.0.1",
     "is-ip": "^3.1.0",
     "libp2p-crypto": "^0.17.5",
-    "libp2p-crypto-secp256k1": "^0.4.3",
     "multiaddr": "^7.4.2",
     "peer-id": "^0.13.11",
     "rlp": "^2.2.4",
