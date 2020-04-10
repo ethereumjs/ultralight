@@ -4,9 +4,9 @@ A TypeScript implementation of the [DiscV5](https://github.com/ethereum/devp2p/b
 
 ## Libp2p compatibility
 
-![Peer Discovery Compatable](https://github.com/libp2p/js-libp2p-interfaces/raw/master/src/peer-discovery/img/badge.png)
+![Peer Discovery Compatible](https://github.com/libp2p/js-libp2p-interfaces/raw/master/src/peer-discovery/img/badge.png)
 
-Included is a libp2p peer-discovery compatability module.
+Included is a libp2p peer-discovery compatibility module.
 
 #### Example
 
