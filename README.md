@@ -2,7 +2,7 @@
 
 A TypeScript implementation of the [DiscV5](https://github.com/ethereum/devp2p/blob/master/discv5/discv5.md) protocol
 
-## Libp2p compatability
+## Libp2p compatibility
 
 ![Peer Discovery Compatable](https://github.com/libp2p/js-libp2p-interfaces/raw/master/src/peer-discovery/img/badge.png)
 
