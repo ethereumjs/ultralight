@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import PeerInfo = require("peer-info");
+import PeerId = require("peer-id");
 import Multiaddr = require("multiaddr");
 import { randomBytes } from "libp2p-crypto";
 
@@ -24,7 +24,7 @@ export interface IDiscv5DiscoveryInputOptions {
 }
 
 export interface IDiscv5DiscoveryOptions extends IDiscv5DiscoveryInputOptions {
-  peerInfo: PeerInfo;
+  peerId: PeerId;
 }
 
 /**
@@ -38,7 +38,7 @@ export class Discv5Discovery extends EventEmitter {
 
   constructor(options: IDiscv5DiscoveryOptions) {
     super();
-    this.discv5 = Discv5.create(options.enr, options.peerInfo.id, Multiaddr(options.bindAddr));
+    this.discv5 = Discv5.create(options.enr, options.peerId, Multiaddr(options.bindAddr));
     this.started = false;
     options.bootEnrs.forEach((bootEnr) => this.discv5.addEnr(bootEnr));
   }
@@ -69,12 +69,10 @@ export class Discv5Discovery extends EventEmitter {
         return;
       }
       for (const enr of enrs) {
-        const peerInfo = new PeerInfo(await enr.peerId());
-        const multiaddrTCP = enr.multiaddrTCP;
-        if (multiaddrTCP) {
-          peerInfo.multiaddrs.add(multiaddrTCP);
-        }
-        this.emit("peer", peerInfo);
+        this.emit("peer", {
+          id: enr.peerId(),
+          multiaddrs: [Multiaddr(enr.multiaddrTCP)]
+        });
       }
     }
   }
