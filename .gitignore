@@ -68,3 +68,6 @@ lib
 
 # swp file
 *.swp
+
+# others
+package-lock.json

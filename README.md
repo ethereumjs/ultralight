@@ -13,14 +13,14 @@ Included is a libp2p peer-discovery compatibility module.
 ```typescript
 import { Discv5Discovery, ENR } from "@chainsafe/discv5";
 import Libp2p from "libp2p";
-import PeerInfo from "peer-info";
+import PeerId from "peer-id";
 
-const myPeerInfo: PeerInfo = ...;
+const myPeerId: PeerId = ...;
 
 const bootstrapEnrs: ENR[] = [...];
 
 const libp2p = new Libp2p({
-  peerInfo: myPeerInfo,
+  peerId: myPeerId,
   modules: {
     peerDiscovery: [Discv5Discovery],
   },
