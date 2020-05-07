@@ -3,14 +3,14 @@ import PeerId = require("peer-id");
 import Multiaddr = require("multiaddr");
 import { randomBytes } from "libp2p-crypto";
 
-import { Discv5 } from "../service";
+import { Discv5, ENRInput } from "../service";
 import { ENR, createNodeId } from "../enr";
 
 export interface IDiscv5DiscoveryInputOptions {
   /**
    * Local ENR associated with the local libp2p peer id
    */
-  enr: ENR;
+  enr: ENRInput;
   /**
    * The bind multiaddr for the discv5 UDP server
    *
@@ -20,7 +20,7 @@ export interface IDiscv5DiscoveryInputOptions {
   /**
    * Remote ENRs used to bootstrap the network
    */
-  bootEnrs: ENR[];
+  bootEnrs: ENRInput[];
 }
 
 export interface IDiscv5DiscoveryOptions extends IDiscv5DiscoveryInputOptions {

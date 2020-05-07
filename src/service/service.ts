@@ -16,7 +16,7 @@ import {
   Message, RequestMessage, ResponseMessage, createPingMessage, createFindNodeMessage, createNodesMessage, MessageType,
   IFindNodeMessage, INodesMessage, IPongMessage, IPingMessage, requestMatchesResponse, createPongMessage,
 } from "../message";
-import { Discv5EventEmitter, IActiveRequest, INodesResponse } from "./types";
+import { Discv5EventEmitter, ENRInput, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
 import { TimeoutMap } from "../util";
 
@@ -130,13 +130,14 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
   public static create(
-    enr: ENR,
+    enr: ENRInput,
     peerId: PeerId,
     multiaddr: Multiaddr,
   ): Discv5 {
-    const magic = createMagic(enr.nodeId);
+    const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
+    const magic = createMagic(decodedEnr.nodeId);
     const udpTransport = new UDPTransportService(multiaddr, magic);
-    const sessionService = new SessionService(enr, createKeypairFromPeerId(peerId), udpTransport);
+    const sessionService = new SessionService(decodedEnr, createKeypairFromPeerId(peerId), udpTransport);
     return new Discv5(sessionService);
   }
 
@@ -198,11 +199,18 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * so that they can be used immediately in following DHT operations involving one of these peers,
    * without having to dial them upfront.
    */
-  public addEnr(enr: ENR): void {
-    if (this.kbuckets.getWithPending(enr.nodeId)) {
-      this.kbuckets.updateValue(enr);
-    } else if (this.kbuckets.add(enr, EntryStatus.Disconnected)) {
-      this.emit("enrAdded", enr);
+  public addEnr(enr: ENRInput): void {
+    let decodedEnr: ENR;
+    try {
+      decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
+    } catch (e) {
+      log("Unable to add enr: %o", enr);
+      return;
+    }
+    if (this.kbuckets.getWithPending(decodedEnr.nodeId)) {
+      this.kbuckets.updateValue(decodedEnr);
+    } else if (this.kbuckets.add(decodedEnr, EntryStatus.Disconnected)) {
+      this.emit("enrAdded", decodedEnr);
     }
   }
 
