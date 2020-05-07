@@ -34,3 +34,5 @@ export interface IActiveRequest {
   dstId: NodeId;
   lookupId?: number;
 }
+
+export type ENRInput = ENR | string;
