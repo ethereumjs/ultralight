@@ -4,7 +4,7 @@ import Multiaddr = require("multiaddr");
 import { randomBytes } from "libp2p-crypto";
 
 import { Discv5, ENRInput } from "../service";
-import { ENR, createNodeId } from "../enr";
+import { createNodeId } from "../enr";
 
 export interface IDiscv5DiscoveryInputOptions {
   /**
