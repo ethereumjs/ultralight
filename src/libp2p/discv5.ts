@@ -49,7 +49,7 @@ export class Discv5Discovery extends EventEmitter {
     }
     this.started = true;
     await this.discv5.start();
-    setTimeout(() => this.findPeers, 1);
+    setTimeout(() => this.findPeers(), 1);
   }
 
   async stop(): Promise<void> {
@@ -61,7 +61,7 @@ export class Discv5Discovery extends EventEmitter {
   }
 
   async findPeers(): Promise<void> {
-    while (!this.started) {
+    while (this.started) {
       // Search for random nodes
       // emit discovered on all finds
       const enrs = await this.discv5.findNode(createNodeId(randomBytes(32)));
