@@ -178,12 +178,13 @@ export class ENR extends Map<ENRKey, ENRValue> {
 
   }
   verify(data: Buffer, signature: Buffer): boolean {
-    switch (this.id) {
-      case "v4":
-        return v4.verify(this.publicKey, data, signature);
-      default:
-        throw new Error(ERR_INVALID_ID);
+    if (!this.get("id") || this.id !== "v4") {
+      throw new Error(ERR_INVALID_ID);
     }
+    if (!this.publicKey) {
+      throw new Error("Failed to verify enr: No public key");
+    }
+    return v4.verify(this.publicKey, data, signature);
   }
   sign(data: Buffer, privateKey: Buffer): Buffer {
     switch (this.id) {
