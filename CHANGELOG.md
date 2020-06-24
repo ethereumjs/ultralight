@@ -1,3 +1,9 @@
+# 0.2.3 - (2020-06-24)
+
+### Bugfixes
+
+* Add validations to ENR verification ([f5c53f](https://github.com/ChainSafe/discv5/commit/f5c53f))
+
 ## 0.2.2 - (2020-05-21)
 
 ### Bugfixes
