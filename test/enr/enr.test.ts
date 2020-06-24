@@ -57,6 +57,16 @@ describe("ENR", function() {
       }
     });
 
+    it("should throw error - invalid id", () => {
+      try {
+        const enr = new ENR({"id": Buffer.from("v3")}, BigInt(0), Buffer.alloc(0));
+        enr.verify(Buffer.alloc(0), Buffer.alloc(0));
+        assert.fail("Expect error here");
+      } catch (err) {
+        expect(err.message).to.be.equal(ERR_INVALID_ID);
+      }
+    });
+
     it("should throw error - no public key", () => {
       try {
         const enr = new ENR({"id": Buffer.from("v4")}, BigInt(0), Buffer.alloc(0));
