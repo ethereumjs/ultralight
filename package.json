@@ -1,6 +1,6 @@
 {
   "name": "@chainsafe/discv5",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Discovery V5",
   "main": "lib/index.js",
   "files": [

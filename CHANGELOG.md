@@ -1,4 +1,10 @@
-# 0.2.3 - (2020-06-24)
+# 0.2.4 - (2020-06-24)
+
+### Chores
+
+* Add build to prepublishOnly script ([23f1c7](https://github.com/ChainSafe/discv5/commit/23f1c7))
+
+# 0.2.3 - (2020-06-24) INVALID/DEPRECATED
 
 ### Bugfixes
 
