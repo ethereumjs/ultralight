@@ -48,12 +48,12 @@ export interface IKeys {
  * We maintain 0, 1, or 2 keys depending on the state
  */
 export type ISessionState =
-  {state: SessionState.WhoAreYouSent} |
-  {state: SessionState.RandomSent} |
-  {state: SessionState.Poisoned} |
-  {state: SessionState.AwaitingResponse; currentKeys: IKeys} |
-  {state: SessionState.Established; currentKeys: IKeys} |
-  {state: SessionState.EstablishedAwaitingResponse; currentKeys: IKeys; newKeys: IKeys};
+  | { state: SessionState.WhoAreYouSent }
+  | { state: SessionState.RandomSent }
+  | { state: SessionState.Poisoned }
+  | { state: SessionState.AwaitingResponse; currentKeys: IKeys }
+  | { state: SessionState.Established; currentKeys: IKeys }
+  | { state: SessionState.EstablishedAwaitingResponse; currentKeys: IKeys; newKeys: IKeys };
 
 export enum TrustedState {
   /**

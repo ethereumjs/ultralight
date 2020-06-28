@@ -46,88 +46,43 @@ function toBuffer(n: bigint): Buffer {
 }
 
 export function encodePingMessage(m: IPingMessage): Buffer {
-  return Buffer.concat([
-    Buffer.from([MessageType.PING]),
-    RLP.encode([
-      toBuffer(m.id),
-      toBuffer(m.enrSeq),
-    ]),
-  ]);
+  return Buffer.concat([Buffer.from([MessageType.PING]), RLP.encode([toBuffer(m.id), toBuffer(m.enrSeq)])]);
 }
 
 export function encodePongMessage(m: IPongMessage): Buffer {
   const ipMultiaddr = Multiaddr(`/${isIp.v4(m.recipientIp) ? "ip4" : "ip6"}/${m.recipientIp}`);
   return Buffer.concat([
     Buffer.from([MessageType.PONG]),
-    RLP.encode([
-      toBuffer(m.id),
-      toBuffer(m.enrSeq),
-      ipMultiaddr.tuples()[0][1],
-      m.recipientPort,
-    ]),
+    RLP.encode([toBuffer(m.id), toBuffer(m.enrSeq), ipMultiaddr.tuples()[0][1], m.recipientPort]),
   ]);
 }
 
 export function encodeFindNodeMessage(m: IFindNodeMessage): Buffer {
-  return Buffer.concat([
-    Buffer.from([MessageType.FINDNODE]),
-    RLP.encode([
-      toBuffer(m.id),
-      m.distance,
-    ]),
-  ]);
+  return Buffer.concat([Buffer.from([MessageType.FINDNODE]), RLP.encode([toBuffer(m.id), m.distance])]);
 }
 
 export function encodeNodesMessage(m: INodesMessage): Buffer {
   return Buffer.concat([
     Buffer.from([MessageType.NODES]),
-    RLP.encode([
-      toBuffer(m.id),
-      m.total,
-      m.enrs.map(enr => enr.encodeToValues()),
-    ]),
+    RLP.encode([toBuffer(m.id), m.total, m.enrs.map((enr) => enr.encodeToValues())]),
   ]);
 }
 
 export function encodeRegTopicMessage(m: IRegTopicMessage): Buffer {
   return Buffer.concat([
     Buffer.from([MessageType.REGTOPIC]),
-    RLP.encode([
-      toBuffer(m.id),
-      m.topic,
-      m.enr.encodeToValues(),
-      m.ticket,
-    ]),
+    RLP.encode([toBuffer(m.id), m.topic, m.enr.encodeToValues(), m.ticket]),
   ]);
 }
 
 export function encodeTicketMessage(m: ITicketMessage): Buffer {
-  return Buffer.concat([
-    Buffer.from([MessageType.TICKET]),
-    RLP.encode([
-      toBuffer(m.id),
-      m.ticket,
-      m.waitTime,
-    ]),
-  ]);
+  return Buffer.concat([Buffer.from([MessageType.TICKET]), RLP.encode([toBuffer(m.id), m.ticket, m.waitTime])]);
 }
 
 export function encodeRegConfirmMessage(m: IRegConfirmationMessage): Buffer {
-  return Buffer.concat([
-    Buffer.from([MessageType.REGCONFIRMATION]),
-    RLP.encode([
-      toBuffer(m.id),
-      m.topic,
-    ]),
-  ]);
+  return Buffer.concat([Buffer.from([MessageType.REGCONFIRMATION]), RLP.encode([toBuffer(m.id), m.topic])]);
 }
 
 export function encodeTopicQueryMessage(m: ITopicQueryMessage): Buffer {
-  return Buffer.concat([
-    Buffer.from([MessageType.TOPICQUERY]),
-    RLP.encode([
-      toBuffer(m.id),
-      m.topic,
-    ]),
-  ]);
+  return Buffer.concat([Buffer.from([MessageType.TOPICQUERY]), RLP.encode([toBuffer(m.id), m.topic])]);
 }

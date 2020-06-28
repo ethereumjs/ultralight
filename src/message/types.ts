@@ -15,17 +15,9 @@ export enum MessageType {
 
 export type Message = RequestMessage | ResponseMessage;
 
-export type RequestMessage =
-  IPingMessage |
-  IFindNodeMessage |
-  IRegTopicMessage |
-  ITopicQueryMessage;
+export type RequestMessage = IPingMessage | IFindNodeMessage | IRegTopicMessage | ITopicQueryMessage;
 
-export type ResponseMessage =
-  IPongMessage |
-  INodesMessage |
-  ITicketMessage |
-  IRegConfirmationMessage;
+export type ResponseMessage = IPongMessage | INodesMessage | ITicketMessage | IRegConfirmationMessage;
 
 export interface IPingMessage {
   type: MessageType.PING;

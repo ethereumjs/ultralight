@@ -20,4 +20,3 @@ export const ERR_TOO_SMALL = "packet too small";
 export const ERR_TOO_LARGE = "packet too large";
 export const ERR_UNKNOWN_FORMAT = "unknown format";
 export const ERR_INVALID_BYTE_SIZE = "invalid byte size";
-

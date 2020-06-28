@@ -21,7 +21,7 @@ export function secp256k1PublicKeyToRaw(publicKey: Buffer): Buffer {
 }
 
 export const Secp256k1Keypair: IKeypairClass = class Secp256k1Keypair extends AbstractKeypair implements IKeypair {
-  readonly type:  KeypairType;
+  readonly type: KeypairType;
 
   constructor(privateKey?: Buffer, publicKey?: Buffer) {
     let pub = publicKey;

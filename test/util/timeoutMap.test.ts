@@ -8,7 +8,7 @@ describe("TimeoutMap", () => {
     const timeout = 15;
     const map = new TimeoutMap(timeout);
     map.set("foo", "bar");
-    await new Promise(resolve => setTimeout(resolve, timeout + 1));
+    await new Promise((resolve) => setTimeout(resolve, timeout + 1));
     expect(map.size).to.equal(0);
   });
   it("should call onTimeout after a timeout", async function () {
@@ -20,7 +20,7 @@ describe("TimeoutMap", () => {
       callbackCalled = true;
     });
     map.set("foo", "bar");
-    await new Promise(resolve => setTimeout(resolve, timeout + 1));
+    await new Promise((resolve) => setTimeout(resolve, timeout + 1));
     expect(map.size).to.equal(0);
     expect(callbackCalled).to.equal(true);
   });
@@ -29,10 +29,9 @@ describe("TimeoutMap", () => {
     const map = new TimeoutMap(timeout);
     map.set("foo", "bar");
     map.setTimeout("foo", timeout * 2);
-    await new Promise(resolve => setTimeout(resolve, timeout));
+    await new Promise((resolve) => setTimeout(resolve, timeout));
     expect(map.size).to.equal(1);
-    await new Promise(resolve => setTimeout(resolve, timeout + 1));
+    await new Promise((resolve) => setTimeout(resolve, timeout + 1));
     expect(map.size).to.equal(0);
   });
 });
-

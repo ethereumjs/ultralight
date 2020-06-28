@@ -3,8 +3,7 @@ import { EventEmitter } from "events";
 import { ENR, NodeId } from "../enr";
 import { BucketEventEmitter, EntryStatus, IEntry, IEntryFull } from "./types";
 
-
-export class Bucket extends (EventEmitter as { new(): BucketEventEmitter }) {
+export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
   private k: number;
   /**
    * Entries ordered from least-recently connected to most-recently connected
@@ -27,7 +26,7 @@ export class Bucket extends (EventEmitter as { new(): BucketEventEmitter }) {
   clear(): void {
     this.bucket = [];
     this.pending = undefined;
-    clearTimeout(this.pendingTimeoutId as unknown as NodeJS.Timeout);
+    clearTimeout((this.pendingTimeoutId as unknown) as NodeJS.Timeout);
   }
 
   /**
@@ -68,7 +67,7 @@ export class Bucket extends (EventEmitter as { new(): BucketEventEmitter }) {
 
   addConnected(value: ENR): boolean {
     if (this.bucket.length < this.k) {
-      this.bucket.push({value, status: EntryStatus.Connected});
+      this.bucket.push({ value, status: EntryStatus.Connected });
       return true;
     }
     // attempt to add a pending node
@@ -81,10 +80,10 @@ export class Bucket extends (EventEmitter as { new(): BucketEventEmitter }) {
     if (this.bucket.length < this.k) {
       if (firstConnected === -1) {
         // No connected nodes, add to the end
-        this.bucket.push({value, status: EntryStatus.Disconnected});
+        this.bucket.push({ value, status: EntryStatus.Disconnected });
       } else {
         // add before the first connected node
-        this.bucket.splice(firstConnected, 0, {value, status: EntryStatus.Disconnected});
+        this.bucket.splice(firstConnected, 0, { value, status: EntryStatus.Disconnected });
       }
       return true;
     }

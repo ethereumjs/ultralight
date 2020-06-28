@@ -21,8 +21,8 @@ export class ENR extends Map<ENRKey, ENRValue> {
   static createV4(publicKey: Buffer, kvs: Record<ENRKey, ENRValue> = {}): ENR {
     return new ENR({
       ...kvs,
-      "id": Buffer.from("v4"),
-      "secp256k1": publicKey,
+      id: Buffer.from("v4"),
+      secp256k1: publicKey,
     });
   }
   static createFromPeerId(peerId: PeerId, kvs: Record<ENRKey, ENRValue> = {}): ENR {
@@ -53,7 +53,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     return enr;
   }
   static decode(encoded: Buffer): ENR {
-    const decoded = RLP.decode(encoded) as unknown as Buffer[];
+    const decoded = (RLP.decode(encoded) as unknown) as Buffer[];
     return ENR.decodeFromValues(decoded);
   }
   static decodeTxt(encoded: string): ENR {
@@ -114,7 +114,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (ip6) {
       const udp6 = this.get("udp6");
       if (udp6) {
-        const ip6Str = Array.from(Uint16Array.from(ip6)).map((n) => n.toString(16)).join(":");
+        const ip6Str = Array.from(Uint16Array.from(ip6))
+          .map((n) => n.toString(16))
+          .join(":");
         return Multiaddr(`/ip6/${ip6Str}/udp/${udp6.readUInt16BE(0)}`);
       }
     }
@@ -152,7 +154,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (ip6) {
       const tcp6 = this.get("tcp6");
       if (tcp6) {
-        const ip6Str = Array.from(Uint16Array.from(ip6)).map((n) => n.toString(16)).join(":");
+        const ip6Str = Array.from(Uint16Array.from(ip6))
+          .map((n) => n.toString(16))
+          .join(":");
         return Multiaddr(`/ip6/${ip6Str}/tcp/${tcp6.readUInt16BE(0)}`);
       }
     }
@@ -175,7 +179,6 @@ export class ENR extends Map<ENRKey, ENRValue> {
       this.set("ip6", tuples[0][1]);
       this.set("tcp6", tuples[1][1]);
     }
-
   }
   verify(data: Buffer, signature: Buffer): boolean {
     if (!this.get("id") || this.id !== "v4") {
@@ -200,7 +203,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     // sort keys and flatten into [k, v, k, v, ...]
     const content: Array<ENRKey | ENRValue | number> = Array.from(this.keys())
       .sort((a, b) => a.localeCompare(b))
-      .map((k) => ([k, this.get(k)] as [ENRKey, ENRValue]))
+      .map((k) => [k, this.get(k)] as [ENRKey, ENRValue])
       .flat();
     content.unshift(Number(this.seq));
     if (privateKey) {

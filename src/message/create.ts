@@ -4,7 +4,6 @@ import { toBigIntBE } from "bigint-buffer";
 import { RequestId, IPingMessage, MessageType, IPongMessage, IFindNodeMessage, INodesMessage } from "./types";
 import { SequenceNumber, ENR } from "../enr";
 
-
 export function createRequestId(): RequestId {
   return toBigIntBE(randomBytes(8));
 }

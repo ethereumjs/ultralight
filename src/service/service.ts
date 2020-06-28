@@ -10,11 +10,28 @@ import { REQUEST_TIMEOUT, SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
 import { IKeypair, createKeypairFromPeerId, createPeerIdFromKeypair } from "../keypair";
 import {
-  EntryStatus, KademliaRoutingTable, ILookupConfig, log2Distance, ILookupPeer, findNodeLog2Distance, Lookup,
+  EntryStatus,
+  KademliaRoutingTable,
+  ILookupConfig,
+  log2Distance,
+  ILookupPeer,
+  findNodeLog2Distance,
+  Lookup,
 } from "../kademlia";
 import {
-  Message, RequestMessage, ResponseMessage, createPingMessage, createFindNodeMessage, createNodesMessage, MessageType,
-  IFindNodeMessage, INodesMessage, IPongMessage, IPingMessage, requestMatchesResponse, createPongMessage,
+  Message,
+  RequestMessage,
+  ResponseMessage,
+  createPingMessage,
+  createFindNodeMessage,
+  createNodesMessage,
+  MessageType,
+  IFindNodeMessage,
+  INodesMessage,
+  IPongMessage,
+  IPingMessage,
+  requestMatchesResponse,
+  createPongMessage,
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
@@ -47,8 +64,7 @@ const log = debug("discv5:service");
  *
  * Additionally, the service offers events when peers are added to the peer table or discovered via lookup.
  */
-export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
-
+export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   private started = false;
   /**
    * Session service that establishes sessions with peers
@@ -102,15 +118,13 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * Default constructor.
    * @param sessionService the service managing sessions underneath.
    */
-  constructor(
-    sessionService: SessionService,
-  ) {
+  constructor(sessionService: SessionService) {
     super();
     this.sessionService = sessionService;
     this.kbuckets = new KademliaRoutingTable(this.sessionService.enr.nodeId, 16);
     this.activeLookups = new Map();
-    this.activeRequests = new TimeoutMap(REQUEST_TIMEOUT,
-      (requestId, activeRequest) => this.onActiveRequestFailed(activeRequest)
+    this.activeRequests = new TimeoutMap(REQUEST_TIMEOUT, (requestId, activeRequest) =>
+      this.onActiveRequestFailed(activeRequest)
     );
     this.activeNodesResponses = new Map();
     this.connectedPeers = new Map();
@@ -129,11 +143,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * @param peerId the PeerId with the keypair that identifies the enr
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
-  public static create(
-    enr: ENRInput,
-    peerId: PeerId,
-    multiaddr: Multiaddr,
-  ): Discv5 {
+  public static create(enr: ENRInput, peerId: PeerId, multiaddr: Multiaddr): Discv5 {
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
     const magic = createMagic(decodedEnr.nodeId);
     const udpTransport = new UDPTransportService(multiaddr, magic);
@@ -258,22 +268,13 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
 
     const knownClosestPeers = this.kbuckets.nearest(target, 16).map((enr) => enr.nodeId);
-    const lookup = new Lookup(
-      this.lookupConfig,
-      target,
-      3,
-      knownClosestPeers,
-    );
+    const lookup = new Lookup(this.lookupConfig, target, 3, knownClosestPeers);
     this.activeLookups.set(lookupId, lookup);
     return await new Promise((resolve) => {
       lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
       lookup.on("finished", (closest: NodeId[]) => {
         log("Lookup Id: %d finished, %d total found", lookupId, closest.length);
-        resolve(
-          closest
-            .map((nodeId) => this.findEnr(nodeId) as ENR)
-            .filter((enr) => enr)
-        );
+        resolve(closest.map((nodeId) => this.findEnr(nodeId) as ENR).filter((enr) => enr));
         this.activeLookups.delete(lookupId);
       });
 
@@ -291,7 +292,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   }
 
   private pingConnectedPeers(): void {
-    for(const id of this.connectedPeers.keys()) {
+    for (const id of this.connectedPeers.keys()) {
       this.sendPing(id);
     }
   }
@@ -308,7 +309,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       const message = createFindNodeMessage(0);
       this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
       this.activeRequests.set(message.id, { request: message, dstId: nodeId });
-    } catch(e) {
+    } catch (e) {
       log("Requesting ENR failed. Error: %s", e.message);
     }
   }
@@ -440,7 +441,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
           }
         }
         log("%d peers found for lookup Id: %d, Node: %s", others.length, lookupId, srcId);
-        lookup.onSuccess(srcId, others.map((enr) => enr.nodeId));
+        lookup.onSuccess(
+          srcId,
+          others.map((enr) => enr.nodeId)
+        );
       }
     }
   }
@@ -518,10 +522,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     );
     const currentAddr = this.enr.multiaddrUDP;
     const votedAddr = this.addrVotes.best(currentAddr);
-    if (
-      (currentAddr && votedAddr && !votedAddr.equals(currentAddr)) ||
-      (!currentAddr && votedAddr)
-    ) {
+    if ((currentAddr && votedAddr && !votedAddr.equals(currentAddr)) || (!currentAddr && votedAddr)) {
       log("Local ENR (IP & UDP) updated: %s", votedAddr);
       this.enr.multiaddrUDP = votedAddr;
       this.emit("multiaddrUpdated", votedAddr);
@@ -621,10 +622,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       // Have received all the Nodes responses we are willing to accept
       message.enrs.push(...currentResponse.enrs);
     }
-    log(
-      "Received NODES response of length: %d, total: %d, from node: %s",
-      message.enrs.length, message.total, srcId
-    );
+    log("Received NODES response of length: %d, total: %d, from node: %s", message.enrs.length, message.total, srcId);
 
     this.activeNodesResponses.delete(message.id);
 
@@ -635,14 +633,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // Check what our latest known ENR is for this node
     const enr = this.findEnr(srcId);
     if (enr) {
-      this.sessionService.sendWhoAreYou(
-        src, srcId, enr.seq, enr, authTag,
-      );
+      this.sessionService.sendWhoAreYou(src, srcId, enr.seq, enr, authTag);
     } else {
       log("Node unknown, requesting ENR. Node: %s", srcId);
-      this.sessionService.sendWhoAreYou(
-        src, srcId, 0n, null, authTag,
-      );
+      this.sessionService.sendWhoAreYou(src, srcId, 0n, null, authTag);
     }
   };
 

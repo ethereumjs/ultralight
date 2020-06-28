@@ -38,7 +38,7 @@ export function decode(data: Buffer, magic: Magic): Packet {
   }
   const tag = data.slice(0, TAG_LENGTH);
   data = data.slice(TAG_LENGTH);
-  const decoded = RLP.decode(data, true) as unknown as RLP.Decoded;
+  const decoded = (RLP.decode(data, true) as unknown) as RLP.Decoded;
   // data looks like either:
   //   magic ++ rlp_list(...)
   //   tag   ++ rlp_bytes(...) ++ message
@@ -57,10 +57,7 @@ export function decodeWhoAreYou(magic: Magic, data: Buffer[], remainder: Buffer)
     throw new Error(ERR_UNKNOWN_FORMAT);
   }
   const [token, idNonce, enrSeqBytes] = data;
-  if (
-    idNonce.length !== ID_NONCE_LENGTH ||
-    token.length !== AUTH_TAG_LENGTH
-  ) {
+  if (idNonce.length !== ID_NONCE_LENGTH || token.length !== AUTH_TAG_LENGTH) {
     throw new Error(ERR_INVALID_BYTE_SIZE);
   }
   const enrSeq = enrSeqBytes.length ? Number(`0x${enrSeqBytes.toString("hex")}`) : 0;
@@ -87,13 +84,7 @@ export function decodeAuthHeader(tag: Tag, data: Buffer[], remainder: Buffer): I
   if (!Array.isArray(data) || data.length !== 5) {
     throw new Error(ERR_UNKNOWN_FORMAT);
   }
-  const [
-    authTag,
-    idNonce,
-    authSchemeNameBytes,
-    ephemeralPubkey,
-    authResponse,
-  ] = data;
+  const [authTag, idNonce, authSchemeNameBytes, ephemeralPubkey, authResponse] = data;
   return {
     type: PacketType.AuthMessage,
     tag,
@@ -109,12 +100,8 @@ export function decodeAuthHeader(tag: Tag, data: Buffer[], remainder: Buffer): I
 }
 
 export function decodeAuthResponse(data: Buffer): IAuthResponse {
-  const responseRaw = RLP.decode(data) as unknown as RLP.Decoded;
-  if (
-    !Array.isArray(responseRaw) ||
-    responseRaw.length !== 3 ||
-    !Array.isArray(responseRaw[2])
-  ) {
+  const responseRaw = (RLP.decode(data) as unknown) as RLP.Decoded;
+  if (!Array.isArray(responseRaw) || responseRaw.length !== 3 || !Array.isArray(responseRaw[2])) {
     throw new Error(ERR_UNKNOWN_FORMAT);
   }
   const response: IAuthResponse = {

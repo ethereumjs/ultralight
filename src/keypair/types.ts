@@ -16,7 +16,7 @@ export interface IKeypair {
 }
 
 export interface IKeypairClass {
-  new(privateKey?: Buffer, publicKey?: Buffer): IKeypair;
+  new (privateKey?: Buffer, publicKey?: Buffer): IKeypair;
   generate(): IKeypair;
 }
 
@@ -24,16 +24,10 @@ export abstract class AbstractKeypair {
   readonly _privateKey?: Buffer;
   readonly _publicKey?: Buffer;
   constructor(privateKey?: Buffer, publicKey?: Buffer) {
-    if (
-      (this._privateKey = privateKey) &&
-      !this.privateKeyVerify()
-    ) {
+    if ((this._privateKey = privateKey) && !this.privateKeyVerify()) {
       throw new Error("Invalid private key");
     }
-    if (
-      (this._publicKey = publicKey) &&
-      !this.publicKeyVerify()
-    ) {
+    if ((this._publicKey = publicKey) && !this.publicKeyVerify()) {
       throw new Error("Invalid private key");
     }
   }

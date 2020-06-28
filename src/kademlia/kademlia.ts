@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 
 import { Bucket } from "./bucket";
-import { EntryStatus, IEntryFull, BucketEventEmitter }  from "./types";
+import { EntryStatus, IEntryFull, BucketEventEmitter } from "./types";
 import { NodeId, ENR } from "../enr";
 import { NUM_BUCKETS, PENDING_TIMEOUT } from "./constants";
 import { log2Distance } from "./util";
@@ -15,8 +15,7 @@ import { log2Distance } from "./util";
  * take the place of the oldest disconnected entry in the bucket
  * or be dropped after a timeout.
  */
-export class KademliaRoutingTable extends (EventEmitter as { new(): BucketEventEmitter }) {
-
+export class KademliaRoutingTable extends (EventEmitter as { new (): BucketEventEmitter }) {
   localId: NodeId;
   k: number;
   size: number;
@@ -94,7 +93,6 @@ export class KademliaRoutingTable extends (EventEmitter as { new(): BucketEventE
     return bucket.update(value, status);
   }
 
-
   /**
    * Gets the ENR if stored, does not include pending values
    */
@@ -113,7 +111,7 @@ export class KademliaRoutingTable extends (EventEmitter as { new(): BucketEventE
 
   nearest(id: NodeId, limit: number): ENR[] {
     const results: ENR[] = [];
-    this.buckets.forEach(bucket => {
+    this.buckets.forEach((bucket) => {
       results.push(...bucket.values());
     });
     results.sort((a, b) => {
@@ -129,13 +127,13 @@ export class KademliaRoutingTable extends (EventEmitter as { new(): BucketEventE
 
   values(): ENR[] {
     return this.buckets
-      .filter(bucket => !bucket.isEmpty())
-      .map(bucket => bucket.values())
+      .filter((bucket) => !bucket.isEmpty())
+      .map((bucket) => bucket.values())
       .flat();
   }
 
   random(): ENR | undefined {
-    const nonEmptyBuckets = this.buckets.filter(bucket => !bucket.isEmpty());
+    const nonEmptyBuckets = this.buckets.filter((bucket) => !bucket.isEmpty());
     if (nonEmptyBuckets.length == 0) {
       return undefined;
     }
