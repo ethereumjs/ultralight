@@ -52,7 +52,7 @@ export class AddrVotes {
     const tiebreakerStr = tiebreaker.toString();
     let best: [string, number] = [tiebreakerStr, this.tallies[tiebreakerStr]];
     for (const [addrStr, total] of Object.entries(this.tallies)) {
-      if (total >  best[1]) {
+      if (total > best[1]) {
         best = [addrStr, total];
       }
     }

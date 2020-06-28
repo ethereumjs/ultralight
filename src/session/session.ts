@@ -81,7 +81,7 @@ export class Session {
    * The delay when this session expires
    */
   timeout: number;
-  constructor({state, trusted, remoteEnr, lastSeenMultiaddr}: ISessionOpts) {
+  constructor({ state, trusted, remoteEnr, lastSeenMultiaddr }: ISessionOpts) {
     this.state = state;
     this.trusted = trusted;
     this.remoteEnr = remoteEnr;
@@ -96,7 +96,7 @@ export class Session {
   static createWithRandom(tag: Tag, remoteEnr: ENR): [Session, IRandomPacket] {
     return [
       new Session({
-        state: {state: SessionState.RandomSent},
+        state: { state: SessionState.RandomSent },
         trusted: TrustedState.Untrusted,
         remoteEnr,
         lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
@@ -117,7 +117,7 @@ export class Session {
   ): [Session, IWhoAreYouPacket] {
     return [
       new Session({
-        state: {state: SessionState.WhoAreYouSent},
+        state: { state: SessionState.WhoAreYouSent },
         trusted: TrustedState.Untrusted,
         remoteEnr: remoteEnr as ENR,
         lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
@@ -138,16 +138,14 @@ export class Session {
     idNonce: Nonce,
     authHeader: IAuthHeader
   ): boolean {
-    const [
-      decryptionKey, encryptionKey, authRespKey,
-    ] = deriveKeysFromPubkey(
+    const [decryptionKey, encryptionKey, authRespKey] = deriveKeysFromPubkey(
       kpriv,
       localId,
       remoteId,
       idNonce,
       authHeader.ephemeralPubkey
     );
-    const keys =  { encryptionKey, decryptionKey, authRespKey };
+    const keys = { encryptionKey, decryptionKey, authRespKey };
     const authResponse = decryptAuthHeader(keys.authRespKey, authHeader);
 
     // update ENR if applicable
@@ -155,7 +153,7 @@ export class Session {
       if (this.remoteEnr) {
         if (this.remoteEnr.seq < authResponse.nodeRecord.seq) {
           this.remoteEnr = authResponse.nodeRecord;
-        }// else don't update
+        } // else don't update
       } else {
         this.remoteEnr = authResponse.nodeRecord;
       }
@@ -164,12 +162,7 @@ export class Session {
     if (!this.remoteEnr) {
       throw new Error(ERR_NO_ENR);
     }
-    if (!verifyNonce(
-      this.remoteEnr.keypair,
-      idNonce,
-      authHeader.ephemeralPubkey,
-      authResponse.signature
-    )) {
+    if (!verifyNonce(this.remoteEnr.keypair, idNonce, authHeader.ephemeralPubkey, authResponse.signature)) {
       throw new Error(ERR_INVALID_SIG);
     }
 
@@ -196,28 +189,21 @@ export class Session {
       throw new Error(ERR_NO_ENR);
     }
     // generate session keys
-    const [
-      encryptionKey, decryptionKey, authRespKey, ephemeralPubkey,
-    ] = generateSessionKeys(localNodeId, this.remoteEnr as ENR, idNonce);
+    const [encryptionKey, decryptionKey, authRespKey, ephemeralPubkey] = generateSessionKeys(
+      localNodeId,
+      this.remoteEnr as ENR,
+      idNonce
+    );
     const keys = { encryptionKey, decryptionKey, authRespKey };
     // create auth header
     const signature = signNonce(kpriv, idNonce, ephemeralPubkey);
     const authHeader = createAuthHeader(
       idNonce,
       ephemeralPubkey,
-      encryptAuthResponse(
-        keys.authRespKey,
-        createAuthResponse(signature, updatedEnr as ENR),
-        kpriv.privateKey
-      )
+      encryptAuthResponse(keys.authRespKey, createAuthResponse(signature, updatedEnr as ENR), kpriv.privateKey)
     );
     // encrypt the message
-    const messageCiphertext = encryptMessage(
-      keys.encryptionKey,
-      authHeader.authTag,
-      message,
-      tag
-    );
+    const messageCiphertext = encryptMessage(keys.encryptionKey, authHeader.authTag, message, tag);
     // update session state
     switch (this.state.state) {
       case SessionState.Established:
@@ -255,12 +241,7 @@ export class Session {
     switch (this.state.state) {
       case SessionState.Established:
       case SessionState.EstablishedAwaitingResponse:
-        ciphertext = encryptMessage(
-          this.state.currentKeys.encryptionKey,
-          authTag,
-          message,
-          tag
-        );
+        ciphertext = encryptMessage(this.state.currentKeys.encryptionKey, authTag, message, tag);
         break;
       default:
         throw new Error("Session not established");
@@ -288,31 +269,16 @@ export class Session {
     switch (this.state.state) {
       case SessionState.AwaitingResponse:
       case SessionState.Established:
-        result = decryptMessage(
-          this.state.currentKeys.decryptionKey,
-          nonce,
-          message,
-          aad
-        );
+        result = decryptMessage(this.state.currentKeys.decryptionKey, nonce, message, aad);
         keys = this.state.currentKeys;
         break;
       case SessionState.EstablishedAwaitingResponse:
         // first try current keys, then new keys
         try {
-          result = decryptMessage(
-            this.state.currentKeys.decryptionKey,
-            nonce,
-            message,
-            aad
-          );
+          result = decryptMessage(this.state.currentKeys.decryptionKey, nonce, message, aad);
           keys = this.state.currentKeys;
         } catch (e) {
-          result = decryptMessage(
-            this.state.newKeys.decryptionKey,
-            nonce,
-            message,
-            aad
-          );
+          result = decryptMessage(this.state.newKeys.decryptionKey, nonce, message, aad);
           keys = this.state.newKeys;
         }
         break;

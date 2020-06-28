@@ -3,7 +3,7 @@ import { KademliaRoutingTable } from "../../src/kademlia/kademlia";
 import { expect } from "chai";
 import { ENR, v4, createNodeId } from "../../src/enr";
 
-describe("Kademlia routing table",  () => {
+describe("Kademlia routing table", () => {
   const nodeId = createNodeId(Buffer.alloc(32));
   it("should throw an error if the number of buckets is zero or negative", () => {
     expect(() => new KademliaRoutingTable(nodeId, 0)).throw("k must be positive");

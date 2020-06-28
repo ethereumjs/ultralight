@@ -36,20 +36,18 @@ export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: No
   const remoteKeypair = remoteEnr.keypair;
   const ephemKeypair = generateKeypair(remoteKeypair.type);
   const secret = ephemKeypair.deriveSecret(remoteKeypair);
-  return [
-    ...deriveKey(secret, localId, remoteEnr.nodeId, idNonce),
-    ephemKeypair.publicKey,
-  ] as [Buffer, Buffer, Buffer, Buffer];
+  return [...deriveKey(secret, localId, remoteEnr.nodeId, idNonce), ephemKeypair.publicKey] as [
+    Buffer,
+    Buffer,
+    Buffer,
+    Buffer
+  ];
 }
 
 export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): [Buffer, Buffer, Buffer] {
   const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), fromHex(firstId), fromHex(secondId)]);
   const output = hkdf.expand(sha256, hkdf.extract(sha256, secret, idNonce), info, 3 * KEY_LENGTH);
-  return [
-    output.slice(0, KEY_LENGTH),
-    output.slice(KEY_LENGTH, 2 * KEY_LENGTH),
-    output.slice(2 * KEY_LENGTH),
-  ];
+  return [output.slice(0, KEY_LENGTH), output.slice(KEY_LENGTH, 2 * KEY_LENGTH), output.slice(2 * KEY_LENGTH)];
 }
 
 export function deriveKeysFromPubkey(
@@ -57,30 +55,21 @@ export function deriveKeysFromPubkey(
   localId: NodeId,
   remoteId: NodeId,
   idNonce: Nonce,
-  ephemPK: Buffer,
-): [Buffer,Buffer, Buffer] {
+  ephemPK: Buffer
+): [Buffer, Buffer, Buffer] {
   const secret = kpriv.deriveSecret(createKeypair(kpriv.type, undefined, ephemPK));
   return deriveKey(secret, remoteId, localId, idNonce);
 }
 
 // Generates a signature of a nonce given a keypair. This prefixes the `NONCE_PREFIX` to the
 // signature.
-export function signNonce(
-  kpriv: IKeypair,
-  idNonce: Nonce,
-  ephemPK: Buffer
-): Buffer {
+export function signNonce(kpriv: IKeypair, idNonce: Nonce, ephemPK: Buffer): Buffer {
   const signingNonce = generateSigningNonce(idNonce, ephemPK);
   return kpriv.sign(signingNonce);
 }
 
 // Verifies the authentication header nonce.
-export function verifyNonce(
-  kpub: IKeypair,
-  idNonce: Nonce,
-  remoteEphemPK: Buffer,
-  sig: Buffer
-): boolean {
+export function verifyNonce(kpub: IKeypair, idNonce: Nonce, remoteEphemPK: Buffer, sig: Buffer): boolean {
   const signingNonce = generateSigningNonce(idNonce, remoteEphemPK);
   return kpub.verify(signingNonce, sig);
 }
@@ -89,11 +78,7 @@ export function generateSigningNonce(idNonce: Nonce, ephemPK: Buffer): Buffer {
   return sha256.digest(Buffer.concat([Buffer.from(NONCE_PREFIX), idNonce, ephemPK]));
 }
 
-export function encryptAuthResponse(
-  authRespKey: Buffer,
-  authResp: IAuthResponse,
-  enrPrivateKey: Buffer,
-): Buffer {
+export function encryptAuthResponse(authRespKey: Buffer, authResp: IAuthResponse, enrPrivateKey: Buffer): Buffer {
   return encryptMessage(
     authRespKey,
     Buffer.alloc(AUTH_TAG_LENGTH),
@@ -107,11 +92,7 @@ export function decryptAuthHeader(authRespKey: Buffer, header: IAuthHeader): IAu
     throw new Error(`auth header scheme name must be: ${KNOWN_SCHEME}, found: ${header.authSchemeName}`);
   }
   return decodeAuthResponse(
-    decryptMessage(
-      authRespKey,
-      Buffer.alloc(AUTH_TAG_LENGTH),
-      header.authResponse,
-      Buffer.alloc(0))
+    decryptMessage(authRespKey, Buffer.alloc(AUTH_TAG_LENGTH), header.authResponse, Buffer.alloc(0))
   );
 }
 

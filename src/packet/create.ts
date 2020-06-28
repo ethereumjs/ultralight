@@ -19,11 +19,7 @@ export function createMagic(nodeId: NodeId): Buffer {
   return sha256.digest(Buffer.concat([fromHex(nodeId), Buffer.from(WHOAREYOU_STRING, "utf-8")]));
 }
 
-export function createWhoAreYouPacket(
-  nodeId: NodeId,
-  authTag: AuthTag,
-  enrSeq: SequenceNumber
-): IWhoAreYouPacket {
+export function createWhoAreYouPacket(nodeId: NodeId, authTag: AuthTag, enrSeq: SequenceNumber): IWhoAreYouPacket {
   return {
     type: PacketType.WhoAreYou,
     magic: createMagic(nodeId),

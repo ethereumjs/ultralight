@@ -22,46 +22,25 @@ export function encode(packet: Packet): Buffer {
 }
 
 export function encodeAuthHeader(h: IAuthHeader): Buffer {
-  return RLP.encode([
-    h.authTag,
-    h.idNonce,
-    h.authSchemeName,
-    h.ephemeralPubkey,
-    h.authResponse,
-  ]);
+  return RLP.encode([h.authTag, h.idNonce, h.authSchemeName, h.ephemeralPubkey, h.authResponse]);
 }
 
 function encodeWhoAreYouPacket(p: IWhoAreYouPacket): Buffer {
-  return Buffer.concat([
-    p.magic,
-    RLP.encode([
-      p.token,
-      p.idNonce,
-      p.enrSeq,
-    ]),
-  ]);
+  return Buffer.concat([p.magic, RLP.encode([p.token, p.idNonce, p.enrSeq])]);
 }
 
 function encodeAuthMessagePacket(p: IAuthMessagePacket): Buffer {
-  return Buffer.concat([
-    p.tag,
-    encodeAuthHeader(p.authHeader),
-    p.message,
-  ]);
+  return Buffer.concat([p.tag, encodeAuthHeader(p.authHeader), p.message]);
 }
 
 function encodeMessagePacket(p: IMessagePacket): Buffer {
-  return Buffer.concat([
-    p.tag,
-    RLP.encode(p.authTag),
-    p.message,
-  ]);
+  return Buffer.concat([p.tag, RLP.encode(p.authTag), p.message]);
 }
 
 export function encodeAuthResponse(authResponse: IAuthResponse, privateKey: Buffer): Buffer {
   return RLP.encode([
     authResponse.version,
     authResponse.signature,
-    authResponse.nodeRecord ? authResponse.nodeRecord.encodeToValues(privateKey) : []
+    authResponse.nodeRecord ? authResponse.nodeRecord.encodeToValues(privateKey) : [],
   ]);
 }

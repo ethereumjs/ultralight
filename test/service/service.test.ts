@@ -27,8 +27,7 @@ describe("Discv5", async () => {
     await service0.stop();
   });
 
-  it("should start and stop", async () => {
-  });
+  it("should start and stop", async () => {});
 
   it("should allow to pick a port and network interface as a multiaddr", async () => {
     expect(service0.bindAddress.toString()).eq(mu0.toString());
@@ -52,7 +51,7 @@ describe("Discv5", async () => {
     enr1.encode(kp1.privateKey);
     const service1 = Discv5.create(enr1, peerId1, mu1);
     await service1.start();
-    for (let i =0; i < 100; i++) {
+    for (let i = 0; i < 100; i++) {
       const kp = generateKeypair(KeypairType.secp256k1);
       const enr = ENR.createV4(kp.publicKey);
       enr.encode(kp.privateKey);

@@ -2,8 +2,8 @@
 import { expect } from "chai";
 import Multiaddr = require("multiaddr");
 
-import {PacketType, TAG_LENGTH, AUTH_TAG_LENGTH, MAGIC_LENGTH, IMessagePacket} from "../../src/packet";
-import {UDPTransportService} from "../../src/transport";
+import { PacketType, TAG_LENGTH, AUTH_TAG_LENGTH, MAGIC_LENGTH, IMessagePacket } from "../../src/packet";
+import { UDPTransportService } from "../../src/transport";
 
 describe("UDP transport", () => {
   const address = "127.0.0.1";
@@ -34,13 +34,8 @@ describe("UDP transport", () => {
       authTag: Buffer.alloc(AUTH_TAG_LENGTH),
       message: Buffer.alloc(44, 1),
     };
-    const received = new Promise((resolve) =>
-      a.once("packet", (sender, packet) =>
-        resolve([sender, packet])));
-    await b.send(
-      multiaddrA,
-      messagePacket,
-    );
+    const received = new Promise((resolve) => a.once("packet", (sender, packet) => resolve([sender, packet])));
+    await b.send(multiaddrA, messagePacket);
     // @ts-ignore
     const [rSender, rPacket] = await received;
     expect(rSender.toString()).to.deep.equal(multiaddrB.toString());

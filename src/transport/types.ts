@@ -2,9 +2,7 @@ import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
 import Multiaddr = require("multiaddr");
 
-import {
-  Packet,
-} from "../packet";
+import { Packet } from "../packet";
 
 export interface ISocketAddr {
   port: number;

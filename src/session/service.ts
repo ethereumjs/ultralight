@@ -5,7 +5,14 @@ import Multiaddr = require("multiaddr");
 
 import { ITransportService } from "../transport";
 import {
-  PacketType, Packet, IWhoAreYouPacket, IAuthMessagePacket, IMessagePacket, AuthTag, createTag, createSrcId,
+  PacketType,
+  Packet,
+  IWhoAreYouPacket,
+  IAuthMessagePacket,
+  IMessagePacket,
+  AuthTag,
+  createTag,
+  createSrcId,
 } from "../packet";
 import { ENR, NodeId } from "../enr";
 import { Session } from "./session";
@@ -34,7 +41,7 @@ const log = debug("discv5:sessionService");
  * to match the source, the `Session` is promoted to an established state. RPC requests are not sent
  * to untrusted Sessions, only responses.
  */
-export class SessionService extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, ISessionEvents> }) {
+export class SessionService extends (EventEmitter as { new (): StrictEventEmitter<EventEmitter, ISessionEvents> }) {
   /**
    * The local ENR
    */
@@ -208,18 +215,19 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       log(
         "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
         src,
-        packet.token.toString("hex"),
+        packet.token.toString("hex")
       );
       return;
     }
     const request = Array.from(pendingRequests.values()).find((r) =>
-      packet.token.equals((r.packet as IMessagePacket).authTag || Buffer.alloc(0)));
+      packet.token.equals((r.packet as IMessagePacket).authTag || Buffer.alloc(0))
+    );
     if (!request) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
         "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
         src,
-        packet.token.toString("hex"),
+        packet.token.toString("hex")
       );
       return;
     }
@@ -328,8 +336,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
       return;
     }
-    const request = Array.from(pendingRequests.values()).find((r) =>
-      r.packet.type === PacketType.WhoAreYou && r.dstId === srcId
+    const request = Array.from(pendingRequests.values()).find(
+      (r) => r.packet.type === PacketType.WhoAreYou && r.dstId === srcId
     );
     if (!request) {
       log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
@@ -347,13 +355,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
 
     // establish the session
     try {
-      const trusted = session.establishFromHeader(
-        this.keypair,
-        this.enr.nodeId,
-        srcId,
-        idNonce,
-        packet.authHeader
-      );
+      const trusted = session.establishFromHeader(this.keypair, this.enr.nodeId, srcId, idNonce, packet.authHeader);
       if (trusted) {
         log("Session established with node from header: %s", srcId);
         // session is trusted, notify the protocol
@@ -373,15 +375,12 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.sessions.setTimeout(srcId, SESSION_TIMEOUT);
 
     // decrypt the message
-    this.onMessage(
-      src,
-      {
-        type: PacketType.Message,
-        authTag: packet.authHeader.authTag,
-        message: packet.message,
-        tag: packet.tag,
-      }
-    );
+    this.onMessage(src, {
+      type: PacketType.Message,
+      authTag: packet.authHeader.authTag,
+      message: packet.message,
+      tag: packet.tag,
+    });
   }
 
   public onMessage(src: Multiaddr, packet: IMessagePacket): void {
@@ -529,8 +528,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
         const pendingMessages = this.pendingMessages.get(dstId);
         if (pendingMessages) {
           this.pendingMessages.delete(dstId);
-          pendingMessages.forEach((message) =>
-            this.emit("requestFailed", request.dstId, message.id));
+          pendingMessages.forEach((message) => this.emit("requestFailed", request.dstId, message.id));
         }
         // drop the session
         this.sessions.delete(dstId);
@@ -566,8 +564,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     }
     // No pending requests for nodeId
     // Fail all pending messages for this node
-    (this.pendingMessages.get(nodeId) || [])
-      .forEach((message) => this.emit("requestFailed", nodeId, message.id));
+    (this.pendingMessages.get(nodeId) || []).forEach((message) => this.emit("requestFailed", nodeId, message.id));
     this.pendingMessages.delete(nodeId);
     log("Session timed out for node: %s", nodeId);
   };
