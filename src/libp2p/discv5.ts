@@ -69,9 +69,13 @@ export class Discv5Discovery extends EventEmitter {
         return;
       }
       for (const enr of enrs) {
+        const multiaddrTCP = enr.multiaddrTCP;
+        if (!multiaddrTCP) {
+          continue;
+        }
         this.emit("peer", {
-          id: enr.peerId(),
-          multiaddrs: [Multiaddr(enr.multiaddrTCP)],
+          id: await enr.peerId(),
+          multiaddrs: [multiaddrTCP],
         });
       }
     }
