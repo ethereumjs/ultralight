@@ -1,3 +1,8 @@
+# 0.2.5 - (2020-07-06)
+
+### Bugfixes
+
+- Fix libp2p peer event ([489b89](https://github.com/ChainSafe/discv5/commit/489b89))
 # 0.2.4 - (2020-06-24)
 
 ### Chores
