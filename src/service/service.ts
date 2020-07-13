@@ -159,7 +159,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       log("Starting discv5 service failed -- already started");
       return;
     }
-    log("Starting discv5 service");
+    log(`Starting discv5 service with node id ${this.enr.nodeId}`);
     this.kbuckets.on("pendingEviction", this.onPendingEviction);
     this.kbuckets.on("appliedEviction", this.onAppliedEviction);
     this.sessionService.on("established", this.onEstablished);
