@@ -62,6 +62,9 @@ describe("ENR Multiformats support", () => {
     const tuples1 = multi1.tuples();
     expect(record.get("ip")).to.deep.equal(tuples1[0][1]);
     expect(record.get("udp")).to.deep.equal(tuples1[1][1]);
+    // unset multiaddrs
+    record.multiaddrUDP = undefined;
+    expect(record.multiaddrUDP).to.be.undefined;
   });
   it("should get / set TCP multiaddr", () => {
     const multi0 = Multiaddr("/ip4/127.0.0.1/tcp/30303");

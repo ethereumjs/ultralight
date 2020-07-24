@@ -103,7 +103,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get multiaddrUDP(): Multiaddr | undefined {
     // First try IPv4
     const ip4 = this.get("ip");
-    if (ip4) {
+    if (ip4 && ip4.length > 0) {
       const udp4 = this.get("udp");
       if (udp4) {
         return Multiaddr(`/ip4/${Array.from(ip4).join(".")}/udp/${udp4.readUInt16BE(0)}`);
@@ -111,7 +111,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     }
     // Then try IPv6
     const ip6 = this.get("ip6");
-    if (ip6) {
+    if (ip6 && ip6.length > 0) {
       const udp6 = this.get("udp6");
       if (udp6) {
         const ip6Str = Array.from(Uint16Array.from(ip6))
@@ -124,6 +124,10 @@ export class ENR extends Map<ENRKey, ENRValue> {
   }
   set multiaddrUDP(multiaddr: Multiaddr | undefined) {
     if (!multiaddr) {
+      this.delete("ip");
+      this.delete("udp");
+      this.delete("ip6");
+      this.delete("udp6");
       return;
     }
     const protoNames = multiaddr.protoNames();
@@ -164,6 +168,10 @@ export class ENR extends Map<ENRKey, ENRValue> {
   }
   set multiaddrTCP(multiaddr: Multiaddr | undefined) {
     if (!multiaddr) {
+      this.delete("ip");
+      this.delete("tcp");
+      this.delete("ip6");
+      this.delete("tcp6");
       return;
     }
     const protoNames = multiaddr.protoNames();
