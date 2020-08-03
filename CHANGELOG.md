@@ -1,8 +1,16 @@
+# 0.2.6 - (2020-08-03)
+
+### Bugfixes
+
+- Fix IPv4-as-IPv6 handling ([d8d0d1](https://github.com/ChainSafe/discv5/commit/d8d0d1))
+- Fix ethemeral pubkey encoding ([a774fc](https://github.com/ChainSafe/discv5/commit/a774fc))
+
 # 0.2.5 - (2020-07-06)
 
 ### Bugfixes
 
 - Fix libp2p peer event ([489b89](https://github.com/ChainSafe/discv5/commit/489b89))
+
 # 0.2.4 - (2020-06-24)
 
 ### Chores
