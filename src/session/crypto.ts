@@ -12,7 +12,7 @@ import {
   IAuthResponse,
   Nonce,
 } from "../packet";
-import { generateKeypair, IKeypair, createKeypair } from "../keypair";
+import { generateKeypair, IKeypair, createKeypair, KeypairType, secp256k1PublicKeyToRaw } from "../keypair";
 import { fromHex } from "../util";
 
 // Implementation for generating session keys in the Discv5 protocol.
@@ -36,12 +36,11 @@ export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: No
   const remoteKeypair = remoteEnr.keypair;
   const ephemKeypair = generateKeypair(remoteKeypair.type);
   const secret = ephemKeypair.deriveSecret(remoteKeypair);
-  return [...deriveKey(secret, localId, remoteEnr.nodeId, idNonce), ephemKeypair.publicKey] as [
-    Buffer,
-    Buffer,
-    Buffer,
-    Buffer
-  ];
+  const ephemPubkey =
+    remoteKeypair.type === KeypairType.secp256k1
+      ? secp256k1PublicKeyToRaw(ephemKeypair.publicKey)
+      : ephemKeypair.publicKey;
+  return [...deriveKey(secret, localId, remoteEnr.nodeId, idNonce), ephemPubkey] as [Buffer, Buffer, Buffer, Buffer];
 }
 
 export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): [Buffer, Buffer, Buffer] {
