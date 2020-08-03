@@ -1,6 +1,7 @@
 import * as RLP from "rlp";
 import { toString as ipBufferToString } from "multiaddr/src/ip";
 import { toBigIntBE } from "bigint-buffer";
+import * as ip6addr from "ip6addr";
 import {
   IPingMessage,
   IPongMessage,
@@ -58,11 +59,16 @@ function decodePong(data: Buffer): IPongMessage {
   if (!Array.isArray(rlpRaw) || rlpRaw.length !== 4) {
     throw new Error(ERR_INVALID_MESSAGE);
   }
+  let stringIpAddr = ipBufferToString(rlpRaw[2]);
+  const parsedIp = ip6addr.parse(stringIpAddr);
+  if (parsedIp.kind() === "ipv4") {
+    stringIpAddr = parsedIp.toString({ format: "v4" });
+  }
   return {
     type: MessageType.PONG,
     id: toBigIntBE(rlpRaw[0]),
     enrSeq: toBigIntBE(rlpRaw[1]),
-    recipientIp: ipBufferToString(rlpRaw[2]),
+    recipientIp: stringIpAddr,
     recipientPort: rlpRaw[3].length ? rlpRaw[3].readUIntBE(0, rlpRaw[3].length) : 0,
   };
 }
