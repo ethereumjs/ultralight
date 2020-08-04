@@ -4,7 +4,7 @@ import Multiaddr = require("multiaddr");
 import { randomBytes } from "libp2p-crypto";
 
 import { Discv5, ENRInput } from "../service";
-import { createNodeId } from "../enr";
+import { createNodeId, ENR } from "../enr";
 
 export interface IDiscv5DiscoveryInputOptions {
   /**
@@ -49,6 +49,7 @@ export class Discv5Discovery extends EventEmitter {
     }
     this.started = true;
     await this.discv5.start();
+    this.discv5.on("discovered", this.handleEnr);
     setTimeout(() => this.findPeers(), 1);
   }
 
@@ -57,6 +58,7 @@ export class Discv5Discovery extends EventEmitter {
       return;
     }
     this.started = false;
+    this.discv5.off("discovered", this.handleEnr);
     await this.discv5.stop();
   }
 
@@ -69,15 +71,19 @@ export class Discv5Discovery extends EventEmitter {
         return;
       }
       for (const enr of enrs) {
-        const multiaddrTCP = enr.multiaddrTCP;
-        if (!multiaddrTCP) {
-          continue;
-        }
-        this.emit("peer", {
-          id: await enr.peerId(),
-          multiaddrs: [multiaddrTCP],
-        });
+        await this.handleEnr(enr);
       }
     }
   }
+
+  handleEnr = async (enr: ENR): Promise<void> => {
+    const multiaddrTCP = enr.multiaddrTCP;
+    if (!multiaddrTCP) {
+      return;
+    }
+    this.emit("peer", {
+      id: await enr.peerId(),
+      multiaddrs: [multiaddrTCP],
+    });
+  };
 }
