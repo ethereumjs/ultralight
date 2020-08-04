@@ -1,3 +1,9 @@
+# 0.2.7 - (2020-08-04)
+
+### Features
+
+- Emit to libp2p on "discovered" event ([dd76a9](https://github.com/ChainSafe/discv5/commit/dd76a9))
+
 # 0.2.6 - (2020-08-03)
 
 ### Bugfixes
