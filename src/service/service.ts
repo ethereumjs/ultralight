@@ -12,7 +12,6 @@ import { IKeypair, createKeypairFromPeerId, createPeerIdFromKeypair } from "../k
 import {
   EntryStatus,
   KademliaRoutingTable,
-  ILookupConfig,
   log2Distance,
   ILookupPeer,
   findNodeLog2Distance,
