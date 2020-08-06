@@ -517,16 +517,20 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     if (!this.retrieveRequest(srcId, message)) {
       return;
     }
-    this.addrVotes.addVote(
-      srcId,
-      Multiaddr(`/${isIp.v4(message.recipientIp) ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`)
-    );
-    const currentAddr = this.enr.multiaddrUDP;
-    const votedAddr = this.addrVotes.best(currentAddr);
-    if ((currentAddr && votedAddr && !votedAddr.equals(currentAddr)) || (!currentAddr && votedAddr)) {
-      log("Local ENR (IP & UDP) updated: %s", votedAddr);
-      this.enr.multiaddrUDP = votedAddr;
-      this.emit("multiaddrUpdated", votedAddr);
+    if (this.config.enrUpdate) {
+      this.addrVotes.addVote(
+        srcId,
+        Multiaddr(
+          `/${isIp.v4(message.recipientIp) ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`
+        )
+      );
+      const currentAddr = this.enr.multiaddrUDP;
+      const votedAddr = this.addrVotes.best(currentAddr);
+      if ((currentAddr && votedAddr && !votedAddr.equals(currentAddr)) || (!currentAddr && votedAddr)) {
+        log("Local ENR (IP & UDP) updated: %s", votedAddr);
+        this.enr.multiaddrUDP = votedAddr;
+        this.emit("multiaddrUpdated", votedAddr);
+      }
     }
 
     // Check if we need to request a new ENR
