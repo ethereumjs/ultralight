@@ -4,6 +4,28 @@ import { NodeId, ENR } from "../enr";
 import { Packet, AuthTag } from "../packet";
 import { Message, RequestMessage } from "../message";
 
+export interface ISessionConfig {
+  /**
+   * The timeout for each UDP request
+   * defined in milliseconds
+   */
+  requestTimeout: number;
+  /**
+   * The number of retries for each UDP request
+   */
+  requestRetries: number;
+  /**
+   * The session timeout for each node
+   * defined in milliseconds
+   */
+  sessionTimeout: number;
+  /**
+   * The timeout for session establishment
+   * defined in milliseconds
+   */
+  sessionEstablishTimeout: number;
+}
+
 export enum SessionState {
   /**
    * A WHOAREYOU packet has been sent, and the Session is awaiting an Authentication response.

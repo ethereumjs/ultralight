@@ -46,14 +46,14 @@ export interface ILookupConfig {
    *
    * Default is 3
    */
-  parallelism: number;
+  lookupParallelism: number;
   /**
    * Number of results to produce.
    *
    * The number of closest peers that a query must obtain successful results for before it terminates.
    * Defaults to the maximum number of entries in a single kbucket.
    */
-  numResults: number;
+  lookupNumResults: number;
 }
 
 export interface ILookupEvents {

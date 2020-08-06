@@ -19,8 +19,7 @@ import { Session } from "./session";
 import { IKeypair } from "../keypair";
 import { TimeoutMap } from "../util";
 import { Message, RequestMessage, encode, decode, ResponseMessage, RequestId, MessageType } from "../message";
-import { IPendingRequest, SessionState, ISessionEvents } from "./types";
-import { SESSION_TIMEOUT, REQUEST_TIMEOUT, REQUEST_RETRIES } from "./constants";
+import { IPendingRequest, SessionState, ISessionEvents, ISessionConfig } from "./types";
 
 const log = debug("discv5:sessionService");
 
@@ -54,6 +53,11 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    * The underlying packet transport
    */
   public transport: ITransportService;
+
+  /**
+   * Configuration
+   */
+  private config: ISessionConfig;
   /**
    * Pending raw requests
    * A collection of request objects we are awaiting a response from the remote.
@@ -72,18 +76,19 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   private sessions: TimeoutMap<NodeId, Session>;
 
-  constructor(enr: ENR, keypair: IKeypair, transport: ITransportService) {
+  constructor(config: ISessionConfig, enr: ENR, keypair: IKeypair, transport: ITransportService) {
     super();
     // ensure the keypair matches the one that signed the ENR
     if (!keypair.publicKey.equals(enr.publicKey)) {
       throw new Error("Provided keypair does not match the provided ENR keypair");
     }
+    this.config = config;
     this.enr = enr;
     this.keypair = keypair;
     this.transport = transport;
     this.pendingRequests = new Map();
     this.pendingMessages = new Map();
-    this.sessions = new TimeoutMap(SESSION_TIMEOUT, this.onSessionTimeout);
+    this.sessions = new TimeoutMap(this.config.sessionTimeout, this.onSessionTimeout);
   }
 
   /**
@@ -372,7 +377,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
 
     // session has been established, update the timeout
-    this.sessions.setTimeout(srcId, SESSION_TIMEOUT);
+    this.sessions.setTimeout(srcId, this.config.sessionTimeout);
 
     // decrypt the message
     this.onMessage(src, {
@@ -490,7 +495,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     this.transport.send(dst, packet);
     let requests = this.pendingRequests.get(dstStr);
     if (!requests) {
-      requests = new TimeoutMap(REQUEST_TIMEOUT, this.onPendingRequestTimeout);
+      requests = new TimeoutMap(this.config.requestTimeout, this.onPendingRequestTimeout);
       this.pendingRequests.set(dstStr, requests);
     }
     requests.set(message ? message.id : 0n, request);
@@ -521,7 +526,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   private onPendingRequestTimeout = (requestId: RequestId, request: IPendingRequest): void => {
     const dstId = request.dstId;
-    if (request.retries >= REQUEST_RETRIES) {
+    if (request.retries >= this.config.requestRetries) {
       if (request.packet.type === PacketType.Random || request.packet.type === PacketType.WhoAreYou) {
         // no response from peer, flush all pending messages and drop session
         log("Session couldn't be established with node: %s at %s", dstId, request.dst);
@@ -544,7 +549,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       const dstStr = request.dst.toString();
       let requests = this.pendingRequests.get(dstStr);
       if (!requests) {
-        requests = new TimeoutMap(REQUEST_TIMEOUT, this.onPendingRequestTimeout);
+        requests = new TimeoutMap(this.config.requestTimeout, this.onPendingRequestTimeout);
         this.pendingRequests.set(dstStr, requests);
       }
       requests.set(requestId, request);
@@ -558,7 +563,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   private onSessionTimeout = (nodeId: NodeId, session: Session): void => {
     for (const pendingRequests of this.pendingRequests.values()) {
       if (Array.from(pendingRequests.values()).find((request) => request.dstId === nodeId)) {
-        this.sessions.setWithTimeout(nodeId, session, REQUEST_TIMEOUT);
+        this.sessions.setWithTimeout(nodeId, session, this.config.requestTimeout);
         return;
       }
     }

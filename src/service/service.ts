@@ -6,7 +6,7 @@ import PeerId = require("peer-id");
 
 import { UDPTransportService } from "../transport";
 import { createMagic, AuthTag, MAX_PACKET_SIZE } from "../packet";
-import { REQUEST_TIMEOUT, SessionService } from "../session";
+import { SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
 import { IKeypair, createKeypairFromPeerId, createPeerIdFromKeypair } from "../keypair";
 import {
@@ -36,6 +36,7 @@ import {
 import { Discv5EventEmitter, ENRInput, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
 import { TimeoutMap } from "../util";
+import { IDiscv5Config, defaultConfig } from "../config";
 
 const log = debug("discv5:service");
 
@@ -54,6 +55,13 @@ const log = debug("discv5:service");
  * registration/advertisement and performs lookups
  */
 
+export interface IDiscv5CreateOptions {
+  enr: ENRInput;
+  peerId: PeerId;
+  multiaddr: Multiaddr;
+  config: Partial<IDiscv5Config>;
+}
+
 /**
  * User-facing service one can use to set up, start and use Discv5.
  *
@@ -65,6 +73,11 @@ const log = debug("discv5:service");
  * Additionally, the service offers events when peers are added to the peer table or discovered via lookup.
  */
 export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
+  /**
+   * Configuration
+   */
+  private config: IDiscv5Config;
+
   private started = false;
   /**
    * Session service that establishes sessions with peers
@@ -95,15 +108,6 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * the interval handler pings the associated node
    */
   private connectedPeers: Map<NodeId, NodeJS.Timer>;
-  /**
-   * The time between pings to ensure connectivity amongst connected nodes
-   */
-  private pingDelay = 300000; // 300 seconds
-
-  /**
-   * The configuration for iterative lookups
-   */
-  private lookupConfig: ILookupConfig;
 
   /**
    * Id for the next lookup that we start
@@ -118,20 +122,17 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * Default constructor.
    * @param sessionService the service managing sessions underneath.
    */
-  constructor(sessionService: SessionService) {
+  constructor(config: IDiscv5Config, sessionService: SessionService) {
     super();
+    this.config = config;
     this.sessionService = sessionService;
     this.kbuckets = new KademliaRoutingTable(this.sessionService.enr.nodeId, 16);
     this.activeLookups = new Map();
-    this.activeRequests = new TimeoutMap(REQUEST_TIMEOUT, (requestId, activeRequest) =>
+    this.activeRequests = new TimeoutMap(this.config.requestTimeout, (requestId, activeRequest) =>
       this.onActiveRequestFailed(activeRequest)
     );
     this.activeNodesResponses = new Map();
     this.connectedPeers = new Map();
-    this.lookupConfig = {
-      parallelism: 3,
-      numResults: 16,
-    };
     this.nextLookupId = 1;
     this.addrVotes = new AddrVotes();
   }
@@ -143,12 +144,13 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * @param peerId the PeerId with the keypair that identifies the enr
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
-  public static create(enr: ENRInput, peerId: PeerId, multiaddr: Multiaddr): Discv5 {
+  public static create({ enr, peerId, multiaddr, config = {} }: IDiscv5CreateOptions): Discv5 {
+    const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
     const magic = createMagic(decodedEnr.nodeId);
     const udpTransport = new UDPTransportService(multiaddr, magic);
-    const sessionService = new SessionService(decodedEnr, createKeypairFromPeerId(peerId), udpTransport);
-    return new Discv5(sessionService);
+    const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), udpTransport);
+    return new Discv5(fullConfig, sessionService);
   }
 
   /**
@@ -268,7 +270,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     }
 
     const knownClosestPeers = this.kbuckets.nearest(target, 16).map((enr) => enr.nodeId);
-    const lookup = new Lookup(this.lookupConfig, target, 3, knownClosestPeers);
+    const lookup = new Lookup(this.config, target, 3, knownClosestPeers);
     this.activeLookups.set(lookupId, lookup);
     return await new Promise((resolve) => {
       lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
@@ -468,7 +470,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     this.sendPing(nodeId);
     this.connectedPeers.set(
       nodeId,
-      setInterval(() => this.sendPing(nodeId), this.pingDelay)
+      setInterval(() => this.sendPing(nodeId), this.config.pingInterval)
     );
   };
 
