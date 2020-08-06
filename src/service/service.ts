@@ -59,7 +59,7 @@ export interface IDiscv5CreateOptions {
   enr: ENRInput;
   peerId: PeerId;
   multiaddr: Multiaddr;
-  config: Partial<IDiscv5Config>;
+  config?: Partial<IDiscv5Config>;
 }
 
 /**
