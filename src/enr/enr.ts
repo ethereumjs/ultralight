@@ -166,7 +166,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (ip) {
       this.set("ip6", muConvert.toBuffer(Multiaddr.protocols.names.ip6.code, ip));
     } else {
-      this.delete("ip");
+      this.delete("ip6");
     }
   }
 
