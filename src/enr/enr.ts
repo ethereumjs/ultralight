@@ -3,6 +3,7 @@ import base64url from "base64url";
 import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
 import PeerId = require("peer-id");
+import muConvert = require("multiaddr/src/convert");
 
 import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
@@ -100,24 +101,124 @@ export class ENR extends Map<ENRKey, ENRValue> {
         throw new Error(ERR_INVALID_ID);
     }
   }
+
+  get ip(): string | undefined {
+    const raw = this.get("ip");
+    if (raw) {
+      return muConvert.toString(Multiaddr.protocols.names.ip4.code, raw) as string;
+    } else {
+      return undefined;
+    }
+  }
+
+  set ip(ip: string | undefined) {
+    if (ip) {
+      this.set("ip", muConvert.toBuffer(Multiaddr.protocols.names.ip4.code, ip));
+    } else {
+      this.delete("ip");
+    }
+  }
+
+  get tcp(): number | undefined {
+    const raw = this.get("tcp");
+    if (raw) {
+      return muConvert.toString(Multiaddr.protocols.names.tcp.code, raw) as number;
+    } else {
+      return undefined;
+    }
+  }
+
+  set tcp(port: number | undefined) {
+    if (port === undefined) {
+      this.delete("tcp");
+    } else {
+      this.set("tcp", muConvert.toBuffer(Multiaddr.protocols.names.tcp.code, port));
+    }
+  }
+
+  get udp(): number | undefined {
+    const raw = this.get("udp");
+    if (raw) {
+      return muConvert.toString(Multiaddr.protocols.names.udp.code, raw) as number;
+    } else {
+      return undefined;
+    }
+  }
+
+  set udp(port: number | undefined) {
+    if (port === undefined) {
+      this.delete("udp");
+    } else {
+      this.set("udp", muConvert.toBuffer(Multiaddr.protocols.names.udp.code, port));
+    }
+  }
+
+  get ip6(): string | undefined {
+    const raw = this.get("ip6");
+    if (raw) {
+      return muConvert.toString(Multiaddr.protocols.names.ip6.code, raw) as string;
+    } else {
+      return undefined;
+    }
+  }
+
+  set ip6(ip: string | undefined) {
+    if (ip) {
+      this.set("ip6", muConvert.toBuffer(Multiaddr.protocols.names.ip6.code, ip));
+    } else {
+      this.delete("ip6");
+    }
+  }
+
+  get tcp6(): number | undefined {
+    const raw = this.get("tcp6");
+    if (raw) {
+      return muConvert.toString(Multiaddr.protocols.names.tcp.code, raw) as number;
+    } else {
+      return undefined;
+    }
+  }
+
+  set tcp6(port: number | undefined) {
+    if (port === undefined) {
+      this.delete("tcp6");
+    } else {
+      this.set("tcp6", muConvert.toBuffer(Multiaddr.protocols.names.tcp.code, port));
+    }
+  }
+
+  get udp6(): number | undefined {
+    const raw = this.get("udp6");
+    if (raw) {
+      return muConvert.toString(Multiaddr.protocols.names.udp.code, raw) as number;
+    } else {
+      return undefined;
+    }
+  }
+
+  set udp6(port: number | undefined) {
+    if (port === undefined) {
+      this.delete("udp6");
+    } else {
+      this.set("udp6", muConvert.toBuffer(Multiaddr.protocols.names.udp.code, port));
+    }
+  }
+
   get multiaddrUDP(): Multiaddr | undefined {
     // First try IPv4
-    const ip4 = this.get("ip");
-    if (ip4 && ip4.length > 0) {
-      const udp4 = this.get("udp");
-      if (udp4) {
-        return Multiaddr(`/ip4/${Array.from(ip4).join(".")}/udp/${udp4.readUInt16BE(0)}`);
+    const ip4 = this.ip;
+    if (ip4) {
+      const udp4 = this.udp;
+      if (typeof udp4 === "number") {
+        return Multiaddr(`/ip4/${ip4}/udp/${udp4}`);
       }
     }
     // Then try IPv6
-    const ip6 = this.get("ip6");
-    if (ip6 && ip6.length > 0) {
-      const udp6 = this.get("udp6");
-      if (udp6) {
-        const ip6Str = Array.from(Uint16Array.from(ip6))
-          .map((n) => n.toString(16))
-          .join(":");
-        return Multiaddr(`/ip6/${ip6Str}/udp/${udp6.readUInt16BE(0)}`);
+    const ip6 = this.ip6;
+    if (ip6) {
+      const udp6 = this.udp6;
+      if (typeof udp6 === "number") {
+        return Multiaddr(`/ip6/${ip6}/udp/${udp6}`);
       }
     }
     return undefined;
@@ -146,22 +247,19 @@ export class ENR extends Map<ENRKey, ENRValue> {
   }
   get multiaddrTCP(): Multiaddr | undefined {
     // First try IPv4
-    const ip4 = this.get("ip");
+    const ip4 = this.ip;
     if (ip4) {
-      const tcp4 = this.get("tcp");
-      if (tcp4) {
-        return Multiaddr(`/ip4/${Array.from(ip4).join(".")}/tcp/${tcp4.readUInt16BE(0)}`);
+      const tcp4 = this.tcp;
+      if (typeof tcp4 === "number") {
+        return Multiaddr(`/ip4/${ip4}/tcp/${tcp4}`);
       }
     }
     // Then try IPv6
-    const ip6 = this.get("ip6");
+    const ip6 = this.ip6;
     if (ip6) {
-      const tcp6 = this.get("tcp6");
-      if (tcp6) {
-        const ip6Str = Array.from(Uint16Array.from(ip6))
-          .map((n) => n.toString(16))
-          .join(":");
-        return Multiaddr(`/ip6/${ip6Str}/tcp/${tcp6.readUInt16BE(0)}`);
+      const tcp6 = this.tcp6;
+      if (typeof tcp6 === "number") {
+        return Multiaddr(`/ip6/${ip6}/tcp/${tcp6}`);
       }
     }
     return undefined;
