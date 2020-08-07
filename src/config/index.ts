@@ -8,6 +8,10 @@ export type IDiscv5Config = ISessionConfig &
      * defined in milliseconds
      */
     pingInterval: number;
+    /**
+     * Whether to enable enr auto-updating
+     */
+    enrUpdate: boolean;
   };
 
 export const defaultConfig: IDiscv5Config = {
@@ -18,4 +22,5 @@ export const defaultConfig: IDiscv5Config = {
   lookupParallelism: 3,
   lookupNumResults: 16,
   pingInterval: 300 * 1000,
+  enrUpdate: true,
 };
