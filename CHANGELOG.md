@@ -1,3 +1,15 @@
+# 0.3.0 - (2020-08-07)
+
+### Features
+
+- Add enrUpdate config field ([62eaa1](https://github.com/ChainSafe/discv5/commit/62eaa1))
+- Add IDiscv5Config configurability ([64fe01](https://github.com/ChainSafe/discv5/commit/64fe01))
+- Add ENR getters/setters ([7dac2f](https://github.com/ChainSafe/discv5/commit/7dac2f))
+
+### BREAKING CHANGES
+
+- Discv5.create now has a single object param ([64fe01](https://github.com/ChainSafe/discv5/commit/64fe01))
+
 # 0.2.7 - (2020-08-04)
 
 ### Features
