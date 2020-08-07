@@ -17,7 +17,7 @@ describe("Discv5", async () => {
   const mu0 = Multiaddr("/ip4/127.0.0.1/udp/40000");
   const addr0 = mu0.toOptions();
 
-  const service0 = Discv5.create(enr0, peerId0, mu0);
+  const service0 = Discv5.create({enr: enr0, peerId: peerId0, multiaddr: mu0});
 
   beforeEach(async () => {
     await service0.start();
@@ -49,7 +49,7 @@ describe("Discv5", async () => {
     enr1.set("ip", addr1[0][1]);
     enr1.set("udp", addr1[1][1]);
     enr1.encode(kp1.privateKey);
-    const service1 = Discv5.create(enr1, peerId1, mu1);
+    const service1 = Discv5.create({enr: enr1, peerId: peerId1, multiaddr: mu1});
     await service1.start();
     for (let i = 0; i < 100; i++) {
       const kp = generateKeypair(KeypairType.secp256k1);

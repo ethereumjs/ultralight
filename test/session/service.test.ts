@@ -8,6 +8,7 @@ import { createMagic, createWhoAreYouPacket, Packet, PacketType } from "../../sr
 import { UDPTransportService } from "../../src/transport";
 import { SessionService } from "../../src/session";
 import { createFindNodeMessage } from "../../src/message";
+import { defaultConfig } from "../../src/config";
 
 describe("session service", () => {
   const kp0 = createKeypair(
@@ -43,8 +44,8 @@ describe("session service", () => {
     transport0 = new UDPTransportService(addr0, magic0);
     transport1 = new UDPTransportService(addr1, magic1);
 
-    service0 = new SessionService(enr0, kp0, transport0);
-    service1 = new SessionService(enr1, kp1, transport1);
+    service0 = new SessionService(defaultConfig, enr0, kp0, transport0);
+    service1 = new SessionService(defaultConfig, enr1, kp1, transport1);
 
     await service0.start();
     await service1.start();

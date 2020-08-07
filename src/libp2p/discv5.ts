@@ -5,8 +5,9 @@ import { randomBytes } from "libp2p-crypto";
 
 import { Discv5, ENRInput } from "../service";
 import { createNodeId, ENR } from "../enr";
+import { IDiscv5Config } from "../config";
 
-export interface IDiscv5DiscoveryInputOptions {
+export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
   /**
    * Local ENR associated with the local libp2p peer id
    */
@@ -38,7 +39,12 @@ export class Discv5Discovery extends EventEmitter {
 
   constructor(options: IDiscv5DiscoveryOptions) {
     super();
-    this.discv5 = Discv5.create(options.enr, options.peerId, Multiaddr(options.bindAddr));
+    this.discv5 = Discv5.create({
+      enr: options.enr,
+      peerId: options.peerId,
+      multiaddr: Multiaddr(options.bindAddr),
+      config: options,
+    });
     this.started = false;
     options.bootEnrs.forEach((bootEnr) => this.discv5.addEnr(bootEnr));
   }

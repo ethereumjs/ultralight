@@ -62,7 +62,7 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
     this.numPeersWaiting = 0;
     this.closestPeers = new Map(
       closestPeers
-        .slice(0, this.config.numResults)
+        .slice(0, this.config.lookupNumResults)
         .map((n) => [distance(nodeId, n), createLookupPeer(n, LookupPeerState.NotContacted)] as [bigint, ILookupPeer])
     );
   }
@@ -91,9 +91,9 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
   atCapacity(): boolean {
     switch (this.state) {
       case LookupState.Stalled:
-        return this.numPeersWaiting >= this.config.numResults;
+        return this.numPeersWaiting >= this.config.lookupNumResults;
       case LookupState.Iterating:
-        return this.numPeersWaiting >= this.config.parallelism;
+        return this.numPeersWaiting >= this.config.lookupParallelism;
       case LookupState.Finished:
         return true;
     }
@@ -115,7 +115,7 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
     return this.closestPeersByDistance()
       .filter((peer) => peer.state === LookupPeerState.Succeeded)
       .map((peer) => peer.nodeId)
-      .slice(0, this.config.numResults);
+      .slice(0, this.config.lookupNumResults);
   }
 
   /**
@@ -140,7 +140,7 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
       if (peer.state === LookupPeerState.Waiting) {
         this.numPeersWaiting -= 1;
         peer.peersReturned += closerPeers.length;
-        if (peer.peersReturned >= this.config.numResults) {
+        if (peer.peersReturned >= this.config.lookupNumResults) {
           peer.state = LookupPeerState.Succeeded;
         } else if (this.maxIterationsPerPeer <= peer.iteration) {
           if (peer.peersReturned > 0) {
@@ -166,14 +166,14 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
         // The lookup makes progress if the new peer is either closer to the target than any peer seen so far
         // or the lookup did not yet accumulate enough closest peers
         const closest = Array.from(this.closestPeers.keys()).sort((a, b) => (b > a ? -1 : 1))[0];
-        progress = progress || closest === cDist || numClosest < this.config.numResults;
+        progress = progress || closest === cDist || numClosest < this.config.lookupNumResults;
       });
 
       // update the lookup state
       if (this.state === LookupState.Iterating) {
         // If there's progress, reset the noProgress counter
         this.noProgress = progress ? 0 : this.noProgress + 1;
-        if (this.noProgress >= this.config.parallelism * this.maxIterationsPerPeer) {
+        if (this.noProgress >= this.config.lookupParallelism * this.maxIterationsPerPeer) {
           this.state = LookupState.Stalled;
         }
       } else if (this.state === LookupState.Stalled) {
@@ -248,7 +248,7 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
           resultCounter += 1;
           // If `numResults` successful results have been delivered for the closest peers,
           // the lookup is done
-          if (resultCounter >= this.config.numResults) {
+          if (resultCounter >= this.config.lookupNumResults) {
             this.state = LookupState.Finished;
             this.emit("finished", this.closestNodesByDistance());
             return;
