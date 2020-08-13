@@ -54,6 +54,12 @@ export interface ILookupConfig {
    * Defaults to the maximum number of entries in a single kbucket.
    */
   lookupNumResults: number;
+  /**
+   * Maximum amount of time to spend on a single lookup
+   *
+   * Declared in milliseconds
+   */
+  lookupTimeout: number;
 }
 
 export interface ILookupEvents {
