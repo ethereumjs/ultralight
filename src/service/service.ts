@@ -562,7 +562,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       }
       return;
     }
-    const nodes = this.kbuckets.valuesOfDistance(distance).slice(15);
+    const nodes = this.kbuckets.valuesOfDistance(distance).slice(0, 15);
     if (nodes.length === 0) {
       log("Sending empty NODES response to %s", srcId);
       try {
