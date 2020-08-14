@@ -21,6 +21,7 @@ export const defaultConfig: IDiscv5Config = {
   sessionEstablishTimeout: 15 * 1000,
   lookupParallelism: 3,
   lookupNumResults: 16,
+  lookupTimeout: 60 * 1000,
   pingInterval: 300 * 1000,
   enrUpdate: true,
 };

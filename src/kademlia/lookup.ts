@@ -51,6 +51,9 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
    */
   config: ILookupConfig;
 
+  timeout?: number;
+  timeoutFn: Function;
+
   constructor(config: ILookupConfig, nodeId: NodeId, maxIterationsPerPeer: number, closestPeers: NodeId[]) {
     super();
     this.config = config;
@@ -65,9 +68,11 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
         .slice(0, this.config.lookupNumResults)
         .map((n) => [distance(nodeId, n), createLookupPeer(n, LookupPeerState.NotContacted)] as [bigint, ILookupPeer])
     );
+    this.timeoutFn = () => this.stop();
   }
 
   start(): void {
+    this.timeout = setTimeout(this.timeoutFn, this.config.lookupTimeout);
     for (let i = 0; i < this.closestPeers.size; i++) {
       this.nextPeer();
     }
@@ -77,6 +82,7 @@ export class Lookup extends (EventEmitter as { new (): LookupEventEmitter }) {
     if (this.state === LookupState.Finished) {
       return;
     }
+    clearTimeout(this.timeout);
     this.state = LookupState.Finished;
     this.emit("finished", this.closestNodesByDistance());
   }
