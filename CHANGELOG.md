@@ -1,3 +1,13 @@
+# 0.3.1 - (2020-08-14)
+
+### Features
+
+- Add lookupTimeout configuration ([db6289](https://github.com/ChainSafe/discv5/commit/db6289))
+
+### Bugfixes
+
+- Fix kad lookup bugs in NODES response ([d95ab4](https://github.com/ChainSafe/discv5/commit/d95ab4))
+
 # 0.3.0 - (2020-08-07)
 
 ### Features
