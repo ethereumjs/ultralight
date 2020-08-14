@@ -121,7 +121,7 @@ export class KademliaRoutingTable extends (EventEmitter as { new (): BucketEvent
   }
 
   valuesOfDistance(value: number): ENR[] {
-    const bucket = this.buckets[value];
+    const bucket = this.buckets[value - 1];
     return bucket === undefined ? [] : bucket.values();
   }
 
