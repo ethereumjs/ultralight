@@ -43,6 +43,12 @@ export class ENR extends Map<ENRKey, ENRValue> {
       throw new Error("Decoded ENR must have an even number of elements");
     }
     const [signature, seq, ...kvs] = decoded;
+    if (!signature || Array.isArray(signature)) {
+      throw new Error("Decoded ENR invalid signature: must be a byte array");
+    }
+    if (!seq || Array.isArray(seq)) {
+      throw new Error("Decoded ENR invalid sequence number: must be a byte array");
+    }
     const obj: Record<ENRKey, ENRValue> = {};
     for (let i = 0; i < kvs.length; i += 2) {
       obj[kvs[i].toString()] = Buffer.from(kvs[i + 1]);
