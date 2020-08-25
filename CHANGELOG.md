@@ -1,3 +1,9 @@
+# 0.3.2 - (2020-08-25)
+
+### Bugfixes
+
+- Fix ENR decoding bugs found with fuzzing ([96c9bb](https://github.com/ChainSafe/discv5/commit/96c9bb))
+
 # 0.3.1 - (2020-08-14)
 
 ### Features
