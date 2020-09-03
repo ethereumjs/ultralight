@@ -52,19 +52,16 @@ describe("ENR Multiformats support", () => {
     record.set("ip", tuples0[0][1]);
     record.set("udp", tuples0[1][1]);
     // and get the multiaddr
-    expect(record.multiaddrUDP!.toString()).to.equal(multi0.toString());
+    expect(record.getLocationMultiaddr("udp")!.toString()).to.equal(multi0.toString());
     // set the multiaddr
     const multi1 = Multiaddr("/ip4/0.0.0.0/udp/30300");
-    record.multiaddrUDP = multi1;
+    record.setLocationMultiaddr(multi1);
     // and get the multiaddr
-    expect(record.multiaddrUDP!.toString()).to.equal(multi1.toString());
+    expect(record.getLocationMultiaddr("udp")!.toString()).to.equal(multi1.toString());
     // and get the underlying records
     const tuples1 = multi1.tuples();
     expect(record.get("ip")).to.deep.equal(tuples1[0][1]);
     expect(record.get("udp")).to.deep.equal(tuples1[1][1]);
-    // unset multiaddrs
-    record.multiaddrUDP = undefined;
-    expect(record.multiaddrUDP).to.be.undefined;
   });
   it("should get / set TCP multiaddr", () => {
     const multi0 = Multiaddr("/ip4/127.0.0.1/tcp/30303");
@@ -73,12 +70,12 @@ describe("ENR Multiformats support", () => {
     record.set("ip", tuples0[0][1]);
     record.set("tcp", tuples0[1][1]);
     // and get the multiaddr
-    expect(record.multiaddrTCP!.toString()).to.equal(multi0.toString());
+    expect(record.getLocationMultiaddr("tcp")!.toString()).to.equal(multi0.toString());
     // set the multiaddr
     const multi1 = Multiaddr("/ip4/0.0.0.0/tcp/30300");
-    record.multiaddrTCP = multi1;
+    record.setLocationMultiaddr(multi1);
     // and get the multiaddr
-    expect(record.multiaddrTCP!.toString()).to.equal(multi1.toString());
+    expect(record.getLocationMultiaddr("tcp")!.toString()).to.equal(multi1.toString());
     // and get the underlying records
     const tuples1 = multi1.tuples();
     expect(record.get("ip")).to.deep.equal(tuples1[0][1]);
