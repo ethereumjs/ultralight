@@ -316,7 +316,7 @@ export class Session {
   updateTrusted(): boolean {
     if (this.remoteEnr) {
       const hasSameMultiaddr = (multiaddr: Multiaddr, enr: ENR): boolean => {
-        const enrMultiaddr = enr.multiaddrUDP;
+        const enrMultiaddr = enr.getLocationMultiaddr("udp");
         return enrMultiaddr ? enrMultiaddr.equals(multiaddr) : false;
       };
       switch (this.trusted) {

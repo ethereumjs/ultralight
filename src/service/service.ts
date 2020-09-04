@@ -524,11 +524,11 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
           `/${isIp.v4(message.recipientIp) ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`
         )
       );
-      const currentAddr = this.enr.multiaddrUDP;
+      const currentAddr = this.enr.getLocationMultiaddr("udp");
       const votedAddr = this.addrVotes.best(currentAddr);
       if ((currentAddr && votedAddr && !votedAddr.equals(currentAddr)) || (!currentAddr && votedAddr)) {
         log("Local ENR (IP & UDP) updated: %s", votedAddr);
-        this.enr.multiaddrUDP = votedAddr;
+        this.enr.setLocationMultiaddr(votedAddr);
         this.emit("multiaddrUpdated", votedAddr);
       }
     }

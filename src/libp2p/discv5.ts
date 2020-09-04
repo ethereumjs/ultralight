@@ -83,7 +83,7 @@ export class Discv5Discovery extends EventEmitter {
   }
 
   handleEnr = async (enr: ENR): Promise<void> => {
-    const multiaddrTCP = enr.multiaddrTCP;
+    const multiaddrTCP = enr.getLocationMultiaddr("tcp");
     if (!multiaddrTCP) {
       return;
     }

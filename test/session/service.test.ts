@@ -28,8 +28,8 @@ describe("session service", () => {
   const enr0 = ENR.createV4(kp0.publicKey);
   const enr1 = ENR.createV4(kp1.publicKey);
 
-  enr0.multiaddrUDP = addr0;
-  enr1.multiaddrUDP = addr1;
+  enr0.setLocationMultiaddr(addr0);
+  enr1.setLocationMultiaddr(addr1);
 
   const magic0 = createMagic(enr0.nodeId);
   const magic1 = createMagic(enr1.nodeId);

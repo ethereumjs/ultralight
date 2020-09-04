@@ -131,7 +131,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public sendRequest(dstEnr: ENR, message: RequestMessage): void {
     const dstId = dstEnr.nodeId;
-    const dst = dstEnr.multiaddrUDP;
+    const dst = dstEnr.getLocationMultiaddr("udp");
     if (!dst) {
       throw new Error("ENR must have udp socket data");
     }

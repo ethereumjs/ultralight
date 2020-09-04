@@ -210,86 +210,51 @@ export class ENR extends Map<ENRKey, ENRValue> {
     }
   }
 
-  get multiaddrUDP(): Multiaddr | undefined {
-    // First try IPv4
-    const ip4 = this.ip;
-    if (ip4) {
-      const udp4 = this.udp;
-      if (typeof udp4 === "number") {
-        return Multiaddr(`/ip4/${ip4}/udp/${udp4}`);
-      }
+  getLocationMultiaddr(protocol: "udp" | "udp4" | "udp6" | "tcp" | "tcp4" | "tcp6"): Multiaddr | undefined {
+    if (protocol === "udp") {
+      return this.getLocationMultiaddr("udp4") || this.getLocationMultiaddr("udp6");
     }
-    // Then try IPv6
-    const ip6 = this.ip6;
-    if (ip6) {
-      const udp6 = this.udp6;
-      if (typeof udp6 === "number") {
-        return Multiaddr(`/ip6/${ip6}/udp/${udp6}`);
-      }
+    if (protocol === "tcp") {
+      return this.getLocationMultiaddr("tcp4") || this.getLocationMultiaddr("tcp6");
     }
-    return undefined;
+    const isIpv6 = protocol.endsWith("6");
+    const isUdp = protocol.startsWith("udp");
+    const isTcp = protocol.startsWith("tcp");
+    const ipName = isIpv6 ? "ip6" : "ip4";
+    const ipVal = isIpv6 ? this.ip6 : this.ip;
+    if (!ipVal) {
+      return undefined;
+    }
+    const protoName = (isUdp && "udp") || (isTcp && "tcp");
+    if (!protoName) {
+      return undefined;
+    }
+    const protoVal = isIpv6 ? (isUdp && this.udp6) || (isTcp && this.tcp6) : (isUdp && this.udp) || (isTcp && this.tcp);
+    if (!protoVal) {
+      return undefined;
+    }
+    return Multiaddr(`/${ipName}/${ipVal}/${protoName}/${protoVal}`);
   }
-  set multiaddrUDP(multiaddr: Multiaddr | undefined) {
-    if (!multiaddr) {
-      this.delete("ip");
-      this.delete("udp");
-      this.delete("ip6");
-      this.delete("udp6");
-      return;
-    }
+  setLocationMultiaddr(multiaddr: Multiaddr): void {
     const protoNames = multiaddr.protoNames();
-    if (protoNames.length !== 2 && protoNames[1] !== "udp") {
-      throw new Error("Invalid udp multiaddr");
+    if (protoNames.length !== 2 && protoNames[1] !== "udp" && protoNames[1] !== "tcp") {
+      throw new Error("Invalid multiaddr");
     }
     const tuples = multiaddr.tuples();
     // IPv4
     if (tuples[0][0] === 4) {
       this.set("ip", tuples[0][1]);
-      this.set("udp", tuples[1][1]);
+      this.set(protoNames[1], tuples[1][1]);
     } else {
       this.set("ip6", tuples[0][1]);
-      this.set("udp6", tuples[1][1]);
+      this.set(protoNames[1] + "6", tuples[1][1]);
     }
   }
-  get multiaddrTCP(): Multiaddr | undefined {
-    // First try IPv4
-    const ip4 = this.ip;
-    if (ip4) {
-      const tcp4 = this.tcp;
-      if (typeof tcp4 === "number") {
-        return Multiaddr(`/ip4/${ip4}/tcp/${tcp4}`);
-      }
-    }
-    // Then try IPv6
-    const ip6 = this.ip6;
-    if (ip6) {
-      const tcp6 = this.tcp6;
-      if (typeof tcp6 === "number") {
-        return Multiaddr(`/ip6/${ip6}/tcp/${tcp6}`);
-      }
-    }
-    return undefined;
-  }
-  set multiaddrTCP(multiaddr: Multiaddr | undefined) {
-    if (!multiaddr) {
-      this.delete("ip");
-      this.delete("tcp");
-      this.delete("ip6");
-      this.delete("tcp6");
-      return;
-    }
-    const protoNames = multiaddr.protoNames();
-    if (protoNames.length !== 2 && protoNames[1] !== "tcp") {
-      throw new Error("Invalid tcp multiaddr");
-    }
-    const tuples = multiaddr.tuples();
-    // IPv4
-    if (tuples[0][0] === 4) {
-      this.set("ip", tuples[0][1]);
-      this.set("tcp", tuples[1][1]);
-    } else {
-      this.set("ip6", tuples[0][1]);
-      this.set("tcp6", tuples[1][1]);
+  async getFullMultiaddr(protocol: "udp" | "udp4" | "udp6" | "tcp" | "tcp4" | "tcp6"): Promise<Multiaddr | undefined> {
+    const locationMultiaddr = this.getLocationMultiaddr(protocol);
+    if (locationMultiaddr) {
+      const peerId = await this.peerId();
+      return locationMultiaddr.encapsulate(`/p2p/${peerId.toB58String()}`);
     }
   }
   verify(data: Buffer, signature: Buffer): boolean {
