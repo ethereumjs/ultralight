@@ -6,6 +6,7 @@ import { randomBytes } from "libp2p-crypto";
 import { Discv5, ENRInput } from "../service";
 import { createNodeId, ENR } from "../enr";
 import { IDiscv5Config } from "../config";
+import { toBuffer } from "../util";
 
 export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
   /**
@@ -72,7 +73,7 @@ export class Discv5Discovery extends EventEmitter {
     while (this.started) {
       // Search for random nodes
       // emit discovered on all finds
-      const enrs = await this.discv5.findNode(createNodeId(randomBytes(32)));
+      const enrs = await this.discv5.findNode(createNodeId(toBuffer(randomBytes(32))));
       if (!this.started) {
         return;
       }

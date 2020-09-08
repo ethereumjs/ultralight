@@ -5,6 +5,7 @@ const { keysPBM, supportedKeys } = keys;
 import { IKeypair, KeypairType } from "./types";
 import { ERR_TYPE_NOT_IMPLEMENTED } from "./constants";
 import { Secp256k1Keypair } from "./secp256k1";
+import { toBuffer } from "../util";
 
 export * from "./types";
 export * from "./secp256k1";
@@ -45,5 +46,9 @@ export async function createPeerIdFromKeypair(keypair: IKeypair): Promise<PeerId
 export function createKeypairFromPeerId(peerId: PeerId): IKeypair {
   // pub/privkey bytes from peer-id are encoded in protobuf format
   const pub = keysPBM.PublicKey.decode(peerId.pubKey.bytes);
-  return createKeypair(pub.Type as KeypairType, peerId.privKey ? peerId.privKey.marshal() : undefined, pub.Data);
+  return createKeypair(
+    pub.Type as KeypairType,
+    peerId.privKey ? toBuffer(peerId.privKey.marshal()) : undefined,
+    pub.Data
+  );
 }
