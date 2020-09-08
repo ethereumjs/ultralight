@@ -1,3 +1,13 @@
+# 0.4.0 - (2020-09-08)
+
+### Chores
+
+- Update dependencies ([83657a](https://github.com/ChainSafe/discv5/commit/83657a))
+
+### BREAKING CHANGES
+
+- Refactor ENR multiaddr handling ([7cf6c8](https://github.com/ChainSafe/discv5/commit/7cf6c8))
+
 # 0.3.2 - (2020-08-25)
 
 ### Bugfixes
