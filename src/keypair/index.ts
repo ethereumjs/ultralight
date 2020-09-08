@@ -46,5 +46,9 @@ export async function createPeerIdFromKeypair(keypair: IKeypair): Promise<PeerId
 export function createKeypairFromPeerId(peerId: PeerId): IKeypair {
   // pub/privkey bytes from peer-id are encoded in protobuf format
   const pub = keysPBM.PublicKey.decode(peerId.pubKey.bytes);
-  return createKeypair(pub.Type as KeypairType, peerId.privKey ? toBuffer(peerId.privKey.marshal()) : undefined, pub.Data);
+  return createKeypair(
+    pub.Type as KeypairType,
+    peerId.privKey ? toBuffer(peerId.privKey.marshal()) : undefined,
+    pub.Data
+  );
 }
