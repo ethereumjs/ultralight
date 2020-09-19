@@ -6,5 +6,5 @@ declare module "multiaddr/src/ip" {
 
 declare module "multiaddr/src/convert" {
   export function toString(protocol: any, buf: Uint8Array): string | number;
-  export function toBuffer(protocol: any, str: string | number): Uint8Array;
+  export function toBytes(protocol: any, str: string | number): Uint8Array;
 }
