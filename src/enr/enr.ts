@@ -119,7 +119,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
 
   set ip(ip: string | undefined) {
     if (ip) {
-      this.set("ip", muConvert.toBuffer(Multiaddr.protocols.names.ip4.code, ip));
+      this.set("ip", muConvert.toBytes(Multiaddr.protocols.names.ip4.code, ip));
     } else {
       this.delete("ip");
     }
@@ -138,7 +138,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (port === undefined) {
       this.delete("tcp");
     } else {
-      this.set("tcp", muConvert.toBuffer(Multiaddr.protocols.names.tcp.code, port));
+      this.set("tcp", muConvert.toBytes(Multiaddr.protocols.names.tcp.code, port));
     }
   }
 
@@ -155,7 +155,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (port === undefined) {
       this.delete("udp");
     } else {
-      this.set("udp", muConvert.toBuffer(Multiaddr.protocols.names.udp.code, port));
+      this.set("udp", muConvert.toBytes(Multiaddr.protocols.names.udp.code, port));
     }
   }
 
@@ -170,7 +170,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
 
   set ip6(ip: string | undefined) {
     if (ip) {
-      this.set("ip6", muConvert.toBuffer(Multiaddr.protocols.names.ip6.code, ip));
+      this.set("ip6", muConvert.toBytes(Multiaddr.protocols.names.ip6.code, ip));
     } else {
       this.delete("ip6");
     }
@@ -189,7 +189,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (port === undefined) {
       this.delete("tcp6");
     } else {
-      this.set("tcp6", muConvert.toBuffer(Multiaddr.protocols.names.tcp.code, port));
+      this.set("tcp6", muConvert.toBytes(Multiaddr.protocols.names.tcp.code, port));
     }
   }
 
@@ -206,7 +206,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (port === undefined) {
       this.delete("udp6");
     } else {
-      this.set("udp6", muConvert.toBuffer(Multiaddr.protocols.names.udp.code, port));
+      this.set("udp6", muConvert.toBytes(Multiaddr.protocols.names.udp.code, port));
     }
   }
 
