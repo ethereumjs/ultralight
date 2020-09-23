@@ -1,3 +1,9 @@
+# 0.4.1 - (2020-09-22)
+
+### Bugfixes
+
+- New multiaddr 0.8.0: use toBytes() instead of toBuffer() ([f16aa1](https://github.com/ChainSafe/discv5/commit/f16aa1))
+
 # 0.4.0 - (2020-09-08)
 
 ### Chores
