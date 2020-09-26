@@ -9,6 +9,7 @@ import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
 import { ENRKey, ENRValue, SequenceNumber, NodeId } from "./types";
 import { createKeypair, KeypairType, IKeypair, createPeerIdFromKeypair, createKeypairFromPeerId } from "../keypair";
+import { toNewUint8Array } from "../util";
 
 export class ENR extends Map<ENRKey, ENRValue> {
   public seq: SequenceNumber;
@@ -128,7 +129,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get tcp(): number | undefined {
     const raw = this.get("tcp");
     if (raw) {
-      return muConvert.toString(Multiaddr.protocols.names.tcp.code, raw) as number;
+      return muConvert.toString(Multiaddr.protocols.names.tcp.code, toNewUint8Array(raw)) as number;
     } else {
       return undefined;
     }
@@ -145,7 +146,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get udp(): number | undefined {
     const raw = this.get("udp");
     if (raw) {
-      return muConvert.toString(Multiaddr.protocols.names.udp.code, raw) as number;
+      return muConvert.toString(Multiaddr.protocols.names.udp.code, toNewUint8Array(raw)) as number;
     } else {
       return undefined;
     }

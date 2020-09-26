@@ -4,6 +4,7 @@ import { ENR } from "../../src/enr/enr";
 import { createKeypairFromPeerId } from "../../src/keypair";
 import { toHex } from "../../src/util";
 import { ERR_INVALID_ID } from "../../src/enr/constants";
+import Multiaddr from "multiaddr";
 
 describe("ENR", function () {
   describe("decodeTxt", () => {
@@ -11,10 +12,13 @@ describe("ENR", function () {
       const peerId = await PeerId.create({ keyType: "secp256k1" });
       const enr = ENR.createFromPeerId(peerId);
       const keypair = createKeypairFromPeerId(peerId);
+      enr.setLocationMultiaddr(new Multiaddr("/ip4/18.223.219.100/udp/9000"));
       const txt = enr.encodeTxt(keypair.privateKey);
       expect(txt.slice(0, 4)).to.be.equal("enr:");
       const enr2 = ENR.decodeTxt(txt);
       expect(toHex(enr2.signature as Buffer)).to.be.equal(toHex(enr.signature as Buffer));
+      const multiaddr = enr2.getLocationMultiaddr("udp")!;
+      expect(multiaddr.toString()).to.be.equal("/ip4/18.223.219.100/udp/9000");
     });
 
     it("should decode valid enr successfully", () => {
