@@ -69,5 +69,8 @@ lib
 # swp file
 *.swp
 
+# ide
+.vscode
+
 # others
 package-lock.json
