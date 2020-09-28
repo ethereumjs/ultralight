@@ -1,3 +1,9 @@
+# 0.4.2 - (2020-09-27)
+
+### Bugfixes
+
+- Fix multiaddr port after decoding ([d81ac3](https://github.com/ChainSafe/discv5/commit/d81ac3))
+
 # 0.4.1 - (2020-09-22)
 
 ### Bugfixes
