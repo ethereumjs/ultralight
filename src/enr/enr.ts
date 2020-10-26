@@ -76,7 +76,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
     return super.set(k, v);
   }
   get id(): string {
-    return (this.get("id") as Buffer).toString("utf8");
+    const id = this.get("id") as Buffer;
+    if (!id) throw new Error("id not found.");
+    return id.toString("utf8");
   }
   get keypairType(): KeypairType {
     switch (this.id) {
