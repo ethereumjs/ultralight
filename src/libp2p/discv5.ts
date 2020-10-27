@@ -23,6 +23,11 @@ export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
    * Remote ENRs used to bootstrap the network
    */
   bootEnrs: ENRInput[];
+  /**
+   * Enable/disable discv5
+   * Note: this option is handled within libp2p, not within discv5
+   */
+  enabled: boolean;
 }
 
 export interface IDiscv5DiscoveryOptions extends IDiscv5DiscoveryInputOptions {
