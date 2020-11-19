@@ -4,7 +4,7 @@ import Multiaddr = require("multiaddr");
 
 import { createKeypair, KeypairType } from "../../src/keypair";
 import { ENR } from "../../src/enr";
-import { createMagic, createWhoAreYouPacket, Packet, PacketType } from "../../src/packet";
+import { createWhoAreYouPacket, IPacket, PacketType } from "../../src/packet";
 import { UDPTransportService } from "../../src/transport";
 import { SessionService } from "../../src/session";
 import { createFindNodeMessage } from "../../src/message";
@@ -31,9 +31,6 @@ describe("session service", () => {
   enr0.setLocationMultiaddr(addr0);
   enr1.setLocationMultiaddr(addr1);
 
-  const magic0 = createMagic(enr0.nodeId);
-  const magic1 = createMagic(enr1.nodeId);
-
   let transport0: UDPTransportService;
   let transport1: UDPTransportService;
 
@@ -41,8 +38,8 @@ describe("session service", () => {
   let service1: SessionService;
 
   beforeEach(async () => {
-    transport0 = new UDPTransportService(addr0, magic0);
-    transport1 = new UDPTransportService(addr1, magic1);
+    transport0 = new UDPTransportService(addr0, enr0.nodeId);
+    transport1 = new UDPTransportService(addr1, enr1.nodeId);
 
     service0 = new SessionService(defaultConfig, enr0, kp0, transport0);
     service1 = new SessionService(defaultConfig, enr1, kp1, transport1);
@@ -56,18 +53,18 @@ describe("session service", () => {
     await service1.stop();
   });
 
-  it("should negotiate a session and receive a message from a cold sender (a->RandomPacket -> b->WhoAreYou -> a->AuthMessage)", async () => {
+  it("should negotiate a session and receive a message from a cold sender (a->RandomPacket -> b->WhoAreYou -> a->Handshake)", async () => {
     const receivedRandom = new Promise((resolve) =>
-      transport1.once("packet", (sender: Multiaddr, data: Packet) => {
+      transport1.once("packet", (sender: Multiaddr, data: IPacket) => {
         expect(sender.toString()).to.equal(addr0.toString());
-        expect(data.type).to.equal(PacketType.Message);
+        expect(data.header.flag).to.equal(PacketType.Message);
         resolve();
       })
     );
     const receivedWhoAreYou = new Promise((resolve) =>
-      transport0.once("packet", (sender: Multiaddr, data: Packet) => {
+      transport0.once("packet", (sender: Multiaddr, data: IPacket) => {
         expect(sender.toString()).to.equal(addr1.toString());
-        expect(data.type).to.equal(PacketType.WhoAreYou);
+        expect(data.header.flag).to.equal(PacketType.WhoAreYou);
         resolve();
       })
     );
@@ -86,11 +83,11 @@ describe("session service", () => {
         resolve();
       })
     );
-    service0.sendRequest(enr1, createFindNodeMessage(0));
+    service0.sendRequest(enr1, createFindNodeMessage([0]));
     await Promise.all([receivedRandom, receivedWhoAreYou, establishedSession, receivedMsg]);
   });
   it("receiver should drop WhoAreYou packets from destinations without existing pending requests", async () => {
-    transport0.send(addr1, createWhoAreYouPacket(enr1.nodeId, Buffer.alloc(12), BigInt(0)));
+    transport0.send(addr1, enr1.nodeId, createWhoAreYouPacket(Buffer.alloc(12), BigInt(0)));
     transport0.on("packet", () => expect.fail("transport0 should not receive any packets"));
   });
   it("should only accept WhoAreYou packets from destinations with existing pending requests", async () => {});

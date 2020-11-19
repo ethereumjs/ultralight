@@ -3,32 +3,20 @@ import Multiaddr = require("multiaddr");
 import { NodeId, ENR, SequenceNumber } from "../enr";
 import { SessionState, TrustedState, IKeys, ISessionState } from "./types";
 import {
-  AuthTag,
-  createAuthHeader,
-  createAuthResponse,
-  createAuthTag,
   createRandomPacket,
   createWhoAreYouPacket,
-  IAuthHeader,
-  IAuthMessagePacket,
-  IMessagePacket,
-  IWhoAreYouPacket,
-  Nonce,
-  Tag,
+  IHandshakeAuthdata,
+  IPacket,
   PacketType,
-  IRandomPacket,
+  encodeHandshakeAuthdata,
+  createHeader,
+  MASKING_IV_SIZE,
+  encodeChallengeData,
+  encodeMessageAuthdata,
 } from "../packet";
-import {
-  generateSessionKeys,
-  deriveKeysFromPubkey,
-  verifyNonce,
-  signNonce,
-  decryptAuthHeader,
-  decryptMessage,
-  encryptAuthResponse,
-  encryptMessage,
-} from "./crypto";
+import { generateSessionKeys, deriveKeysFromPubkey, decryptMessage, encryptMessage, idSign, idVerify } from "./crypto";
 import { IKeypair } from "../keypair";
+import { randomBytes } from "crypto";
 
 // The `Session` struct handles the stages of creating and establishing a handshake with a
 // peer.
@@ -36,7 +24,7 @@ import { IKeypair } from "../keypair";
 // There are two ways a Session can get initialised.
 //
 // - An RPC request to an unknown peer is requested by the application.
-// In this scenario, a RANDOM packet is sent to the unknown peer.
+// In this scenario, a packet with random message data is sent to the unknown peer.
 // - A message was received from an unknown peer and we start the `Session` by sending a
 // WHOAREYOU message.
 //
@@ -93,7 +81,7 @@ export class Session {
    * Creates a new `Session` instance and generates a RANDOM packet to be sent along with this
    * session being established. This session is set to `RandomSent` state.
    */
-  static createWithRandom(tag: Tag, remoteEnr: ENR): [Session, IRandomPacket] {
+  static createWithRandom(localId: NodeId, remoteEnr: ENR): [Session, IPacket] {
     return [
       new Session({
         state: { state: SessionState.RandomSent },
@@ -101,7 +89,7 @@ export class Session {
         remoteEnr,
         lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
       }),
-      createRandomPacket(tag),
+      createRandomPacket(localId),
     ];
   }
 
@@ -109,60 +97,55 @@ export class Session {
    * Creates a new `Session` and generates an associated WHOAREYOU packet.
    * The returned session is in the `WhoAreYouSent` state.
    */
-  static createWithWhoAreYou(
-    nodeId: NodeId,
-    enrSeq: SequenceNumber,
-    remoteEnr: ENR | null,
-    authTag: AuthTag
-  ): [Session, IWhoAreYouPacket] {
+  static createWithWhoAreYou(nonce: Buffer, enrSeq: SequenceNumber, remoteEnr: ENR | null): [Session, IPacket] {
+    const packet = createWhoAreYouPacket(nonce, enrSeq);
+    const challengeData = encodeChallengeData(packet.maskingIv, packet.header);
     return [
       new Session({
-        state: { state: SessionState.WhoAreYouSent },
+        state: { state: SessionState.WhoAreYouSent, challengeData },
         trusted: TrustedState.Untrusted,
         remoteEnr: remoteEnr as ENR,
         lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
       }),
-      createWhoAreYouPacket(nodeId, authTag, enrSeq),
+      packet,
     ];
   }
 
   /**
-   * Generates session keys from an authentication header.
+   * Generates session keys from a handshake authdata.
    * If the IP of the ENR does not match the source IP address, the session is considered untrusted.
    * The output returns a boolean which specifies if the Session is trusted or not.
    */
-  establishFromHeader(
-    kpriv: IKeypair,
-    localId: NodeId,
-    remoteId: NodeId,
-    idNonce: Nonce,
-    authHeader: IAuthHeader
-  ): boolean {
-    const [decryptionKey, encryptionKey, authRespKey] = deriveKeysFromPubkey(
+  establishFromHandshake(kpriv: IKeypair, localId: NodeId, remoteId: NodeId, authdata: IHandshakeAuthdata): boolean {
+    if (this.state.state !== SessionState.WhoAreYouSent) {
+      throw new Error("Session must be in WHOAREYOU-sent state");
+    }
+    const challengeData = this.state.challengeData;
+    const [decryptionKey, encryptionKey] = deriveKeysFromPubkey(
       kpriv,
       localId,
       remoteId,
-      idNonce,
-      authHeader.ephemeralPubkey
+      authdata.ephPubkey,
+      challengeData
     );
-    const keys = { encryptionKey, decryptionKey, authRespKey };
-    const authResponse = decryptAuthHeader(keys.authRespKey, authHeader);
+    const keys = { encryptionKey, decryptionKey };
 
     // update ENR if applicable
-    if (authResponse.nodeRecord) {
+    if (authdata.record) {
+      const newRemoteEnr = ENR.decode(authdata.record);
       if (this.remoteEnr) {
-        if (this.remoteEnr.seq < authResponse.nodeRecord.seq) {
-          this.remoteEnr = authResponse.nodeRecord;
+        if (this.remoteEnr.seq < newRemoteEnr.seq) {
+          this.remoteEnr = newRemoteEnr;
         } // else don't update
       } else {
-        this.remoteEnr = authResponse.nodeRecord;
+        this.remoteEnr = newRemoteEnr;
       }
     }
 
     if (!this.remoteEnr) {
       throw new Error(ERR_NO_ENR);
     }
-    if (!verifyNonce(this.remoteEnr.keypair, idNonce, authHeader.ephemeralPubkey, authResponse.signature)) {
+    if (!idVerify(this.remoteEnr.keypair, challengeData, authdata.ephPubkey, localId, authdata.idSignature)) {
       throw new Error(ERR_INVALID_SIG);
     }
 
@@ -175,35 +158,41 @@ export class Session {
   }
 
   /**
-   * Encrypts a message and produces an IAuthMessagePacket.
+   * Encrypts a message and produces an handshake packet.
    */
-  encryptWithHeader(
-    tag: Tag,
+  encryptWithHandshake(
     kpriv: IKeypair,
-    updatedEnr: ENR | null,
-    localNodeId: NodeId,
-    idNonce: Nonce,
+    challengeData: Buffer,
+    srcId: NodeId,
+    updatedEnr: Buffer | null,
     message: Buffer
-  ): IAuthMessagePacket {
+  ): IPacket {
     if (!this.remoteEnr) {
       throw new Error(ERR_NO_ENR);
     }
     // generate session keys
-    const [encryptionKey, decryptionKey, authRespKey, ephemeralPubkey] = generateSessionKeys(
-      localNodeId,
-      this.remoteEnr as ENR,
-      idNonce
-    );
-    const keys = { encryptionKey, decryptionKey, authRespKey };
-    // create auth header
-    const signature = signNonce(kpriv, idNonce, ephemeralPubkey);
-    const authHeader = createAuthHeader(
-      idNonce,
-      ephemeralPubkey,
-      encryptAuthResponse(keys.authRespKey, createAuthResponse(signature, updatedEnr as ENR), kpriv.privateKey)
-    );
+    const [encryptionKey, decryptionKey, ephPubkey] = generateSessionKeys(srcId, this.remoteEnr as ENR, challengeData);
+    const keys = { encryptionKey, decryptionKey };
+
+    // create idSignature
+    const idSignature = idSign(kpriv, challengeData, ephPubkey, this.remoteEnr.nodeId);
+
+    // create authdata
+    const authdata = encodeHandshakeAuthdata({
+      srcId,
+      sigSize: 64,
+      ephKeySize: 33,
+      idSignature,
+      ephPubkey,
+      record: updatedEnr || undefined,
+    });
+
+    const header = createHeader(PacketType.Handshake, authdata);
+    const maskingIv = randomBytes(MASKING_IV_SIZE);
+    const aad = encodeChallengeData(maskingIv, header);
+
     // encrypt the message
-    const messageCiphertext = encryptMessage(keys.encryptionKey, authHeader.authTag, message, tag);
+    const messageCiphertext = encryptMessage(keys.encryptionKey, header.nonce, message, aad);
     // update session state
     switch (this.state.state) {
       case SessionState.Established:
@@ -222,9 +211,8 @@ export class Session {
         };
     }
     return {
-      type: PacketType.AuthMessage,
-      tag,
-      authHeader,
+      maskingIv,
+      header,
       message: messageCiphertext,
     };
   }
@@ -234,22 +222,23 @@ export class Session {
    * Encrypt packets with the current session key if we are awaiting a response from an
    * IAuthMessagePacket.
    */
-  encryptMessage(tag: Tag, message: Buffer): IMessagePacket {
-    // TODO: Establish a counter to prevent repeats of nonce
-    const authTag = createAuthTag();
+  encryptMessage(srcId: NodeId, destId: NodeId, message: Buffer): IPacket {
+    const authdata = encodeMessageAuthdata({ srcId });
+    const header = createHeader(PacketType.Message, authdata);
+    const maskingIv = randomBytes(MASKING_IV_SIZE);
+    const aad = encodeChallengeData(maskingIv, header);
     let ciphertext: Buffer;
     switch (this.state.state) {
       case SessionState.Established:
       case SessionState.EstablishedAwaitingResponse:
-        ciphertext = encryptMessage(this.state.currentKeys.encryptionKey, authTag, message, tag);
+        ciphertext = encryptMessage(this.state.currentKeys.encryptionKey, header.nonce, message, aad);
         break;
       default:
         throw new Error("Session not established");
     }
     return {
-      type: PacketType.Message,
-      tag,
-      authTag,
+      maskingIv,
+      header,
       message: ciphertext,
     };
   }
@@ -260,7 +249,7 @@ export class Session {
    * upon failure, the new keys are attempted. If the new keys succeed,
    * the session keys are updated along with the Session state.
    */
-  decryptMessage(nonce: AuthTag, message: Buffer, aad: Buffer): Buffer {
+  decryptMessage(nonce: Buffer, message: Buffer, aad: Buffer): Buffer {
     if (!this.remoteEnr) {
       throw new Error(ERR_NO_ENR);
     }

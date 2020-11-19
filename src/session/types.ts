@@ -1,7 +1,7 @@
 import Multiaddr = require("multiaddr");
 
 import { NodeId, ENR } from "../enr";
-import { Packet, AuthTag } from "../packet";
+import { IPacket } from "../packet";
 import { Message, RequestMessage } from "../message";
 
 export interface ISessionConfig {
@@ -60,7 +60,6 @@ export enum SessionState {
 }
 
 export interface IKeys {
-  authRespKey: Buffer;
   encryptionKey: Buffer;
   decryptionKey: Buffer;
 }
@@ -70,7 +69,7 @@ export interface IKeys {
  * We maintain 0, 1, or 2 keys depending on the state
  */
 export type ISessionState =
-  | { state: SessionState.WhoAreYouSent }
+  | { state: SessionState.WhoAreYouSent; challengeData: Buffer }
   | { state: SessionState.RandomSent }
   | { state: SessionState.Poisoned }
   | { state: SessionState.AwaitingResponse; currentKeys: IKeys }
@@ -105,7 +104,7 @@ export interface IPendingRequest {
   /**
    * The raw packet sent
    */
-  packet: Packet;
+  packet: IPacket;
   /**
    * The unencrypted message. Required if we need to re-encrypt and re-send
    */
@@ -129,7 +128,7 @@ export interface ISessionEvents {
    * A WHOAREYOU packet needs to be sent.
    * This requests the protocol layer to send back the highest known ENR.
    */
-  whoAreYouRequest: (srcId: NodeId, src: Multiaddr, authTag: AuthTag) => void;
+  whoAreYouRequest: (srcId: NodeId, src: Multiaddr, nonce: Buffer) => void;
   /**
    * An RPC request failed.
    */

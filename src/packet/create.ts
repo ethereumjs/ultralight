@@ -1,78 +1,41 @@
 import { randomBytes } from "bcrypto/lib/random";
-import sha256 = require("bcrypto/lib/sha256");
+import { NodeId, SequenceNumber } from "../enr";
+import { ID_NONCE_SIZE, MASKING_IV_SIZE, NONCE_SIZE } from "./constants";
+import { encodeMessageAuthdata, encodeWhoAreYouAuthdata } from "./encode";
+import { IHeader, IPacket, PacketType } from "./types";
 
-import { AUTH_TAG_LENGTH, ID_NONCE_LENGTH, RANDOM_DATA_LENGTH, WHOAREYOU_STRING } from "./constants";
-import { Tag, AuthTag, IWhoAreYouPacket, IAuthResponse, Nonce, IAuthHeader, PacketType, IRandomPacket } from "./types";
-import { NodeId, SequenceNumber, ENR } from "../enr";
-import { fromHex, toHex } from "../util";
-
-export function createRandomPacket(tag: Tag): IRandomPacket {
+export function createHeader(flag: PacketType, authdata: Buffer, nonce = randomBytes(NONCE_SIZE)): IHeader {
   return {
-    type: PacketType.Random,
-    tag,
-    authTag: randomBytes(AUTH_TAG_LENGTH),
-    message: randomBytes(RANDOM_DATA_LENGTH),
+    protocolId: "discv5",
+    version: 1,
+    flag,
+    nonce,
+    authdataSize: authdata.length,
+    authdata,
   };
 }
 
-export function createMagic(nodeId: NodeId): Buffer {
-  return sha256.digest(Buffer.concat([fromHex(nodeId), Buffer.from(WHOAREYOU_STRING, "utf-8")]));
-}
-
-export function createWhoAreYouPacket(nodeId: NodeId, authTag: AuthTag, enrSeq: SequenceNumber): IWhoAreYouPacket {
+export function createRandomPacket(srcId: NodeId): IPacket {
+  const authdata = encodeMessageAuthdata({ srcId });
+  const header = createHeader(PacketType.Message, authdata);
+  const maskingIv = randomBytes(MASKING_IV_SIZE);
+  const message = randomBytes(44);
   return {
-    type: PacketType.WhoAreYou,
-    magic: createMagic(nodeId),
-    token: authTag,
-    idNonce: randomBytes(ID_NONCE_LENGTH),
-    enrSeq: Number(enrSeq),
+    maskingIv,
+    header,
+    message,
   };
 }
 
-export function createAuthTag(): AuthTag {
-  return randomBytes(AUTH_TAG_LENGTH);
-}
-
-export function createAuthHeader(
-  idNonce: Nonce,
-  ephemeralPubkey: Buffer,
-  authResponse: Buffer,
-  authTag?: AuthTag
-): IAuthHeader {
+export function createWhoAreYouPacket(nonce: Buffer, enrSeq: SequenceNumber): IPacket {
+  const idNonce = randomBytes(ID_NONCE_SIZE);
+  const authdata = encodeWhoAreYouAuthdata({ idNonce, enrSeq });
+  const header = createHeader(PacketType.WhoAreYou, authdata, nonce);
+  const maskingIv = randomBytes(MASKING_IV_SIZE);
+  const message = Buffer.alloc(0);
   return {
-    authTag: authTag || createAuthTag(),
-    idNonce,
-    authSchemeName: "gcm",
-    ephemeralPubkey,
-    authResponse,
+    maskingIv,
+    header,
+    message,
   };
-}
-
-export function createAuthResponse(signature: Buffer, enr?: ENR): IAuthResponse {
-  return {
-    version: 5,
-    signature,
-    nodeRecord: enr,
-  };
-}
-
-// calculate node id / tag
-
-export function createSrcId(dstId: NodeId, tag: Tag): NodeId {
-  const hash = sha256.digest(fromHex(dstId));
-  // reuse `hash` buffer for output
-  for (let i = 0; i < 32; i++) {
-    hash[i] = hash[i] ^ tag[i];
-  }
-  return toHex(hash);
-}
-
-export function createTag(srcId: NodeId, dstId: NodeId): Tag {
-  const nodeId = fromHex(srcId);
-  const hash = sha256.digest(fromHex(dstId));
-  // reuse `hash` buffer for output
-  for (let i = 0; i < 32; i++) {
-    hash[i] = hash[i] ^ nodeId[i];
-  }
-  return hash;
 }

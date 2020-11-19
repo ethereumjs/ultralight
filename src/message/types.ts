@@ -7,17 +7,24 @@ export enum MessageType {
   PONG = 2,
   FINDNODE = 3,
   NODES = 4,
-  REGTOPIC = 5,
-  TICKET = 6,
-  REGCONFIRMATION = 7,
-  TOPICQUERY = 8,
+  TALKREQ = 5,
+  TALKRESP = 6,
+  REGTOPIC = 7,
+  TICKET = 8,
+  REGCONFIRMATION = 9,
+  TOPICQUERY = 10,
 }
 
 export type Message = RequestMessage | ResponseMessage;
 
-export type RequestMessage = IPingMessage | IFindNodeMessage | IRegTopicMessage | ITopicQueryMessage;
+export type RequestMessage = IPingMessage | IFindNodeMessage | ITalkReqMessage | IRegTopicMessage | ITopicQueryMessage;
 
-export type ResponseMessage = IPongMessage | INodesMessage | ITicketMessage | IRegConfirmationMessage;
+export type ResponseMessage =
+  | IPongMessage
+  | INodesMessage
+  | ITalkRespMessage
+  | ITicketMessage
+  | IRegConfirmationMessage;
 
 export interface IPingMessage {
   type: MessageType.PING;
@@ -36,7 +43,7 @@ export interface IPongMessage {
 export interface IFindNodeMessage {
   type: MessageType.FINDNODE;
   id: RequestId;
-  distance: number;
+  distances: number[];
 }
 
 export interface INodesMessage {
@@ -44,6 +51,19 @@ export interface INodesMessage {
   id: RequestId;
   total: number;
   enrs: ENR[];
+}
+
+export interface ITalkReqMessage {
+  type: MessageType.TALKREQ;
+  id: RequestId;
+  protocol: Buffer;
+  request: Buffer;
+}
+
+export interface ITalkRespMessage {
+  type: MessageType.TALKRESP;
+  id: RequestId;
+  response: Buffer;
 }
 
 export interface IRegTopicMessage {

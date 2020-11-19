@@ -2,7 +2,7 @@ import * as dgram from "dgram";
 import { EventEmitter } from "events";
 import Multiaddr = require("multiaddr");
 
-import { decode, encode, Packet, MAX_PACKET_SIZE } from "../packet";
+import { decodePacket, encodePacket, IPacket, MAX_PACKET_SIZE } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 
 /**
@@ -12,16 +12,16 @@ export class UDPTransportService extends (EventEmitter as { new (): TransportEve
   implements ITransportService {
   public multiaddr: Multiaddr;
   private socket!: dgram.Socket;
-  private whoAreYouMagic: Buffer;
+  private srcId: string;
 
-  public constructor(multiaddr: Multiaddr, whoAreYouMagic: Buffer) {
+  public constructor(multiaddr: Multiaddr, srcId: string) {
     super();
     const opts = multiaddr.toOptions();
     if (opts.transport !== "udp") {
       throw new Error("Local multiaddr must use UDP");
     }
     this.multiaddr = multiaddr;
-    this.whoAreYouMagic = whoAreYouMagic;
+    this.srcId = srcId;
   }
 
   public async start(): Promise<void> {
@@ -40,15 +40,17 @@ export class UDPTransportService extends (EventEmitter as { new (): TransportEve
     return new Promise((resolve) => this.socket.close(resolve));
   }
 
-  public async send(to: Multiaddr, packet: Packet): Promise<void> {
+  public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
     const nodeAddr = to.toOptions();
-    return new Promise((resolve) => this.socket.send(encode(packet), nodeAddr.port, nodeAddr.host, () => resolve()));
+    return new Promise((resolve) =>
+      this.socket.send(encodePacket(toId, packet), nodeAddr.port, nodeAddr.host, () => resolve())
+    );
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
     const multiaddr = Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/udp/${rinfo.port}`);
     try {
-      const packet = decode(data, this.whoAreYouMagic);
+      const packet = decodePacket(this.srcId, data);
       this.emit("packet", multiaddr, packet);
     } catch (e) {
       this.emit("decodeError", e, multiaddr);
