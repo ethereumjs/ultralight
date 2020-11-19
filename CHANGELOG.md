@@ -1,3 +1,9 @@
+# 0.5.0 - (2020-11-19)
+
+### BREAKING CHANGES
+
+- Initial discv5.1 update ([05ba82](https://github.com/ChainSafe/discv5/commit/05ba82))
+
 # 0.4.2 - (2020-09-27)
 
 ### Bugfixes
