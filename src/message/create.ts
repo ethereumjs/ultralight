@@ -31,11 +31,11 @@ export function createPongMessage(
   };
 }
 
-export function createFindNodeMessage(distance: number): IFindNodeMessage {
+export function createFindNodeMessage(distances: number[]): IFindNodeMessage {
   return {
     type: MessageType.FINDNODE,
     id: createRequestId(),
-    distance,
+    distances,
   };
 }
 

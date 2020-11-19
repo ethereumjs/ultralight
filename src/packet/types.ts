@@ -1,78 +1,85 @@
-import { ENR } from "../enr";
+import { NodeId } from "../enr";
 
 // DISCV5 message packet types
 
-export type Tag = Buffer; // TAG_LENGTH
-export type Nonce = Buffer; // ID_NONCE_LENGTH
-export type AuthTag = Buffer; // AUTH_TAG_LENGTH
-export type Magic = Buffer; // MAGIC_LENGTH
-
 export enum PacketType {
-  WhoAreYou = 1,
-  AuthMessage,
-  Message,
-  Random,
+  /**
+   * Ordinary message packet
+   */
+  Message = 0,
+  /**
+   * Sent when the recipient of an ordinary message packet cannot decrypt/authenticate the packet's message
+   */
+  WhoAreYou,
+  /**
+   * Sent following a WHOAREYOU.
+   * These packets establish a new session and carry handshake related data
+   * in addition to the encrypted/authenticated message
+   */
+  Handshake,
 }
 
-export type Packet = IWhoAreYouPacket | IAuthMessagePacket | IMessagePacket | IRandomPacket;
-
-export interface IAuthHeader {
-  authTag: Buffer;
-  idNonce: Buffer;
-  authSchemeName: "gcm" | string;
-  ephemeralPubkey: Buffer;
-  authResponse: Buffer;
-}
-
-export interface IAuthResponse {
+export interface IStaticHeader {
+  /**
+   * "discv5"
+   */
+  protocolId: string;
+  /**
+   * 2 bytes
+   */
   version: number;
-  signature: Buffer;
-  nodeRecord?: ENR;
+  /**
+   * 1 byte
+   */
+  flag: PacketType;
+  /**
+   * 12 bytes
+   */
+  nonce: Buffer;
+  /**
+   * 2 bytes
+   */
+  authdataSize: number;
 }
 
-// Packet format
-
-export interface IRegularPacket {
-  // The XOR(SHA256(dest-node-id), src-node-id).
-  tag: Tag;
+export interface IHeader extends IStaticHeader {
+  authdata: Buffer;
 }
 
-/**
- * Packets
- */
+// A IHeader contains an "authdata
+// the contents of which are dependent on the packet type
 
-export interface IWhoAreYouPacket {
-  type: PacketType.WhoAreYou;
-  // SHA256(`dest-node-id` || "WHOAREYOU").
-  magic: Magic;
-  // The auth-tag of the request.
-  token: AuthTag;
-  // The `id-nonce` to prevent handshake replays.
-  idNonce: Nonce;
-  // Highest known ENR sequence number of node.
-  enrSeq: number;
+export interface IMessageAuthdata {
+  /**
+   * 32 bytes
+   */
+  srcId: NodeId;
 }
 
-export interface IAuthMessagePacket extends IRegularPacket {
-  type: PacketType.AuthMessage;
-  // Authentication header.
-  authHeader: IAuthHeader;
-  // The encrypted message including the authentication header.
+export interface IWhoAreYouAuthdata {
+  /**
+   * 16 bytes
+   */
+  idNonce: Buffer;
+  /**
+   * 8 bytes
+   */
+  enrSeq: bigint;
+}
+
+export interface IHandshakeAuthdata {
+  srcId: NodeId;
+  sigSize: number;
+  ephKeySize: number;
+  idSignature: Buffer;
+  ephPubkey: Buffer;
+  // pre-encoded ENR
+  record?: Buffer;
+}
+
+export interface IPacket {
+  maskingIv: Buffer;
+  header: IHeader;
   message: Buffer;
-}
-
-export interface IMessagePacket extends IRegularPacket {
-  type: PacketType.Message;
-  // 12 byte Authentication nonce.
-  authTag: AuthTag;
-  // The encrypted message as raw bytes.
-  message: Buffer;
-}
-
-export interface IRandomPacket extends IRegularPacket {
-  type: PacketType.Random;
-  // 12 byte Authentication nonce.
-  authTag: AuthTag;
-  // random data
-  message: Buffer;
+  messageAd?: Buffer;
 }

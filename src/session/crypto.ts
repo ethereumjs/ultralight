@@ -3,16 +3,7 @@ import sha256 = require("bcrypto/lib/sha256");
 import cipher = require("bcrypto/lib/cipher");
 
 import { ENR, NodeId } from "../enr";
-import {
-  AUTH_TAG_LENGTH,
-  AuthTag,
-  decodeAuthResponse,
-  encodeAuthResponse,
-  IAuthHeader,
-  IAuthResponse,
-  Nonce,
-} from "../packet";
-import { generateKeypair, IKeypair, createKeypair, KeypairType, secp256k1PublicKeyToRaw } from "../keypair";
+import { generateKeypair, IKeypair, createKeypair } from "../keypair";
 import { fromHex } from "../util";
 
 // Implementation for generating session keys in the Discv5 protocol.
@@ -24,78 +15,70 @@ import { fromHex } from "../util";
 // for different algorithms.
 
 const KEY_AGREEMENT_STRING = "discovery v5 key agreement";
-const NONCE_PREFIX = "discovery-id-nonce";
+const ID_SIGNATURE_TEXT = "discovery v5 identity proof";
 const KEY_LENGTH = 16;
-const KNOWN_SCHEME = "gcm";
 export const MAC_LENGTH = 16;
 
-// Generates session and auth-response keys for a nonce and remote ENR. This currently only
+// Generates session keys for a challengeData and remote ENR. This currently only
 // supports Secp256k1 signed ENR's.
-// Returns [initiatorKey, responderKey, authRespKey, ephemPK]
-export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, idNonce: Nonce): [Buffer, Buffer, Buffer, Buffer] {
+// Returns [initiatorKey, responderKey, ephemPK]
+export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, challengeData: Buffer): [Buffer, Buffer, Buffer] {
   const remoteKeypair = remoteEnr.keypair;
   const ephemKeypair = generateKeypair(remoteKeypair.type);
   const secret = ephemKeypair.deriveSecret(remoteKeypair);
+  /* TODO possibly not needed, check tests
   const ephemPubkey =
     remoteKeypair.type === KeypairType.secp256k1
-      ? secp256k1PublicKeyToRaw(ephemKeypair.publicKey)
+      ? secp256k1PublicKeyToCompressed(ephemKeypair.publicKey)
       : ephemKeypair.publicKey;
-  return [...deriveKey(secret, localId, remoteEnr.nodeId, idNonce), ephemPubkey] as [Buffer, Buffer, Buffer, Buffer];
+  */
+  return [...deriveKey(secret, localId, remoteEnr.nodeId, challengeData), ephemKeypair.publicKey] as [
+    Buffer,
+    Buffer,
+    Buffer
+  ];
 }
 
-export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, idNonce: Nonce): [Buffer, Buffer, Buffer] {
+export function deriveKey(secret: Buffer, firstId: NodeId, secondId: NodeId, challengeData: Buffer): [Buffer, Buffer] {
   const info = Buffer.concat([Buffer.from(KEY_AGREEMENT_STRING), fromHex(firstId), fromHex(secondId)]);
-  const output = hkdf.expand(sha256, hkdf.extract(sha256, secret, idNonce), info, 3 * KEY_LENGTH);
-  return [output.slice(0, KEY_LENGTH), output.slice(KEY_LENGTH, 2 * KEY_LENGTH), output.slice(2 * KEY_LENGTH)];
+  const output = hkdf.expand(sha256, hkdf.extract(sha256, secret, challengeData), info, 2 * KEY_LENGTH);
+  return [output.slice(0, KEY_LENGTH), output.slice(KEY_LENGTH, 2 * KEY_LENGTH)];
 }
 
 export function deriveKeysFromPubkey(
   kpriv: IKeypair,
   localId: NodeId,
   remoteId: NodeId,
-  idNonce: Nonce,
-  ephemPK: Buffer
-): [Buffer, Buffer, Buffer] {
+  ephemPK: Buffer,
+  challengeData: Buffer
+): [Buffer, Buffer] {
   const secret = kpriv.deriveSecret(createKeypair(kpriv.type, undefined, ephemPK));
-  return deriveKey(secret, remoteId, localId, idNonce);
+  return deriveKey(secret, remoteId, localId, challengeData);
 }
 
-// Generates a signature of a nonce given a keypair. This prefixes the `NONCE_PREFIX` to the
-// signature.
-export function signNonce(kpriv: IKeypair, idNonce: Nonce, ephemPK: Buffer): Buffer {
-  const signingNonce = generateSigningNonce(idNonce, ephemPK);
+// Generates a signature given a keypair.
+export function idSign(kpriv: IKeypair, challengeData: Buffer, ephemPK: Buffer, destNodeId: NodeId): Buffer {
+  const signingNonce = generateIdSignatureInput(challengeData, ephemPK, destNodeId);
   return kpriv.sign(signingNonce);
 }
 
-// Verifies the authentication header nonce.
-export function verifyNonce(kpub: IKeypair, idNonce: Nonce, remoteEphemPK: Buffer, sig: Buffer): boolean {
-  const signingNonce = generateSigningNonce(idNonce, remoteEphemPK);
+// Verifies the id signature
+export function idVerify(
+  kpub: IKeypair,
+  challengeData: Buffer,
+  remoteEphemPK: Buffer,
+  srcNodeId: NodeId,
+  sig: Buffer
+): boolean {
+  const signingNonce = generateIdSignatureInput(challengeData, remoteEphemPK, srcNodeId);
   return kpub.verify(signingNonce, sig);
 }
 
-export function generateSigningNonce(idNonce: Nonce, ephemPK: Buffer): Buffer {
-  return sha256.digest(Buffer.concat([Buffer.from(NONCE_PREFIX), idNonce, ephemPK]));
+export function generateIdSignatureInput(challengeData: Buffer, ephemPK: Buffer, nodeId: NodeId): Buffer {
+  return sha256.digest(Buffer.concat([Buffer.from(ID_SIGNATURE_TEXT), challengeData, ephemPK, fromHex(nodeId)]));
 }
 
-export function encryptAuthResponse(authRespKey: Buffer, authResp: IAuthResponse, enrPrivateKey: Buffer): Buffer {
-  return encryptMessage(
-    authRespKey,
-    Buffer.alloc(AUTH_TAG_LENGTH),
-    encodeAuthResponse(authResp, enrPrivateKey),
-    Buffer.alloc(0)
-  );
-}
-
-export function decryptAuthHeader(authRespKey: Buffer, header: IAuthHeader): IAuthResponse {
-  if (header.authSchemeName !== KNOWN_SCHEME) {
-    throw new Error(`auth header scheme name must be: ${KNOWN_SCHEME}, found: ${header.authSchemeName}`);
-  }
-  return decodeAuthResponse(
-    decryptMessage(authRespKey, Buffer.alloc(AUTH_TAG_LENGTH), header.authResponse, Buffer.alloc(0))
-  );
-}
-
-export function decryptMessage(key: Buffer, nonce: AuthTag, data: Buffer, aad: Buffer): Buffer {
+export function decryptMessage(key: Buffer, nonce: Buffer, data: Buffer, aad: Buffer): Buffer {
   if (data.length < MAC_LENGTH) {
     throw new Error("message data not long enough");
   }
@@ -109,7 +92,7 @@ export function decryptMessage(key: Buffer, nonce: AuthTag, data: Buffer, aad: B
   ]);
 }
 
-export function encryptMessage(key: Buffer, nonce: AuthTag, data: Buffer, aad: Buffer): Buffer {
+export function encryptMessage(key: Buffer, nonce: Buffer, data: Buffer, aad: Buffer): Buffer {
   const ctx = new cipher.Cipher("AES-128-GCM");
   ctx.init(key, nonce);
   ctx.setAAD(aad);

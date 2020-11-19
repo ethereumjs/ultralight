@@ -4,10 +4,7 @@ import { expect } from "chai";
 import Multiaddr = require("multiaddr");
 
 import { Discv5 } from "../../src/service/service";
-import { ENR, v4 } from "../../src/enr";
-import { SessionService } from "../../src/session/service";
-import { ISocketAddr, UDPTransportService } from "../../src/transport";
-import { IAuthMessagePacket, PacketType } from "../../src/packet";
+import { ENR } from "../../src/enr";
 import { generateKeypair, KeypairType, createPeerIdFromKeypair } from "../../src/keypair";
 
 describe("Discv5", async () => {

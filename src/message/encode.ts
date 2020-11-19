@@ -13,6 +13,8 @@ import {
   ITopicQueryMessage,
   Message,
   MessageType,
+  ITalkReqMessage,
+  ITalkRespMessage,
 } from "./types";
 
 export function encode(message: Message): Buffer {
@@ -25,6 +27,10 @@ export function encode(message: Message): Buffer {
       return encodeFindNodeMessage(message as IFindNodeMessage);
     case MessageType.NODES:
       return encodeNodesMessage(message as INodesMessage);
+    case MessageType.TALKREQ:
+      return encodeTalkReqMessage(message as ITalkReqMessage);
+    case MessageType.TALKRESP:
+      return encodeTalkRespMessage(message as ITalkRespMessage);
     case MessageType.REGTOPIC:
       return encodeRegTopicMessage(message as IRegTopicMessage);
     case MessageType.TICKET:
@@ -58,7 +64,7 @@ export function encodePongMessage(m: IPongMessage): Buffer {
 }
 
 export function encodeFindNodeMessage(m: IFindNodeMessage): Buffer {
-  return Buffer.concat([Buffer.from([MessageType.FINDNODE]), RLP.encode([toBuffer(m.id), m.distance])]);
+  return Buffer.concat([Buffer.from([MessageType.FINDNODE]), RLP.encode([toBuffer(m.id), m.distances])]);
 }
 
 export function encodeNodesMessage(m: INodesMessage): Buffer {
@@ -66,6 +72,14 @@ export function encodeNodesMessage(m: INodesMessage): Buffer {
     Buffer.from([MessageType.NODES]),
     RLP.encode([toBuffer(m.id), m.total, m.enrs.map((enr) => enr.encodeToValues())]),
   ]);
+}
+
+export function encodeTalkReqMessage(m: ITalkReqMessage): Buffer {
+  return Buffer.concat([Buffer.from([MessageType.TALKREQ]), RLP.encode([toBuffer(m.id), m.protocol, m.request])]);
+}
+
+export function encodeTalkRespMessage(m: ITalkRespMessage): Buffer {
+  return Buffer.concat([Buffer.from([MessageType.TALKRESP]), RLP.encode([toBuffer(m.id), m.response])]);
 }
 
 export function encodeRegTopicMessage(m: IRegTopicMessage): Buffer {

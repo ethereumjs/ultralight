@@ -13,6 +13,8 @@ import {
   ITopicQueryMessage,
   Message,
   MessageType,
+  ITalkReqMessage,
+  ITalkRespMessage,
 } from "./types";
 import { ENR } from "../enr";
 
@@ -29,6 +31,10 @@ export function decode(data: Buffer): Message {
       return decodeFindNode(data);
     case MessageType.NODES:
       return decodeNodes(data);
+    case MessageType.TALKREQ:
+      return decodeTalkReq(data);
+    case MessageType.TALKRESP:
+      return decodeTalkResp(data);
     case MessageType.REGTOPIC:
       return decodeRegTopic(data);
     case MessageType.TICKET:
@@ -78,10 +84,14 @@ function decodeFindNode(data: Buffer): IFindNodeMessage {
   if (!Array.isArray(rlpRaw) || rlpRaw.length !== 2) {
     throw new Error(ERR_INVALID_MESSAGE);
   }
+  if (!Array.isArray(rlpRaw[1])) {
+    throw new Error(ERR_INVALID_MESSAGE);
+  }
+  const distances = ((rlpRaw[1] as unknown) as Buffer[]).map((x) => (x.length ? x.readUInt8(0) : 0));
   return {
     type: MessageType.FINDNODE,
     id: toBigIntBE(rlpRaw[0]),
-    distance: rlpRaw[1].length ? rlpRaw[1].readUInt8(0) : 0,
+    distances,
   };
 }
 
@@ -95,6 +105,31 @@ function decodeNodes(data: Buffer): INodesMessage {
     id: toBigIntBE(rlpRaw[0]),
     total: rlpRaw[1].length ? rlpRaw[1].readUIntBE(0, rlpRaw[1].length) : 0,
     enrs: rlpRaw[2].map((enrRaw) => ENR.decodeFromValues(enrRaw)),
+  };
+}
+
+function decodeTalkReq(data: Buffer): ITalkReqMessage {
+  const rlpRaw = (RLP.decode(data.slice(1)) as unknown) as RLP.Decoded;
+  if (!Array.isArray(rlpRaw) || rlpRaw.length !== 3) {
+    throw new Error(ERR_INVALID_MESSAGE);
+  }
+  return {
+    type: MessageType.TALKREQ,
+    id: toBigIntBE(rlpRaw[0]),
+    protocol: rlpRaw[1],
+    request: rlpRaw[2],
+  };
+}
+
+function decodeTalkResp(data: Buffer): ITalkRespMessage {
+  const rlpRaw = (RLP.decode(data.slice(1)) as unknown) as RLP.Decoded;
+  if (!Array.isArray(rlpRaw) || rlpRaw.length !== 2) {
+    throw new Error(ERR_INVALID_MESSAGE);
+  }
+  return {
+    type: MessageType.TALKRESP,
+    id: toBigIntBE(rlpRaw[0]),
+    response: rlpRaw[1],
   };
 }
 
