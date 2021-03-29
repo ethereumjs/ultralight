@@ -49,6 +49,6 @@ export function createKeypairFromPeerId(peerId: PeerId): IKeypair {
   return createKeypair(
     pub.Type as KeypairType,
     peerId.privKey ? toBuffer(peerId.privKey.marshal()) : undefined,
-    pub.Data
+    toBuffer(pub.Data)
   );
 }
