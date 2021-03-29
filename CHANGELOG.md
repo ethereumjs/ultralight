@@ -1,3 +1,10 @@
+# 0.5.1 - (2021-03-29)
+
+### Chores
+
+- Convert stray Uint8Array to Buffer ([4eb0fc](https://github.com/ChainSafe/discv5/commit/4eb0fc))
+- Update bcrypto ([c6f08b](https://github.com/ChainSafe/discv5/commit/c6f08b))
+
 # 0.5.0 - (2020-11-19)
 
 ### BREAKING CHANGES
