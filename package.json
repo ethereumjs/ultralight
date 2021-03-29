@@ -56,7 +56,7 @@
   "dependencies": {
     "@types/err-code": "^2.0.0",
     "base64url": "^3.0.1",
-    "bcrypto": "^4.2.8",
+    "bcrypto": "^5.4.0",
     "bigint-buffer": "^1.1.5",
     "debug": "^4.1.1",
     "dgram": "^1.0.1",
