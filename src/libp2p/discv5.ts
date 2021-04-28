@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import PeerId = require("peer-id");
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 import { randomBytes } from "libp2p-crypto";
 
 import { Discv5, ENRInput } from "../service";
@@ -48,7 +48,7 @@ export class Discv5Discovery extends EventEmitter {
     this.discv5 = Discv5.create({
       enr: options.enr,
       peerId: options.peerId,
-      multiaddr: Multiaddr(options.bindAddr),
+      multiaddr: new Multiaddr(options.bindAddr),
       config: options,
     });
     this.started = false;

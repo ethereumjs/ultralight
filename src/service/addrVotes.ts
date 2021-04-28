@@ -1,4 +1,4 @@
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { NodeId } from "../enr";
 import { TimeoutMap } from "../util";
@@ -47,7 +47,7 @@ export class AddrVotes {
       if (!this.votes.size) {
         return undefined;
       }
-      tiebreaker = Multiaddr(Object.keys(this.tallies)[0]);
+      tiebreaker = new Multiaddr(Object.keys(this.tallies)[0]);
     }
     const tiebreakerStr = tiebreaker.toString();
     let best: [string, number] = [tiebreakerStr, this.tallies[tiebreakerStr]];
@@ -56,6 +56,6 @@ export class AddrVotes {
         best = [addrStr, total];
       }
     }
-    return Multiaddr(best[0]);
+    return new Multiaddr(best[0]);
   }
 }

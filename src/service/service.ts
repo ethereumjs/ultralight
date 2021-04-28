@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import debug from "debug";
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 import isIp = require("is-ip");
 import PeerId = require("peer-id");
 
@@ -519,7 +519,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     if (this.config.enrUpdate) {
       this.addrVotes.addVote(
         srcId,
-        Multiaddr(
+        new Multiaddr(
           `/${isIp.v4(message.recipientIp) ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`
         )
       );

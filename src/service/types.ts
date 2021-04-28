@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { ENR, NodeId } from "../enr";
 import { RequestMessage } from "../message";

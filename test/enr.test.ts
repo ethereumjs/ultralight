@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 import { expect } from "chai";
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 import { ENR, v4 } from "../src/enr";
 
 describe("ENR", () => {
@@ -49,15 +49,19 @@ describe("ENR Multiformats support", () => {
   });
 
   it("should get / set UDP multiaddr", () => {
-    const multi0 = Multiaddr("/ip4/127.0.0.1/udp/30303");
+    const multi0 = new Multiaddr("/ip4/127.0.0.1/udp/30303");
     const tuples0 = multi0.tuples();
+
+    if (!tuples0[0][1] || !tuples0[1][1]) {
+      throw new Error('invalid multiaddr')
+    }
     // set underlying records
     record.set("ip", tuples0[0][1]);
     record.set("udp", tuples0[1][1]);
     // and get the multiaddr
     expect(record.getLocationMultiaddr("udp")!.toString()).to.equal(multi0.toString());
     // set the multiaddr
-    const multi1 = Multiaddr("/ip4/0.0.0.0/udp/30300");
+    const multi1 = new Multiaddr("/ip4/0.0.0.0/udp/30300");
     record.setLocationMultiaddr(multi1);
     // and get the multiaddr
     expect(record.getLocationMultiaddr("udp")!.toString()).to.equal(multi1.toString());
@@ -67,15 +71,20 @@ describe("ENR Multiformats support", () => {
     expect(record.get("udp")).to.deep.equal(tuples1[1][1]);
   });
   it("should get / set TCP multiaddr", () => {
-    const multi0 = Multiaddr("/ip4/127.0.0.1/tcp/30303");
+    const multi0 = new Multiaddr("/ip4/127.0.0.1/tcp/30303");
     const tuples0 = multi0.tuples();
+
+    if (!tuples0[0][1] || !tuples0[1][1]) {
+      throw new Error('invalid multiaddr')
+    }
+
     // set underlying records
     record.set("ip", tuples0[0][1]);
     record.set("tcp", tuples0[1][1]);
     // and get the multiaddr
     expect(record.getLocationMultiaddr("tcp")!.toString()).to.equal(multi0.toString());
     // set the multiaddr
-    const multi1 = Multiaddr("/ip4/0.0.0.0/tcp/30300");
+    const multi1 = new Multiaddr("/ip4/0.0.0.0/tcp/30300");
     record.setLocationMultiaddr(multi1);
     // and get the multiaddr
     expect(record.getLocationMultiaddr("tcp")!.toString()).to.equal(multi1.toString());

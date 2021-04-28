@@ -4,7 +4,7 @@ import { ENR } from "../../src/enr/enr";
 import { createKeypairFromPeerId } from "../../src/keypair";
 import { toHex } from "../../src/util";
 import { ERR_INVALID_ID } from "../../src/enr/constants";
-import Multiaddr from "multiaddr";
+import { Multiaddr } from "multiaddr";
 
 describe("ENR", function () {
   describe("decodeTxt", () => {

@@ -1,4 +1,4 @@
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { NodeId, ENR } from "../enr";
 import { IPacket } from "../packet";

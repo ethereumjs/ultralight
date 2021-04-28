@@ -1,6 +1,6 @@
 import * as dgram from "dgram";
 import { EventEmitter } from "events";
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { decodePacket, encodePacket, IPacket, MAX_PACKET_SIZE } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
@@ -30,7 +30,7 @@ export class UDPTransportService
     this.socket = dgram.createSocket({
       recvBufferSize: 16 * MAX_PACKET_SIZE,
       sendBufferSize: MAX_PACKET_SIZE,
-      type: opts.family === "ipv4" ? "udp4" : "udp6",
+      type: opts.family === 4 ? "udp4" : "udp6",
     });
     this.socket.on("message", this.handleIncoming);
     return new Promise((resolve) => this.socket.bind(opts.port, opts.host, resolve));
@@ -49,7 +49,7 @@ export class UDPTransportService
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    const multiaddr = Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/udp/${rinfo.port}`);
+    const multiaddr = new Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/udp/${rinfo.port}`);
     try {
       const packet = decodePacket(this.srcId, data);
       this.emit("packet", multiaddr, packet);

@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
 import debug from "debug";
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { ITransportService } from "../transport";
 import {
