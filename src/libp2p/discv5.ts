@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import PeerId = require("peer-id");
+import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";
 import { randomBytes } from "libp2p-crypto";
 

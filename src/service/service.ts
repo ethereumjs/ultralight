@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import debug from "debug";
 import { Multiaddr } from "multiaddr";
 import isIp = require("is-ip");
-import PeerId = require("peer-id");
+import PeerId from "peer-id";
 
 import { UDPTransportService } from "../transport";
 import { MAX_PACKET_SIZE } from "../packet";

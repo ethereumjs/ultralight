@@ -2,8 +2,8 @@ import { Multiaddr, protocols } from "multiaddr";
 import base64url from "base64url";
 import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
-import PeerId = require("peer-id");
-import muConvert = require("multiaddr/src/convert");
+import PeerId from "peer-id";
+import muConvert from "multiaddr/src/convert";
 
 import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
@@ -131,7 +131,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get tcp(): number | undefined {
     const raw = this.get("tcp");
     if (raw) {
-      return muConvert.toString(protocols.names.tcp.code, toNewUint8Array(raw)) as number;
+      return Number(muConvert.toString(protocols.names.tcp.code, toNewUint8Array(raw)));
     } else {
       return undefined;
     }
@@ -148,7 +148,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get udp(): number | undefined {
     const raw = this.get("udp");
     if (raw) {
-      return muConvert.toString(protocols.names.udp.code, toNewUint8Array(raw)) as number;
+      return Number(muConvert.toString(protocols.names.udp.code, toNewUint8Array(raw)));
     } else {
       return undefined;
     }
@@ -182,7 +182,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get tcp6(): number | undefined {
     const raw = this.get("tcp6");
     if (raw) {
-      return muConvert.toString(protocols.names.tcp.code, raw) as number;
+      return Number(muConvert.toString(protocols.names.tcp.code, raw));
     } else {
       return undefined;
     }
@@ -199,7 +199,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
   get udp6(): number | undefined {
     const raw = this.get("udp6");
     if (raw) {
-      return muConvert.toString(protocols.names.udp.code, raw) as number;
+      return Number(muConvert.toString(protocols.names.udp.code, raw));
     } else {
       return undefined;
     }
