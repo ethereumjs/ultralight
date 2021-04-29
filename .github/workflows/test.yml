@@ -1,0 +1,25 @@
+name: Tests
+
+on: [pull_request, push]
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [12, 14, 15]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: ${{matrix.node}}
+      - run: yarn install
+      - run: yarn build
+      - name: Lint
+        run: yarn lint
+      - name: Check Types
+        run: yarn run check-types
+      - name: Unit tests
+        run: yarn test
