@@ -57,9 +57,9 @@ export function encodePingMessage(m: IPingMessage): Buffer {
 
 export function encodePongMessage(m: IPongMessage): Buffer {
   const ipMultiaddr = new Multiaddr(`/${isIp.v4(m.recipientIp) ? "ip4" : "ip6"}/${m.recipientIp}`);
-  const tuple = ipMultiaddr.tuples()[0][1]
+  const tuple = ipMultiaddr.tuples()[0][1];
   if (!tuple) {
-    throw new Error('invalid address for encoding')
+    throw new Error("invalid address for encoding");
   }
   return Buffer.concat([
     Buffer.from([MessageType.PONG]),

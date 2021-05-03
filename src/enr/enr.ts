@@ -245,7 +245,7 @@ export class ENR extends Map<ENRKey, ENRValue> {
     }
     const tuples = multiaddr.tuples();
     if (!tuples[0][1] || !tuples[1][1]) {
-      return
+      throw new Error("Invalid multiaddr");
     }
 
     // IPv4
