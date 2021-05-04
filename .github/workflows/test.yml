@@ -9,7 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [12, 14, 15]
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        node: [14, 15]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2-beta

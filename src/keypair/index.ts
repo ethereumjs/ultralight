@@ -1,4 +1,4 @@
-import PeerId = require("peer-id");
+import PeerId from "peer-id";
 import { keys } from "libp2p-crypto";
 const { keysPBM, supportedKeys } = keys;
 

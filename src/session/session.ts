@@ -1,4 +1,4 @@
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { NodeId, ENR, SequenceNumber } from "../enr";
 import { SessionState, TrustedState, IKeys, ISessionState } from "./types";
@@ -87,7 +87,7 @@ export class Session {
         state: { state: SessionState.RandomSent },
         trusted: TrustedState.Untrusted,
         remoteEnr,
-        lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
+        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/udp/0"),
       }),
       createRandomPacket(localId),
     ];
@@ -105,7 +105,7 @@ export class Session {
         state: { state: SessionState.WhoAreYouSent, challengeData },
         trusted: TrustedState.Untrusted,
         remoteEnr: remoteEnr as ENR,
-        lastSeenMultiaddr: Multiaddr("/ip4/0.0.0.0/udp/0"),
+        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/udp/0"),
       }),
       packet,
     ];

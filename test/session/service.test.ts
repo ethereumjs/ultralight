@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 import { expect } from "chai";
-import Multiaddr = require("multiaddr");
+import { Multiaddr } from "multiaddr";
 
 import { createKeypair, KeypairType } from "../../src/keypair";
 import { ENR } from "../../src/enr";
@@ -22,8 +22,8 @@ describe("session service", () => {
     Buffer.from("03eae9945b354e9212566bc3f2740f3a62b3e1eb227dbed809f6dc2d3ea848c82e", "hex")
   );
 
-  const addr0 = Multiaddr("/ip4/127.0.0.1/udp/49020");
-  const addr1 = Multiaddr("/ip4/127.0.0.1/udp/49021");
+  const addr0 = new Multiaddr("/ip4/127.0.0.1/udp/49020");
+  const addr1 = new Multiaddr("/ip4/127.0.0.1/udp/49021");
 
   const enr0 = ENR.createV4(kp0.publicKey);
   const enr1 = ENR.createV4(kp1.publicKey);
