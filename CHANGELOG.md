@@ -1,3 +1,13 @@
+# 0.6.0 - (2021-05-04)
+
+### Chores
+
+- Add strictNullChecks to tsconfig ([7f2d5e](https://github.com/ChainSafe/discv5/commit/7f2d5e))
+
+### BREAKING CHANGES
+
+- new multiaddr used with different API ([f0c70c](https://github.com/ChainSafe/discv5/commit/f0c70c))
+
 # 0.5.1 - (2021-03-29)
 
 ### Chores
