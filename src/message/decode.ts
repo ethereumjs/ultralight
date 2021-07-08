@@ -87,7 +87,7 @@ function decodeFindNode(data: Buffer): IFindNodeMessage {
   if (!Array.isArray(rlpRaw[1])) {
     throw new Error(ERR_INVALID_MESSAGE);
   }
-  const distances = ((rlpRaw[1] as unknown) as Buffer[]).map((x) => (x.length ? x.readUInt8(0) : 0));
+  const distances = ((rlpRaw[1] as unknown) as Buffer[]).map((x) => (x.length ? x.readUIntBE(0, x.length) : 0));
   return {
     type: MessageType.FINDNODE,
     id: toBigIntBE(rlpRaw[0]),
