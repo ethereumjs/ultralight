@@ -50,7 +50,7 @@ export class AddrVotes {
       tiebreaker = new Multiaddr(Object.keys(this.tallies)[0]);
     }
     const tiebreakerStr = tiebreaker.toString();
-    let best: [string, number] = [tiebreakerStr, this.tallies[tiebreakerStr] || 0];
+    let best: [string, number] = [tiebreakerStr, this.tallies[tiebreakerStr] ?? 0];
     for (const [addrStr, total] of Object.entries(this.tallies)) {
       if (total > best[1]) {
         best = [addrStr, total];
