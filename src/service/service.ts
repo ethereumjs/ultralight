@@ -31,6 +31,10 @@ import {
   IPingMessage,
   requestMatchesResponse,
   createPongMessage,
+  ITalkReqMessage,
+  createTalkResponseMessage,
+  createTalkRequestMessage,
+  ITalkRespMessage,
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
@@ -283,6 +287,15 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     });
   }
 
+  public async findContent(content: string): Promise<void> {
+    log(`Content ${content} requested from network`);
+    const knownEnrs = this.kadValues();
+    for (const enr of knownEnrs) {
+      const message = createTalkRequestMessage(content);
+      this.sessionService.sendRequest(enr, message);
+    }
+  }
+
   /**
    * Sends a PING request to a node
    */
@@ -482,6 +495,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         return this.onFindNode(srcId, src, message as IFindNodeMessage);
       case MessageType.NODES:
         return this.onNodes(srcId, src, message as INodesMessage);
+      case MessageType.TALKREQ:
+        return this.onTalkReq(srcId, src, message as ITalkReqMessage);
+      case MessageType.TALKRESP:
+        return this.onTalkResp(srcId, src, message as ITalkRespMessage);
       default:
         // TODO Implement all RPC methods
         return;
@@ -641,6 +658,21 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       log("Node unknown, requesting ENR. Node: %s", srcId);
       this.sessionService.sendWhoAreYou(src, srcId, 0n, null, nonce);
     }
+  };
+
+  private onTalkReq = (srcId: NodeId, src: Multiaddr, message: ITalkReqMessage): void => {
+    log("Received request from Node: %s", srcId);
+    log(`Requested content: ${message.request.toString("utf-8")}`);
+    try {
+      this.sessionService.sendResponse(src, srcId, createTalkResponseMessage(message));
+    } catch (err) {
+      log("Error sending TalkResp Message: %s. Error text: %s", [srcId, err]);
+    }
+  };
+
+  private onTalkResp = (srcId: NodeId, src: Multiaddr, message: ITalkRespMessage): void => {
+    log("Received response from Node: %s", srcId);
+    log(`Returned content is: ${message.response.toString("utf-8")}`);
   };
 
   private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {
