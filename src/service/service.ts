@@ -32,9 +32,9 @@ import {
   requestMatchesResponse,
   createPongMessage,
   ITalkReqMessage,
-  createTalkResponseMessage,
-  createTalkRequestMessage,
   ITalkRespMessage,
+  createTalkRequestMessage,
+  createTalkResponseMessage,
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
@@ -287,12 +287,34 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     });
   }
 
-  public async findContent(content: string): Promise<void> {
-    log(`Content ${content} requested from network`);
-    const knownEnrs = this.kadValues();
-    for (const enr of knownEnrs) {
-      const message = createTalkRequestMessage(content);
-      this.sessionService.sendRequest(enr, message);
+  /**
+   * Broadcast TALKREQ message to all nodes in routing table
+   */
+  public async sendTalkReq(payload: Buffer, protocol: string): Promise<void> {
+    const msg = createTalkRequestMessage(payload, protocol);
+    for (const node of this.kadValues()) {
+      console.log(node.nodeId);
+      const sendStatus = this.sendRequest(node.nodeId, msg);
+      if (!sendStatus) {
+        log(`Failed to send TALKREQ message to node ${node.nodeId}`);
+      } else {
+        log(`Sent TALKREQ message to node ${node.nodeId}`);
+      }
+    }
+  }
+
+  /**
+   * Broadcast TALKRESP message to requestingi node
+   */
+  public async sendTalkResp(srcId: NodeId, request: ITalkReqMessage, payload: Buffer): Promise<void> {
+    const msg = createTalkResponseMessage(request, payload);
+    const enr = this.getKadValue(srcId);
+    const addr = await enr?.getFullMultiaddr("udp");
+    if (enr && addr) {
+      await this.sessionService.sendResponse(addr, srcId, msg);
+      log(`Sent TALKRESP message to node ${enr.id}`);
+    } else {
+      log(`Node ${srcId} not found`);
     }
   }
 
@@ -661,18 +683,13 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   };
 
   private onTalkReq = (srcId: NodeId, src: Multiaddr, message: ITalkReqMessage): void => {
-    log("Received request from Node: %s", srcId);
-    log(`Requested content: ${message.request.toString("utf-8")}`);
-    try {
-      this.sessionService.sendResponse(src, srcId, createTalkResponseMessage(message));
-    } catch (err) {
-      log("Error sending TalkResp Message: %s. Error text: %s", [srcId, err]);
-    }
+    log("Received TALKREQ message from Node: %s", srcId);
+    this.emit("talkReqReceived", srcId, message);
   };
 
   private onTalkResp = (srcId: NodeId, src: Multiaddr, message: ITalkRespMessage): void => {
     log("Received response from Node: %s", srcId);
-    log(`Returned content is: ${message.response.toString("utf-8")}`);
+    this.emit("talkRespReceived", srcId, message);
   };
 
   private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {

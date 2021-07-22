@@ -3,7 +3,7 @@ import StrictEventEmitter from "strict-event-emitter-types";
 import { Multiaddr } from "multiaddr";
 
 import { ENR, NodeId } from "../enr";
-import { RequestMessage } from "../message";
+import { ITalkReqMessage, ITalkRespMessage, RequestMessage } from "../message";
 
 export interface IDiscv5Events {
   /**
@@ -20,6 +20,18 @@ export interface IDiscv5Events {
    * Our local ENR IP address has been updated
    */
   multiaddrUpdated: (addr: Multiaddr) => void;
+  /**
+   * A TALKREQ message was received. Messages
+   *
+   * The message object is returned.
+   */
+  talkReqReceived: (srcId: NodeId, message: ITalkReqMessage) => void;
+  /**
+   * A TALKREQ message was received.
+   *
+   * The message object is returned.
+   */
+  talkRespReceived: (srcId: NodeId, message: ITalkRespMessage) => void;
 }
 
 export type Discv5EventEmitter = StrictEventEmitter<EventEmitter, IDiscv5Events>;

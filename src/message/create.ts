@@ -57,18 +57,18 @@ export function createNodesMessage(id: RequestId, total: number, enrs: ENR[]): I
   };
 }
 
-export function createTalkRequestMessage(request: string): ITalkReqMessage {
+export function createTalkRequestMessage(request: string | Buffer, protocol: string): ITalkReqMessage {
   return {
     type: MessageType.TALKREQ,
     id: createRequestId(),
-    protocol: Buffer.from("0x01"),
+    protocol: Buffer.from(protocol.toString()),
     request: Buffer.from(request),
   };
 }
-export function createTalkResponseMessage(message: ITalkReqMessage): ITalkRespMessage {
+export function createTalkResponseMessage(request: ITalkReqMessage, payload: Buffer): ITalkRespMessage {
   return {
     type: MessageType.TALKRESP,
-    id: message.id,
-    response: Buffer.from(message.request.toString("utf-8") + " - back to you"),
+    id: request.id,
+    response: payload,
   };
 }
