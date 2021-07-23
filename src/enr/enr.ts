@@ -4,6 +4,7 @@ import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
 import PeerId from "peer-id";
 import muConvert from "multiaddr/src/convert";
+import {encode as varintEncode} from "varint";
 
 import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
@@ -221,22 +222,44 @@ export class ENR extends Map<ENRKey, ENRValue> {
       return this.getLocationMultiaddr("tcp4") || this.getLocationMultiaddr("tcp6");
     }
     const isIpv6 = protocol.endsWith("6");
-    const isUdp = protocol.startsWith("udp");
-    const isTcp = protocol.startsWith("tcp");
-    const ipName = isIpv6 ? "ip6" : "ip4";
-    const ipVal = isIpv6 ? this.ip6 : this.ip;
+    const ipVal = this.get(isIpv6 ? "ip6" : "ip");
     if (!ipVal) {
       return undefined;
     }
-    const protoName = (isUdp && "udp") || (isTcp && "tcp");
-    if (!protoName) {
+
+    const isUdp = protocol.startsWith("udp");
+    const isTcp = protocol.startsWith("tcp");
+    let protoName, protoVal;
+    if (isUdp) {
+      protoName = "udp";
+      protoVal = isIpv6 ? this.get("udp6") : this.get("udp");
+    } else if (isTcp) {
+      protoName = "tcp";
+      protoVal = isIpv6 ? this.get("tcp6") : this.get("tcp");
+    } else {
       return undefined;
     }
-    const protoVal = isIpv6 ? (isUdp && this.udp6) || (isTcp && this.tcp6) : (isUdp && this.udp) || (isTcp && this.tcp);
     if (!protoVal) {
       return undefined;
     }
-    return new Multiaddr(`/${ipName}/${ipVal}/${protoName}/${protoVal}`);
+
+    // Create raw multiaddr buffer
+    // multiaddr length is:
+    //  1 byte for the ip protocol (ip4 or ip6)
+    //  N bytes for the ip address
+    //  1 or 2 bytes for the protocol as buffer (tcp or udp)
+    //  2 bytes for the port
+    const ipMa = protocols.names[isIpv6 ? "ip6" : "ip4"];
+    const ipByteLen = ipMa.size / 8;
+    const protoMa = protocols.names[protoName];
+    const protoBuf = varintEncode(protoMa.code);
+    const maBuf = new Uint8Array(3 + ipByteLen + protoBuf.length);
+    maBuf[0] = ipMa.code;
+    maBuf.set(ipVal, 1);
+    maBuf.set(protoBuf, 1 + ipByteLen);
+    maBuf.set(protoVal, 1 + ipByteLen + protoBuf.length);
+
+    return new Multiaddr(maBuf);
   }
   setLocationMultiaddr(multiaddr: Multiaddr): void {
     const protoNames = multiaddr.protoNames();
