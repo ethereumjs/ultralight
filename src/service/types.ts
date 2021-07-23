@@ -21,17 +21,17 @@ export interface IDiscv5Events {
    */
   multiaddrUpdated: (addr: Multiaddr) => void;
   /**
-   * A TALKREQ message was received. Messages
+   * A TALKREQ message was received.
    *
    * The message object is returned.
    */
-  talkReqReceived: (srcId: NodeId, message: ITalkReqMessage) => void;
+  talkReqReceived: (srcId: NodeId, enr: ENR | null, message: ITalkReqMessage) => void;
   /**
    * A TALKREQ message was received.
    *
    * The message object is returned.
    */
-  talkRespReceived: (srcId: NodeId, message: ITalkRespMessage) => void;
+  talkRespReceived: (srcId: NodeId, enr: ENR | null, message: ITalkRespMessage) => void;
 }
 
 export type Discv5EventEmitter = StrictEventEmitter<EventEmitter, IDiscv5Events>;

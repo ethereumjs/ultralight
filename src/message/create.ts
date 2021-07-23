@@ -57,18 +57,18 @@ export function createNodesMessage(id: RequestId, total: number, enrs: ENR[]): I
   };
 }
 
-export function createTalkRequestMessage(request: string | Buffer, protocol: string): ITalkReqMessage {
+export function createTalkRequestMessage(request: string | Buffer, protocol: string | Uint8Array): ITalkReqMessage {
   return {
     type: MessageType.TALKREQ,
     id: createRequestId(),
-    protocol: Buffer.from(protocol.toString()),
+    protocol: Buffer.from(protocol),
     request: Buffer.from(request),
   };
 }
-export function createTalkResponseMessage(request: ITalkReqMessage, payload: Buffer): ITalkRespMessage {
+export function createTalkResponseMessage(requestId: RequestId, payload: Uint8Array): ITalkRespMessage {
   return {
     type: MessageType.TALKRESP,
-    id: request.id,
-    response: payload,
+    id: requestId,
+    response: Buffer.from(payload),
   };
 }
