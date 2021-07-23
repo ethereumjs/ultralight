@@ -6,6 +6,7 @@ import { IKeypair, KeypairType } from "./types";
 import { ERR_TYPE_NOT_IMPLEMENTED } from "./constants";
 import { Secp256k1Keypair } from "./secp256k1";
 import { toBuffer } from "../util";
+import mh from "multihashes";
 
 export * from "./types";
 export * from "./secp256k1";
@@ -30,14 +31,16 @@ export function createKeypair(type: KeypairType, privateKey?: Buffer, publicKey?
 
 export async function createPeerIdFromKeypair(keypair: IKeypair): Promise<PeerId> {
   switch (keypair.type) {
-    case KeypairType.secp256k1:
-      try {
-        return await PeerId.createFromPrivKey(
-          new supportedKeys.secp256k1.Secp256k1PrivateKey(keypair.privateKey, keypair.publicKey).bytes
-        );
-      } catch (e) {
-        return await PeerId.createFromPubKey(new supportedKeys.secp256k1.Secp256k1PublicKey(keypair.publicKey).bytes);
-      }
+    case KeypairType.secp256k1: {
+      // manually create a peer id to avoid expensive ops
+      const privKey = keypair.hasPrivateKey()
+        ? new supportedKeys.secp256k1.Secp256k1PrivateKey(keypair.privateKey, keypair.publicKey)
+        : // TODO: this is a workaround for https://github.com/libp2p/js-peer-id/pull/154, change once peer-id updated
+          ((null as unknown) as undefined);
+      const pubKey = new supportedKeys.secp256k1.Secp256k1PublicKey(keypair.publicKey);
+      const id = mh.encode(pubKey.bytes, "identity");
+      return new PeerId(id, privKey, pubKey);
+    }
     default:
       throw new Error(ERR_TYPE_NOT_IMPLEMENTED);
   }
