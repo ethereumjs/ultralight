@@ -4,7 +4,7 @@ import { toBigIntBE } from "bigint-buffer";
 import * as RLP from "rlp";
 import PeerId from "peer-id";
 import muConvert from "multiaddr/src/convert";
-import {encode as varintEncode} from "varint";
+import { encode as varintEncode } from "varint";
 
 import { ERR_INVALID_ID, ERR_NO_SIGNATURE, MAX_RECORD_SIZE } from "./constants";
 import * as v4 from "./v4";
