@@ -1,3 +1,9 @@
+# 0.6.1 - (2021-07-23)
+
+### Features
+
+- Add TALKREQ/TALKRESP support ([277c79](https://github.com/ChainSafe/discv5/commit/277c79))
+
 # 0.6.0 - (2021-05-04)
 
 ### Chores
