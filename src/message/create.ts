@@ -57,7 +57,7 @@ export function createNodesMessage(id: RequestId, total: number, enrs: ENR[]): I
   };
 }
 
-export function createTalkRequestMessage(request: string | Buffer, protocol: string | Uint8Array): ITalkReqMessage {
+export function createTalkRequestMessage(request: string | Uint8Array, protocol: string | Uint8Array): ITalkReqMessage {
   return {
     type: MessageType.TALKREQ,
     id: createRequestId(),

@@ -315,7 +315,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       log(`Sent TALKRESP message to node ${enr.id}`);
     } else {
       if (!addr && enr) {
-        log(`No ip + udp port found for node ${enr.id}`);
+        log(`No ip + udp port found for node ${srcId}`);
       } else {
         log(`Node ${srcId} not found`);
       }
