@@ -1,7 +1,16 @@
 import { randomBytes } from "bcrypto/lib/random";
 import { toBigIntBE } from "bigint-buffer";
 
-import { RequestId, IPingMessage, MessageType, IPongMessage, IFindNodeMessage, INodesMessage } from "./types";
+import {
+  RequestId,
+  IPingMessage,
+  MessageType,
+  IPongMessage,
+  IFindNodeMessage,
+  INodesMessage,
+  ITalkReqMessage,
+  ITalkRespMessage,
+} from "./types";
 import { SequenceNumber, ENR } from "../enr";
 
 export function createRequestId(): RequestId {
@@ -45,5 +54,21 @@ export function createNodesMessage(id: RequestId, total: number, enrs: ENR[]): I
     id,
     total,
     enrs,
+  };
+}
+
+export function createTalkRequestMessage(request: string | Uint8Array, protocol: string | Uint8Array): ITalkReqMessage {
+  return {
+    type: MessageType.TALKREQ,
+    id: createRequestId(),
+    protocol: Buffer.from(protocol),
+    request: Buffer.from(request),
+  };
+}
+export function createTalkResponseMessage(requestId: RequestId, payload: Uint8Array): ITalkRespMessage {
+  return {
+    type: MessageType.TALKRESP,
+    id: requestId,
+    response: Buffer.from(payload),
   };
 }

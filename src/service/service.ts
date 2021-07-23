@@ -31,6 +31,11 @@ import {
   IPingMessage,
   requestMatchesResponse,
   createPongMessage,
+  ITalkReqMessage,
+  ITalkRespMessage,
+  createTalkRequestMessage,
+  createTalkResponseMessage,
+  RequestId,
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
@@ -284,6 +289,40 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }
 
   /**
+   * Broadcast TALKREQ message to all nodes in routing table
+   */
+  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<void> {
+    const msg = createTalkRequestMessage(payload, protocol);
+    for (const node of this.kadValues()) {
+      const sendStatus = this.sendRequest(node.nodeId, msg);
+      if (!sendStatus) {
+        log(`Failed to send TALKREQ message to node ${node.nodeId}`);
+      } else {
+        log(`Sent TALKREQ message to node ${node.nodeId}`);
+      }
+    }
+  }
+
+  /**
+   * Send TALKRESP message to requesting node
+   */
+  public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
+    const msg = createTalkResponseMessage(requestId, payload);
+    const enr = this.getKadValue(srcId);
+    const addr = await enr?.getFullMultiaddr("udp");
+    if (enr && addr) {
+      await this.sessionService.sendResponse(addr, srcId, msg);
+      log(`Sent TALKRESP message to node ${enr.id}`);
+    } else {
+      if (!addr && enr) {
+        log(`No ip + udp port found for node ${srcId}`);
+      } else {
+        log(`Node ${srcId} not found`);
+      }
+    }
+  }
+
+  /**
    * Sends a PING request to a node
    */
   private sendPing(nodeId: NodeId): void {
@@ -482,6 +521,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         return this.onFindNode(srcId, src, message as IFindNodeMessage);
       case MessageType.NODES:
         return this.onNodes(srcId, src, message as INodesMessage);
+      case MessageType.TALKREQ:
+        return this.onTalkReq(srcId, src, message as ITalkReqMessage);
+      case MessageType.TALKRESP:
+        return this.onTalkResp(srcId, src, message as ITalkRespMessage);
       default:
         // TODO Implement all RPC methods
         return;
@@ -641,6 +684,16 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       log("Node unknown, requesting ENR. Node: %s", srcId);
       this.sessionService.sendWhoAreYou(src, srcId, 0n, null, nonce);
     }
+  };
+
+  private onTalkReq = (srcId: NodeId, src: Multiaddr, message: ITalkReqMessage): void => {
+    log("Received TALKREQ message from Node: %s", srcId);
+    this.emit("talkReqReceived", srcId, this.findEnr(srcId) ?? null, message);
+  };
+
+  private onTalkResp = (srcId: NodeId, src: Multiaddr, message: ITalkRespMessage): void => {
+    log("Received response from Node: %s", srcId);
+    this.emit("talkRespReceived", srcId, this.findEnr(srcId) ?? null, message);
   };
 
   private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {
