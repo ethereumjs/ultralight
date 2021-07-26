@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";
 import { randomBytes } from "libp2p-crypto";
+import { AbortController } from "@chainsafe/abort-controller";
 
 import { Discv5, ENRInput } from "../service";
 import { createNodeId, ENR } from "../enr";
@@ -24,6 +25,10 @@ export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
    */
   bootEnrs: ENRInput[];
   /**
+   * Amount of time in milliseconds to wait between lookups
+   */
+  searchInterval: number;
+  /**
    * Enable/disable discv5
    * Note: this option is handled within libp2p, not within discv5
    */
@@ -41,7 +46,9 @@ export class Discv5Discovery extends EventEmitter {
   static tag = "discv5";
 
   public discv5: Discv5;
+  public searchInterval: number;
   private started: NodeJS.Timer | boolean;
+  private controller: AbortController;
 
   constructor(options: IDiscv5DiscoveryOptions) {
     super();
@@ -51,7 +58,9 @@ export class Discv5Discovery extends EventEmitter {
       multiaddr: new Multiaddr(options.bindAddr),
       config: options,
     });
+    this.searchInterval = options.searchInterval;
     this.started = false;
+    this.controller = new AbortController();
     options.bootEnrs.forEach((bootEnr) => this.discv5.addEnr(bootEnr));
   }
 
@@ -60,6 +69,7 @@ export class Discv5Discovery extends EventEmitter {
       return;
     }
     this.started = true;
+    this.controller = new AbortController();
     await this.discv5.start();
     this.discv5.on("discovered", this.handleEnr);
     setTimeout(() => this.findPeers(), 1);
@@ -72,6 +82,7 @@ export class Discv5Discovery extends EventEmitter {
     this.started = false;
     this.discv5.off("discovered", this.handleEnr);
     await this.discv5.stop();
+    this.controller.abort();
   }
 
   async findPeers(): Promise<void> {
@@ -84,6 +95,11 @@ export class Discv5Discovery extends EventEmitter {
       }
       for (const enr of enrs) {
         await this.handleEnr(enr);
+      }
+      try {
+        await sleep(this.searchInterval, this.controller.signal);
+      } catch (e) {
+        return;
       }
     }
   }
@@ -98,4 +114,32 @@ export class Discv5Discovery extends EventEmitter {
       multiaddrs: [multiaddrTCP],
     });
   };
+}
+
+/**
+ * Abortable sleep function. Cleans everything on all cases preventing leaks
+ * On abort throws Error
+ */
+async function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(new Error());
+
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    let onDone: () => void = () => {};
+
+    const timeout = setTimeout(() => {
+      onDone();
+      resolve();
+    }, ms);
+    const onAbort = (): void => {
+      onDone();
+      reject(new Error());
+    };
+    signal.addEventListener("abort", onAbort);
+
+    onDone = () => {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", onAbort);
+    };
+  });
 }
