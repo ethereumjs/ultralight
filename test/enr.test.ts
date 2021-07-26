@@ -1,6 +1,7 @@
 /* eslint-env mocha */
 import { expect } from "chai";
 import { Multiaddr } from "multiaddr";
+import PeerId from "peer-id";
 import { ENR, v4 } from "../src/enr";
 
 describe("ENR", () => {
@@ -92,5 +93,64 @@ describe("ENR Multiformats support", () => {
     const tuples1 = multi1.tuples();
     expect(record.get("ip")).to.deep.equal(tuples1[0][1]);
     expect(record.get("tcp")).to.deep.equal(tuples1[1][1]);
+  });
+
+  describe("location multiaddr", async () => {
+    const ip4 = "127.0.0.1";
+    const ip6 = "::1";
+    const tcp = 8080;
+    const udp = 8080;
+
+    const peerId = await PeerId.create({ keyType: "secp256k1" });
+    const enr = ENR.createFromPeerId(peerId);
+    enr.ip = ip4;
+    enr.ip6 = ip6;
+    enr.tcp = tcp;
+    enr.udp = udp;
+    enr.tcp6 = tcp;
+    enr.udp6 = udp;
+
+
+    it("should properly create location multiaddrs - udp4", () => {
+      expect(enr.getLocationMultiaddr("udp4")).to.deep.equal(new Multiaddr(`/ip4/${ip4}/udp/${udp}`));
+    });
+
+    it("should properly create location multiaddrs - tcp4", () => {
+      expect(enr.getLocationMultiaddr("tcp4")).to.deep.equal(new Multiaddr(`/ip4/${ip4}/tcp/${tcp}`));
+    });
+
+    it("should properly create location multiaddrs - udp6", () => {
+      expect(enr.getLocationMultiaddr("udp6")).to.deep.equal(new Multiaddr(`/ip6/${ip6}/udp/${udp}`));
+    });
+
+    it("should properly create location multiaddrs - tcp6", () => {
+      expect(enr.getLocationMultiaddr("tcp6")).to.deep.equal(new Multiaddr(`/ip6/${ip6}/tcp/${tcp}`));
+    });
+
+    it("should properly create location multiaddrs - udp", () => {
+      // default to ip4
+      expect(enr.getLocationMultiaddr("udp")).to.deep.equal(new Multiaddr(`/ip4/${ip4}/udp/${udp}`));
+      // if ip6 is set, use it
+      enr.ip = undefined;
+      expect(enr.getLocationMultiaddr("udp")).to.deep.equal(new Multiaddr(`/ip6/${ip6}/udp/${udp}`));
+      // if ip6 does not exist, use ip4
+      enr.ip6 = undefined;
+      enr.ip = ip4;
+      expect(enr.getLocationMultiaddr("udp")).to.deep.equal(new Multiaddr(`/ip4/${ip4}/udp/${udp}`));
+      enr.ip6 = ip6;
+    });
+
+    it("should properly create location multiaddrs - tcp", () => {
+      // default to ip4
+      expect(enr.getLocationMultiaddr("tcp")).to.deep.equal(new Multiaddr(`/ip4/${ip4}/tcp/${tcp}`));
+      // if ip6 is set, use it
+      enr.ip = undefined;
+      expect(enr.getLocationMultiaddr("tcp")).to.deep.equal(new Multiaddr(`/ip6/${ip6}/tcp/${tcp}`));
+      // if ip6 does not exist, use ip4
+      enr.ip6 = undefined;
+      enr.ip = ip4;
+      expect(enr.getLocationMultiaddr("tcp")).to.deep.equal(new Multiaddr(`/ip4/${ip4}/tcp/${tcp}`));
+      enr.ip6 = ip6;
+    });
   });
 });
