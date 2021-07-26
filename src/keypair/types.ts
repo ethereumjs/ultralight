@@ -13,6 +13,7 @@ export interface IKeypair {
   sign(msg: Buffer): Buffer;
   verify(msg: Buffer, sig: Buffer): boolean;
   deriveSecret(keypair: IKeypair): Buffer;
+  hasPrivateKey(): boolean;
 }
 
 export interface IKeypairClass {
@@ -48,5 +49,8 @@ export abstract class AbstractKeypair {
   }
   publicKeyVerify(): boolean {
     return true;
+  }
+  hasPrivateKey(): boolean {
+    return Boolean(this._privateKey);
   }
 }
