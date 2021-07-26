@@ -32,6 +32,7 @@ const libp2p = new Libp2p({
       enr: ENR.createFromPeerId(myPeerInfo.id),
       bindAddr: "/ip4/0.0.0.0/udp/9000",
       bootstrapEnrs: bootstrapEnrs,
+      searchInterval: 30000, // wait 30s between searches
     },
   },
 });

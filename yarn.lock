@@ -252,6 +252,13 @@
     "@babel/helper-validator-identifier" "^7.12.11"
     to-fast-properties "^2.0.0"
 
+"@chainsafe/abort-controller@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@chainsafe/abort-controller/-/abort-controller-3.0.1.tgz#9f99ff6c641fa08e76ca346ecea54496ccb0662e"
+  integrity sha512-oyq0qgFJDIIgLpyPwTv4j/sHX/MITatFzY3/b42VSldyZfnUC1lYBx5RwFvzBv1Sq4APOj2VCZO23pDRwy5kew==
+  dependencies:
+    event-target-shim "^5.0.0"
+
 "@dapplion/benchmark@^0.1.6":
   version "0.1.6"
   resolved "https://registry.yarnpkg.com/@dapplion/benchmark/-/benchmark-0.1.6.tgz#d58cc150732a2d743089b9462cdfef9339ef81fa"
