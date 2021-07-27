@@ -115,6 +115,10 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     this.sessions.clear();
   }
 
+  public sessionsSize(): number {
+    return this.sessions.size;
+  }
+
   public updateEnr(enr: ENR): void {
     const session = this.sessions.get(enr.nodeId);
     if (session) {

@@ -4,7 +4,7 @@ import { Multiaddr } from "multiaddr";
 import { randomBytes } from "libp2p-crypto";
 import { AbortController } from "@chainsafe/abort-controller";
 
-import { Discv5, ENRInput } from "../service";
+import { Discv5, ENRInput, IDiscv5Metrics } from "../service";
 import { createNodeId, ENR } from "../enr";
 import { IDiscv5Config } from "../config";
 import { toBuffer } from "../util";
@@ -28,6 +28,10 @@ export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
    * Amount of time in milliseconds to wait between lookups
    */
   searchInterval: number;
+  /**
+   * Optional metrics
+   */
+  metrics?: IDiscv5Metrics;
   /**
    * Enable/disable discv5
    * Note: this option is handled within libp2p, not within discv5
@@ -57,6 +61,7 @@ export class Discv5Discovery extends EventEmitter {
       peerId: options.peerId,
       multiaddr: new Multiaddr(options.bindAddr),
       config: options,
+      metrics: options.metrics,
     });
     this.searchInterval = options.searchInterval;
     this.started = false;
