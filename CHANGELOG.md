@@ -1,3 +1,11 @@
+# 0.6.2 - (2021-07-27)
+
+- Make searchInterval optional, handle infinity case ([079796](https://github.com/ChainSafe/discv5/commit/079796))
+- Add metrics ([da78f5](https://github.com/ChainSafe/discv5/commit/da78f5))
+- Add search interval to libp2p discovery module ([2e2f62](https://github.com/ChainSafe/discv5/commit/2e2f62))
+- Optimize enr getLocationMultiaddr ([babb2a](https://github.com/ChainSafe/discv5/commit/babb2a))
+- Optimize createPeerIdFromKeypair ([f534f5](https://github.com/ChainSafe/discv5/commit/f534f5))
+
 # 0.6.1 - (2021-07-23)
 
 ### Features
