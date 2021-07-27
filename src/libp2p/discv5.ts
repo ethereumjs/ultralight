@@ -9,6 +9,11 @@ import { createNodeId, ENR } from "../enr";
 import { IDiscv5Config } from "../config";
 import { toBuffer } from "../util";
 
+// Default to 0ms between automatic searches
+// 0ms is 'backwards compatible' with the prior behavior (always be searching)
+// Furthere analysis should be done to determine a good number
+const DEFAULT_SEARCH_INTERVAL_MS = 0;
+
 export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
   /**
    * Local ENR associated with the local libp2p peer id
@@ -26,8 +31,12 @@ export interface IDiscv5DiscoveryInputOptions extends Partial<IDiscv5Config> {
   bootEnrs: ENRInput[];
   /**
    * Amount of time in milliseconds to wait between lookups
+   *
+   * Set to Infinity to disable automatic lookups entirely
+   *
+   * Default value is 0 (no wait)
    */
-  searchInterval: number;
+  searchInterval?: number;
   /**
    * Optional metrics
    */
@@ -63,7 +72,7 @@ export class Discv5Discovery extends EventEmitter {
       config: options,
       metrics: options.metrics,
     });
-    this.searchInterval = options.searchInterval;
+    this.searchInterval = options.searchInterval ?? DEFAULT_SEARCH_INTERVAL_MS;
     this.started = false;
     this.controller = new AbortController();
     options.bootEnrs.forEach((bootEnr) => this.discv5.addEnr(bootEnr));
@@ -91,6 +100,7 @@ export class Discv5Discovery extends EventEmitter {
   }
 
   async findPeers(): Promise<void> {
+    if (this.searchInterval === Infinity) return;
     while (this.started) {
       // Search for random nodes
       // emit discovered on all finds
@@ -102,6 +112,7 @@ export class Discv5Discovery extends EventEmitter {
         await this.handleEnr(enr);
       }
       try {
+        if (this.searchInterval === Infinity) return;
         await sleep(this.searchInterval, this.controller.signal);
       } catch (e) {
         return;
