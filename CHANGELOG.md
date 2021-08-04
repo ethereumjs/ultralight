@@ -1,3 +1,9 @@
+# 0.6.3 - (2021-08-04)
+
+### Chores
+
+- Update multiaddr dep  ([611afd](https://github.com/ChainSafe/discv5/commit/611afd))
+
 # 0.6.2 - (2021-07-27)
 
 - Make searchInterval optional, handle infinity case ([079796](https://github.com/ChainSafe/discv5/commit/079796))
