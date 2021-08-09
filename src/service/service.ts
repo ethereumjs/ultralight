@@ -5,6 +5,7 @@ import isIp = require("is-ip");
 import PeerId from "peer-id";
 
 import { UDPTransportService } from "../transport";
+import { WebSocketTransportService } from "../transport";
 import { MAX_PACKET_SIZE } from "../packet";
 import { SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
@@ -65,6 +66,7 @@ export interface IDiscv5CreateOptions {
   multiaddr: Multiaddr;
   config?: Partial<IDiscv5Config>;
   metrics?: IDiscv5Metrics;
+  transport?: string;
 }
 
 /**
@@ -159,11 +161,21 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * @param peerId the PeerId with the keypair that identifies the enr
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
-  public static create({ enr, peerId, multiaddr, config = {}, metrics }: IDiscv5CreateOptions): Discv5 {
+  public static create({
+    enr,
+    peerId,
+    multiaddr,
+    config = {},
+    transport = "udp",
+    metrics,
+  }: IDiscv5CreateOptions): Discv5 {
     const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
-    const udpTransport = new UDPTransportService(multiaddr, decodedEnr.nodeId);
-    const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), udpTransport);
+    const transportLayer =
+      transport === "udp"
+        ? new UDPTransportService(multiaddr, decodedEnr.nodeId)
+        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId);
+    const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
     return new Discv5(fullConfig, sessionService, metrics);
   }
 
@@ -361,12 +373,14 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   private requestEnr(nodeId: NodeId, src: Multiaddr): void {
     try {
       log("Sending ENR request to node: %s", nodeId);
+      console.log("Sending ENR request to node: %s", nodeId);
       const message = createFindNodeMessage([0]);
       this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
       this.activeRequests.set(message.id, { request: message, dstId: nodeId });
       this.metrics?.sentMessageCount.inc({ type: MessageType[message.type] });
     } catch (e) {
       log("Requesting ENR failed. Error: %s", e.message);
+      console.log("Requesting ENR failed. Error: %s", e.message);
     }
   }
 
@@ -710,12 +724,20 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
 
   private onTalkReq = (srcId: NodeId, src: Multiaddr, message: ITalkReqMessage): void => {
     log("Received TALKREQ message from Node: %s", srcId);
-    this.emit("talkReqReceived", srcId, this.findEnr(srcId) ?? null, message);
+    let sourceId: ENR | undefined | null = this.findEnr(srcId);
+    if (!sourceId) {
+      sourceId = null;
+    }
+    this.emit("talkReqReceived", srcId, sourceId, message);
   };
 
   private onTalkResp = (srcId: NodeId, src: Multiaddr, message: ITalkRespMessage): void => {
     log("Received response from Node: %s", srcId);
-    this.emit("talkRespReceived", srcId, this.findEnr(srcId) ?? null, message);
+    let sourceId: ENR | undefined | null = this.findEnr(srcId);
+    if (!sourceId) {
+      sourceId = null;
+    }
+    this.emit("talkRespReceived", srcId, sourceId, message);
   };
 
   private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {

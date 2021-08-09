@@ -97,6 +97,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   public async start(): Promise<void> {
     log(`Starting session service with node id ${this.enr.nodeId}`);
     this.transport.on("packet", this.onPacket);
+    this.transport.on("decodeError", (err, ma) => console.log("Error processing packet", err, ma));
     await this.transport.start();
   }
 
@@ -135,9 +136,10 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public sendRequest(dstEnr: ENR, message: RequestMessage): void {
     const dstId = dstEnr.nodeId;
-    const dst = dstEnr.getLocationMultiaddr("udp");
+    const dst = dstEnr.getLocationMultiaddr("tcp");
+
     if (!dst) {
-      throw new Error("ENR must have udp socket data");
+      throw new Error("ENR must have tcp socket data");
     }
     const session = this.sessions.get(dstId);
     if (!session) {
@@ -179,6 +181,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
 
     log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst);
+    console.log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst);
     const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
