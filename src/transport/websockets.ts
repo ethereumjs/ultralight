@@ -54,8 +54,7 @@ export class WebSocketTransportService
         connection.multiAddr = `/ip4/${req.connection.remoteAddress}/tcp/${req.connection.remotePort}/ws`;
         connection.on("message", (msg) => {
           log("server received message");
-          //@ts-ignore
-          this.handleIncoming(msg.toString(), {
+          this.handleIncoming(msg as Buffer, {
             address: req.connection.remoteAddress!,
             family: "IPv4",
             port: req.connection.remotePort!,
@@ -74,33 +73,29 @@ export class WebSocketTransportService
   }
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
-    console.log("sending message to", to, packet.header);
+    log("sending message to", to);
     if (this.isNode()) {
       this.server?.clients.forEach((client: ws) => {
         // If websocket server exists, send packet to open socket corresponding to to if it exists
-        log("trying to send message from server");
-        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         //@ts-ignore
-        if (client.multiAddr.toString() == to.toString()) {
+        if (to.toString().includes(client.multiAddr.toString())) {
           client.send(encodePacket(toId, packet).buffer);
-          log("sending message from server");
         }
       });
     } else {
       // Send via websocket (i.e. in browser)
       const connection = await this.getConnection(to);
-      connection.send(encodePacket(toId, packet).buffer);
+      connection.sendPacked(encodePacket(toId, packet));
     }
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    log("handling inbound message", data, rinfo);
-    console.log("handling inbound message", data);
+    log("handling inbound message", rinfo);
     const multiaddr = new Multiaddr(
       `/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}/wss`
     );
     try {
-      const packet = decodePacket(this.srcId, Buffer.from(data));
+      const packet = decodePacket(this.srcId, data);
       this.emit("packet", multiaddr, packet);
     } catch (e) {
       this.emit("decodeError", e, multiaddr);
@@ -111,19 +106,22 @@ export class WebSocketTransportService
     if (this.connections[multiaddress.toString()]) {
       return this.connections[multiaddress.toString()].connection;
     } else {
-      console.log("getting new socket connection -", multiaddress.toString());
+      log("getting new socket connection -", multiaddress.toString());
       const opts = multiaddress.toOptions();
       const url = `ws://${opts.host}:${opts.port}`;
       this.connections[multiaddress.toString()] = {
         multiaddr: multiaddress,
-        connection: new WebSocketAsPromised(url),
+        connection: new WebSocketAsPromised(url, {
+          packMessage: (data: Buffer) => data.buffer,
+          unpackMessage: (data) => Buffer.from(data),
+        }),
       };
       const socket = this.connections[multiaddress.toString()].connection;
       await socket.open();
       this.emit("newSocketConnection", multiaddress);
 
       socket.onMessage.addListener((msg) => {
-        console.log("got message from: ", opts.host, opts.port);
+        log("got message from: ", opts.host, opts.port);
         this.handleIncoming(msg, {
           address: opts.host,
           family: "IPv4",

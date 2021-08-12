@@ -97,7 +97,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   public async start(): Promise<void> {
     log(`Starting session service with node id ${this.enr.nodeId}`);
     this.transport.on("packet", this.onPacket);
-    this.transport.on("decodeError", (err, ma) => console.log("Error processing packet", err, ma));
+    this.transport.on("decodeError", (err, ma) => log("Error processing packet", err, ma));
     await this.transport.start();
   }
 
@@ -181,7 +181,6 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
 
     log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst);
-    console.log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst);
     const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
@@ -497,6 +496,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   }
 
   public onPacket = (src: Multiaddr, packet: IPacket): void => {
+    log("packet received from ", src.toString());
     switch (packet.header.flag) {
       case PacketType.WhoAreYou:
         return this.onWhoAreYou(src, packet);

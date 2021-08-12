@@ -249,13 +249,6 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       this.kbuckets.updateValue(decodedEnr);
     } else if (this.kbuckets.add(decodedEnr, EntryStatus.Disconnected)) {
       this.emit("enrAdded", decodedEnr);
-      if (decodedEnr.tcp) {
-        decodedEnr
-          .getFullMultiaddr("tcp")
-          .then((ma) =>
-            this.sessionService.sendWhoAreYou(ma!, decodedEnr.nodeId, decodedEnr.seq, decodedEnr, Buffer.alloc(12))
-          );
-      }
     }
   }
 
@@ -357,6 +350,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     }
   }
 
+  public enableLogs(): void {
+    debug.enable("discv5*");
+  }
+
   /**
    * Sends a PING request to a node
    */
@@ -380,14 +377,12 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   private requestEnr(nodeId: NodeId, src: Multiaddr): void {
     try {
       log("Sending ENR request to node: %s", nodeId);
-      console.log("Sending ENR request to node: %s", nodeId);
       const message = createFindNodeMessage([0]);
       this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
       this.activeRequests.set(message.id, { request: message, dstId: nodeId });
       this.metrics?.sentMessageCount.inc({ type: MessageType[message.type] });
     } catch (e) {
       log("Requesting ENR failed. Error: %s", e.message);
-      console.log("Requesting ENR failed. Error: %s", e.message);
     }
   }
 
