@@ -113,7 +113,7 @@ export class WebSocketTransportService
         multiaddr: multiaddress,
         connection: new WebSocketAsPromised(url, {
           packMessage: (data: Buffer) => data.buffer,
-          unpackMessage: (data) => Buffer.from(data),
+          unpackMessage: (data) => data,
         }),
       };
       const socket = this.connections[multiaddress.toString()].connection;
