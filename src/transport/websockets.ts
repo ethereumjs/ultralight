@@ -2,7 +2,7 @@ import ws from "ws";
 import debug from "debug";
 import { EventEmitter } from "events";
 import { Multiaddr } from "multiaddr";
-import { createRandomPacket, decodePacket, encodePacket, IPacket } from "../packet";
+import { decodePacket, encodePacket, IPacket } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 import WebSocketAsPromised from "websocket-as-promised";
 
@@ -55,7 +55,7 @@ export class WebSocketTransportService
         connection.on("message", (msg) => {
           log("server received message");
           //@ts-ignore
-          this.handleIncoming(msg as Buffer, {
+          this.handleIncoming(msg.toString(), {
             address: req.connection.remoteAddress!,
             family: "IPv4",
             port: req.connection.remotePort!,
@@ -74,30 +74,22 @@ export class WebSocketTransportService
   }
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
-    console.log('sending message to', to, packet.header)
-    let sentFromServer = false;
-    this.server?.clients.forEach((client: ws) => {
-      // If websocket server exists, send packet to open socket corresponding to to if it exists
-      log("trying to send message from server");
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      //@ts-ignore
-      if (client.multiAddr.toString() == to.toString()) {
-        sentFromServer = true;
-        client.send(encodePacket(toId, packet!));
-        log("sending message from server");
-      }
-    });
-
-    // if message sent from server, return early
-    if (sentFromServer) {
-      return;
-    }
-    // Tries to create a new socket if not already sent via server
-    const connection = await this.getConnection(to);
-
-    //connection.send(encodePacket(toId, packet));
-    if (connection.ws.readyState === connection.ws.OPEN) {
-      connection.send("hi from socket");
+    console.log("sending message to", to, packet.header);
+    if (this.isNode()) {
+      this.server?.clients.forEach((client: ws) => {
+        // If websocket server exists, send packet to open socket corresponding to to if it exists
+        log("trying to send message from server");
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        //@ts-ignore
+        if (client.multiAddr.toString() == to.toString()) {
+          client.send(encodePacket(toId, packet).buffer);
+          log("sending message from server");
+        }
+      });
+    } else {
+      // Send via websocket (i.e. in browser)
+      const connection = await this.getConnection(to);
+      connection.send(encodePacket(toId, packet).buffer);
     }
   }
 
@@ -108,7 +100,7 @@ export class WebSocketTransportService
       `/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}/wss`
     );
     try {
-      const packet = decodePacket(this.srcId, data);
+      const packet = decodePacket(this.srcId, Buffer.from(data));
       this.emit("packet", multiaddr, packet);
     } catch (e) {
       this.emit("decodeError", e, multiaddr);
@@ -128,9 +120,11 @@ export class WebSocketTransportService
       };
       const socket = this.connections[multiaddress.toString()].connection;
       await socket.open();
+      this.emit("newSocketConnection", multiaddress);
+
       socket.onMessage.addListener((msg) => {
         console.log("got message from: ", opts.host, opts.port);
-        this.handleIncoming(msg as Buffer, {
+        this.handleIncoming(msg, {
           address: opts.host,
           family: "IPv4",
           port: opts.port,

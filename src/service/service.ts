@@ -249,6 +249,13 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       this.kbuckets.updateValue(decodedEnr);
     } else if (this.kbuckets.add(decodedEnr, EntryStatus.Disconnected)) {
       this.emit("enrAdded", decodedEnr);
+      if (decodedEnr.tcp) {
+        decodedEnr
+          .getFullMultiaddr("tcp")
+          .then((ma) =>
+            this.sessionService.sendWhoAreYou(ma!, decodedEnr.nodeId, decodedEnr.seq, decodedEnr, Buffer.alloc(12))
+          );
+      }
     }
   }
 

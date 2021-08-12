@@ -106,7 +106,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public async stop(): Promise<void> {
     log("Stopping session service");
-    this.transport.removeListener("packet", this.onPacket);
+    this.transport.removeAllListeners();
     await this.transport.stop();
     for (const requestMap of this.pendingRequests.values()) {
       requestMap.clear();
