@@ -53,7 +53,6 @@ export class WebSocketTransportService
         // @ts-ignore
         connection.multiAddr = `/ip4/${req.connection.remoteAddress}/tcp/${req.connection.remotePort}/ws`;
         connection.on("message", (msg) => {
-          log("server received message");
           this.handleIncoming(msg as Buffer, {
             address: req.connection.remoteAddress!,
             family: "IPv4",
@@ -79,7 +78,8 @@ export class WebSocketTransportService
         // If websocket server exists, send packet to open socket corresponding to to if it exists
         //@ts-ignore
         if (to.toString().includes(client.multiAddr.toString())) {
-          client.send(encodePacket(toId, packet).buffer);
+          const encoded = encodePacket(toId, packet);
+          client.send(encoded);
         }
       });
     } else {
@@ -113,20 +113,20 @@ export class WebSocketTransportService
         multiaddr: multiaddress,
         connection: new WebSocketAsPromised(url, {
           packMessage: (data: Buffer) => data.buffer,
-          unpackMessage: (data) => data,
+          unpackMessage: (data) => Buffer.from(data)
         }),
       };
       const socket = this.connections[multiaddress.toString()].connection;
-      await socket.open();
-      this.emit("newSocketConnection", multiaddress);
 
-      socket.onMessage.addListener((msg) => {
-        log("got message from: ", opts.host, opts.port);
+      await socket.open();
+      socket.ws.binaryType = "arraybuffer";
+      this.emit("newSocketConnection", multiaddress);
+      socket.onUnpackedMessage.addListener((msg) => {
         this.handleIncoming(msg, {
           address: opts.host,
           family: "IPv4",
           port: opts.port,
-          size: 1024,
+          size: msg.length,
         });
       });
       return this.connections[multiaddress.toString()].connection;
