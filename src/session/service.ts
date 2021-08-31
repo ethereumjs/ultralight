@@ -417,7 +417,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     const session = this.sessions.get(srcId);
     if (!session) {
       // Received a message without a session.
-      log("Received a message without a session. from: %s at %s", srcId, src);
+      log("Received a message without a session. from: %s at %s", srcId, src.toString());
       log("Requesting a WHOAREYOU packet to be sent.");
 
       // spawn a WHOAREYOU event to check for highest known ENR

@@ -723,7 +723,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     if (enr) {
       this.sessionService.sendWhoAreYou(src, srcId, enr.seq, enr, nonce);
     } else {
-      log("Node unknown, requesting ENR. Node: %s", srcId);
+      log("Node unknown, requesting ENR. Node: %s; Token: %s", srcId, nonce.toString("hex"));
       this.sessionService.sendWhoAreYou(src, srcId, 0n, null, nonce);
     }
   };
