@@ -231,7 +231,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
         "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
-        src,
+        srcStr,
         nonce.toString("hex")
       );
       return;
@@ -241,7 +241,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
         "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
-        src,
+        srcStr,
         nonce.toString("hex")
       );
       return;
