@@ -47,7 +47,8 @@ export class WebSocketTransportService
         const remoteAddr = req.connection.remoteAddress;
         const remotePort = req.connection.remotePort;
         log(`new connection from ${remoteAddr}:${remotePort}`);
-
+        // send public address and port back to browser client to update ENR
+        connection.send(`${remoteAddr}:${remotePort}`);
         // adding the multiaddr to the socket so individual connections can be identified when sending messages to nodes
         /* eslint-disable @typescript-eslint/ban-ts-ignore */
         // @ts-ignore
@@ -75,7 +76,7 @@ export class WebSocketTransportService
     log("sending message to", to);
     if (this.isNode()) {
       this.server?.clients.forEach((client: ws) => {
-        // If websocket server exists, send packet to open socket corresponding to to if it exists
+        // If websocket server exists, send packet to open socket corresponding to `to` if it exists
         //@ts-ignore
         if (to.toString().includes(client.multiAddr.toString())) {
           const encoded = encodePacket(toId, packet);
@@ -113,7 +114,7 @@ export class WebSocketTransportService
         multiaddr: multiaddress,
         connection: new WebSocketAsPromised(url, {
           packMessage: (data: Buffer) => data.buffer,
-          unpackMessage: (data) => Buffer.from(data)
+          unpackMessage: (data) => Buffer.from(data),
         }),
       };
       const socket = this.connections[multiaddress.toString()].connection;
@@ -128,6 +129,13 @@ export class WebSocketTransportService
           port: opts.port,
           size: msg.length,
         });
+      });
+      socket.onMessage.addListener((msg) => {
+        if (typeof msg === "string") {
+          const [address, port] = msg.split(":");
+          this.multiaddr = new Multiaddr(`/ip4/${address}/tcp/${port}/wss`);
+          this.emit("multiaddrUpdate", this.multiaddr);
+        }
       });
       return this.connections[multiaddress.toString()].connection;
     }
