@@ -194,7 +194,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     if (!session) {
       throw new Error("Response could not be sent, no session exists");
     }
-    log("Sending %s response to %s at %s", MessageType[message.type], dstId, dst);
+    log("Sending %s response to %s at %s", MessageType[message.type], dstId, dst.toString());
     const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
     this.transport.send(dst, dstId, packet);
   }
@@ -210,7 +210,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
         return;
       }
     }
-    log("Sending WHOAREYOU to: %s on %s", dstId, dst);
+    log("Sending WHOAREYOU to: %s on %s", dstId, dst.toString());
     const [session, packet] = Session.createWithWhoAreYou(nonce, enrSeq, remoteEnr);
     this.sessions.set(dstId, session);
     this.processRequest(dstId, dst, packet);
@@ -557,7 +557,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
         session.state.state === SessionState.RandomSent
       ) {
         // no response from peer, flush all pending messages and drop session
-        log("Session couldn't be established with node: %s at %s", dstId, request.dst);
+        log("Session couldn't be established with node: %s at %s", dstId, request.dst.toString());
         const pendingMessages = this.pendingMessages.get(dstId);
         if (pendingMessages) {
           this.pendingMessages.delete(dstId);
