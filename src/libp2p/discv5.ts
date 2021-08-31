@@ -72,7 +72,7 @@ export class Discv5Discovery extends EventEmitter {
       config: options,
       metrics: options.metrics,
     });
-    this.searchInterval = options.searchInterval ?? DEFAULT_SEARCH_INTERVAL_MS;
+    this.searchInterval = options.searchInterval ? options.searchInterval : DEFAULT_SEARCH_INTERVAL_MS;
     this.started = false;
     this.controller = new AbortController();
     options.bootEnrs.forEach((bootEnr) => this.discv5.addEnr(bootEnr));

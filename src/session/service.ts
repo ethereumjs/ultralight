@@ -212,7 +212,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
         return;
       }
     }
-    log("Sending WHOAREYOU to: %s on %s", dstId, dst);
+    log("Sending WHOAREYOU to: %s on %s", dstId, dst.toString());
     const [session, packet] = Session.createWithWhoAreYou(nonce, enrSeq, remoteEnr);
     this.sessions.set(dstId, session);
     this.processRequest(dstId, dst, packet);
