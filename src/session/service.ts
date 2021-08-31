@@ -141,7 +141,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
     const session = this.sessions.get(dstId);
     if (!session) {
-      log("No session established, sending a random packet to: %s on %s", dstId, dst);
+      log("No session established, sending a random packet to: %s on %s", dstId, dst.toString());
       // cache message
       const msgs = this.pendingMessages.get(dstId);
       if (msgs) {
@@ -162,7 +162,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       throw new Error("Tried to send a request to an untrusted node");
     }
     // encrypt the message and send
-    log("Sending request: %O to %s on %s", message, dstId, dst);
+    log("Sending request: %O to %s on %s", message, dstId, dst.toString());
     const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
@@ -178,7 +178,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       throw new Error("Request without an ENR could not be sent, no session exists");
     }
 
-    log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst);
+    log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst.toString());
     const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
