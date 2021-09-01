@@ -92,7 +92,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   }
 
   /**
-   * Starts the session service, starting the underlying UDP transport service.
+   * Starts the session service, starting the underlying transport service.
    */
   public async start(): Promise<void> {
     log(`Starting session service with node id ${this.enr.nodeId}`);
@@ -102,7 +102,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   }
 
   /**
-   * Stops the session service, stopping the underlying UDP transport service.
+   * Stops the session service, stopping the underlying transport service.
    */
   public async stop(): Promise<void> {
     log("Stopping session service");
@@ -228,12 +228,12 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
     const nonce = packet.header.nonce;
     const srcStr = src.toString();
-    const pendingRequests = this.pendingRequests.get(srcStr.split("/wss")[0]);
+    const pendingRequests = this.pendingRequests.get(srcStr);
     if (!pendingRequests) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
         "Received a WHOAREYOU packet that references an unknown or expired request - no pending requests. source: %s, token: %s",
-        srcStr.split("/wss")[0],
+        srcStr,
         nonce.toString("hex")
       );
       return;

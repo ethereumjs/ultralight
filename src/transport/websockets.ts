@@ -52,7 +52,7 @@ export class WebSocketTransportService
         // adding the multiaddr to the socket so individual connections can be identified when sending messages to nodes
         /* eslint-disable @typescript-eslint/ban-ts-ignore */
         // @ts-ignore
-        connection.multiAddr = `/ip4/${req.connection.remoteAddress}/tcp/${req.connection.remotePort}/ws`;
+        connection.multiAddr = `/ip4/${req.connection.remoteAddress}/tcp/${req.connection.remotePort}`;
         connection.on("message", (msg) => {
           this.handleIncoming(msg as Buffer, {
             address: req.connection.remoteAddress!,
@@ -90,9 +90,7 @@ export class WebSocketTransportService
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    const multiaddr = new Multiaddr(
-      `/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}/wss`
-    );
+    const multiaddr = new Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}`);
     try {
       const packet = decodePacket(this.srcId, data);
       this.emit("packet", multiaddr, packet);
@@ -102,7 +100,7 @@ export class WebSocketTransportService
   };
 
   private getConnection = async (multiaddress: Multiaddr): Promise<WebSocketAsPromised> => {
-    const address = multiaddress.toString().split('/wss')[0]
+    const address = multiaddress.toString();
     if (this.connections[address]) {
       const socket = this.connections[address].connection;
       if (!socket.isOpened) {
@@ -110,7 +108,7 @@ export class WebSocketTransportService
       }
       return socket;
     } else {
-      log("Openning new socket connection to %s", multiaddress.toString());
+      log("Opening new socket connection to %s", multiaddress.toString());
       const opts = multiaddress.toOptions();
       const url = `ws://${opts.host}:${opts.port}`;
       this.connections[address] = {
