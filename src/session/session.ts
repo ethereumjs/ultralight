@@ -87,7 +87,7 @@ export class Session {
         state: { state: SessionState.RandomSent },
         trusted: TrustedState.Untrusted,
         remoteEnr,
-        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/udp/0"),
+        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/tcp/0"),
       }),
       createRandomPacket(localId),
     ];

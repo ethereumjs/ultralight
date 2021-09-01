@@ -48,7 +48,7 @@ export class WebSocketTransportService
         const remotePort = req.connection.remotePort;
         log(`new connection from ${remoteAddr}:${remotePort}`);
         // send public address and port back to browser client to update ENR
-        connection.send(`${remoteAddr}:${remotePort}`);
+        connection.send(JSON.stringify({ address: remoteAddr, port: remotePort }));
         // adding the multiaddr to the socket so individual connections can be identified when sending messages to nodes
         /* eslint-disable @typescript-eslint/ban-ts-ignore */
         // @ts-ignore
@@ -73,7 +73,6 @@ export class WebSocketTransportService
   }
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
-    log("sending message to", to);
     if (this.isNode()) {
       this.server?.clients.forEach((client: ws) => {
         // If websocket server exists, send packet to open socket corresponding to `to` if it exists
@@ -91,7 +90,6 @@ export class WebSocketTransportService
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    log("handling inbound message", rinfo);
     const multiaddr = new Multiaddr(
       `/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}/wss`
     );
@@ -104,13 +102,18 @@ export class WebSocketTransportService
   };
 
   private getConnection = async (multiaddress: Multiaddr): Promise<WebSocketAsPromised> => {
-    if (this.connections[multiaddress.toString()]) {
-      return this.connections[multiaddress.toString()].connection;
+    const address = multiaddress.toString().split('/wss')[0]
+    if (this.connections[address]) {
+      const socket = this.connections[address].connection;
+      if (!socket.isOpened) {
+        await socket.open();
+      }
+      return socket;
     } else {
-      log("getting new socket connection -", multiaddress.toString());
+      log("Openning new socket connection to %s", multiaddress.toString());
       const opts = multiaddress.toOptions();
       const url = `ws://${opts.host}:${opts.port}`;
-      this.connections[multiaddress.toString()] = {
+      this.connections[address] = {
         multiaddr: multiaddress,
         connection: new WebSocketAsPromised(url, {
           packMessage: (data: Buffer) => data.buffer,
@@ -123,6 +126,13 @@ export class WebSocketTransportService
       socket.ws.binaryType = "arraybuffer";
       this.emit("newSocketConnection", multiaddress);
       socket.onUnpackedMessage.addListener((msg) => {
+        // Hack to drop public url reflection based messages from packet processing
+        try {
+          JSON.parse(msg);
+          return;
+        } catch {
+          // eslint-disable-next-line no-empty
+        }
         this.handleIncoming(msg, {
           address: opts.host,
           family: "IPv4",
@@ -131,13 +141,15 @@ export class WebSocketTransportService
         });
       });
       socket.onMessage.addListener((msg) => {
-        if (typeof msg === "string") {
-          const [address, port] = msg.split(":");
-          this.multiaddr = new Multiaddr(`/ip4/${address}/tcp/${port}/wss`);
+        try {
+          const { address, port } = JSON.parse(msg);
+          this.multiaddr = new Multiaddr(`/ip4/${address}/tcp/${port}`);
           this.emit("multiaddrUpdate", this.multiaddr);
-        }
+          // eslint-disable-next-line no-empty
+        } catch {}
       });
-      return this.connections[multiaddress.toString()].connection;
+      socket.onClose.addListener(() => log("socket for %s closed", opts.host));
+      return socket;
     }
   };
 

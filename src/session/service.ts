@@ -143,7 +143,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
     const session = this.sessions.get(dstId);
     if (!session) {
-      log("No session established, sending a random packet to: %s on %s", dstId, dst);
+      log("No session established, sending a random packet to: %s on %s", dstId, dst.toString());
       // cache message
       const msgs = this.pendingMessages.get(dstId);
       if (msgs) {
@@ -164,7 +164,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       throw new Error("Tried to send a request to an untrusted node");
     }
     // encrypt the message and send
-    log("Sending request: %O to %s on %s", message, dstId, dst);
+    log("Sending request: %O to %s on %s", message, dstId, dst.toString());
     const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
     this.processRequest(dstId, dst, packet, message);
   }
@@ -223,17 +223,17 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     try {
       authdata = decodeWhoAreYouAuthdata(packet.header.authdata);
     } catch (e) {
-      log("Cannot decode WHOAREYOU authdata from %s: %s", src, e);
+      log("Cannot decode WHOAREYOU authdata from %s: %s", src.toString(), e);
       return;
     }
     const nonce = packet.header.nonce;
     const srcStr = src.toString();
-    const pendingRequests = this.pendingRequests.get(srcStr);
+    const pendingRequests = this.pendingRequests.get(srcStr.split("/wss")[0]);
     if (!pendingRequests) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
-        "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
-        srcStr,
+        "Received a WHOAREYOU packet that references an unknown or expired request - no pending requests. source: %s, token: %s",
+        srcStr.split("/wss")[0],
         nonce.toString("hex")
       );
       return;
@@ -242,7 +242,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     if (!request) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
-        "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
+        "Received a WHOAREYOU packet that references an unknown or expired request - nonce not found. source: %s, token: %s",
         srcStr,
         nonce.toString("hex")
       );
@@ -253,7 +253,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
     pendingRequests.delete(request.message ? request.message.id : 0n);
 
-    log("Received a WHOAREYOU packet. source: %s", src);
+    log("Received a WHOAREYOU packet. source: %s", src.toString());
 
     // This is an assumed NodeId. We sent the packet to this NodeId and can only verify it against the
     // originating IP address. We assume it comes from this NodeId.
@@ -318,7 +318,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       return;
     }
 
-    log("Sending authentication message: %O to node: %s on %s", message, srcId, src);
+    log("Sending authentication message: %O to node: %s on %s", message, srcId, src.toString());
 
     // send the response
     this.processRequest(srcId, src, handshakePacket, message);
