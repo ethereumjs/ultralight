@@ -336,7 +336,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
     const msg = createTalkResponseMessage(requestId, payload);
     const enr = this.getKadValue(srcId);
-    const addr = await enr?.getFullMultiaddr("udp");
+    const addr = await enr?.getFullMultiaddr(enr?.tcp ? "tcp" : "udp");
     if (enr && addr) {
       log(`Sending TALKRESP message to node ${enr.id}`);
       try {
