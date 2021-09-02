@@ -72,7 +72,7 @@ export class Discv5Discovery extends EventEmitter {
       config: options,
       metrics: options.metrics,
     });
-    this.searchInterval = options.searchInterval ?? DEFAULT_SEARCH_INTERVAL_MS;
+    this.searchInterval = options.searchInterval ? options.searchInterval : DEFAULT_SEARCH_INTERVAL_MS;
     this.started = false;
     this.controller = new AbortController();
     options.bootEnrs.forEach((bootEnr) => this.discv5.addEnr(bootEnr));
@@ -121,13 +121,14 @@ export class Discv5Discovery extends EventEmitter {
   }
 
   handleEnr = async (enr: ENR): Promise<void> => {
-    const multiaddrTCP = enr.getLocationMultiaddr("tcp");
-    if (!multiaddrTCP) {
+    const transport = this.discv5.bindAddress.toOptions().transport.includes("tcp") ? "tcp" : "udp";
+    const multiaddr = enr.getLocationMultiaddr(transport);
+    if (!multiaddr) {
       return;
     }
     this.emit("peer", {
       id: await enr.peerId(),
-      multiaddrs: [multiaddrTCP],
+      multiaddrs: [multiaddr],
     });
   };
 }

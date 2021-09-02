@@ -21,6 +21,8 @@ export interface IRemoteInfo {
 export interface ITransportEvents {
   packet: (src: Multiaddr, packet: IPacket) => void;
   decodeError: (err: Error, src: Multiaddr) => void;
+  newSocketConnection: (src: Multiaddr) => void;
+  multiaddrUpdate: (addr: Multiaddr) => void;
 }
 export type TransportEventEmitter = StrictEventEmitter<EventEmitter, ITransportEvents>;
 
