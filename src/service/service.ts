@@ -318,7 +318,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   /**
    * Broadcast TALKREQ message to all nodes in routing table
    */
-  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<void> {
+  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<bigint> {
     const msg = createTalkRequestMessage(payload, protocol);
     for (const node of this.kadValues()) {
       const sendStatus = this.sendRequest(node.nodeId, msg);
@@ -328,6 +328,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         log(`Sent TALKREQ message to node ${node.nodeId}`);
       }
     }
+    return msg.id;
   }
 
   /**
