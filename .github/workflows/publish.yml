@@ -51,12 +51,22 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
-      - name: Get Changelog Entry
-        id: changelog_reader
-        uses: mindsers/changelog-reader-action@v2
+      - name: Generate changelog
+        id: changelog
+        uses: heinrichreimer/github-changelog-generator-action@v2.2
         with:
-          version: ${{ needs.tag.outputs.version }}
-          path: ./CHANGELOG.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issues: "false"
+          pullRequests: "true"
+          prWoLabels: "true"
+          author: "true"
+          usernamesAsGithubLogins: "true"
+          compareLink: "true"
+          filterByMilestone: "false"
+          unreleased: "false"
+          sinceTag: "${{ needs.tag.outputs.previous_tag }}"
+          maxIssues: "0"
+          stripGeneratorNotice: "true"
 
       - name: Create Release
         id: create_release
@@ -65,10 +75,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.tag.outputs.tag }}
-          body: ${{ steps.changelog_reader.outputs.changes }}
-          prerelease: true
+          body_path: "CHANGELOG.md"
           release_name: Release ${{ needs.tag.outputs.tag }}
-      #in case of failure
+          prerelease: false # Note: if prerelease, will be hidden from view in the main page
+
+      # in case of failure
       - name: Rollback on failure
         if: failure()
         uses: author/action-rollback@9ec72a6af74774e00343c6de3e946b0901c23013
