@@ -1,3 +1,9 @@
+# 0.6.4 - (2021-09-02)
+
+### Chores
+
+- Bump libp2p deps for uint8arrays@3.0.0 [#134](https://github.com/ChainSafe/discv5/pull/134) 
+
 # 0.6.3 - (2021-08-04)
 
 ### Chores
