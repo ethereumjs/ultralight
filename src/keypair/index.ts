@@ -35,8 +35,8 @@ export async function createPeerIdFromKeypair(keypair: IKeypair): Promise<PeerId
       // manually create a peer id to avoid expensive ops
       const privKey = keypair.hasPrivateKey()
         ? new supportedKeys.secp256k1.Secp256k1PrivateKey(keypair.privateKey, keypair.publicKey)
-        : // TODO: this is a workaround for https://github.com/libp2p/js-peer-id/pull/154, change once peer-id updated
-          ((null as unknown) as undefined);
+        : undefined;
+
       const pubKey = new supportedKeys.secp256k1.Secp256k1PublicKey(keypair.publicKey);
       const id = mh.encode(pubKey.bytes, "identity");
       return new PeerId(id, privKey, pubKey);
