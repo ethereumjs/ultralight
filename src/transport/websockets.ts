@@ -33,7 +33,7 @@ export class WebSocketTransportService
 
     const opts = multiaddr.toOptions();
     if (opts.transport !== "tcp") {
-      throw new Error("Local multiaddr must use WSS");
+      throw new Error("Local multiaddr must use WSS or UDP");
     }
     this.multiaddr = multiaddr;
     this.srcId = srcId;

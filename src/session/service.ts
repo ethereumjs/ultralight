@@ -3,7 +3,7 @@ import StrictEventEmitter from "strict-event-emitter-types";
 import debug from "debug";
 import { Multiaddr } from "multiaddr";
 
-import { ITransportService } from "../transport";
+import { ITransportService, WebSocketTransportService } from "../transport";
 import {
   PacketType,
   IPacket,
@@ -136,10 +136,11 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public sendRequest(dstEnr: ENR, message: RequestMessage): void {
     const dstId = dstEnr.nodeId;
-    const dst = dstEnr.getLocationMultiaddr("tcp");
+    const transport = this.transport instanceof WebSocketTransportService ? "tcp" : "udp";
+    const dst = dstEnr.getLocationMultiaddr(transport);
 
     if (!dst) {
-      throw new Error("ENR must have tcp socket data");
+      throw new Error(`ENR must have ${transport} socket data`);
     }
     const session = this.sessions.get(dstId);
     if (!session) {
