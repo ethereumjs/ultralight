@@ -316,19 +316,28 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }
 
   /**
-   * Broadcast TALKREQ message to all nodes in routing table
+   * Broadcast TALKREQ message to all nodes in routing table and returns response
    */
-  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<bigint> {
-    const msg = createTalkRequestMessage(payload, protocol);
-    for (const node of this.kadValues()) {
-      const sendStatus = this.sendRequest(node.nodeId, msg);
-      if (!sendStatus) {
-        log(`Failed to send TALKREQ message to node ${node.nodeId}`);
-      } else {
-        log(`Sent TALKREQ message to node ${node.nodeId}`);
+  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<Buffer> {
+    return await new Promise((resolve, reject) => {
+      const msg = createTalkRequestMessage(payload, protocol);
+      const timeout = setTimeout(() => reject("Request timed out"), 1000);
+      this.on("talkRespReceived", (srcId, enr, res) => {
+        if (res.id === msg.id) {
+          clearTimeout(timeout);
+          resolve(res.response);
+        }
+      });
+
+      for (const node of this.kadValues()) {
+        const sendStatus = this.sendRequest(node.nodeId, msg);
+        if (!sendStatus) {
+          log(`Failed to send TALKREQ message to node ${node.nodeId}`);
+        } else {
+          log(`Sent TALKREQ message to node ${node.nodeId}`);
+        }
       }
-    }
-    return msg.id;
+    });
   }
 
   /**
