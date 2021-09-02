@@ -318,13 +318,13 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   /**
    * Broadcast TALKREQ message to all nodes in routing table and returns response
    */
-  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<Buffer> {
+  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array, timeout = 1000): Promise<Buffer> {
     return await new Promise((resolve, reject) => {
       const msg = createTalkRequestMessage(payload, protocol);
-      const timeout = setTimeout(() => reject("Request timed out"), 1000);
+      const responseTimeout = setTimeout(() => reject("Request timed out"), timeout);
       this.on("talkRespReceived", (srcId, enr, res) => {
         if (res.id === msg.id) {
-          clearTimeout(timeout);
+          clearTimeout(responseTimeout);
           resolve(res.response);
         }
       });
