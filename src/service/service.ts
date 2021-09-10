@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import debug from "debug";
+import { randomBytes } from "libp2p-crypto";
 import { Multiaddr } from "multiaddr";
 import isIp = require("is-ip");
 import PeerId from "peer-id";
@@ -7,7 +8,7 @@ import PeerId from "peer-id";
 import { UDPTransportService } from "../transport";
 import { MAX_PACKET_SIZE } from "../packet";
 import { SessionService } from "../session";
-import { ENR, NodeId, MAX_RECORD_SIZE } from "../enr";
+import { ENR, NodeId, MAX_RECORD_SIZE, createNodeId } from "../enr";
 import { IKeypair, createKeypairFromPeerId, createPeerIdFromKeypair } from "../keypair";
 import {
   EntryStatus,
@@ -39,7 +40,7 @@ import {
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, IDiscv5Metrics, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
-import { TimeoutMap } from "../util";
+import { TimeoutMap, toBuffer } from "../util";
 import { IDiscv5Config, defaultConfig } from "../config";
 
 const log = debug("discv5:service");
@@ -269,6 +270,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    */
   public kadValues(): ENR[] {
     return this.kbuckets.values();
+  }
+
+  public async findRandomNode(): Promise<ENR[]> {
+    return await this.findNode(createNodeId(toBuffer(randomBytes(32))));
   }
 
   /**

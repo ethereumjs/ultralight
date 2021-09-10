@@ -1,13 +1,11 @@
 import { EventEmitter } from "events";
 import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";
-import { randomBytes } from "libp2p-crypto";
 import { AbortController } from "@chainsafe/abort-controller";
 
 import { Discv5, ENRInput, IDiscv5Metrics } from "../service";
-import { createNodeId, ENR } from "../enr";
+import { ENR } from "../enr";
 import { IDiscv5Config } from "../config";
-import { toBuffer } from "../util";
 
 // Default to 0ms between automatic searches
 // 0ms is 'backwards compatible' with the prior behavior (always be searching)
@@ -104,7 +102,7 @@ export class Discv5Discovery extends EventEmitter {
     while (this.started) {
       // Search for random nodes
       // emit discovered on all finds
-      const enrs = await this.discv5.findNode(createNodeId(toBuffer(randomBytes(32))));
+      const enrs = await this.discv5.findRandomNode();
       if (!this.started) {
         return;
       }
