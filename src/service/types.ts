@@ -67,6 +67,8 @@ export interface IDiscv5Metrics {
   activeSessionCount: IGauge;
   /** Total number of connected peers */
   connectedPeerCount: IGauge;
+  /** Total number of attempted lookups */
+  lookupCount: IGauge;
 
   /** Total number messages sent by message type */
   sentMessageCount: IGauge<"type">;
