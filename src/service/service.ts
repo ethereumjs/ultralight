@@ -150,6 +150,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       metrics.kadTableSize.collect = () => metrics.kadTableSize.set(discv5.kbuckets.size);
       metrics.connectedPeerCount.collect = () => metrics.connectedPeerCount.set(discv5.connectedPeers.size);
       metrics.activeSessionCount.collect = () => metrics.activeSessionCount.set(discv5.sessionService.sessionsSize());
+      metrics.lookupCount.collect = () => metrics.lookupCount.set(this.nextLookupId - 1);
     }
   }
 
