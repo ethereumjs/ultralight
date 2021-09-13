@@ -77,23 +77,21 @@ export class WebSocketTransportService
     const encodedPacket = encodePacket(toId, packet);
     const encodedAddress = ip.encode(opts.host)
     const encodedPort = Buffer.from(opts.port.toString())
-    console.log(ip.encode(opts.host));
-    console.log(Buffer.from(opts.port.toString()));
-    const encodedMessage = [
+    const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
       ...Uint8Array.from(encodedPort),
       ...Uint8Array.from(encodedPacket),
-    ];
-    console.log(encodedMessage)
+    ]);
     this.socket.sendPacked(encodedMessage);
   }
 
-  public handleIncoming = (data: Buffer[]): void => {
-    const decoded = rlp.decode(data);
-    const rinfo = JSON.parse(decoded[0].toString()) as IRemoteInfo;
-    const multiaddr = new Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}`);
+  public handleIncoming = (data: Uint8Array): void => {
+    const rinfoLength = parseInt(data.slice(0, 2).toString());
+    const rinfo = JSON.parse(new TextDecoder().decode(data.slice(2, rinfoLength + 2))) as IRemoteInfo;
+    const multiaddr = new Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/udp/${rinfo.port}`);
+    const packetBuf = Buffer.from(data.slice(2 + rinfoLength));
     try {
-      const packet = decodePacket(this.srcId, decoded[1]);
+      const packet = decodePacket(this.srcId, packetBuf);
       this.emit("packet", multiaddr, packet);
     } catch (e) {
       this.emit("decodeError", e, multiaddr);
