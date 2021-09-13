@@ -174,7 +174,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     const transportLayer =
       transport === "udp"
         ? new UDPTransportService(multiaddr, decodedEnr.nodeId)
-        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId, "127.0.0.1:5050");
+        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId, "ws://127.0.0.1:5050");
     const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
     return new Discv5(fullConfig, sessionService, metrics);
   }

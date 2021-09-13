@@ -136,7 +136,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public sendRequest(dstEnr: ENR, message: RequestMessage): void {
     const dstId = dstEnr.nodeId;
-    const transport = this.transport instanceof WebSocketTransportService ? "tcp" : "udp";
+    const transport = this.transport instanceof WebSocketTransportService ? "udp" : "udp";
     const dst = dstEnr.getLocationMultiaddr(transport);
 
     if (!dst) {

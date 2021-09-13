@@ -74,9 +74,18 @@ export class WebSocketTransportService
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
     // Send via websocket (i.e. in browser)
     const opts = to.toOptions();
-    this.socket.sendPacked(
-      Buffer.concat([ip.encode(opts.host), Buffer.from(opts.port.toString()), encodePacket(toId, packet)])
-    );
+    const encodedPacket = encodePacket(toId, packet);
+    const encodedAddress = ip.encode(opts.host)
+    const encodedPort = Buffer.from(opts.port.toString())
+    console.log(ip.encode(opts.host));
+    console.log(Buffer.from(opts.port.toString()));
+    const encodedMessage = [
+      ...Uint8Array.from(encodedAddress),
+      ...Uint8Array.from(encodedPort),
+      ...Uint8Array.from(encodedPacket),
+    ];
+    console.log(encodedMessage)
+    this.socket.sendPacked(encodedMessage);
   }
 
   public handleIncoming = (data: Buffer[]): void => {
