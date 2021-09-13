@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@chainsafe/abort-controller": "^3.0.1",
+    "@leichtgewicht/ip-codec": "^2.0.3",
     "@types/ws": "^7.4.7",
     "base64url": "^3.0.1",
     "bcrypto": "^5.4.0",
