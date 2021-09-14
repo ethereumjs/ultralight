@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit",
     "build": "tsc --declaration --outDir lib",
     "prepublishOnly": "yarn build",
+    "prepare": "npm run build",
     "lint": "eslint --color --ext .ts src/",
     "test": "mocha -r ts-node/register 'test/**/*.test.ts'"
   },
