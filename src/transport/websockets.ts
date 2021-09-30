@@ -1,13 +1,12 @@
-import ws from "ws";
 import debug from "debug";
 import { EventEmitter } from "events";
 import { Multiaddr } from "multiaddr";
 import { decodePacket, encodePacket, IPacket } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 import WebSocketAsPromised from "websocket-as-promised";
-
+import ip from "@leichtgewicht/ip-codec";
 const log = debug("discv5:transport");
-
+import rlp from "rlp";
 interface ISocketConnection {
   multiaddr: Multiaddr;
   connection: WebSocketAsPromised;
@@ -22,139 +21,80 @@ export class WebSocketTransportService
 {
   public multiaddr: Multiaddr;
 
-  private server: ws.Server | undefined = undefined;
+  private socket: WebSocketAsPromised;
   private srcId: string;
   private connections: {
     [multiaddr: string]: ISocketConnection;
   } = {};
 
-  public constructor(multiaddr: Multiaddr, srcId: string) {
+  public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     super();
 
     const opts = multiaddr.toOptions();
-    if (opts.transport !== "tcp") {
-      throw new Error("Local multiaddr must use WSS or UDP");
+    if (opts.transport !== "udp") {
+      throw new Error("Local multiaddr must use udp");
     }
     this.multiaddr = multiaddr;
     this.srcId = srcId;
+    this.socket = new WebSocketAsPromised(proxyAddress, {
+      packMessage: (data: Buffer) => data.buffer,
+      unpackMessage: (data) => Buffer.from(data),
+    });
   }
 
   public async start(): Promise<void> {
-    const opts = this.multiaddr.toOptions();
-    if (this.isNode()) {
-      this.server = new ws.Server({ host: opts.host, port: opts.port, clientTracking: true });
-      this.server.on("connection", (connection, req) => {
-        const remoteAddr = req.connection.remoteAddress;
-        const remotePort = req.connection.remotePort;
-        log(`new connection from ${remoteAddr}:${remotePort}`);
-        // send public address and port back to browser client to update ENR
-        connection.send(JSON.stringify({ address: remoteAddr, port: remotePort }));
-        // adding the multiaddr to the socket so individual connections can be identified when sending messages to nodes
-        /* eslint-disable @typescript-eslint/ban-ts-ignore */
-        // @ts-ignore
-        connection.multiAddr = `/ip4/${req.connection.remoteAddress}/tcp/${req.connection.remotePort}`;
-        connection.on("message", (msg) => {
-          this.handleIncoming(msg as Buffer, {
-            address: req.connection.remoteAddress!,
-            family: "IPv4",
-            port: req.connection.remotePort!,
-            size: 1024,
-          });
-        });
-      });
-    }
+    await this.socket.open();
+    this.socket.ws.binaryType = "arraybuffer";
+
+    this.socket.onUnpackedMessage.addListener((msg) => {
+      // Hack to drop public url reflection based messages from packet processing
+      try {
+        JSON.parse(msg);
+        return;
+      } catch {
+        // eslint-disable-next-line no-empty
+      }
+      this.handleIncoming(msg);
+    });
+    this.socket.onMessage.addListener((msg) => {
+      try {
+        const { address, port } = JSON.parse(msg);
+        this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`);
+        this.emit("multiaddrUpdate", this.multiaddr);
+        // eslint-disable-next-line no-empty
+      } catch { }
+    });
+    this.socket.onClose.addListener(() => log("socket to proxy closed"));
   }
 
   public async stop(): Promise<void> {
-    if (this.isNode() && this.server) {
-      this.server.off("message", this.handleIncoming);
-      this.server.close();
-    }
+    await this.socket.close();
   }
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
-    if (this.isNode()) {
-      this.server?.clients.forEach((client: ws) => {
-        // If websocket server exists, send packet to open socket corresponding to `to` if it exists
-        //@ts-ignore
-        if (to.toString().includes(client.multiAddr.toString())) {
-          const encoded = encodePacket(toId, packet);
-          client.send(encoded);
-        }
-      });
-    } else {
-      // Send via websocket (i.e. in browser)
-      const connection = await this.getConnection(to);
-      connection.sendPacked(encodePacket(toId, packet));
-    }
+    // Send via websocket (i.e. in browser)
+    const opts = to.toOptions();
+    const encodedPacket = encodePacket(toId, packet);
+    const encodedAddress = ip.encode(opts.host)
+    const encodedPort = Buffer.from(opts.port.toString())
+    const encodedMessage = new Uint8Array([
+      ...Uint8Array.from(encodedAddress),
+      ...Uint8Array.from(encodedPort),
+      ...Uint8Array.from(encodedPacket),
+    ]);
+    this.socket.sendPacked(encodedMessage);
   }
 
-  public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    const multiaddr = new Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/tcp/${rinfo.port}`);
+  public handleIncoming = (data: Uint8Array): void => {
+    const rinfoLength = parseInt(data.slice(0, 2).toString());
+    const rinfo = JSON.parse(new TextDecoder().decode(data.slice(2, rinfoLength + 2))) as IRemoteInfo;
+    const multiaddr = new Multiaddr(`/${rinfo.family === "IPv4" ? "ip4" : "ip6"}/${rinfo.address}/udp/${rinfo.port}`);
+    const packetBuf = Buffer.from(data.slice(2 + rinfoLength));
     try {
-      const packet = decodePacket(this.srcId, data);
+      const packet = decodePacket(this.srcId, packetBuf);
       this.emit("packet", multiaddr, packet);
     } catch (e) {
       this.emit("decodeError", e, multiaddr);
     }
-  };
-
-  private getConnection = async (multiaddress: Multiaddr): Promise<WebSocketAsPromised> => {
-    const address = multiaddress.toString();
-    if (this.connections[address]) {
-      const socket = this.connections[address].connection;
-      if (!socket.isOpened) {
-        await socket.open();
-      }
-      return socket;
-    } else {
-      log("Opening new socket connection to %s", multiaddress.toString());
-      const opts = multiaddress.toOptions();
-      const url = `ws://${opts.host}:${opts.port}`;
-      this.connections[address] = {
-        multiaddr: multiaddress,
-        connection: new WebSocketAsPromised(url, {
-          packMessage: (data: Buffer) => data.buffer,
-          unpackMessage: (data) => Buffer.from(data),
-        }),
-      };
-      const socket = this.connections[multiaddress.toString()].connection;
-
-      await socket.open();
-      socket.ws.binaryType = "arraybuffer";
-      this.emit("newSocketConnection", multiaddress);
-      socket.onUnpackedMessage.addListener((msg) => {
-        // Hack to drop public url reflection based messages from packet processing
-        try {
-          JSON.parse(msg);
-          return;
-        } catch {
-          // eslint-disable-next-line no-empty
-        }
-        this.handleIncoming(msg, {
-          address: opts.host,
-          family: "IPv4",
-          port: opts.port,
-          size: msg.length,
-        });
-      });
-      socket.onMessage.addListener((msg) => {
-        try {
-          const { address, port } = JSON.parse(msg);
-          this.multiaddr = new Multiaddr(`/ip4/${address}/tcp/${port}`);
-          this.emit("multiaddrUpdate", this.multiaddr);
-          // eslint-disable-next-line no-empty
-        } catch {}
-      });
-      socket.onClose.addListener(() => log("socket for %s closed", opts.host));
-      return socket;
-    }
-  };
-
-  // Check if environment is Node or no
-  private isNode = (): boolean => {
-    if (ws.Server) {
-      return true;
-    } else return false;
   };
 }

@@ -10,6 +10,7 @@
     "check-types": "tsc --noEmit",
     "build": "tsc --declaration --outDir lib",
     "prepublishOnly": "yarn build",
+    "prepare": "npm run build",
     "lint": "eslint --color --ext .ts src/",
     "test": "mocha -r ts-node/register 'test/**/*.test.ts'"
   },
@@ -57,6 +58,7 @@
   },
   "dependencies": {
     "@chainsafe/abort-controller": "^3.0.1",
+    "@leichtgewicht/ip-codec": "^2.0.3",
     "@types/ws": "^7.4.7",
     "base64url": "^3.0.1",
     "bcrypto": "^5.4.0",

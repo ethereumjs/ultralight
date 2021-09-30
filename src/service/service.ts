@@ -68,6 +68,7 @@ export interface IDiscv5CreateOptions {
   config?: Partial<IDiscv5Config>;
   metrics?: IDiscv5Metrics;
   transport?: string;
+  proxyAddress?: string;
 }
 
 /**
@@ -170,13 +171,14 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     config = {},
     transport = "udp",
     metrics,
+    proxyAddress = "",
   }: IDiscv5CreateOptions): Discv5 {
     const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
     const transportLayer =
       transport === "udp"
         ? new UDPTransportService(multiaddr, decodedEnr.nodeId)
-        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId);
+        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId, proxyAddress);
     const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
     return new Discv5(fullConfig, sessionService, metrics);
   }
