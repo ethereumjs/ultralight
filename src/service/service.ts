@@ -6,6 +6,7 @@ import isIp = require("is-ip");
 import PeerId from "peer-id";
 
 import { UDPTransportService } from "../transport";
+import { WebSocketTransportService } from "../transport";
 import { MAX_PACKET_SIZE } from "../packet";
 import { SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE, createNodeId } from "../enr";
@@ -66,6 +67,7 @@ export interface IDiscv5CreateOptions {
   multiaddr: Multiaddr;
   config?: Partial<IDiscv5Config>;
   metrics?: IDiscv5Metrics;
+  transport?: string;
 }
 
 /**
@@ -161,11 +163,21 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * @param peerId the PeerId with the keypair that identifies the enr
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
-  public static create({ enr, peerId, multiaddr, config = {}, metrics }: IDiscv5CreateOptions): Discv5 {
+  public static create({
+    enr,
+    peerId,
+    multiaddr,
+    config = {},
+    transport = "udp",
+    metrics,
+  }: IDiscv5CreateOptions): Discv5 {
     const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
-    const udpTransport = new UDPTransportService(multiaddr, decodedEnr.nodeId);
-    const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), udpTransport);
+    const transportLayer =
+      transport === "udp"
+        ? new UDPTransportService(multiaddr, decodedEnr.nodeId)
+        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId);
+    const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
     return new Discv5(fullConfig, sessionService, metrics);
   }
 
@@ -184,6 +196,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     this.sessionService.on("message", this.onMessage);
     this.sessionService.on("whoAreYouRequest", this.onWhoAreYouRequest);
     this.sessionService.on("requestFailed", this.onRequestFailed);
+    this.sessionService.transport.on("multiaddrUpdate", (addr) => {
+      this.enr.setLocationMultiaddr(addr);
+      log("Updated ENR based on public multiaddr to", this.enr.encodeTxt(this.keypair.privateKey));
+    });
     await this.sessionService.start();
     this.started = true;
   }
@@ -306,18 +322,28 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }
 
   /**
-   * Broadcast TALKREQ message to all nodes in routing table
+   * Broadcast TALKREQ message to all nodes in routing table and returns response
    */
-  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<void> {
-    const msg = createTalkRequestMessage(payload, protocol);
-    for (const node of this.kadValues()) {
-      const sendStatus = this.sendRequest(node.nodeId, msg);
-      if (!sendStatus) {
-        log(`Failed to send TALKREQ message to node ${node.nodeId}`);
-      } else {
-        log(`Sent TALKREQ message to node ${node.nodeId}`);
+  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array, timeout = 1000): Promise<Buffer> {
+    return await new Promise((resolve, reject) => {
+      const msg = createTalkRequestMessage(payload, protocol);
+      const responseTimeout = setTimeout(() => reject("Request timed out"), timeout);
+      this.on("talkRespReceived", (srcId, enr, res) => {
+        if (res.id === msg.id) {
+          clearTimeout(responseTimeout);
+          resolve(res.response);
+        }
+      });
+
+      for (const node of this.kadValues()) {
+        const sendStatus = this.sendRequest(node.nodeId, msg);
+        if (!sendStatus) {
+          log(`Failed to send TALKREQ message to node ${node.nodeId}`);
+        } else {
+          log(`Sent TALKREQ message to node ${node.nodeId}`);
+        }
       }
-    }
+    });
   }
 
   /**
@@ -326,7 +352,8 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
     const msg = createTalkResponseMessage(requestId, payload);
     const enr = this.getKadValue(srcId);
-    const addr = await enr?.getFullMultiaddr("udp");
+    const transport = this.sessionService.transport instanceof WebSocketTransportService ? "tcp" : "udp";
+    const addr = await enr?.getFullMultiaddr(transport);
     if (enr && addr) {
       log(`Sending TALKRESP message to node ${enr.id}`);
       try {
@@ -342,6 +369,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         log(`Node ${srcId} not found`);
       }
     }
+  }
+
+  public enableLogs(): void {
+    debug.enable("discv5*");
   }
 
   /**
@@ -709,19 +740,27 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     if (enr) {
       this.sessionService.sendWhoAreYou(src, srcId, enr.seq, enr, nonce);
     } else {
-      log("Node unknown, requesting ENR. Node: %s", srcId);
+      log("Node unknown, requesting ENR. Node: %s; Token: %s", srcId, nonce.toString("hex"));
       this.sessionService.sendWhoAreYou(src, srcId, 0n, null, nonce);
     }
   };
 
   private onTalkReq = (srcId: NodeId, src: Multiaddr, message: ITalkReqMessage): void => {
     log("Received TALKREQ message from Node: %s", srcId);
-    this.emit("talkReqReceived", srcId, this.findEnr(srcId) ?? null, message);
+    let sourceId: ENR | undefined | null = this.findEnr(srcId);
+    if (!sourceId) {
+      sourceId = null;
+    }
+    this.emit("talkReqReceived", srcId, sourceId, message);
   };
 
   private onTalkResp = (srcId: NodeId, src: Multiaddr, message: ITalkRespMessage): void => {
     log("Received response from Node: %s", srcId);
-    this.emit("talkRespReceived", srcId, this.findEnr(srcId) ?? null, message);
+    let sourceId: ENR | undefined | null = this.findEnr(srcId);
+    if (!sourceId) {
+      sourceId = null;
+    }
+    this.emit("talkRespReceived", srcId, sourceId, message);
   };
 
   private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {

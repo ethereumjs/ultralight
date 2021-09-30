@@ -82,12 +82,13 @@ export class Session {
    * session being established. This session is set to `RandomSent` state.
    */
   static createWithRandom(localId: NodeId, remoteEnr: ENR): [Session, IPacket] {
+    const transport = remoteEnr.tcp ? "tcp" : "udp";
     return [
       new Session({
         state: { state: SessionState.RandomSent },
         trusted: TrustedState.Untrusted,
         remoteEnr,
-        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/udp/0"),
+        lastSeenMultiaddr: new Multiaddr(`/ip4/0.0.0.0/${transport}/0`),
       }),
       createRandomPacket(localId),
     ];
@@ -305,7 +306,8 @@ export class Session {
   updateTrusted(): boolean {
     if (this.remoteEnr) {
       const hasSameMultiaddr = (multiaddr: Multiaddr, enr: ENR): boolean => {
-        const enrMultiaddr = enr.getLocationMultiaddr("udp");
+        const transport = enr.tcp ? "tcp" : "udp";
+        const enrMultiaddr = enr.getLocationMultiaddr(transport);
         return enrMultiaddr ? enrMultiaddr.equals(multiaddr) : false;
       };
       switch (this.trusted) {
