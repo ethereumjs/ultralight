@@ -27,7 +27,7 @@ export interface IDiscv5Events {
    */
   talkReqReceived: (srcId: NodeId, enr: ENR | null, message: ITalkReqMessage) => void;
   /**
-   * A TALKREQ message was received.
+   * A TALKRESP message was received.
    *
    * The message object is returned.
    */
