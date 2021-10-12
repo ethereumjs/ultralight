@@ -304,12 +304,23 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    */
   public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array, timeout = 1000): Promise<Buffer> {
     return await new Promise((resolve, reject) => {
+      const listenerId = this.listeners("talkRespReceived").length;
       const msg = createTalkRequestMessage(payload, protocol);
-      const responseTimeout = setTimeout(() => reject("Request timed out"), timeout);
+      const responseTimeout = setTimeout(() => {
+        try {
+          const listener = this.listeners("talkRespReceived")[listenerId];
+          this.removeListener("talkRespReceived", listener as () => void);
+        } catch {
+          // Just catching any error if listener is already removed
+        }
+        reject("Request timed out");
+      }, timeout);
       this.on("talkRespReceived", (srcId, enr, res) => {
+        const listener = this.listeners("talkRespReceived")[listenerId];
         if (res.id === msg.id) {
           clearTimeout(responseTimeout);
           resolve(res.response);
+          this.removeListener("talkRespReceived", listener as () => void);
         }
       });
 
