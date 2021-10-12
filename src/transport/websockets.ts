@@ -6,7 +6,7 @@ import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 import WebSocketAsPromised from "websocket-as-promised";
 import ip from "@leichtgewicht/ip-codec";
 const log = debug("discv5:transport");
-import rlp from "rlp";
+
 interface ISocketConnection {
   multiaddr: Multiaddr;
   connection: WebSocketAsPromised;
@@ -75,8 +75,8 @@ export class WebSocketTransportService
     // Send via websocket (i.e. in browser)
     const opts = to.toOptions();
     const encodedPacket = encodePacket(toId, packet);
-    const encodedAddress = ip.encode(opts.host)
-    const encodedPort = Buffer.from(opts.port.toString())
+    const encodedAddress = ip.encode(opts.host);
+    const encodedPort = Buffer.from(opts.port.toString());
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
       ...Uint8Array.from(encodedPort),

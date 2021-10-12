@@ -372,7 +372,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       try {
         this.sessionService.sendResponse(addr, srcId, msg);
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.TALKRESP] });
-      } catch (e: any) {
+      } catch (e) {
         log("Failed to send a TALKRESP response. Error: %s", e.message);
       }
     } else {
@@ -415,7 +415,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
       this.activeRequests.set(message.id, { request: message, dstId: nodeId });
       this.metrics?.sentMessageCount.inc({ type: MessageType[message.type] });
-    } catch (e: any) {
+    } catch (e) {
       log("Requesting ENR failed. Error: %s", e.message);
     }
   }
@@ -457,7 +457,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         this.activeRequests.set(req.id, { request: req, dstId: nodeId, lookupId });
         this.metrics?.sentMessageCount.inc({ type: MessageType[req.type] });
         return true;
-      } catch (e: any) {
+      } catch (e) {
         log("Sending request to node: %s failed: error: %s", nodeId, e.message);
       }
     }
@@ -620,7 +620,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         createPongMessage(message.id, this.enr.seq, srcOpts.host, srcOpts.port)
       );
       this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.PONG] });
-    } catch (e: any) {
+    } catch (e) {
       log("Failed to send Pong. Error %s", e.message);
     }
   }
@@ -679,7 +679,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       try {
         this.sessionService.sendResponse(src, srcId, createNodesMessage(id, 0, nodes));
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.NODES] });
-      } catch (e: any) {
+      } catch (e) {
         log("Failed to send a NODES response. Error: %s", e.message);
       }
       return;
@@ -698,7 +698,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       try {
         this.sessionService.sendResponse(src, srcId, createNodesMessage(id, total, _nodes));
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.NODES] });
-      } catch (e: any) {
+      } catch (e) {
         log("Failed to send a NODES response. Error: %s", e.message);
       }
     }
