@@ -360,6 +360,43 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }
 
   /**
+ * Send TALKREQ message to dstId and returns response
+ */
+  public async sendTalkReq(
+    dstId: string,
+    payload: Buffer,
+    protocol: string | Uint8Array,
+    timeout = 1000
+  ): Promise<Buffer> {
+    return await new Promise((resolve, reject) => {
+      const listenerId = this.listeners("talkRespReceived").length;
+      const msg = createTalkRequestMessage(payload, protocol);
+      const responseTimeout = setTimeout(() => {
+        try {
+          const listener = this.listeners("talkRespReceived")[listenerId];
+          this.removeListener("talkRespReceived", listener as () => void);
+        } catch {
+          // Just catching any error if listener is already removed
+        }
+        reject("Request timed out");
+      }, timeout);
+      this.on("talkRespReceived", (srcId, enr, res) => {
+        const listener = this.listeners("talkRespReceived")[listenerId];
+        if (res.id === msg.id) {
+          clearTimeout(responseTimeout);
+          resolve(res.response);
+          this.removeListener("talkRespReceived", listener as () => void);
+        }
+      });
+      const sendStatus = this.sendRequest(dstId, msg);
+      if (!sendStatus) {
+        log(`Failed to send TALKREQ message to node ${dstId}`);
+      } else {
+        log(`Sent TALKREQ message to node ${dstId}`);
+      }
+    });
+  }
+  /**
    * Send TALKRESP message to requesting node
    */
   public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
