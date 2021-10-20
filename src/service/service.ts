@@ -360,8 +360,8 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }
 
   /**
- * Send TALKREQ message to dstId and returns response
- */
+   * Send TALKREQ message to dstId and returns response
+   */
   public async sendTalkReq(
     dstId: string,
     payload: Buffer,

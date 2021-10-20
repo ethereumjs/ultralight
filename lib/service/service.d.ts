@@ -122,6 +122,7 @@ export declare class Discv5 extends Discv5_base {
      * Return all ENRs of nodes currently contained in buckets of the kad routing table
      */
     kadValues(): ENR[];
+    findRandomNode(): Promise<ENR[]>;
     /**
      * Starts an iterative FIND_NODE lookup
      */
@@ -130,6 +131,10 @@ export declare class Discv5 extends Discv5_base {
      * Broadcast TALKREQ message to all nodes in routing table and returns response
      */
     broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array, timeout?: number): Promise<Buffer>;
+    /**
+     * Send TALKREQ message to dstId and returns response
+     */
+    sendTalkReq(dstId: string, payload: Buffer, protocol: string | Uint8Array, timeout?: number): Promise<Buffer>;
     /**
      * Send TALKRESP message to requesting node
      */

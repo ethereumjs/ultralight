@@ -26,7 +26,7 @@ export interface IDiscv5Events {
      */
     talkReqReceived: (srcId: NodeId, enr: ENR | null, message: ITalkReqMessage) => void;
     /**
-     * A TALKREQ message was received.
+     * A TALKRESP message was received.
      *
      * The message object is returned.
      */
@@ -58,6 +58,8 @@ export interface IDiscv5Metrics {
     activeSessionCount: IGauge;
     /** Total number of connected peers */
     connectedPeerCount: IGauge;
+    /** Total number of attempted lookups */
+    lookupCount: IGauge;
     /** Total number messages sent by message type */
     sentMessageCount: IGauge<"type">;
     /** Total number messages received by message type */
