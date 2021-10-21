@@ -402,7 +402,8 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
     const msg = createTalkResponseMessage(requestId, payload);
     const enr = this.getKadValue(srcId);
-    const transport = this.sessionService.transport instanceof WebSocketTransportService ? "tcp" : "udp";
+    //const transport = this.sessionService.transport instanceof WebSocketTransportService ? "tcp" : "udp";
+    const transport = "udp"
     const addr = await enr?.getFullMultiaddr(transport);
     if (enr && addr) {
       log(`Sending TALKRESP message to node ${enr.id}`);
