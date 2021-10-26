@@ -126,6 +126,11 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   private metrics?: IDiscv5Metrics;
 
   /**
+   * A map of open listeners for TALKREQ messages that have been set.  Used to ensure event listeners
+   * are cleared when the expected response is returned or the timeout period expires
+   */
+  private talkReqListeners: Map<string, (...args: [string, ENR, ITalkRespMessage, null]) => void>;
+  /**
    * Default constructor.
    * @param sessionService the service managing sessions underneath.
    */
@@ -150,6 +155,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       metrics.connectedPeerCount.collect = () => metrics.connectedPeerCount.set(discv5.connectedPeers.size);
       metrics.activeSessionCount.collect = () => metrics.activeSessionCount.set(discv5.sessionService.sessionsSize());
     }
+    this.talkReqListeners = new Map();
   }
 
   /**
@@ -304,25 +310,28 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    */
   public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array, timeout = 1000): Promise<Buffer> {
     return await new Promise((resolve, reject) => {
-      const listenerId = this.listeners("talkRespReceived").length;
       const msg = createTalkRequestMessage(payload, protocol);
       const responseTimeout = setTimeout(() => {
-        try {
-          const listener = this.listeners("talkRespReceived")[listenerId];
-          this.removeListener("talkRespReceived", listener as () => void);
-        } catch {
-          // Just catching any error if listener is already removed
+        const event = this.talkReqListeners.get(msg.id.toString());
+        if (event) {
+          this.removeListener("talkRespReceived", event);
+          this.talkReqListeners.delete(msg.id.toString());
         }
         reject("Request timed out");
       }, timeout);
-      this.on("talkRespReceived", (srcId, enr, res) => {
-        const listener = this.listeners("talkRespReceived")[listenerId];
+      const listener = (srcId: string, enr: ENR | null, res: ITalkRespMessage): void => {
         if (res.id === msg.id) {
+          const event = this.talkReqListeners.get(msg.id.toString());
+          if (event) {
+            this.removeListener("talkRespReceived", event);
+            this.talkReqListeners.delete(msg.id.toString());
+          }
           clearTimeout(responseTimeout);
           resolve(res.response);
-          this.removeListener("talkRespReceived", listener as () => void);
         }
-      });
+      };
+      this.talkReqListeners.set(msg.id.toString(), listener);
+      this.on("talkRespReceived", listener);
 
       for (const node of this.kadValues()) {
         const sendStatus = this.sendRequest(node.nodeId, msg);
@@ -336,27 +345,45 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }
 
   /**
-   * Send TALKRESP message to requesting node
+   * Send TALKREQ message to dstId and returns response
    */
-  public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
-    const msg = createTalkResponseMessage(requestId, payload);
-    const enr = this.getKadValue(srcId);
-    const addr = await enr?.getFullMultiaddr("udp");
-    if (enr && addr) {
-      log(`Sending TALKRESP message to node ${enr.id}`);
-      try {
-        this.sessionService.sendResponse(addr, srcId, msg);
-        this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.TALKRESP] });
-      } catch (e) {
-        log("Failed to send a TALKRESP response. Error: %s", e.message);
-      }
-    } else {
-      if (!addr && enr) {
-        log(`No ip + udp port found for node ${srcId}`);
+  public async sendTalkReq(
+    dstId: string,
+    payload: Buffer,
+    protocol: string | Uint8Array,
+    timeout = 1000
+  ): Promise<Buffer> {
+    return await new Promise((resolve, reject) => {
+      const msg = createTalkRequestMessage(payload, protocol);
+      const responseTimeout = setTimeout(() => {
+        const event = this.talkReqListeners.get(msg.id.toString());
+        if (event) {
+          this.removeListener("talkRespReceived", event);
+          this.talkReqListeners.delete(msg.id.toString());
+        }
+        reject("Request timed out");
+      }, timeout);
+      const listener = (srcId: string, enr: ENR | null, res: ITalkRespMessage): void => {
+        if (res.id === msg.id) {
+          clearTimeout(responseTimeout);
+          resolve(res.response);
+          const event = this.talkReqListeners.get(msg.id.toString());
+          if (event) {
+            this.removeListener("talkRespReceived", event);
+            this.talkReqListeners.delete(msg.id.toString());
+          }
+        }
+      };
+      this.talkReqListeners.set(msg.id.toString(), listener);
+
+      this.on("talkRespReceived", listener);
+      const sendStatus = this.sendRequest(dstId, msg);
+      if (!sendStatus) {
+        log(`Failed to send TALKREQ message to node ${dstId}`);
       } else {
-        log(`Node ${srcId} not found`);
+        log(`Sent TALKREQ message to node ${dstId}`);
       }
-    }
+    });
   }
 
   /**
