@@ -34,8 +34,6 @@ import {
   ITalkReqMessage,
   ITalkRespMessage,
   createTalkRequestMessage,
-  createTalkResponseMessage,
-  RequestId,
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, IDiscv5Metrics, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
