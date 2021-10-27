@@ -133,7 +133,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * A map of open listeners for TALKREQ messages that have been set.  Used to ensure event listeners
    * are cleared when the expected response is returned or the timeout period expires
    */
-  private talkReqListeners: Map<string, (...args: [string, ENR, ITalkRespMessage, null]) => void>;
+  private talkReqListeners: Map<bigint, (...args: [string, ENR, ITalkRespMessage, null]) => void>;
   /**
    * Default constructor.
    * @param sessionService the service managing sessions underneath.
@@ -336,10 +336,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     return await new Promise((resolve, reject) => {
       const msg = createTalkRequestMessage(payload, protocol);
       const responseTimeout = setTimeout(() => {
-        const event = this.talkReqListeners.get(msg.id.toString());
+        const event = this.talkReqListeners.get(msg.id);
         if (event) {
           this.removeListener("talkRespReceived", event);
-          this.talkReqListeners.delete(msg.id.toString());
+          this.talkReqListeners.delete(msg.id);
         }
         reject("Request timed out");
       }, timeout);
@@ -347,14 +347,14 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         if (res.id === msg.id) {
           clearTimeout(responseTimeout);
           resolve(res.response);
-          const event = this.talkReqListeners.get(msg.id.toString());
+          const event = this.talkReqListeners.get(msg.id);
           if (event) {
             this.removeListener("talkRespReceived", event);
-            this.talkReqListeners.delete(msg.id.toString());
+            this.talkReqListeners.delete(msg.id);
           }
         }
       };
-      this.talkReqListeners.set(msg.id.toString(), listener);
+      this.talkReqListeners.set(msg.id, listener);
 
       this.on("talkRespReceived", listener);
 
@@ -381,10 +381,10 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     return await new Promise((resolve, reject) => {
       const msg = createTalkRequestMessage(payload, protocol);
       const responseTimeout = setTimeout(() => {
-        const event = this.talkReqListeners.get(msg.id.toString());
+        const event = this.talkReqListeners.get(msg.id);
         if (event) {
           this.removeListener("talkRespReceived", event);
-          this.talkReqListeners.delete(msg.id.toString());
+          this.talkReqListeners.delete(msg.id);
         }
         reject("Request timed out");
       }, timeout);
@@ -392,14 +392,14 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         if (res.id === msg.id) {
           clearTimeout(responseTimeout);
           resolve(res.response);
-          const event = this.talkReqListeners.get(msg.id.toString());
+          const event = this.talkReqListeners.get(msg.id);
           if (event) {
             this.removeListener("talkRespReceived", event);
-            this.talkReqListeners.delete(msg.id.toString());
+            this.talkReqListeners.delete(msg.id);
           }
         }
       };
-      this.talkReqListeners.set(msg.id.toString(), listener);
+      this.talkReqListeners.set(msg.id, listener);
 
       this.on("talkRespReceived", listener);
       const sendStatus = this.sendRequest(dstId, msg);
