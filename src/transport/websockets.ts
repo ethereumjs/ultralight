@@ -5,6 +5,7 @@ import { decodePacket, encodePacket, IPacket } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 import WebSocketAsPromised from "websocket-as-promised";
 import ip from "@leichtgewicht/ip-codec";
+import { numberToBuffer } from "..";
 const log = debug("discv5:transport");
 
 interface ISocketConnection {
@@ -23,9 +24,6 @@ export class WebSocketTransportService
 
   private socket: WebSocketAsPromised;
   private srcId: string;
-  private connections: {
-    [multiaddr: string]: ISocketConnection;
-  } = {};
 
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     super();
@@ -76,7 +74,7 @@ export class WebSocketTransportService
     const opts = to.toOptions();
     const encodedPacket = encodePacket(toId, packet);
     const encodedAddress = ip.encode(opts.host);
-    const encodedPort = Buffer.from(opts.port.toString());
+    const encodedPort = numberToBuffer(opts.port, 2);
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
       ...Uint8Array.from(encodedPort),
@@ -94,7 +92,7 @@ export class WebSocketTransportService
       const packet = decodePacket(this.srcId, packetBuf);
       this.emit("packet", multiaddr, packet);
     } catch (e) {
-      this.emit("decodeError", e, multiaddr);
+      this.emit("decodeError", e as Error, multiaddr);
     }
   };
 }
