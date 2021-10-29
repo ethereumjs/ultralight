@@ -48,6 +48,10 @@ export interface ILookupConfig {
    */
   lookupParallelism: number;
   /**
+   * Amount of distances requested in a single Findnode message for a lookup or query
+   */
+  lookupRequestLimit: number;
+  /**
    * Number of results to produce.
    *
    * The number of closest peers that a query must obtain successful results for before it terminates.
