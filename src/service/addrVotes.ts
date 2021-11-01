@@ -9,7 +9,7 @@ export class AddrVotes {
   private tallies: Record<string, number>;
 
   constructor() {
-    this.votes = new TimeoutMap(IP_VOTE_TIMEOUT, this.removeTally);
+    this.votes = new TimeoutMap(IP_VOTE_TIMEOUT, this.removeVote);
     this.tallies = {};
   }
 
@@ -33,10 +33,6 @@ export class AddrVotes {
     this.tallies[addrStr] += 1;
   }
 
-  removeTally = (addrStr: string): void => {
-    this.tallies[addrStr] -= 1;
-  };
-
   clear(): void {
     this.votes.clear();
     this.tallies = {};
@@ -58,4 +54,11 @@ export class AddrVotes {
     }
     return new Multiaddr(best[0]);
   }
+
+  private removeTally = (addrStr: string): void => {
+    const total = this.tallies[addrStr];
+    if (!isNaN(total)) {
+      this.tallies[addrStr] = total - 1;
+    }
+  };
 }
