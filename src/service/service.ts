@@ -15,7 +15,7 @@ import {
   KademliaRoutingTable,
   log2Distance,
   ILookupPeer,
-  findNodeLog2Distance,
+  findNodeLog2Distances,
   Lookup,
 } from "../kademlia";
 import {
@@ -381,13 +381,9 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    */
   private sendLookup(lookupId: number, target: NodeId, peer: ILookupPeer): void {
     const peerId = peer.nodeId;
-    const distance = findNodeLog2Distance(target, peer);
-    // send request if distance is not 0
-    let succeeded = Boolean(distance);
-    if (succeeded) {
-      log("Sending lookup. Id: %d, Iteration: %d, Node: %s", lookupId, peer.iteration, peerId);
-      succeeded = this.sendRequest(peer.nodeId, createFindNodeMessage([distance]), lookupId);
-    }
+    const distances = findNodeLog2Distances(target, peer, this.config);
+    log("Sending lookup. Id: %d, Iteration: %d, Node: %s", lookupId, peer.iteration, peerId);
+    const succeeded = this.sendRequest(peer.nodeId, createFindNodeMessage(distances), lookupId);
     // request errored (or request was not possible)
     if (!succeeded) {
       const lookup = this.activeLookups.get(lookupId);

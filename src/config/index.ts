@@ -20,6 +20,7 @@ export const defaultConfig: IDiscv5Config = {
   sessionTimeout: 86400 * 1000, // 1 day
   sessionEstablishTimeout: 15 * 1000,
   lookupParallelism: 3,
+  lookupRequestLimit: 3,
   lookupNumResults: 16,
   lookupTimeout: 60 * 1000,
   pingInterval: 300 * 1000,
