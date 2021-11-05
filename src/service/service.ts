@@ -35,6 +35,8 @@ import {
   ITalkReqMessage,
   ITalkRespMessage,
   createTalkRequestMessage,
+  createTalkResponseMessage,
+  RequestId,
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, IDiscv5Metrics, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
@@ -390,6 +392,30 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     });
   }
 
+  /**
+   * Send TALKRESP message to requesting node
+   */
+  public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
+    const msg = createTalkResponseMessage(requestId, payload);
+    const enr = this.getKadValue(srcId);
+    //const transport = this.sessionService.transport instanceof WebSocketTransportService ? "tcp" : "udp";
+    const transport = "udp";
+    const addr = await enr?.getFullMultiaddr(transport);
+    if (enr && addr) {
+      log(`Sending TALKRESP message to node ${enr.id}`);
+      try {
+        this.sessionService.sendResponse(addr, srcId, msg);
+        this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.TALKRESP] });
+      } catch (e) {
+        log("Failed to send a TALKRESP response. Error: %s", e.message);
+      }
+    } else {
+      if (!addr && enr) {
+        log(`No ip + udp port found for node ${srcId}`);
+      } else {
+        log(`Node ${srcId} not found`);
+      }
+    }
   /**
    * Sends a PING request to a node
    */
