@@ -1,3 +1,14 @@
+# 0.6.5 - (2021-11-04)
+
+### Features
+
+- Convert `broadcastTalkReq` to return promise [#136](https://github.com/ChainSafe/discv5/pull/136)
+- Query multiple distance at once in lookups [#143](https://github.com/ChainSafe/discv5/pull/143)
+- AddrVotes: Fix timeout map [#144](https://github.com/ChainSafe/discv5/pull/144)
+- Cache enr node id [#147](https://github.com/ChainSafe/discv5/pull/147)
+- Add lookup count metric [#138](https://github.com/ChainSafe/discv5/pull/138)
+- Add findRandomNode method [#137](https://github.com/ChainSafe/discv5/pull/137)
+
 # 0.6.4 - (2021-09-02)
 
 ### Chores

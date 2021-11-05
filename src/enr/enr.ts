@@ -15,6 +15,7 @@ import { toNewUint8Array } from "../util";
 export class ENR extends Map<ENRKey, ENRValue> {
   public seq: SequenceNumber;
   public signature: Buffer | null;
+  private _nodeId?: NodeId;
 
   constructor(kvs: Record<ENRKey, ENRValue> = {}, seq: SequenceNumber = 1n, signature: Buffer | null = null) {
     super(Object.entries(kvs));
@@ -74,6 +75,9 @@ export class ENR extends Map<ENRKey, ENRValue> {
   set(k: ENRKey, v: ENRValue): this {
     this.signature = null;
     this.seq++;
+    if (k === "secp256k1" && this.id === "v4") {
+      delete this._nodeId;
+    }
     return super.set(k, v);
   }
   get id(): string {
@@ -104,9 +108,12 @@ export class ENR extends Map<ENRKey, ENRValue> {
     return createPeerIdFromKeypair(this.keypair);
   }
   get nodeId(): NodeId {
+    if (this._nodeId) {
+      return this._nodeId;
+    }
     switch (this.id) {
       case "v4":
-        return v4.nodeId(this.publicKey);
+        return (this._nodeId = v4.nodeId(this.publicKey));
       default:
         throw new Error(ERR_INVALID_ID);
     }

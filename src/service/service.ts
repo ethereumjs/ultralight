@@ -16,7 +16,7 @@ import {
   KademliaRoutingTable,
   log2Distance,
   ILookupPeer,
-  findNodeLog2Distance,
+  findNodeLog2Distances,
   Lookup,
 } from "../kademlia";
 import {
@@ -81,7 +81,7 @@ export interface IDiscv5CreateOptions {
  *
  * Additionally, the service offers events when peers are added to the peer table or discovered via lookup.
  */
-export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
+export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   /**
    * Configuration
    */
@@ -345,17 +345,16 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       }, timeout);
       const listener = (srcId: string, enr: ENR | null, res: ITalkRespMessage): void => {
         if (res.id === msg.id) {
-          clearTimeout(responseTimeout);
-          resolve(res.response);
           const event = this.talkReqListeners.get(msg.id);
           if (event) {
             this.removeListener("talkRespReceived", event);
             this.talkReqListeners.delete(msg.id);
           }
+          clearTimeout(responseTimeout);
+          resolve(res.response);
         }
       };
       this.talkReqListeners.set(msg.id, listener);
-
       this.on("talkRespReceived", listener);
 
       for (const node of this.kadValues()) {
@@ -368,7 +367,6 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       }
     });
   }
-
   /**
    * Send TALKREQ message to dstId and returns response
    */
@@ -390,17 +388,16 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       }, timeout);
       const listener = (srcId: string, enr: ENR | null, res: ITalkRespMessage): void => {
         if (res.id === msg.id) {
-          clearTimeout(responseTimeout);
-          resolve(res.response);
           const event = this.talkReqListeners.get(msg.id);
           if (event) {
             this.removeListener("talkRespReceived", event);
             this.talkReqListeners.delete(msg.id);
           }
+          clearTimeout(responseTimeout);
+          resolve(res.response);
         }
       };
       this.talkReqListeners.set(msg.id, listener);
-
       this.on("talkRespReceived", listener);
       const sendStatus = this.sendRequest(dstId, msg);
       if (!sendStatus) {
@@ -410,6 +407,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       }
     });
   }
+
   /**
    * Send TALKRESP message to requesting node
    */
@@ -477,13 +475,9 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    */
   private sendLookup(lookupId: number, target: NodeId, peer: ILookupPeer): void {
     const peerId = peer.nodeId;
-    const distance = findNodeLog2Distance(target, peer);
-    // send request if distance is not 0
-    let succeeded = Boolean(distance);
-    if (succeeded) {
-      log("Sending lookup. Id: %d, Iteration: %d, Node: %s", lookupId, peer.iteration, peerId);
-      succeeded = this.sendRequest(peer.nodeId, createFindNodeMessage([distance]), lookupId);
-    }
+    const distances = findNodeLog2Distances(target, peer, this.config);
+    log("Sending lookup. Id: %d, Iteration: %d, Node: %s", lookupId, peer.iteration, peerId);
+    const succeeded = this.sendRequest(peer.nodeId, createFindNodeMessage(distances), lookupId);
     // request errored (or request was not possible)
     if (!succeeded) {
       const lookup = this.activeLookups.get(lookupId);

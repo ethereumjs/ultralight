@@ -4,6 +4,7 @@ import { NodeId } from "../enr";
 import { ILookupPeer } from "./types";
 import { fromHex } from "../util";
 import { NUM_BUCKETS } from "./constants";
+import { ILookupConfig } from "./types";
 
 /**
  * Computes the xor distance between two NodeIds
@@ -21,18 +22,18 @@ export function log2Distance(a: NodeId, b: NodeId): number {
 }
 
 /**
- * Calculates the log2 distance for a destination given a target and current iteration
+ * Calculates the log2 distances for a destination given a target and current iteration
  * As the iteration increases, the distance is incremented / decremented to adjacent distances from the exact distance
  */
-export function findNodeLog2Distance(a: NodeId, b: ILookupPeer): number {
-  const d = log2Distance(a, b.nodeId);
-  const iteration = b.iteration;
-  if (b.iteration === 1) {
-    return d;
+export function findNodeLog2Distances(a: NodeId, b: ILookupPeer, c: ILookupConfig): number[] {
+  let d = log2Distance(a, b.nodeId);
+  if (d === 0) {
+    d = 1;
   }
-  let difference = 1;
+  const iteration = b.iteration;
   const results = [d];
-  while (results.length < iteration) {
+  let difference = 1;
+  while (results.length < iteration * c.lookupRequestLimit) {
     if (d + difference <= 256) {
       results.push(d + difference);
     }
@@ -41,8 +42,5 @@ export function findNodeLog2Distance(a: NodeId, b: ILookupPeer): number {
     }
     difference += 1;
   }
-  if (iteration % 2 === 1) {
-    results.pop();
-  }
-  return results.pop() as number;
+  return results.slice((iteration - 1) * c.lookupRequestLimit, iteration * c.lookupRequestLimit);
 }
