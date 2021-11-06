@@ -416,6 +416,8 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
         log(`Node ${srcId} not found`);
       }
     }
+  }
+
   /**
    * Sends a PING request to a node
    */
