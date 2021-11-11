@@ -12,6 +12,10 @@ export type IDiscv5Config = ISessionConfig &
      * Whether to enable enr auto-updating
      */
     enrUpdate: boolean;
+    /**
+     * The minimum number of peer's who agree on an external IP port before updating the local ENR.
+     */
+    addrVotesToUpdateEnr: number;
   };
 
 export const defaultConfig: IDiscv5Config = {
@@ -19,6 +23,7 @@ export const defaultConfig: IDiscv5Config = {
   requestRetries: 1,
   sessionTimeout: 86400 * 1000, // 1 day
   sessionEstablishTimeout: 15 * 1000,
+  addrVotesToUpdateEnr: 10,
   lookupParallelism: 3,
   lookupRequestLimit: 3,
   lookupNumResults: 16,
