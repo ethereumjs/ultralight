@@ -1,3 +1,10 @@
+# 0.6.6 - (2021-11-15)
+
+### Features
+
+- Bound AddrVotes data structure [#152](https://github.com/ChainSafe/discv5/pull/152)
+- Add talkresp back [#149](https://github.com/ChainSafe/discv5/pull/149)
+
 # 0.6.5 - (2021-11-04)
 
 ### Features
@@ -13,7 +20,7 @@
 
 ### Chores
 
-- Bump libp2p deps for uint8arrays@3.0.0 [#134](https://github.com/ChainSafe/discv5/pull/134) 
+- Bump libp2p deps for uint8arrays@3.0.0 [#134](https://github.com/ChainSafe/discv5/pull/134)
 
 # 0.6.3 - (2021-08-04)
 

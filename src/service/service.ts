@@ -2,7 +2,6 @@ import { EventEmitter } from "events";
 import debug from "debug";
 import { randomBytes } from "libp2p-crypto";
 import { Multiaddr } from "multiaddr";
-import isIp = require("is-ip");
 import PeerId from "peer-id";
 
 import { UDPTransportService } from "../transport";
@@ -150,7 +149,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.activeNodesResponses = new Map();
     this.connectedPeers = new Map();
     this.nextLookupId = 1;
-    this.addrVotes = new AddrVotes();
+    this.addrVotes = new AddrVotes(config.addrVotesToUpdateEnr);
     if (metrics) {
       this.metrics = metrics;
       // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -447,6 +446,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
   }
 
+  /**
+   * Hack to get debug logs to work in browser
+   */
   public enableLogs(): void {
     debug.enable("discv5*");
   }
@@ -689,16 +691,11 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       return;
     }
     if (this.config.enrUpdate) {
-      this.addrVotes.addVote(
-        srcId,
-        new Multiaddr(
-          `/${isIp.v4(message.recipientIp) ? "ip4" : "ip6"}/${message.recipientIp}/udp/${message.recipientPort}`
-        )
-      );
+      const winningVote = this.addrVotes.addVote(srcId, message);
       const currentAddr = this.enr.getLocationMultiaddr("udp");
-      const votedAddr = this.addrVotes.best(currentAddr);
-      if ((currentAddr && votedAddr && !votedAddr.equals(currentAddr)) || (!currentAddr && votedAddr)) {
-        log("Local ENR (IP & UDP) updated: %s", votedAddr);
+      if (winningVote && (!currentAddr || winningVote.multiaddrStr !== currentAddr.toString())) {
+        log("Local ENR (IP & UDP) updated: %s", winningVote.multiaddrStr);
+        const votedAddr = new Multiaddr(winningVote.multiaddrStr);
         this.enr.setLocationMultiaddr(votedAddr);
         this.emit("multiaddrUpdated", votedAddr);
       }
