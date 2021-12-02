@@ -1,0 +1,15 @@
+{
+	"name": "ultralight",
+	"private":true,
+	"workspaces": [
+		"./packages/*"
+	],
+	"engines": {
+		"npm": ">=7"
+	},
+	"scripts": {    
+		"preinstall": "npm run checkNpmVersion",
+		"checkNpmVersion": "./scripts/check-npm-version.sh",
+		"postinstall": "npm run build --workspaces --if-present"
+	}
+}
