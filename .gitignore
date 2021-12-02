@@ -1,2 +1,4 @@
 node_modules
-
+packages/discv5/lib
+packages/portalnetwork/dist
+packages/ultralight-browser-client/build/
