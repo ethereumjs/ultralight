@@ -37,7 +37,7 @@ export const App = () => {
       proxyAddress: "ws://127.0.0.1:5050",
     });
     //@ts-ignore
-    window.discv5 = portal;
+    window.portal = portal;
     //@ts-ignore
     window.Multiaddr = Multiaddr;
     //@ts-ignore
