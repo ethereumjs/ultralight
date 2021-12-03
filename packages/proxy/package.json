@@ -1,4 +1,6 @@
 {
+  "name": "proxy",
+  "private": true,
   "devDependencies": {
     "@types/ws": "^7.4.7",
     "ts-node": "^10.2.1",
