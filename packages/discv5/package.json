@@ -9,6 +9,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "build": "tsc",
+    "dev": "tsc --watch",
     "lint": "eslint --color --ext .ts src/",
     "test": "mocha -r ts-node/register 'test/**/*.test.ts'"
   },

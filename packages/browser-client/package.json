@@ -1,5 +1,5 @@
 {
-  "name": "ultralight-browser-node",
+  "name": "browser-client",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -19,8 +19,6 @@
     "web-vitals": "^0.2.2"
   },
   "scripts": {
-    "install-proxy": "git clone https://github.com/ethereumjs/ultralight-proxy.git && cd ultralight-proxy && npm i",
-    "run-proxy": "ts-node ultralight-proxy/src/index.ts",
     "start": "SKIP_PREFLIGHT_CHECK=true craco start",
     "build-app": "craco build",
     "test": "react-scripts test",

@@ -10,6 +10,8 @@
 	"scripts": {    
 		"preinstall": "npm run checkNpmVersion",
 		"checkNpmVersion": "./scripts/check-npm-version.sh",
-		"postinstall": "npm run build --workspaces --if-present"
+		"postinstall": "npm run build --workspaces --if-present",
+		"start-proxy": "npm run proxy -w=proxy",
+		"start-browser-client": "npm run start -w=browser-client"
 	}
 }
