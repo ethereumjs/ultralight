@@ -179,10 +179,9 @@ export class PortalNetwork extends EventEmitter {
 
     private handlePing = (srcId: string, message: ITalkReqMessage) => {
         // Check to see if node is already in state network routing table and add if not
-        console.log('check this id in routing table', srcId)
         if (!this.stateNetworkRoutingTable.getValue(srcId)) {
             const enr = this.client.getKadValue(srcId);
-            console.log('adding to stateNetwork routing table', enr?.encodeTxt())
+            this.log(`adding ${srcId} to stateNetwork routing table`)
             if (enr) {
                 this.stateNetworkRoutingTable.add(enr);
             }
