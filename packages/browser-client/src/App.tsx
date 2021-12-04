@@ -9,7 +9,7 @@ import {
   Text,
   Tooltip,
   useClipboard,
-  SimpleGrid,
+  VStack,
 } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "./ColorModeSwitcher";
 import { ENR } from "portalnetwork-discv5";
@@ -68,26 +68,22 @@ export const App = () => {
     <ChakraProvider theme={theme}>
       <ColorModeSwitcher justifySelf="flex-end" />
       <Heading textAlign="center">Ultralight Node Interface</Heading>
-      <SimpleGrid columns={2}>
+      <VStack>
         <Box textAlign="center" fontSize="xl">
-          <Grid minH="50vh" p={3}>
-            <Button disabled={!portal} onClick={() => setShowInfo(true)}>
-              Click to Start
-            </Button>
-            {showInfo && (
-              <Tooltip label="click to copy">
-                <Text onClick={copy} wordBreak="break-all" cursor="pointer">
-                  {portal?.client.enr.encodeTxt(
-                    portal.client.keypair.privateKey
-                  )}
-                </Text>
-              </Tooltip>
-            )}
-            {showInfo && portal && <ShowInfo portal={portal} />}
-          </Grid>
+          <Button disabled={!portal} onClick={() => setShowInfo(!showInfo)}>
+            {!showInfo ? "Show" : "Hide"} node info
+          </Button>
+          {showInfo && (
+            <Tooltip label="click to copy">
+              <Text onClick={copy} wordBreak="break-all" cursor="pointer">
+                {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
+              </Text>
+            </Tooltip>
+          )}
+          {showInfo && portal && <ShowInfo portal={portal} />}
         </Box>
         <Box>{portal && <AddressBookManager portal={portal} />}</Box>
-      </SimpleGrid>
+      </VStack>
       <Box position="fixed" bottom="0">
         {portal && <Log portal={portal} />}
       </Box>
