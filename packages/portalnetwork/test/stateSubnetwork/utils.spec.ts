@@ -1,14 +1,18 @@
 import tape from 'tape';
-import { distance } from '../../src/stateSubnetwork/util'
+import { distance, MODULO } from '../../src/stateSubnetwork/util'
 import BN from 'bn.js'
 
 tape('distance()', (t) => {
 
-    t.test('should calculate distance between two nodes', (st) => {
-        const node1 = "40e093a48c603a631104a78105028fba75f67c13ba724af357eadc7b51564312"
-        const node2 = "ea111f9f9685cb93c16e3cbafe555acd30b78150aacf39a0502661a6f65d9d63"
-        const dist = distance(node1, node2);
-        console.log(dist.toString())
+    t.test('should calculate distance between two values', (st) => {
+        st.ok(distance(new BN(10), new BN(10)).eq(new BN(0)), 'calculates correct distance')
+        st.ok(distance(new BN(5), MODULO.subn(1)).eq(new BN(6)), 'calculates correct distance')
+        st.ok(distance(MODULO.subn(1), new BN(6)).eq(new BN(7)), 'calculates correct distance')
+        st.ok(distance(new BN(5), new BN(1)).eq(new BN(4)), 'calculates correct distance')
+        st.ok(distance(new BN(1), new BN(5)).eq(new BN(4)), 'calculates correct distance')
+        st.ok(distance(new BN(0), new BN(2).pow(new BN(255))).eq(new BN(2).pow(new BN(255))), 'calculates correct distance')
+        st.ok(distance(new BN(0), new BN(2).pow(new BN(255)).addn(1)).eq(new BN(2).pow(new BN(255)).subn(1)), 'calculates correct distance')
+        st.end()
     })
     t.end()
 })

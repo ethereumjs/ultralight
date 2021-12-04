@@ -1,7 +1,7 @@
 import _BN from 'bn.js';
 const BN = _BN
 
-const MODULO = new BN(2).pow(new BN(256))
+export const MODULO = new BN(2).pow(new BN(256))
 const MID = new BN(2).pow(new BN(255))
 
 /** 
