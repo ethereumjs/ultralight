@@ -3,8 +3,8 @@ import { ITalkReqMessage, ITalkRespMessage } from "portalnetwork-discv5/lib/mess
 import { EventEmitter } from 'events'
 
 import debug from 'debug'
-import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessageType, FindNodesMessage, NodesMessageType, NodesMessage, PortalWireMessageType, OfferMessageType, FindContentMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage } from "../wire";
-import { fromHexString, toHexString, Union } from "@chainsafe/ssz";
+import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage } from "../wire";
+import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { StateNetworkRoutingTable } from "..";
 import { shortId } from "../util";
 import { bufferToPacket, PacketType, UtpProtocol } from '../wire/utp'
@@ -148,7 +148,6 @@ export class PortalNetwork extends EventEmitter {
             value: payload
         })
         this.client.sendTalkResp(srcId, reqId, Buffer.from(pongMsg))
-        const peerENR = this.client.getKadValue(srcId);
     }
 
     private onTalkReq = async (srcId: string, sourceId: ENR | null, message: ITalkReqMessage) => {
@@ -180,8 +179,10 @@ export class PortalNetwork extends EventEmitter {
 
     private handlePing = (srcId: string, message: ITalkReqMessage) => {
         // Check to see if node is already in state network routing table and add if not
+        console.log('check this id in routing table', srcId)
         if (!this.stateNetworkRoutingTable.getValue(srcId)) {
             const enr = this.client.getKadValue(srcId);
+            console.log('adding to stateNetwork routing table', enr?.encodeTxt())
             if (enr) {
                 this.stateNetworkRoutingTable.add(enr);
             }
