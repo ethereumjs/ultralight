@@ -47,10 +47,6 @@ export const App = () => {
     await portal.start();
 
     portal.enableLog();
-    portal.client.on("discovered", (msg) => console.log("discovered", msg));
-    portal.client.on("talkRespReceived", (src, enr, msg) =>
-      console.log("Msg received", msg)
-    );
   };
 
   React.useEffect(() => {
@@ -58,7 +54,6 @@ export const App = () => {
   }, []);
 
   const copy = async () => {
-    console.log("got here!");
     await setENR(
       portal?.client.enr.encodeTxt(portal.client.keypair.privateKey) ?? ""
     );
