@@ -1,8 +1,5 @@
 import debug from "debug";
-import { IOException } from "../../Utils/exceptions";
-import UtpAlgConfiguration from "../UtpAlgConfiguration";
-import OutPacketBuffer from "./OutPacketBuffer";
-import fs from 'fs'
+import { DEBUG } from "../..";
 
 export interface StatisticLogger {
     
@@ -188,7 +185,7 @@ export default class UtpDataLogger implements StatisticLogger {
 
 	
 	public next(): void {
-		if (UtpAlgConfiguration.DEBUG && this._loggerOn) {
+		if (DEBUG && this._loggerOn) {
 			let logEntry = "" + (this._timeStamp - this._minimumTimeStamp) + ";";
 			logEntry += this._ackReceived + ";";
 			logEntry += this._currentWindow + ";";
@@ -251,7 +248,7 @@ export default class UtpDataLogger implements StatisticLogger {
 
 	
 	public end( bytesLength: number): void {
-		if (UtpAlgConfiguration.DEBUG && this._loggerOn) {
+		if (DEBUG && this._loggerOn) {
 			// this.closeFile();
 			let seconds = (this._timeStamp - this._minimumTimeStamp) / 1000000;
 			 let sendRate = 0;

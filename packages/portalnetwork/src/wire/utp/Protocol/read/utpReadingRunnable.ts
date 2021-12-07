@@ -1,9 +1,8 @@
-import { MAX_PACKET_SIZE } from "portalnetwork-discv5/lib/packet";
-import { MicrosecondTimeStamp, Packet, UINT16MAX, _UTPSocket } from "../..";
+import { MAX_PACKET_SIZE, MicrosecondTimeStamp, Packet, UINT16MAX, _UTPSocket } from "../..";
 import { ArrayIndexOutOfBoundsException, InterruptedException, IOException } from "../../Utils/exceptions";
 import BlockingQueue from "../congestionControl/blockingQueue";
 import { SkippedPacketBuffer } from "../congestionControl/SkippedPacketBuffer";
-import { UtpReadFuture } from "./UtpReadFuture";
+// import { UtpReadFuture } from "./UtpReadFuture";
 import { UtpPacketDTO } from "../../Packets/UtpPacketDTO";
 
 export class utpReadingRunnable {
@@ -19,7 +18,7 @@ export class utpReadingRunnable {
   lastPacketTimestamp: bigint | undefined;
   lastPayloadLength: number;
   lastPacketReceived: number;
-  readFuture: UtpReadFuture;
+//   readFuture: UtpReadFuture;
   timestamper: () => bigint;
   nowTimestamp: bigint | undefined;
   startReadingTimeStamp: number;
@@ -30,13 +29,13 @@ export class utpReadingRunnable {
     socket: _UTPSocket,
     buffer: Buffer,
     timestamp: number,
-    readFuture: UtpReadFuture
+    // readFuture: UtpReadFuture
   ) {
     this.PACKET_DIFF_WARP = 50000;
     this.socket = socket;
     this.buffer = buffer;
     this.timestamper = MicrosecondTimeStamp;
-    this.readFuture = readFuture;
+    // this.readFuture = readFuture;
     this.exceptionOccured = false;
     this.skippedBuffer = new SkippedPacketBuffer();
     this.totalPayloadLength = 0;
@@ -44,7 +43,7 @@ export class utpReadingRunnable {
     this.lastPacketReceived = 0
     this.gotLastPacket = false;
     this.currentPackedAck = 0;
-    this.lastPayloadLength = MAX_PACKET_SIZE;
+    this.lastPayloadLength = MAX_PACKET_SIZE
     this.startReadingTimeStamp = performance.now();
     this.exp = null;
   }
@@ -124,7 +123,7 @@ export class utpReadingRunnable {
 
     }
     this.isRunning = false;
-    this.readFuture.finished(this.exp, this.buffer)
+    // this.readFuture.finished(this.exp, this.buffer)
     console.log("finished reading")
     this.socket.returnFromReading();
   }

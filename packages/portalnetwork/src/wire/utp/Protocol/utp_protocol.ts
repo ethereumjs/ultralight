@@ -1,8 +1,8 @@
 import { _UTPSocket } from "../Socket/_UTPSocket";
 import { bufferToPacket, ConnectionState, Packet, randUint16 } from "..";
-import { Discv5 } from "portalnetwork-discv5";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
+import { Discv5 } from "portalnetwork-discv5";
 
 const log = debug("<uTP>");
 

@@ -1,4 +1,3 @@
-import { PacketSizeModus } from "../Protocol/UtpAlgConfiguration"
 
 export const EXTENSION = 0
 export const VERSION = 1
@@ -21,8 +20,7 @@ export const MAX_CONNECTION_ATTEMPTS: number = 5;
   export const SKIP_PACKETS_UNTIL_ACK: number = 2;
   export const AUTO_ACK_SMALLER_THAN_ACK_NUMBER: boolean = true;
   export const MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC: number = 120000000;
-  export const PACKET_SIZE_MODE: PacketSizeModus =
-    PacketSizeModus.CONSTANT_1472;
+
   export const MAX_PACKET_SIZE: number = 1472;
   export const MIN_PACKET_SIZE: number = 150;
   export const MINIMUM_MTU: number = 576;

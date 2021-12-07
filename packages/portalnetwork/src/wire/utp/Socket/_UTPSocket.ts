@@ -32,10 +32,6 @@ import {
 } from "./socketFunctions";
 import utpWritingRunnable from "../Protocol/write/utpWritingRunnable";
 import { utpReadingRunnable } from "../Protocol/read/utpReadingRunnable";
-import {
-  UtpWriteFutureImpl,
-} from "../Protocol/write/UtpWriteFuture";
-import { UtpReadFuture } from "../Protocol/read/UtpReadFuture";
 import BlockingQueue from "../Protocol/congestionControl/blockingQueue";
 
 const log = debug("<uTP>");
@@ -292,28 +288,22 @@ export class _UTPSocket extends EventEmitter {
   }
 
   write(src: Buffer) {
-    let future: UtpWriteFutureImpl = new UtpWriteFutureImpl();
     let writer: utpWritingRunnable = new utpWritingRunnable(
       this.utp,
       this,
       src,
       Bytes32TimeStamp(),
-      future
     );
     writer.start();
-    return future;
   }
 
   read(dst: Buffer) {
-    let readFuture: UtpReadFuture = new UtpReadFuture(dst);
     const reader = new utpReadingRunnable(
       this,
       dst,
       performance.now(),
-      readFuture
     );
     reader.run();
-    return readFuture;
   }
 
   ReadTest(socket: _UTPSocket) {
@@ -321,7 +311,6 @@ export class _UTPSocket extends EventEmitter {
     _log("start Read Test");
     let buffer: Buffer = Buffer.alloc(150000000);
     while (true) {
-      let readFuture: UtpReadFuture = socket.read(buffer);
       _log("Read Test End");
     }
   }

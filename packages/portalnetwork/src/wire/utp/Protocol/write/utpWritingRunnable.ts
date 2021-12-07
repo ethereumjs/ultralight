@@ -1,6 +1,6 @@
 import { UtpProtocol } from "..";
 import { Packet, PacketType, TWO_MINUTES, _UTPSocket } from "../..";
-import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
+// import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
 
 
 const MIN_RTO = TWO_MINUTES;
@@ -8,18 +8,18 @@ export default class utpWritingRunnable {
   utp: UtpProtocol;
   socket: _UTPSocket;
   src: Buffer;
-  future: UtpWriteFutureImpl;
+  // future: UtpWriteFutureImpl;
   writing: boolean;
   canSendNextPacket: boolean;
   timedoutPackets: Packet[];
   waitingTime: number;
   rto: number;
   timestamp
-  constructor(utp: UtpProtocol, socket: _UTPSocket, src: Buffer, timestamp: number, future: UtpWriteFutureImpl) {
+  constructor(utp: UtpProtocol, socket: _UTPSocket, src: Buffer, timestamp: number) {
     this.socket = socket;
     this.utp = utp
     this.src = src;
-    this.future = future;
+    // this.future = future;
     this.writing = false;
     this.canSendNextPacket = true;
     this.timedoutPackets = [];

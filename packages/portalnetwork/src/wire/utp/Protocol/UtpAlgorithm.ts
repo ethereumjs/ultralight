@@ -1,4 +1,3 @@
-import { MAX_PACKET_SIZE } from "portalnetwork-discv5/lib/packet";
 import {
   C_CONTROL_TARGET_MICROS,
   DEFAULT_WINDOW_SIZE,
@@ -15,6 +14,7 @@ import {
   MAX_BURST_SEND,
   SEND_IN_BURST,
   MIN_PACKET_SIZE,
+  MAX_PACKET_SIZE,
 } from "..";
 import { UtpPacketDTO } from "../Packets/UtpPacketDTO";
 import MinimumDelay from "./congestionControl/MinimumDelay";
