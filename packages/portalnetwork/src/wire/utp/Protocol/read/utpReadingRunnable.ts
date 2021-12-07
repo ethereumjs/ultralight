@@ -1,4 +1,4 @@
-import { MAX_PACKET_SIZE } from "@chainsafe/discv5/lib/packet";
+import { MAX_PACKET_SIZE } from "portalnetwork-discv5/lib/packet";
 import { MicrosecondTimeStamp, Packet, UINT16MAX, _UTPSocket } from "../..";
 import { ArrayIndexOutOfBoundsException, InterruptedException, IOException } from "../../Utils/exceptions";
 import BlockingQueue from "../congestionControl/blockingQueue";

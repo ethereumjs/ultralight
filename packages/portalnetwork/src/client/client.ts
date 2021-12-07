@@ -23,7 +23,7 @@ export class PortalNetwork extends EventEmitter {
         this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId, 5)
         this.client.on("talkReqReceived", this.onTalkReq)
         this.client.on("talkRespReceived", this.onTalkResp)
-        this.uTP = new UtpProtocol(this.client);
+        this.uTP = new UtpProtocol(this);
     }
     
     log = (msg: any ) => {
@@ -134,7 +134,7 @@ export class PortalNetwork extends EventEmitter {
         
     public sendUtpStreamRequest = async (dstId: string) => {
             // Initiate a uTP stream request with a SYN packet
-            await this.uTP.initiateSyn(dstId)
+        await this.uTP.initiateConnectionRequest(dstId)
     }
 
     private sendPong = async (srcId: string, reqId: bigint) => {
@@ -227,7 +227,7 @@ export class PortalNetwork extends EventEmitter {
     }
     
     private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
-        const connectionId = await this.uTP.initiateSyn(srcId);
+        const connectionId = await this.uTP.initiateConnectionRequest(srcId);
         const payload: AcceptMessage = {
             connectionId: new Uint8Array(2).fill(connectionId),
             contentKeys: [true]
@@ -254,7 +254,7 @@ export class PortalNetwork extends EventEmitter {
         const packet = bufferToPacket(message.request)
         switch (packet.header.pType) {
 
-            case PacketType.ST_SYN: await this.uTP.handleIncomingSyn(packet, srcId); break;
+            case PacketType.ST_SYN: await this.uTP.handleIncomingConnectionRequest(packet, srcId); break;
             case PacketType.ST_DATA: await this.uTP.handleIncomingData(packet, srcId); break;
             case PacketType.ST_STATE: this.log('got STATE packet'); break;
             case PacketType.ST_RESET: this.log('got RESET packet'); break;

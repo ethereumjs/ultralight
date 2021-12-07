@@ -1,6 +1,6 @@
 import { _UTPSocket } from "../Socket/_UTPSocket";
 import { bufferToPacket, ConnectionState, Packet, randUint16 } from "..";
-import { Discv5 } from "@chainsafe/discv5";
+import { Discv5 } from "portalnetwork-discv5";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 

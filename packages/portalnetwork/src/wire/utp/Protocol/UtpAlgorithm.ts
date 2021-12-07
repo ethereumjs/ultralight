@@ -1,4 +1,4 @@
-import { MAX_PACKET_SIZE } from "@chainsafe/discv5/lib/packet";
+import { MAX_PACKET_SIZE } from "portalnetwork-discv5/lib/packet";
 import {
   C_CONTROL_TARGET_MICROS,
   DEFAULT_WINDOW_SIZE,
