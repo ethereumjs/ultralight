@@ -12,7 +12,6 @@ export enum PacketType {
   ST_SYN = 4,
 }
 
-export const MIN_PACKET_SIZE = 20;
 export const DEFAULT_WINDOW_SIZE = 1 << 18;
 export const CLOSE_GRACE = 5000;
 
@@ -39,7 +38,9 @@ export type PacketHeaderType = {
   wndSize: Uint32;
   seqNr: Uint16;
   ackNr: Uint16;
+  extentions?: Uint8Array
 }
+
 export interface IPacketHeader {
   pType: PacketType;
   connectionId: Uint16;
@@ -50,15 +51,10 @@ export interface IPacketHeader {
   timestamp?: MicroSeconds;
   timestampDiff?: MicroSeconds;
   wndSize?: Uint32;
+  extensions?: Uint8Array
 }
-
-
 
 export interface IPacketOptions {
     header: PacketHeader,
     payload: Uint8Array ,
   }
-
-export interface IDecodePacketOptions extends IPacketOptions {
-    bytes: Uint8Array
-}
