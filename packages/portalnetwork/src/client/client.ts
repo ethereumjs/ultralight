@@ -7,15 +7,20 @@ import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessa
 import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { StateNetworkRoutingTable } from "..";
 import { shortId } from "../util";
-import { bufferToPacket, PacketType, UtpProtocol } from '../wire/utp'
+import { bufferToPacket, PacketType, Uint8, UtpProtocol } from '../wire/utp'
 
 const _log = debug("portalnetwork")
 
+type state = {
+    [key: string]: Uint8Array
+}
 
 export class PortalNetwork extends EventEmitter {
     client: Discv5;
     stateNetworkRoutingTable: StateNetworkRoutingTable;
     uTP: UtpProtocol;
+    // TODO: Replace with proper database once state network defined 
+    stateNetworkState: state
     
     constructor(config: IDiscv5CreateOptions) {
         super();
@@ -23,7 +28,13 @@ export class PortalNetwork extends EventEmitter {
         this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId, 5)
         this.client.on("talkReqReceived", this.onTalkReq)
         this.client.on("talkRespReceived", this.onTalkResp)
-        this.uTP = new UtpProtocol(this);
+
+        this.uTP = new UtpProtocol(this.client);
+        this.stateNetworkState = {
+            "01": Buffer.from('abc'),
+            "02": Buffer.from('efg'),
+            "03": new Uint8Array(2000).fill(1)
+        }
     }
     
     log = (msg: any ) => {
@@ -102,6 +113,7 @@ export class PortalNetwork extends EventEmitter {
 
     public sendFindContent = (dstId: string, key: Uint8Array) => {
         const findContentMsg: FindContentMessage = { contentKey: key };
+        console.log(key)
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
         this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(SubNetworkIds.StateNetworkId))
             .then(res => {
@@ -242,11 +254,23 @@ export class PortalNetwork extends EventEmitter {
         const decoded = PortalWireMessageType.deserialize(message.request)
         this.log(`Received FINDCONTENT request from ${shortId(srcId)}`)
         this.log(decoded)
-        // Sends the node's ENR as the CONTENT response (dummy data to verify the union serialization is working)
-        const msg: enrs = [this.client.enr.encode()]
-        // TODO: Switch this line to use PortalWireMessageType.serialize
-        const payload = ContentMessageType.serialize({ selector: 2, value: msg })
-        this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+        const decodedContentMessage = decoded.value as FindContentMessage
+
+        //Check to see if value in locally maintained state network state
+        const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
+        const value = this.stateNetworkState[contentKey]
+        console.log('value found', contentKey, value)
+        if (value && value.length < 1200) {
+            console.log('Found value for requested content', Buffer.from(decodedContentMessage.contentKey).toString('hex'), value)
+            const payload = ContentMessageType.serialize({ selector: 1, value: value })
+            this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+        } else {
+            // Sends the node's ENR as the CONTENT response (dummy data to verify the union serialization is working)
+            const msg: enrs = [this.client.enr.encode()]
+            // TODO: Switch this line to use PortalWireMessageType.serialize
+            const payload = ContentMessageType.serialize({ selector: 2, value: msg })
+            this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+        }
     }
 
     private handleUTPStreamRequest = async (srcId: string, message: ITalkReqMessage) => {

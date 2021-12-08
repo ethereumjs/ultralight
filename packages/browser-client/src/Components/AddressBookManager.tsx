@@ -16,7 +16,7 @@ type NodeManagerProps = {
 const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   const [enr, setEnr] = React.useState<string>("");
   const [peers, setPeers] = React.useState<string[]>([]);
-
+  const [contentKey, setContentKey] = React.useState<string>("");
   const handleClick = () => {
     if (enr) {
       portal.client.addEnr(enr);
@@ -36,7 +36,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   };
 
   const handleFindContent = (nodeId: string) => {
-    portal.sendFindContent(nodeId, new Uint8Array(16).fill(0));
+    portal.sendFindContent(nodeId, Buffer.from(contentKey, "hex"));
   };
 
   const handleOffer = (nodeId: string) => {
@@ -46,13 +46,14 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   const handleUtpStream = (nodeId: string) => {
     portal.sendUtpStreamRequest(nodeId);
   };
+
   return (
     <Box>
       <Input
         value={enr}
         placeholder={"Node ENR"}
         onChange={(evt) => setEnr(evt.target.value)}
-      ></Input>
+      />
       <Button onClick={handleClick}>Add Node</Button>
       {peers.length > 0 &&
         peers.map((peer) => (
@@ -63,6 +64,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
               <Button onClick={() => handleFindNodes(peer)}>
                 Request Nodes from Peer
               </Button>
+              <Input
+                value={contentKey}
+                placeholder={"Content-Key"}
+                onChange={(evt) => setContentKey(evt.target.value)}
+              />
               <Button onClick={() => handleFindContent(peer)}>
                 Send Find Content Request
               </Button>
