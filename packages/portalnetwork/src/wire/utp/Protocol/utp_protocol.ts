@@ -17,26 +17,27 @@ export class UtpProtocol {
     this.sockets = {};
   }
 
-  async initiateConnectionRequest(dstId: string): Promise<number> {
+  async initiateConnectionRequest(dstId: string, data?:Uint8Array): Promise<number> {
     log(`Requesting uTP stream connection with ${dstId}`);
     const socket = new _UTPSocket(this, dstId);
     this.sockets[dstId] = socket;
+    this.sockets[dstId].content = data && data;
 
-    await this.sockets[dstId].sendSynPacket();
+    await this.sockets[dstId].sendSynPacket(data);
     return this.sockets[dstId].sndConnectionId;
   }
 
-  async sendData(data: Buffer, dstId: string): Promise<void> {
-    this.sockets[dstId].startDataTransfer(data);
+  async sendData(data: Uint8Array, dstId: string): Promise<void> {
+    await this.initiateConnectionRequest(dstId, data);
   }
 
   async handleSynAck(ack: Packet, dstId: string): Promise<void> {
     log("Received ST_STATE packet...SYN acked...Connection established.");
-    this.sockets[dstId].handleSynAckPacket(ack);
+    await this.sockets[dstId].handleSynAckPacket(ack);
   }
 
   async handleAck(packet: Packet, dstId: string): Promise<void> {
-    log("Received ST_STATE packet from " + dstId);
+    log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr + "Received ST_STATE packet from " + dstId);
     this.sockets[dstId].handleStatePacket(packet);
   }
   async handleFin(packet: Packet, dstId: string): Promise<void> {

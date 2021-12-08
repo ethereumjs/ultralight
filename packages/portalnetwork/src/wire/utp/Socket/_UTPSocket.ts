@@ -42,6 +42,7 @@ PacketSent.addEventListener("Packet Sent", (id) => {
 });
 
 export class _UTPSocket extends EventEmitter {
+  content: Uint8Array | undefined
   remoteAddress: string;
   seqNr: number;
   client: Discv5;
@@ -140,14 +141,17 @@ export class _UTPSocket extends EventEmitter {
     this.updateRTT(packet.header.timestampDiff);
     this.setConnectionIdsFromPacket(packet);
     this.seqNr = randUint16();
-    this.ackNr = packet.header.seqNr;
+    this.ackNr = packet.header.seqNr
     this.state = ConnectionState.SynRecv;
-    this.seqNr++, await this.sendAckPacket();
+    await this.sendAckPacket();
+    this.seqNr++; 
   }
-  handleSynAckPacket(packet: Packet): void {
+  async handleSynAckPacket(packet: Packet): Promise<void> {
     if ((packet.header.connectionId & UINT16MAX) === this.rcvConnectionId) {
       this.setState(ConnectionState.Connected);
     }
+    this.content && this.startDataTransfer(this.content);
+
   }
   handleResetPacket(packet: Packet): void {
     // this.close()
@@ -159,8 +163,12 @@ export class _UTPSocket extends EventEmitter {
     this.seqNr++, await this.sendAckPacket();
   }
   handleStatePacket(packet: Packet): void {
+    this.initiateAckPosition(packet.header.seqNr)
     this.state = ConnectionState.Connected;
-    this.ackNr = packet.header.seqNr;
+    if (packet.header.ackNr == 1) {
+      log("syn ack received")
+      this.handleSynAckPacket(packet)
+    }
   }
   handleFinPacket(packet: Packet): void {
     this.setState(ConnectionState.GotFin);
@@ -186,22 +194,22 @@ export class _UTPSocket extends EventEmitter {
     spaceLeftInBuffer: number
   ) {}
 
-  async sendAckPacket(ackNr: number = this.ackNr): Promise<void> {
+  async sendAckPacket(): Promise<void> {
     const packet = createAckPacket(
       this.seqNr,
       this.sndConnectionId,
-      ackNr,
+      this.ackNr,
       this.rtt_var
     );
     log(
-      `Sending ST_STATE packet ${packet.encodePacket().toString("hex")} to ${
+      `Sending ST_STATE packet ${this.ackNr} / ${this.seqNr} to ${
         this.remoteAddress
       }`
     );
     await this.sendPacket(packet, PacketType.ST_STATE);
   }
 
-  async sendSynPacket(): Promise<void> {
+  async sendSynPacket(data?: Uint8Array): Promise<void> {
     let packet = createSynPacket(this.rcvConnectionId, 1, this.ackNr);
     log(
       `Sending SYN packet ${packet.encodePacket().toString("hex")} to ${
@@ -210,6 +218,8 @@ export class _UTPSocket extends EventEmitter {
     );
     await this.sendPacket(packet, PacketType.ST_SYN);
     log(`SYN packet sent to ${this.remoteAddress}`);
+    
+
   }
 
   async sendFinPacket() {
@@ -245,10 +255,11 @@ export class _UTPSocket extends EventEmitter {
     log(`DATA packet ${packet} sent to ${this.remoteAddress}`);
   }
 
-  startDataTransfer(data: Buffer) {
-    // CCONTROL
+  startDataTransfer(data: Uint8Array) {
+    log("Beginning transfer of" + data);
 
-    this.sendDataPacket(Uint8Array.from(data));
+
+    // this.sendDataPacket(Uint8Array.from(data));
   }
 
   updateRTT(packetRTT: number) {

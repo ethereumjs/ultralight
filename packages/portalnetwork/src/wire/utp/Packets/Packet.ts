@@ -201,21 +201,21 @@ export function packetToBuffer(packet: Packet): Buffer {
   let pv = p + v;
   let typeAndVer = parseInt(pv, 16);
 
-  buffer.writeUInt8(typeAndVer);
+  buffer.writeUInt8(typeAndVer, 0);
   buffer.writeUInt8(EXTENSION, 1);
   buffer.writeUInt16BE(packet.header.connectionId, 2);
   buffer.writeUInt32BE(packet.header.timestamp, 4);
   buffer.writeUInt32BE(packet.header.timestampDiff as number, 8);
   buffer.writeUInt32BE(packet.header.wndSize as number, 12);
   buffer.writeUInt16BE(packet.header.seqNr, 16);
-  buffer.writeUInt16BE(packet.header.seqNr, 18);
+  buffer.writeUInt16BE(packet.header.ackNr, 18);
   if (packet.header.extension === 1) {
     let p = packet.header as SelectiveAckHeader;
-    buffer.writeUInt8(p.selectiveAckExtension.type);
-    buffer.writeUInt8(p.selectiveAckExtension.len);
+    buffer.writeUInt8(p.selectiveAckExtension.type, 20);
+    buffer.writeUInt8(p.selectiveAckExtension.len, 21);
     Array.from([...p.selectiveAckExtension.bitmask.values()]).forEach(
       (uint32) => {
-        buffer.writeUInt32BE(uint32);
+        buffer.writeUInt32BE(uint32, buffer.length-1);
       }
     );
   }
