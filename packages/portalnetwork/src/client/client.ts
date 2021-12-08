@@ -14,7 +14,7 @@ const _log = debug("portalnetwork")
 type state = {
     [key: string]: Uint8Array
 }
-
+ 
 export class PortalNetwork extends EventEmitter {
     client: Discv5;
     stateNetworkRoutingTable: StateNetworkRoutingTable;
@@ -29,7 +29,7 @@ export class PortalNetwork extends EventEmitter {
         this.client.on("talkReqReceived", this.onTalkReq)
         this.client.on("talkRespReceived", this.onTalkResp)
 
-        this.uTP = new UtpProtocol(this.client);
+        this.uTP = new UtpProtocol(this);
         this.stateNetworkState = {
             "01": Buffer.from('abc'),
             "02": Buffer.from('efg'),
@@ -250,7 +250,7 @@ export class PortalNetwork extends EventEmitter {
 
     }
 
-    private handleFindContent = (srcId: string, message: ITalkReqMessage) => {
+    private handleFindContent = async (srcId: string, message: ITalkReqMessage) => {
         const decoded = PortalWireMessageType.deserialize(message.request)
         this.log(`Received FINDCONTENT request from ${shortId(srcId)}`)
         this.log(decoded)
@@ -259,12 +259,14 @@ export class PortalNetwork extends EventEmitter {
         //Check to see if value in locally maintained state network state
         const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
         const value = this.stateNetworkState[contentKey]
-        console.log('value found', contentKey, value)
+        this.log('value found' + contentKey + value)
         if (value && value.length < 1200) {
             console.log('Found value for requested content', Buffer.from(decodedContentMessage.contentKey).toString('hex'), value)
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
         } else {
+            await this.uTP.sendData(value, srcId)
+
             // Sends the node's ENR as the CONTENT response (dummy data to verify the union serialization is working)
             const msg: enrs = [this.client.enr.encode()]
             // TODO: Switch this line to use PortalWireMessageType.serialize
@@ -280,7 +282,7 @@ export class PortalNetwork extends EventEmitter {
 
             case PacketType.ST_SYN: await this.uTP.handleIncomingConnectionRequest(packet, srcId); break;
             case PacketType.ST_DATA: await this.uTP.handleIncomingData(packet, srcId); break;
-            case PacketType.ST_STATE: this.log('got STATE packet'); break;
+            case PacketType.ST_STATE: await this.uTP.handleAck(packet, srcId); break;
             case PacketType.ST_RESET: this.log('got RESET packet'); break;
             case PacketType.ST_FIN: await this.uTP.handleFin(packet, srcId); this.log('got FIN packet'); break;
         }
