@@ -4,6 +4,7 @@ import {
   HStack,
   Input,
   Text,
+  VStack,
   Wrap,
 } from "@chakra-ui/react";
 import { PortalNetwork } from "portalnetwork";
@@ -48,13 +49,22 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   };
 
   return (
-    <Box>
+    <VStack>
       <Input
         value={enr}
         placeholder={"Node ENR"}
         onChange={(evt) => setEnr(evt.target.value)}
       />
       <Button onClick={handleClick}>Add Node</Button>
+      {peers.length > 0 && (
+        <Input
+          placeholder={"Content-Key"}
+          onChange={(evt) => {
+            setContentKey(evt.target.value);
+          }}
+        />
+      )}
+
       {peers.length > 0 &&
         peers.map((peer) => (
           <HStack key={Math.random().toString()}>
@@ -64,11 +74,6 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
               <Button onClick={() => handleFindNodes(peer)}>
                 Request Nodes from Peer
               </Button>
-              <Input
-                value={contentKey}
-                placeholder={"Content-Key"}
-                onChange={(evt) => setContentKey(evt.target.value)}
-              />
               <Button onClick={() => handleFindContent(peer)}>
                 Send Find Content Request
               </Button>
@@ -79,7 +84,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
             </Wrap>
           </HStack>
         ))}
-    </Box>
+    </VStack>
   );
 };
 

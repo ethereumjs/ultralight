@@ -112,7 +112,6 @@ export class PortalNetwork extends EventEmitter {
 
     public sendFindContent = (dstId: string, key: Uint8Array) => {
         const findContentMsg: FindContentMessage = { contentKey: key };
-        console.log(key)
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
         this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(SubNetworkIds.StateNetworkId))
             .then(res => {
@@ -120,6 +119,16 @@ export class PortalNetwork extends EventEmitter {
                     this.log(`Received FOUNDCONTENT from ${shortId(dstId)}`);
                     // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
                     const decoded = ContentMessageType.deserialize(res.slice(1))
+                    console.log(decoded.selector)
+                    switch (decoded.selector) {
+                        case 0: console.log(decoded.selector); this.log(`received Connection ID ${Buffer.from(decoded.value as Uint8Array).toString('hex')}`); break;
+                        case 1: this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`); break;
+                        case 2: {
+                            this.log(`received ${decoded.value.length} ENRs`);
+                            decoded.value.forEach((enr) => this.log(`Node ID: ${ENR.decode(Buffer.from(decoded.value[0] as Uint8Array)).nodeId}`))
+                            break;
+                        };
+                    }
                     this.log(decoded)
                 }
             })
@@ -258,7 +267,6 @@ export class PortalNetwork extends EventEmitter {
         //Check to see if value in locally maintained state network state
         const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
         const value = this.stateNetworkState[contentKey]
-        console.log('value found', contentKey, value)
         if (value && value.length < 1200) {
             console.log('Found value for requested content', Buffer.from(decodedContentMessage.contentKey).toString('hex'), value)
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
