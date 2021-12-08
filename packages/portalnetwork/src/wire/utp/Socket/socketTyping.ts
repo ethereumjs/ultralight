@@ -14,8 +14,7 @@ export const mtuSize: number = 580;
 export const checkTimeoutsLoopInterval: number = 500;
 //   # Defualt initial timeout for first Syn packet
 export const defaultInitialSynTimeout: number = 3000;
-//   # Initial timeout to receive first Data data packet after receiving initial Syn
-//   # packet. (TODO it should only be set when working over udp)
+//   # Initial timeout to receive first Data data packet after receiving initial Syn packet. 
 export const initialRcvRetransmitTimeout: number = 10000;
 //   # Number of times each data packet will be resend before declaring connection
 //   # dead. 4 is taken from reference implementation:
@@ -27,9 +26,9 @@ export enum ConnectionState {
   SynSent,
   SynRecv,
   Connected,
-  ConnectedFull,
   Reset,
-  Destroy,
+  Closed,
+  GotFin
 }
 
 export enum ConnectionDirection {
@@ -88,7 +87,6 @@ export interface ISocketOptions {
   syn: Packet | null
 }
 
-// export type UtpSocketType<T> = IUtpSocket<T>
 
 export type SocketCloseCallBack = () => void;
 

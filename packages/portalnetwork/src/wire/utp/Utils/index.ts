@@ -1,3 +1,5 @@
 export * from './math'
 export * from './growableBuffer'
 export * from './constants'
+export * from './Convert'
+export * from  './exceptions'
