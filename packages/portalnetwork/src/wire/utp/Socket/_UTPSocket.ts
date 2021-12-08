@@ -147,7 +147,6 @@ export class _UTPSocket extends EventEmitter {
   handleSynAckPacket(packet: Packet): void {
     if ((packet.header.connectionId & UINT16MAX) === this.rcvConnectionId) {
       this.setState(ConnectionState.Connected);
-      this.setAckNrFromPacketSeqNr(packet);
     }
   }
   handleResetPacket(packet: Packet): void {
@@ -203,7 +202,6 @@ export class _UTPSocket extends EventEmitter {
   }
 
   async sendSynPacket(): Promise<void> {
-    assert(this.state === ConnectionState.SynSent);
     let packet = createSynPacket(this.rcvConnectionId, 1, this.ackNr);
     log(
       `Sending SYN packet ${packet.encodePacket().toString("hex")} to ${
@@ -275,9 +273,7 @@ export class _UTPSocket extends EventEmitter {
   setState(state: ConnectionState) {
     this.state = state;
   }
-  setAckNrFromPacketSeqNr(p: Packet) {
-    this.ackNr = p.header.seqNr;
-  }
+
   setConnectionIdsFromPacket(p: Packet) {
     let id = p.header.connectionId;
     this.sndConnectionId = id;
