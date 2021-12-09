@@ -29,11 +29,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   };
 
   const handlePing = (nodeId: string) => {
-    portal.sendPing(nodeId);
+    portal.stateNetwork_sendPing(nodeId);
   };
 
   const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(nodeId, Uint16Array.from([0, 1, 2]));
+    portal.stateNetwork_sendFindNodes(nodeId, Uint16Array.from([0, 1, 2]));
   };
 
   const handleFindContent = (nodeId: string) => {

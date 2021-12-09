@@ -3,11 +3,12 @@ import { ITalkReqMessage, ITalkRespMessage } from "portalnetwork-discv5/lib/mess
 import { EventEmitter } from 'events'
 
 import debug from 'debug'
-import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage } from "../wire";
+import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage, PongMessage } from "../wire";
 import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { StateNetworkRoutingTable } from "..";
 import { shortId } from "../util";
-import { bufferToPacket, PacketType, Uint8, UtpProtocol } from '../wire/utp'
+import { bufferToPacket, PacketType, UtpProtocol } from '../wire/utp'
+import { PortalNetworkEventEmitter } from "./types";
 
 const _log = debug("portalnetwork")
 
@@ -15,7 +16,7 @@ type state = {
     [key: string]: Uint8Array
 }
 
-export class PortalNetwork extends EventEmitter {
+export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventEmitter }) {
     client: Discv5;
     stateNetworkRoutingTable: StateNetworkRoutingTable;
     uTP: UtpProtocol;
@@ -42,6 +43,7 @@ export class PortalNetwork extends EventEmitter {
         ? this.emit("log", msg)
         : this.emit("log", `Payload: SSZ Union<${Object.entries(msg).map(([k,v]) => {return `${k}: ${v}`}).toString()}>`)
     }
+
     /**
      * Starts the portal network client
      */
@@ -52,62 +54,89 @@ export class PortalNetwork extends EventEmitter {
     /**
      * 
      * @param namespaces comma separated list of logging namespaces
-     * defaults to "portalnetwork*, discv5*"
+     * defaults to "portalnetwork*, discv5:service, <uTP>*"
      */
     public enableLog = (namespaces: string = "portalnetwork*,discv5:service*,<uTP>*") => {
         debug.enable(namespaces)
     }
 
     /**
-     * 
-     * Sends a Portal Network Wire Protocol PING message to a specified node
+     * Sends a PING message over State Network to a specified node
      * @param dstId the nodeId of the peer to send a ping to
      */
-    public sendPing = (dstId: string) => {
+    public stateNetwork_sendPing = async (dstId: string) => {
         const payload = StateNetworkCustomDataType.serialize({ dataRadius: BigInt(1) })
+        const res = await this.sendPing(dstId, payload, SubNetworkIds.StateNetworkId)
+        if (res) {
+            this.log('received PONG message on STATE subnetwork')
+            this.log(res)
+        }
+    }
+
+    /**
+     * Sends a Portal Network Wire Protocol PING message to a specified node
+     * @param dstId the nodeId of the peer to send a ping to
+     * @param payload custom payload to be sent in PING message
+     * @param networkId subnetwork ID
+     * @returns the PING payload specified by the subnetwork or undefined
+     */
+    private sendPing = async (dstId: string, payload: Uint8Array, networkId: SubNetworkIds) => {
         const pingMsg = PortalWireMessageType.serialize({
             selector: MessageCodes.PING, value: {
             enrSeq: this.client.enr.seq,
             customPayload: payload
             }
         })
-        this.client.sendTalkReq(dstId, Buffer.from(pingMsg), fromHexString(SubNetworkIds.StateNetworkId))
-            .then((res) => {
-                if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
-                    this.log(`Received PONG from ${shortId(dstId)}`)
-                    const decoded = PortalWireMessageType.deserialize(res)
-                    this.log(decoded)
-                } else {
-                    this.log(`Received invalid response from ${shortId(dstId)} to PING request`)
-                }
-            })
-            .catch((err) => {
+        try {
+            this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+            const res = await this.client.sendTalkReq(dstId, Buffer.from(pingMsg), fromHexString(networkId))
+            if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
+                this.log(`Received PONG from ${shortId(dstId)}`)
+                const decoded = PortalWireMessageType.deserialize(res)
+                return decoded.value as PongMessage
+            }
+        }
+        catch (err: any) {
                 this.log(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
-            })
-        this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+        }
     }
 
     /**
-     * Sends a Portal Network Wire Protocol FINDNODES request to a peer requesting other node ENRs
+     * Sends a FINDNODES request over the State Network to a peer requesting other node ENRs
      * @param dstId node id of peer
      * @param distances distances as defined by subnetwork for node ENRs being requested
      */
-    public sendFindNodes = (dstId: string, distances: Uint16Array) => {
+    public stateNetwork_sendFindNodes = async (dstId: string, distances: Uint16Array) => {
+        const res = await this.sendFindNodes(dstId, distances, SubNetworkIds.StateNetworkId) as NodesMessage;
+        if (res) {
+            this.log(`Received ${res.total} ENRs from ${shortId(dstId)}`);
+            res.enrs.forEach((enr) => this.log(ENR.decode(Buffer.from(enr)).nodeId))
+        }
+    }
+
+    /**
+     * 
+     * Sends a Portal Network FINDNODES request to a peer requesting other node ENRs
+     * @param dstId node id of peer
+     * @param distances distances as defined by subnetwork for node ENRs being requested
+     * @param networkId subnetwork id for message being
+     * @returns a `NodesMessage` or undefined
+     */
+    private sendFindNodes = async (dstId: string, distances: Uint16Array, networkId: SubNetworkIds) => {
         const findNodesMsg: FindNodesMessage = { distances: distances }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDNODES, value: findNodesMsg })
-        this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(SubNetworkIds.StateNetworkId))
-            .then(res => {
-                if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
-                    this.log(`Received NODES from ${shortId(dstId)}`);
-                    const decoded = PortalWireMessageType.deserialize(res);
-                    const msg = decoded.value as NodesMessage;
-                    this.log(`Received ${msg.total} ENRs from ${shortId(dstId)}`);
-                    if (msg.total > 0) {
-                        this.log(ENR.decode(Buffer.from(msg.enrs[0])).nodeId)
-                    }
-                }
-            })
-        this.log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+        try {
+            const res = await this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
+            this.log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+            if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
+                this.log(`Received NODES from ${shortId(dstId)}`);
+                const decoded = PortalWireMessageType.deserialize(res);
+                return decoded.value as NodesMessage;
+            }
+        }
+        catch (err: any) {
+            this.log(`Error sending FINDNODES to ${shortId(dstId)} - ${err.message}`)
+        }
     }
 
     public sendFindContent = (dstId: string, key: Uint8Array) => {
