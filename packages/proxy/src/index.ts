@@ -30,19 +30,17 @@ const main = async () => {
             websocket.send(msg)
         });
         console.log(`incoming connection from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
-        let remotePort: number = 1;
         let foundPort = false;
         while (!foundPort) {
-            remotePort = Math.floor(Math.random() * 65535)
             try {
-                udpsocket.bind(remotePort)
+                await udpsocket.bind()
                 foundPort = true
             }
             catch { }
         }
         // Send external IP address/port to websocket client to update ENR
-        websocket.send(JSON.stringify({ address: remoteAddr, port: remotePort }));
-        console.log('UDP proxy listening on ', remoteAddr, remotePort)
+        websocket.send(JSON.stringify({ address: remoteAddr, port: udpsocket.address().port }));
+        console.log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
         websocket.on("message", (data) => {
             try {
                 const address = ipCodec.decode(Buffer.from(data.slice(0, 4) as ArrayBuffer))
