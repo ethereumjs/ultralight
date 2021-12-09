@@ -2,7 +2,6 @@ import {
   protocolVersion,
   PacketType,
   IPacketOptions,
-  DEFAULT_WINDOW_SIZE,
 } from "./PacketTyping";
 import { PacketHeader } from "./PacketHeader";
 import { SelectiveAckHeader, Uint16, Uint32 } from ".";
@@ -54,14 +53,15 @@ export function createAckPacket(
   seqNr: Uint16,
   sndConnectionId: Uint16,
   ackNr: Uint16,
-  rtt_var: number
+  rtt_var: number,
+  wndSize: number
 ): Packet {
   let h: PacketHeader = new PacketHeader({
     pType: PacketType.ST_STATE,
     connectionId: sndConnectionId,
     seqNr: seqNr,
     ackNr: ackNr,
-    wndSize: DEFAULT_WINDOW_SIZE,
+    wndSize: wndSize,
     timestampDiff: rtt_var,
   });
 
@@ -73,7 +73,8 @@ export function createSelectiveAckPacket(
   seqNr: Uint16,
   sndConnectionId: Uint16,
   ackNr: Uint16,
-  rtt_var: number
+  rtt_var: number,
+  wndSize: number
 ): Packet {
   let h: SelectiveAckHeader = new SelectiveAckHeader(
     {
@@ -81,7 +82,7 @@ export function createSelectiveAckPacket(
       connectionId: sndConnectionId,
       seqNr: seqNr,
       ackNr: ackNr,
-      wndSize: DEFAULT_WINDOW_SIZE,
+      wndSize: wndSize,
       timestampDiff: rtt_var,
     },
     new Uint8Array(1)
@@ -133,7 +134,7 @@ export function createResetPacket(
   log("Creating ST_RESET Packet...");
   return new Packet({ header: h, payload: new Uint8Array() });
 }
-export function createFinPacket(connectionId: Uint16, ackNr: number): Packet {
+export function createFinPacket(connectionId: Uint16, ackNr: number,   wndSize: number): Packet {
   let h = new PacketHeader({
     pType: PacketType.ST_FIN,
     version: protocolVersion,
@@ -141,7 +142,7 @@ export function createFinPacket(connectionId: Uint16, ackNr: number): Packet {
     connectionId: connectionId,
     timestamp: Date.now(),
     timestampDiff: 0,
-    wndSize: DEFAULT_WINDOW_SIZE,
+    wndSize: wndSize,
     seqNr: Number("eof_pkt") as Uint16,
     ackNr: ackNr,
   });

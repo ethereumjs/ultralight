@@ -7,9 +7,11 @@ import { Duration, Miliseconds } from "../Socket/socketTyping";
 import { minimalHeaderSize } from "../Packets/PacketTyping";
 import * as Convert from "./Convert";
 
-export function MicrosecondTimeStamp(): bigint {
-  let time = hrtime.bigint();
-  return time / BigInt(1000);
+export function MicrosecondTimeStamp(): number {
+  // this is only a millisecond timestamp
+  // process.hrtime.bigint() doesn't seem to work in the browser?
+  let time = performance.now();
+  return time * 1000;
 }
 
 export function Bytes32TimeStamp(): number {

@@ -239,7 +239,7 @@ export class PortalNetwork extends EventEmitter {
     }
     
     private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
-        const connectionId = await this.uTP.initiateConnectionRequest(srcId);
+        const connectionId = await this.uTP.initiateConnectionRequest(srcId).then((res) => {return this.uTP.sockets[srcId].sndConnectionId});
         const payload: AcceptMessage = {
             connectionId: new Uint8Array(2).fill(connectionId),
             contentKeys: [true]
@@ -265,15 +265,21 @@ export class PortalNetwork extends EventEmitter {
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
         } else {
-            await this.uTP.sendData(value, srcId)
+            await this.uTP.sendData(value, srcId).then((msg) => {
+
+                    this.client.sendTalkResp(srcId, message.id,
+      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(msg)]))
+            })
 
             // Sends the node's ENR as the CONTENT response (dummy data to verify the union serialization is working)
-            const msg: enrs = [this.client.enr.encode()]
-            // TODO: Switch this line to use PortalWireMessageType.serialize
-            const payload = ContentMessageType.serialize({ selector: 2, value: msg })
-            this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+            // const msg: enrs = [this.client.enr.encode()]
+            // // TODO: Switch this line to use PortalWireMessageType.serialize
+            // const payload = ContentMessageType.serialize({ selector: 2, value: msg })
+            // this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
         }
     }
+
+    // private handleContent = async (srcId: string, message: Italk)
 
     private handleUTPStreamRequest = async (srcId: string, message: ITalkReqMessage) => {
 

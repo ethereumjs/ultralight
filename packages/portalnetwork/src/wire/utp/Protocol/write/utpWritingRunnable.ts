@@ -1,5 +1,7 @@
+import { min } from "bn.js";
+import { log } from "debug";
 import { UtpProtocol } from "..";
-import { Packet, PacketType, TWO_MINUTES, _UTPSocket } from "../..";
+import { Bytes32TimeStamp, MAX_PACKET_SIZE, Packet, PacketType, TWO_MINUTES, _UTPSocket } from "../..";
 // import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
 
 
@@ -7,65 +9,101 @@ const MIN_RTO = TWO_MINUTES;
 export default class utpWritingRunnable {
   utp: UtpProtocol;
   socket: _UTPSocket;
-  src: Buffer;
-  // future: UtpWriteFutureImpl;
+  content: Uint8Array;
+  lastAckReceived: Packet;
+  contentMod: Uint8Array;
   writing: boolean;
+  finished: boolean;
   canSendNextPacket: boolean;
-  timedoutPackets: Packet[];
-  waitingTime: number;
-  rto: number;
-  timestamp
-  constructor(utp: UtpProtocol, socket: _UTPSocket, src: Buffer, timestamp: number) {
+  // timedoutPackets: Packet[];
+  // waitingTime: number;
+  // rto: number;
+  timestamp: number
+  sentBytes: Map<Packet, Uint8Array>
+  constructor(utp: UtpProtocol, socket: _UTPSocket, synAck: Packet, content: Uint8Array, timestamp: number) {
     this.socket = socket;
     this.utp = utp
-    this.src = src;
-    // this.future = future;
-    this.writing = false;
-    this.canSendNextPacket = true;
-    this.timedoutPackets = [];
-    this.waitingTime = 0;
-    this.rto = 0
     this.timestamp = timestamp
+    this.content = content;
+    this.contentMod = content;
+    this.writing = false;
+    this.finished = false;
+    this.canSendNextPacket = true;
+    // this.timedoutPackets = [];
+    this.sentBytes = new Map<Packet, Uint8Array>();
+    // this.waitingTime = 0;
+    // this.rto = 0
+    this.lastAckReceived = synAck
   }
 
-  start() {
-
-  }
-
-  run() {
-    this.socket.initiateAckPosition(this.socket.seqNr);
-    // this.utp.
-  }
-
-  calculateRTO(p: Packet) {
-      this.socket.rtt_var += 0.25 * (Math.abs(this.socket.rtt - p.header.timestampDiff) - this.socket.rtt_var)
-      this.socket.rtt += 0.125 * (p.header.timestampDiff - this.socket.rtt)
-      this.rto = Math.max(MIN_RTO, this.socket.rtt + this.socket.rtt_var * 4)
-  }
-
-  getNextPacket(): Packet {
-    return this.timedoutPackets.shift() as Packet;
-  }
-
-  sendPacket(p: Packet) {
-      this.socket.sendPacket(p, PacketType.ST_DATA)
-  }
-
-  markPacketOnFly(p: Packet) {}
-
-  waitAndProcessAcks() {}
-
-  write() {
+  async start(): Promise<void> {
+    this.writing = this.content && true
     while (this.writing) {
-      while (this.canSendNextPacket) {
-        let p = this.getNextPacket();
-        this.sendPacket(p);
-        this.markPacketOnFly(p);
+      while (this.canSendNextPacket && !this.finished) {
+        // let size = this.nextPacketSize();
+        let bytes = this.getNextBytes(this.contentMod)
+        this.canSendNextPacket = false;
+        await this.socket.sendDataPacket(bytes).then((p: Packet) => {
+          this.sentBytes.set(p, bytes)
+        })
+        if (this.contentMod.length == 0) {
+          await this.socket.sendDataPacket(bytes, true).then((p: Packet) => {
+            this.sentBytes.set(p, bytes)
+          })
+          this.finished = true
+          this.writing = false
+          log("All Data Written")
+        }
       }
-      this.waitAndProcessAcks();
-      this.timedoutPackets.forEach((p) => {
-        this.sendPacket(p);
-      });
     }
   }
+
+  nextPacketSize(): number {
+    return this.contentMod.length > 900 ? 900 : this.contentMod.length
+  }
+
+  getNextBytes(array: Uint8Array, idx: number = 100): Uint8Array {
+      let next = array.subarray(0, 100)
+      let rest = array.subarray(100)
+      log(`sending ${next.length} bytes...`)
+      this.setContentMod(rest)
+      return next
+  }
+
+  setContentMod(subArray: Uint8Array) {
+    this.contentMod = subArray;
+  }
+
+  // getNextPacket(): Packet {
+  //   return this.timedoutPackets.shift() as Packet;
+  // }
+
+  
+  // calculateRTO(p: Packet) {
+  //     this.socket.rtt_var += 0.25 * (Math.abs(this.socket.rtt - p.header.timestampDiff) - this.socket.rtt_var)
+  //     this.socket.rtt += 0.125 * (p.header.timestampDiff - this.socket.rtt)
+  //     this.rto = Math.max(MIN_RTO, this.socket.rtt + this.socket.rtt_var * 4)
+  // }
+
+  // sendPacket(p: Packet) {
+  //     this.socket.sendPacket(p, PacketType.ST_DATA)
+  // }
+
+  // markPacketOnFly(p: Packet) {}
+
+  // waitAndProcessAcks() {}
+
+  // write() {
+  //   while (this.writing) {
+  //     while (this.canSendNextPacket) {
+  //       let p = this.getNextPacket();
+  //       this.sendPacket(p);
+  //       this.markPacketOnFly(p);
+  //     }
+  //     this.waitAndProcessAcks();
+  //     this.timedoutPackets.forEach((p) => {
+  //       this.sendPacket(p);
+  //     });
+  //   }
+  // }
 }

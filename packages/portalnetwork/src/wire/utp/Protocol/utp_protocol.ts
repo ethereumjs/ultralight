@@ -1,5 +1,5 @@
 import { _UTPSocket } from "../Socket/_UTPSocket";
-import { bufferToPacket, ConnectionState, Packet, randUint16 } from "..";
+import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16 } from "..";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 import { Discv5 } from "portalnetwork-discv5";
@@ -17,18 +17,32 @@ export class UtpProtocol {
     this.sockets = {};
   }
 
-  async initiateConnectionRequest(dstId: string, data?:Uint8Array): Promise<number> {
+  // async handleUtpPacket(dstId: string, msg: Buffer) {
+  //   let packet = bufferToPacket(msg)
+  //   let pType = packet.header.pType
+  //   if (pType === PacketType.ST_SYN) {
+  //     this.handleIncomingConnectionRequest(packet, dstId)
+  //   }
+  //   if (pType === PacketType.ST_DATA) {
+  //     this.handleAck(packet, dstId)
+  //   }
+  //   if (pType === PacketType.ST_DATA) {
+  //     this.handleIncomingData(packet, dstId)
+  //   }
+  // }
+
+  async initiateConnectionRequest(dstId: string, data?:Uint8Array): Promise<Buffer> {
     log(`Requesting uTP stream connection with ${dstId}`);
     const socket = new _UTPSocket(this, dstId);
     this.sockets[dstId] = socket;
     this.sockets[dstId].content = data && data;
 
-    await this.sockets[dstId].sendSynPacket(data);
-    return this.sockets[dstId].sndConnectionId;
+    return this.sockets[dstId].sendSynPacket(data)
+    
   }
 
-  async sendData(data: Uint8Array, dstId: string): Promise<void> {
-    await this.initiateConnectionRequest(dstId, data);
+  async sendData(data: Uint8Array, dstId: string): Promise<Buffer> {
+    return await this.initiateConnectionRequest(dstId, data);
   }
 
   async handleSynAck(ack: Packet, dstId: string): Promise<void> {

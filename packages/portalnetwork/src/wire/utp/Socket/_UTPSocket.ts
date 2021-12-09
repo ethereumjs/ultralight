@@ -12,6 +12,7 @@ import {
   UINT16MAX,
   UtpProtocol,
   Bytes32TimeStamp,
+  bufferToPacket,
 } from "..";
 import dgram from 'dgram'
 import { ConnectionState } from ".";
@@ -20,7 +21,7 @@ import EventEmitter from "events";
 import { Discv5 } from "portalnetwork-discv5";
 import assert from "assert";
 import { fromHexString } from "@chainsafe/ssz";
-import { SubNetworkIds } from "../..";
+import { MessageCodes, SubNetworkIds } from "../..";
 import { debug } from "debug";
 import {
   isDataPacket,
@@ -35,7 +36,7 @@ import { utpReadingRunnable } from "../Protocol/read/utpReadingRunnable";
 import BlockingQueue from "../Protocol/congestionControl/blockingQueue";
 
 const log = debug("<uTP>");
-const MAX_WINDOW = 1280;
+const MAX_WINDOW = 1200;
 const PacketSent = new EventTarget();
 PacketSent.addEventListener("Packet Sent", (id) => {
   log("Packet sent to" + id);
@@ -65,6 +66,8 @@ export class _UTPSocket extends EventEmitter {
   ourDelay: number;
   sendRate: number;
   CCONTROL_TARGET: number;
+  writer: utpWritingRunnable | undefined;
+  reader: utpReadingRunnable | undefined;
   constructor(utp: UtpProtocol, remoteAddress: string) {
     super();
     this.client = utp.client;
@@ -102,15 +105,22 @@ export class _UTPSocket extends EventEmitter {
     }
   }
 
-  async sendPacket(packet: Packet, type: PacketType): Promise<void> {
+
+  async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     let msg = packet.encodePacket();
-    this.client.sendTalkReqSync(
-      this.remoteAddress,
-      msg,
-      fromHexString(SubNetworkIds.UTPNetworkId)
-    );
-    log(`${PacketType[type]} packet sent to ${this.remoteAddress}.`);
-    type === 1 && log("uTP stream closed.");
+    if (packet.header.pType === PacketType.ST_DATA) {
+      return msg
+    } else {
+      this.client.sendTalkReqSync(
+        this.remoteAddress,
+        msg,
+        fromHexString(SubNetworkIds.UTPNetworkId)
+      );
+      log(`${PacketType[type]} packet sent to ${this.remoteAddress}.`);
+      type === 1 && log("uTP stream closed.");
+
+    }
+    return msg
   }
   recievePacket(packet: Packet): void {
     if (isSynAckPacket(packet, this.state)) {
@@ -143,6 +153,7 @@ export class _UTPSocket extends EventEmitter {
     this.seqNr = randUint16();
     this.ackNr = packet.header.seqNr
     this.state = ConnectionState.SynRecv;
+    this.reader = new utpReadingRunnable(this, packet)
     await this.sendAckPacket();
     this.seqNr++; 
   }
@@ -150,7 +161,7 @@ export class _UTPSocket extends EventEmitter {
     if ((packet.header.connectionId & UINT16MAX) === this.rcvConnectionId) {
       this.setState(ConnectionState.Connected);
     }
-    this.content && this.startDataTransfer(this.content);
+    this.content && this.startDataTransfer(this.content, packet);
 
   }
   handleResetPacket(packet: Packet): void {
@@ -160,16 +171,27 @@ export class _UTPSocket extends EventEmitter {
     this.updateRTT(packet.header.timestampDiff);
     this.ackNr = packet.header.seqNr;
     this.state = ConnectionState.Connected;
-    this.seqNr++, await this.sendAckPacket();
+    this.seqNr++;
+    this.reader?.packets.push(packet)
+    await this.sendAckPacket();
   }
-  handleStatePacket(packet: Packet): void {
+  async handleStatePacket(packet: Packet): Promise<void> {
     this.initiateAckPosition(packet.header.seqNr)
     this.state = ConnectionState.Connected;
     if (packet.header.ackNr == 1) {
       log("syn ack received")
       this.handleSynAckPacket(packet)
+    } else {
+      log(`DATA ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`)
+      if (this.writer?.writing) {
+        this.writer.canSendNextPacket = true;
+      } else {
+        await this.sendFinPacket()
+        return
+      }
     }
   }
+
   handleFinPacket(packet: Packet): void {
     this.setState(ConnectionState.GotFin);
     this.ackNr = packet.header.seqNr;
@@ -199,7 +221,8 @@ export class _UTPSocket extends EventEmitter {
       this.seqNr,
       this.sndConnectionId,
       this.ackNr,
-      this.rtt_var
+      this.rtt_var,
+      this.cur_window
     );
     log(
       `Sending ST_STATE packet ${this.ackNr} / ${this.seqNr} to ${
@@ -209,21 +232,22 @@ export class _UTPSocket extends EventEmitter {
     await this.sendPacket(packet, PacketType.ST_STATE);
   }
 
-  async sendSynPacket(data?: Uint8Array): Promise<void> {
+  async sendSynPacket(data?: Uint8Array): Promise<Buffer> {
     let packet = createSynPacket(this.rcvConnectionId, 1, this.ackNr);
     log(
       `Sending SYN packet ${packet.encodePacket().toString("hex")} to ${
         this.remoteAddress
       }...`
     );
-    await this.sendPacket(packet, PacketType.ST_SYN);
-    log(`SYN packet sent to ${this.remoteAddress}`);
-    
+    return this.sendPacket(packet, PacketType.ST_SYN).then((buffer) => {
+      log(`SYN packet sent to ${this.remoteAddress}`);
+      return buffer
+    })
 
   }
 
   async sendFinPacket() {
-    let packet = createFinPacket(this.sndConnectionId, this.ackNr);
+    let packet = createFinPacket(this.sndConnectionId, this.ackNr, this.cur_window);
     log(`Sending FIN packet ${packet} to ${this.remoteAddress}`);
     await this.sendPacket(packet, PacketType.ST_FIN);
     this.seqNr = Number("eof_pkt");
@@ -241,7 +265,7 @@ export class _UTPSocket extends EventEmitter {
     log(`RESET packet ${packet} sent to ${this.remoteAddress}`);
   }
 
-  async sendDataPacket(payload: Uint8Array): Promise<void> {
+  async sendDataPacket(payload: Uint8Array, last?: boolean): Promise<Packet> {
     let packet = createDataPacket(
       this.seqNr,
       this.sndConnectionId,
@@ -250,13 +274,21 @@ export class _UTPSocket extends EventEmitter {
       payload,
       this.rtt_var
     );
-    log(`Sending DATA packet to ${this.remoteAddress}`, packet);
+    let msg = packet.encodePacket()
+    log(`Sending DATA packet to ${this.remoteAddress}`, msg);
+    // await this.client.sendTalkResp(this.remoteAddress, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(msg)]))
+    // await this.client.sendTalkReq(this.remoteAddress, msg, fromHexString(SubNetworkIds.UTPNetworkId))
     await this.sendPacket(packet, PacketType.ST_DATA);
     log(`DATA packet ${packet} sent to ${this.remoteAddress}`);
+    return packet
   }
 
-  startDataTransfer(data: Uint8Array) {
+  startDataTransfer(data: Uint8Array, synAck: Packet) {
     log("Beginning transfer of" + data);
+    this.write(
+      data,
+      synAck
+    )
 
 
     // this.sendDataPacket(Uint8Array.from(data));
@@ -294,21 +326,22 @@ export class _UTPSocket extends EventEmitter {
     return packet.payload.length <= this.max_window;
   }
 
-  write(src: Buffer) {
+  write(content: Uint8Array, synAck: Packet) {
     let writer: utpWritingRunnable = new utpWritingRunnable(
       this.utp,
       this,
-      src,
+      synAck,
+      content,
       Bytes32TimeStamp(),
     );
-    writer.start();
+    this.writer = writer;
+    this.writer.start();
   }
 
-  read(dst: Buffer) {
+  read(synAck: Packet) {
     const reader = new utpReadingRunnable(
       this,
-      dst,
-      performance.now(),
+      synAck,
     );
     reader.run();
   }

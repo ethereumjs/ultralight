@@ -37,7 +37,7 @@ export default class BlockingQueue {
   }
 
   ack(ack_nr: number) {
-    this.socket.sendAckPacket(ack_nr)
+    this.socket.sendAckPacket()
   }
   
   selectiveAck(ack_nr: number) {}

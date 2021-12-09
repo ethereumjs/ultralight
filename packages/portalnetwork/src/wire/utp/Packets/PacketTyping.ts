@@ -12,7 +12,6 @@ export enum PacketType {
   ST_SYN = 4,
 }
 
-export const DEFAULT_WINDOW_SIZE = 1 << 18;
 export const CLOSE_GRACE = 5000;
 
 export const BUFFER_SIZE = 512;
