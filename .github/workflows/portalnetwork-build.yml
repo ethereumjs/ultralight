@@ -43,6 +43,8 @@ jobs:
       - run: npm ls
         working-directory: ${{github.workspace}}
 
+      - run: npm ci --ignore-scripts
+      
       - run: npm run build -w=portalnetwork
         working-directory: ${{github.workspace}}
 
