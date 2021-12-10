@@ -8,6 +8,7 @@ import {
   Wrap,
 } from "@chakra-ui/react";
 import { PortalNetwork } from "portalnetwork";
+import { randUint16 } from "portalnetwork/dist/wire/utp";
 import React from "react";
 
 type NodeManagerProps = {
@@ -45,7 +46,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   };
 
   const handleUtpStream = (nodeId: string) => {
-    portal.sendUtpStreamRequest(nodeId);
+    portal.sendUtpStreamRequest(nodeId, randUint16());
   };
 
   return (
