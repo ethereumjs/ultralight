@@ -19,7 +19,8 @@
     "@types/bn.js": "^5.1.0",
     "bn.js": "^5.2.0",
     "debug": "^4.3.2",
-    "tape": "^5.3.1"
+    "tape": "^5.3.1",
+    "strict-event-emitter-types": "^2.0.0"
   },
   "peerDependencies": {
     "bn.js": "^5.2.0"
