@@ -32,7 +32,7 @@ jobs:
           cache: 'npm'
 
       - run: pwd
-        working-directory:${{github.workspace}}
+        working-directory: ${{github.workspace}}
 
       - name: Use npm v7 for workspaces support
         run: npm i -g npm@7
