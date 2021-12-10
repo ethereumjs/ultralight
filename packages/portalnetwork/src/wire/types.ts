@@ -1,4 +1,4 @@
-import { ContainerType, ByteVector, BigIntUintType, UnionType, ListType, byteType, NumberUintType, BitListType, ByteVectorType, Union } from "@chainsafe/ssz";
+import { ContainerType, ByteVector, BigIntUintType, UnionType, ListType, byteType, NumberUintType, BitListType, ByteVectorType, Union, List } from "@chainsafe/ssz";
 import { NoneType } from '@chainsafe/ssz/lib/types/basic/none'
 
 // Subnetwork IDs
@@ -116,7 +116,7 @@ export const OfferMessageType = new ContainerType({
 
 export type AcceptMessage = {
     connectionId: Uint8Array,
-    contentKeys: Boolean[]
+    contentKeys: List<Boolean>
 }
 
 export const AcceptMessageType = new ContainerType({
