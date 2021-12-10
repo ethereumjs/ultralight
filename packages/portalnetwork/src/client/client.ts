@@ -117,11 +117,19 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
     }
 
-    public sendFindContent = (dstId: string, key: Uint8Array, networkId: SubNetworkIds) => {
+
+    /**
+     * 
+     * @param dstId node id of peer
+     * @param key content key defined by the subnetwork spec
+     * @param networkId subnetwork ID on which content is being sought
+     * @returns the value of the FOUNDCONTENT response or undefined
+     */
+    public sendFindContent = async (dstId: string, key: Uint8Array, networkId: SubNetworkIds) => {
         const findContentMsg: FindContentMessage = { contentKey: key };
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
-        this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
-            .then(res => {
+        this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+        const res = await this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
                 if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
                     this.log(`Received FOUNDCONTENT from ${shortId(dstId)}`);
                     // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
@@ -136,19 +144,22 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                             break;
                         };
                     }
-                    this.log(decoded)
+                    return decoded.value
                 }
-            })
-        this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
     }
 
-    public sendOffer = (dstId: string, contentKeys: Uint8Array[]) => {
+    /**
+     * 
+     * @param dstId node ID of a peer
+     * @param contentKeys content keys being offered as specified by the subnetwork
+     * @param networkId network ID of subnetwork being used
+     */
+    public sendOffer = async (dstId: string, contentKeys: Uint8Array[], networkId: SubNetworkIds) => {
         const offerMsg: OfferMessage = {
             contentKeys
         }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.OFFER, value: offerMsg })
-        this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(SubNetworkIds.StateNetworkId))
-            .then(async (res) => {
+        const res = await this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
                 const decoded = PortalWireMessageType.deserialize(res);
                 if (decoded.selector === MessageCodes.ACCEPT) {
                     this.log(`Received ACCEPT message from ${shortId(dstId)}`);
@@ -156,7 +167,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     // TODO: Add code to initiate uTP streams with serving of requested content
                     await this.sendUtpStreamRequest(dstId)
                 }
-            })
         }
         
     public sendUtpStreamRequest = async (dstId: string) => {

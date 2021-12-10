@@ -57,7 +57,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   };
 
   const handleOffer = (nodeId: string) => {
-    portal.sendOffer(nodeId, [new Uint8Array(16).fill(0)]);
+    portal.sendOffer(
+      nodeId,
+      [new Uint8Array(16).fill(0)],
+      SubNetworkIds.StateNetworkId
+    );
   };
 
   const handleUtpStream = (nodeId: string) => {
