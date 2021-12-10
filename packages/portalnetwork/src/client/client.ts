@@ -280,10 +280,13 @@ export class PortalNetwork extends EventEmitter {
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
         } else {
+            this.log(`Generating Random Connection Id...`)
             const _id = randUint16();
             const idBuffer = Buffer.alloc(2)
             idBuffer.writeUInt16BE(_id, 0)
             const id = Uint8Array.from(idBuffer)
+            this.log(`Sending CONTENT message with CONNECTION ID: ${_id}`)
+
             const payload = ContentMessageType.serialize({selector: 0, value: id})
                     this.client.sendTalkResp(srcId, message.id,
       Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
