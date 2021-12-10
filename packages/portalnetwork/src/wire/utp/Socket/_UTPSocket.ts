@@ -232,7 +232,8 @@ export class _UTPSocket extends EventEmitter {
     await this.sendPacket(packet, PacketType.ST_STATE);
   }
 
-  async sendSynPacket(data?: Uint8Array): Promise<Buffer> {
+  async sendSynPacket(id: number): Promise<Buffer> {
+    this.rcvConnectionId = id
     let packet = createSynPacket(this.rcvConnectionId, 1, this.ackNr);
     log(
       `Sending SYN packet ${packet.encodePacket().toString("hex")} to ${

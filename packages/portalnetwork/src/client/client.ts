@@ -7,7 +7,7 @@ import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessa
 import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { StateNetworkRoutingTable } from "..";
 import { shortId } from "../util";
-import { bufferToPacket, PacketType, Uint8, UtpProtocol } from '../wire/utp'
+import { bufferToPacket, PacketType, randUint16, Uint8, UtpProtocol } from '../wire/utp'
 
 const _log = debug("portalnetwork")
 
@@ -122,7 +122,11 @@ export class PortalNetwork extends EventEmitter {
                     const decoded = ContentMessageType.deserialize(res.slice(1))
                     console.log(decoded.selector)
                     switch (decoded.selector) {
-                        case 0: console.log(decoded.selector); this.log(`received Connection ID ${Buffer.from(decoded.value as Uint8Array).toString('hex')}`); break;
+                        case 0: console.log(decoded.selector); 
+                        const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
+                        this.log(`received Connection ID ${id}`);
+                        this.sendUtpStreamRequest(dstId, id)
+                         break;
                         case 1: this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`); break;
                         case 2: {
                             this.log(`received ${decoded.value.length} ENRs`);
@@ -147,15 +151,16 @@ export class PortalNetwork extends EventEmitter {
                 if (decoded.selector === MessageCodes.ACCEPT) {
                     this.log(`Received ACCEPT message from ${shortId(dstId)}`);
                     this.log(decoded.value);
+                    let id = randUint16()
                     // TODO: Add code to initiate uTP streams with serving of requested content
-                    await this.sendUtpStreamRequest(dstId)
+                    await this.sendUtpStreamRequest(dstId, id)
                 }
             })
         }
         
-    public sendUtpStreamRequest = async (dstId: string) => {
+    public sendUtpStreamRequest = async (dstId: string, id: number) => {
             // Initiate a uTP stream request with a SYN packet
-        await this.uTP.initiateConnectionRequest(dstId)
+        await this.uTP.initiateConnectionRequest(dstId, id)
     }
 
     private sendPong = async (srcId: string, reqId: bigint) => {
@@ -248,7 +253,8 @@ export class PortalNetwork extends EventEmitter {
     }
     
     private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
-        const connectionId = await this.uTP.initiateConnectionRequest(srcId).then((res) => {return this.uTP.sockets[srcId].sndConnectionId});
+        let id = randUint16()
+        const connectionId = await this.uTP.initiateConnectionRequest(srcId, id).then((res) => {return this.uTP.sockets[srcId].sndConnectionId});
         const payload: AcceptMessage = {
             connectionId: new Uint8Array(2).fill(connectionId),
             contentKeys: [true]
@@ -274,19 +280,18 @@ export class PortalNetwork extends EventEmitter {
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
         } else {
-            await this.uTP.sendData(value, srcId).then((msg) => {
-
+            const _id = randUint16();
+            const idBuffer = Buffer.alloc(2)
+            idBuffer.writeUInt16BE(_id, 0)
+            const id = Uint8Array.from(idBuffer)
+            const payload = ContentMessageType.serialize({selector: 0, value: id})
                     this.client.sendTalkResp(srcId, message.id,
-      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(msg)]))
-            })
+      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+            }
 
-            // Sends the node's ENR as the CONTENT response (dummy data to verify the union serialization is working)
-            // const msg: enrs = [this.client.enr.encode()]
-            // // TODO: Switch this line to use PortalWireMessageType.serialize
-            // const payload = ContentMessageType.serialize({ selector: 2, value: msg })
-            // this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+
         }
-    }
+    
 
     // private handleContent = async (srcId: string, message: Italk)
 

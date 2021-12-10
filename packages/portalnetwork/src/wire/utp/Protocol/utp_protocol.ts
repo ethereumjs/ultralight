@@ -31,19 +31,19 @@ export class UtpProtocol {
   //   }
   // }
 
-  async initiateConnectionRequest(dstId: string, data?:Uint8Array): Promise<Buffer> {
+  async initiateConnectionRequest(dstId: string, id: number): Promise<Buffer> {
     log(`Requesting uTP stream connection with ${dstId}`);
     const socket = new _UTPSocket(this, dstId);
     this.sockets[dstId] = socket;
-    this.sockets[dstId].content = data && data;
+    // this.sockets[dstId].content = data && data;
 
-    return this.sockets[dstId].sendSynPacket(data)
+    return this.sockets[dstId].sendSynPacket(id)
     
   }
 
-  async sendData(data: Uint8Array, dstId: string): Promise<Buffer> {
-    return await this.initiateConnectionRequest(dstId, data);
-  }
+  // async sendData(data: Uint8Array, dstId: string): Promise<Buffer> {
+  //   return await this.initiateConnectionRequest(dstId, data);
+  // }
 
   async handleSynAck(ack: Packet, dstId: string): Promise<void> {
     log("Received ST_STATE packet...SYN acked...Connection established.");
