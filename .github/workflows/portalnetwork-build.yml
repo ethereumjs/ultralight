@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12, 14]
+        node-version: [14]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -36,3 +36,5 @@ jobs:
 
       - run: npm i
         working-directory: ${{github.workspace}}
+
+      - run: npm run test
