@@ -34,18 +34,7 @@ jobs:
       - name: Use npm v7 for workspaces support
         run: npm i -g npm@7
 
-      - run: npm ci --ignore-scripts
-        working-directory: ${{github.workspace}}
-
-      - run: npm run build -w=portalnetwork-discv5
-        working-directory: ${{github.workspace}}
-
-      - run: npm ls
-        working-directory: ${{github.workspace}}
-
-      - run: npm i --ignore-scripts
-
-      - run: npm run build -w=portalnetwork
+      - run: npm ci 
         working-directory: ${{github.workspace}}
 
       - run: npm run test
