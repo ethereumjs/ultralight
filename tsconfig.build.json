@@ -1,0 +1,4 @@
+{
+    "files": [],
+    "references": [{ "path": "packages/portalnetwork-discv5" }, { "path": "packages/portalnetwork" }]
+  }
