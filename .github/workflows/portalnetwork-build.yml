@@ -31,13 +31,16 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - run: pwd
-        working-directory: ${{github.workspace}}
-
       - name: Use npm v7 for workspaces support
         run: npm i -g npm@7
 
       - run: npm i
         working-directory: ${{github.workspace}}
+
+      - run: npm run build -w=portalnetwork-discv5
+        working-directory: ${{github.workspace}}
+
+      - run: ls  
+        working-directory: ${{github.workspace}}/packages/discv5/lib
 
       - run: npm run test
