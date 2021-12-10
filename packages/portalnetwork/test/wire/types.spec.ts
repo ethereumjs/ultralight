@@ -1,6 +1,6 @@
 
 import tape from 'tape';
-import { ContentMessageType, MessageCodes, PortalWireMessageType, StateNetworkCustomDataType } from '../src/wire/types';
+import { ContentMessageType, MessageCodes, PortalWireMessageType, StateNetworkCustomDataType } from '../../src/wire/types';
 import { ENR } from 'portalnetwork-discv5'
 import { fromHexString } from '@chainsafe/ssz';
 
