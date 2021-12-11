@@ -52,13 +52,13 @@ export class UtpProtocol {
     await this.sockets[dstId].handleSynAckPacket(ack);
   }
 
-  async handleAck(packet: Packet, dstId: string): Promise<void> {
+  async handleAck(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
     log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr + "Received ST_STATE packet from " + dstId);
     this.sockets[dstId].handleStatePacket(packet);
   }
-  async handleFin(packet: Packet, dstId: string): Promise<void> {
+  async handleFin(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
     log("Received ST_FIN packet from " + dstId + "...uTP stream closing...");
-    this.sockets[dstId].handleFinPacket(packet);
+    await this.sockets[dstId].handleFinPacket(packet, dstId, msgId);
   }
 
   async handleIncomingConnectionRequest(

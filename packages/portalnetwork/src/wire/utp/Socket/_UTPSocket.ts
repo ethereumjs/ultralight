@@ -187,19 +187,21 @@ msg,
         log(`SYN ACK ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`)
         log(`Starting uTP data stream`)
         this.content && await this.write(this.content, packet)
-      } else {
+      } else if (packet.header.ackNr === (Number("eof_pkt") & 0xFFFF)) {
+        log(`FIN acked`)
+      } 
+      else {
         log(`DATA ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`)
-        this.sendFinPacket().then((res) => {
-          return
-        })
       }
     }
   }
 
-  handleFinPacket(packet: Packet): void {
+  async handleFinPacket(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
     this.setState(ConnectionState.GotFin);
     this.ackNr = packet.header.seqNr;
-    this.client.sendTalkResp(this.remoteAddress, BigInt(this.sndConnectionId), new Uint8Array())
+    await this.sendAckPacket()
+    log(`FIN ACKED`)
+    // await this.client.sendTalkResp(dstId, msgId, new Uint8Array())
   }
 
   returnFromReading() {}
@@ -344,7 +346,8 @@ msg,
     );
     this.writer = writer;
     this.writer.start().then((res) => {
-      log(`done writing`)
+      log(`all packets in flight`)
+      this.sendFinPacket()
     })
   }
 

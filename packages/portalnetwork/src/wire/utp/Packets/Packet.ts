@@ -143,7 +143,7 @@ export function createFinPacket(connectionId: Uint16, ackNr: number,   wndSize: 
     timestamp: Date.now(),
     timestampDiff: 0,
     wndSize: wndSize,
-    seqNr: Number("eof_pkt") as Uint16,
+    seqNr: Number("eof_pkt") & 0xFFFF,
     ackNr: ackNr,
   });
   log("Creating ST_FIN Packet...");
