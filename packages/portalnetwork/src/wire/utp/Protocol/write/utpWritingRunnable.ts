@@ -74,10 +74,10 @@ export default class utpWritingRunnable {
   }
 
   getNextBytes(array: Uint8Array, idx: number = 100): Uint8Array {
-    let next = array.subarray(0, 100);
-    let rest = array.slice(100)
+    let next = array.subarray(0, 500);
+    let rest = array.slice(500)
     log(`sending ${next.length} bytes...`);
-    log(`${rest.length} bytes`)
+    log(`${rest.length} bytes left`)
     this.setContentMod(rest);
     return next;
   }

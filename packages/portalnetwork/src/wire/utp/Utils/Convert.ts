@@ -129,7 +129,3 @@
         }
         return(result);    
      }
-  
-
-
-  console.log(NumberToInt16(2))

@@ -197,7 +197,7 @@ export function bufferToPacket(buffer: Buffer): Packet {
 }
 export function packetToBuffer(packet: Packet): Buffer {
   let buffer = Buffer.alloc(
-    packet.header.length + (packet.payload ? packet.payload.length : 0)
+    packet.header.length
   );
   let p = packet.header.pType.toString(16);
   let v = packet.header.version.toString(16);
@@ -224,7 +224,7 @@ export function packetToBuffer(packet: Packet): Buffer {
   }
 
   if (packet.payload) {
-    Buffer.concat([buffer, Buffer.from(packet.payload)]);
+    return Buffer.concat([buffer, Buffer.from(packet.payload)]);
   }
   return buffer;
 }

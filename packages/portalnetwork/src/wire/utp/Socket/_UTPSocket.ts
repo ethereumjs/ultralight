@@ -107,8 +107,7 @@ export class _UTPSocket extends EventEmitter {
 
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
-    let msg = packet.encodePacket();
-
+    const msg = packet.encodePacket();
       this.client.sendTalkReqSync(
         this.remoteAddress,
 msg,
