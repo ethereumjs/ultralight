@@ -1,9 +1,15 @@
 import { min } from "bn.js";
 import { log } from "debug";
 import { UtpProtocol } from "..";
-import { Bytes32TimeStamp, MAX_PACKET_SIZE, Packet, PacketType, TWO_MINUTES, _UTPSocket } from "../..";
+import {
+  Bytes32TimeStamp,
+  MAX_PACKET_SIZE,
+  Packet,
+  PacketType,
+  TWO_MINUTES,
+  _UTPSocket,
+} from "../..";
 // import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
-
 
 const MIN_RTO = TWO_MINUTES;
 export default class utpWritingRunnable {
@@ -18,14 +24,20 @@ export default class utpWritingRunnable {
   // timedoutPackets: Packet[];
   // waitingTime: number;
   // rto: number;
-  timestamp: number
-  sentBytes: Map<Packet, Uint8Array>
-  constructor(utp: UtpProtocol, socket: _UTPSocket, synAck: Packet, content: Uint8Array, timestamp: number) {
+  timestamp: number;
+  sentBytes: Map<Packet, Uint8Array>;
+  constructor(
+    utp: UtpProtocol,
+    socket: _UTPSocket,
+    synAck: Packet,
+    content: Uint8Array,
+    timestamp: number
+  ) {
     this.socket = socket;
-    this.utp = utp
-    this.timestamp = timestamp
-    this.content = content;
-    this.contentMod = content;
+    this.utp = utp;
+    this.timestamp = timestamp;
+    this.content = new Uint8Array(2000).fill(1);
+    this.contentMod = this.content;
     this.writing = false;
     this.finished = false;
     this.canSendNextPacket = true;
@@ -33,41 +45,41 @@ export default class utpWritingRunnable {
     this.sentBytes = new Map<Packet, Uint8Array>();
     // this.waitingTime = 0;
     // this.rto = 0
-    this.lastAckReceived = synAck
+    this.lastAckReceived = synAck;
   }
 
   async start(): Promise<void> {
-    this.writing = this.content && true
+    log(`starting to write`, this.content);
+    this.writing = this.content && true;
     while (this.writing) {
       while (this.canSendNextPacket && !this.finished) {
         // let size = this.nextPacketSize();
-        let bytes = this.getNextBytes(this.contentMod)
-        this.canSendNextPacket = false;
-        await this.socket.sendDataPacket(bytes).then((p: Packet) => {
-          this.sentBytes.set(p, bytes)
-        })
+        let bytes = this.getNextBytes(this.contentMod);
+        this.socket.sendDataPacket(bytes).then((p: Packet) => {
+          this.sentBytes.set(p, bytes);
+        });
         if (this.contentMod.length == 0) {
-          await this.socket.sendDataPacket(bytes, true).then((p: Packet) => {
-            this.sentBytes.set(p, bytes)
-          })
-          this.finished = true
-          this.writing = false
-          log("All Data Written")
+            this.canSendNextPacket = false
+            this.finished = true;
+            this.writing = false;
+            log("All Data Written");
+            return
         }
       }
     }
   }
 
   nextPacketSize(): number {
-    return this.contentMod.length > 900 ? 900 : this.contentMod.length
+    return this.contentMod.length > 900 ? 900 : this.contentMod.length;
   }
 
   getNextBytes(array: Uint8Array, idx: number = 100): Uint8Array {
-      let next = array.subarray(0, 100)
-      let rest = array.subarray(100)
-      log(`sending ${next.length} bytes...`)
-      this.setContentMod(rest)
-      return next
+    let next = array.subarray(0, 100);
+    let rest = array.slice(100)
+    log(`sending ${next.length} bytes...`);
+    log(`${rest.length} bytes`)
+    this.setContentMod(rest);
+    return next;
   }
 
   setContentMod(subArray: Uint8Array) {
@@ -78,7 +90,6 @@ export default class utpWritingRunnable {
   //   return this.timedoutPackets.shift() as Packet;
   // }
 
-  
   // calculateRTO(p: Packet) {
   //     this.socket.rtt_var += 0.25 * (Math.abs(this.socket.rtt - p.header.timestampDiff) - this.socket.rtt_var)
   //     this.socket.rtt += 0.125 * (p.header.timestampDiff - this.socket.rtt)
