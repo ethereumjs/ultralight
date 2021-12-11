@@ -10,11 +10,13 @@ export class UtpProtocol {
   portal: PortalNetwork
   sockets: Record<string, _UTPSocket>;
   client: Discv5;
+  contents: Record<string, Uint8Array>
 
   constructor(portal: PortalNetwork) {
     this.portal = portal
     this.client = portal.client;
     this.sockets = {};
+    this.contents = {}
   }
 
   // async handleUtpPacket(dstId: string, msg: Buffer) {
@@ -61,20 +63,27 @@ export class UtpProtocol {
 
   async handleIncomingConnectionRequest(
     packet: Packet,
-    dstId: string
+    dstId: string,
+    msgId: bigint
   ): Promise<void> {
     log(
       `Received incoming ST_SYN packet...uTP connection requested by ${dstId}`
     );
     let socket = new _UTPSocket(this, dstId);
     this.sockets[dstId] = socket;
-    await this.sockets[dstId].handleIncomingConnectionRequest(packet);
-    log(`uTP stream opened with ${dstId}`);
-  }
+    this.sockets[dstId].content = this.contents[dstId];
+    await this.sockets[dstId].handleIncomingConnectionRequest(packet)
+      log(`uTP stream request accepted.  Sending ACK.  Preparing to send ${this.contents}`);
+    }
 
-  async handleIncomingData(packet: Packet, dstId: string): Promise<void> {
-    log(`Receiving Data Packet from ${dstId}`);
-    await this.sockets[dstId].handleDataPacket(packet);
-    log(`Received Data Packet from ${dstId}`);
+  async handleIncomingData(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
+    log(`Receiving Utp Packet from ${dstId}`);
+    if (this.sockets[dstId]) {
+      log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0,10)}... `)
+      this.client.sendTalkResp(dstId, msgId, new Uint8Array()).then((res) => {
+        this.sockets[dstId].handleDataPacket(packet).then((res) => {
+        })
+      })
+    } 
   }
 }
