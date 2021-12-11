@@ -8,10 +8,11 @@ import {
   Wrap,
 } from "@chakra-ui/react";
 import { PortalNetwork } from "portalnetwork";
-import { randUint16 } from "portalnetwork/dist/wire/utp";
+import {
+  SubNetworkIds,
+} from "portalnetwork/dist/wire";
 import React from "react";
 
-type NodeManagerProps = {
   portal: PortalNetwork;
 };
 
@@ -30,19 +31,35 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
   };
 
   const handlePing = (nodeId: string) => {
-    portal.sendPing(nodeId);
+    portal.sendPing(
+      nodeId,
+      StateNetworkCustomDataType.serialize({ dataRadius: BigInt(1) }),
+      SubNetworkIds.StateNetworkId
+    );
   };
 
   const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(nodeId, Uint16Array.from([0, 1, 2]));
+    portal.sendFindNodes(
+      nodeId,
+      Uint16Array.from([0, 1, 2]),
+      SubNetworkIds.StateNetworkId
+    );
   };
 
   const handleFindContent = (nodeId: string) => {
-    portal.sendFindContent(nodeId, Buffer.from(contentKey, "hex"));
+    portal.sendFindContent(
+      nodeId,
+      Buffer.from(contentKey, "hex"),
+      SubNetworkIds.StateNetworkId
+    );
   };
 
   const handleOffer = (nodeId: string) => {
-    portal.sendOffer(nodeId, [new Uint8Array(16).fill(0)]);
+    portal.sendOffer(
+      nodeId,
+      [new Uint8Array(16).fill(0)],
+      SubNetworkIds.StateNetworkId
+    );
   };
 
   const handleUtpStream = (nodeId: string) => {

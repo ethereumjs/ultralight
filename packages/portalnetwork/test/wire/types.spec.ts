@@ -1,8 +1,8 @@
 
 import tape from 'tape';
-import { ContentMessageType, MessageCodes, PortalWireMessageType, StateNetworkCustomDataType } from '../src/wire/types';
+import { ContentMessageType, MessageCodes, PortalWireMessageType, StateNetworkCustomDataType } from '../../src/wire/types';
 import { ENR } from 'portalnetwork-discv5'
-import { fromHexString } from '@chainsafe/ssz';
+import { fromHexString, List } from '@chainsafe/ssz';
 
 tape('message encoding should match test vectors', (t) => {
 
@@ -73,7 +73,7 @@ tape('message encoding should match test vectors', (t) => {
 
     // Validate ACCEPT message encoding
     connectionId = Uint8Array.from([0x01, 0x02])
-    const acceptMessageContentKeys = [1, 0, 0, 0, 0, 0, 0, 0].map(val => new Boolean(val))
+    const acceptMessageContentKeys: List<Boolean> = [true, false, false, false, false, false, false, false]
     payload = PortalWireMessageType.serialize({
         selector: MessageCodes.ACCEPT, value: {
             connectionId: connectionId,
