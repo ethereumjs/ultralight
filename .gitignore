@@ -3,4 +3,4 @@ dist
 build
 lib
 package-lock.json
-
+*.tsbuildinfo

@@ -3,6 +3,7 @@
   "version": "0.6.6",
   "description": "Discovery V5",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
     "lib"
   ],
