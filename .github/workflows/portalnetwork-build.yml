@@ -31,7 +31,7 @@ jobs:
       - name: Use npm v7 for workspaces support
         run: npm i -g npm@7
 
-      - run: npm ci 
+      - run: npm i 
         working-directory: ${{ github.workspace }}
 
       - run: npm run test
