@@ -126,5 +126,5 @@ export const AcceptMessageType = new ContainerType({
     }
 })
 
-type MessageTypeUnion = | PingMessage | PongMessage | FindNodesMessage | NodesMessage | FindContentMessage | ContentMessage | OfferMessage | AcceptMessage
+export type MessageTypeUnion = | PingMessage | PongMessage | FindNodesMessage | NodesMessage | FindContentMessage | ContentMessage | OfferMessage | AcceptMessage
 export const PortalWireMessageType = new UnionType<Union<MessageTypeUnion>>({ types: [PingMessageType, PongMessageType, FindNodesMessageType, NodesMessageType, FindContentMessageType, ContentMessageType, OfferMessageType, AcceptMessageType] })

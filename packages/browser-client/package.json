@@ -19,7 +19,7 @@
     "web-vitals": "^0.2.2"
   },
   "scripts": {
-    "start": "SKIP_PREFLIGHT_CHECK=true craco start",
+    "start": "craco start",
     "build-app": "craco build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
