@@ -9,10 +9,13 @@ import {
 } from "@chakra-ui/react";
 import { PortalNetwork } from "portalnetwork";
 import {
+  StateNetworkCustomDataType,
   SubNetworkIds,
 } from "portalnetwork/dist/wire";
+import { randUint16 } from "portalnetwork/dist/wire/utp";
 import React from "react";
 
+type NodeManagerProps = {
   portal: PortalNetwork;
 };
 
