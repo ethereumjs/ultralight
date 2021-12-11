@@ -56,9 +56,10 @@ export class UtpProtocol {
     log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr + "Received ST_STATE packet from " + dstId);
     this.sockets[dstId].handleStatePacket(packet);
   }
-  async handleFin(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
+  async handleFin(packet: Packet, dstId: string, msgId: bigint): Promise<Uint8Array | undefined> {
     log("Received ST_FIN packet from " + dstId + "...uTP stream closing...");
     await this.sockets[dstId].handleFinPacket(packet, dstId, msgId);
+    return this.sockets[dstId].content
   }
 
   async handleIncomingConnectionRequest(
@@ -78,12 +79,11 @@ export class UtpProtocol {
 
   async handleIncomingData(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
     log(`Receiving Utp Packet from ${dstId}`);
-    if (this.sockets[dstId]) {
-      log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0,10)}... `)
-      this.client.sendTalkResp(dstId, msgId, new Uint8Array()).then((res) => {
-        this.sockets[dstId].handleDataPacket(packet).then((res) => {
-        })
+    this.sockets[dstId].content = Uint8Array.from([...this.sockets[dstId].content, ...packet.payload])
+    log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
+    this.client.sendTalkResp(dstId, msgId, new Uint8Array()).then((res) => {
+      this.sockets[dstId].handleDataPacket(packet).then((res) => {
       })
-    } 
+    })
   }
 }

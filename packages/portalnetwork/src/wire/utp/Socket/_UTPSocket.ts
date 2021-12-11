@@ -43,7 +43,7 @@ PacketSent.addEventListener("Packet Sent", (id) => {
 });
 
 export class _UTPSocket extends EventEmitter {
-  content: Uint8Array | undefined
+  content: Uint8Array
   remoteAddress: string;
   seqNr: number;
   client: Discv5;
@@ -92,6 +92,7 @@ export class _UTPSocket extends EventEmitter {
     this.ourDelay = 0;
     this.sendRate = 0;
     this.CCONTROL_TARGET = DELAY_TARGET;
+    this.content = Uint8Array.from([])
   }
 
   initiateAckPosition(sequenceNumber: number) {
