@@ -16,7 +16,6 @@
   "dependencies": {
     "@chainsafe/discv5": "^0.6.6",
     "@chainsafe/ssz": "^0.8.19",
-    "@types/bn.js": "^5.1.0",
     "bn.js": "^5.2.0",
     "debug": "^4.3.2",
     "tape": "^5.3.1",
@@ -28,6 +27,7 @@
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
+    "@types/bn.js": "^5.1.0",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
     "typedoc": "^0.22.5",
