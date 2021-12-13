@@ -45,19 +45,25 @@ export class ENR extends Map<ENRKey, ENRValue> {
     if (decoded.length % 2 !== 0) {
       throw new Error("Decoded ENR must have an even number of elements");
     }
-    const [signature, seq, ...kvs] = decoded;
+
+    const [signature, seq] = decoded;
     if (!signature || Array.isArray(signature)) {
       throw new Error("Decoded ENR invalid signature: must be a byte array");
     }
     if (!seq || Array.isArray(seq)) {
       throw new Error("Decoded ENR invalid sequence number: must be a byte array");
     }
+
     const obj: Record<ENRKey, ENRValue> = {};
-    for (let i = 0; i < kvs.length; i += 2) {
-      obj[kvs[i].toString()] = Buffer.from(kvs[i + 1]);
+    const signed: Buffer[] = [seq];
+    for (let i = 2; i < decoded.length; i += 2) {
+      const k = decoded[i];
+      const v = decoded[i + 1];
+      obj[k.toString()] = Buffer.from(v);
+      signed.push(k, v);
     }
     const enr = new ENR(obj, toBigIntBE(seq), signature);
-    if (!enr.verify(RLP.encode([seq, ...kvs]), signature)) {
+    if (!enr.verify(RLP.encode(signed), signature)) {
       throw new Error("Unable to verify enr signature");
     }
     return enr;

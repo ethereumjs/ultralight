@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Multiaddr } from "multiaddr";
-import { createNodeId } from "../../src/enr";
-import {AddrVotes} from "../../src/service/addrVotes";
+import { createNodeId } from "../../../src/enr";
+import {AddrVotes} from "../../../src/service/addrVotes";
 
 describe("AddrVotes", () => {
   let addVotes: AddrVotes;

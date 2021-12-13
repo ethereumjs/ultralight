@@ -1,11 +1,6 @@
-import { Multiaddr } from "multiaddr";
-
-import { NodeId, ENR, SequenceNumber } from "../enr";
-import { SessionState, TrustedState, IKeys, ISessionState } from "./types";
+import { NodeId, ENR } from "../enr";
+import { IKeys } from "./types";
 import {
-  createRandomPacket,
-  createWhoAreYouPacket,
-  IHandshakeAuthdata,
   IPacket,
   PacketType,
   encodeHandshakeAuthdata,
@@ -17,6 +12,9 @@ import {
 import { generateSessionKeys, deriveKeysFromPubkey, decryptMessage, encryptMessage, idSign, idVerify } from "./crypto";
 import { IKeypair } from "../keypair";
 import { randomBytes } from "crypto";
+import { RequestId } from "../message";
+import { IChallenge } from ".";
+import { getNodeId, NodeContact } from "./nodeInfo";
 
 // The `Session` struct handles the stages of creating and establishing a handshake with a
 // peer.
@@ -31,84 +29,35 @@ import { randomBytes } from "crypto";
 // This `Session` module is responsible for generating, deriving and holding keys for sessions for known peers.
 
 interface ISessionOpts {
-  state: ISessionState;
-  trusted: TrustedState;
-  remoteEnr?: ENR;
-  lastSeenMultiaddr: Multiaddr;
+  keys: IKeys;
 }
 
 const ERR_NO_ENR = "No available session ENR";
-const ERR_INVALID_SIG = "Invalid signature";
+export const ERR_INVALID_SIG = "Invalid signature";
 
 /**
- * Manages active handshakes and connections between nodes in discv5.
- * There are three main states a session can be in,
- *  Initializing (`WhoAreYouSent` or `RandomSent`),
- *  Untrusted (when the socket address of the ENR doesn't match the `lastSeenSocket`) and
- *  Established (the session has been successfully established).
+ * A Session containing the encryption/decryption keys. These are kept individually for a given
+ * node.
  */
 export class Session {
+  /** The current keys used to encrypt/decrypt messages. */
+  keys: IKeys;
   /**
-   * The current state of the Session
+   * If a new handshake is being established, these keys can be tried to determine if this new
+   * set of keys is canon.
    */
-  state: ISessionState;
+  awaitingKeys?: IKeys;
   /**
-   * Whether the last seen socket address of the peer matches its known ENR.
-   * If it does not, the session is considered untrusted, and outgoing messages are not sent.
+   * If we contacted this node without an ENR, i.e. via a multiaddr, during the session
+   * establishment we request the nodes ENR. Once the ENR is received and verified, this session
+   * becomes established.
+   *
+   * This field holds the request_id associated with the ENR request.
    */
-  trusted: TrustedState;
-  /**
-   * The ENR of the remote node. This may be unknown during `WhoAreYouSent` states.
-   */
-  remoteEnr: ENR | null | undefined;
-  /**
-   * Last seen IP address and port. This is used to determine if the session is trusted or not.
-   */
-  lastSeenMultiaddr: Multiaddr;
-  /**
-   * The delay when this session expires
-   */
-  timeout: number;
-  constructor({ state, trusted, remoteEnr, lastSeenMultiaddr }: ISessionOpts) {
-    this.state = state;
-    this.trusted = trusted;
-    this.remoteEnr = remoteEnr;
-    this.lastSeenMultiaddr = lastSeenMultiaddr;
-    this.timeout = 0;
-  }
+  awaitingEnr?: RequestId;
 
-  /**
-   * Creates a new `Session` instance and generates a RANDOM packet to be sent along with this
-   * session being established. This session is set to `RandomSent` state.
-   */
-  static createWithRandom(localId: NodeId, remoteEnr: ENR): [Session, IPacket] {
-    return [
-      new Session({
-        state: { state: SessionState.RandomSent },
-        trusted: TrustedState.Untrusted,
-        remoteEnr,
-        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/udp/0"),
-      }),
-      createRandomPacket(localId),
-    ];
-  }
-
-  /**
-   * Creates a new `Session` and generates an associated WHOAREYOU packet.
-   * The returned session is in the `WhoAreYouSent` state.
-   */
-  static createWithWhoAreYou(nonce: Buffer, enrSeq: SequenceNumber, remoteEnr: ENR | null): [Session, IPacket] {
-    const packet = createWhoAreYouPacket(nonce, enrSeq);
-    const challengeData = encodeChallengeData(packet.maskingIv, packet.header);
-    return [
-      new Session({
-        state: { state: SessionState.WhoAreYouSent, challengeData },
-        trusted: TrustedState.Untrusted,
-        remoteEnr: remoteEnr as ENR,
-        lastSeenMultiaddr: new Multiaddr("/ip4/0.0.0.0/udp/0"),
-      }),
-      packet,
-    ];
+  constructor({ keys }: ISessionOpts) {
+    this.keys = keys;
   }
 
   /**
@@ -116,70 +65,70 @@ export class Session {
    * If the IP of the ENR does not match the source IP address, the session is considered untrusted.
    * The output returns a boolean which specifies if the Session is trusted or not.
    */
-  establishFromHandshake(kpriv: IKeypair, localId: NodeId, remoteId: NodeId, authdata: IHandshakeAuthdata): boolean {
-    if (this.state.state !== SessionState.WhoAreYouSent) {
-      throw new Error("Session must be in WHOAREYOU-sent state");
-    }
-    const challengeData = this.state.challengeData;
-    const [decryptionKey, encryptionKey] = deriveKeysFromPubkey(
-      kpriv,
-      localId,
-      remoteId,
-      authdata.ephPubkey,
-      challengeData
-    );
-    const keys = { encryptionKey, decryptionKey };
-
-    // update ENR if applicable
-    if (authdata.record) {
-      const newRemoteEnr = ENR.decode(authdata.record);
-      if (this.remoteEnr) {
-        if (this.remoteEnr.seq < newRemoteEnr.seq) {
-          this.remoteEnr = newRemoteEnr;
-        } // else don't update
+  static establishFromChallenge(
+    localKey: IKeypair,
+    localId: NodeId,
+    remoteId: NodeId,
+    challenge: IChallenge,
+    idSignature: Buffer,
+    ephPubkey: Buffer,
+    enrRecord?: Buffer
+  ): [Session, ENR] {
+    let enr: ENR;
+    // check and verify a potential ENR update
+    if (enrRecord && enrRecord.length) {
+      const newRemoteEnr = ENR.decode(enrRecord);
+      if (challenge.remoteEnr) {
+        if (challenge.remoteEnr.seq < newRemoteEnr.seq) {
+          enr = newRemoteEnr;
+        } else {
+          enr = challenge.remoteEnr;
+        }
       } else {
-        this.remoteEnr = newRemoteEnr;
+        enr = newRemoteEnr;
       }
-    }
-
-    if (!this.remoteEnr) {
+    } else if (challenge.remoteEnr) {
+      enr = challenge.remoteEnr;
+    } else {
       throw new Error(ERR_NO_ENR);
     }
-    if (!idVerify(this.remoteEnr.keypair, challengeData, authdata.ephPubkey, localId, authdata.idSignature)) {
+
+    // verify the auth header nonce
+    if (!idVerify(enr.keypair, challenge.data, ephPubkey, localId, idSignature)) {
       throw new Error(ERR_INVALID_SIG);
     }
 
-    this.state = {
-      state: SessionState.Established,
-      currentKeys: keys,
-    };
+    // The keys are derived after the message has been verified to prevent potential extra work
+    // for invalid messages.
 
-    return this.updateTrusted();
+    // generate session keys
+    const [decryptionKey, encryptionKey] = deriveKeysFromPubkey(localKey, localId, remoteId, ephPubkey, challenge.data);
+    const keys = { encryptionKey, decryptionKey };
+
+    return [new Session({ keys }), enr];
   }
 
   /**
    * Encrypts a message and produces an handshake packet.
    */
-  encryptWithHandshake(
-    kpriv: IKeypair,
-    challengeData: Buffer,
-    srcId: NodeId,
+  static encryptWithHeader(
+    remoteContact: NodeContact,
+    localKey: IKeypair,
+    localNodeId: NodeId,
     updatedEnr: Buffer | null,
+    challengeData: Buffer,
     message: Buffer
-  ): IPacket {
-    if (!this.remoteEnr) {
-      throw new Error(ERR_NO_ENR);
-    }
+  ): [IPacket, Session] {
     // generate session keys
-    const [encryptionKey, decryptionKey, ephPubkey] = generateSessionKeys(srcId, this.remoteEnr as ENR, challengeData);
+    const [encryptionKey, decryptionKey, ephPubkey] = generateSessionKeys(localNodeId, remoteContact, challengeData);
     const keys = { encryptionKey, decryptionKey };
 
-    // create idSignature
-    const idSignature = idSign(kpriv, challengeData, ephPubkey, this.remoteEnr.nodeId);
+    // construct nonce signature
+    const idSignature = idSign(localKey, challengeData, ephPubkey, getNodeId(remoteContact));
 
     // create authdata
     const authdata = encodeHandshakeAuthdata({
-      srcId,
+      srcId: localNodeId,
       sigSize: 64,
       ephKeySize: 33,
       idSignature,
@@ -193,28 +142,23 @@ export class Session {
 
     // encrypt the message
     const messageCiphertext = encryptMessage(keys.encryptionKey, header.nonce, message, aad);
-    // update session state
-    switch (this.state.state) {
-      case SessionState.Established:
-        this.state = {
-          state: SessionState.EstablishedAwaitingResponse,
-          currentKeys: this.state.currentKeys,
-          newKeys: keys,
-        };
-        break;
-      case SessionState.Poisoned:
-        throw new Error("Coding error if this is possible");
-      default:
-        this.state = {
-          state: SessionState.AwaitingResponse,
-          currentKeys: keys,
-        };
-    }
-    return {
-      maskingIv,
-      header,
-      message: messageCiphertext,
-    };
+
+    return [
+      {
+        maskingIv,
+        header,
+        message: messageCiphertext,
+      },
+      new Session({ keys }),
+    ];
+  }
+
+  /**
+   * A new session has been established. Update this session based on the new session.
+   */
+  update(newSession: Session): void {
+    this.awaitingKeys = newSession.keys;
+    this.awaitingEnr = newSession.awaitingEnr;
   }
 
   /**
@@ -227,15 +171,7 @@ export class Session {
     const header = createHeader(PacketType.Message, authdata);
     const maskingIv = randomBytes(MASKING_IV_SIZE);
     const aad = encodeChallengeData(maskingIv, header);
-    let ciphertext: Buffer;
-    switch (this.state.state) {
-      case SessionState.Established:
-      case SessionState.EstablishedAwaitingResponse:
-        ciphertext = encryptMessage(this.state.currentKeys.encryptionKey, header.nonce, message, aad);
-        break;
-      default:
-        throw new Error("Session not established");
-    }
+    const ciphertext = encryptMessage(this.keys.encryptionKey, header.nonce, message, aad);
     return {
       maskingIv,
       header,
@@ -250,99 +186,18 @@ export class Session {
    * the session keys are updated along with the Session state.
    */
   decryptMessage(nonce: Buffer, message: Buffer, aad: Buffer): Buffer {
-    if (!this.remoteEnr) {
-      throw new Error(ERR_NO_ENR);
-    }
-    let result: Buffer;
-    let keys: IKeys;
-    switch (this.state.state) {
-      case SessionState.AwaitingResponse:
-      case SessionState.Established:
-        result = decryptMessage(this.state.currentKeys.decryptionKey, nonce, message, aad);
-        keys = this.state.currentKeys;
-        break;
-      case SessionState.EstablishedAwaitingResponse:
-        // first try current keys, then new keys
-        try {
-          result = decryptMessage(this.state.currentKeys.decryptionKey, nonce, message, aad);
-          keys = this.state.currentKeys;
-        } catch (e) {
-          result = decryptMessage(this.state.newKeys.decryptionKey, nonce, message, aad);
-          keys = this.state.newKeys;
-        }
-        break;
-      case SessionState.RandomSent:
-      case SessionState.WhoAreYouSent:
-        throw new Error("Session not established");
-      default:
-        throw new Error("Unreachable");
-    }
-    this.state = {
-      state: SessionState.Established,
-      currentKeys: keys,
-    };
-    return result;
-  }
-
-  /**
-   * Returns true if the Session has been promoted
-   */
-  updateEnr(enr: ENR): boolean {
-    if (this.remoteEnr) {
-      if (this.remoteEnr.seq < enr.seq) {
-        this.remoteEnr = enr;
-        return this.updateTrusted();
+    // try with the new keys
+    if (this.awaitingKeys) {
+      const newKeys = this.awaitingKeys;
+      delete this.awaitingKeys;
+      try {
+        const result = decryptMessage(newKeys.decryptionKey, nonce, message, aad);
+        this.keys = newKeys;
+        return result;
+      } catch (e) {
+        //
       }
     }
-    return false;
-  }
-
-  /**
-   * Updates the trusted status of a Session.
-   * It can be promoted to an `established` state, or demoted to an `untrusted` state.
-   * This value returns true if the Session has been promoted.
-   */
-  updateTrusted(): boolean {
-    if (this.remoteEnr) {
-      const hasSameMultiaddr = (multiaddr: Multiaddr, enr: ENR): boolean => {
-        const enrMultiaddr = enr.getLocationMultiaddr("udp");
-        return enrMultiaddr ? enrMultiaddr.equals(multiaddr) : false;
-      };
-      switch (this.trusted) {
-        case TrustedState.Untrusted:
-          if (hasSameMultiaddr(this.lastSeenMultiaddr, this.remoteEnr)) {
-            this.trusted = TrustedState.Trusted;
-            return true;
-          }
-          break;
-        case TrustedState.Trusted:
-          if (!hasSameMultiaddr(this.lastSeenMultiaddr, this.remoteEnr)) {
-            this.trusted = TrustedState.Untrusted;
-          }
-      }
-    }
-    return false;
-  }
-
-  isTrusted(): boolean {
-    return this.trusted === TrustedState.Trusted;
-  }
-
-  /**
-   * Returns true if the Session is trusted and has established session keys.
-   * This state means the session is capable of sending requests.
-   */
-  trustedEstablished(): boolean {
-    switch (this.state.state) {
-      case SessionState.WhoAreYouSent:
-      case SessionState.RandomSent:
-      case SessionState.AwaitingResponse:
-        return false;
-      case SessionState.Established:
-      case SessionState.EstablishedAwaitingResponse:
-        return true;
-      default:
-        throw new Error("Unreachable");
-    }
+    return decryptMessage(this.keys.decryptionKey, nonce, message, aad);
   }
 }

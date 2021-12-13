@@ -19,11 +19,12 @@ export type IDiscv5Config = ISessionConfig &
   };
 
 export const defaultConfig: IDiscv5Config = {
+  addrVotesToUpdateEnr: 10,
   requestTimeout: 1 * 1000,
   requestRetries: 1,
   sessionTimeout: 86400 * 1000, // 1 day
   sessionEstablishTimeout: 15 * 1000,
-  addrVotesToUpdateEnr: 10,
+  sessionCacheCapacity: 2000,
   lookupParallelism: 3,
   lookupRequestLimit: 3,
   lookupNumResults: 16,

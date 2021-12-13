@@ -2,13 +2,14 @@
 import { expect } from "chai";
 import { Multiaddr } from "multiaddr";
 
-import { createKeypair, KeypairType } from "../../src/keypair";
-import { ENR } from "../../src/enr";
-import { createWhoAreYouPacket, IPacket, PacketType } from "../../src/packet";
-import { UDPTransportService } from "../../src/transport";
-import { SessionService } from "../../src/session";
-import { createFindNodeMessage } from "../../src/message";
-import { defaultConfig } from "../../src/config";
+import { createKeypair, KeypairType } from "../../../src/keypair";
+import { ENR } from "../../../src/enr";
+import { createWhoAreYouPacket, IPacket, PacketType } from "../../../src/packet";
+import { UDPTransportService } from "../../../src/transport";
+import { SessionService } from "../../../src/session";
+import { createFindNodeMessage } from "../../../src/message";
+import { defaultConfig } from "../../../src/config";
+import { createNodeContact } from "../../../src/session/nodeInfo";
 
 describe("session service", () => {
   const kp0 = createKeypair(
@@ -54,14 +55,14 @@ describe("session service", () => {
   });
 
   it("should negotiate a session and receive a message from a cold sender (a->RandomPacket -> b->WhoAreYou -> a->Handshake)", async () => {
-    const receivedRandom = new Promise((resolve) =>
+    const receivedRandom = new Promise<void>((resolve) =>
       transport1.once("packet", (sender: Multiaddr, data: IPacket) => {
         expect(sender.toString()).to.equal(addr0.toString());
         expect(data.header.flag).to.equal(PacketType.Message);
         resolve();
       })
     );
-    const receivedWhoAreYou = new Promise((resolve) =>
+    const receivedWhoAreYou = new Promise<void>((resolve) =>
       transport0.once("packet", (sender: Multiaddr, data: IPacket) => {
         expect(sender.toString()).to.equal(addr1.toString());
         expect(data.header.flag).to.equal(PacketType.WhoAreYou);
@@ -69,21 +70,21 @@ describe("session service", () => {
       })
     );
     // send a who are you when requested
-    service1.on("whoAreYouRequest", (srcId, src, authTag) => {
-      service1.sendWhoAreYou(src, srcId, BigInt(0), enr0, authTag);
+    service1.on("whoAreYouRequest", (nodeAddr, authTag) => {
+      service1.sendChallenge(nodeAddr, authTag, enr0);
     });
-    const establishedSession = new Promise((resolve) =>
+    const establishedSession = new Promise<void>((resolve) =>
       service1.once("established", (enr) => {
         expect(enr).to.deep.equal(enr0);
         resolve();
       })
     );
-    const receivedMsg = new Promise((resolve) =>
-      service1.once("message", (srcId, src, message) => {
+    const receivedMsg = new Promise<void>((resolve) =>
+      service1.once("request", (nodeAddr, request) => {
         resolve();
       })
     );
-    service0.sendRequest(enr1, createFindNodeMessage([0]));
+    service0.sendRequest(createNodeContact(enr1), createFindNodeMessage([0]));
     await Promise.all([receivedRandom, receivedWhoAreYou, establishedSession, receivedMsg]);
   });
   it("receiver should drop WhoAreYou packets from destinations without existing pending requests", async () => {

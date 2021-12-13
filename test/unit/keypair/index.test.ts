@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import PeerId from "peer-id";
 import { keys } from "libp2p-crypto";
-import { createPeerIdFromKeypair, generateKeypair, KeypairType } from "../../src/keypair";
+import { createPeerIdFromKeypair, generateKeypair, KeypairType } from "../../../src/keypair";
 const { keysPBM, supportedKeys } = keys;
 
 describe("createPeerIdFromKeypair", function() {

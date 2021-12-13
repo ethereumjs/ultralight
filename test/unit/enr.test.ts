@@ -2,7 +2,7 @@
 import { expect } from "chai";
 import { Multiaddr } from "multiaddr";
 import PeerId from "peer-id";
-import { ENR, v4 } from "../src/enr";
+import { ENR, v4 } from "../../src/enr";
 
 describe("ENR", () => {
   let seq: bigint;

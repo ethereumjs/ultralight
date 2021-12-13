@@ -1,10 +1,11 @@
 import { EventEmitter } from "events";
 
 import { Bucket } from "./bucket";
-import { EntryStatus, IEntryFull, BucketEventEmitter } from "./types";
+import { EntryStatus, IEntryFull, BucketEventEmitter, IEntry, InsertResult } from "./types";
 import { NodeId, ENR } from "../enr";
 import { NUM_BUCKETS, PENDING_TIMEOUT } from "./constants";
 import { log2Distance } from "./util";
+import { UpdateResult } from ".";
 
 /**
  * A Kademlia routing table, for storing ENRs based on their NodeIds
@@ -17,8 +18,6 @@ import { log2Distance } from "./util";
  */
 export class KademliaRoutingTable extends (EventEmitter as { new (): BucketEventEmitter }) {
   localId: NodeId;
-  k: number;
-  size: number;
   buckets: Bucket[];
 
   /**
@@ -27,70 +26,156 @@ export class KademliaRoutingTable extends (EventEmitter as { new (): BucketEvent
    * @param localId the ID of the local node
    * @param k the size of each bucket (k value)
    */
-  constructor(localId: NodeId, k: number) {
+  constructor(localId: NodeId) {
     super();
-    if (k <= 0) {
-      throw new Error("k must be positive");
-    }
     this.localId = localId;
-    this.k = k;
-    this.size = 0;
-    this.buckets = Array.from({ length: NUM_BUCKETS }, () => new Bucket(this.k, PENDING_TIMEOUT));
+    this.buckets = Array.from({ length: NUM_BUCKETS }, () => new Bucket(PENDING_TIMEOUT));
     this.buckets.forEach((bucket) => {
       bucket.on("pendingEviction", (enr: ENR) => this.emit("pendingEviction", enr));
       bucket.on("appliedEviction", (inserted: ENR, evicted?: ENR) => this.emit("appliedEviction", inserted, evicted));
     });
   }
 
+  get size(): number {
+    return this.buckets.reduce((acc, bucket) => acc + bucket.size(), 0);
+  }
+
   isEmpty(): boolean {
     return this.size == 0;
   }
 
-  add(value: ENR, status: EntryStatus = EntryStatus.Disconnected): boolean {
-    const bucket = this.bucketForValue(value);
-    const added = bucket.add(value, status);
-    if (added) {
-      this.size += 1;
-    }
-    return added;
-  }
-
   clear(): void {
     this.buckets.forEach((bucket) => bucket && bucket.clear());
-    this.size = 0;
   }
 
-  removeById(id: NodeId): ENR | undefined {
+  /**
+   * Removes a node from the routing table.
+   *
+   * Returns the entry if it existed.
+   */
+  removeById(id: NodeId): IEntry<ENR> | undefined {
     const bucket = this.bucketForId(id);
-    const removed = bucket.removeById(id);
-    if (removed) {
-      this.size -= 1;
-    }
-    return removed;
+    return bucket.removeById(id);
   }
 
-  remove(value: ENR): ENR | undefined {
+  /**
+   * Removes a node from the routing table.
+   *
+   * Returns the entry if it existed.
+   */
+  remove(value: ENR): IEntry<ENR> | undefined {
     const bucket = this.bucketForValue(value);
-    const removed = bucket.remove(value);
-    if (removed) {
-      this.size -= 1;
+    return bucket.remove(value);
+  }
+
+  /**
+   * Updates a node's status if it exists in the table.
+   */
+  updateStatus(id: NodeId, status: EntryStatus): UpdateResult {
+    if (this.localId === id) {
+      return UpdateResult.NotModified;
     }
-    return removed;
-  }
-
-  updateValue(value: ENR): boolean {
-    const bucket = this.bucketForValue(value);
-    return bucket.updateValue(value);
-  }
-
-  updateStatus(id: NodeId, status: EntryStatus): boolean {
     const bucket = this.bucketForId(id);
     return bucket.updateStatus(id, status);
   }
 
-  update(value: ENR, status: EntryStatus): boolean {
+  /**
+   * Updates a node's value if it exists in the table.
+   *
+   * Optionally the connection state can be modified.
+   */
+  update(value: ENR, status?: EntryStatus): UpdateResult {
+    if (this.localId === value.nodeId) {
+      return UpdateResult.NotModified;
+    }
     const bucket = this.bucketForValue(value);
-    return bucket.update(value, status);
+
+    const updateResult = bucket.updateValue(value);
+    switch (updateResult) {
+      case UpdateResult.FailedBucketFull:
+      case UpdateResult.FailedKeyNonExistant:
+        return updateResult;
+    }
+
+    if (status === undefined) {
+      return updateResult;
+    }
+
+    const statusResult = bucket.updateStatus(value.nodeId, status);
+    switch (statusResult) {
+      case UpdateResult.FailedBucketFull:
+      case UpdateResult.FailedKeyNonExistant:
+      case UpdateResult.UpdatedAndPromoted:
+      case UpdateResult.UpdatedPending:
+        return statusResult;
+    }
+
+    if (
+      updateResult === UpdateResult.UpdatedPending ||
+      (updateResult === UpdateResult.NotModified && statusResult === UpdateResult.NotModified)
+    ) {
+      return updateResult;
+    } else {
+      return UpdateResult.Updated;
+    }
+  }
+
+  /**
+   * Attempts to insert or update
+   */
+  insertOrUpdate(value: ENR, status: EntryStatus): InsertResult {
+    const id = value.nodeId;
+    if (this.localId === id) {
+      return InsertResult.FailedInvalidSelfUpdate;
+    }
+    const bucket = this.bucketForValue(value);
+
+    if (!bucket.get(id)) {
+      return bucket.add(value, status);
+    } else {
+      // The node exists in the bucket
+      // Attempt to update the status
+      const updateStatus = bucket.updateStatus(id, status);
+
+      // If there was a failure state, we'd return early
+      // but the only failure we have is a full bucket (which can't happen here)
+
+      // Attempt to update the value
+      const updateValue = bucket.updateValue(value);
+
+      if (updateValue === UpdateResult.Updated && updateStatus === UpdateResult.Updated) {
+        return InsertResult.Updated;
+      }
+
+      if (updateValue === UpdateResult.Updated && updateStatus === UpdateResult.UpdatedAndPromoted) {
+        return InsertResult.UpdatedAndPromoted;
+      }
+
+      if (
+        (updateValue === UpdateResult.Updated && updateStatus === UpdateResult.NotModified) ||
+        (updateValue === UpdateResult.Updated && updateStatus === UpdateResult.UpdatedPending)
+      ) {
+        return InsertResult.ValueUpdated;
+      }
+
+      if (updateValue === UpdateResult.NotModified && updateStatus === UpdateResult.Updated) {
+        return InsertResult.StatusUpdated;
+      }
+
+      if (updateValue === UpdateResult.NotModified && updateStatus === UpdateResult.UpdatedAndPromoted) {
+        return InsertResult.StatusUpdatedAndPromoted;
+      }
+
+      if (updateValue === UpdateResult.NotModified && updateStatus === UpdateResult.NotModified) {
+        return InsertResult.Updated;
+      }
+
+      if (updateValue === UpdateResult.UpdatedPending && updateStatus === UpdateResult.UpdatedPending) {
+        return InsertResult.UpdatedPending;
+      }
+
+      throw new Error("Unreachable");
+    }
   }
 
   /**
@@ -129,6 +214,13 @@ export class KademliaRoutingTable extends (EventEmitter as { new (): BucketEvent
     return this.buckets
       .filter((bucket) => !bucket.isEmpty())
       .map((bucket) => bucket.values())
+      .flat();
+  }
+
+  rawValues(): IEntry<ENR>[] {
+    return this.buckets
+      .filter((bucket) => !bucket.isEmpty())
+      .map((bucket) => bucket.rawValues())
       .flat();
   }
 
