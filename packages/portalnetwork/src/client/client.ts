@@ -90,6 +90,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         catch (err: any) {
             this.log(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
+            this.updateSubnetworkRoutingTable(dstId, networkId)
         }
     }
 
@@ -338,20 +339,31 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
     }
 
-    private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload: any): void => {
+    private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload?: any): void => {
         switch (networkId) {
             case SubNetworkIds.StateNetworkId: {
+                if (!customPayload) {
+                    this.stateNetworkRoutingTable.removeById(srcId);
+                    this.stateNetworkRoutingTable.removeFromRadiusMap(srcId)
+                    this.log(`removed ${srcId} from State Network Routing Table`)
+                    return
+                }
                 const enr = this.client.getKadValue(srcId);
                 this.log(`adding ${srcId} to stateNetwork routing table`)
                 if (enr) {
                     this.stateNetworkRoutingTable.add(enr);
                     const decodedPayload = StateNetworkCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.dataRadius)
-                    console.log(this.stateNetworkRoutingTable)
                 }
-                break;
+                return;
             }
             case SubNetworkIds.HistoryNetworkId: {
+                if (!customPayload) {
+                    this.historyNetworkRoutingTable.removeById(srcId);
+                    this.historyNetworkRoutingTable.removeFromRadiusMap(srcId)
+                    this.log(`removed ${srcId} from History Network Routing Table`)
+                    return
+                }
                 const enr = this.client.getKadValue(srcId);
                 this.log(`adding ${srcId} to historyNetwork routing table`)
                 if (enr) {
@@ -359,7 +371,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     const decodedPayload = StateNetworkCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.dataRadius)
                 }
-                break;
+                return;
             }
         }
     }
