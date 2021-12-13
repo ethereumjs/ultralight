@@ -1,4 +1,4 @@
-import { ENR } from "portalnetwork-discv5";
+import { ENR } from "@chainsafe/discv5";
 import { Button } from "@chakra-ui/button";
 import PeerId from "peer-id";
 import { PortalNetwork } from "portalnetwork";

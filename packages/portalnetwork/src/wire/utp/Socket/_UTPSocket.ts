@@ -18,7 +18,7 @@ import dgram from 'dgram'
 import { ConnectionState } from ".";
 
 import EventEmitter from "events";
-import { Discv5 } from "portalnetwork-discv5";
+import { Discv5 } from "@chainsafe/discv5";
 import assert from "assert";
 import { fromHexString } from "@chainsafe/ssz";
 import { ContentMessageType, MessageCodes, PortalWireMessageType, SubNetworkIds } from "../..";

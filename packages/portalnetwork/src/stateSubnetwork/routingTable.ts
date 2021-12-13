@@ -1,5 +1,5 @@
 import { BN } from 'bn.js';
-import { ENR, KademliaRoutingTable, NodeId } from 'portalnetwork-discv5'
+import { ENR, KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
 import { distance } from './util'
 
 

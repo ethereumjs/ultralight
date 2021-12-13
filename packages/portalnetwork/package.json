@@ -14,7 +14,7 @@
   "author": "acolytec3",
   "license": "MIT",
   "dependencies": {
-    "portalnetwork-discv5": "^0.6.6",
+    "@chainsafe/discv5": "^0.6.6",
     "@chainsafe/ssz": "^0.8.19",
     "@types/bn.js": "^5.1.0",
     "bn.js": "^5.2.0",
