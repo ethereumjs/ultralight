@@ -66,7 +66,6 @@ export class WebSocketTransportService
   }
 
   public async stop(): Promise<void> {
-    console.log('testing the subtree')
     await this.socket.close();
   }
 
