@@ -109,7 +109,7 @@ export class _UTPSocket extends EventEmitter {
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encodePacket();
-      this.client.sendTalkReqSync(
+    void this.client.sendTalkReq(
         this.remoteAddress,
 msg,
         fromHexString(SubNetworkIds.UTPNetworkId)
