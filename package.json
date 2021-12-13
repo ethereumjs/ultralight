@@ -1,18 +1,18 @@
 {
-	"name": "ultralight",
-	"private":true,
-	"workspaces": [
-		"./packages/*"
-	],
-	"engines": {
-		"npm": ">=7"
-	},
-	"scripts": {    
-		"preinstall": "npm run checkNpmVersion",
-		"checkNpmVersion": "bash ./scripts/check-npm-version.sh",
-		"postinstall": "npm run build --workspaces --if-present",
-		"start-proxy": "npm run proxy -w=proxy",
-		"start-browser-client": "npm run start -w=browser-client",
-		"start-dev-everything": "npm run start-proxy & npm run start-browser-client & npm run dev -w=portalnetwork"
-	}
+  "name": "ultralight",
+  "private": true,
+  "workspaces": [
+    "./packages/*"
+  ],
+  "engines": {
+    "npm": ">=7"
+  },
+  "scripts": {
+    "preinstall": "npm run checkNpmVersion",
+    "checkNpmVersion": "bash ./scripts/check-npm-version.sh",
+    "postinstall": "npm run build --workspaces --if-present",
+    "start-proxy": "npm run proxy -w=proxy",
+    "start-browser-client": "npm run start -w=browser-client",
+    "start-dev-everything": "npm run start-proxy & npm run start-browser-client & npm run dev -w=portalnetwork"
+  }
 }

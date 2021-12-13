@@ -10,7 +10,8 @@ import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
  */
 export class UDPTransportService
   extends (EventEmitter as { new (): TransportEventEmitter })
-  implements ITransportService {
+  implements ITransportService
+{
   public multiaddr: Multiaddr;
   private socket!: dgram.Socket;
   private srcId: string;

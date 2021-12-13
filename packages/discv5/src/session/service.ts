@@ -3,7 +3,7 @@ import StrictEventEmitter from "strict-event-emitter-types";
 import debug from "debug";
 import { Multiaddr } from "multiaddr";
 
-import { ITransportService } from "../transport";
+import { ITransportService, WebSocketTransportService } from "../transport";
 import {
   PacketType,
   IPacket,
@@ -92,20 +92,21 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   }
 
   /**
-   * Starts the session service, starting the underlying UDP transport service.
+   * Starts the session service, starting the underlying transport service.
    */
   public async start(): Promise<void> {
     log(`Starting session service with node id ${this.enr.nodeId}`);
     this.transport.on("packet", this.onPacket);
+    this.transport.on("decodeError", (err, ma) => log("Error processing packet", err, ma));
     await this.transport.start();
   }
 
   /**
-   * Stops the session service, stopping the underlying UDP transport service.
+   * Stops the session service, stopping the underlying transport service.
    */
   public async stop(): Promise<void> {
     log("Stopping session service");
-    this.transport.removeListener("packet", this.onPacket);
+    this.transport.removeAllListeners();
     await this.transport.stop();
     for (const requestMap of this.pendingRequests.values()) {
       requestMap.clear();
@@ -135,9 +136,11 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public sendRequest(dstEnr: ENR, message: RequestMessage): void {
     const dstId = dstEnr.nodeId;
-    const dst = dstEnr.getLocationMultiaddr("udp");
+    const transport = this.transport instanceof WebSocketTransportService ? "udp" : "udp";
+    const dst = dstEnr.getLocationMultiaddr(transport);
+
     if (!dst) {
-      throw new Error("ENR must have udp socket data");
+      throw new Error(`ENR must have ${transport} socket data`);
     }
     const session = this.sessions.get(dstId);
     if (!session) {
@@ -221,7 +224,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     try {
       authdata = decodeWhoAreYouAuthdata(packet.header.authdata);
     } catch (e) {
-      log("Cannot decode WHOAREYOU authdata from %s: %s", src, e);
+      log("Cannot decode WHOAREYOU authdata from %s: %s", src.toString(), e);
       return;
     }
     const nonce = packet.header.nonce;
@@ -230,7 +233,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     if (!pendingRequests) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
-        "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
+        "Received a WHOAREYOU packet that references an unknown or expired request - no pending requests. source: %s, token: %s",
         srcStr,
         nonce.toString("hex")
       );
@@ -240,7 +243,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     if (!request) {
       // Received a WHOAREYOU packet that references an unknown or expired request.
       log(
-        "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
+        "Received a WHOAREYOU packet that references an unknown or expired request - nonce not found. source: %s, token: %s",
         srcStr,
         nonce.toString("hex")
       );
@@ -251,7 +254,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     }
     pendingRequests.delete(request.message ? request.message.id : 0n);
 
-    log("Received a WHOAREYOU packet. source: %s", src);
+    log("Received a WHOAREYOU packet. source: %s", src.toString());
 
     // This is an assumed NodeId. We sent the packet to this NodeId and can only verify it against the
     // originating IP address. We assume it comes from this NodeId.
@@ -316,7 +319,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       return;
     }
 
-    log("Sending authentication message: %O to node: %s on %s", message, srcId, src);
+    log("Sending authentication message: %O to node: %s on %s", message, srcId, src.toString());
 
     // send the response
     this.processRequest(srcId, src, handshakePacket, message);
@@ -415,7 +418,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     const session = this.sessions.get(srcId);
     if (!session) {
       // Received a message without a session.
-      log("Received a message without a session. from: %s at %s", srcId, src);
+      log("Received a message without a session. from: %s at %s", srcId, src.toString());
       log("Requesting a WHOAREYOU packet to be sent.");
 
       // spawn a WHOAREYOU event to check for highest known ENR
@@ -494,6 +497,7 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
   }
 
   public onPacket = (src: Multiaddr, packet: IPacket): void => {
+    log("packet received from ", src.toString());
     switch (packet.header.flag) {
       case PacketType.WhoAreYou:
         return this.onWhoAreYou(src, packet);
