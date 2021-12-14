@@ -408,19 +408,6 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   }
 
   /**
-   * Send TALKREQ message to dstId
-   */
-  public sendTalkReqSync(dstId: string, payload: Buffer, protocol: string | Uint8Array): void {
-    const msg = createTalkRequestMessage(payload, protocol);
-    const sendStatus = this.sendRequest(dstId, msg);
-    if (!sendStatus) {
-      log(`Failed to send TALKREQ message to node ${dstId}`);
-    } else {
-      log(`Sent TALKREQ message to node ${dstId}`);
-    }
-  }
-
-  /**
    * Send TALKRESP message to requesting node
    */
   public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
@@ -444,13 +431,6 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         log(`Node ${srcId} not found`);
       }
     }
-  }
-
-  /**
-   * Hack to get debug logs to work in browser
-   */
-  public enableLogs(): void {
-    debug.enable("discv5*");
   }
 
   /**

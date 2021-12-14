@@ -12,7 +12,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "./ColorModeSwitcher";
-import { ENR } from "portalnetwork-discv5";
+import { ENR } from "@chainsafe/discv5";
 import { PortalNetwork } from "portalnetwork";
 import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";

@@ -36,7 +36,7 @@ export class WebSocketTransportService
     this.srcId = srcId;
     this.socket = new WebSocketAsPromised(proxyAddress, {
       packMessage: (data: Buffer) => data.buffer,
-      unpackMessage: (data) => Buffer.from(data as ArrayBuffer),
+      unpackMessage: (data) => Buffer.from(data),
     });
   }
 

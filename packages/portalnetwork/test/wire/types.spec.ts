@@ -1,7 +1,7 @@
 
 import tape from 'tape';
 import { ContentMessageType, MessageCodes, PortalWireMessageType, StateNetworkCustomDataType } from '../../src/wire/types';
-import { ENR } from 'portalnetwork-discv5'
+import { ENR } from '@chainsafe/discv5'
 import { fromHexString, List } from '@chainsafe/ssz';
 
 tape('message encoding should match test vectors', (t) => {

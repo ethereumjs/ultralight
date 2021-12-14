@@ -1,5 +1,5 @@
-import { Discv5, ENR, IDiscv5CreateOptions } from "portalnetwork-discv5";
-import { ITalkReqMessage, ITalkRespMessage } from "portalnetwork-discv5/lib/message";
+import { Discv5, ENR, IDiscv5CreateOptions } from "@chainsafe/discv5";
+import { ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
 import { EventEmitter } from 'events'
 import debug from 'debug'
 import { fromHexString, toHexString } from "@chainsafe/ssz";

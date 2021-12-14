@@ -2,7 +2,7 @@ import { _UTPSocket } from "../Socket/_UTPSocket";
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16 } from "..";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
-import { Discv5 } from "portalnetwork-discv5";
+import { Discv5 } from "@chainsafe/discv5";
 
 const log = debug("<uTP>");
 
