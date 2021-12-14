@@ -10,10 +10,13 @@ import {
   Tooltip,
   useClipboard,
   VStack,
+  RadioGroup,
+  Radio,
+  Stack,
 } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "./ColorModeSwitcher";
 import { ENR } from "@chainsafe/discv5";
-import { PortalNetwork } from "portalnetwork";
+import { PortalNetwork, SubNetworkIds } from "portalnetwork";
 import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";
 import ShowInfo from "./Components/ShowInfo";
@@ -23,6 +26,9 @@ export const App = () => {
   const [portal, setDiscv5] = React.useState<PortalNetwork>();
   const [enr, setENR] = React.useState<string>("");
   const [showInfo, setShowInfo] = React.useState(false);
+  const [network, setNetwork] = React.useState<SubNetworkIds>(
+    SubNetworkIds.HistoryNetworkId
+  );
   const { hasCopied, onCopy } = useClipboard(enr); // eslint-disable-line
 
   const init = async () => {
@@ -59,6 +65,17 @@ export const App = () => {
     );
     onCopy();
   };
+
+  const updateNetwork = (val: string) => {
+    switch (val) {
+      case SubNetworkIds.HistoryNetworkId:
+        setNetwork(SubNetworkIds.HistoryNetworkId);
+        break;
+      case SubNetworkIds.StateNetworkId:
+        setNetwork(SubNetworkIds.StateNetworkId);
+        break;
+    }
+  };
   return (
     <ChakraProvider theme={theme}>
       <ColorModeSwitcher justifySelf="flex-end" />
@@ -77,7 +94,17 @@ export const App = () => {
           )}
           {showInfo && portal && <ShowInfo portal={portal} />}
         </Box>
-        <Box>{portal && <AddressBookManager portal={portal} />}</Box>
+        <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
+          <Stack direction="row">
+            <Radio value={SubNetworkIds.StateNetworkId}>State Network</Radio>
+            <Radio value={SubNetworkIds.HistoryNetworkId}>
+              History Network
+            </Radio>
+          </Stack>
+        </RadioGroup>
+        <Box>
+          {portal && <AddressBookManager portal={portal} network={network} />}
+        </Box>
       </VStack>
       <Box position="fixed" bottom="0">
         {portal && <Log portal={portal} />}

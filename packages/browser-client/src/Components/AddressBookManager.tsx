@@ -17,9 +17,13 @@ import React from "react";
 
 type NodeManagerProps = {
   portal: PortalNetwork;
+  network: SubNetworkIds;
 };
 
-const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
+const AddressBookManager: React.FC<NodeManagerProps> = ({
+  portal,
+  network,
+}) => {
   const [enr, setEnr] = React.useState<string>("");
   const [peers, setPeers] = React.useState<string[]>([]);
   const [contentKey, setContentKey] = React.useState<string>("");
@@ -37,32 +41,20 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal }) => {
     portal.sendPing(
       nodeId,
       StateNetworkCustomDataType.serialize({ dataRadius: BigInt(1) }),
-      SubNetworkIds.StateNetworkId
+      network
     );
   };
 
   const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(
-      nodeId,
-      Uint16Array.from([0, 1, 2]),
-      SubNetworkIds.StateNetworkId
-    );
+    portal.sendFindNodes(nodeId, Uint16Array.from([0, 1, 2]), network);
   };
 
   const handleFindContent = (nodeId: string) => {
-    portal.sendFindContent(
-      nodeId,
-      Buffer.from(contentKey, "hex"),
-      SubNetworkIds.StateNetworkId
-    );
+    portal.sendFindContent(nodeId, Buffer.from(contentKey, "hex"), network);
   };
 
   const handleOffer = (nodeId: string) => {
-    portal.sendOffer(
-      nodeId,
-      [new Uint8Array(16).fill(0)],
-      SubNetworkIds.StateNetworkId
-    );
+    portal.sendOffer(nodeId, [new Uint8Array(16).fill(0)], network);
   };
 
   const handleUtpStream = (nodeId: string) => {
