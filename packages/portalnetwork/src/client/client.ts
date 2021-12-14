@@ -21,12 +21,14 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     stateNetworkRoutingTable: StateNetworkRoutingTable;
     historyNetworkRoutingTable: PortalNetworkRoutingTable;
     uTP: UtpProtocol;
-    // TODO: Replace with proper database once state network defined 
+    nodeRadius: number;
+    // TODO: Replace with proper content database
     stateNetworkState: state
 
-    constructor(config: IDiscv5CreateOptions) {
+    constructor(config: IDiscv5CreateOptions, radius = 1) {
         super();
         this.client = Discv5.create(config)
+        this.nodeRadius = radius;
         this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId, 5)
         this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId, 5);
         this.client.on("talkReqReceived", this.onTalkReq)
@@ -64,6 +66,25 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     /**
+     * @returns the node's current radius
+     */
+    public get radius() {
+        return this.nodeRadius
+    }
+
+    /**
+     * Updates the node's radius for interested content
+     * @param value number representing the new radius
+     * @throws if `value` is greater than 256
+     */
+    public set radius(value: number) {
+        if (value > 256) {
+            throw new Error('radius cannot be greater than 256')
+        }
+        this.nodeRadius = value
+    }
+
+    /**
      * Sends a Portal Network Wire Protocol PING message to a specified node
      * @param dstId the nodeId of the peer to send a ping to
      * @param payload custom payload to be sent in PING message
@@ -90,6 +111,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         catch (err: any) {
             this.log(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
+            this.updateSubnetworkRoutingTable(dstId, networkId)
         }
     }
 
@@ -112,7 +134,18 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage;
                 if (decoded) {
                     this.log(`Received ${decoded.total} ENRs from ${shortId(dstId)}`);
-                    decoded.enrs.forEach((enr) => this.log(ENR.decode(Buffer.from(enr)).nodeId))
+                    decoded.enrs.forEach((enr) => {
+                        const decodedEnr = ENR.decode(Buffer.from(enr))
+                        this.log(decodedEnr.nodeId)
+                        this.client.addEnr(decodedEnr)
+                        // TODO: Update routing table corresponding to `networkId` 
+                        if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+                            // Add node to History Subnetwork Routing Table if we don't already know it
+                            const payload = StateNetworkCustomDataType.serialize({ dataRadius: BigInt(this.nodeRadius) })
+                            this.sendPing(decodedEnr.nodeId, payload, SubNetworkIds.HistoryNetworkId)
+                        }
+
+                    })
                 }
                 return decoded;
             }
@@ -184,7 +217,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     private sendPong = async (srcId: string, reqId: bigint) => {
-        const customPayload = StateNetworkCustomDataType.serialize({ dataRadius: BigInt(1) })
+        const customPayload = StateNetworkCustomDataType.serialize({ dataRadius: BigInt(this.nodeRadius) })
         const payload = {
             enrSeq: this.client.enr.seq,
             customPayload: customPayload
@@ -356,6 +389,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @param customPayload payload of the PING/PONG message being decoded
      */
     private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload?: any) => {
+        const enr = this.client.getKadValue(srcId);
+        if (!enr) {
+            this.log(`no ENR found in routing table for ${srcId}`)
+            return
+        }
         switch (networkId) {
             case SubNetworkIds.StateNetworkId: {
                 if (!customPayload) {
@@ -364,14 +402,14 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     this.log(`removed ${srcId} from State Network Routing Table`)
                     return
                 }
-                const enr = this.client.getKadValue(srcId);
-                this.log(`adding ${srcId} to stateNetwork routing table`)
-                if (enr) {
+                if (!this.stateNetworkRoutingTable.getValue(srcId)) {
+                    this.log(`adding ${srcId} to stateNetwork routing table`)
                     this.stateNetworkRoutingTable.add(enr);
                     const decodedPayload = StateNetworkCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.dataRadius)
+                    return
                 }
-                return;
+                break;
             }
             case SubNetworkIds.HistoryNetworkId: {
                 if (!customPayload) {
@@ -380,14 +418,14 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     this.log(`removed ${srcId} from History Network Routing Table`)
                     return
                 }
-                const enr = this.client.getKadValue(srcId);
-                this.log(`adding ${srcId} to historyNetwork routing table`)
-                if (enr) {
+                if (!this.historyNetworkRoutingTable.getValue(srcId)) {
+                    this.log(`adding ${srcId} to historyNetwork routing table`)
                     this.historyNetworkRoutingTable.add(enr);
                     const decodedPayload = StateNetworkCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.dataRadius)
+                    return
                 }
-                return;
+                break;
             }
         }
     }

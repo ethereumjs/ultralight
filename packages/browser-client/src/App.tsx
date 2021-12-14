@@ -35,13 +35,16 @@ export const App = () => {
     const id = await PeerId.create({ keyType: "secp256k1" });
     const enr = ENR.createFromPeerId(id);
     enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
-    const portal = new PortalNetwork({
-      enr: enr,
-      peerId: id,
-      multiaddr: new Multiaddr("/ip4/127.0.0.1/udp/0"),
-      transport: "wss",
-      proxyAddress: "ws://127.0.0.1:5050",
-    });
+    const portal = new PortalNetwork(
+      {
+        enr: enr,
+        peerId: id,
+        multiaddr: new Multiaddr("/ip4/127.0.0.1/udp/0"),
+        transport: "wss",
+        proxyAddress: "ws://127.0.0.1:5050",
+      },
+      1
+    );
     //@ts-ignore
     window.portal = portal;
     //@ts-ignore
