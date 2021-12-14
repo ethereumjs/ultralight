@@ -140,7 +140,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
             const decoded = ContentMessageType.deserialize(res.slice(1))
             switch (decoded.selector) {
-                case 0: 
+                case 0:
                     const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
                     this.log(`received Connection ID ${id}`);
                     this.sendUtpStreamRequest(dstId, id)
