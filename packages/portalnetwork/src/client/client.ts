@@ -199,7 +199,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     private onTalkReq = async (srcId: string, sourceId: ENR | null, message: ITalkReqMessage) => {
         switch (toHexString(message.protocol)) {
             case SubNetworkIds.StateNetworkId: this.log(`Received State Subnetwork request`); break;
-            case SubNetworkIds.StateNetworkId: this.log(`Received History Subnetwork request`); break;
+            case SubNetworkIds.HistoryNetworkId: this.log(`Received History Subnetwork request`); break;
             case SubNetworkIds.UTPNetworkId: this.log(`Received uTP packet`); this.handleUTPStreamRequest(srcId, message.id, message.request); return;
             default: this.log(`Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`); return;
 
