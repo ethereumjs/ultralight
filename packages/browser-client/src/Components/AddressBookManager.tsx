@@ -8,10 +8,7 @@ import {
   Wrap,
 } from "@chakra-ui/react";
 import { PortalNetwork } from "portalnetwork";
-import {
-  StateNetworkCustomDataType,
-  SubNetworkIds,
-} from "portalnetwork/dist/wire";
+import { SubNetworkIds } from "portalnetwork/dist/wire";
 import { randUint16 } from "portalnetwork/dist/wire/utp";
 import React from "react";
 
@@ -40,11 +37,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   };
 
   const handlePing = (nodeId: string) => {
-    portal.sendPing(
-      nodeId,
-      StateNetworkCustomDataType.serialize({ dataRadius: BigInt(1) }),
-      network
-    );
+    portal.sendPing(nodeId, network);
   };
 
   const handleFindNodes = (nodeId: string) => {

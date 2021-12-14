@@ -1,5 +1,5 @@
 import { ContainerType, ByteVector, BigIntUintType, UnionType, ListType, byteType, NumberUintType, BitListType, ByteVectorType, Union, List } from "@chainsafe/ssz";
-import { NoneType } from '@chainsafe/ssz/lib/types/basic/none'
+
 
 // Subnetwork IDs
 export enum SubNetworkIds {
@@ -11,12 +11,13 @@ export enum SubNetworkIds {
     UTPNetworkId = '0x757470'
 }
 
-// State Network Custom Data type
-export const StateNetworkCustomDataType = new ContainerType({
+// Ping/Pong Custom Data type -- currently identical for State and History networks
+export const PingPongCustomDataType = new ContainerType({
     fields: {
-        dataRadius: new BigIntUintType({ byteLength: 32 })
+        radius: new BigIntUintType({ byteLength: 32 })
     }
 })
+
 // Wire Protocol Message Codes
 export enum MessageCodes {
     PING = 0x00,
