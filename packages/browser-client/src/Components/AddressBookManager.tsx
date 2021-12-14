@@ -27,6 +27,8 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   const [enr, setEnr] = React.useState<string>("");
   const [peers, setPeers] = React.useState<string[]>([]);
   const [contentKey, setContentKey] = React.useState<string>("");
+  const [distance, setDistance] = React.useState<string>("0");
+
   const handleClick = () => {
     if (enr) {
       portal.client.addEnr(enr);
@@ -46,7 +48,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   };
 
   const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(nodeId, Uint16Array.from([0, 1, 2]), network);
+    portal.sendFindNodes(
+      nodeId,
+      Uint16Array.from([parseInt(distance)]),
+      network
+    );
   };
 
   const handleFindContent = (nodeId: string) => {
@@ -70,12 +76,20 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
       />
       <Button onClick={handleClick}>Add Node</Button>
       {peers.length > 0 && (
-        <Input
-          placeholder={"Content-Key"}
-          onChange={(evt) => {
-            setContentKey(evt.target.value);
-          }}
-        />
+        <>
+          <Input
+            placeholder={"Content-Key"}
+            onChange={(evt) => {
+              setContentKey(evt.target.value);
+            }}
+          />
+          <Input
+            placeholder={"Distance"}
+            onChange={(evt) => {
+              setDistance(evt.target.value);
+            }}
+          />
+        </>
       )}
 
       {peers.length > 0 &&
