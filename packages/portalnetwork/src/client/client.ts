@@ -79,7 +79,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         })
         try {
             this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
-            const res = await this.client.sendTalkReq(dstId, Buffer.from(pingMsg), fromHexString(networkId))
+            const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(pingMsg), networkId)
             if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
                 this.log(`Received PONG from ${shortId(dstId)}`)
                 const decoded = PortalWireMessageType.deserialize(res)
@@ -90,7 +90,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         catch (err: any) {
             this.log(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
-            this.updateSubnetworkRoutingTable(dstId, networkId)
         }
     }
 
@@ -106,8 +105,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const findNodesMsg: FindNodesMessage = { distances: distances }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDNODES, value: findNodesMsg })
         try {
-            const res = await this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
             this.log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+            const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
             if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
                 this.log(`Received NODES from ${shortId(dstId)}`);
                 const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage;
@@ -135,7 +134,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const findContentMsg: FindContentMessage = { contentKey: key };
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
         this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
-        const res = await this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
+        const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
         if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
             this.log(`Received FOUNDCONTENT from ${shortId(dstId)}`);
             // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
@@ -168,7 +167,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             contentKeys
         }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.OFFER, value: offerMsg })
-        const res = await this.client.sendTalkReq(dstId, Buffer.from(payload), fromHexString(networkId))
+        const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
         const decoded = PortalWireMessageType.deserialize(res);
         if (decoded.selector === MessageCodes.ACCEPT) {
             this.log(`Received ACCEPT message from ${shortId(dstId)}`);
@@ -339,7 +338,13 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
     }
 
-    private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload?: any): void => {
+    /**
+     * 
+     * @param srcId nodeId of peer being updated in subnetwork routing table
+     * @param networkId subnetwork Id of routing table being updated
+     * @param customPayload payload of the PING/PONG message being decoded
+     */
+    private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload?: any) => {
         switch (networkId) {
             case SubNetworkIds.StateNetworkId: {
                 if (!customPayload) {
@@ -373,6 +378,24 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 }
                 return;
             }
+        }
+    }
+
+    /**
+     * 
+     * @param dstId `NodeId` of message recipient
+     * @param payload `Buffer` serialized payload of message
+     * @param networkId Subnetwork ID of Subnetwork message is being sent on
+     * @returns response from `dstId` as `Buffer` or null `Buffer`
+     */
+    private sendPortalNetworkMessage = async (dstId: NodeId, payload: Buffer, networkId: SubNetworkIds): Promise<Buffer> => {
+        try {
+            const res = await this.client.sendTalkReq(dstId, payload, fromHexString(networkId))
+            return res
+        } catch (err: any) {
+            this.log(`Error sending TALKREQ message: ${err.message}`)
+            this.updateSubnetworkRoutingTable(dstId, networkId)
+            return Buffer.from([0])
         }
     }
 }
