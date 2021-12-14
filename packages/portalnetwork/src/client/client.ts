@@ -249,13 +249,21 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 total: 0,
                 enrs: []
             };
-            // Send the client's ENR if a node at distance 0 is requested
-            if (typeof payload.distances.find((res) => res === 0) === 'number')
-                nodesPayload = {
-                    total: 1,
-                    enrs: [this.client.enr.encode()]
+            payload.distances.forEach(distance => {
+                if (distance > 0) {
+                    // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
+                    // would be in bucket 0
+                    this.historyNetworkRoutingTable.valuesOfDistance(distance + 1).forEach((enr) => {
+                        nodesPayload.total++;
+                        nodesPayload.enrs.push(enr.encode())
+                    })
                 }
-            // TODO: Return known nodes in State Network DHT at specified distances
+            })
+            // Send the client's ENR if a node at distance 0 is requested
+            if (typeof payload.distances.find((res) => res === 0) === 'number') {
+                nodesPayload.total++;
+                nodesPayload.enrs.push(this.client.enr.encode())
+            }
             const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload })
             this.client.sendTalkResp(srcId, message.id, encodedPayload);
         } else {

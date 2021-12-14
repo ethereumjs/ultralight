@@ -70,7 +70,7 @@ export const FindNodesMessageType = new ContainerType({
 })
 
 export type NodesMessage = {
-    total: Number,
+    total: number,
     enrs: Uint8Array[]
 }
 
