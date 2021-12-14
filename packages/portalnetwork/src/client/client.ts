@@ -299,7 +299,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
         const value = this.stateNetworkState[contentKey]
 
-        if (value && value.length < 1200) {
+        if (!value) {
+            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        } else if (value && value.length < 1200) {
+            // TODO Replace 1200 with a global constant for MAX PACKET size
             this.log('Found value for requested content' + Buffer.from(decodedContentMessage.contentKey).toString('hex') + value.slice(0, 10) + `...`)
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
