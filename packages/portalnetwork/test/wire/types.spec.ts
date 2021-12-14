@@ -1,6 +1,6 @@
 
 import tape from 'tape';
-import { ContentMessageType, MessageCodes, PortalWireMessageType, StateNetworkCustomDataType } from '../../src/wire/types';
+import { ContentMessageType, MessageCodes, PortalWireMessageType, PingPongCustomDataType } from '../../src/wire/types';
 import { ENR } from '@chainsafe/discv5'
 import { fromHexString, List } from '@chainsafe/ssz';
 
@@ -9,7 +9,7 @@ tape('message encoding should match test vectors', (t) => {
     // Validate PING/PONG message encoding
     const enrSeq = BigInt(1);
     const dataRadius = 2n ** 256n - 2n
-    const customPayload = StateNetworkCustomDataType.serialize({ dataRadius: dataRadius });
+    const customPayload = PingPongCustomDataType.serialize({ radius: dataRadius });
     let payload = PortalWireMessageType.serialize({
         selector: MessageCodes.PING,
         value: {

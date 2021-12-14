@@ -6,7 +6,7 @@ import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { StateNetworkRoutingTable } from "..";
 import { shortId } from "../util";
 import { bufferToPacket, PacketType, randUint16, Uint8, UtpProtocol } from '../wire/utp'
-import { StateNetworkCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage, PongMessage, ContentMessage, PingMessageType, PingMessage, PongMessageType } from "../wire";
+import { PingPongCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage, PongMessage, ContentMessage, PingMessageType, PingMessage, PongMessageType } from "../wire";
 import { PortalNetworkEventEmitter } from "./types";
 import { PortalNetworkRoutingTable } from ".";
 
@@ -91,7 +91,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @param networkId subnetwork ID
      * @returns the PING payload specified by the subnetwork or undefined
      */
-    public sendPing = async (dstId: string, payload: Uint8Array, networkId: SubNetworkIds) => {
+    public sendPing = async (dstId: string, networkId: SubNetworkIds) => {
+        const payload = PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) })
         const pingMsg = PortalWireMessageType.serialize({
             selector: MessageCodes.PING, value: {
                 enrSeq: this.client.enr.seq,
@@ -141,8 +142,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                         // TODO: Update routing table corresponding to `networkId` 
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             // Add node to History Subnetwork Routing Table if we don't already know it
-                            const payload = StateNetworkCustomDataType.serialize({ dataRadius: BigInt(this.nodeRadius) })
-                            this.sendPing(decodedEnr.nodeId, payload, SubNetworkIds.HistoryNetworkId)
+                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetworkId)
                         }
 
                     })
@@ -217,7 +217,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     private sendPong = async (srcId: string, reqId: bigint) => {
-        const customPayload = StateNetworkCustomDataType.serialize({ dataRadius: BigInt(this.nodeRadius) })
+        const customPayload = PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) })
         const payload = {
             enrSeq: this.client.enr.seq,
             customPayload: customPayload
@@ -405,8 +405,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 if (!this.stateNetworkRoutingTable.getValue(srcId)) {
                     this.log(`adding ${srcId} to stateNetwork routing table`)
                     this.stateNetworkRoutingTable.add(enr);
-                    const decodedPayload = StateNetworkCustomDataType.deserialize(Uint8Array.from(customPayload))
-                    this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.dataRadius)
+                    const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+                    this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
                     return
                 }
                 break;
@@ -421,8 +421,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 if (!this.historyNetworkRoutingTable.getValue(srcId)) {
                     this.log(`adding ${srcId} to historyNetwork routing table`)
                     this.historyNetworkRoutingTable.add(enr);
-                    const decodedPayload = StateNetworkCustomDataType.deserialize(Uint8Array.from(customPayload))
-                    this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.dataRadius)
+                    const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+                    this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
                     return
                 }
                 break;
