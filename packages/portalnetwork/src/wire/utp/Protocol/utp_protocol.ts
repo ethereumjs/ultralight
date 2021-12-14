@@ -81,9 +81,7 @@ export class UtpProtocol {
     log(`Receiving Utp Packet from ${dstId}`);
     this.sockets[dstId].content = Uint8Array.from([...this.sockets[dstId].content, ...packet.payload])
     log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
-    this.client.sendTalkResp(dstId, msgId, new Uint8Array()).then((res) => {
-      this.sockets[dstId].handleDataPacket(packet).then((res) => {
-      })
-    })
+    await this.sockets[dstId].handleDataPacket(packet)
+    }
   }
-}
+

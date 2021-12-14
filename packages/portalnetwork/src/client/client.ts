@@ -369,7 +369,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     // private handleContent = async (srcId: string, message: Italk)
 
     private handleUTPStreamRequest = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
-
+        this.client.sendTalkResp(srcId, msgId, new Uint8Array())
         const packet = bufferToPacket(packetBuffer)
         switch (packet.header.pType) {
 
