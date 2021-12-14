@@ -1,10 +1,10 @@
 import { BN } from 'bn.js';
 import { ENR, KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
 import { distance } from './util'
+import { PortalNetworkRoutingTable } from '../client';
 
 
-export class StateNetworkRoutingTable extends KademliaRoutingTable {
-
+export class StateNetworkRoutingTable extends PortalNetworkRoutingTable {
     /**
      *
      * @param id id of node to find nearest nodes to
