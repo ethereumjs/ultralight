@@ -19,53 +19,28 @@ export class UtpProtocol {
     this.contents = {}
   }
 
-  // async handleUtpPacket(dstId: string, msg: Buffer) {
-  //   let packet = bufferToPacket(msg)
-  //   let pType = packet.header.pType
-  //   if (pType === PacketType.ST_SYN) {
-  //     this.handleIncomingConnectionRequest(packet, dstId)
-  //   }
-  //   if (pType === PacketType.ST_DATA) {
-  //     this.handleAck(packet, dstId)
-  //   }
-  //   if (pType === PacketType.ST_DATA) {
-  //     this.handleIncomingData(packet, dstId)
-  //   }
-  // }
+  async handleUtpPacket(packet: Packet, srcId: string ,msgId: bigint): Promise<void> {
+    switch (packet.header.pType) {
+
+      case PacketType.ST_SYN: await this.handleSynPacket(packet, srcId, msgId); break;
+      case PacketType.ST_DATA: await this.handleDataPacket(packet, srcId, msgId); break;
+      case PacketType.ST_STATE: await this.handleAckPacket(packet, srcId, msgId); break;
+      case PacketType.ST_RESET: log('got RESET packet'); break;
+      case PacketType.ST_FIN: await this.handleFinPacket(packet, srcId, msgId);
+      break;
+  }
+  }
 
   async initiateConnectionRequest(dstId: string, id: number): Promise<Buffer> {
+    // 
     log(`Requesting uTP stream connection with ${dstId}`);
     const socket = new _UTPSocket(this, dstId);
     this.sockets[dstId] = socket;
-    // this.sockets[dstId].content = data && data;
-
     return this.sockets[dstId].sendSynPacket(id)
     
   }
 
-  // async sendData(data: Uint8Array, dstId: string): Promise<Buffer> {
-  //   return await this.initiateConnectionRequest(dstId, data);
-  // }
-
-  async handleSynAck(ack: Packet, dstId: string): Promise<void> {
-    log("Received ST_STATE packet...SYN acked...Connection established.");
-    await this.sockets[dstId].handleSynAckPacket(ack);
-  }
-
-  async handleAck(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
-    log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr + "Received ST_STATE packet from " + dstId);
-    this.sockets[dstId].handleStatePacket(packet);
-  }
-  async handleFin(packet: Packet, dstId: string, msgId: bigint): Promise<Uint8Array> {
-    log("Received ST_FIN packet from " + dstId + "...uTP stream closing...");
-    await this.sockets[dstId].handleFinPacket(packet, dstId, msgId);
-    this.contents[dstId] = this.sockets[dstId].content
-    log(`${this.contents[dstId].length} bytes received. ${this.contents[dstId].toString().slice(0, 20)} ...`)
-
-    return this.contents[dstId]
-  }
-
-  async handleIncomingConnectionRequest(
+  async handleSynPacket(
     packet: Packet,
     dstId: string,
     msgId: bigint
@@ -80,9 +55,27 @@ export class UtpProtocol {
       log(`uTP stream request accepted.  Sending ACK.  Preparing to send ${this.contents}`);
     }
 
-  async handleIncomingData(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
-    log(`Receiving Utp Packet from ${dstId}`);
-    this.sockets[dstId].content = Uint8Array.from([...this.sockets[dstId].content, ...packet.payload])
+  async handleSynAck(ack: Packet, dstId: string): Promise<void> {
+    log("Received ST_STATE packet...SYN acked...Connection established.");
+    await this.sockets[dstId].handleSynAckPacket(ack);
+  }
+
+  async handleAckPacket(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
+    log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr + "Received ST_STATE packet from " + dstId);
+    this.sockets[dstId].handleStatePacket(packet);
+  }
+  async handleFinPacket(packet: Packet, dstId: string, msgId: bigint): Promise<Uint8Array> {
+    log("Received ST_FIN packet from " + dstId + ".  Waiting for in flight ST_DATA packets...");
+    await this.sockets[dstId].handleFinPacket(packet, dstId, msgId)
+    this.contents[dstId] = this.sockets[dstId].content
+    log(`${this.contents[dstId].length} bytes received. ${this.contents[dstId].toString().slice(0, 20)} ...`)
+    log(`${this.sockets[dstId].readerContent.toString().slice(0,20)}`)
+    return this.contents[dstId]
+  }
+
+
+  async handleDataPacket(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
+    // this.sockets[dstId].content = Uint8Array.from([...this.sockets[dstId].content, ...packet.payload])
     log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
     await this.sockets[dstId].handleDataPacket(packet)
     }

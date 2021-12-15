@@ -68,7 +68,8 @@ export class _UTPSocket extends EventEmitter {
   sendRate: number;
   CCONTROL_TARGET: number;
   writer: utpWritingRunnable | undefined;
-  // reader: Reader
+  reader: Reader;
+  readerContent: Uint8Array;
   constructor(utp: UtpProtocol, remoteAddress: string) {
     super();
     this.client = utp.client;
@@ -94,7 +95,8 @@ export class _UTPSocket extends EventEmitter {
     this.sendRate = 0;
     this.CCONTROL_TARGET = DELAY_TARGET;
     this.content = Uint8Array.from([]);
-    // this.reader= new Reader(this);
+    this.reader= new Reader(this);
+    this.readerContent = new Uint8Array()
   }
 
   initiateAckPosition(sequenceNumber: number) {
@@ -122,32 +124,13 @@ msg,
 
        return msg
   }
-  // recievePacket(packet: Packet): void {
-  //   if (isSynAckPacket(packet, this.state)) {
-  //     this.handleSynAckPacket(packet);
-  //   } else if (isResetPacket(packet)) {
-  //     this.handleResetPacket(packet);
-  //   } else if (isSynPacket(packet)) {
-  //     this.handleIncomingConnectionRequest(packet);
-  //   } else if (isDataPacket(packet)) {
-  //     this.handleDataPacket(packet);
-  //   } else if (isStatePacket(packet)) {
-  //     this.handleStatePacket(packet);
-  //   } else if (isFinPacket(packet)) {
-  //     this.handleFinPacket(packet);
-  //   } else {
-  //     this.sendResetPacket();
-  //   }
-  // }
 
-  handlePacket(packet: Packet): void {
-    // this.incrementSequenceNumber.offer(new UtpPacketDTO(packet, timestamp, packetTimestamp))
-  }
 
-  ackPacket(packet: Packet, timestampDiff: number, wnd_size: number): void {}
 
-  // aka handle SYN packet
+
+
   async handleIncomingConnectionRequest(packet: Packet): Promise<void> {
+    // aka handle SYN packet/
     this.updateRTT(packet.header.timestampDiff);
     this.setConnectionIdsFromPacket(packet);
     this.seqNr = randUint16();
@@ -160,19 +143,18 @@ msg,
   }
   async handleSynAckPacket(packet: Packet): Promise<void> {
       this.setState(ConnectionState.Connected);
-      this.sendAckPacket()
-    // this.content && this.startDataTransfer(this.content, packet);
-
+      await this.sendAckPacket()
   }
   handleResetPacket(packet: Packet): void {
     // this.close()
   }
   async handleDataPacket(packet: Packet): Promise<void> {
     this.updateRTT(packet.header.timestampDiff);
+    this.content = Uint8Array.from([...this.content, ...packet.payload])
     this.ackNr = packet.header.seqNr;
     this.state = ConnectionState.Connected;
     this.seqNr++;
-    // this.reader.addPacket(packet)
+    this.reader.addPacket(packet)
     this.sendAckPacket().then((res) => {
       log(`ack sent for ${packet}`)
     })
@@ -201,9 +183,9 @@ msg,
   async handleFinPacket(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
     this.setState(ConnectionState.GotFin);
     this.ackNr = packet.header.seqNr;
-    await this.sendAckPacket()
     log(`FIN ACKED`)
-    // this.content = this.reader.run()
+    this.readerContent = this.reader.run()
+    this.sendAckPacket()
     // await this.client.sendTalkResp(dstId, msgId, new Uint8Array())
   }
 
