@@ -16,12 +16,6 @@ type state = {
     [key: string]: Uint8Array
 }
 
-let testArray = new Uint8Array(2000)
-for (let i = 0; i < 2000; i++) {
-    testArray[i] = Math.floor(Math.random() * 255)
-    
-}
-
 export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventEmitter }) {
     client: Discv5;
     stateNetworkRoutingTable: StateNetworkRoutingTable;
@@ -44,7 +38,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.stateNetworkState = {
             "01": Buffer.from('abc'),
             "02": Buffer.from('efg'),
-            "03": testArray
+            "03": new Uint8Array(2000).fill(1)
         }
     }
 
@@ -375,7 +369,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     // private handleContent = async (srcId: string, message: Italk)
 
     private handleUTPStreamRequest = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
-        await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
+        this.client.sendTalkResp(srcId, msgId, new Uint8Array())
         const packet = bufferToPacket(packetBuffer)
         switch (packet.header.pType) {
 
@@ -383,8 +377,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             case PacketType.ST_DATA: await this.uTP.handleIncomingData(packet, srcId, msgId); break;
             case PacketType.ST_STATE: await this.uTP.handleAck(packet, srcId, msgId); break;
             case PacketType.ST_RESET: this.log('got RESET packet'); break;
-            case PacketType.ST_FIN: await this.uTP.handleFin(packet, srcId, msgId);
-            break;
+            case PacketType.ST_FIN: const content = await this.uTP.handleFin(packet, srcId, msgId);
+                _log('Got this content', content); break;
         }
     }
 
