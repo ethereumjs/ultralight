@@ -34,6 +34,7 @@ import {
 import utpWritingRunnable from "../Protocol/write/utpWritingRunnable";
 import { utpReadingRunnable } from "../Protocol/read/utpReadingRunnable";
 import BlockingQueue from "../Protocol/congestionControl/blockingQueue";
+import Reader from "../Protocol/read/Reader";
 
 const log = debug("<uTP>");
 const MAX_WINDOW = 1200;
@@ -67,7 +68,7 @@ export class _UTPSocket extends EventEmitter {
   sendRate: number;
   CCONTROL_TARGET: number;
   writer: utpWritingRunnable | undefined;
-  reader: utpReadingRunnable | undefined;
+  // reader: Reader
   constructor(utp: UtpProtocol, remoteAddress: string) {
     super();
     this.client = utp.client;
@@ -92,7 +93,8 @@ export class _UTPSocket extends EventEmitter {
     this.ourDelay = 0;
     this.sendRate = 0;
     this.CCONTROL_TARGET = DELAY_TARGET;
-    this.content = Uint8Array.from([])
+    this.content = Uint8Array.from([]);
+    // this.reader= new Reader(this);
   }
 
   initiateAckPosition(sequenceNumber: number) {
@@ -100,7 +102,7 @@ export class _UTPSocket extends EventEmitter {
       throw Error("sequence number cannot be 0");
     }
     if (sequenceNumber == 1) {
-      this.ackNr = UINT16MAX;
+      this.ackNr = 0;
     } else {
       this.ackNr = sequenceNumber - 1;
     }
@@ -109,7 +111,7 @@ export class _UTPSocket extends EventEmitter {
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encodePacket();
-    void this.client.sendTalkReq(
+    await this.client.sendTalkReq(
         this.remoteAddress,
 msg,
         fromHexString(SubNetworkIds.UTPNetworkId)
@@ -151,7 +153,6 @@ msg,
     this.seqNr = randUint16();
     this.ackNr = packet.header.seqNr
     this.state = ConnectionState.SynRecv;
-    this.reader = new utpReadingRunnable(this, packet)
     await this.sendAckPacket()
       log(`SYN  ACK'ed`)
       this.seqNr++; 
@@ -171,13 +172,13 @@ msg,
     this.ackNr = packet.header.seqNr;
     this.state = ConnectionState.Connected;
     this.seqNr++;
-    this.reader?.packets.push(packet)
+    // this.reader.addPacket(packet)
     this.sendAckPacket().then((res) => {
       log(`ack sent for ${packet}`)
     })
   }
   async handleStatePacket(packet: Packet): Promise<void> {
-    this.initiateAckPosition(packet.header.seqNr)
+    this.ackNr = packet.header.seqNr
     this.state = ConnectionState.Connected;
     if (packet.header.ackNr == 1) {
       log("syn ack received")
@@ -189,6 +190,7 @@ msg,
         this.content && await this.write(this.content, packet)
       } else if (packet.header.ackNr === (Number("eof_pkt") & 0xFFFF)) {
         log(`FIN acked`)
+        return
       } 
       else {
         log(`DATA ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`)
@@ -201,6 +203,7 @@ msg,
     this.ackNr = packet.header.seqNr;
     await this.sendAckPacket()
     log(`FIN ACKED`)
+    // this.content = this.reader.run()
     // await this.client.sendTalkResp(dstId, msgId, new Uint8Array())
   }
 
@@ -351,20 +354,20 @@ msg,
     })
   }
 
-  read(synAck: Packet) {
-    const reader = new utpReadingRunnable(
-      this,
-      synAck,
-    );
-    reader.run();
-  }
+  // read(synAck: Packet) {
+  //   const reader = new utpReadingRunnable(
+  //     this,
+  //     synAck,
+  //   );
+  //   reader.run();
+  // }
 
-  ReadTest(socket: _UTPSocket) {
-    let _log = debug("Read Test");
-    _log("start Read Test");
-    let buffer: Buffer = Buffer.alloc(150000000);
-    while (true) {
-      _log("Read Test End");
-    }
-  }
+  // ReadTest(socket: _UTPSocket) {
+  //   let _log = debug("Read Test");
+  //   _log("start Read Test");
+  //   let buffer: Buffer = Buffer.alloc(150000000);
+  //   while (true) {
+  //     _log("Read Test End");
+  //   }
+  // }
 }
