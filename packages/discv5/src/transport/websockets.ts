@@ -4,6 +4,7 @@ import { Multiaddr } from "multiaddr";
 import { decodePacket, encodePacket, IPacket } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 import WebSocketAsPromised from "websocket-as-promised";
+import WebSocket from "isomorphic-ws";
 import ip from "@leichtgewicht/ip-codec";
 import { numberToBuffer } from "..";
 const log = debug("discv5:transport");
@@ -36,31 +37,28 @@ export class WebSocketTransportService
     this.srcId = srcId;
     this.socket = new WebSocketAsPromised(proxyAddress, {
       packMessage: (data: Buffer) => data.buffer,
-      unpackMessage: (data) => Buffer.from(data),
+      unpackMessage: (data) => data, // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      //@ts-ignore
+      createWebSocket: (url) => new WebSocket(url),
+      extractMessageData: (event) => event,
     });
   }
 
   public async start(): Promise<void> {
     await this.socket.open();
     this.socket.ws.binaryType = "arraybuffer";
+    this.socket.onMessage.addListener((msg: MessageEvent | ArrayBuffer) => {
+      const data = msg instanceof MessageEvent ? Buffer.from(msg.data) : Buffer.from(msg);
 
-    this.socket.onUnpackedMessage.addListener((msg) => {
-      // Hack to drop public url reflection based messages from packet processing
-      try {
-        JSON.parse(msg);
-        return;
-      } catch {
-        // eslint-disable-next-line no-empty
-      }
-      this.handleIncoming(msg);
-    });
-    this.socket.onMessage.addListener((msg) => {
-      try {
-        const { address, port } = JSON.parse(msg);
+      if (data.length === 6) {
+        const address = ip.decode(data.slice(0, 4));
+        const port = data.readUIntBE(4, 2);
         this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`);
         this.emit("multiaddrUpdate", this.multiaddr);
         // eslint-disable-next-line no-empty
-      } catch { }
+      } else {
+        this.handleIncoming(data);
+      }
     });
     this.socket.onClose.addListener(() => log("socket to proxy closed"));
   }
