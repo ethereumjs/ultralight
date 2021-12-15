@@ -39,7 +39,10 @@ const main = async () => {
             catch { }
         }
         // Send external IP address/port to websocket client to update ENR
-        websocket.send(JSON.stringify({ address: remoteAddr, port: udpsocket.address().port }));
+        const bAddress = ipCodec.encode(remoteAddr)
+        const bPort = Buffer.alloc(2);
+        bPort.writeUIntBE(udpsocket.address().port, 0, 2);
+        websocket.send(Buffer.concat([bAddress, bPort]));
         console.log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
         websocket.on("message", (data) => {
             try {
