@@ -1,5 +1,5 @@
 import { _UTPSocket } from "../Socket/_UTPSocket";
-import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16 } from "..";
+import { Packet, PacketType } from "..";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 import { Discv5 } from "@chainsafe/discv5";
@@ -19,72 +19,87 @@ export class UtpProtocol {
     this.contents = {}
   }
 
-  // async handleUtpPacket(dstId: string, msg: Buffer) {
-  //   let packet = bufferToPacket(msg)
-  //   let pType = packet.header.pType
-  //   if (pType === PacketType.ST_SYN) {
-  //     this.handleIncomingConnectionRequest(packet, dstId)
-  //   }
-  //   if (pType === PacketType.ST_DATA) {
-  //     this.handleAck(packet, dstId)
-  //   }
-  //   if (pType === PacketType.ST_DATA) {
-  //     this.handleIncomingData(packet, dstId)
-  //   }
-  // }
-
-  async initiateConnectionRequest(dstId: string, id: number): Promise<Buffer> {
-    log(`Requesting uTP stream connection with ${dstId}`);
-    const socket = new _UTPSocket(this, dstId);
-    this.sockets[dstId] = socket;
-    // this.sockets[dstId].content = data && data;
-
-    return this.sockets[dstId].sendSynPacket(id)
-    
+  async handleUtpPacket(packet: Packet, srcId: string ,msgId: bigint): Promise<void> {
+    // Client receives CONTENT talkreq message with uTP Network ID
+    // Talkreq handler decodes CONTENT message, sends decoded message here
+    // This reads the PacketType from the Packet Header, and sends each to different handler.
+    switch (packet.header.pType) {
+      case PacketType.ST_SYN: await this.handleSynPacket(packet, srcId, msgId); break;
+      case PacketType.ST_DATA: await this.handleDataPacket(packet, srcId, msgId); break;
+      case PacketType.ST_STATE: await this.handleStatePacket(packet, srcId, msgId); break;
+      case PacketType.ST_RESET: await this.handleResetPacket; break;
+      case PacketType.ST_FIN: await this.handleFinPacket(packet, srcId, msgId);
+      break;
+  }
   }
 
-  // async sendData(data: Uint8Array, dstId: string): Promise<Buffer> {
-  //   return await this.initiateConnectionRequest(dstId, data);
-  // }
-
-  async handleSynAck(ack: Packet, dstId: string): Promise<void> {
-    log("Received ST_STATE packet...SYN acked...Connection established.");
-    await this.sockets[dstId].handleSynAckPacket(ack);
+  async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<Buffer> {
+    // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
+    log(`Requesting uTP stream connection with ${remoteAddr}...`);
+    // Creates a new uTP socket for remoteAddr
+    const socket = new _UTPSocket(this, remoteAddr, "reading");
+    // Adds this socket to 'sockets' registry, wtih remoteAddr as key
+    this.sockets[remoteAddr] = socket;
+    // Sends Syn Packet to begin uTP connection process using connectionId
+    return this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 
-  async handleAck(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
-    log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr + "Received ST_STATE packet from " + dstId);
-    this.sockets[dstId].handleStatePacket(packet);
-  }
-  async handleFin(packet: Packet, dstId: string, msgId: bigint): Promise<Uint8Array> {
-    log("Received ST_FIN packet from " + dstId + "...uTP stream closing...");
-    await this.sockets[dstId].handleFinPacket(packet, dstId, msgId);
-    this.contents[dstId] = this.sockets[dstId].content
-    log(`${this.contents[dstId].length} bytes received. ${this.contents[dstId].toString().slice(0, 20)} ...`)
-
-    return this.contents[dstId]
-  }
-
-  async handleIncomingConnectionRequest(
-    packet: Packet,
-    dstId: string,
-    msgId: bigint
-  ): Promise<void> {
+  async handleSynPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
     log(
-      `Received incoming ST_SYN packet...uTP connection requested by ${dstId}`
+      `Received incoming ST_SYN packet...uTP connection requested by ${remoteAddr}`
     );
-    let socket = new _UTPSocket(this, dstId);
-    this.sockets[dstId] = socket;
-    this.sockets[dstId].content = this.contents[dstId];
-    await this.sockets[dstId].handleIncomingConnectionRequest(packet)
-      log(`uTP stream request accepted.  Sending ACK.  Preparing to send ${this.contents}`);
+      // Creates a new socket for remoteAddr
+    let socket = new _UTPSocket(this, remoteAddr, "writing");
+    // Adds this socket to 'sockets' registry wtih remoteAddr as key
+    this.sockets[remoteAddr] = socket;
+    // Passes content from "Database" to the socket
+    this.sockets[remoteAddr].content = this.contents[remoteAddr];
+    // Socket processes the SYN packet
+    // Accepts connection by sending a SYN ACK - which is a STATE packet
+    log(`Accepting uTP stream request...  Sending SYN ACK...  Preparing to send ${this.contents}...`);
+    await this.sockets[remoteAddr].handleIncomingConnectionRequest(packet)
     }
 
-  async handleIncomingData(packet: Packet, dstId: string, msgId: bigint): Promise<void> {
-    log(`Receiving Utp Packet from ${dstId}`);
-    this.sockets[dstId].content = Uint8Array.from([...this.sockets[dstId].content, ...packet.payload])
-    log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
-    await this.sockets[dstId].handleDataPacket(packet)
-    }
+  async handleStatePacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
+    // STATE packets, also known as ACK packets, are sent as response to SYN or DATA packets
+    // And in some cases to STATE or FIN packets.
+    log("Received ST_STATE packet from " + remoteAddr);
+    log('seqnr: ' + packet.header.seqNr + "acknr:" + packet.header.ackNr);
+    // Socket will decode and process packet
+    this.sockets[remoteAddr].handleStatePacket(packet);
+  }
+  async handleFinPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<Uint8Array> {
+    // FIN packet is sent when sending node has sent all DATA packets.
+    log("Received ST_FIN packet from " + remoteAddr + ".  Socket will close when all packets have been processed.");
+    // Socket should remain open untill all DATA packets have been received.
+    await this.sockets[remoteAddr].handleFinPacket(packet)
+    // Socket will compile Packets, and reassemble the full payload.
+    this.contents[remoteAddr] = this.sockets[remoteAddr].content
+    // TODO -- Test reader with out of order packets/ lost packets
+    log(`${this.contents[remoteAddr].length} bytes received. ${this.contents[remoteAddr].toString().slice(0, 20)} ...`)
+    log(`${this.sockets[remoteAddr].readerContent.toString().slice(0,20)}`)
+    // Closes socket (deletes from registry)
+    delete this.sockets[remoteAddr]
+    return this.contents[remoteAddr]
   }
 
+  async handleDataPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
+    // Socket will read seqNr from Packet Header.
+    // If packet arrived in expected order, will respond with ACK (STATE Packet)
+    // If packet arrived out of order, will respond with SELECTIVE ACK (STATE Packet)
+    // Socket will recalculate it's WINDOW_SIZE based on metadata in the Packet Header
+    // Congestion Control (CC) uses WINDOW_SIZE to determine packet sizes
+    // CC also will TIMEOUT the stream if packets appear lost (if the seqNr falls behind by more than 3)
+    log(`received CONTENT seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr} Length: ${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
+    await this.sockets[remoteAddr].handleDataPacket(packet)
+    }
+
+
+  async handleResetPacket(packet: Packet, remoteAddr: string, msgId: bigint) {
+    // Closes socket (deletes from registry)
+    delete this.sockets[remoteAddr]
+    delete this.contents[remoteAddr]
+    log('Got Reset Packet...Deleting socket from registry.')
+  }
+
+  }
