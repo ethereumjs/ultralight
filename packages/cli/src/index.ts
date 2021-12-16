@@ -5,6 +5,7 @@ import { Multiaddr } from "multiaddr";
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 const readline = require('readline')
+
 readline.emitKeypressEvents(process.stdin)
 process.stdin.setRawMode(true)
 
@@ -28,18 +29,29 @@ const main = async () => {
         },
         1
     );
+    portal.enableLog();
     await portal.start();
     portal.client.addEnr(args.bootnode)
+    const bootnodeId = ENR.decodeTxt(args.bootnode).nodeId
     console.log('Press p to ping bootnode')
+    console.log('Press n to send FINDNODES to bootnode')
     process.stdin.on('keypress', async (str, key) => {
         switch (key.name) {
             case 'p': {
-                console.log('Sending PING to', ENR.decodeTxt(args.bootnode).nodeId);
-                const res = await portal.sendPing(ENR.decodeTxt(args.bootnode).nodeId, SubNetworkIds.HistoryNetworkId)
+                console.log('Sending PING to', bootnodeId);
+                const res = await portal.sendPing(bootnodeId, SubNetworkIds.HistoryNetworkId)
                 console.log('Received PONG response', res);
                 break;
             }
-            case 'c': if (key.ctrl) process.exit(0);
+            case 'n': {
+                console.log('Sending FINDNODES to ', bootnodeId)
+                const res = await portal.sendFindNodes(bootnodeId, Uint16Array.from([0, 1, 2]), SubNetworkIds.HistoryNetworkId)
+                console.log(res)
+            }
+            case 'c': if (key.ctrl) {
+                console.log('Exiting')
+                process.exit(0);
+            }
         }
     })
 }
