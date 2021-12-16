@@ -28,12 +28,15 @@ const args: any = yargs(hideBin(process.argv))
 let child: ChildProcessWithoutNullStreams
 const main = async () => {
     if (args.proxy === true) {
+        //Spawn a child process that runs the proxy 
         const file = require.resolve('../../proxy/dist/index.js')
         child = spawn(process.execPath, [file, args.extip])
         child.stdout.on('data', async (data) => {
+            // Prints all proxy logs to the console
             console.log(data.toString())
         })
         child.stderr.on('data', (data) => {
+            // Prints all proxy errors to the console
             console.log(data.toString())
         })
     }
@@ -56,9 +59,9 @@ const main = async () => {
     if (args.bootnode) {
         portal.client.addEnr(args.bootnode)
         bootnodeId = ENR.decodeTxt(args.bootnode).nodeId
+        console.log(`Press p to ping ${bootnodeId}`)
+        console.log(`Press n to send FINDNODES to ${bootnodeId}`)
     }
-    console.log('Press p to ping bootnode')
-    console.log('Press n to send FINDNODES to bootnode')
     process.stdin.on('keypress', async (str, key) => {
         switch (key.name) {
             case 'p': {
@@ -73,6 +76,10 @@ const main = async () => {
                 console.log('Sending FINDNODES to ', bootnodeId)
                 const res = await portal.sendFindNodes(bootnodeId, Uint16Array.from([0, 1, 2]), SubNetworkIds.HistoryNetworkId)
                 console.log(res)
+            }
+            case 'e': {
+                console.log('Current ENR is:', portal.client.enr.encodeTxt())
+                break;
             }
             case 'c': if (key.ctrl) {
                 console.log('Exiting')
