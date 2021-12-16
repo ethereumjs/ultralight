@@ -4,6 +4,7 @@ import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 const readline = require('readline')
 
 readline.emitKeypressEvents(process.stdin)
@@ -16,6 +17,8 @@ const args: any = yargs(hideBin(process.argv))
     }).argv
 
 const main = async () => {
+    const file = require.resolve('../../proxy/dist/index.js')
+    const child = spawn(process.execPath, [file])
     const id = await PeerId.create({ keyType: "secp256k1" });
     const enr = ENR.createFromPeerId(id);
     enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
@@ -31,8 +34,11 @@ const main = async () => {
     );
     portal.enableLog();
     await portal.start();
-    portal.client.addEnr(args.bootnode)
-    const bootnodeId = ENR.decodeTxt(args.bootnode).nodeId
+    let bootnodeId: string
+    if (args.bootnode) {
+        portal.client.addEnr(args.bootnode)
+        bootnodeId = ENR.decodeTxt(args.bootnode).nodeId
+    }
     console.log('Press p to ping bootnode')
     console.log('Press n to send FINDNODES to bootnode')
     process.stdin.on('keypress', async (str, key) => {
@@ -50,6 +56,7 @@ const main = async () => {
             }
             case 'c': if (key.ctrl) {
                 console.log('Exiting')
+                child.kill(0)
                 process.exit(0);
             }
         }

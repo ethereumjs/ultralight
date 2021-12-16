@@ -11,6 +11,7 @@
     "ws": "^8.2.2"
   },
   "scripts": {
-    "proxy": "ts-node src/index.ts"
+    "run-proxy": "ts-node src/index.ts",
+    "build": "tsc"
   }
 }
