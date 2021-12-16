@@ -14,11 +14,22 @@ const args: any = yargs(hideBin(process.argv))
     .option('bootnode', {
         describe: 'Bootnode',
         default: '',
+    })
+    .option('proxy', {
+        describe: "Proxy Address",
+        default: '127.0.0.1',
     }).argv
 
+let child: ChildProcessWithoutNullStreams
 const main = async () => {
     const file = require.resolve('../../proxy/dist/index.js')
-    const child = spawn(process.execPath, [file])
+    child = spawn(process.execPath, [file, args.proxy])
+    child.stdout.on('data', async (data) => {
+        console.log(data.toString())
+    })
+    child.stderr.on('data', (data) => {
+        console.log(data.toString())
+    })
     const id = await PeerId.create({ keyType: "secp256k1" });
     const enr = ENR.createFromPeerId(id);
     enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
@@ -63,4 +74,8 @@ const main = async () => {
     })
 }
 
-main()
+main().catch((err) => {
+    console.log('Encountered an error', err.message)
+    console.log('Shutting down...')
+    child.kill(0)
+})
