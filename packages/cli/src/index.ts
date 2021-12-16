@@ -12,24 +12,31 @@ process.stdin.setRawMode(true)
 
 const args: any = yargs(hideBin(process.argv))
     .option('bootnode', {
-        describe: 'Bootnode',
+        describe: 'ENR of Bootnode',
         default: '',
     })
     .option('proxy', {
-        describe: "Proxy Address",
+        describe: 'Start proxy service',
+        boolean: true,
+        default: true
+    })
+    .option('extip', {
+        describe: "External IP Address",
         default: '127.0.0.1',
     }).argv
 
 let child: ChildProcessWithoutNullStreams
 const main = async () => {
-    const file = require.resolve('../../proxy/dist/index.js')
-    child = spawn(process.execPath, [file, args.proxy])
-    child.stdout.on('data', async (data) => {
-        console.log(data.toString())
-    })
-    child.stderr.on('data', (data) => {
-        console.log(data.toString())
-    })
+    if (args.proxy === true) {
+        const file = require.resolve('../../proxy/dist/index.js')
+        child = spawn(process.execPath, [file, args.extip])
+        child.stdout.on('data', async (data) => {
+            console.log(data.toString())
+        })
+        child.stderr.on('data', (data) => {
+            console.log(data.toString())
+        })
+    }
     const id = await PeerId.create({ keyType: "secp256k1" });
     const enr = ENR.createFromPeerId(id);
     enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
@@ -55,19 +62,21 @@ const main = async () => {
     process.stdin.on('keypress', async (str, key) => {
         switch (key.name) {
             case 'p': {
+                if (!bootnodeId) return;
                 console.log('Sending PING to', bootnodeId);
                 const res = await portal.sendPing(bootnodeId, SubNetworkIds.HistoryNetworkId)
                 console.log('Received PONG response', res);
                 break;
             }
             case 'n': {
+                if (!bootnodeId) return;
                 console.log('Sending FINDNODES to ', bootnodeId)
                 const res = await portal.sendFindNodes(bootnodeId, Uint16Array.from([0, 1, 2]), SubNetworkIds.HistoryNetworkId)
                 console.log(res)
             }
             case 'c': if (key.ctrl) {
                 console.log('Exiting')
-                child.kill(0)
+                child?.kill(0)
                 process.exit(0);
             }
         }
@@ -77,5 +86,5 @@ const main = async () => {
 main().catch((err) => {
     console.log('Encountered an error', err.message)
     console.log('Shutting down...')
-    child.kill(0)
+    child?.kill(0)
 })
