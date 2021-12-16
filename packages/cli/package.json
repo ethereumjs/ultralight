@@ -23,6 +23,9 @@
     "portalnetwork": "^0.0.1",
     "yargs": "^17.3.0"
   },
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
   "author": "acolytec3",
   "license": "MIT"
 }
