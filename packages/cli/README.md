@@ -5,8 +5,7 @@ This is an experimental tool for running an ultralight node from the command lin
 ## Usage
 
 - Start the [proxy](../proxy)
-- Paste the ENR and Node ID for a currently running browser client 
-- Execute `ts-node src/index.ts` and you should see the payload from a PONG message logged to the console as below:
+- Run `ts-node src/index.ts --bootnode=enr:[Your favorite bootnode ENR here]`
 ```js
 {
   enrSeq: 1n,

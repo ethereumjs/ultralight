@@ -2,6 +2,17 @@ import { ENR } from "@chainsafe/discv5";
 import { PortalNetwork, SubNetworkIds } from "portalnetwork";
 import PeerId from "peer-id";
 import { Multiaddr } from "multiaddr";
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
+const readline = require('readline')
+readline.emitKeypressEvents(process.stdin)
+process.stdin.setRawMode(true)
+
+const args: any = yargs(hideBin(process.argv))
+    .option('bootnode', {
+        describe: 'Bootnode',
+        default: '',
+    }).argv
 
 const main = async () => {
     const id = await PeerId.create({ keyType: "secp256k1" });
@@ -18,13 +29,18 @@ const main = async () => {
         1
     );
     await portal.start();
-    portal.client.addEnr("enr:-IS4QJBALBigZVoKyz-NDBV8z34-pkVHU9yMxa6qXEqhCKYxOs5Psw6r5ueFOnBDOjsmgMGpC3Qjyr41By34wab1sKIBgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg")
-    const res = await portal.sendPing("639ab17d4327ae42826b838ca77796778ebbc22ee0279d5cfe3a86016fe2d9bd", SubNetworkIds.HistoryNetworkId)
-    console.log(res)
-    process.on('SIGINT', async () => {
-        console.log('Exiting')
-        await portal.client.stop()
-        process.exit(0)
+    portal.client.addEnr(args.bootnode)
+    console.log('Press p to ping bootnode')
+    process.stdin.on('keypress', async (str, key) => {
+        switch (key.name) {
+            case 'p': {
+                console.log('Sending PING to', ENR.decodeTxt(args.bootnode).nodeId);
+                const res = await portal.sendPing(ENR.decodeTxt(args.bootnode).nodeId, SubNetworkIds.HistoryNetworkId)
+                console.log('Received PONG response', res);
+                break;
+            }
+            case 'c': if (key.ctrl) process.exit(0);
+        }
     })
 }
 
