@@ -47,14 +47,14 @@ export class _UTPSocket extends EventEmitter {
   writer: utpWritingRunnable | undefined;
   reader: Reader;
   readerContent: Uint8Array;
-  constructor(utp: UtpProtocol, remoteAddress: string) {
+  constructor(utp: UtpProtocol, remoteAddress: string, type: string) {
     super();
     this.utp = utp;
     this.client = utp.client;
     this.remoteAddress = remoteAddress;
     this.rcvConnectionId = randUint16() & (UINT16MAX - 1);
     this.sndConnectionId = this.rcvConnectionId + 1;
-    this.seqNr = 1;
+    this.seqNr = type === "writing" ? randUint16() : 1;
     this.ackNr = 0;
     this.max_window = DEFAULT_WINDOW_SIZE;
     this.cur_window = this.max_window;
@@ -93,24 +93,27 @@ export class _UTPSocket extends EventEmitter {
   async handleIncomingConnectionRequest(packet: Packet): Promise<void> {
     // sndConnectionId and rcvConnectionId calculated from packet header
     this.setConnectionIdsFromPacket(packet);
+    this.ackNr = packet.header.seqNr
     // TODO: Figure out SeqNr and AckNr initializing and incrementation
-    this.seqNr = randUint16();
-    this.ackNr = packet.header.seqNr;
+
     log(`Setting Connection State: SynRecv`);
     this.state = ConnectionState.SynRecv;
     log(`Sending SYN ACK to accept connection request...`);
-    await this.sendSynAckPacket();
-    log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
-    // Increments seqNr (***????????*****)
-    this.seqNr++;
+    await this.sendSynAckPacket().then((res) => {
+      log(`Incrementing seqNr from ${this.seqNr-1} to ${this.seqNr}`);
+      // Increments seqNr (***????????*****)
+      // this.incrementSequenceNumber();
+    });
   }
 
   async handleSynAckPacket(packet: Packet): Promise<void> {
+    this.ackNr = packet.header.seqNr
     log(`SYN packet accepted.  SYN ACK Received.  Connection State: Connected`);
     this.setState(ConnectionState.Connected);
     log(`Sending SYN ACK ACK`);
-    await this.sendAckPacket();
-    log(`SYN ACK ACK sent...Reader listening for DATA stream...`);
+    await this.sendAckPacket().then((res) => {
+      log(`SYN ACK ACK sent...Reader listening for DATA stream...`);
+    });
   }
 
   async handleDataPacket(packet: Packet): Promise<void> {
@@ -125,11 +128,11 @@ export class _UTPSocket extends EventEmitter {
     // Send ACK if packet arrived in expected order.
     // TODO: Send SELECTIVE ACK if packet arrived out of order.
     // Call TIMEOUT if packet appears lost
-    await this.sendAckPacket();
-    log(`ACK sent for ${packet}`);
-    log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
-    // Increments seqNr (***????????*****)
-    this.seqNr++;
+    let sn = this.seqNr
+    await this.sendAckPacket().then((res) => {
+      log(`ACK sent.  seqNr: ${sn} ackNr: ${this.ackNr}`);
+      log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+    });
   }
   async handleStatePacket(packet: Packet): Promise<void> {
     // STATE packet is ACK for a specific DATA packet.
@@ -144,8 +147,11 @@ export class _UTPSocket extends EventEmitter {
         log(
           `SYN ACK ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`
         );
-        log(`Starting uTP data stream`);
-        this.content && (await this.write(this.content, packet));
+        log(`Starting uTP data stream...`);
+        this.content &&
+          (await this.write(this.content, packet).then((res) => {
+            log(`Finishing uTP data stream...`);
+          }));
         // a STATE packet will ACK the FIN packet to close connection.
       } else if (packet.header.ackNr === (Number("eof_pkt") & 0xffff)) {
         log(`FIN acked`);
@@ -163,11 +169,11 @@ export class _UTPSocket extends EventEmitter {
     this.setState(ConnectionState.GotFin);
     this.updateSocketFromPacketHeader(packet);
     log(`Sending FIN ACK packet.`);
-    await this.sendAckPacket();
-    log(`Waiting for 0 in-flight packets.`);
-    this.readerContent = await this.reader.run();
-    log(`Packet payloads compiled`);
-    // await this.client.sendTalkResp(dstId, msgId, new Uint8Array())
+    await this.sendAckPacket().then((res) => {
+      log(`Waiting for 0 in-flight packets.`);
+      this.readerContent = this.reader.run();
+      log(`Packet payloads compiled`);
+    });
   }
 
   // TODO
@@ -195,7 +201,7 @@ export class _UTPSocket extends EventEmitter {
 
   async sendAckPacket(): Promise<void> {
     const packet = createAckPacket(
-      this.seqNr,
+      this.seqNr++,
       this.sndConnectionId,
       this.ackNr,
       this.rtt_var,
@@ -205,23 +211,27 @@ export class _UTPSocket extends EventEmitter {
       `Sending ST_STATE packet ackNr: ${this.ackNr} seqNr: ${this.seqNr} to ${this.remoteAddress}`
     );
     await this.sendPacket(packet, PacketType.ST_STATE);
+    log(`Incrementing SeqNr from ${this.seqNr-1} to ${this.seqNr}`);
+    // *******************??????????????????????**********************
+    // this.incrementSequenceNumber();
   }
   async sendSynAckPacket(): Promise<void> {
-    this.seqNr = randUint16()
+    let seq = randUint16()
+    this.seqNr = seq;
     const packet = createAckPacket(
-      this.seqNr,
+      this.seqNr++,
       this.sndConnectionId,
       this.ackNr,
       this.rtt_var,
       this.cur_window
     );
     log(
-      `Sending SYN ACK -  seqNr: (random) ackNr: ${this.ackNr}  to ${this.remoteAddress}`
+      `Sending SYN ACK -  seqNr: ${this.seqNr} ackNr: ${this.ackNr}  to ${this.remoteAddress}`
     );
     await this.sendPacket(packet, PacketType.ST_STATE);
-    log(`Incrementing SeqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+    log(`Incrementing SeqNr from ${this.seqNr-1} to ${this.seqNr}`);
     // *******************??????????????????????**********************
-    this.seqNr++;
+    // this.incrementSequenceNumber();
   }
 
   async sendSynPacket(connectionId: number): Promise<Buffer> {
@@ -229,15 +239,16 @@ export class _UTPSocket extends EventEmitter {
     this.rcvConnectionId = connectionId;
     this.ackNr = randUint16();
     log(`Initializing ackNr to random Uint16.......${this.ackNr}`);
-    let packet = createSynPacket(this.rcvConnectionId, 1, this.ackNr);
+    let packet = createSynPacket(this.rcvConnectionId, 1, 0xFFFF);
+    this.seqNr = 2
     log(
-      `Sending SYN packet seqNr: 1 ackNr: ${this.ackNr} to ${this.remoteAddress}...`
+      `Sending SYN packet seqNr: 1 ackNr: ${0xFFFF} to ${this.remoteAddress}...`
     );
     return this.sendPacket(packet, PacketType.ST_SYN).then((buffer) => {
-      log(`SYN packet sent to ${this.remoteAddress}`);
-      log(`Incrementing SeqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+      log(`SYN packet sent with seqNr: 1 ackNr: ${0xFFFF}`);
+      log(`Incrementing SeqNr from ${this.seqNr-1} to ${this.seqNr}`);
       // *******************??????????????????????**********************
-      this.seqNr++;
+      // this.incrementSequenceNumber();
       return buffer;
     });
   }
@@ -249,32 +260,32 @@ export class _UTPSocket extends EventEmitter {
       this.cur_window
     );
     log(`Sending FIN packet ${packet} to ${this.remoteAddress}`);
-    log(`Incrementing SeqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+    log(`seqNr ${Number("eof pkt") & 0xFFFF}`);
     // *******************??????????????????????**********************
-    this.seqNr++;
+    // this.incrementSequenceNumber();
     await this.sendPacket(packet, PacketType.ST_FIN);
     log(`FIN packet ${packet} sent to ${this.remoteAddress}`);
   }
 
   async sendResetPacket() {
     let packet = createResetPacket(
-      this.seqNr,
+      this.seqNr++,
       this.sndConnectionId,
       this.ackNr
     );
     log(
       `Sending RESET packet seqNr: ${this.seqNr} ackNr: ${this.ackNr} to ${this.remoteAddress}`
     );
-    log(`Incrementing SeqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+    log(`Incrementing SeqNr from ${this.seqNr-1} to ${this.seqNr}`);
     // *******************??????????????????????**********************
-    this.seqNr++;
+    // this.incrementSequenceNumber();
     await this.sendPacket(packet, PacketType.ST_RESET);
     log(`RESET packet ${packet} sent to ${this.remoteAddress}`);
   }
 
   async sendDataPacket(payload: Uint8Array): Promise<Packet> {
     let packet = createDataPacket(
-      this.seqNr,
+      this.seqNr++,
       this.sndConnectionId,
       this.ackNr,
       this.max_window,
@@ -286,9 +297,9 @@ export class _UTPSocket extends EventEmitter {
       packet.payload
     );
     await this.sendPacket(packet, PacketType.ST_DATA);
-    log(`Incrementing SeqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+    log(`Incrementing SeqNr from ${this.seqNr-1} to ${this.seqNr}`);
     // *******************??????????????????????**********************
-    this.seqNr++;
+    // this.incrementSequenceNumber();
     return packet;
   }
 
@@ -307,11 +318,7 @@ export class _UTPSocket extends EventEmitter {
   }
 
   incrementSequenceNumber(): void {
-    let sn = this.seqNr + 1;
-    if (sn > UINT16MAX) {
-      sn = 1;
-    }
-    this.seqNr = sn;
+    this.seqNr += 1
   }
 
   setState(state: ConnectionState) {

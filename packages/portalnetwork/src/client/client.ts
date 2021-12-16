@@ -65,9 +65,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     /**
      * 
      * @param namespaces comma separated list of logging namespaces
-     * defaults to "portalnetwork*, discv5:service, <uTP>*"
+     * defaults to "portalnetwork*, discv5:service, <uTP>*,<uTP>:Reader*"
      */
-    public enableLog = (namespaces: string = "portalnetwork*,discv5:service*,<uTP>*") => {
+    public enableLog = (namespaces: string = "portalnetwork*,discv5:service*,<uTP>*,<uTP>:Reader*") => {
         debug.enable(namespaces)
     }
 

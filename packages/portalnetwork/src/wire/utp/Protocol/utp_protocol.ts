@@ -37,7 +37,7 @@ export class UtpProtocol {
     // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
     log(`Requesting uTP stream connection with ${remoteAddr}...`);
     // Creates a new uTP socket for remoteAddr
-    const socket = new _UTPSocket(this, remoteAddr);
+    const socket = new _UTPSocket(this, remoteAddr, "reading");
     // Adds this socket to 'sockets' registry, wtih remoteAddr as key
     this.sockets[remoteAddr] = socket;
     // Sends Syn Packet to begin uTP connection process using connectionId
@@ -49,7 +49,7 @@ export class UtpProtocol {
       `Received incoming ST_SYN packet...uTP connection requested by ${remoteAddr}`
     );
       // Creates a new socket for remoteAddr
-    let socket = new _UTPSocket(this, remoteAddr);
+    let socket = new _UTPSocket(this, remoteAddr, "writing");
     // Adds this socket to 'sockets' registry wtih remoteAddr as key
     this.sockets[remoteAddr] = socket;
     // Passes content from "Database" to the socket
@@ -90,7 +90,7 @@ export class UtpProtocol {
     // Socket will recalculate it's WINDOW_SIZE based on metadata in the Packet Header
     // Congestion Control (CC) uses WINDOW_SIZE to determine packet sizes
     // CC also will TIMEOUT the stream if packets appear lost (if the seqNr falls behind by more than 3)
-    log(`received CONTENT seqNr: ${packet.header.seqNr} ${packet.header.ackNr} packet${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
+    log(`received CONTENT seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr} Length: ${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
     await this.sockets[remoteAddr].handleDataPacket(packet)
     }
 
