@@ -12,13 +12,16 @@ The `discv5` library is a fork of [Chainsafe's implementation](https://github.co
 
 The `portalnetwork` library is the application layer needed to interact with the Portal Network and depends on `discv5` for its networking layer
 
+### `Ultralight-Proxy`
+
+This a simple nodejs server that accepts incoming websocket connections from browser clients and routes their messages on to other Portal Network clients
 ### `Ultralight-Browser-Client`
 
 This is a technical demonstration of a web application that uses the `portalnetwork` module to connect to the Portal Network
 
-### `Ultralight-Proxy`
+### `CLI`
 
-This a simple nodejs server that accepts incoming websocket connections from browser clients and routes their messages on to other Portal Network clients
+This is a technical demonstration of a NodeJS application that uses the `portalnetwork` module to connect to the Portal Network
 
 ## Usage
 
