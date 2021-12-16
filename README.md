@@ -2,6 +2,10 @@
 
 This monorepo comprises a suite of tools **currently in development** to allow dapps, wallet providers, and really any Javascript based Ethereum application to connect into the Portal Network once development is complete and the Portal Network is live. 
 
+## Prequisites
+
+Node v15+, NPM v7+
+
 ## Quick Start
 
 Clone this repo and run `npm i` from the root directory.  This project leverage [`npm workspaces`](https://docs.npmjs.com/cli/v7/using-npm/workspaces) so requires NPM v7 or above.
