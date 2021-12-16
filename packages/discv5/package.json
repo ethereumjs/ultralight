@@ -75,6 +75,7 @@
     "strict-event-emitter-types": "^2.0.0",
     "varint": "^6.0.0",
     "websocket-as-promised": "^2.0.1",
-    "ws": "^8.2.1"
+    "ws": "^8.2.1",
+    "isomorphic-ws": "^4.0.1"
   }
 }
