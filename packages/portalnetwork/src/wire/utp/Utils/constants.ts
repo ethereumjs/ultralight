@@ -22,7 +22,7 @@ export const MAX_CONNECTION_ATTEMPTS: number = 5;
   export const MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC: number = 120000000;
 
 
-  export const DEFAULT_WINDOW_SIZE = 300
+  export const DEFAULT_WINDOW_SIZE = 1200
   export const MAX_PACKET_SIZE: number = 900;
   export const MIN_PACKET_SIZE: number = 150;
   export const MINIMUM_MTU: number = 576;

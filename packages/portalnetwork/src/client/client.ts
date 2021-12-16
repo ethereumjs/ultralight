@@ -16,6 +16,12 @@ type state = {
     [key: string]: Uint8Array
 }
 
+let testArray = new Uint8Array(2000)
+for (let i = 0; i < 2000; i++) {
+    testArray[i] = Math.floor(Math.random() * 255)
+    
+}
+
 export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventEmitter }) {
     client: Discv5;
     stateNetworkRoutingTable: StateNetworkRoutingTable;
@@ -38,7 +44,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.stateNetworkState = {
             "01": Buffer.from('abc'),
             "02": Buffer.from('efg'),
-            "03": new Uint8Array(2000).fill(1)
+            "03": testArray
         }
     }
 
@@ -59,9 +65,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     /**
      * 
      * @param namespaces comma separated list of logging namespaces
-     * defaults to "portalnetwork*, discv5:service, <uTP>*"
+     * defaults to "portalnetwork*, discv5:service, <uTP>*,<uTP>:Reader*"
      */
-    public enableLog = (namespaces: string = "portalnetwork*,discv5:service*,<uTP>*") => {
+    public enableLog = (namespaces: string = "portalnetwork*,discv5:service*,<uTP>*,<uTP>:Reader*") => {
         debug.enable(namespaces)
     }
 
@@ -233,7 +239,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         switch (toHexString(message.protocol)) {
             case SubNetworkIds.StateNetworkId: this.log(`Received State Subnetwork request`); break;
             case SubNetworkIds.HistoryNetworkId: this.log(`Received History Subnetwork request`); break;
-            case SubNetworkIds.UTPNetworkId: this.log(`Received uTP packet`); this.handleUTPStreamRequest(srcId, message.id, message.request); return;
+            case SubNetworkIds.UTPNetworkId: this.log(`Received uTP packet`); this.handleUTP(srcId, message.id, message.request); return;
             default: this.log(`Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`); return;
 
         }
@@ -261,7 +267,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         let decoded = PortalWireMessageType.deserialize(message.request)
         let payload = decoded.value as ContentMessage
         let packet = payload.content as Uint8Array
-        this.handleUTPStreamRequest(srcId, message.id, Buffer.from(packet))
+        this.handleUTP(srcId, message.id, Buffer.from(packet))
     }
 
     private handlePing = (srcId: string, message: ITalkReqMessage) => {
@@ -325,7 +331,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             contentKeys: [true]
         }
         const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.ACCEPT, value: payload });
-        this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
+        await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
 
 
     }
@@ -368,18 +374,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
     // private handleContent = async (srcId: string, message: Italk)
 
-    private handleUTPStreamRequest = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
-
+    private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
+        await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
         const packet = bufferToPacket(packetBuffer)
-        switch (packet.header.pType) {
-
-            case PacketType.ST_SYN: await this.uTP.handleIncomingConnectionRequest(packet, srcId, msgId); break;
-            case PacketType.ST_DATA: await this.uTP.handleIncomingData(packet, srcId, msgId); break;
-            case PacketType.ST_STATE: await this.uTP.handleAck(packet, srcId, msgId); break;
-            case PacketType.ST_RESET: this.log('got RESET packet'); break;
-            case PacketType.ST_FIN: const content = await this.uTP.handleFin(packet, srcId, msgId);
-                _log('Got this content', content); break;
-        }
+        await this.uTP.handleUtpPacket(packet, srcId, msgId)
     }
 
     /**

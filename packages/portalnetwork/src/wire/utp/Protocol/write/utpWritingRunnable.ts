@@ -36,7 +36,7 @@ export default class utpWritingRunnable {
     this.socket = socket;
     this.utp = utp;
     this.timestamp = timestamp;
-    this.content = new Uint8Array(2000).fill(1);
+    this.content = content
     this.contentMod = this.content;
     this.writing = false;
     this.finished = false;
