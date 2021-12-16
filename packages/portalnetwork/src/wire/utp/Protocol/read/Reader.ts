@@ -1,5 +1,8 @@
+import debug from "debug";
 import { Packet, _UTPSocket } from "../..";
 
+
+const log = debug('<uTP>')
 export default class Reader {
     packets: Packet[]
     inOrder: Packet[]
@@ -17,6 +20,7 @@ export default class Reader {
     }
 
     addPacket(packet: Packet) {
+        log(`Packet Received.  seqNr: ${packet.header.seqNr}`)
         this.packets.push(packet);
     }
 

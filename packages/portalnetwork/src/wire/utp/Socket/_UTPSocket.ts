@@ -140,7 +140,7 @@ export class _UTPSocket extends EventEmitter {
     if (packet.header.ackNr == 1) {
       this.handleSynAckPacket(packet);
     } else {
-      if (packet.header.seqNr == 1) {
+      if (packet.header.seqNr == 2) {
         log(
           `SYN ACK ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`
         );
@@ -207,8 +207,9 @@ export class _UTPSocket extends EventEmitter {
     await this.sendPacket(packet, PacketType.ST_STATE);
   }
   async sendSynAckPacket(): Promise<void> {
+    this.seqNr = randUint16()
     const packet = createAckPacket(
-      randUint16(),
+      this.seqNr,
       this.sndConnectionId,
       this.ackNr,
       this.rtt_var,
