@@ -195,6 +195,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
         this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
         const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
+        try {
         if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
             this.log(`Received FOUNDCONTENT from ${shortId(dstId)}`);
             // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
@@ -213,6 +214,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 };
             }
             return decoded.value
+            }
+        }
+        catch (err: any) {
+            this.log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
         }
     }
 
@@ -228,14 +233,21 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.OFFER, value: offerMsg })
         const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
-        const decoded = PortalWireMessageType.deserialize(res);
-        if (decoded.selector === MessageCodes.ACCEPT) {
-            this.log(`Received ACCEPT message from ${shortId(dstId)}`);
-            this.log(decoded.value);
-            let id = randUint16()
-            // TODO: Add code to initiate uTP streams with serving of requested content
-            await this.sendUtpStreamRequest(dstId, id)
+        try {
+            const decoded = PortalWireMessageType.deserialize(res);
+            if (decoded.selector === MessageCodes.ACCEPT) {
+                this.log(`Received ACCEPT message from ${shortId(dstId)}`);
+                this.log(decoded.value);
+                let id = randUint16()
+                // TODO: Add code to initiate uTP streams with serving of requested content
+                await this.sendUtpStreamRequest(dstId, id)
+            }
+            return decoded.value
         }
+        catch (err: any) {
+            this.log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+        }
+
     }
 
     public sendUtpStreamRequest = async (dstId: string, id: number) => {
