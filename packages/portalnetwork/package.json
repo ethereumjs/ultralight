@@ -8,7 +8,8 @@
     "build": "tsc --declaration",
     "docs": "typedoc src/index.ts",
     "tape": "tape -r  ts-node/register",
-    "test": "tape -r  ts-node/register 'test/**/*.spec.ts'"
+    "test": "tape -r  ts-node/register 'test/!(integration)/**/*.spec.ts'",
+    "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'"
   },
   "types": "dist/index.d.ts",
   "author": "acolytec3",
@@ -18,16 +19,18 @@
     "@chainsafe/ssz": "^0.8.19",
     "bn.js": "^5.2.0",
     "debug": "^4.3.2",
-    "tape": "^5.3.1",
-    "strict-event-emitter-types": "^2.0.0"
+    "strict-event-emitter-types": "^2.0.0",
+    "tape": "^5.3.1"
   },
   "peerDependencies": {
     "bn.js": "^5.2.0"
   },
   "devDependencies": {
+    "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
-    "@types/bn.js": "^5.1.0",
+    "nyc": "^15.1.0",
+    "testdouble": "^3.16.3",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
     "typedoc": "^0.22.5",
