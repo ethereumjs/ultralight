@@ -415,6 +415,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
     /**
      * 
+     * This method maintains the liveness of peers in the Subnetwork routing tables.  If a PONG message is received from 
+     * an unknown peer for a given subnetwork, that peer is added to the corresponding subnetwork routing table.  If this
+     * method is called with no `customPayload`, this indicates the peer corresponding to `srcId` should be removed from 
+     * the specified subnetwork routing table.
      * @param srcId nodeId of peer being updated in subnetwork routing table
      * @param networkId subnetwork Id of routing table being updated
      * @param customPayload payload of the PING/PONG message being decoded
