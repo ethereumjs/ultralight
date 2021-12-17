@@ -304,10 +304,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     private handlePing = (srcId: string, message: ITalkReqMessage) => {
-        // Check to see if node is already in corresponding network routing table and add if not
         const decoded = PortalWireMessageType.deserialize(message.request);
         const pingMessage = decoded.value as PingMessage;
         this.updateSubnetworkRoutingTable(srcId, toHexString(message.protocol) as SubNetworkIds, pingMessage.customPayload)
+        // Check to see if node is already in corresponding network routing table and add if not
         this.sendPong(srcId, message.id);
     }
 

@@ -1,5 +1,5 @@
 import tape from 'tape'
-import { PortalNetwork, SubNetworkIds } from '../../src/'
+import { MessageCodes, PingPongCustomDataType, PortalNetwork, PortalWireMessageType, SubNetworkIds } from '../../src/'
 import td from 'testdouble'
 
 tape('Client unit tests', async (t) => {
@@ -43,5 +43,18 @@ tape('Client unit tests', async (t) => {
     res = await node.sendOffer('abc', [Uint8Array.from([0])], SubNetworkIds.HistoryNetworkId)
     t.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
 
+    node.sendPong = td.func<any>()
+    td.when(node.sendPong('abc', td.matchers.anything())).thenDo(() => t.pass('correctly handled PING message'))
+    node.updateSubnetworkRoutingTable = td.func<any>()
+    const payload = PingPongCustomDataType.serialize({ radius: BigInt(1) })
+    const pingMsg = PortalWireMessageType.serialize({
+        selector: MessageCodes.PING, value: {
+            enrSeq: node.client.enr.seq,
+            customPayload: payload
+        }
+    })
+    node.handlePing('abc', { request: pingMsg, protocol: SubNetworkIds.HistoryNetworkId })
+    
+    td.reset();
     t.end()
 })
