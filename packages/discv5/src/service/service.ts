@@ -205,8 +205,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.sessionService.on("requestFailed", this.onRequestFailed);
     this.sessionService.transport.on("multiaddrUpdate", (addr) => {
       this.enr.setLocationMultiaddr(addr);
+      this.emit("multiaddrUpdated", addr)
       log("Updated ENR based on public multiaddr to", this.enr.encodeTxt(this.keypair.privateKey));
     });
+
     await this.sessionService.start();
     this.started = true;
   }

@@ -9,6 +9,8 @@ import { bufferToPacket, PacketType, randUint16, Uint8, UtpProtocol } from '../w
 import { PingPongCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage, PongMessage, ContentMessage, PingMessageType, PingMessage, PongMessageType } from "../wire";
 import { PortalNetworkEventEmitter } from "./types";
 import { PortalNetworkRoutingTable } from ".";
+import PeerId from 'peer-id';
+import { Multiaddr } from 'multiaddr';
 
 const _log = debug("portalnetwork")
 
@@ -30,6 +32,25 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     nodeRadius: number;
     // TODO: Replace with proper content database
     stateNetworkState: state
+
+    /**
+     * 
+     * @param ip initial local IP address of node
+     * @param proxyAddress IP address of proxy
+     * @returns a new PortalNetwork instance
+     */
+    public static createPortalNetwork = async (ip: string, proxyAddress = '127.0.0.1') => {
+        const id = await PeerId.create({ keyType: "secp256k1" });
+        const enr = ENR.createFromPeerId(id);
+        enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/0`));
+        return new PortalNetwork({
+            enr,
+            peerId: id,
+            multiaddr: enr.getLocationMultiaddr('udp')!,
+            transport: "wss",
+            proxyAddress: proxyAddress,
+        }, 1)
+    }
 
     constructor(config: IDiscv5CreateOptions, radius = 1) {
         super();
@@ -84,8 +105,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @throws if `value` is greater than 256
      */
     public set radius(value: number) {
-        if (value > 256) {
-            throw new Error('radius cannot be greater than 256')
+        if (value > 256 || value < 0) {
+            throw new Error('radius must be between 0 and 256')
         }
         this.nodeRadius = value
     }
