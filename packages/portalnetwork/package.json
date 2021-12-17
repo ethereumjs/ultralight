@@ -8,7 +8,8 @@
     "build": "tsc --declaration",
     "docs": "typedoc src/index.ts",
     "tape": "tape -r  ts-node/register",
-    "test": "tape -r  ts-node/register 'test/**/*.spec.ts'"
+    "test": "tape -r  ts-node/register 'test/!(integration)/**/*.spec.ts'",
+    "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'"
   },
   "types": "dist/index.d.ts",
   "author": "acolytec3",
