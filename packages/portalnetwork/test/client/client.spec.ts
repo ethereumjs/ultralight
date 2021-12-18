@@ -64,6 +64,17 @@ tape('Client unit tests', async (t) => {
     td.when(node.client.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
     node.handleFindNodes('abc', { request: findNodesMessageWithDistance, protocol: SubNetworkIds.HistoryNetworkId })
     node.handleFindNodes('abc', { request: findNodesMessageWithoutDistance, protocol: SubNetworkIds.HistoryNetworkId })
+
+    // TODO: Construct better findContent tests since these will break when introduce an actual content database
+    const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 1])
+    const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0])
+    const findContentMessageWithLongContent = Uint8Array.from([4, 4, 0, 0, 0, 3])
+    td.when(node.client.sendTalkResp('def', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 1))).thenDo(() => t.pass('correctly handle findContent with small content request'))
+    td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => t.pass('correctly handle findContent where no matching content'))
+    td.when(node.client.sendTalkResp('jkl', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 0))).thenDo(() => t.pass('correctly handle findContent with large content request'))
+    node.handleFindContent('def', { request: findContentMessageWithShortContent })
+    node.handleFindContent('ghi', { request: findContentMessageWithNoContent })
+    node.handleFindContent('jkl', { request: findContentMessageWithLongContent })
     td.reset();
 
     t.end()

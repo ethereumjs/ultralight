@@ -296,7 +296,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
     }
 
-    handleContent(srcId: string, message: ITalkReqMessage) {
+    // TODO: Decide if we actually need this message since we should never get a CONTENT message in a TALKREQ message packet
+    private handleContent(srcId: string, message: ITalkReqMessage) {
         let decoded = PortalWireMessageType.deserialize(message.request)
         let payload = decoded.value as ContentMessage
         let packet = payload.content as Uint8Array
@@ -374,7 +375,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(`Received FINDCONTENT request from ${shortId(srcId)}`)
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
-
         //Check to see if value in locally maintained state network state
         const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
         const value = this.stateNetworkState[contentKey]
@@ -395,7 +395,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             idBuffer.writeUInt16BE(_id, 0)
             const id = Uint8Array.from(idBuffer)
             this.log(`Sending FOUND_CONTENT message with CONNECTION ID: ${_id}`)
-
             const payload = ContentMessageType.serialize({ selector: 0, value: id })
             this.client.sendTalkResp(srcId, message.id,
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
