@@ -336,7 +336,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 nodesPayload.total++;
                 nodesPayload.enrs.push(this.client.enr.encode())
             }
-            const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload })
+            const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload }) 
             this.client.sendTalkResp(srcId, message.id, encodedPayload);
         } else {
             this.client.sendTalkResp(srcId, message.id, Buffer.from([]))

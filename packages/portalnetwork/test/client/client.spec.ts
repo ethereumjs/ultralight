@@ -55,6 +55,16 @@ tape('Client unit tests', async (t) => {
     })
     node.handlePing('abc', { request: pingMsg, protocol: SubNetworkIds.HistoryNetworkId })
     
+    node.client.sendTalkResp = td.func<any>()
+    const findNodesMessageWithDistance = Uint8Array.from([2, 4, 0, 0, 0, 0, 0])
+    const findNodesMessageWithoutDistance = Uint8Array.from([2, 4, 0, 0, 0])
+    node.client.enr.encode = td.func<any>()
+    td.when(node.client.sendTalkResp('abc', td.matchers.anything(), td.matchers.argThat((arg: Uint8Array) => arg.length > 3))).thenDo(() => t.pass('correctly handle findNodes message with ENRs'))
+    td.when(node.client.sendTalkResp('abc', td.matchers.anything(), td.matchers.argThat((arg: Uint8Array) => arg.length === 0))).thenDo(() => t.pass('correctly handle findNodes message with no ENRs'))
+    td.when(node.client.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
+    node.handleFindNodes('abc', { request: findNodesMessageWithDistance, protocol: SubNetworkIds.HistoryNetworkId })
+    node.handleFindNodes('abc', { request: findNodesMessageWithoutDistance, protocol: SubNetworkIds.HistoryNetworkId })
     td.reset();
+
     t.end()
 })
