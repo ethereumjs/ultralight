@@ -1,5 +1,5 @@
 import tape from 'tape'
-import { PortalNetwork, SubNetworkIds } from '../../src/'
+import { MessageCodes, PingPongCustomDataType, PortalNetwork, PortalWireMessageType, SubNetworkIds } from '../../src/'
 import td from 'testdouble'
 
 tape('Client unit tests', async (t) => {
@@ -42,6 +42,40 @@ tape('Client unit tests', async (t) => {
     t.ok(res.contentKeys[0] === true, 'received valid ACCEPT response to OFFER')
     res = await node.sendOffer('abc', [Uint8Array.from([0])], SubNetworkIds.HistoryNetworkId)
     t.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
+
+    node.sendPong = td.func<any>()
+    td.when(node.sendPong('abc', td.matchers.anything())).thenDo(() => t.pass('correctly handled PING message'))
+    node.updateSubnetworkRoutingTable = td.func<any>()
+    const payload = PingPongCustomDataType.serialize({ radius: BigInt(1) })
+    const pingMsg = PortalWireMessageType.serialize({
+        selector: MessageCodes.PING, value: {
+            enrSeq: node.client.enr.seq,
+            customPayload: payload
+        }
+    })
+    node.handlePing('abc', { request: pingMsg, protocol: SubNetworkIds.HistoryNetworkId })
+    
+    node.client.sendTalkResp = td.func<any>()
+    const findNodesMessageWithDistance = Uint8Array.from([2, 4, 0, 0, 0, 0, 0])
+    const findNodesMessageWithoutDistance = Uint8Array.from([2, 4, 0, 0, 0])
+    node.client.enr.encode = td.func<any>()
+    td.when(node.client.sendTalkResp('abc', td.matchers.anything(), td.matchers.argThat((arg: Uint8Array) => arg.length > 3))).thenDo(() => t.pass('correctly handle findNodes message with ENRs'))
+    td.when(node.client.sendTalkResp('abc', td.matchers.anything(), td.matchers.argThat((arg: Uint8Array) => arg.length === 0))).thenDo(() => t.pass('correctly handle findNodes message with no ENRs'))
+    td.when(node.client.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
+    node.handleFindNodes('abc', { request: findNodesMessageWithDistance, protocol: SubNetworkIds.HistoryNetworkId })
+    node.handleFindNodes('abc', { request: findNodesMessageWithoutDistance, protocol: SubNetworkIds.HistoryNetworkId })
+
+    // TODO: Construct better findContent tests since these will break when introduce an actual content database
+    const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 1])
+    const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0])
+    const findContentMessageWithLongContent = Uint8Array.from([4, 4, 0, 0, 0, 3])
+    td.when(node.client.sendTalkResp('def', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 1))).thenDo(() => t.pass('correctly handle findContent with small content request'))
+    td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => t.pass('correctly handle findContent where no matching content'))
+    td.when(node.client.sendTalkResp('jkl', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 0))).thenDo(() => t.pass('correctly handle findContent with large content request'))
+    node.handleFindContent('def', { request: findContentMessageWithShortContent })
+    node.handleFindContent('ghi', { request: findContentMessageWithNoContent })
+    node.handleFindContent('jkl', { request: findContentMessageWithLongContent })
+    td.reset();
 
     t.end()
 })

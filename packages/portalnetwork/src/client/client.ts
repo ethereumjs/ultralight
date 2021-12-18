@@ -296,7 +296,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
     }
 
-    handleContent(srcId: string, message: ITalkReqMessage) {
+    // TODO: Decide if we actually need this message since we should never get a CONTENT message in a TALKREQ message packet
+    private handleContent(srcId: string, message: ITalkReqMessage) {
         let decoded = PortalWireMessageType.deserialize(message.request)
         let payload = decoded.value as ContentMessage
         let packet = payload.content as Uint8Array
@@ -304,10 +305,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     private handlePing = (srcId: string, message: ITalkReqMessage) => {
-        // Check to see if node is already in corresponding network routing table and add if not
         const decoded = PortalWireMessageType.deserialize(message.request);
         const pingMessage = decoded.value as PingMessage;
         this.updateSubnetworkRoutingTable(srcId, toHexString(message.protocol) as SubNetworkIds, pingMessage.customPayload)
+        // Check to see if node is already in corresponding network routing table and add if not
         this.sendPong(srcId, message.id);
     }
 
@@ -336,7 +337,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 nodesPayload.total++;
                 nodesPayload.enrs.push(this.client.enr.encode())
             }
-            const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload })
+            const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload }) 
             this.client.sendTalkResp(srcId, message.id, encodedPayload);
         } else {
             this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
@@ -374,7 +375,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(`Received FINDCONTENT request from ${shortId(srcId)}`)
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
-
         //Check to see if value in locally maintained state network state
         const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
         const value = this.stateNetworkState[contentKey]
@@ -395,7 +395,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             idBuffer.writeUInt16BE(_id, 0)
             const id = Uint8Array.from(idBuffer)
             this.log(`Sending FOUND_CONTENT message with CONNECTION ID: ${_id}`)
-
             const payload = ContentMessageType.serialize({ selector: 0, value: id })
             this.client.sendTalkResp(srcId, message.id,
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
@@ -415,6 +414,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
     /**
      * 
+     * This method maintains the liveness of peers in the Subnetwork routing tables.  If a PONG message is received from 
+     * an unknown peer for a given subnetwork, that peer is added to the corresponding subnetwork routing table.  If this
+     * method is called with no `customPayload`, this indicates the peer corresponding to `srcId` should be removed from 
+     * the specified subnetwork routing table.
      * @param srcId nodeId of peer being updated in subnetwork routing table
      * @param networkId subnetwork Id of routing table being updated
      * @param customPayload payload of the PING/PONG message being decoded
