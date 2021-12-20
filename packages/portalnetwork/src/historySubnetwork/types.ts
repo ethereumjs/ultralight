@@ -16,4 +16,4 @@ export const BlockBodyType = BlockHeaderType
 
 export const ReceiptType = BlockHeaderType
 
-export const HistoryNetworkContentKeyUnionType = new UnionType<Union<HistoryNetworkContentKey>>({ types: [BlockHeaderType, BlockHeaderType, BlockBodyType, ReceiptType] })
+export const HistoryNetworkContentKeyUnionType = new UnionType<Union<HistoryNetworkContentKey>>({ types: [BlockHeaderType, BlockBodyType, ReceiptType] })
