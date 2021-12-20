@@ -124,16 +124,22 @@ export class _UTPSocket extends EventEmitter {
     log(`Connection State: Connected`);
     this.state = ConnectionState.Connected;
     log(`Sending packet payload to Reader`);
-    await this.reader.addPacket(packet);
+    await this.reader.addPacket(packet).then(async (expected) => {
+      let sn = this.seqNr
+      expected ?
+      await this.sendAckPacket().then((res) => {
+        log(`ACK sent.  seqNr: ${sn} ackNr: ${this.ackNr}`);
+        log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+      }) :
+      await this.sendSelectiveAckPacket(packet).then((res) => {
+        log(`Packet Arrived Out of Order.  seqNr: ${sn} ackNr: ${this.ackNr}`);
+        log(`Sending Selective Ack`);
+    })
     // Send ACK if packet arrived in expected order.
     // TODO: Send SELECTIVE ACK if packet arrived out of order.
     // Call TIMEOUT if packet appears lost
-    let sn = this.seqNr
-    await this.sendAckPacket().then((res) => {
-      log(`ACK sent.  seqNr: ${sn} ackNr: ${this.ackNr}`);
-      log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
-    });
-  }
+  })}
+
   async handleStatePacket(packet: Packet): Promise<void> {
     // STATE packet is ACK for a specific DATA packet.
     // TODO: handle SELECTIVE ACK packet
@@ -187,10 +193,8 @@ export class _UTPSocket extends EventEmitter {
     spaceLeftInBuffer: number
   ) {}
 
-  sendSelectiveAckPacket(
-    headerExtension: unknown,
-    timestampDiff: number,
-    spaceLeftInBuffer: number
+  async sendSelectiveAckPacket(
+    packet: Packet
   ) {}
 
   ackAlreadyAcked(

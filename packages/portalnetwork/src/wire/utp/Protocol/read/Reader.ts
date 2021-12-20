@@ -9,21 +9,30 @@ export default class Reader {
   gotFinPacket: boolean;
   socket: _UTPSocket;
   nextSeqNr: number;
+  lastSeqNr: number | null;
   constructor(socket: _UTPSocket) {
     this.socket = socket;
     this.packets = new Array<Packet>();
     this.inOrder = new Array<Packet>();
     this.reading = true;
     this.gotFinPacket = false;
-    this.nextSeqNr = 65536;
+    this.nextSeqNr = 66000;
+    this.lastSeqNr = null;
   }
 
-  addPacket(packet: Packet) {
+  async addPacket(packet: Packet): Promise<boolean> {
     log(`Packet Received.  seqNr: ${packet.header.seqNr}`);
-    if (packet.header.seqNr < this.nextSeqNr) {
+    if (packet.header.seqNr === 66000) {
         this.nextSeqNr = packet.header.seqNr
+        this.lastSeqNr = packet.header.seqNr
+        this.packets.push(packet);
+        return true
+    } else {
+      this.packets.push(packet)
+      if (packet.header.seqNr === this.lastSeqNr) {
+        return true
+      } else return false
     }
-    this.packets.push(packet);
   }
 
   notEmpty() {
