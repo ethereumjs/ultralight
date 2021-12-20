@@ -10,9 +10,9 @@ So, when a message received containing `[127,0,0,1,122,73,28,96...` is received 
  The first 4 bytes are parsed to an ip address of: 127.0.0.1 and the port (represented by `[122, 73]`) is parsed to 31305.  The proxy then sends the remainder of the message (i.e. all bytes starting with the 7th element of the message) to the address 127.0.0.1:31305.
 ## Usage
 
-`npm run proxy -- [YOUR EXTERNAL IP HERE]`
+To run a proxy on a local network, run `npm run start`.
 
-or
+To make your proxy public facing, run `npm run start extip` and the proxy will get its public IP address from a STUN server and route all traffic via the external IP address.
 
-`ts-node src/index.ts [YOUR EXTERNAL IP HERE]`
+
 

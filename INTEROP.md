@@ -12,7 +12,7 @@
 
 - Find your public IP address using something like [What is my IP Address](https://whatismyipaddress.com/)
 - Copy one of the [trin public bootnode ENRs](https://github.com/ethereum/portal-network-specs/blob/master/testnet.md)
-- Start the CLI client using this command `npm run start -w=cli -- --extip=[your public ip address] --bootnode=[trin bootnode enr]`
+- Start the CLI client using this command `npm run start -w=cli -- --proxy --nat=extip --bootnode=[trin bootnode enr]`
 - Once the client starts, press `p` to send a PING message to the bootnode.
 - Press `n` to send a FINDNODES message to the bootnode
 - Press `e` to print the Ultralight-CLI node's current ENR
