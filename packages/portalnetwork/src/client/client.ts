@@ -9,6 +9,8 @@ import { bufferToPacket, PacketType, randUint16, Uint8, UtpProtocol } from '../w
 import { PingPongCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage, PongMessage, ContentMessage, PingMessageType, PingMessage, PongMessageType } from "../wire";
 import { PortalNetworkEventEmitter } from "./types";
 import { PortalNetworkRoutingTable } from ".";
+import PeerId from 'peer-id';
+import { Multiaddr } from 'multiaddr';
 
 const _log = debug("portalnetwork")
 
@@ -30,6 +32,25 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     nodeRadius: number;
     // TODO: Replace with proper content database
     stateNetworkState: state
+
+    /**
+     * 
+     * @param ip initial local IP address of node
+     * @param proxyAddress IP address of proxy
+     * @returns a new PortalNetwork instance
+     */
+    public static createPortalNetwork = async (ip: string, proxyAddress = '127.0.0.1') => {
+        const id = await PeerId.create({ keyType: "secp256k1" });
+        const enr = ENR.createFromPeerId(id);
+        enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/0`));
+        return new PortalNetwork({
+            enr,
+            peerId: id,
+            multiaddr: enr.getLocationMultiaddr('udp')!,
+            transport: "wss",
+            proxyAddress: proxyAddress,
+        }, 1)
+    }
 
     constructor(config: IDiscv5CreateOptions, radius = 1) {
         super();
@@ -84,8 +105,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @throws if `value` is greater than 256
      */
     public set radius(value: number) {
-        if (value > 256) {
-            throw new Error('radius cannot be greater than 256')
+        if (value > 256 || value < 0) {
+            throw new Error('radius must be between 0 and 256')
         }
         this.nodeRadius = value
     }
@@ -174,6 +195,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
         this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
         const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
+        try {
         if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
             this.log(`Received FOUNDCONTENT from ${shortId(dstId)}`);
             // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
@@ -192,6 +214,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 };
             }
             return decoded.value
+            }
+        }
+        catch (err: any) {
+            this.log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
         }
     }
 
@@ -207,14 +233,21 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.OFFER, value: offerMsg })
         const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
-        const decoded = PortalWireMessageType.deserialize(res);
-        if (decoded.selector === MessageCodes.ACCEPT) {
-            this.log(`Received ACCEPT message from ${shortId(dstId)}`);
-            this.log(decoded.value);
-            let id = randUint16()
-            // TODO: Add code to initiate uTP streams with serving of requested content
-            await this.sendUtpStreamRequest(dstId, id)
+        try {
+            const decoded = PortalWireMessageType.deserialize(res);
+            if (decoded.selector === MessageCodes.ACCEPT) {
+                this.log(`Received ACCEPT message from ${shortId(dstId)}`);
+                this.log(decoded.value);
+                let id = randUint16()
+                // TODO: Add code to initiate uTP streams with serving of requested content
+                await this.sendUtpStreamRequest(dstId, id)
+            }
+            return decoded.value
         }
+        catch (err: any) {
+            this.log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+        }
+
     }
 
     public sendUtpStreamRequest = async (dstId: string, id: number) => {
@@ -263,7 +296,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
     }
 
-    handleContent(srcId: string, message: ITalkReqMessage) {
+    // TODO: Decide if we actually need this message since we should never get a CONTENT message in a TALKREQ message packet
+    private handleContent(srcId: string, message: ITalkReqMessage) {
         let decoded = PortalWireMessageType.deserialize(message.request)
         let payload = decoded.value as ContentMessage
         let packet = payload.content as Uint8Array
@@ -271,10 +305,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     private handlePing = (srcId: string, message: ITalkReqMessage) => {
-        // Check to see if node is already in corresponding network routing table and add if not
         const decoded = PortalWireMessageType.deserialize(message.request);
         const pingMessage = decoded.value as PingMessage;
         this.updateSubnetworkRoutingTable(srcId, toHexString(message.protocol) as SubNetworkIds, pingMessage.customPayload)
+        // Check to see if node is already in corresponding network routing table and add if not
         this.sendPong(srcId, message.id);
     }
 
@@ -303,7 +337,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 nodesPayload.total++;
                 nodesPayload.enrs.push(this.client.enr.encode())
             }
-            const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload })
+            const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.NODES, value: nodesPayload }) 
             this.client.sendTalkResp(srcId, message.id, encodedPayload);
         } else {
             this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
@@ -341,7 +375,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(`Received FINDCONTENT request from ${shortId(srcId)}`)
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
-
         //Check to see if value in locally maintained state network state
         const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
         const value = this.stateNetworkState[contentKey]
@@ -362,7 +395,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             idBuffer.writeUInt16BE(_id, 0)
             const id = Uint8Array.from(idBuffer)
             this.log(`Sending FOUND_CONTENT message with CONNECTION ID: ${_id}`)
-
             const payload = ContentMessageType.serialize({ selector: 0, value: id })
             this.client.sendTalkResp(srcId, message.id,
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
@@ -382,6 +414,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
     /**
      * 
+     * This method maintains the liveness of peers in the Subnetwork routing tables.  If a PONG message is received from 
+     * an unknown peer for a given subnetwork, that peer is added to the corresponding subnetwork routing table.  If this
+     * method is called with no `customPayload`, this indicates the peer corresponding to `srcId` should be removed from 
+     * the specified subnetwork routing table.
      * @param srcId nodeId of peer being updated in subnetwork routing table
      * @param networkId subnetwork Id of routing table being updated
      * @param customPayload payload of the PING/PONG message being decoded

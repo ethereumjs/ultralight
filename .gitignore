@@ -3,3 +3,4 @@ dist
 build
 lib
 *.tsbuildinfo
+.nyc_output

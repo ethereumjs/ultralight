@@ -20,26 +20,15 @@ const args: any = yargs(hideBin(process.argv))
         boolean: true,
         default: true
     })
-    .option('extip', {
-        describe: "External IP Address",
-        default: '127.0.0.1',
+    .option('nat', {
+        describe: "NAT Traversal options for proxy",
+        choices: ['none', 'extip'],
+        default: "none",
+        string: true
     }).argv
 
 let child: ChildProcessWithoutNullStreams
-const main = async () => {
-    if (args.proxy === true) {
-        //Spawn a child process that runs the proxy 
-        const file = require.resolve('../../proxy/dist/index.js')
-        child = spawn(process.execPath, [file, args.extip])
-        child.stdout.on('data', async (data) => {
-            // Prints all proxy logs to the console
-            console.log(data.toString())
-        })
-        child.stderr.on('data', (data) => {
-            // Prints all proxy errors to the console
-            console.log(data.toString())
-        })
-    }
+const run = async () => {
     const id = await PeerId.create({ keyType: "secp256k1" });
     const enr = ENR.createFromPeerId(id);
     enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
@@ -88,6 +77,28 @@ const main = async () => {
             }
         }
     })
+}
+
+const main = async () => {
+    let proxyStarted = false
+    if (args.proxy === true) {
+        //Spawn a child process that runs the proxy 
+        const file = require.resolve('../../proxy/dist/index.js')
+        console.log(args)
+        child = spawn(process.execPath, [file, args.nat])
+        child.stdout.on('data', async (data) => {
+            // Prints all proxy logs to the console
+            console.log(data.toString())
+            if (!proxyStarted && data.toString().includes("websocket server listening")) {
+                run();
+                proxyStarted = true
+            }
+        })
+        child.stderr.on('data', (data) => {
+            // Prints all proxy errors to the console
+            console.log(data.toString())
+        })
+    }
 }
 
 main().catch((err) => {
