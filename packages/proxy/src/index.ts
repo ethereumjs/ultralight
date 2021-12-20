@@ -2,6 +2,7 @@
 import WS from 'ws';
 import * as dgram from 'dgram'
 import ipCodec from '@leichtgewicht/ip-codec'
+const stun = require('stun');
 
 const MAX_PACKET_SIZE = 1280;
 
@@ -9,10 +10,16 @@ const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true }
 
 const main = async () => {
     const args = process.argv.slice(2)
+    console.log(args)
     let remoteAddr = '127.0.0.1'
-
-    if (args.length > 0) {
-        remoteAddr = args[0]
+    if (args[0] === 'extip') {
+        try {
+            const res = await stun.request('stun.l.google.com:19302');
+            remoteAddr = res.getXorAddress().address
+        }
+        catch (err) {
+            console.log('error getting public IP', err)
+        }
     }
 
     console.log(`websocket server listening on ${remoteAddr}:5050`)
