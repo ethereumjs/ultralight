@@ -15,6 +15,7 @@
   "author": "acolytec3",
   "license": "MIT",
   "dependencies": {
+    "@chainsafe/as-sha256": "^0.2.4",
     "@chainsafe/discv5": "^0.6.6",
     "@chainsafe/ssz": "^0.8.19",
     "bn.js": "^5.2.0",
