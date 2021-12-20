@@ -1,8 +1,9 @@
 import { ENR } from "@chainsafe/discv5";
 import { Button } from "@chakra-ui/button";
+import { Box, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useDisclosure } from "@chakra-ui/react";
 import PeerId from "peer-id";
 import { PortalNetwork } from "portalnetwork";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 type infoprops = {
   portal: PortalNetwork;
@@ -21,13 +22,15 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
   return hex;
 }
 const ShowInfo: React.FC<infoprops> = ({ portal }) => {
+
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const discv5 = portal.client;
   const [pid, setPid] = useState<PeerId>();
   const [enr, setENR] = useState<ENR>();
   const [newLookupMessage, setNewLookupMessage] = useState<
     string | undefined
   >();
-
+  const btnRef = useRef<HTMLButtonElement | null>(null)
   const row: React.CSSProperties = {
     display: "flex",
     border: "solid black 1px",
@@ -36,6 +39,7 @@ const ShowInfo: React.FC<infoprops> = ({ portal }) => {
     flex: "50%",
     wordBreak: "break-all",
     margin: "2px",
+    fontSize: "0.7rem"
   };
 
   async function perId() {
@@ -47,7 +51,7 @@ const ShowInfo: React.FC<infoprops> = ({ portal }) => {
     discv5 && setENR(discv5.enr);
     discv5 && perId();
     setNewLookupMessage("");
-  }, []); // eslint-disable-line
+  }, [portal]); // eslint-disable-line
 
   function handleClick() {
     setNewLookupMessage("discv5:service Starting a new lookup...");
@@ -64,7 +68,19 @@ const ShowInfo: React.FC<infoprops> = ({ portal }) => {
 
   return enr ? (
     <>
-      <div style={row}>
+    
+    <Button mt={3} ref={btnRef} onClick={onOpen}>
+        Local Node Info
+      </Button>
+<Modal
+isOpen={isOpen}
+onClose={onClose}>
+    <ModalOverlay />
+    <ModalContent>
+    <ModalHeader>Local Node Info</ModalHeader>      
+    <ModalCloseButton />
+    <ModalBody>
+            <div style={row}>
         <div style={col}>
           <div style={row}>
             <div style={col}>ENR ID:</div>
@@ -137,7 +153,7 @@ const ShowInfo: React.FC<infoprops> = ({ portal }) => {
                       {Buffer.from(
                         // @ts-ignore
                         enr.getLocationMultiaddr("udp").toOptions()?.transport
-                      ).toString("hex")}
+                        ).toString("hex")}
                     </div>
                     {encodeURIComponent("udp")}
                   </div>
@@ -232,13 +248,15 @@ const ShowInfo: React.FC<infoprops> = ({ portal }) => {
           </div>
         </div>
       </div>
-      <div style={row}></div>
-      <div style={row}>
-        <Button onClick={() => handleClick()}> Start Random Node Lookup</Button>
-      </div>
-      <div style={row}>{newLookupMessage && newLookupMessage}</div>
-    </>
-  ) : (
+    </ModalBody>
+    </ModalContent>
+
+      <ModalFooter>
+        <Button onClick={onClose}>Close</Button>
+      </ModalFooter>
+    </Modal>
+                  </>
+) : (
     <div style={row}>discv5:sessionService Starting session service...</div>
   );
 };

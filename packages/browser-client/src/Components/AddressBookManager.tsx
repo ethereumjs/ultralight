@@ -7,6 +7,7 @@ import {
   VStack,
   Wrap,
 } from "@chakra-ui/react";
+import debug from "debug";
 import { PortalNetwork } from "portalnetwork";
 import { SubNetworkIds } from "portalnetwork/dist/wire";
 import { randUint16 } from "portalnetwork/dist/wire/utp";
@@ -25,6 +26,8 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   const [peers, setPeers] = React.useState<string[]>([]);
   const [contentKey, setContentKey] = React.useState<string>("");
   const [distance, setDistance] = React.useState<string>("0");
+
+  const log = debug("discv5:service")
 
   const handleClick = () => {
     if (enr) {
@@ -60,14 +63,33 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
     portal.sendUtpStreamRequest(nodeId, randUint16());
   };
 
+  const nodeLookup = () => {
+    log("discv5:service Starting a new lookup...");
+    
+    portal.client
+      .findNode(
+        Math.random()
+          .toString(32)
+          .replace(/[^a-z]+/g, "")
+      )
+      .then((res) => {
+        log(`finished. ${res.length} found`);
+      });
+  }
+
   return (
     <VStack>
+
       <Input
         value={enr}
         placeholder={"Node ENR"}
         onChange={(evt) => setEnr(evt.target.value)}
-      />
+        />
+        <HStack>
       <Button onClick={handleClick}>Add Node</Button>
+      <Button onClick={() => nodeLookup()}> Start Random Node Lookup</Button>
+        </HStack>
+
       {peers.length > 0 && (
         <>
           <Input
