@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Heading,
   HStack,
   Input,
   Text,
@@ -34,8 +35,8 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
       setPeers(newPeers);
     });
   }, []);
-  
-  const log = debug("discv5:service")
+
+  const log = debug("discv5:service");
 
   const handleClick = () => {
     if (enr) {
@@ -73,14 +74,15 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
 
   const nodeLookup = () => {
     log("discv5:service Starting a new lookup...");
-    
+
     portal.client.findRandomNode().then((res) => {
       log(`finished. ${res.length} found`);
     });
-  }
+  };
 
   return (
-    <VStack>
+    <VStack paddingTop={2}>
+      <Heading size="lg">Address Book Manager</Heading>
       <Input
         value={enr}
         placeholder={"Node ENR"}

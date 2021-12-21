@@ -15,6 +15,8 @@ import {
   Stack,
   HStack,
   Flex,
+  Input,
+  Center,
 } from "@chakra-ui/react";
 import { ColorModeSwitcher } from "./ColorModeSwitcher";
 import { ENR } from "@chainsafe/discv5";
@@ -30,7 +32,9 @@ export const App = () => {
   const [network, setNetwork] = React.useState<SubNetworkIds>(
     SubNetworkIds.HistoryNetworkId
   );
-  const { hasCopied, onCopy } = useClipboard(enr); // eslint-disable-line
+  const [radius, setRadius] = React.useState("");
+
+  const { onCopy } = useClipboard(enr); // eslint-disable-line
 
   const init = async () => {
     const id = await PeerId.create({ keyType: "secp256k1" });
@@ -82,6 +86,19 @@ export const App = () => {
         break;
     }
   };
+
+  const updateRadius = () => {
+    let rad = portal?.radius;
+    try {
+      rad = parseInt(radius);
+      if (rad < 0) return;
+    } catch (err) {
+      console.log(err);
+      return;
+    }
+    setRadius("");
+    if (portal) portal.radius = rad;
+  };
   return (
     <ChakraProvider theme={theme}>
       <ColorModeSwitcher justifySelf="flex-end" />
@@ -107,16 +124,38 @@ export const App = () => {
                 </Text>
               </Tooltip>
             </Box>
-            <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
-              <Stack direction="row">
-                <Radio value={SubNetworkIds.StateNetworkId}>
-                  State Network
-                </Radio>
-                <Radio value={SubNetworkIds.HistoryNetworkId}>
-                  History Network
-                </Radio>
-              </Stack>
-            </RadioGroup>
+            <Box>
+              <Center>
+                <Heading paddingBottom={2} size="lg">
+                  Local Node Management
+                </Heading>
+              </Center>
+              <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
+                <Stack direction="row">
+                  <Radio value={SubNetworkIds.StateNetworkId}>
+                    State Network
+                  </Radio>
+                  <Radio value={SubNetworkIds.HistoryNetworkId}>
+                    History Network
+                  </Radio>
+                </Stack>
+              </RadioGroup>
+              <HStack>
+                <Input
+                  w="150px"
+                  placeholder="Radius"
+                  value={radius}
+                  onChange={(evt) => setRadius(evt.target.value)}
+                />
+                <Button
+                  onClick={updateRadius}
+                  disabled={!portal || !radius}
+                  w="155px"
+                >
+                  Update Radius
+                </Button>
+              </HStack>
+            </Box>
             <Box>
               {portal && (
                 <AddressBookManager portal={portal} network={network} />
