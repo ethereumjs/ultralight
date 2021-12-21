@@ -66,15 +66,9 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   const nodeLookup = () => {
     log("discv5:service Starting a new lookup...");
     
-    portal.client
-      .findNode(
-        Math.random()
-          .toString(32)
-          .replace(/[^a-z]+/g, "")
-      )
-      .then((res) => {
-        log(`finished. ${res.length} found`);
-      });
+    portal.client.findRandomNode().then((res) => {
+      log(`finished. ${res.length} found`);
+    });
   }
 
   return (

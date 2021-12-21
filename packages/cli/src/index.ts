@@ -84,7 +84,6 @@ const main = async () => {
     if (args.proxy === true) {
         //Spawn a child process that runs the proxy 
         const file = require.resolve('../../proxy/dist/index.js')
-        console.log(args)
         child = spawn(process.execPath, [file, args.nat])
         child.stdout.on('data', async (data) => {
             // Prints all proxy logs to the console
