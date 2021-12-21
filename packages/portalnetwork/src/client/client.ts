@@ -69,13 +69,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId, 5);
         this.client.on("talkReqReceived", this.onTalkReq)
         this.client.on("talkRespReceived", this.onTalkResp)
-        this.client.on("enrAdded", (inserted, evicted) => {
-            if (evicted) {
-                // Remove node from subnetwork routing tables when it is evicted from the discv5 routing table 
+        this.client.on("sessionEnded", (srcId) => {
+                // Remove node from subnetwork routing tables when a session is ended by discv5
                 // (i.e. failed a liveness check)
-                this.updateSubnetworkRoutingTable(evicted.nodeId, SubNetworkIds.StateNetworkId);
-                this.updateSubnetworkRoutingTable(evicted.nodeId, SubNetworkIds.HistoryNetworkId);
-            }
+            this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.StateNetworkId);
+            this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.HistoryNetworkId);
         })
         this.uTP = new UtpProtocol(this);
         // Static data for testing portal network content related functionality - served on State Network requests
@@ -184,13 +182,19 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     decoded.enrs.forEach((enr) => {
                         const decodedEnr = ENR.decode(Buffer.from(enr))
                         this.log(decodedEnr.nodeId)
-                        this.client.addEnr(decodedEnr)
+                        if (!this.client.getKadValue(decodedEnr.nodeId)) {
+                            // Add ENR to the discv5 routing table if not already known
+                            this.client.addEnr(decodedEnr)
+                        }
                         // TODO: Update routing table corresponding to `networkId` 
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             // Add node to History Subnetwork Routing Table if we don't already know it
                             this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetworkId)
                         }
-
+                        if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+                            // Add node to State Subnetwork Routing Table if we don't already know it
+                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.StateNetworkId)
+                        }
                     })
                 }
                 return decoded;

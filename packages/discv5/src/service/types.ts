@@ -32,6 +32,11 @@ export interface IDiscv5Events {
    * The message object is returned.
    */
   talkRespReceived: (srcId: NodeId, enr: ENR | null, message: ITalkRespMessage) => void;
+
+  /**
+   * A session is terminated with a connected peer
+   */
+  sessionEnded: (srcId: NodeId) => void;
 }
 
 export type Discv5EventEmitter = StrictEventEmitter<EventEmitter, IDiscv5Events>;
