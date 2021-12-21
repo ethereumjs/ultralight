@@ -73,16 +73,15 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
 
   return (
     <VStack>
-
       <Input
         value={enr}
         placeholder={"Node ENR"}
         onChange={(evt) => setEnr(evt.target.value)}
-        />
-        <HStack>
-      <Button onClick={handleClick}>Add Node</Button>
-      <Button onClick={() => nodeLookup()}> Start Random Node Lookup</Button>
-        </HStack>
+      />
+      <HStack>
+        <Button onClick={handleClick}>Add Node</Button>
+        <Button onClick={() => nodeLookup()}> Start Random Node Lookup</Button>
+      </HStack>
 
       {peers.length > 0 && (
         <>

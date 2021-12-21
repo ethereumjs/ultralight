@@ -27,7 +27,6 @@ import Log from "./Components/Log";
 export const App = () => {
   const [portal, setDiscv5] = React.useState<PortalNetwork>();
   const [enr, setENR] = React.useState<string>("");
-  const [showInfo, setShowInfo] = React.useState(false);
   const [network, setNetwork] = React.useState<SubNetworkIds>(
     SubNetworkIds.HistoryNetworkId
   );
@@ -54,21 +53,17 @@ export const App = () => {
     //@ts-ignore
     window.ENR = ENR;
     setDiscv5(portal);
-
+    portal.client.on("multiaddrUpdated", () =>
+      setENR(portal.client.enr.encodeTxt(portal.client.keypair.privateKey))
+    );
     await portal.start();
 
     portal.enableLog();
-
   };
 
   React.useEffect(() => {
     init();
   }, []);
-
-  React.useEffect(() => {
-    setShowInfo(false)
-    waitRefresh();
-  }, [enr])
 
   const copy = async () => {
     await setENR(
@@ -76,11 +71,6 @@ export const App = () => {
     );
     onCopy();
   };
-
-  const waitRefresh = (): Boolean => {
-    setTimeout(() => setShowInfo(true), 1000);
-    return true
-  }
 
   const updateNetwork = (val: string) => {
     switch (val) {
@@ -95,37 +85,46 @@ export const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <ColorModeSwitcher justifySelf="flex-end" />
-<HStack justifyContent={"space-between"}>
-<Flex >
-      <Box width={'20%'}height="100%">
-        {portal && <Log portal={portal} />}
-      </Box>
-      <VStack width="70%">
-      <Heading textAlign="center">Ultralight Node Interface</Heading>
-        <Box textAlign="center" fontSize="xl">
-          {portal && <ShowInfo portal={portal}/>}
-          {showInfo && (
-            <Tooltip label="click to copy">
-              <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
-                {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
-              </Text>
-            </Tooltip>
-          )}
-        </Box>
-        <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
-          <Stack direction="row">
-            <Radio value={SubNetworkIds.StateNetworkId}>State Network</Radio>
-            <Radio value={SubNetworkIds.HistoryNetworkId}>
-              History Network
-            </Radio>
-          </Stack>
-        </RadioGroup>
-        <Box>
-          {portal && <AddressBookManager portal={portal} network={network} />}
-        </Box>
-      </VStack>
-              </Flex>
-        </HStack>
+      <HStack justifyContent={"space-between"}>
+        <Flex>
+          <Box width={"20%"} height="100%">
+            {portal && <Log portal={portal} />}
+          </Box>
+          <VStack width="70%">
+            <Heading textAlign="center">Ultralight Node Interface</Heading>
+            <Box textAlign="center" fontSize="xl">
+              {portal && <ShowInfo portal={portal} />}
+              <Tooltip label="click to copy">
+                <Text
+                  fontSize={"1rem"}
+                  onClick={copy}
+                  wordBreak="break-all"
+                  cursor="pointer"
+                >
+                  {portal?.client.enr.encodeTxt(
+                    portal.client.keypair.privateKey
+                  )}
+                </Text>
+              </Tooltip>
+            </Box>
+            <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
+              <Stack direction="row">
+                <Radio value={SubNetworkIds.StateNetworkId}>
+                  State Network
+                </Radio>
+                <Radio value={SubNetworkIds.HistoryNetworkId}>
+                  History Network
+                </Radio>
+              </Stack>
+            </RadioGroup>
+            <Box>
+              {portal && (
+                <AddressBookManager portal={portal} network={network} />
+              )}
+            </Box>
+          </VStack>
+        </Flex>
+      </HStack>
     </ChakraProvider>
   );
 };
