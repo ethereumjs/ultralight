@@ -10,7 +10,6 @@ const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true }
 
 const main = async () => {
     const args = process.argv.slice(2)
-    console.log(args)
     let remoteAddr = '127.0.0.1'
     if (args[0] === 'extip') {
         try {
