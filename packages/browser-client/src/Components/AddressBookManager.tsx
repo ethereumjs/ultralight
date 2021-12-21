@@ -27,6 +27,14 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   const [contentKey, setContentKey] = React.useState<string>("");
   const [distance, setDistance] = React.useState<string>("0");
 
+  React.useEffect(() => {
+    portal.client.on("enrAdded", () => {
+      const peerENRs = portal.client.kadValues();
+      const newPeers = peerENRs.map((peer) => peer.nodeId);
+      setPeers(newPeers);
+    });
+  }, []);
+  
   const log = debug("discv5:service")
 
   const handleClick = () => {
