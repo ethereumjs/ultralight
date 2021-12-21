@@ -54,6 +54,13 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }, 1)
     }
 
+    /**
+     * 
+     * Portal Network constructor
+     * @param config a dictionary of `IDiscv5CreateOptions` for configuring the discv5 networking layer
+     * @param radius defines the radius of data the node is interesting in storing
+     * @param db a `level` compliant database provided by the module consumer - instantiates an in-memory DB if not provided
+     */
     constructor(config: IDiscv5CreateOptions, radius = 1, db?: LevelUp) {
         super();
         this.client = Discv5.create(config)
@@ -62,8 +69,16 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId, 5);
         this.client.on("talkReqReceived", this.onTalkReq)
         this.client.on("talkRespReceived", this.onTalkResp)
-
+        this.client.on("enrAdded", (inserted, evicted) => {
+            if (evicted) {
+                // Remove node from subnetwork routing tables when it is evicted from the discv5 routing table 
+                // (i.e. failed a liveness check)
+                this.updateSubnetworkRoutingTable(evicted.nodeId, SubNetworkIds.StateNetworkId);
+                this.updateSubnetworkRoutingTable(evicted.nodeId, SubNetworkIds.HistoryNetworkId);
+            }
+        })
         this.uTP = new UtpProtocol(this);
+        // Static data for testing portal network content related functionality - served on State Network requests
         this.stateNetworkState = {
             "0x01": Buffer.from('abc'),
             "0x02": Buffer.from('efg'),
