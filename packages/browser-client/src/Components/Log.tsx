@@ -2,6 +2,7 @@ import * as chakra from "@chakra-ui/layout";
 import { useState, useEffect } from "react";
 
 import { PortalNetwork } from "portalnetwork";
+import { Box, Flex } from "@chakra-ui/react";
 
 type logProps = {
   portal: PortalNetwork;
@@ -16,7 +17,7 @@ export default function Log(props: logProps) {
     props.portal.on("log", (msg) => {
       let out = [...output];
       out.push(msg);
-      setOutput(out.slice(-10));
+      setOutput(out.slice(-15));
     });
     return function () {
       props.portal.removeAllListeners("log");
@@ -24,13 +25,13 @@ export default function Log(props: logProps) {
   });
 
   return (
-    <chakra.Box>
-      <chakra.Code style={{ textAlign: "start" }}>
+    <Box p={2}>
+      <chakra.Code height={'xl'} w={'100%'}  style={{ textAlign: "start" }}>
         {output.map((string, idx) => {
-          return <div key={idx}>{string}</div>;
+          return <div style={{fontSize: "0.7rem"}} key={idx}>{string}</div>;
         })}
       </chakra.Code>
-    </chakra.Box>
+    </Box>
   );
 }
 
