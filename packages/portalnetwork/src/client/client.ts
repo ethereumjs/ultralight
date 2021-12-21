@@ -11,6 +11,8 @@ import { PortalNetworkEventEmitter } from "./types";
 import { PortalNetworkRoutingTable } from ".";
 import PeerId from 'peer-id';
 import { Multiaddr } from 'multiaddr';
+import { LevelUp } from 'levelup'
+const level = require('level-mem')
 
 const _log = debug("portalnetwork")
 
@@ -32,7 +34,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     nodeRadius: number;
     // TODO: Replace with proper content database
     stateNetworkState: state
-
+    historyNetworkDB: LevelUp
     /**
      * 
      * @param ip initial local IP address of node
@@ -52,7 +54,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }, 1)
     }
 
-    constructor(config: IDiscv5CreateOptions, radius = 1) {
+    constructor(config: IDiscv5CreateOptions, radius = 1, db?: LevelUp) {
         super();
         this.client = Discv5.create(config)
         this.nodeRadius = radius;
@@ -63,10 +65,12 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
         this.uTP = new UtpProtocol(this);
         this.stateNetworkState = {
-            "01": Buffer.from('abc'),
-            "02": Buffer.from('efg'),
-            "03": testArray
+            "0x01": Buffer.from('abc'),
+            "0x02": Buffer.from('efg'),
+            "0x03": testArray
         }
+
+        this.historyNetworkDB = db ?? level()
     }
 
     log = (msg: any) => {
@@ -255,6 +259,21 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         await this.uTP.initiateConnectionRequest(dstId, id)
     }
 
+    /**
+     * 
+     * @param key - hex string representation of history subnetwork content-key
+     * @param value - hex string representing RLP encoded block header, block body, or receipt
+     * @throws if `key` or `value` is not hex string
+     */
+    public addContentToHistory = async (key: string, value: string) => {
+        if (!(key.startsWith('0x') || !(value.startsWith('0x')))) {
+            throw new Error('content-keys and values must be hex strings')
+        }
+        await this.historyNetworkDB.put(key, value, (err: any) => {
+            if (err) this.log(`Error putting content in history DB: ${err}`)
+        })
+    }
+
     private sendPong = async (srcId: string, reqId: bigint) => {
         const customPayload = PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) })
         const payload = {
@@ -376,10 +395,23 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
         //Check to see if value in locally maintained state network state
-        const contentKey = Buffer.from(decodedContentMessage.contentKey).toString('hex')
-        const value = this.stateNetworkState[contentKey]
+        const contentKey = toHexString(decodedContentMessage.contentKey)
+        let value = Uint8Array.from([])
+        switch (toHexString(message.protocol)) {
+            case SubNetworkIds.StateNetworkId: value = this.stateNetworkState[contentKey]; break;
+            case SubNetworkIds.HistoryNetworkId: {
+                try {
+                    value = await this.historyNetworkDB.get(contentKey);
+                }
+                catch (err) {
+                    console.log('Error retrieving content', err)
+                }
+            }
+        }
 
-        if (!value) {
+
+        if (value.length === 0) {
+            // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
             this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
         } else if (value && value.length < 1200) {
             // TODO Replace 1200 with a global constant for MAX PACKET size
