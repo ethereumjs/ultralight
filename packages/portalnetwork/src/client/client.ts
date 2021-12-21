@@ -259,7 +259,16 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         await this.uTP.initiateConnectionRequest(dstId, id)
     }
 
+    /**
+     * 
+     * @param key - hex string representation of history subnetwork content-key
+     * @param value - hex string representing RLP encoded block header, block body, or receipt
+     * @throws if `key` or `value` is not hex string
+     */
     public addContentToHistory = async (key: string, value: string) => {
+        if (!(key.startsWith('0x') || !(value.startsWith('0x')))) {
+            throw new Error('content-keys and values must be hex strings')
+        }
         await this.historyNetworkDB.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err}`)
         })
