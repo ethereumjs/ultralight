@@ -121,7 +121,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     /**
      * Updates the node's radius for interested content
      * @param value number representing the new radius
-     * @throws if `value` is greater than 256
+     * @throws if `value` is outside correct range
      */
     public set radius(value: number) {
         if (value > 256 || value < 0) {
