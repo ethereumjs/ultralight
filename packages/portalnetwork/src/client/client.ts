@@ -72,8 +72,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.client.on("sessionEnded", (srcId) => {
                 // Remove node from subnetwork routing tables when a session is ended by discv5
                 // (i.e. failed a liveness check)
-            this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.StateNetworkId);
-            this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.HistoryNetworkId);
+            this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.StateNetwork);
+            this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.HistoryNetwork);
         })
         this.uTP = new UtpProtocol(this);
         // Static data for testing portal network content related functionality - served on State Network requests
@@ -144,7 +144,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             }
         })
         try {
-            this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+            this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
             const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(pingMsg), networkId)
             if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
                 this.log(`Received PONG from ${shortId(dstId)}`)
@@ -172,7 +172,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const findNodesMsg: FindNodesMessage = { distances: distances }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDNODES, value: findNodesMsg })
         try {
-            this.log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+            this.log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
             const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
             if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
                 this.log(`Received NODES from ${shortId(dstId)}`);
@@ -185,11 +185,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                         // TODO: Update routing table corresponding to `networkId` 
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             // Add node to History Subnetwork Routing Table if we don't already know it
-                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetworkId)
+                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
                         }
                         if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             // Add node to State Subnetwork Routing Table if we don't already know it
-                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.StateNetworkId)
+                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.StateNetwork)
                         }
                     })
                 }
@@ -212,7 +212,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     public sendFindContent = async (dstId: string, key: Uint8Array, networkId: SubNetworkIds) => {
         const findContentMsg: FindContentMessage = { contentKey: key };
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.FINDCONTENT, value: findContentMsg });
-        this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetworkId} subnetwork`)
+        this.log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
         const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
         try {
         if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
@@ -304,9 +304,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
     private onTalkReq = async (srcId: string, sourceId: ENR | null, message: ITalkReqMessage) => {
         switch (toHexString(message.protocol)) {
-            case SubNetworkIds.StateNetworkId: this.log(`Received State Subnetwork request`); break;
-            case SubNetworkIds.HistoryNetworkId: this.log(`Received History Subnetwork request`); break;
-            case SubNetworkIds.UTPNetworkId: this.log(`Received uTP packet`); this.handleUTP(srcId, message.id, message.request); return;
+            case SubNetworkIds.StateNetwork: this.log(`Received State Subnetwork request`); break;
+            case SubNetworkIds.HistoryNetwork: this.log(`Received History Subnetwork request`); break;
+            case SubNetworkIds.UTPNetwork: this.log(`Received uTP packet`); this.handleUTP(srcId, message.id, message.request); return;
             default: this.log(`Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`); return;
 
         }
@@ -413,8 +413,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const contentKey = toHexString(decodedContentMessage.contentKey)
         let value = Uint8Array.from([])
         switch (toHexString(message.protocol)) {
-            case SubNetworkIds.StateNetworkId: value = this.stateNetworkState[contentKey]; break;
-            case SubNetworkIds.HistoryNetworkId: {
+            case SubNetworkIds.StateNetwork: value = this.stateNetworkState[contentKey]; break;
+            case SubNetworkIds.HistoryNetwork: {
                 try {
                     value = await this.historyNetworkDB.get(contentKey);
                 }
@@ -478,7 +478,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             return
         }
         switch (networkId) {
-            case SubNetworkIds.StateNetworkId: {
+            case SubNetworkIds.StateNetwork: {
                 if (!customPayload) {
                     this.stateNetworkRoutingTable.removeById(srcId);
                     this.stateNetworkRoutingTable.removeFromRadiusMap(srcId)
@@ -494,7 +494,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 }
                 break;
             }
-            case SubNetworkIds.HistoryNetworkId: {
+            case SubNetworkIds.HistoryNetwork: {
                 if (!customPayload) {
                     this.historyNetworkRoutingTable.removeById(srcId);
                     this.historyNetworkRoutingTable.removeFromRadiusMap(srcId)

@@ -19,28 +19,28 @@ tape('Client unit tests', async (t) => {
     const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
     node.sendPortalNetworkMessage = td.func<any>()
     td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(pongResponse, null, findNodesResponse, null, findContentResponse)
-    let res = await node.sendPing('abc', SubNetworkIds.HistoryNetworkId)
+    let res = await node.sendPing('abc', SubNetworkIds.HistoryNetwork)
     t.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
-    res = await node.sendPing('abc', SubNetworkIds.HistoryNetworkId)
+    res = await node.sendPing('abc', SubNetworkIds.HistoryNetwork)
     t.ok(res === undefined, 'received undefined when no valid PONG message received')
-    res = await node.sendFindNodes('abc', [0, 1, 2], SubNetworkIds.HistoryNetworkId)
+    res = await node.sendFindNodes('abc', [0, 1, 2], SubNetworkIds.HistoryNetwork)
     t.ok(res.total === 1, 'received 1 ENR from FINDNODES')
-    res = await node.sendFindNodes('abc', [], SubNetworkIds.HistoryNetworkId)
+    res = await node.sendFindNodes('abc', [], SubNetworkIds.HistoryNetwork)
     t.ok(res === undefined, 'received undefined when no valid NODES response received')
-    res = await node.sendFindContent('abc', Uint8Array.from([1]), SubNetworkIds.HistoryNetworkId)
+    res = await node.sendFindContent('abc', Uint8Array.from([1]), SubNetworkIds.HistoryNetwork)
     t.ok(Buffer.from(res).toString() === 'abc', 'received expected content from FINDCONTENT')
 
     // Testdouble apparently has an upper limit of 5 on the number of return values that can be passed from `thenResolve` 
     // so have to provide a new list here
     const acceptResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 3])
     td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(null, acceptResponse, null)
-    res = await node.sendFindContent('abc', '', SubNetworkIds.HistoryNetworkId)
+    res = await node.sendFindContent('abc', '', SubNetworkIds.HistoryNetwork)
     t.ok(res === undefined, 'received undefined when no valid FOUNDCONTENT message received')
     node.sendUtpStreamRequest = td.func<any>()
     td.when(node.sendUtpStreamRequest(td.matchers.contains('abc'), td.matchers.anything())).thenResolve(undefined)
-    res = await node.sendOffer('abc', [Uint8Array.from([1])], SubNetworkIds.HistoryNetworkId)
+    res = await node.sendOffer('abc', [Uint8Array.from([1])], SubNetworkIds.HistoryNetwork)
     t.ok(res.contentKeys[0] === true, 'received valid ACCEPT response to OFFER')
-    res = await node.sendOffer('abc', [Uint8Array.from([0])], SubNetworkIds.HistoryNetworkId)
+    res = await node.sendOffer('abc', [Uint8Array.from([0])], SubNetworkIds.HistoryNetwork)
     t.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
 
     node.sendPong = td.func<any>()
@@ -53,7 +53,7 @@ tape('Client unit tests', async (t) => {
             customPayload: payload
         }
     })
-    node.handlePing('abc', { request: pingMsg, protocol: SubNetworkIds.HistoryNetworkId })
+    node.handlePing('abc', { request: pingMsg, protocol: SubNetworkIds.HistoryNetwork })
     
     node.client.sendTalkResp = td.func<any>()
     const findNodesMessageWithDistance = Uint8Array.from([2, 4, 0, 0, 0, 0, 0])
@@ -62,8 +62,8 @@ tape('Client unit tests', async (t) => {
     td.when(node.client.sendTalkResp('abc', td.matchers.anything(), td.matchers.argThat((arg: Uint8Array) => arg.length > 3))).thenDo(() => t.pass('correctly handle findNodes message with ENRs'))
     td.when(node.client.sendTalkResp('abc', td.matchers.anything(), td.matchers.argThat((arg: Uint8Array) => arg.length === 0))).thenDo(() => t.pass('correctly handle findNodes message with no ENRs'))
     td.when(node.client.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
-    node.handleFindNodes('abc', { request: findNodesMessageWithDistance, protocol: SubNetworkIds.HistoryNetworkId })
-    node.handleFindNodes('abc', { request: findNodesMessageWithoutDistance, protocol: SubNetworkIds.HistoryNetworkId })
+    node.handleFindNodes('abc', { request: findNodesMessageWithDistance, protocol: SubNetworkIds.HistoryNetwork })
+    node.handleFindNodes('abc', { request: findNodesMessageWithoutDistance, protocol: SubNetworkIds.HistoryNetwork })
 
     // TODO: Construct better findContent tests since these will break when introduce an actual content database
     const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 1])
