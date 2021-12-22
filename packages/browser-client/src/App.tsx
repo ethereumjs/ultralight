@@ -70,10 +70,6 @@ export const App = () => {
     init();
   }, []);
 
-  React.useEffect(() => {
-    setShowInfo(false)
-    waitRefresh();
-  }, [enr])
 
   const copy = async () => {
     await setENR(
@@ -82,10 +78,6 @@ export const App = () => {
     onCopy();
   };
 
-  const waitRefresh = (): Boolean => {
-    setTimeout(() => setShowInfo(true), 1000);
-    return true
-  }
 
   const updateNetwork = (val: string) => {
     switch (val) {
