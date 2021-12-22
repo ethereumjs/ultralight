@@ -53,210 +53,210 @@ const ShowInfo: React.FC<infoprops> = ({ portal }) => {
     setNewLookupMessage("");
   }, [portal]); // eslint-disable-line
 
-  function handleClick() {
-    setNewLookupMessage("discv5:service Starting a new lookup...");
-    discv5
-      .findNode(
-        Math.random()
-          .toString(32)
-          .replace(/[^a-z]+/g, "")
-      )
-      .then((res) => {
-        setNewLookupMessage(`finished. ${res.length} found`);
-      });
-  }
-
   return enr ? (
     <>
-    
-    <Button mt={3} ref={btnRef} onClick={onOpen}>
-        Local Node Info
+      <Button mt={3} ref={btnRef} onClick={onOpen}>
+      ENR Details
       </Button>
-<Modal
-isOpen={isOpen}
-onClose={onClose}>
-    <ModalOverlay />
-    <ModalContent>
-    <ModalHeader>Local Node Info</ModalHeader>      
-    <ModalCloseButton />
-    <ModalBody>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>ENR Details</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
             <div style={row}>
-        <div style={col}>
-          <div style={row}>
-            <div style={col}>ENR ID:</div>
-            <div style={col}>
-              <div style={row}>
-                <div style={col}>{enr?.id}</div>
-                <div style={col}>0x{Buffer.from(enr?.id).toString("hex")}</div>
-              </div>
-            </div>
-          </div>
-          <div style={row}>
-            <div style={col}>IP:</div>
-            <div style={col}>{enr?.ip}</div>
-          </div>
-          <div style={row}>
-            <div style={col}>uPD:</div>
-            <div style={col}>
-              <div style={row}>
-                <div style={col}>{enr?.udp}</div>
-                <div style={col}>0x{enr?.udp?.toString(16)}</div>
-              </div>
-            </div>
-          </div>
-          <div style={row}>
-            <div style={col}>keypairType:</div>
-            <div style={col}>{enr?.keypairType}</div>
-          </div>
-          <div style={row}>
-            <div style={col}>Sequence Number:</div>
-            <div style={col}>{Number(enr?.seq)}</div>
-          </div>
-
-          <div style={row}>
-            <div style={col}>Location Multiaddress:</div>
-            <div style={col}>
-              <div style={row}>
-                <div style={col}>- bytes: </div>
-                <div style={col}>
-                  {toHexString(enr?.getLocationMultiaddr("udp")?.bytes)}
-                </div>
-              </div>
-              <div style={row}>
-                <div style={col}>- string: </div>
-                <div style={col}>
-                  {enr?.getLocationMultiaddr("udp")?.toString()}
-                </div>
-              </div>
-              <div style={row}>
-                <div style={col}>- family: </div>
-                <div style={col}>
-                  {enr?.getLocationMultiaddr("udp")?.toOptions()?.family}
-                </div>
-              </div>
-              <div style={row}>
-                <div style={col}>- host:</div>
-                <div style={col}>
-                  {" "}
-                  {enr?.getLocationMultiaddr("udp")?.toOptions()?.host}
-                </div>
-              </div>
-              <div style={row}>
-                <div style={col}>- transport:</div>
-                <div style={col}>
-                  <div style={row}>
-                    <div style={col}>
-                      {enr?.getLocationMultiaddr("udp")?.toOptions()?.transport}
+              <div style={col}>
+                <div style={row}>
+                  <div style={col}>ENR ID:</div>
+                  <div style={col}>
+                    <div style={row}>
+                      <div style={col}>{enr?.id}</div>
+                      <div style={col}>
+                        0x{Buffer.from(enr?.id).toString("hex")}
+                      </div>
                     </div>
-                    <div style={col}>
-                      0x
-                      {Buffer.from(
-                        // @ts-ignore
-                        enr.getLocationMultiaddr("udp").toOptions()?.transport
-                        ).toString("hex")}
-                    </div>
-                    {encodeURIComponent("udp")}
                   </div>
                 </div>
-              </div>
-              <div style={row}>
-                <div style={col}>- port:</div>
-                <div style={col}>
-                  {enr?.getLocationMultiaddr("udp")?.toOptions()?.port}
+                <div style={row}>
+                  <div style={col}>IP:</div>
+                  <div style={col}>{enr?.ip}</div>
                 </div>
-              </div>
-              <div style={row}>
-                <div style={col}>- protoCodes:</div>
-                {enr
-                  ?.getLocationMultiaddr("udp")
-                  ?.protoCodes()
-                  .map((code, idx) => {
-                    return (
-                      <div key={idx} style={col}>
-                        {code}
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          </div>
+                <div style={row}>
+                  <div style={col}>uPD:</div>
+                  <div style={col}>
+                    <div style={row}>
+                      <div style={col}>{enr?.udp}</div>
+                      <div style={col}>0x{enr?.udp?.toString(16)}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={row}>
+                  <div style={col}>keypairType:</div>
+                  <div style={col}>{enr?.keypairType}</div>
+                </div>
+                <div style={row}>
+                  <div style={col}>Sequence Number:</div>
+                  <div style={col}>{Number(enr?.seq)}</div>
+                </div>
 
-          <div style={row}>
-            <div style={col}>Protos:</div>
-            <div style={col}>
-              <div style={row}>
-                {enr
-                  ?.getLocationMultiaddr("udp")
-                  ?.protos()
-                  .map((proto, idx) => {
-                    return (
-                      <div key={idx} style={col}>
-                        {Object.entries(proto).map(([k, v], idx) => {
+                <div style={row}>
+                  <div style={col}>Location Multiaddress:</div>
+                  <div style={col}>
+                    <div style={row}>
+                      <div style={col}>- bytes: </div>
+                      <div style={col}>
+                        {toHexString(enr?.getLocationMultiaddr("udp")?.bytes)}
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={col}>- string: </div>
+                      <div style={col}>
+                        {enr?.getLocationMultiaddr("udp")?.toString()}
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={col}>- family: </div>
+                      <div style={col}>
+                        {enr?.getLocationMultiaddr("udp")?.toOptions()?.family}
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={col}>- host:</div>
+                      <div style={col}>
+                        {" "}
+                        {enr?.getLocationMultiaddr("udp")?.toOptions()?.host}
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={col}>- transport:</div>
+                      <div style={col}>
+                        <div style={row}>
+                          <div style={col}>
+                            {
+                              enr?.getLocationMultiaddr("udp")?.toOptions()
+                                ?.transport
+                            }
+                          </div>
+                          <div style={col}>
+                            0x
+                            {Buffer.from(
+                              // @ts-ignore
+                              enr.getLocationMultiaddr("udp").toOptions()
+                                ?.transport
+                            ).toString("hex")}
+                          </div>
+                          {encodeURIComponent("udp")}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={col}>- port:</div>
+                      <div style={col}>
+                        {enr?.getLocationMultiaddr("udp")?.toOptions()?.port}
+                      </div>
+                    </div>
+                    <div style={row}>
+                      <div style={col}>- protoCodes:</div>
+                      {enr
+                        ?.getLocationMultiaddr("udp")
+                        ?.protoCodes()
+                        .map((code, idx) => {
                           return (
-                            <div key={idx} style={row}>
-                              <div style={col}>{`${k}:`}</div>
-                              <div style={col}>{`${v}`}</div>
+                            <div key={idx} style={col}>
+                              {code}
                             </div>
                           );
                         })}
-                      </div>
-                    );
-                  })}{" "}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={row}>
+                  <div style={col}>Protos:</div>
+                  <div style={col}>
+                    <div style={row}>
+                      {enr
+                        ?.getLocationMultiaddr("udp")
+                        ?.protos()
+                        .map((proto, idx) => {
+                          return (
+                            <div key={idx} style={col}>
+                              {Object.entries(proto).map(([k, v], idx) => {
+                                return (
+                                  <div key={idx} style={row}>
+                                    <div style={col}>{`${k}:`}</div>
+                                    <div style={col}>{`${v}`}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}{" "}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={col}>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>ENR</h2>
+                <div style={row}></div>
+                <div style={row}>
+                  <div style={col}>
+                    {enr?.encodeTxt(discv5.keypair.privateKey)}
+                  </div>
+                </div>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
+                  Ethereum Node Record:
+                </h2>
+                <div style={row}>
+                  <div style={col}>
+                    {`0x${enr
+                      ?.encode(discv5.keypair.privateKey)
+                      .toString("hex")}`}
+                  </div>
+                </div>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
+                  Node Id:{" "}
+                </h2>
+                <div style={row}>
+                  <div style={col}>0x{enr?.nodeId}</div>
+                </div>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
+                  publicKey:
+                </h2>
+                <div style={row}>
+                  <div style={col}>{`0x${enr?.publicKey.toString("hex")}`}</div>
+                </div>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
+                  Signature:
+                </h2>
+                <div style={row}>
+                  <div style={col}>{`0x${enr?.signature?.toString(
+                    "hex"
+                  )}`}</div>
+                </div>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
+                  Peer Id:
+                </h2>
+                <div style={row}>
+                  <div style={col}>0x{pid?.toHexString()}</div>
+                </div>
+                <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
+                  Peer Id B5BString:
+                </h2>
+                <div style={row}>
+                  <div style={col}>{pid?.toB58String()}</div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-        <div style={col}>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>ENR</h2>
-          <div style={row}></div>
-          <div style={row}>
-            <div style={col}>{enr?.encodeTxt(discv5.keypair.privateKey)}</div>
-          </div>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
-            Ethereum Node Record:
-          </h2>
-          <div style={row}>
-            <div style={col}>
-              {`0x${enr?.encode(discv5.keypair.privateKey).toString("hex")}`}
-            </div>
-          </div>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>Node Id: </h2>
-          <div style={row}>
-            <div style={col}>0x{enr?.nodeId}</div>
-          </div>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
-            publicKey:
-          </h2>
-          <div style={row}>
-            <div style={col}>{`0x${enr?.publicKey.toString("hex")}`}</div>
-          </div>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
-            Signature:
-          </h2>
-          <div style={row}>
-            <div style={col}>{`0x${enr?.signature?.toString("hex")}`}</div>
-          </div>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>Peer Id:</h2>
-          <div style={row}>
-            <div style={col}>0x{pid?.toHexString()}</div>
-          </div>
-          <h2 style={{ textAlign: "center", fontWeight: "bold" }}>
-            Peer Id B5BString:
-          </h2>
-          <div style={row}>
-            <div style={col}>{pid?.toB58String()}</div>
-          </div>
-        </div>
-      </div>
-    </ModalBody>
-    </ModalContent>
+          </ModalBody>
+        </ModalContent>
 
-      <ModalFooter>
-        <Button onClick={onClose}>Close</Button>
-      </ModalFooter>
-    </Modal>
-                  </>
-) : (
+        <ModalFooter>
+          <Button onClick={onClose}>Close</Button>
+        </ModalFooter>
+      </Modal>
+    </>
+  ) : (
     <div style={row}>discv5:sessionService Starting session service...</div>
   );
 };

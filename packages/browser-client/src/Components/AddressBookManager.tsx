@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Heading,
   HStack,
   Input,
   Text,
@@ -27,7 +28,15 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   const [contentKey, setContentKey] = React.useState<string>("");
   const [distance, setDistance] = React.useState<string>("0");
 
-  const log = debug("discv5:service")
+  React.useEffect(() => {
+    portal.client.on("enrAdded", () => {
+      const peerENRs = portal.client.kadValues();
+      const newPeers = peerENRs.map((peer) => peer.nodeId);
+      setPeers(newPeers);
+    });
+  }, []);
+
+  const log = debug("discv5:service");
 
   const handleClick = () => {
     if (enr) {
@@ -65,24 +74,24 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
 
   const nodeLookup = () => {
     log("discv5:service Starting a new lookup...");
-    
+
     portal.client.findRandomNode().then((res) => {
       log(`finished. ${res.length} found`);
     });
-  }
+  };
 
   return (
-    <VStack>
-
+    <VStack paddingTop={2}>
+      <Heading size="lg">Address Book Manager</Heading>
       <Input
         value={enr}
         placeholder={"Node ENR"}
         onChange={(evt) => setEnr(evt.target.value)}
-        />
-        <HStack>
-      <Button onClick={handleClick}>Add Node</Button>
-      <Button onClick={() => nodeLookup()}> Start Random Node Lookup</Button>
-        </HStack>
+      />
+      <HStack>
+        <Button onClick={handleClick}>Add Node</Button>
+        <Button onClick={() => nodeLookup()}> Start Random Node Lookup</Button>
+      </HStack>
 
       {peers.length > 0 && (
         <>
