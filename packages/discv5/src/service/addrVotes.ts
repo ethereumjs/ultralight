@@ -66,3 +66,5 @@ export class AddrVotes {
     this.tallies.clear();
   }
 }
+
+console.log('test')
