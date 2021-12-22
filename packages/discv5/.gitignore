@@ -72,3 +72,4 @@ typings/
 
 # others
 package-lock.json
+lib
