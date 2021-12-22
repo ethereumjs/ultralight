@@ -69,6 +69,7 @@ export default class Reader {
       }
       return this.compile();
     } else if (this.nextSeqNr === 66000) {
+      log(`Sequencing Error...Compiling anyway...`)
       this.nextSeqNr = Math.min(...seqNrs)
       return this.run()
     } else {
