@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
 import { Multiaddr } from "multiaddr";
 
-import { ENR } from "../enr";
+import { ENR, NodeId } from "../enr";
 import { ITalkReqMessage, ITalkRespMessage, RequestMessage } from "../message";
 import { INodeAddress, NodeContact } from "../session/nodeInfo";
 import { ConnectionDirection, RequestErrorType } from "../session";
@@ -38,7 +38,7 @@ export interface IDiscv5Events {
   /**
    * A session is terminated with a connected peer
    */
-  sessionEnded: (nodeId: NodeContact) => void;
+  sessionEnded: (nodeId: NodeId) => void;
 }
 
 export type Discv5EventEmitter = StrictEventEmitter<EventEmitter, IDiscv5Events>;
