@@ -82,8 +82,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             "0x02": Buffer.from('efg'),
             "0x03": testArray
         }
-
         this.historyNetworkDB = db ?? level()
+
     }
 
     log = (msg: any) => {
@@ -182,14 +182,17 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     decoded.enrs.forEach((enr) => {
                         const decodedEnr = ENR.decode(Buffer.from(enr))
                         this.log(decodedEnr.nodeId)
-                        // TODO: Update routing table corresponding to `networkId` 
-                        if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                            // Add node to History Subnetwork Routing Table if we don't already know it
-                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
-                        }
-                        if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                            // Add node to State Subnetwork Routing Table if we don't already know it
-                            this.sendPing(decodedEnr.nodeId, SubNetworkIds.StateNetwork)
+                        switch (networkId) {
+                            case SubNetworkIds.StateNetwork: if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+                                // Add node to State Subnetwork Routing Table if we don't already know it
+                                this.sendPing(decodedEnr.nodeId, SubNetworkIds.StateNetwork)
+                            }
+                                break;
+                            case SubNetworkIds.HistoryNetwork: if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+                                // Add node to History Subnetwork Routing Table if we don't already know it
+                                this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
+                            };
+                                break;
                         }
                     })
                 }
