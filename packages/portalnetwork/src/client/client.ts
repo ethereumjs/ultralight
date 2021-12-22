@@ -238,14 +238,17 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             if (decoded.selector === MessageCodes.ACCEPT) {
                 this.log(`Received ACCEPT message from ${shortId(dstId)}`);
                 this.log(decoded.value);
-                let id = randUint16()
-                // TODO: Add code to initiate uTP streams with serving of requested content
-                await this.sendUtpStreamRequest(dstId, id)
+                let msg = decoded.value as AcceptMessage
+                let id = Buffer.from(msg.connectionId).readUInt16BE(0)
+                // Initiate uTP streams with serving of requested content
+                let requested: Uint8Array[] = contentKeys.filter((n, idx) => msg.contentKeys[idx] === true)                
+                await this.uTP.initiateUtpFromAccept(dstId, id, requested)
+                return msg.contentKeys
             }
-            return decoded.value
+             
         }
         catch (err: any) {
-            this.log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+            this.log(`Error sending to ${shortId(dstId)} - ${err.message}`)
         }
 
     }

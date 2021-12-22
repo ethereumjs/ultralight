@@ -68,6 +68,9 @@ export default class Reader {
         }
       }
       return this.compile();
+    } else if (this.nextSeqNr === 66000) {
+      this.nextSeqNr = Math.min(...seqNrs)
+      return this.run()
     } else {
         log(`Expected: ${this.nextSeqNr}`)
         log(`Got ${seqNrs.toString()}`)
