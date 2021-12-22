@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import { Message, MessageType, decode, encode } from "../../src/message";
-import { ENR } from "../../src/enr";
+import { Message, MessageType, decode, encode } from "../../../src/message";
+import { ENR } from "../../../src/enr";
 
 describe("message", () => {
   const testCases: {

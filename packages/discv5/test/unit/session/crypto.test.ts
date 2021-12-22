@@ -11,9 +11,10 @@ import {
   idVerify,
   encryptMessage,
   decryptMessage,
-} from "../../src/session";
-import { v4, ENR } from "../../src/enr";
-import { KeypairType, createKeypair } from "../../src/keypair";
+} from "../../../src/session";
+import { v4, ENR } from "../../../src/enr";
+import { KeypairType, createKeypair } from "../../../src/keypair";
+import { createNodeContact } from "../../../src/session/nodeInfo";
 
 describe("session crypto", () => {
   it("ecdh should produce expected secret", () => {
@@ -51,7 +52,7 @@ describe("session crypto", () => {
     const enr1 = ENR.createV4(v4.publicKey(sk1));
     const enr2 = ENR.createV4(v4.publicKey(sk2));
     const nonce = randomBytes(32);
-    const [a1, b1, pk] = generateSessionKeys(enr1.nodeId, enr2, nonce);
+    const [a1, b1, pk] = generateSessionKeys(enr1.nodeId, createNodeContact(enr2), nonce);
     const [a2, b2] = deriveKeysFromPubkey(
       createKeypair(KeypairType.secp256k1, sk2),
       enr2.nodeId,

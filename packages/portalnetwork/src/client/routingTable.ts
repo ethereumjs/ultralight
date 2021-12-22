@@ -4,7 +4,7 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
 
     private radiusMap: Map<NodeId, bigint>
     constructor(nodeId: NodeId, kBucketSize: number) {
-        super(nodeId, kBucketSize);
+        super(nodeId );
         this.radiusMap = new Map();
     }
 

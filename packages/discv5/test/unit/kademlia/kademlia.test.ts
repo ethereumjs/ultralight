@@ -1,25 +1,27 @@
 /* eslint-env mocha */
-import { KademliaRoutingTable } from "../../src/kademlia/kademlia";
+import { KademliaRoutingTable } from "../../../src/kademlia/kademlia";
 import { expect } from "chai";
-import { ENR, v4, createNodeId } from "../../src/enr";
+import { ENR, v4, createNodeId } from "../../../src/enr";
+import { distance, EntryStatus, log2Distance } from "../../../src/kademlia";
+import { randomBytes } from "libp2p-crypto";
+import { toBuffer } from "../../../src/util";
 
 describe("Kademlia routing table", () => {
   const nodeId = createNodeId(Buffer.alloc(32));
-  it("should throw an error if the number of buckets is zero or negative", () => {
-    expect(() => new KademliaRoutingTable(nodeId, 0)).throw("k must be positive");
-    expect(() => new KademliaRoutingTable(nodeId, -1)).throw("k must be positive");
-  });
+
   it("should return true when empty initially", () => {
-    const table = new KademliaRoutingTable(nodeId, 1);
+    const table = new KademliaRoutingTable(nodeId);
     expect(table.isEmpty()).to.be.true;
   });
+
   it("should return 0 when asked for size initially", () => {
-    const table = new KademliaRoutingTable(nodeId, 1);
+    const table = new KademliaRoutingTable(nodeId);
     expect(table.size).eq(0);
   });
+
   it("should add items", () => {
-    const table = new KademliaRoutingTable(nodeId, 1);
-    table.add(ENR.createV4(v4.publicKey(v4.createPrivateKey())));
+    const table = new KademliaRoutingTable(nodeId);
+    table.insertOrUpdate(randomENR(), EntryStatus.Disconnected);
     expect(table.isEmpty()).to.be.false;
     expect(table.size).eq(1);
   });
@@ -54,12 +56,12 @@ describe("Kademlia routing table", () => {
   });
    */
   it("should clear values", () => {
-    const table = new KademliaRoutingTable(nodeId, 4);
-    const enr = ENR.createV4(v4.publicKey(v4.createPrivateKey()));
-    table.add(enr);
-    table.add(ENR.createV4(v4.publicKey(v4.createPrivateKey())));
-    table.add(ENR.createV4(v4.publicKey(v4.createPrivateKey())));
-    table.add(ENR.createV4(v4.publicKey(v4.createPrivateKey())));
+    const table = new KademliaRoutingTable(nodeId);
+    const enr = randomENR();
+    table.insertOrUpdate(enr, EntryStatus.Disconnected);
+    table.insertOrUpdate(randomENR(), EntryStatus.Disconnected);
+    table.insertOrUpdate(randomENR(), EntryStatus.Disconnected);
+    table.insertOrUpdate(randomENR(), EntryStatus.Disconnected);
     expect(table.size).to.eq(4);
     table.clear();
     expect(table.size).to.eq(0);
@@ -99,4 +101,26 @@ describe("Kademlia routing table", () => {
     expect(table.random()).to.be.oneOf(["2", "3", "g", "f"]);
   });
    */
+  it("should return the closest nodes sorted", () => {
+    const table = new KademliaRoutingTable(nodeId);
+
+    for (let i = 0; i < 100; i++) {
+      table.insertOrUpdate(randomENR(), EntryStatus.Disconnected);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const target = randomNodeId();
+      const enrs = table.nearest(target, 100);
+      const expectedEnrs = enrs.slice().sort((a, b) => log2Distance(target, a.nodeId) - log2Distance(target, b.nodeId))
+      expect(enrs).to.deep.equal(expectedEnrs);
+    }
+  })
 });
+
+function randomENR(): ENR {
+  return ENR.createV4(v4.publicKey(v4.createPrivateKey()));
+}
+
+function randomNodeId(): string {
+  return createNodeId(toBuffer(randomBytes(32)));
+}

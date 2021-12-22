@@ -1,22 +1,49 @@
 import { EventEmitter } from "events";
 
 import { ENR, NodeId } from "../enr";
-import { BucketEventEmitter, EntryStatus, IEntry, IEntryFull } from "./types";
+import { MAX_NODES_PER_BUCKET } from "./constants";
+import { BucketEventEmitter, EntryStatus, IEntry, IEntryFull, InsertResult, UpdateResult } from "./types";
 
 export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
-  private k: number;
   /**
    * Entries ordered from least-recently connected to most-recently connected
    */
-  private bucket: IEntry<ENR>[];
+  private nodes: IEntry<ENR>[];
+
+  /**
+   * The position (index) in `nodes`
+   * Since the entries in `nodes` are ordered from least-recently connected to
+   * most-recently connected, all entries above this index are also considered
+   * connected, i.e. the range `[0, firstConnectedIndex)` marks the sub-list of entries
+   * that are considered disconnected and the range
+   * `[firstConnectedIndex, MAX_NODES_PER_BUCKET)` marks sub-list of entries that are
+   * considered connected.
+   *
+   * `undefined` indicates that there are no connected entries in the bucket, i.e.
+   * the bucket is either empty, or contains only entries for peers that are
+   * considered disconnected.
+   */
+  private firstConnectedIndex?: number;
+
+  /**
+   * A node that is pending to be inserted into a full bucket, should the
+   * least-recently connected (and currently disconnected) node not be
+   * marked as connected within `pendingTimeout`.
+   */
   private pending: IEntry<ENR> | undefined;
+
+  /**
+   * The timeout window before a new pending node is eligible for insertion,
+   * if the least-recently connected node is not updated as being connected
+   * in the meantime.
+   */
   private pendingTimeout: number;
+
   private pendingTimeoutId: NodeJS.Timeout | undefined;
 
-  constructor(k: number, pendingTimeout: number) {
+  constructor(pendingTimeout: number) {
     super();
-    this.k = k;
-    this.bucket = [];
+    this.nodes = [];
     this.pendingTimeout = pendingTimeout;
   }
 
@@ -24,7 +51,7 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    * Remove all entries, including any pending entry
    */
   clear(): void {
-    this.bucket = [];
+    this.nodes = [];
     this.pending = undefined;
     clearTimeout((this.pendingTimeoutId as unknown) as NodeJS.Timeout);
   }
@@ -33,21 +60,14 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    * The number of entries in the bucket
    */
   size(): number {
-    return this.bucket.length;
+    return this.nodes.length;
   }
 
   /**
    * Returns true when there are no entries in the bucket
    */
   isEmpty(): boolean {
-    return this.bucket.length === 0;
-  }
-
-  /**
-   * Return the first index in the bucket with a `Connected` status (or -1 if none exist)
-   */
-  firstConnectedIndex(): number {
-    return this.bucket.findIndex((entry) => entry.status === EntryStatus.Connected);
+    return this.nodes.length === 0;
   }
 
   /**
@@ -55,93 +75,129 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    *
    * If this entry's status is connected, the bucket is full, and there are disconnected entries in the bucket,
    * set this new entry as a pending entry
-   *
-   * Returns true if the entry is successfully inserted into the bucket. (excludes pending)
    */
-  add(value: ENR, status: EntryStatus): boolean {
-    if (status === EntryStatus.Connected) {
-      return this.addConnected(value);
+  add(value: ENR, status: EntryStatus): InsertResult {
+    // Prevent inserting duplicate nodes.
+    if (this.get(value.nodeId)) {
+      return InsertResult.NodeExists;
     }
-    return this.addDisconnected(value);
+
+    const isPendingNode = this.pending?.value.nodeId === value.nodeId;
+
+    switch (status) {
+      case EntryStatus.Connected: {
+        if (this.nodes.length < MAX_NODES_PER_BUCKET) {
+          this.firstConnectedIndex = this.firstConnectedIndex ?? this.nodes.length;
+          this.nodes.push({ value, status });
+          break;
+        } else {
+          // The bucket is full, attempt to add the node as pending
+          if (this.addPending(value, status)) {
+            return InsertResult.Pending;
+          } else {
+            return InsertResult.FailedBucketFull;
+          }
+        }
+      }
+      case EntryStatus.Disconnected: {
+        if (this.nodes.length < MAX_NODES_PER_BUCKET) {
+          if (this.firstConnectedIndex === undefined) {
+            // No connected nodes, add to the end
+            this.nodes.push({ value, status });
+          } else {
+            // add before the first connected node
+            this.nodes.splice(this.firstConnectedIndex, 0, { value, status });
+            this.firstConnectedIndex++;
+          }
+          break;
+        } else {
+          // The bucket is full
+          return InsertResult.FailedBucketFull;
+        }
+      }
+    }
+
+    // If we inserted the node, make sure there is no pending node of the same key. This can
+    // happen when a pending node is inserted, a node gets removed from the bucket, freeing up
+    // space and then re-inserted here.
+    if (isPendingNode) {
+      delete this.pending;
+    }
+    return InsertResult.Inserted;
   }
 
-  addConnected(value: ENR): boolean {
-    if (this.bucket.length < this.k) {
-      this.bucket.push({ value, status: EntryStatus.Connected });
-      return true;
-    }
-    // attempt to add a pending node
-    this.addPending(value, EntryStatus.Connected);
-    return false;
-  }
-
-  addDisconnected(value: ENR): boolean {
-    const firstConnected = this.firstConnectedIndex();
-    if (this.bucket.length < this.k) {
-      if (firstConnected === -1) {
-        // No connected nodes, add to the end
-        this.bucket.push({ value, status: EntryStatus.Disconnected });
+  /**
+   * Updates the value of the node referred to by the given key, if it is in the bucket.
+   * If the node is not in the bucket, returns an update result indicating the outcome.
+   * NOTE: This does not update the position of the node in the table.
+   */
+  updateValue(value: ENR): UpdateResult {
+    const node = this.nodes.find((entry) => entry.value.nodeId === value.nodeId);
+    if (node) {
+      // use seq numbers to determine whether to update the value
+      if (value.seq > node.value.seq) {
+        node.value = value;
+        return UpdateResult.Updated;
       } else {
-        // add before the first connected node
-        this.bucket.splice(firstConnected, 0, { value, status: EntryStatus.Disconnected });
+        return UpdateResult.NotModified;
       }
-      return true;
+    } else if (this.pending?.value.nodeId === value.nodeId) {
+      this.pending.value = value;
+      return UpdateResult.UpdatedPending;
+    } else {
+      return UpdateResult.FailedKeyNonExistant;
     }
-    return false;
   }
 
   /**
-   * Update an existing entry (ENR)
+   * Updates the status of the node referred to by the given key, if it is in the bucket.
+   * If the node is not in the bucket, returns an update result indicating the outcome.
    */
-  updateValue(value: ENR): boolean {
-    const index = this.bucket.findIndex((entry) => entry.value.nodeId === value.nodeId);
-    if (index === -1) {
-      if (this.pending && this.pending.value.nodeId === value.nodeId) {
-        this.pending.value = value;
-        return true;
-      }
-      return false;
-    }
-    this.bucket[index].value = value;
-    return true;
-  }
+  updateStatus(id: NodeId, status: EntryStatus): UpdateResult {
+    // Remove the node from its current position and then reinsert it
+    // with the desired status, which puts it at the end of either the
+    // prefix list of disconnected nodes or the suffix list of connected
+    // nodes (i.e. most-recently disconnected or most-recently connected,
+    // respectively).
+    const index = this.nodes.findIndex((entry) => entry.value.nodeId === id);
+    if (index !== -1) {
+      // Remove the node from its current position.
+      const node = this.removeByIndex(index);
 
-  /**
-   * Update the status of an existing entry
-   */
-  updateStatus(id: NodeId, status: EntryStatus): boolean {
-    const index = this.bucket.findIndex((entry) => entry.value.nodeId === id);
-    if (index === -1) {
-      if (this.pending && this.pending.value.nodeId === id) {
-        this.pending.status = status;
-        return true;
-      }
-      return false;
-    }
-    if (this.bucket[index].status === status) {
-      return true;
-    }
-    const value = this.removeByIndex(index);
-    return this.add(value, status);
-  }
+      const oldStatus = node.status;
 
-  /**
-   * Update both the value and status of an existing entry
-   */
-  update(value: ENR, status: EntryStatus): boolean {
-    const index = this.bucket.findIndex((entry) => entry.value.nodeId === value.nodeId);
-    if (index === -1) {
-      if (this.pending && this.pending.value.nodeId === value.nodeId) {
-        this.pending = { value, status };
-        return true;
+      // Flag indicating if this update modified the entry
+      const notModified = oldStatus === status;
+      // Flags indicating we are upgrading to a connected status
+      const wasConnected = oldStatus === EntryStatus.Connected;
+      const isConnected = status === EntryStatus.Connected;
+
+      // If the least-recently connected node re-establishes its
+      // connected status, drop the pending node.
+      if (index === 0 && isConnected) {
+        delete this.pending;
       }
-      return false;
+
+      // Reinsert the node with the desired status
+      switch (this.add(node.value, status)) {
+        case InsertResult.Inserted: {
+          if (notModified) {
+            return UpdateResult.NotModified;
+          } else if (!wasConnected && isConnected) {
+            return UpdateResult.UpdatedAndPromoted;
+          } else {
+            return UpdateResult.Updated;
+          }
+        }
+        default:
+          throw new Error("Unreachable");
+      }
+    } else if (this.pending?.value.nodeId === id) {
+      this.pending.status = status;
+      return UpdateResult.UpdatedPending;
+    } else {
+      return UpdateResult.FailedKeyNonExistant;
     }
-    if (this.bucket[index].status === status) {
-      return true;
-    }
-    this.removeByIndex(index);
-    return this.add(value, status);
   }
 
   /**
@@ -151,19 +207,20 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    * and a callback to `applyPending` to evict the first disconnected entry, should one exist at the time.
    */
   addPending(value: ENR, status: EntryStatus): boolean {
-    if (!this.pending && this.firstConnectedIndex() !== 0) {
+    if (!this.pending && this.firstConnectedIndex !== 0) {
       this.pending = { value, status };
-      const first = this.bucket[0];
+      const first = this.nodes[0];
       this.emit("pendingEviction", first.value);
       this.pendingTimeoutId = setTimeout(this.applyPending, this.pendingTimeout);
       return true;
     }
     return false;
   }
+
   applyPending = (): void => {
     if (this.pending) {
       // If the bucket is full with connected nodes, drop the pending node
-      if (this.firstConnectedIndex() === 0) {
+      if (this.firstConnectedIndex === 0) {
         this.pending = undefined;
         return;
       }
@@ -172,7 +229,7 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
       const inserted = this.pending.value;
       this.add(this.pending.value, this.pending.status);
       this.pending = undefined;
-      this.emit("appliedEviction", inserted, evicted);
+      this.emit("appliedEviction", inserted, evicted.value);
     }
   };
 
@@ -180,7 +237,7 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    * Get an entry from the bucket, if it exists
    */
   get(id: NodeId): IEntry<ENR> | undefined {
-    const entry = this.bucket.find((entry) => entry.value.nodeId === id);
+    const entry = this.nodes.find((entry) => entry.value.nodeId === id);
     if (entry) {
       return entry;
     }
@@ -219,27 +276,45 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    * Get a value from the bucket by index
    */
   getValueByIndex(index: number): ENR {
-    if (index >= this.bucket.length) {
+    if (index >= this.nodes.length) {
       throw new Error(`Invalid index in bucket: ${index}`);
     }
-    return this.bucket[index].value;
+    return this.nodes[index].value;
   }
 
   /**
    * Remove a value from the bucket by index
    */
-  removeByIndex(index: number): ENR {
-    if (index >= this.bucket.length) {
+  removeByIndex(index: number): IEntry<ENR> {
+    if (index >= this.nodes.length) {
       throw new Error(`Invalid index in bucket: ${index}`);
     }
-    return this.bucket.splice(index, 1)[0].value;
+    // Remove the entry
+    const entry = this.nodes.splice(index, 1)[0];
+
+    // Update firstConnectedIndex
+    switch (entry.status) {
+      case EntryStatus.Connected: {
+        if (this.firstConnectedIndex === index && index === this.nodes.length) {
+          // It was the last connected node.
+          delete this.firstConnectedIndex;
+        }
+        break;
+      }
+      case EntryStatus.Disconnected: {
+        this.firstConnectedIndex =
+          this.firstConnectedIndex === undefined ? this.firstConnectedIndex : this.firstConnectedIndex - 1;
+      }
+    }
+
+    return entry;
   }
 
   /**
    * Remove a value from the bucket by NodeId
    */
-  removeById(id: NodeId): ENR | undefined {
-    const index = this.bucket.findIndex((entry) => entry.value.nodeId === id);
+  removeById(id: NodeId): IEntry<ENR> | undefined {
+    const index = this.nodes.findIndex((entry) => entry.value.nodeId === id);
     if (index === -1) {
       return undefined;
     }
@@ -249,7 +324,7 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
   /**
    * Remove an ENR from the bucket
    */
-  remove(value: ENR): ENR | undefined {
+  remove(value: ENR): IEntry<ENR> | undefined {
     return this.removeById(value.nodeId);
   }
 
@@ -257,6 +332,13 @@ export class Bucket extends (EventEmitter as { new (): BucketEventEmitter }) {
    * Return the bucket values as an array
    */
   values(): ENR[] {
-    return this.bucket.map((entry) => entry.value);
+    return this.nodes.map((entry) => entry.value);
+  }
+
+  /**
+   * Return the raw nodes as an array
+   */
+  rawValues(): IEntry<ENR>[] {
+    return this.nodes;
   }
 }

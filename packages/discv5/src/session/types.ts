@@ -2,7 +2,10 @@ import { Multiaddr } from "multiaddr";
 
 import { NodeId, ENR } from "../enr";
 import { IPacket } from "../packet";
-import { Message, RequestMessage } from "../message";
+import { RequestMessage, ResponseMessage } from "../message";
+import { INodeAddress, NodeContact } from "./nodeInfo";
+
+export type NodeAddressString = string;
 
 export interface ISessionConfig {
   /**
@@ -24,39 +27,29 @@ export interface ISessionConfig {
    * defined in milliseconds
    */
   sessionEstablishTimeout: number;
+  /**
+   * The maximum number of established sessions to maintain
+   */
+  sessionCacheCapacity: number;
 }
 
-export enum SessionState {
-  /**
-   * A WHOAREYOU packet has been sent, and the Session is awaiting an Authentication response.
-   */
-  WhoAreYouSent,
-  /**
-   * A RANDOM packet has been sent and the Session is awaiting a WHOAREYOU response.
-   */
-  RandomSent,
-  /**
-   * An AuthMessage has been sent with a new set of generated keys. Once a response has been
-   * received that we can decrypt, the session transitions to an established state, replacing
-   * any current set of keys. No Session is currently active.
-   */
-  AwaitingResponse,
-  /**
-   * An established Session has received a WHOAREYOU. In this state, messages are sent
-   * out with the established sessions keys and new encrypted messages are first attempted to
-   * be decrypted with the established session keys, upon failure, the new keys are tried. If
-   * the new keys are successful, the session keys are updated and the state progresses to
-   * `Established`
-   */
-  EstablishedAwaitingResponse,
-  /**
-   * A Session has been established and the ENR IP matches the source IP.
-   */
-  Established,
-  /**
-   * Processing has failed. Fatal error.
-   */
-  Poisoned,
+export enum RequestErrorType {
+  /** The request timed out. */
+  Timeout,
+  /** The discovery service has not been started. */
+  ServiceNotStarted,
+  /** The request was sent to ourselves. */
+  SelfRequest,
+  /** An invalid ENR was provided. */
+  InvalidENR,
+  /** The remote's ENR was invalid. */
+  InvalidRemoteENR,
+  /** The remote returned an invalid packet. */
+  InvalidRemotePacket,
+  /** Failed attempting to encrypt the request. */
+  Encryptionailed,
+  /** The multiaddr provided is invalid */
+  InvalidMultiaddr,
 }
 
 export interface IKeys {
@@ -64,43 +57,41 @@ export interface IKeys {
   decryptionKey: Buffer;
 }
 
-/**
- * Wrapper interface for Session state
- * We maintain 0, 1, or 2 keys depending on the state
- */
-export type ISessionState =
-  | { state: SessionState.WhoAreYouSent; challengeData: Buffer }
-  | { state: SessionState.RandomSent }
-  | { state: SessionState.Poisoned }
-  | { state: SessionState.AwaitingResponse; currentKeys: IKeys }
-  | { state: SessionState.Established; currentKeys: IKeys }
-  | { state: SessionState.EstablishedAwaitingResponse; currentKeys: IKeys; newKeys: IKeys };
+/** How we connected to the node. */
+export enum ConnectionDirection {
+  /** The node contacted us. */
+  Incoming,
+  /** We contacted the node. */
+  Outgoing,
+}
 
-export enum TrustedState {
-  /**
-   * The ENR socket address matches what is observed
-   */
-  Trusted,
-  /**
-   * The source socket address of the last message doesn't match the known ENR.
-   * In this state, the service will respond to requests, but does not treat the node as
-   * connected until the IP is updated to match the source IP.
-   */
-  Untrusted,
+/** A Challenge (WHOAREYOU) object used to handle and send WHOAREYOU requests. */
+export interface IChallenge {
+  /** The challenge data received from the node. */
+  data: Buffer; // length 63
+  /** The remote's ENR if we know it. We can receive a challenge from an unknown node. */
+  remoteEnr?: ENR;
+}
+
+/** Node info */
+export interface INodeInfo {
+  /** The node id */
+  nodeId: NodeId;
+  /** The node multiaddr */
+  socketAddr: Multiaddr;
+  /** The node ENR */
+  enr?: ENR;
+  /** The time the last packet was received */
+  lastPacketRcvd?: number;
+  /** Whether the node is relevant, based on relevance filter */
+  isRelevant?: boolean;
 }
 
 /**
  * A request to a node that we are waiting for a response
  */
-export interface IPendingRequest {
-  /**
-   * The destination NodeId
-   */
-  dstId: NodeId;
-  /**
-   * The destination Multiaddr
-   */
-  dst: Multiaddr;
+export interface IRequestCall {
+  contact: NodeContact;
   /**
    * The raw packet sent
    */
@@ -108,29 +99,45 @@ export interface IPendingRequest {
   /**
    * The unencrypted message. Required if we need to re-encrypt and re-send
    */
-  message?: RequestMessage;
+  request: RequestMessage;
+  /** Handshakes attempted. */
+  handshakeSent: boolean;
   /**
    * The number if times this request has been re-sent
    */
   retries: number;
+  /**
+   * If we receive a Nodes Response with a total greater than 1. This keeps track of the
+   * remaining responses expected.
+   */
+  remainingResponses?: number;
+  /**
+   * Signifies if we are initiating the session with a random packet. This is only used to
+   * determine the connection direction of the session.
+   */
+  initiatingSession: boolean;
 }
 
 export interface ISessionEvents {
   /**
    * A session has been established with a node
    */
-  established: (enr: ENR) => void;
+  established: (enr: ENR, connectionDirection: ConnectionDirection) => void;
   /**
-   * A message was received
+   * A Request was received
    */
-  message: (srcId: NodeId, src: Multiaddr, message: Message) => void;
+  request: (nodeAddr: INodeAddress, request: RequestMessage) => void;
+  /**
+   * A Response was received
+   */
+  response: (nodeAddr: INodeAddress, response: ResponseMessage) => void;
   /**
    * A WHOAREYOU packet needs to be sent.
    * This requests the protocol layer to send back the highest known ENR.
    */
-  whoAreYouRequest: (srcId: NodeId, src: Multiaddr, nonce: Buffer) => void;
+  whoAreYouRequest: (nodeAddr: INodeAddress, nonce: Buffer) => void;
   /**
    * An RPC request failed.
    */
-  requestFailed: (srcId: NodeId, rpcId: bigint) => void;
+  requestFailed: (requestId: bigint, error: RequestErrorType) => void;
 }

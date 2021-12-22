@@ -56,14 +56,14 @@ const run = async () => {
             case 'p': {
                 if (!bootnodeId) return;
                 console.log('Sending PING to', bootnodeId);
-                const res = await portal.sendPing(bootnodeId, SubNetworkIds.HistoryNetworkId)
+                const res = await portal.sendPing(bootnodeId, SubNetworkIds.HistoryNetwork)
                 console.log('Received PONG response', res);
                 break;
             }
             case 'n': {
                 if (!bootnodeId) return;
                 console.log('Sending FINDNODES to ', bootnodeId)
-                const res = await portal.sendFindNodes(bootnodeId, Uint16Array.from([0, 1, 2]), SubNetworkIds.HistoryNetworkId)
+                const res = await portal.sendFindNodes(bootnodeId, Uint16Array.from([0, 1, 2]), SubNetworkIds.HistoryNetwork)
                 console.log(res)
             }
             case 'e': {

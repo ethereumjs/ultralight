@@ -86,7 +86,7 @@ export class _UTPSocket extends EventEmitter {
     await this.client.sendTalkReq(
       this.remoteAddress,
       msg,
-      fromHexString(SubNetworkIds.UTPNetworkId)
+      fromHexString(SubNetworkIds.UTPNetwork)
     );
     log(`${PacketType[type]} packet sent to ${this.remoteAddress}.`);
     type === 1 && log("uTP stream clsed.");

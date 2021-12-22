@@ -13,13 +13,27 @@ import {
   encodeChallengeData,
   createHeader,
   encodeMessageAuthdata,
+  createRandomPacket,
+  createWhoAreYouPacket,
 } from "../packet";
-import { ENR, NodeId } from "../enr";
+import { ENR } from "../enr";
 import { Session } from "./session";
 import { IKeypair } from "../keypair";
+import {
+  Message,
+  RequestMessage,
+  encode,
+  decode,
+  ResponseMessage,
+  MessageType,
+  createFindNodeMessage,
+  isRequestType,
+} from "../message";
+import { IRequestCall, ISessionEvents, ISessionConfig, IChallenge, RequestErrorType } from "./types";
+import { getNodeAddress, INodeAddress, INodeContactType, nodeAddressToString, NodeContact } from "./nodeInfo";
+import LRUCache from "lru-cache";
+import { ConnectionDirection, ERR_INVALID_SIG, NodeAddressString } from ".";
 import { TimeoutMap } from "../util";
-import { Message, RequestMessage, encode, decode, ResponseMessage, RequestId, MessageType } from "../message";
-import { IPendingRequest, SessionState, ISessionEvents, ISessionConfig } from "./types";
 
 const log = debug("discv5:sessionService");
 
@@ -40,7 +54,7 @@ const log = debug("discv5:sessionService");
  * to match the source, the `Session` is promoted to an established state. RPC requests are not sent
  * to untrusted Sessions, only responses.
  */
-export class SessionService extends (EventEmitter as { new (): StrictEventEmitter<EventEmitter, ISessionEvents> }) {
+export class SessionService extends (EventEmitter as { new(): StrictEventEmitter<EventEmitter, ISessionEvents> }) {
   /**
    * The local ENR
    */
@@ -58,23 +72,52 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    * Configuration
    */
   private config: ISessionConfig;
+
   /**
-   * Pending raw requests
-   * A collection of request objects we are awaiting a response from the remote.
-   * These are indexed by multiaddr string as WHOAREYOU packets do not return a source node id to
-   * match against.
-   * We need to keep pending requests for sessions not yet fully connected.
+   * Pending raw requests. A list of raw messages we are awaiting a response from the remote.
+   *
+   * UNBOUNDED: consumer data, responsibility of the app layer to bound
+   *
+   * Keyed by NodeAddressString
    */
-  private pendingRequests: Map<string, TimeoutMap<RequestId, IPendingRequest>>;
+  private activeRequests: TimeoutMap<NodeAddressString, IRequestCall>;
+
+  // WHOAREYOU messages do not include the source node id. We therefore maintain another
+  // mapping of active_requests via message_nonce. This allows us to match WHOAREYOU
+  // requests with active requests sent.
   /**
-   * Messages awaiting to be sent once a handshake has been established
+   * A mapping of all pending active raw requests message nonces to their NodeAddress.
+   *
+   * UNBOUNDED: consumer data, responsibility of the app layer to bound
    */
-  private pendingMessages: Map<NodeId, RequestMessage[]>;
+  private activeRequestsNonceMapping: Map<string, INodeAddress>;
+
   /**
-   * Sessions that have been created for each node id. These can be established or
-   * awaiting response from remote nodes
+   * Requests awaiting a handshake completion.
+   *
+   * UNBOUNDED: consumer data, responsibility of the app layer to bound
+   *
+   * Keyed by NodeAddressString
    */
-  private sessions: TimeoutMap<NodeId, Session>;
+  private pendingRequests: Map<NodeAddressString, [NodeContact, RequestMessage][]>;
+
+  /**
+   * Currently in-progress handshakes with peers.
+   *
+   * BOUNDED: bounded by expiry and IP rate limiter
+   *
+   * Keyed by NodeAddressString
+   */
+  private activeChallenges: LRUCache<NodeAddressString, IChallenge>;
+
+  /**
+   * Established sessions with peers.
+   *
+   * BOUNDED: bounded by expiry and max items
+   *
+   * Keyed by NodeAddressString
+   */
+  private sessions: LRUCache<NodeAddressString, Session>;
 
   constructor(config: ISessionConfig, enr: ENR, keypair: IKeypair, transport: ITransportService) {
     super();
@@ -86,9 +129,13 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
     this.enr = enr;
     this.keypair = keypair;
     this.transport = transport;
+    this.activeRequests = new TimeoutMap(config.requestTimeout, (k, v) =>
+      this.handleRequestTimeout(getNodeAddress(v.contact), v)
+    );
+    this.activeRequestsNonceMapping = new Map();
     this.pendingRequests = new Map();
-    this.pendingMessages = new Map();
-    this.sessions = new TimeoutMap(this.config.sessionTimeout, this.onSessionTimeout);
+    this.activeChallenges = new LRUCache({ maxAge: config.requestTimeout * 2 });
+    this.sessions = new LRUCache({ maxAge: config.sessionTimeout, max: config.sessionCacheCapacity });
   }
 
   /**
@@ -96,8 +143,8 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public async start(): Promise<void> {
     log(`Starting session service with node id ${this.enr.nodeId}`);
-    this.transport.on("packet", this.onPacket);
     this.transport.on("decodeError", (err, ma) => log("Error processing packet", err, ma));
+    this.transport.on("packet", this.processInboundPacket);
     await this.transport.start();
   }
 
@@ -106,120 +153,147 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
    */
   public async stop(): Promise<void> {
     log("Stopping session service");
-    this.transport.removeAllListeners();
+    this.transport.removeListener("packet", this.processInboundPacket);
     await this.transport.stop();
-    for (const requestMap of this.pendingRequests.values()) {
-      requestMap.clear();
-    }
+    this.activeRequests.clear();
+    this.activeRequestsNonceMapping.clear();
     this.pendingRequests.clear();
-    this.pendingMessages.clear();
-    this.sessions.clear();
+    this.activeChallenges.reset();
+    this.sessions.reset();
   }
 
   public sessionsSize(): number {
-    return this.sessions.size;
-  }
-
-  public updateEnr(enr: ENR): void {
-    const session = this.sessions.get(enr.nodeId);
-    if (session) {
-      if (session.updateEnr(enr)) {
-        // A session has be been promoted to established.
-        this.emit("established", enr);
-      }
-    }
+    return this.sessions.length;
   }
 
   /**
-   * Sends an RequestMessage request to a known ENR.
-   * It is possible to send requests to IP addresses not related to the ENR.
+   * Sends an RequestMessage to a node.
    */
-  public sendRequest(dstEnr: ENR, message: RequestMessage): void {
-    const dstId = dstEnr.nodeId;
-    const transport = this.transport instanceof WebSocketTransportService ? "udp" : "udp";
-    const dst = dstEnr.getLocationMultiaddr(transport);
+  public sendRequest(contact: NodeContact, request: RequestMessage): void {
+    const nodeAddr = getNodeAddress(contact);
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
 
-    if (!dst) {
-      throw new Error(`ENR must have ${transport} socket data`);
-    }
-    const session = this.sessions.get(dstId);
-    if (!session) {
-      log("No session established, sending a random packet to: %s on %s", dstId, dst.toString());
-      // cache message
-      const msgs = this.pendingMessages.get(dstId);
-      if (msgs) {
-        msgs.push(message);
-      } else {
-        this.pendingMessages.set(dstId, [message]);
-      }
-      // need to establish a new session, send a random packet
-      const [session, packet] = Session.createWithRandom(this.enr.nodeId, dstEnr);
-      this.sessions.set(dstId, session);
-      this.processRequest(dstId, dst, packet, message);
+    if (nodeAddr.socketAddr.equals(this.transport.multiaddr)) {
+      log("Filtered request to self");
       return;
     }
-    if (!session.trustedEstablished()) {
-      throw new Error("Session is being established, request failed");
-    }
-    if (!session.isTrusted()) {
-      throw new Error("Tried to send a request to an untrusted node");
-    }
-    // encrypt the message and send
-    log("Sending request: %O to %s on %s", message, dstId, dst.toString());
-    const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
-    this.processRequest(dstId, dst, packet, message);
-  }
 
-  /**
-   * Similar to `sendRequest` but for requests which an ENR may be unknown.
-   * A session is therefore assumed to be valid
-   */
-  public sendRequestUnknownEnr(dst: Multiaddr, dstId: NodeId, message: RequestMessage): void {
-    // session should be established
-    const session = this.sessions.get(dstId);
-    if (!session) {
-      throw new Error("Request without an ENR could not be sent, no session exists");
-    }
-
-    log("Sending request w/o ENR: %O to %s on %s", message, dstId, dst.toString());
-    const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
-    this.processRequest(dstId, dst, packet, message);
-  }
-
-  /**
-   * Sends a response
-   * This differs from `sendRequest` as responses do not require a known ENR to send messages
-   * and sessions should already be established
-   */
-  public sendResponse(dst: Multiaddr, dstId: NodeId, message: ResponseMessage): void {
-    // session should be established
-    const session = this.sessions.get(dstId);
-    if (!session) {
-      throw new Error("Response could not be sent, no session exists");
-    }
-    log("Sending %s response to %s at %s", MessageType[message.type], dstId, dst.toString());
-    const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
-    this.transport.send(dst, dstId, packet);
-  }
-
-  public sendWhoAreYou(dst: Multiaddr, dstId: NodeId, enrSeq: bigint, remoteEnr: ENR | null, nonce: Buffer): void {
-    // _session will be overwritten if not trusted-established or state.whoareyousent
-    const _session = this.sessions.get(dstId);
-    if (_session) {
-      // If a WHOAREYOU is already sent or a session is already established, ignore this request
-      if (_session.trustedEstablished() || _session.state.state === SessionState.WhoAreYouSent) {
-        // session exists, WhoAreYou packet not sent
-        log("Session exists, WHOAREYOU packet not sent");
-        return;
+    // If there is already an active request for this node, add to the pending requests
+    if (this.activeRequests.get(nodeAddrStr)) {
+      log("Request queued for node: %o", nodeAddr);
+      let pendingRequests = this.pendingRequests.get(nodeAddrStr);
+      if (!pendingRequests) {
+        pendingRequests = [];
+        this.pendingRequests.set(nodeAddrStr, pendingRequests);
       }
+      pendingRequests.push([contact, request]);
+      return;
     }
-    log("Sending WHOAREYOU to: %s on %s", dstId, dst.toString());
-    const [session, packet] = Session.createWithWhoAreYou(nonce, enrSeq, remoteEnr);
-    this.sessions.set(dstId, session);
-    this.processRequest(dstId, dst, packet);
+
+    const session = this.sessions.get(nodeAddrStr);
+    let packet, initiatingSession;
+    if (session) {
+      // Encrypt the message and send
+      packet = session.encryptMessage(this.enr.nodeId, nodeAddr.nodeId, encode(request));
+      initiatingSession = false;
+    } else {
+      // No session exists, start a new handshake
+      log("No session established, sending a random packet to: %o", nodeAddr);
+
+      // We are initiating a new session
+      packet = createRandomPacket(this.enr.nodeId);
+      initiatingSession = true;
+    }
+
+    const call: IRequestCall = {
+      contact,
+      packet,
+      request,
+      initiatingSession,
+      handshakeSent: false,
+      retries: 1,
+    };
+
+    // let the filter know we are expecting a response
+    this.addExpectedResponse(nodeAddr.socketAddr);
+
+    this.send(nodeAddr, packet);
+
+    this.activeRequestsNonceMapping.set(packet.header.nonce.toString("hex"), nodeAddr);
+    this.activeRequests.set(nodeAddrStr, call);
   }
 
-  public onWhoAreYou(src: Multiaddr, packet: IPacket): void {
+  /**
+   * Sends an RPC response
+   */
+  public sendResponse(nodeAddr: INodeAddress, response: ResponseMessage): void {
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+
+    // Check for an established session
+    const session = this.sessions.get(nodeAddrStr);
+    if (!session) {
+      log("Response could not be sent, no session exists to node: %o", nodeAddr);
+      return;
+    }
+
+    // Encrypt the message and send
+    let packet;
+    try {
+      packet = session.encryptMessage(this.enr.nodeId, nodeAddr.nodeId, encode(response));
+    } catch (e) {
+      log("Could not encrypt response: %s", e);
+      return;
+    }
+
+    this.send(nodeAddr, packet);
+  }
+
+  /**
+   * This is called in response to a "whoAreYouRequest" event.
+   * The applications finds the highest known ENR for a node then we respond to the node with a WHOAREYOU packet.
+   */
+  public sendChallenge(nodeAddr: INodeAddress, nonce: Buffer, remoteEnr: ENR | null): void {
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+
+    if (this.activeChallenges.peek(nodeAddrStr)) {
+      log("WHOAREYOU already sent. %o", nodeAddr);
+      return;
+    }
+
+    // Ignore this request if the session is already established
+    if (this.sessions.get(nodeAddrStr)) {
+      log("Session already established. WHOAREYOU not sent to %o", nodeAddr);
+      return;
+    }
+
+    // It could be the case we have sent an ENR with an active request, however we consider
+    // these independent as this is in response to an unknown packet. If the ENR it not in our
+    // table (remote_enr is None) then we re-request the ENR to keep the session up to date.
+
+    // send the challenge
+    const enrSeq = remoteEnr?.seq ?? 0n;
+    const packet = createWhoAreYouPacket(nonce, enrSeq);
+    const challengeData = encodeChallengeData(packet.maskingIv, packet.header);
+
+    log("Sending WHOAREYOU to %o", nodeAddr);
+    this.send(nodeAddr, packet);
+
+    this.activeChallenges.set(nodeAddrStr, { data: challengeData, remoteEnr: remoteEnr ?? undefined });
+  }
+
+  public processInboundPacket = (src: Multiaddr, packet: IPacket): void => {
+    switch (packet.header.flag) {
+      case PacketType.WhoAreYou:
+        return this.handleChallenge(src, packet);
+      case PacketType.Handshake:
+        return this.handleHandshake(src, packet);
+      case PacketType.Message:
+        return this.handleMessage(src, packet);
+    }
+  };
+
+  private handleChallenge(src: Multiaddr, packet: IPacket): void {
+    // First decode the authdata
     let authdata;
     try {
       authdata = decodeWhoAreYouAuthdata(packet.header.authdata);
@@ -227,109 +301,179 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       log("Cannot decode WHOAREYOU authdata from %s: %s", src.toString(), e);
       return;
     }
-    const nonce = packet.header.nonce;
-    const srcStr = src.toString();
-    const pendingRequests = this.pendingRequests.get(srcStr);
-    if (!pendingRequests) {
-      // Received a WHOAREYOU packet that references an unknown or expired request.
+    const nonce = packet.header.nonce.toString("hex");
+
+    // Check that this challenge matches a known active request.
+    // If this message passes all the requisite checks, a request call is returned.
+
+    // Check for an active request
+    const nodeAddr = this.activeRequestsNonceMapping.get(nonce);
+    if (!nodeAddr) {
       log(
-        "Received a WHOAREYOU packet that references an unknown or expired request - no pending requests. source: %s, token: %s",
-        srcStr,
-        nonce.toString("hex")
+        "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
+        src.toString(),
+        nonce
       );
       return;
     }
-    const request = Array.from(pendingRequests.values()).find((r) => nonce.equals(r.packet.header.nonce));
-    if (!request) {
-      // Received a WHOAREYOU packet that references an unknown or expired request.
+
+    // Verify that the src_addresses match
+    if (!nodeAddr.socketAddr.equals(src)) {
       log(
-        "Received a WHOAREYOU packet that references an unknown or expired request - nonce not found. source: %s, token: %s",
-        srcStr,
-        nonce.toString("hex")
+        // eslint-disable-next-line max-len
+        "Received a WHOAREYOU packet for a message with a non-expected source. Source %s, expected_source: %s message_nonce %s",
+        src.toString(),
+        nodeAddr.socketAddr.toString(),
+        nonce
       );
       return;
     }
-    if (pendingRequests.size === 1) {
-      this.pendingRequests.delete(srcStr);
+    this.activeRequestsNonceMapping.delete(nonce);
+
+    // Obtain the request from the mapping. This must exist, otherwise there is a
+    // serious coding error. The active_requests_nonce_mapping and active_requests
+    // mappings should be 1 to 1.
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+    const requestCall = this.activeRequests.get(nodeAddrStr);
+    if (!requestCall) {
+      log(
+        // eslint-disable-next-line max-len
+        "Active request mappings are not in sync. Message_id %s, node_address %o doesn't exist in active request mapping",
+        nonce,
+        nodeAddr
+      );
+      return;
     }
-    pendingRequests.delete(request.message ? request.message.id : 0n);
+    this.activeRequests.delete(nodeAddrStr);
+
+    // double check the message nonces match
+    const requestNonce = requestCall.packet.header.nonce.toString("hex");
+    if (requestNonce !== nonce) {
+      // This could theoretically happen if a peer uses the same node id across
+      // different connections.
+      log(
+        "Received a WHOAREYOU from a non expected source. Source: %o, message_nonce %s , expected_nonce: %s",
+        requestCall.contact,
+        nonce,
+        requestNonce
+      );
+      return;
+    }
 
     log("Received a WHOAREYOU packet. source: %s", src.toString());
 
-    // This is an assumed NodeId. We sent the packet to this NodeId and can only verify it against the
-    // originating IP address. We assume it comes from this NodeId.
-    const srcId = request.dstId;
-
-    const session = this.sessions.get(srcId);
-    if (!session) {
-      // Received a WhoAreYou packet without having an established session
-      log("Received a WHOAREYOU packet without having an established session.");
+    // We do not allow multiple WHOAREYOU packets for a single challenge request. If we have
+    // already sent a WHOAREYOU ourselves, we drop sessions who send us a WHOAREYOU in
+    // response.
+    if (requestCall.handshakeSent) {
+      log("Authentication response already sent. Dropping session. Node: %s", requestCall.contact);
+      this.failRequest(requestCall, RequestErrorType.InvalidRemotePacket, true);
       return;
     }
 
-    // Determine which message to send back. A WhoAreYou could refer to the random packet
-    // sent during establishing a connection, or their session has expired on one of our
-    // send messages and we need to re-encrypt it
-    let message: RequestMessage;
-    if (session.state.state === SessionState.RandomSent) {
-      // get the messages that are waiting for an established session
-      const messages = this.pendingMessages.get(srcId);
-      if (!messages || !messages.length) {
-        log("No pending messages found for WHOAREYOU request.");
-        return;
+    // Encrypt the message with an auth header and respond
+
+    // First if a new version of our ENR is requested, obtain it for the header
+    const updatedEnr = authdata.enrSeq < this.enr.seq ? this.enr.encode(this.keypair.privateKey) : null;
+
+    // Generate a new session and authentication packet
+    const [authPacket, session] = Session.encryptWithHeader(
+      requestCall.contact,
+      this.keypair,
+      this.enr.nodeId,
+      updatedEnr,
+      encodeChallengeData(packet.maskingIv, packet.header),
+      encode(requestCall.request)
+    );
+
+    // There are two quirks with an established session at this point.
+    // 1. We may not know the ENR if we dialed this node with a NodeContact::Raw. In this case
+    //    we need to set up a request to find the ENR and wait for a response before we
+    //    officially call this node established.
+    // 2. The challenge here could be to an already established session. If so, we need to
+    //    update the existing session to attempt to decrypt future messages with the new keys
+    //    and update the keys internally upon successful decryption.
+    //
+    // We handle both of these cases here.
+
+    // Check if we know the ENR, if not request it and flag the session as awaiting an ENR.
+    //
+    // All sent requests must have an associated node_id. Therefore the following
+    // must not panic.
+    switch (requestCall.contact.type) {
+      case INodeContactType.ENR: {
+        // NOTE: Here we decide if the session is outgoing or ingoing. The condition for an
+        // outgoing session is that we originally sent a RANDOM packet (signifying we did
+        // not have a session for a request) and the packet is not a PING (we are not
+        // trying to update an old session that may have expired.
+        let connectionDirection;
+        if (requestCall.initiatingSession) {
+          if (requestCall.request.type === MessageType.PING) {
+            connectionDirection = ConnectionDirection.Incoming;
+          } else {
+            connectionDirection = ConnectionDirection.Outgoing;
+          }
+        } else {
+          connectionDirection = ConnectionDirection.Incoming;
+        }
+
+        // We already know the ENR. Send the handshake response packet
+        log("Sending authentication response to node: %o", nodeAddr);
+
+        requestCall.packet = authPacket;
+        requestCall.handshakeSent = true;
+        requestCall.initiatingSession = false;
+
+        // Reinsert the request call
+        this.insertActiveRequest(requestCall);
+
+        // Send the actual packet
+        this.send(nodeAddr, authPacket);
+
+        // Notify the application that the session has been established
+        this.emit("established", requestCall.contact.enr, connectionDirection);
+        break;
       }
-      message = messages.shift() as RequestMessage;
-      this.pendingMessages.set(srcId, messages);
-    } else {
-      // re-send the original message
-      if (!request.message) {
-        log("All non-random requests must have an unencrypted message");
-        return;
+      case INodeContactType.Raw: {
+        // Don't know the ENR. Establish the session, but request an ENR
+
+        // Send the handshake response packet
+        log("Sending authentication response to node: %o", nodeAddr);
+
+        requestCall.packet = authPacket;
+        requestCall.handshakeSent = true;
+
+        // Reinsert the request call
+        this.insertActiveRequest(requestCall);
+
+        // Send the actual request
+        this.send(nodeAddr, authPacket);
+
+        // send FINDNODE 0
+        const request = createFindNodeMessage([0]);
+        session.awaitingEnr = request.id;
+        this.sendRequest(requestCall.contact, request);
+        break;
       }
-      message = request.message as RequestMessage;
-    }
-    // Update the session (this must be the socket that we sent the referenced request to)
-    session.lastSeenMultiaddr = src;
-
-    // Update the ENR record if necessary
-    let updatedEnr: Buffer | null = null;
-    if (authdata.enrSeq < this.enr.seq) {
-      updatedEnr = this.enr.encode(this.keypair.privateKey);
     }
 
-    // Generate session keys and encrypt the earliest packet in a handshake packet
-    let handshakePacket: IPacket;
-    try {
-      handshakePacket = session.encryptWithHandshake(
-        this.keypair,
-        encodeChallengeData(packet.maskingIv, packet.header),
-        this.enr.nodeId,
-        updatedEnr,
-        encode(message)
-      );
-    } catch (e) {
-      // insert the message back into the pending queue
-      let messages = this.pendingMessages.get(srcId);
-      if (!messages) {
-        messages = [];
-      }
-      messages.unshift(message);
-      this.pendingMessages.set(srcId, messages);
-      log("Could not generate a session: error: %O", e);
-      return;
-    }
-
-    log("Sending authentication message: %O to node: %s on %s", message, srcId, src.toString());
-
-    // send the response
-    this.processRequest(srcId, src, handshakePacket, message);
-
-    // flush the message cache
-    this.flushMessages(srcId, src);
+    this.newSession(nodeAddr, session);
   }
 
-  public onHandshake(src: Multiaddr, packet: IPacket): void {
-    const srcStr = src.toString();
+  /**
+   * Verifies a Node ENR to its observed address.
+   * If it fails, any associated session is also considered failed.
+   * If it succeeds, we notify the application
+   */
+  private verifyEnr(enr: ENR, nodeAddr: INodeAddress): boolean {
+    // If the ENR does not match the observed IP addresses,
+    // we consider the session failed.
+    const enrMultiaddr = enr.getLocationMultiaddr("udp");
+    return enr.nodeId === nodeAddr.nodeId && (enrMultiaddr?.equals(nodeAddr.socketAddr) ?? true);
+  }
+
+  /** Handle a message that contains an authentication header */
+  private handleHandshake(src: Multiaddr, packet: IPacket): void {
     // Needs to match an outgoing WHOAREYOU packet (so we have the required nonce to be signed).
     // If it doesn't we drop the packet.
     // This will lead to future outgoing WHOAREYOU packets if they proceed to send further encrypted packets
@@ -340,71 +484,67 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       log("Unable to decode handkshake authdata: %s", e);
       return;
     }
-    const srcId = authdata.srcId;
-    log("Received an authentication message from: %s on %s", srcId, src);
+    const nodeAddr = {
+      socketAddr: src,
+      nodeId: authdata.srcId,
+    };
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
 
-    const session = this.sessions.get(srcId);
-    if (!session) {
-      log("Received an authenticated header without a known session, dropping.");
+    log("Received an authentication message from: %o", nodeAddr);
+
+    const challenge = this.activeChallenges.get(nodeAddrStr);
+    if (!challenge) {
+      log("Received an authenticated header without a matching WHOAREYOU request. %o", nodeAddr);
       return;
     }
+    this.activeChallenges.del(nodeAddrStr);
 
-    if (session.state.state !== SessionState.WhoAreYouSent) {
-      log("Received an authenticated header without a known WHOAREYOU session, dropping.");
-      return;
-    }
-
-    const pendingRequests = this.pendingRequests.get(srcStr);
-    if (!pendingRequests) {
-      log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
-      return;
-    }
-    const request = Array.from(pendingRequests.values()).find(
-      (r) => r.packet.header.flag === PacketType.WhoAreYou && r.dstId === srcId
-    );
-    if (!request) {
-      log("Received an authenticated header without a matching WHOAREYOU request, dropping.");
-      return;
-    }
-    if (pendingRequests.size === 1) {
-      this.pendingRequests.delete(srcStr);
-    }
-    pendingRequests.delete(request.message ? request.message.id : 0n);
-
-    // update the sessions last seen socket
-    session.lastSeenMultiaddr = src;
-
-    // establish the session
     try {
-      const trusted = session.establishFromHandshake(this.keypair, this.enr.nodeId, srcId, authdata);
-      if (trusted) {
-        log("Session established with node from header: %s", srcId);
-        // session is trusted, notify the protocol
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this.emit("established", session.remoteEnr!);
-        // flush messages
-        this.flushMessages(srcId, src);
+      const [session, enr] = Session.establishFromChallenge(
+        this.keypair,
+        this.enr.nodeId,
+        nodeAddr.nodeId,
+        challenge,
+        authdata.idSignature,
+        authdata.ephPubkey,
+        authdata.record
+      );
+
+      // Receiving an AuthResponse must give us an up-to-date view of the node ENR.
+      // Verify the ENR is valid
+      if (this.verifyEnr(enr, nodeAddr)) {
+        // Session is valid
+        // Notify the application
+        // The session established here are from WHOAREYOU packets that we sent.
+        // This occurs when a node established a connection with us.
+        this.emit("established", enr, ConnectionDirection.Incoming);
+
+        this.newSession(nodeAddr, session);
+
+        // decrypt the message
+        this.handleMessage(src, {
+          maskingIv: packet.maskingIv,
+          header: createHeader(
+            PacketType.Message,
+            encodeMessageAuthdata({ srcId: nodeAddr.nodeId }),
+            packet.header.nonce
+          ),
+          message: packet.message,
+          messageAd: encodeChallengeData(packet.maskingIv, packet.header),
+        });
       }
     } catch (e) {
-      log("Invalid Authentication header. Dropping session. Error: %O", e);
-      this.sessions.delete(srcId);
-      this.pendingMessages.delete(srcId);
-      return;
+      if ((e as Error).name === ERR_INVALID_SIG) {
+        log("Authentication header contained invalid signature. Ignoring packet from: %o", nodeAddr);
+        this.activeChallenges.set(nodeAddrStr, challenge);
+      } else {
+        log("Invalid Authentication header. Dropping session. %s", e);
+        this.failSession(nodeAddr, RequestErrorType.InvalidRemotePacket, true);
+      }
     }
-
-    // session has been established, update the timeout
-    this.sessions.setTimeout(srcId, this.config.sessionTimeout);
-
-    // decrypt the message
-    this.onMessage(src, {
-      maskingIv: packet.maskingIv,
-      header: createHeader(PacketType.Message, encodeMessageAuthdata({ srcId }), packet.header.nonce),
-      message: packet.message,
-      messageAd: encodeChallengeData(packet.maskingIv, packet.header),
-    });
   }
 
-  public onMessage(src: Multiaddr, packet: IPacket): void {
+  private handleMessage(src: Multiaddr, packet: IPacket): void {
     let authdata;
     try {
       authdata = decodeMessageAuthdata(packet.header.authdata);
@@ -412,34 +552,23 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       log("Cannot decode message authdata: %s", e);
       return;
     }
-    const srcId = authdata.srcId;
+    const nodeAddr = {
+      socketAddr: src,
+      nodeId: authdata.srcId,
+    };
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
 
     // check if we have an available session
-    const session = this.sessions.get(srcId);
+    const session = this.sessions.get(nodeAddrStr);
     if (!session) {
       // Received a message without a session.
-      log("Received a message without a session. from: %s at %s", srcId, src.toString());
+      log("Received a message without a session. from: %o", nodeAddr);
       log("Requesting a WHOAREYOU packet to be sent.");
 
       // spawn a WHOAREYOU event to check for highest known ENR
-      this.emit("whoAreYouRequest", srcId, src, packet.header.nonce);
+      this.emit("whoAreYouRequest", nodeAddr, packet.header.nonce);
       return;
     }
-    // if we have sent a random packet, upgrade to a WHOAREYOU request
-    if (session.state.state === SessionState.RandomSent) {
-      this.emit("whoAreYouRequest", srcId, src, packet.header.nonce);
-    } else if (session.state.state === SessionState.WhoAreYouSent) {
-      // Waiting for a session to be generated
-      log("Waiting for a session to be generated. from: %s at %s", srcId, src);
-
-      // potentially store and decrypt once we receive the packet
-      // drop it for now
-      return;
-    }
-    // We could be in the AwaitingResponse state. If so, this message could establish a new
-    // session with a node. We keep track to see if the decryption uupdates the session. If so,
-    // we notify the user and flush all cached messages.
-    const sessionWasAwaiting = session.state.state === SessionState.AwaitingResponse;
 
     // attempt to decrypt and process the message
     let encodedMessage;
@@ -454,158 +583,235 @@ export class SessionService extends (EventEmitter as { new (): StrictEventEmitte
       // It is likely the node sending this message has dropped their session.
       // In this case, this message is a random packet and we should reply with a WHOAREYOU.
       // This means we need to drop the current session and re-establish.
-      log("Message from node: %s is not encrypted with known session keys. Requesting a WHOAREYOU packet", srcId);
-      this.sessions.delete(srcId);
-      this.emit("whoAreYouRequest", srcId, src, packet.header.nonce);
+      log("Message from node: %o is not encrypted with known session keys. Requesting a WHOAREYOU packet", nodeAddr);
+      this.failSession(nodeAddr, RequestErrorType.InvalidRemotePacket, true);
+
+      // If we haven't already sent a WhoAreYou,
+      // spawn a WHOAREYOU event to check for highest known ENR
+      // Update the cache time and remove expired entries.
+      if (!this.activeChallenges.peek(nodeAddrStr)) {
+        this.emit("whoAreYouRequest", nodeAddr, packet.header.nonce);
+      } else {
+        log("WHOAREYOU packet already sent: %o", nodeAddr);
+      }
       return;
     }
     let message: Message;
     try {
       message = decode(encodedMessage);
     } catch (e) {
-      throw new Error(`Failed to decode message. Error: ${e.message}`);
-    }
-
-    // Remove any associated request from pendingRequests
-    const pendingRequests = this.pendingRequests.get(src.toString());
-    if (pendingRequests) {
-      pendingRequests.delete(message.id);
-    }
-
-    // update the lastSeenSocket and check if we need to promote the session to trusted
-    session.lastSeenMultiaddr = src;
-
-    // There are two possibilities as session could have been established.
-    // The lastest message addr matches the addr in the known ENR and upgrades the session to an established state,
-    // or, we were awaiting a message to be decrypted with new session keys,
-    // this just arrived and now we consider the session established.
-    // In both cases, we notify the user and flush the cached messages
-    if (
-      (session.updateTrusted() && session.trustedEstablished()) ||
-      (session.trustedEstablished() && sessionWasAwaiting)
-    ) {
-      // session has been established, notify the protocol
-      log("Session established with node from updated: %s", srcId);
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.emit("established", session.remoteEnr!);
-      // flush messages
-      this.flushMessages(srcId, src);
-    }
-    // We have received a new message. Notify the protocol
-    log("Message received: %s from: %s on %s", MessageType[message.type], srcId, src);
-    this.emit("message", srcId, src, message);
-  }
-
-  public onPacket = (src: Multiaddr, packet: IPacket): void => {
-    log("packet received from ", src.toString());
-    switch (packet.header.flag) {
-      case PacketType.WhoAreYou:
-        return this.onWhoAreYou(src, packet);
-      case PacketType.Handshake:
-        return this.onHandshake(src, packet);
-      case PacketType.Message:
-        return this.onMessage(src, packet);
-    }
-  };
-
-  /**
-   * Send the request over the transport, storing the pending request
-   */
-  private processRequest(dstId: NodeId, dst: Multiaddr, packet: IPacket, message?: RequestMessage): void {
-    const dstStr = dst.toString();
-    const request: IPendingRequest = {
-      dstId,
-      dst,
-      packet,
-      message,
-      retries: 1,
-    };
-    this.transport.send(dst, dstId, packet);
-    let requests = this.pendingRequests.get(dstStr);
-    if (!requests) {
-      requests = new TimeoutMap(this.config.requestTimeout, this.onPendingRequestTimeout);
-      this.pendingRequests.set(dstStr, requests);
-    }
-    requests.set(message ? message.id : 0n, request);
-  }
-
-  /**
-   * Encrypts and sends any messages (for a specific destination) that were waiting for a session to be established
-   */
-  private flushMessages(dstId: NodeId, dst: Multiaddr): void {
-    const session = this.sessions.get(dstId);
-    if (!session || !session.trustedEstablished()) {
-      // No adequate session
+      log("Failed to decode message. Error: %s", (e as Error).message);
       return;
     }
 
-    const messages = this.pendingMessages.get(dstId) || [];
-    this.pendingMessages.delete(dstId);
-    messages.forEach((message) => {
-      log("Sending cached message");
-      const packet = session.encryptMessage(this.enr.nodeId, dstId, encode(message));
-      this.processRequest(dstId, dst, packet, message);
-    });
+    log("Received message from: %o", nodeAddr);
+
+    if (isRequestType(message.type)) {
+      // report the request to the application
+      this.emit("request", nodeAddr, message as RequestMessage);
+    } else {
+      // Response
+      // Sessions could be awaiting an ENR response.
+      // Check if this response matches these
+      const requestId = session.awaitingEnr;
+      if (requestId !== undefined) {
+        if (requestId === message.id) {
+          delete session.awaitingEnr;
+          if (message.type === MessageType.NODES) {
+            // Received the requested ENR
+            const enr = message.enrs.pop();
+            if (enr) {
+              if (this.verifyEnr(enr, nodeAddr)) {
+                // Notify the application
+                // This can occur when we try to dial a node without an
+                // ENR. In this case we have attempted to establish the
+                // connection, so this is an outgoing connection.
+                this.emit("established", enr, ConnectionDirection.Outgoing);
+                return;
+              }
+            }
+          }
+
+          log("Session failed invalid ENR response");
+          this.failSession(nodeAddr, RequestErrorType.InvalidRemoteENR, true);
+          return;
+        }
+      }
+
+      // Handle standard responses
+      this.handleResponse(nodeAddr, message as ResponseMessage);
+    }
   }
 
   /**
-   * Remove timed-out requests
+   * Handles a response to a request.
+   * Re-inserts the request call if the response is a multiple Nodes response.
    */
-  private onPendingRequestTimeout = (requestId: RequestId, request: IPendingRequest): void => {
-    const dstId = request.dstId;
-    const session = this.sessions.get(dstId);
-    if (request.retries >= this.config.requestRetries) {
-      if (
-        !session ||
-        session.state.state === SessionState.WhoAreYouSent ||
-        session.state.state === SessionState.RandomSent
-      ) {
-        // no response from peer, flush all pending messages and drop session
-        log("Session couldn't be established with node: %s at %s", dstId, request.dst.toString());
-        const pendingMessages = this.pendingMessages.get(dstId);
-        if (pendingMessages) {
-          this.pendingMessages.delete(dstId);
-          pendingMessages.forEach((message) => this.emit("requestFailed", request.dstId, message.id));
-        }
-        // drop the session
-        this.sessions.delete(dstId);
-      } else if (
-        request.packet.header.flag === PacketType.Handshake ||
-        request.packet.header.flag === PacketType.Message
-      ) {
-        log("Message timed out with node: %s", dstId);
-        this.emit("requestFailed", request.dstId, requestId);
-      }
-    } else {
-      // Increment the request retry count and restart the timeout
-      log("Resending message: %O to node: %s", request.message, dstId);
-      this.transport.send(request.dst, request.dstId, request.packet);
-      request.retries += 1;
-      const dstStr = request.dst.toString();
-      let requests = this.pendingRequests.get(dstStr);
-      if (!requests) {
-        requests = new TimeoutMap(this.config.requestTimeout, this.onPendingRequestTimeout);
-        this.pendingRequests.set(dstStr, requests);
-      }
-      requests.set(requestId, request);
+  private handleResponse(nodeAddr: INodeAddress, response: ResponseMessage): void {
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+
+    // Find a matching request, if any
+    const requestCall = this.activeRequests.get(nodeAddrStr);
+    if (!requestCall) {
+      // This is likely a late response and we have already failed the request.
+      // These get dropped here.
+      log("Late response from node: %o", nodeAddr);
+      return;
     }
-  };
+
+    if (requestCall.request.id !== response.id) {
+      log("Received an RPC Response to an unknown request. Likely late response. %o", nodeAddr);
+      return;
+    }
+    this.activeRequests.delete(nodeAddrStr);
+
+    // The response matches a request
+
+    // Check to see if this is a Nodes response, in which case we may require to wait for extra responses
+    if (response.type === MessageType.NODES) {
+      if (response.total > 1) {
+        // This is a multi-response Nodes response
+        if (requestCall.remainingResponses === undefined) {
+          // This is the first nodes response
+          requestCall.remainingResponses = response.total - 1;
+          // add back the request and send the response
+          this.activeRequests.set(nodeAddrStr, requestCall);
+          this.emit("response", nodeAddr, response);
+          return;
+        } else {
+          // This is not the first nodes response
+          requestCall.remainingResponses--;
+          if (requestCall.remainingResponses !== 0) {
+            // more responses remaining, add back the request and send the response
+            // add back the request and send the response
+            this.activeRequests.set(nodeAddrStr, requestCall);
+            this.emit("response", nodeAddr, response);
+            return;
+          }
+        }
+      }
+    }
+
+    // Remove the associated nonce mapping.
+    this.activeRequestsNonceMapping.delete(requestCall.packet.header.nonce.toString("hex"));
+
+    // Remove the expected response
+    this.removeExpectedResponse(nodeAddr.socketAddr);
+
+    // The request matches, report the response
+    this.emit("response", nodeAddr, response);
+
+    this.sendNextRequest(nodeAddr);
+  }
 
   /**
-   * Handle timed-out sessions
-   * Only drop a session if we are not expecting any responses.
+   * Inserts a request and associated authTag mapping
    */
-  private onSessionTimeout = (nodeId: NodeId, session: Session): void => {
-    for (const pendingRequests of this.pendingRequests.values()) {
-      if (Array.from(pendingRequests.values()).find((request) => request.dstId === nodeId)) {
-        this.sessions.setWithTimeout(nodeId, session, this.config.requestTimeout);
-        return;
+  private insertActiveRequest(requestCall: IRequestCall): void {
+    const nodeAddr = getNodeAddress(requestCall.contact);
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+    this.activeRequestsNonceMapping.set(requestCall.packet.header.nonce.toString("hex"), nodeAddr);
+    this.activeRequests.set(nodeAddrStr, requestCall);
+  }
+
+  private newSession(nodeAddr: INodeAddress, session: Session): void {
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+    const currentSession = this.sessions.get(nodeAddrStr);
+
+    log("New session with: %o", nodeAddr);
+    if (currentSession) {
+      currentSession.update(session);
+    } else {
+      this.sessions.set(nodeAddrStr, session);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private removeExpectedResponse(socketAddr: Multiaddr): void {
+    //
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private addExpectedResponse(socketAddr: Multiaddr): void {
+    //
+  }
+
+  private handleRequestTimeout(nodeAddr: INodeAddress, requestCall: IRequestCall): void {
+    if (requestCall.retries >= this.config.requestRetries) {
+      log("Request timed out with %o", nodeAddr);
+
+      // Remove the associated nonce mapping
+      this.activeRequestsNonceMapping.delete(requestCall.packet.header.nonce.toString("hex"));
+      this.removeExpectedResponse(nodeAddr.socketAddr);
+
+      // The request has timed out.
+      // We keep any established session fo future use.
+      this.failRequest(requestCall, RequestErrorType.Timeout, false);
+    } else {
+      const nodeAddrStr = nodeAddressToString(nodeAddr);
+
+      // increment the request retry count and restart the timeout
+      log("Resending message to: %o", nodeAddr);
+      this.send(nodeAddr, requestCall.packet);
+      requestCall.retries++;
+      this.activeRequests.set(nodeAddrStr, requestCall);
+    }
+  }
+
+  private sendNextRequest(nodeAddr: INodeAddress): void {
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+    // ensure we are not overwriting any existing requests
+
+    if (!this.activeRequests.get(nodeAddrStr)) {
+      const entry = this.pendingRequests.get(nodeAddrStr);
+      if (entry) {
+        // if it exists, there must be a request here
+        const request = entry.shift()!;
+        if (!entry.length) {
+          this.pendingRequests.delete(nodeAddrStr);
+        }
+
+        log("Sending next awaiting message. Node: %o", request[0]);
+        this.sendRequest(request[0], request[1]);
       }
     }
-    // No pending requests for nodeId
-    // Fail all pending messages for this node
-    (this.pendingMessages.get(nodeId) || []).forEach((message) => this.emit("requestFailed", nodeId, message.id));
-    this.pendingMessages.delete(nodeId);
-    log("Session timed out for node: %s", nodeId);
-  };
+  }
+
+  /**
+   * A request has failed
+   */
+  private failRequest(requestCall: IRequestCall, error: RequestErrorType, removeSession: boolean): void {
+    // The request has expored, remove the session.
+    // Remove the associated nonce mapping.
+    this.activeRequestsNonceMapping.delete(requestCall.packet.header.nonce.toString("hex"));
+
+    // Fail the current request
+    this.emit("requestFailed", requestCall.request.id, error);
+
+    const nodeAddr = getNodeAddress(requestCall.contact);
+    this.failSession(nodeAddr, error, removeSession);
+  }
+
+  /**
+   * Removes a session
+   */
+  private failSession(nodeAddr: INodeAddress, error: RequestErrorType, removeSession: boolean): void {
+    const nodeAddrStr = nodeAddressToString(nodeAddr);
+    if (removeSession) {
+      this.sessions.del(nodeAddrStr);
+    }
+
+    const requests = this.pendingRequests.get(nodeAddrStr);
+    if (requests) {
+      this.pendingRequests.delete(nodeAddrStr);
+
+      for (let i = 0; i < requests.length; i++) {
+        this.emit("requestFailed", requests[i][1].id, error);
+      }
+    }
+  }
+
+  private send(nodeAddr: INodeAddress, packet: IPacket): void {
+    this.transport.send(nodeAddr.socketAddr, nodeAddr.nodeId, packet);
+  }
 }

@@ -48,7 +48,7 @@ tape('Client start-up', async (t) => {
         t.pass('updated second multiaddr')
         portal1.client.addEnr(portal2.client.enr);
 
-        const res = await portal1.sendPing(portal2.client.enr.nodeId, SubNetworkIds.HistoryNetworkId)
+        const res = await portal1.sendPing(portal2.client.enr.nodeId, SubNetworkIds.HistoryNetwork)
         console.log(res)
         child.kill()
         await portal1.client.stop();

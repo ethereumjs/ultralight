@@ -21,6 +21,53 @@ export interface IBucketEvents {
 
 export type BucketEventEmitter = StrictEventEmitter<EventEmitter, IBucketEvents>;
 
+/** The result of inserting an entry into a bucket. */
+export enum InsertResult {
+  /** The entry has been sucessfully inserted */
+  Inserted,
+  /**
+   * The entry is pending insertion because the relevant bucket is currently full.
+   *
+   * The entry is inserted after a timeout elapsed, if the status of the least-recently connected
+   * (and currently disconnected) node in the bucket is not updated before the timeout expires.
+   */
+  Pending,
+  /** The node existed and the status was updated */
+  StatusUpdated,
+  /** The node existed and the status was updated and the node was promoted to a connected state */
+  StatusUpdatedAndPromoted,
+  /** The node existed and the value was updated. */
+  ValueUpdated,
+  /** Both the status and value were updated. */
+  Updated,
+  /** Both the status and value were promoted and the node was promoted to a connected state */
+  UpdatedAndPromoted,
+  /** The pending slot was updated. */
+  UpdatedPending,
+  /** The entry was not inserted because the relevant bucket is full. */
+  FailedBucketFull,
+  /** Cannot update self */
+  FailedInvalidSelfUpdate,
+  /** The entry already exists. */
+  NodeExists,
+}
+
+/** The result of performing an update on a bucket. */
+export enum UpdateResult {
+  /** The node was updated successfully */
+  Updated,
+  /** The update promited the node to a connected state from a disconnected state. */
+  UpdatedAndPromoted,
+  /** The pending entry was updated. */
+  UpdatedPending,
+  /** The update removed the node. The node didn't exist. */
+  FailedKeyNonExistant,
+  /** The update removed the node. The bucket was full. */
+  FailedBucketFull,
+  /** There were no changes made to the value of the node. */
+  NotModified,
+}
+
 export enum EntryStatus {
   Connected,
   Disconnected,
@@ -67,7 +114,7 @@ export interface ILookupConfig {
 }
 
 export interface ILookupEvents {
-  peer: (peer: ILookupPeer) => void;
+  peer: (peer: NodeId) => void;
   finished: (closest: NodeId[]) => void;
 }
 
@@ -105,10 +152,6 @@ export interface ILookupPeer {
    */
   nodeId: NodeId;
   /**
-   * The current rpc request iteration that has been made on this peer
-   */
-  iteration: number;
-  /**
    * The number of peers that have  been returned by this peer
    */
   peersReturned: number;
@@ -129,10 +172,6 @@ export enum LookupPeerState {
    * The lookup is waiting for a result from the peer
    */
   Waiting,
-  /**
-   * The peer is waiting to begin another iteration
-   */
-  PendingIteration,
   /**
    * Obtaining a result from the peer has failed
    */

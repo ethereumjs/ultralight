@@ -1,9 +1,9 @@
 import PeerId from "peer-id";
 import { expect, assert } from "chai";
-import { ENR } from "../../src/enr/enr";
-import { createKeypairFromPeerId } from "../../src/keypair";
-import { toHex } from "../../src/util";
-import { ERR_INVALID_ID } from "../../src/enr/constants";
+import { ENR } from "../../../src/enr/enr";
+import { createKeypairFromPeerId } from "../../../src/keypair";
+import { toHex } from "../../../src/util";
+import { ERR_INVALID_ID } from "../../../src/enr/constants";
 import { Multiaddr } from "multiaddr";
 
 describe("ENR", function () {
