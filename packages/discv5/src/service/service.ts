@@ -7,19 +7,11 @@ import PeerId from "peer-id";
 import { UDPTransportService } from "../transport";
 import { WebSocketTransportService } from "../transport";
 import { MAX_PACKET_SIZE } from "../packet";
-import { SessionService } from "../session";
+import { ConnectionDirection, RequestErrorType, SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE, createNodeId } from "../enr";
 import { IKeypair, createKeypairFromPeerId, createPeerIdFromKeypair } from "../keypair";
+import { EntryStatus, InsertResult, KademliaRoutingTable, log2Distance, Lookup, UpdateResult } from "../kademlia";
 import {
-  EntryStatus,
-  KademliaRoutingTable,
-  log2Distance,
-  ILookupPeer,
-  findNodeLog2Distances,
-  Lookup,
-} from "../kademlia";
-import {
-  Message,
   RequestMessage,
   ResponseMessage,
   createPingMessage,
@@ -40,8 +32,10 @@ import {
 } from "../message";
 import { Discv5EventEmitter, ENRInput, IActiveRequest, IDiscv5Metrics, INodesResponse } from "./types";
 import { AddrVotes } from "./addrVotes";
-import { TimeoutMap, toBuffer } from "../util";
+import { toBuffer } from "../util";
 import { IDiscv5Config, defaultConfig } from "../config";
+import { createNodeContact, getNodeAddress, getNodeId, INodeAddress, NodeContact } from "../session/nodeInfo";
+import { BufferCallback, ConnectionStatus, ConnectionStatusType } from ".";
 
 const log = debug("discv5:service");
 
@@ -87,33 +81,46 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   private config: IDiscv5Config;
 
   private started = false;
+
   /**
    * Session service that establishes sessions with peers
    */
   private sessionService: SessionService;
+
   /**
    * Storage of the ENR record for each node
+   *
+   * BOUNDED: bounded by bucket count + size
    */
   private kbuckets: KademliaRoutingTable;
+
   /**
    * All the iterative lookups we are currently performing with their ID
+   *
+   * UNBOUNDED: consumer data, responsibility of the app layer to bound
    */
   private activeLookups: Map<number, Lookup>;
 
   /**
    * RPC requests that have been sent and are awaiting a response.
    * Some requests are linked to a lookup (spanning multiple req/resp trips)
+   *
+   * UNBOUNDED: consumer data, responsibility of the app layer to bound
    */
-  private activeRequests: TimeoutMap<bigint, IActiveRequest>;
+  private activeRequests: Map<bigint, IActiveRequest>;
 
   /**
    * Tracks responses received across NODES responses.
+   *
+   * UNBOUNDED: consumer data, responsibility of the app layer to bound
    */
   private activeNodesResponses: Map<bigint, INodesResponse>;
 
   /**
    * List of peers we have established sessions with and an interval id
    * the interval handler pings the associated node
+   *
+   * BOUNDED: bounded by kad table size
    */
   private connectedPeers: Map<NodeId, NodeJS.Timer>;
 
@@ -121,18 +128,16 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * Id for the next lookup that we start
    */
   private nextLookupId: number;
+
   /**
    * A map of votes that nodes have made about our external IP address
+   *
+   * BOUNDED
    */
   private addrVotes: AddrVotes;
 
   private metrics?: IDiscv5Metrics;
 
-  /**
-   * A map of open listeners for TALKREQ messages that have been set.  Used to ensure event listeners
-   * are cleared when the expected response is returned or the timeout period expires
-   */
-  private talkReqListeners: Map<bigint, (...args: [string, ENR, ITalkRespMessage, null]) => void>;
   /**
    * Default constructor.
    * @param sessionService the service managing sessions underneath.
@@ -141,11 +146,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     super();
     this.config = config;
     this.sessionService = sessionService;
-    this.kbuckets = new KademliaRoutingTable(this.sessionService.enr.nodeId, 16);
+    this.kbuckets = new KademliaRoutingTable(this.sessionService.enr.nodeId);
     this.activeLookups = new Map();
-    this.activeRequests = new TimeoutMap(this.config.requestTimeout, (requestId, activeRequest) =>
-      this.onActiveRequestFailed(activeRequest)
-    );
+    this.activeRequests = new Map();
     this.activeNodesResponses = new Map();
     this.connectedPeers = new Map();
     this.nextLookupId = 1;
@@ -159,7 +162,6 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       metrics.activeSessionCount.collect = () => metrics.activeSessionCount.set(discv5.sessionService.sessionsSize());
       metrics.lookupCount.collect = () => metrics.lookupCount.set(this.nextLookupId - 1);
     }
-    this.talkReqListeners = new Map();
   }
 
   /**
@@ -200,15 +202,15 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.kbuckets.on("pendingEviction", this.onPendingEviction);
     this.kbuckets.on("appliedEviction", this.onAppliedEviction);
     this.sessionService.on("established", this.onEstablished);
-    this.sessionService.on("message", this.onMessage);
-    this.sessionService.on("whoAreYouRequest", this.onWhoAreYouRequest);
-    this.sessionService.on("requestFailed", this.onRequestFailed);
+    this.sessionService.on("request", this.handleRpcRequest);
+    this.sessionService.on("response", this.handleRpcResponse);
+    this.sessionService.on("whoAreYouRequest", this.handleWhoAreYouRequest);
+    this.sessionService.on("requestFailed", this.rpcFailure);
     this.sessionService.transport.on("multiaddrUpdate", (addr) => {
       this.enr.setLocationMultiaddr(addr);
-      this.emit("multiaddrUpdated", addr)
+      this.emit("multiaddrUpdated", addr);
       log("Updated ENR based on public multiaddr to", this.enr.encodeTxt(this.keypair.privateKey));
     });
-
     await this.sessionService.start();
     this.started = true;
   }
@@ -234,9 +236,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.connectedPeers.forEach((intervalId) => clearInterval(intervalId));
     this.connectedPeers.clear();
     this.sessionService.off("established", this.onEstablished);
-    this.sessionService.off("message", this.onMessage);
-    this.sessionService.off("whoAreYouRequest", this.onWhoAreYouRequest);
-    this.sessionService.off("requestFailed", this.onRequestFailed);
+    this.sessionService.off("request", this.handleRpcRequest);
+    this.sessionService.off("response", this.handleRpcResponse);
+    this.sessionService.off("whoAreYouRequest", this.handleWhoAreYouRequest);
+    this.sessionService.off("requestFailed", this.rpcFailure);
     await this.sessionService.stop();
     this.started = false;
   }
@@ -256,13 +259,12 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     let decodedEnr: ENR;
     try {
       decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
+      decodedEnr.encode();
     } catch (e) {
       log("Unable to add enr: %o", enr);
       return;
     }
-    if (this.kbuckets.getWithPending(decodedEnr.nodeId)) {
-      this.kbuckets.updateValue(decodedEnr);
-    } else if (this.kbuckets.add(decodedEnr, EntryStatus.Disconnected)) {
+    if (this.kbuckets.insertOrUpdate(decodedEnr, EntryStatus.Disconnected) === InsertResult.Inserted) {
       this.emit("enrAdded", decodedEnr);
     }
   }
@@ -315,10 +317,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
 
     const knownClosestPeers = this.kbuckets.nearest(target, 16).map((enr) => enr.nodeId);
-    const lookup = new Lookup(this.config, target, 3, knownClosestPeers);
+    const lookup = new Lookup(this.config, target, knownClosestPeers);
     this.activeLookups.set(lookupId, lookup);
     return await new Promise((resolve) => {
-      lookup.on("peer", (peer: ILookupPeer) => this.sendLookup(lookupId, target, peer));
+      lookup.on("peer", (peer: NodeId) => this.sendLookup(lookupId, peer, lookup.createRpcRequest(peer)));
       lookup.on("finished", (closest: NodeId[]) => {
         log("Lookup Id: %d finished, %d total found", lookupId, closest.length);
         resolve(closest.map((nodeId) => this.findEnr(nodeId) as ENR).filter((enr) => enr));
@@ -333,79 +335,50 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   /**
    * Broadcast TALKREQ message to all nodes in routing table and returns response
    */
-  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array, timeout = 1000): Promise<Buffer> {
+  public async broadcastTalkReq(payload: Buffer, protocol: string | Uint8Array): Promise<Buffer> {
     return await new Promise((resolve, reject) => {
-      const msg = createTalkRequestMessage(payload, protocol);
-      const responseTimeout = setTimeout(() => {
-        const event = this.talkReqListeners.get(msg.id);
-        if (event) {
-          this.removeListener("talkRespReceived", event);
-          this.talkReqListeners.delete(msg.id);
+      const request = createTalkRequestMessage(payload, protocol);
+      const callback = (err: RequestErrorType | null, res: Buffer | null): void => {
+        if (err) {
+          return reject(err);
         }
-        reject("Request timed out");
-      }, timeout);
-      const listener = (srcId: string, enr: ENR | null, res: ITalkRespMessage): void => {
-        if (res.id === msg.id) {
-          const event = this.talkReqListeners.get(msg.id);
-          if (event) {
-            this.removeListener("talkRespReceived", event);
-            this.talkReqListeners.delete(msg.id);
-          }
-          clearTimeout(responseTimeout);
-          resolve(res.response);
+        if (res) {
+          resolve(res);
         }
       };
-      this.talkReqListeners.set(msg.id, listener);
-      this.on("talkRespReceived", listener);
 
+      /** Broadcast request to all peers in the routing table */
       for (const node of this.kadValues()) {
-        const sendStatus = this.sendRequest(node.nodeId, msg);
-        if (!sendStatus) {
-          log(`Failed to send TALKREQ message to node ${node.nodeId}`);
-        } else {
-          log(`Sent TALKREQ message to node ${node.nodeId}`);
-        }
+        this.sendRpcRequest({
+          contact: createNodeContact(node),
+          request,
+          callback,
+        });
       }
     });
   }
   /**
    * Send TALKREQ message to dstId and returns response
    */
-  public async sendTalkReq(
-    dstId: string,
-    payload: Buffer,
-    protocol: string | Uint8Array,
-    timeout = 1000
-  ): Promise<Buffer> {
+  public async sendTalkReq(dstId: string, payload: Buffer, protocol: string | Uint8Array): Promise<Buffer> {
     return await new Promise((resolve, reject) => {
-      const msg = createTalkRequestMessage(payload, protocol);
-      const responseTimeout = setTimeout(() => {
-        const event = this.talkReqListeners.get(msg.id);
-        if (event) {
-          this.removeListener("talkRespReceived", event);
-          this.talkReqListeners.delete(msg.id);
-        }
-        reject("Request timed out");
-      }, timeout);
-      const listener = (srcId: string, enr: ENR | null, res: ITalkRespMessage): void => {
-        if (res.id === msg.id) {
-          const event = this.talkReqListeners.get(msg.id);
-          if (event) {
-            this.removeListener("talkRespReceived", event);
-            this.talkReqListeners.delete(msg.id);
-          }
-          clearTimeout(responseTimeout);
-          resolve(res.response);
-        }
-      };
-      this.talkReqListeners.set(msg.id, listener);
-      this.on("talkRespReceived", listener);
-      const sendStatus = this.sendRequest(dstId, msg);
-      if (!sendStatus) {
-        log(`Failed to send TALKREQ message to node ${dstId}`);
-      } else {
-        log(`Sent TALKREQ message to node ${dstId}`);
+      const enr = this.findEnr(dstId);
+      if (!enr) {
+        log("Talkreq requested an unknown ENR, node: %s", dstId);
+        return;
       }
+
+      this.sendRpcRequest({
+        contact: createNodeContact(enr),
+        request: createTalkRequestMessage(payload, protocol),
+        callback: (err: RequestErrorType | null, res: Buffer | null): void => {
+          if (err !== null) {
+            reject(err);
+            return;
+          }
+          resolve(res as Buffer);
+        },
+      });
     });
   }
 
@@ -414,17 +387,15 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
     const msg = createTalkResponseMessage(requestId, payload);
-    const enr = this.getKadValue(srcId);
-    //const transport = this.sessionService.transport instanceof WebSocketTransportService ? "tcp" : "udp";
-    const transport = "udp";
-    const addr = await enr?.getFullMultiaddr(transport);
+    const enr = this.findEnr(srcId);
+    const addr = enr?.getLocationMultiaddr("udp");
     if (enr && addr) {
       log(`Sending TALKRESP message to node ${enr.id}`);
       try {
-        this.sessionService.sendResponse(addr, srcId, msg);
+        this.sessionService.sendResponse({ nodeId: srcId, socketAddr: addr }, msg);
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.TALKRESP] });
       } catch (e) {
-        log("Failed to send a TALKRESP response. Error: %s", e.message);
+        log("Failed to send a TALKRESP response. Error: %s", (e as Error).message);
       }
     } else {
       if (!addr && enr) {
@@ -436,52 +407,53 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   }
 
   /**
-   * Sends a PING request to a node
+   * Hack to get debug logs to work in browser
    */
-  private sendPing(nodeId: NodeId): void {
-    log("Sending PING to %s", nodeId);
-    this.sendRequest(nodeId, createPingMessage(this.enr.seq));
+  public enableLogs(): void {
+    debug.enable("discv5*");
   }
 
+  /**
+   * Sends a PING request to a node
+   */
+  private sendPing(enr: ENR): void {
+    this.sendRpcRequest({ contact: createNodeContact(enr), request: createPingMessage(this.enr.seq) });
+  }
+
+  /**
+   * Ping all peers connected in the routing table
+   */
   private pingConnectedPeers(): void {
-    for (const id of this.connectedPeers.keys()) {
-      this.sendPing(id);
+    for (const entry of this.kbuckets.rawValues()) {
+      if (entry.status === EntryStatus.Connected) {
+        this.sendPing(entry.value);
+      }
     }
   }
 
   /**
    * Request an external node's ENR
-   *
-   * This logic doesn't fit into a standard request, we likely don't know the ENR,
-   * and would like to send this as a response, with request logic built in.
    */
-  private requestEnr(nodeId: NodeId, src: Multiaddr): void {
-    try {
-      log("Sending ENR request to node: %s", nodeId);
-      const message = createFindNodeMessage([0]);
-      this.sessionService.sendRequestUnknownEnr(src, nodeId, message);
-      this.activeRequests.set(message.id, { request: message, dstId: nodeId });
-      this.metrics?.sentMessageCount.inc({ type: MessageType[message.type] });
-    } catch (e) {
-      log("Requesting ENR failed. Error: %s", e.message);
-    }
+  private requestEnr(contact: NodeContact, callback?: (err: RequestErrorType | null, res: ENR | null) => void): void {
+    this.sendRpcRequest({ request: createFindNodeMessage([0]), contact, callback });
   }
 
   /**
    * Constructs and sends a request to the session service given a target and lookup peer
    */
-  private sendLookup(lookupId: number, target: NodeId, peer: ILookupPeer): void {
-    const peerId = peer.nodeId;
-    const distances = findNodeLog2Distances(target, peer, this.config);
-    log("Sending lookup. Id: %d, Iteration: %d, Node: %s", lookupId, peer.iteration, peerId);
-    const succeeded = this.sendRequest(peer.nodeId, createFindNodeMessage(distances), lookupId);
-    // request errored (or request was not possible)
-    if (!succeeded) {
-      const lookup = this.activeLookups.get(lookupId);
-      if (lookup) {
-        lookup.onFailure(peer.nodeId);
-      }
+  private sendLookup(lookupId: number, peer: NodeId, request: RequestMessage): void {
+    const enr = this.findEnr(peer);
+    if (!enr || !enr.getLocationMultiaddr("udp")) {
+      log("Lookup %s requested an unknown ENR or ENR w/o UDP", lookupId);
+      this.activeLookups.get(lookupId)?.onFailure(peer);
+      return;
     }
+
+    this.sendRpcRequest({
+      contact: createNodeContact(enr),
+      request,
+      lookupId,
+    });
   }
 
   /**
@@ -490,36 +462,110 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    *
    * Returns true if the request was sent successfully
    */
-  private sendRequest(nodeId: NodeId, req: RequestMessage, lookupId?: number): boolean {
-    const dstEnr = this.findEnr(nodeId);
-    if (!dstEnr) {
-      log("Request not sent. Failed to find an ENR for node: %s", nodeId);
-    } else {
-      try {
-        this.sessionService.sendRequest(dstEnr, req);
-        this.activeRequests.set(req.id, { request: req, dstId: nodeId, lookupId });
-        this.metrics?.sentMessageCount.inc({ type: MessageType[req.type] });
-        return true;
-      } catch (e) {
-        log("Sending request to node: %s failed: error: %s", nodeId, e.message);
-      }
+  private sendRpcRequest(activeRequest: IActiveRequest): void {
+    this.activeRequests.set(activeRequest.request.id, activeRequest);
+
+    const nodeAddr = getNodeAddress(activeRequest.contact);
+    log("Sending %s to node: %o", MessageType[activeRequest.request.type], nodeAddr);
+    try {
+      this.sessionService.sendRequest(activeRequest.contact, activeRequest.request);
+      this.metrics?.sentMessageCount.inc({ type: MessageType[activeRequest.request.type] });
+    } catch (e) {
+      this.activeRequests.delete(activeRequest.request.id);
+      log("Error sending RPC to node: %o, :Error: %s", nodeAddr, (e as Error).message);
     }
-    return false;
   }
 
   /**
-   * Update the conection status of a node in the routing table
+   * Update the conection status of a node in the routing table.
+   * This tracks whether or not we should be pinging peers.
+   * Disconnected peers are removed from the queue and
+   * newly added peers to the routing table are added to the queue.
    */
-  private connectionUpdated(nodeId: NodeId, enr: ENR | undefined, newStatus: EntryStatus): void {
-    if (this.kbuckets.getWithPending(nodeId)) {
-      if (enr) {
-        this.kbuckets.update(enr, newStatus);
-      } else {
-        this.kbuckets.updateStatus(nodeId, newStatus);
+  private connectionUpdated(nodeId: NodeId, newStatus: ConnectionStatus): void {
+    switch (newStatus.type) {
+      case ConnectionStatusType.Connected: {
+        // attempt to update or insert the new ENR.
+        switch (this.kbuckets.insertOrUpdate(newStatus.enr, EntryStatus.Connected)) {
+          case InsertResult.Inserted: {
+            // We added this peer to the table
+            log("New connected node added to routing table: %s", nodeId);
+            clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+            this.connectedPeers.set(
+              nodeId,
+              setInterval(() => {
+                // If the node is in the routing table, keep pinging
+                if (this.kbuckets.getValue(nodeId)) {
+                  this.sendPing(newStatus.enr);
+                } else {
+                  clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+                  this.connectedPeers.delete(nodeId);
+                }
+              }, this.config.pingInterval)
+            );
+            this.emit("enrAdded", newStatus.enr);
+            break;
+          }
+
+          case InsertResult.UpdatedAndPromoted:
+          case InsertResult.StatusUpdatedAndPromoted: {
+            // The node was promoted
+            log("Node promoted to connected: %s", nodeId);
+            clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+            this.connectedPeers.set(
+              nodeId,
+              setInterval(() => {
+                // If the node is in the routing table, keep pinging
+                if (this.kbuckets.getValue(nodeId)) {
+                  this.sendPing(newStatus.enr);
+                } else {
+                  clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+                  this.connectedPeers.delete(nodeId);
+                }
+              }, this.config.pingInterval)
+            );
+            break;
+          }
+
+          case InsertResult.FailedBucketFull:
+          case InsertResult.FailedInvalidSelfUpdate:
+            log("Could not insert node: %s", nodeId);
+            clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+            this.connectedPeers.delete(nodeId);
+            break;
+        }
+        break;
       }
-    } else if (newStatus === EntryStatus.Connected && enr) {
-      if (this.kbuckets.add(enr, newStatus)) {
-        this.emit("enrAdded", enr);
+
+      case ConnectionStatusType.PongReceived: {
+        switch (this.kbuckets.update(newStatus.enr, EntryStatus.Connected)) {
+          case UpdateResult.FailedBucketFull:
+          case UpdateResult.FailedKeyNonExistant: {
+            log("Could not update ENR from pong. Node: %s", nodeId);
+            clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+            this.connectedPeers.delete(nodeId);
+            break;
+          }
+        }
+        break;
+      }
+
+      case ConnectionStatusType.Disconnected: {
+        // If the node has disconnected, remove any ping timer for the node.
+        switch (this.kbuckets.updateStatus(nodeId, EntryStatus.Disconnected)) {
+          case UpdateResult.FailedBucketFull:
+          case UpdateResult.FailedKeyNonExistant: {
+            log("Could not update node to disconnected, Node: %s", nodeId);
+            break;
+          }
+          default: {
+            log("Node set to disconnected: %s", nodeId);
+            break;
+          }
+        }
+        clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
+        this.connectedPeers.delete(nodeId);
+        break;
       }
     }
   }
@@ -545,41 +591,44 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return undefined;
   }
 
-  private retrieveRequest(srcId: NodeId, message: ResponseMessage): IActiveRequest | undefined {
-    // verify we know of the rpcId
-    const activeRequest = this.activeRequests.get(message.id);
-    if (!activeRequest) {
-      log("Received an RPC response which doesn't match a request");
-      return;
-    }
-    this.activeRequests.delete(message.id);
-    if (!requestMatchesResponse(activeRequest.request, message)) {
-      log("Node gave an incorrect response type. Ignoring response from node: %s", srcId);
-      return;
-    }
-    return activeRequest;
-  }
-
+  /**
+   * Processes discovered peers from a query
+   */
   private discovered(srcId: NodeId, enrs: ENR[], lookupId?: number): void {
     const localId = this.enr.nodeId;
-    const others = enrs.filter((enr) => enr.nodeId !== localId);
+    const others: ENR[] = [];
+    for (const enr of enrs) {
+      if (enr.nodeId === localId) {
+        continue;
+      }
 
-    for (const enr of others) {
-      // If any of the discovered nodes are in the routing table, and there contains an older ENR, update it
+      // send the discovered event
+      //if (this.config.reportDiscoveredPeers)
+      this.emit("discovered", enr);
+
+      // ignore peers that don't pass the table filter
+      // if (this.config.tableFilter(enr)) {}
+
+      // If any of the discovered nodes are in the routing table,
+      // and there contains an older ENR, update it.
       const entry = this.kbuckets.getWithPending(enr.nodeId);
       if (entry) {
         if (entry.value.seq < enr.seq) {
-          this.kbuckets.updateValue(enr);
-          this.sessionService.updateEnr(enr);
+          switch (this.kbuckets.update(enr)) {
+            case UpdateResult.FailedBucketFull:
+            case UpdateResult.FailedKeyNonExistant: {
+              clearInterval(this.connectedPeers.get(enr.nodeId) as NodeJS.Timeout);
+              this.connectedPeers.delete(enr.nodeId);
+              log("Failed to update discovered ENR. Node: %s", enr.nodeId);
+              continue;
+            }
+          }
         }
-      } else {
-        // The service may have an untrusted session.
-        // Update the service, which will inform this protocol if a session
-        // is established or not.
-        this.sessionService.updateEnr(enr);
       }
-      this.emit("discovered", enr);
+
+      others.push(enr);
     }
+
     // If this is part of a lookup, update the lookup
     if (lookupId) {
       const lookup = this.activeLookups.get(lookupId);
@@ -602,7 +651,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   // process kad updates
 
   private onPendingEviction = (enr: ENR): void => {
-    this.sendPing(enr.nodeId);
+    this.sendPing(enr);
   };
 
   private onAppliedEviction = (inserted: ENR, evicted?: ENR): void => {
@@ -611,86 +660,71 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
 
   // process events from the session service
 
-  private onEstablished = (enr: ENR): void => {
+  private onEstablished = (enr: ENR, direction: ConnectionDirection): void => {
+    // Ignore sessions with non-contactable ENRs
+    if (!enr.getLocationMultiaddr("udp")) {
+      return;
+    }
+
     const nodeId = enr.nodeId;
-    this.connectionUpdated(nodeId, enr, EntryStatus.Connected);
-    // send an initial ping and start the ping interval
-    this.sendPing(nodeId);
-    this.connectedPeers.set(
-      nodeId,
-      setInterval(() => this.sendPing(nodeId), this.config.pingInterval)
-    );
+    log("Session established with Node: %s, Direction: %s", nodeId, ConnectionDirection[direction]);
+    this.connectionUpdated(nodeId, { type: ConnectionStatusType.Connected, enr, direction });
   };
 
-  private onMessage = (srcId: NodeId, src: Multiaddr, message: Message): void => {
-    this.metrics?.rcvdMessageCount.inc({ type: MessageType[message.type] });
-    switch (message.type) {
+  private handleWhoAreYouRequest = (nodeAddr: INodeAddress, nonce: Buffer): void => {
+    // Check what our latest known ENR is for this node
+    const enr = this.findEnr(nodeAddr.nodeId) ?? null;
+    if (enr) {
+      log("Received WHOAREYOU, Node known, Node: %o", nodeAddr);
+    } else {
+      log("Received WHOAREYOU, Node unknown, requesting ENR. Node: %o", nodeAddr);
+    }
+    this.sessionService.sendChallenge(nodeAddr, nonce, enr);
+  };
+
+  // handle rpc request
+
+  /**
+   * Processes an RPC request from a peer.
+   *
+   * Requests respond to the received socket address, rather than the IP of the known ENR.
+   */
+  private handleRpcRequest = (nodeAddr: INodeAddress, request: RequestMessage): void => {
+    this.metrics?.rcvdMessageCount.inc({ type: MessageType[request.type] });
+    switch (request.type) {
       case MessageType.PING:
-        return this.onPing(srcId, src, message as IPingMessage);
-      case MessageType.PONG:
-        return this.onPong(srcId, src, message as IPongMessage);
+        return this.handlePing(nodeAddr, request as IPingMessage);
       case MessageType.FINDNODE:
-        return this.onFindNode(srcId, src, message as IFindNodeMessage);
-      case MessageType.NODES:
-        return this.onNodes(srcId, src, message as INodesMessage);
+        return this.handleFindNode(nodeAddr, request as IFindNodeMessage);
       case MessageType.TALKREQ:
-        return this.onTalkReq(srcId, src, message as ITalkReqMessage);
-      case MessageType.TALKRESP:
-        return this.onTalkResp(srcId, src, message as ITalkRespMessage);
+        return this.handleTalkReq(nodeAddr, request as ITalkReqMessage);
       default:
+        log("Received request which is unimplemented");
         // TODO Implement all RPC methods
         return;
     }
   };
 
-  private onPing(srcId: NodeId, src: Multiaddr, message: IPingMessage): void {
+  private handlePing(nodeAddr: INodeAddress, message: IPingMessage): void {
     // check if we need to update the known ENR
-    const entry = this.kbuckets.getWithPending(srcId);
+    const entry = this.kbuckets.getWithPending(nodeAddr.nodeId);
     if (entry) {
       if (entry.value.seq < message.enrSeq) {
-        this.requestEnr(srcId, src);
+        this.requestEnr(createNodeContact(entry.value));
       }
-    } else {
-      this.requestEnr(srcId, src);
     }
+
     // build the Pong response
-    log("Sending PONG response to node: %s", srcId);
+    log("Sending PONG response to node: %o", nodeAddr);
     try {
-      const srcOpts = src.toOptions();
+      const srcOpts = nodeAddr.socketAddr.toOptions();
       this.sessionService.sendResponse(
-        src,
-        srcId,
+        nodeAddr,
         createPongMessage(message.id, this.enr.seq, srcOpts.host, srcOpts.port)
       );
       this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.PONG] });
     } catch (e) {
-      log("Failed to send Pong. Error %s", e.message);
-    }
-  }
-
-  private onPong(srcId: NodeId, src: Multiaddr, message: IPongMessage): void {
-    if (!this.retrieveRequest(srcId, message)) {
-      return;
-    }
-    if (this.config.enrUpdate) {
-      const winningVote = this.addrVotes.addVote(srcId, message);
-      const currentAddr = this.enr.getLocationMultiaddr("udp");
-      if (winningVote && (!currentAddr || winningVote.multiaddrStr !== currentAddr.toString())) {
-        log("Local ENR (IP & UDP) updated: %s", winningVote.multiaddrStr);
-        const votedAddr = new Multiaddr(winningVote.multiaddrStr);
-        this.enr.setLocationMultiaddr(votedAddr);
-        this.emit("multiaddrUpdated", votedAddr);
-      }
-    }
-
-    // Check if we need to request a new ENR
-    const enr = this.findEnr(srcId);
-    if (enr) {
-      if (enr.seq < message.enrSeq) {
-        log("Requesting an ENR update from node: %s", srcId);
-        this.sendRequest(srcId, createFindNodeMessage([0]));
-      }
-      this.connectionUpdated(srcId, undefined, EntryStatus.Connected);
+      log("Failed to send Pong. Error %s", (e as Error).message);
     }
   }
 
@@ -699,7 +733,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * This function splits the nodes up into multiple responses to ensure the response stays below
    * the maximum packet size
    */
-  private onFindNode(srcId: NodeId, src: Multiaddr, message: IFindNodeMessage): void {
+  private handleFindNode(nodeAddr: INodeAddress, message: IFindNodeMessage): void {
     const { id, distances } = message;
     let nodes: ENR[] = [];
     distances.forEach((distance) => {
@@ -713,12 +747,12 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     });
     nodes = nodes.slice(0, 15);
     if (nodes.length === 0) {
-      log("Sending empty NODES response to %s", srcId);
+      log("Sending empty NODES response to %o", nodeAddr);
       try {
-        this.sessionService.sendResponse(src, srcId, createNodesMessage(id, 0, nodes));
+        this.sessionService.sendResponse(nodeAddr, createNodesMessage(id, 0, nodes));
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.NODES] });
       } catch (e) {
-        log("Failed to send a NODES response. Error: %s", e.message);
+        log("Failed to send a NODES response. Error: %s", (e as Error).message);
       }
       return;
     }
@@ -730,23 +764,107 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // So, the total empty packet size can be at most 92
     const nodesPerPacket = Math.floor((MAX_PACKET_SIZE - 92) / MAX_RECORD_SIZE);
     const total = Math.ceil(nodes.length / nodesPerPacket);
-    log("Sending %d NODES responses to %s", total, srcId);
+    log("Sending %d NODES responses to %o", total, nodeAddr);
     for (let i = 0; i < nodes.length; i += nodesPerPacket) {
       const _nodes = nodes.slice(i, i + nodesPerPacket);
       try {
-        this.sessionService.sendResponse(src, srcId, createNodesMessage(id, total, _nodes));
+        this.sessionService.sendResponse(nodeAddr, createNodesMessage(id, total, _nodes));
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.NODES] });
       } catch (e) {
-        log("Failed to send a NODES response. Error: %s", e.message);
+        log("Failed to send a NODES response. Error: %s", (e as Error).message);
       }
     }
   }
 
-  private onNodes(srcId: NodeId, src: Multiaddr, message: INodesMessage): void {
-    const activeRequest = this.retrieveRequest(srcId, message);
+  private handleTalkReq = (nodeAddr: INodeAddress, message: ITalkReqMessage): void => {
+    log("Received TALKREQ message from Node: %o", nodeAddr);
+    this.emit("talkReqReceived", nodeAddr, this.findEnr(nodeAddr.nodeId) ?? null, message);
+  };
+
+  // handle rpc response
+
+  /**
+   * Processes an RPC response from a peer.
+   */
+  private handleRpcResponse = (nodeAddr: INodeAddress, response: ResponseMessage): void => {
+    this.metrics?.rcvdMessageCount.inc({ type: MessageType[response.type] });
+
+    // verify we know of the rpc id
+
+    const activeRequest = this.activeRequests.get(response.id);
     if (!activeRequest) {
+      log("Received an RPC response which doesn't match a request. Id: &s", response.id);
       return;
     }
+    this.activeRequests.delete(response.id);
+
+    // Check that the responder matches the expected request
+    const requestNodeAddr = getNodeAddress(activeRequest.contact);
+    if (requestNodeAddr.nodeId !== nodeAddr.nodeId || !requestNodeAddr.socketAddr.equals(nodeAddr.socketAddr)) {
+      log(
+        "Received a response from an unexpected address. Expected %o, received %o, request id: %s",
+        requestNodeAddr,
+        nodeAddr,
+        response.id
+      );
+      return;
+    }
+
+    // Check that the response type matches the request
+    if (!requestMatchesResponse(activeRequest.request, response)) {
+      log("Node gave an incorrect response type. Ignoring response from: %o", nodeAddr);
+      return;
+    }
+
+    switch (response.type) {
+      case MessageType.PONG:
+        return this.handlePong(nodeAddr, activeRequest, response as IPongMessage);
+      case MessageType.NODES:
+        return this.handleNodes(nodeAddr, activeRequest, response as INodesMessage);
+      case MessageType.TALKRESP:
+        return this.handleTalkResp(
+          nodeAddr,
+          activeRequest as IActiveRequest<ITalkReqMessage, BufferCallback>,
+          response as ITalkRespMessage
+        );
+      default:
+        // TODO Implement all RPC methods
+        return;
+    }
+  };
+
+  private handlePong(nodeAddr: INodeAddress, activeRequest: IActiveRequest, message: IPongMessage): void {
+    log("Received a PONG response from %o", nodeAddr);
+
+    if (this.config.enrUpdate) {
+      const winningVote = this.addrVotes.addVote(nodeAddr.nodeId, message);
+      const currentAddr = this.enr.getLocationMultiaddr("udp");
+      if (winningVote && (!currentAddr || winningVote.multiaddrStr !== currentAddr.toString())) {
+        log("Local ENR (IP & UDP) updated: %s", winningVote.multiaddrStr);
+        const votedAddr = new Multiaddr(winningVote.multiaddrStr);
+        this.enr.setLocationMultiaddr(votedAddr);
+        this.emit("multiaddrUpdated", votedAddr);
+
+        // publish update to all connected peers
+        this.pingConnectedPeers();
+      }
+    }
+
+    // Check if we need to request a new ENR
+    const enr = this.findEnr(nodeAddr.nodeId);
+    if (enr) {
+      if (enr.seq < message.enrSeq) {
+        log("Requesting an ENR update from node: %o", nodeAddr);
+        this.sendRpcRequest({
+          contact: activeRequest.contact,
+          request: createFindNodeMessage([0]),
+        });
+      }
+      this.connectionUpdated(nodeAddr.nodeId, { type: ConnectionStatusType.PongReceived, enr });
+    }
+  }
+
+  private handleNodes(nodeAddr: INodeAddress, activeRequest: IActiveRequest, message: INodesMessage): void {
     const { request, lookupId } = activeRequest as { request: IFindNodeMessage; lookupId: number };
     // Currently a maximum of 16 peers can be returned.
     // Datagrams have a max size of 1280 and ENRs have a max size of 300 bytes.
@@ -759,7 +877,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // TODO: if a swarm peer reputation is built,
     // downvote the peer if all peers do not have the correct distance
     const distancesRequested = request.distances;
-    message.enrs = message.enrs.filter((enr) => distancesRequested.includes(log2Distance(enr.nodeId, srcId)));
+    message.enrs = message.enrs.filter((enr) => distancesRequested.includes(log2Distance(enr.nodeId, nodeAddr.nodeId)));
 
     // handle the case that there is more than one response
     if (message.total > 1) {
@@ -778,78 +896,81 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       // Have received all the Nodes responses we are willing to accept
       message.enrs.push(...currentResponse.enrs);
     }
-    log("Received NODES response of length: %d, total: %d, from node: %s", message.enrs.length, message.total, srcId);
+    log(
+      "Received NODES response of length: %d, total: %d, from node: %o",
+      message.enrs.length,
+      message.total,
+      nodeAddr
+    );
 
     this.activeNodesResponses.delete(message.id);
 
-    this.discovered(srcId, message.enrs, lookupId);
+    this.discovered(nodeAddr.nodeId, message.enrs, lookupId);
   }
 
-  private onWhoAreYouRequest = (srcId: NodeId, src: Multiaddr, nonce: Buffer): void => {
-    // Check what our latest known ENR is for this node
-    const enr = this.findEnr(srcId);
-    if (enr) {
-      this.sessionService.sendWhoAreYou(src, srcId, enr.seq, enr, nonce);
-    } else {
-      log("Node unknown, requesting ENR. Node: %s; Token: %s", srcId, nonce.toString("hex"));
-      this.sessionService.sendWhoAreYou(src, srcId, 0n, null, nonce);
-    }
-  };
-
-  private onTalkReq = (srcId: NodeId, src: Multiaddr, message: ITalkReqMessage): void => {
-    log("Received TALKREQ message from Node: %s", srcId);
-    let sourceId: ENR | undefined | null = this.findEnr(srcId);
-    if (!sourceId) {
-      sourceId = null;
-    }
-    this.emit("talkReqReceived", srcId, sourceId, message);
-  };
-
-  private onTalkResp = (srcId: NodeId, src: Multiaddr, message: ITalkRespMessage): void => {
-    log("Received response from Node: %s", srcId);
-    let sourceId: ENR | undefined | null = this.findEnr(srcId);
-    if (!sourceId) {
-      sourceId = null;
-    }
-    this.emit("talkRespReceived", srcId, sourceId, message);
-  };
-
-  private onActiveRequestFailed = (activeRequest: IActiveRequest): void => {
-    const { request, dstId, lookupId } = activeRequest;
-    this.activeRequests.delete(request.id);
-    // If a failed FindNodes Request, ensure we haven't partially received responses.
-    // If so, process the partially found nodes
-    if (request.type === MessageType.FINDNODE) {
-      const nodesResponse = this.activeNodesResponses.get(request.id);
-      if (nodesResponse) {
-        this.activeNodesResponses.delete(request.id);
-        log("FINDNODE request failed, but was partially processed from Node: %s", dstId);
-        // If its a query, mark it as a success, to process the partial collection of its peers
-        this.discovered(dstId, nodesResponse.enrs, lookupId);
-      } else {
-        // There was no partially downloaded nodes, inform the lookup of the failure if its part of a query
-        const lookup = this.activeLookups.get(lookupId as number);
-        if (lookup) {
-          lookup.onFailure(dstId);
-        } else {
-          log("Failed request: %O for node: %s", request, dstId);
-        }
-      }
+  private handleTalkResp = (
+    nodeAddr: INodeAddress,
+    activeRequest: IActiveRequest<ITalkReqMessage, BufferCallback>,
+    message: ITalkRespMessage
+  ): void => {
+    log("Received TALKRESP message from Node: %o", nodeAddr);
+    this.emit("talkRespReceived", nodeAddr, this.findEnr(nodeAddr.nodeId) ?? null, message);
+    if (activeRequest.callback) {
+      activeRequest.callback(null, message.response);
     }
   };
 
   /**
    * A session could not be established or an RPC request timed out
    */
-  private onRequestFailed = (srcId: NodeId, rpcId: bigint): void => {
+  private rpcFailure = (rpcId: bigint, error: RequestErrorType): void => {
+    log("RPC error, removing request. Reason: %s, id %s", RequestErrorType[error], rpcId);
     const req = this.activeRequests.get(rpcId);
-    if (req) {
-      this.onActiveRequestFailed(req);
+    if (!req) {
+      return;
     }
+    const { request, contact, lookupId, callback } = req;
+    this.activeRequests.delete(request.id);
+
+    // If this is initiated by the user, return an error on the callback.
+    if (callback) {
+      callback(error, null);
+    }
+
+    const nodeId = getNodeId(contact);
+    // If a failed FindNodes Request, ensure we haven't partially received responses.
+    // If so, process the partially found nodes
+    if (request.type === MessageType.FINDNODE) {
+      const nodesResponse = this.activeNodesResponses.get(request.id);
+      if (nodesResponse) {
+        this.activeNodesResponses.delete(request.id);
+
+        if (nodesResponse.enrs.length) {
+          log("NODES response failed, but was partially processed from Node: %s", nodeId);
+          // If its a query, mark it as a success, to process the partial collection of its peers
+          this.discovered(nodeId, nodesResponse.enrs, lookupId);
+        }
+      } else {
+        // There was no partially downloaded nodes, inform the lookup of the failure if its part of a query
+        const lookup = this.activeLookups.get(lookupId as number);
+        if (lookup) {
+          lookup.onFailure(nodeId);
+        } else {
+          log("Failed %s request: %O for node: %s", MessageType[request.type], request, nodeId);
+        }
+      }
+    } else {
+      // for all other requests, if any are lookups, mark them as failures.
+      const lookup = this.activeLookups.get(lookupId as number);
+      if (lookup) {
+        lookup.onFailure(nodeId);
+      } else {
+        log("Failed %s request: %O for node: %s", MessageType[request.type], request, nodeId);
+      }
+    }
+
     // report the node as being disconnected
-    this.connectionUpdated(srcId, undefined, EntryStatus.Disconnected);
-    clearInterval(this.connectedPeers.get(srcId) as NodeJS.Timer);
-    this.connectedPeers.delete(srcId);
-    this.emit("sessionEnded", srcId)
+    this.connectionUpdated(nodeId, { type: ConnectionStatusType.Disconnected });
+    this.emit("sessionEnded", nodeId);
   };
 }

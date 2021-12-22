@@ -2,9 +2,10 @@ import hkdf = require("bcrypto/lib/hkdf");
 import sha256 = require("bcrypto/lib/sha256");
 import cipher = require("bcrypto/lib/cipher");
 
-import { ENR, NodeId } from "../enr";
+import { NodeId } from "../enr";
 import { generateKeypair, IKeypair, createKeypair } from "../keypair";
 import { fromHex } from "../util";
+import { getNodeId, getPublicKey, NodeContact } from "./nodeInfo";
 
 // Implementation for generating session keys in the Discv5 protocol.
 // Currently, Diffie-Hellman key agreement is performed with known public key types. Session keys
@@ -22,8 +23,12 @@ export const MAC_LENGTH = 16;
 // Generates session keys for a challengeData and remote ENR. This currently only
 // supports Secp256k1 signed ENR's.
 // Returns [initiatorKey, responderKey, ephemPK]
-export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, challengeData: Buffer): [Buffer, Buffer, Buffer] {
-  const remoteKeypair = remoteEnr.keypair;
+export function generateSessionKeys(
+  localId: NodeId,
+  remoteContact: NodeContact,
+  challengeData: Buffer
+): [Buffer, Buffer, Buffer] {
+  const remoteKeypair = getPublicKey(remoteContact);
   const ephemKeypair = generateKeypair(remoteKeypair.type);
   const secret = ephemKeypair.deriveSecret(remoteKeypair);
   /* TODO possibly not needed, check tests
@@ -32,7 +37,7 @@ export function generateSessionKeys(localId: NodeId, remoteEnr: ENR, challengeDa
       ? secp256k1PublicKeyToCompressed(ephemKeypair.publicKey)
       : ephemKeypair.publicKey;
   */
-  return [...deriveKey(secret, localId, remoteEnr.nodeId, challengeData), ephemKeypair.publicKey] as [
+  return [...deriveKey(secret, localId, getNodeId(remoteContact), challengeData), ephemKeypair.publicKey] as [
     Buffer,
     Buffer,
     Buffer

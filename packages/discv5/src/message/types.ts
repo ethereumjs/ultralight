@@ -15,6 +15,16 @@ export enum MessageType {
   TOPICQUERY = 10,
 }
 
+export function isRequestType(type: MessageType): boolean {
+  return (
+    type === MessageType.PING ||
+    type === MessageType.FINDNODE ||
+    type === MessageType.TALKREQ ||
+    type === MessageType.REGTOPIC ||
+    type === MessageType.TOPICQUERY
+  );
+}
+
 export type Message = RequestMessage | ResponseMessage;
 
 export type RequestMessage = IPingMessage | IFindNodeMessage | ITalkReqMessage | IRegTopicMessage | ITopicQueryMessage;

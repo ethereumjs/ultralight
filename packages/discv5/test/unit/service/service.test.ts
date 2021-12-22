@@ -3,9 +3,9 @@
 import { expect } from "chai";
 import { Multiaddr } from "multiaddr";
 
-import { Discv5 } from "../../src/service/service";
-import { ENR } from "../../src/enr";
-import { generateKeypair, KeypairType, createPeerIdFromKeypair } from "../../src/keypair";
+import { Discv5 } from "../../../src/service/service";
+import { ENR } from "../../../src/enr";
+import { generateKeypair, KeypairType, createPeerIdFromKeypair } from "../../../src/keypair";
 
 describe("Discv5", async () => {
   const kp0 = generateKeypair(KeypairType.secp256k1);
@@ -33,11 +33,13 @@ describe("Discv5", async () => {
   it("should add new enrs", async () => {
     const kp1 = generateKeypair(KeypairType.secp256k1);
     const enr1 = ENR.createV4(kp1.publicKey);
+    enr1.encode(kp1.privateKey);
     service0.addEnr(enr1);
     expect(service0.kadValues().length).eq(1);
   });
 
-  it("should complete a lookup to another node", async () => {
+  it("should complete a lookup to another node", async function () {
+    this.timeout(10000);
     const kp1 = generateKeypair(KeypairType.secp256k1);
     const peerId1 = await createPeerIdFromKeypair(kp1);
     const enr1 = ENR.createV4(kp1.publicKey);

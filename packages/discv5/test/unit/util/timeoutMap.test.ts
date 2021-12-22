@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 import { expect } from "chai";
 
-import { TimeoutMap } from "../../src/util";
+import { TimeoutMap } from "../../../src/util";
 
 describe("TimeoutMap", () => {
   it("should evict items after a timeout", async function () {

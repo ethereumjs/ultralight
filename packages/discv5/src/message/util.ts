@@ -8,6 +8,8 @@ export function requestMatchesResponse(req: RequestMessage, res: ResponseMessage
       return res.type === MessageType.NODES;
     case MessageType.REGTOPIC:
       return res.type === MessageType.TICKET;
+    case MessageType.TALKREQ:
+      return res.type === MessageType.TALKRESP;
     default:
       return false;
   }

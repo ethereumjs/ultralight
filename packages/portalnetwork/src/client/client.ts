@@ -1,4 +1,4 @@
-import { Discv5, ENR, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
+import { Discv5, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
 import { ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
 import { EventEmitter } from 'events'
 import debug from 'debug'
@@ -12,6 +12,7 @@ import { PortalNetworkRoutingTable } from ".";
 import PeerId from 'peer-id';
 import { Multiaddr } from 'multiaddr';
 import { LevelUp } from 'levelup'
+import { INodeAddress } from "@chainsafe/discv5/lib/session/nodeInfo";
 const level = require('level-mem')
 
 const _log = debug("portalnetwork")
@@ -195,12 +196,12 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                         switch (networkId) {
                             case SubNetworkIds.StateNetwork: if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to State Subnetwork Routing Table if we don't already know it
-                                this.stateNetworkRoutingTable.add(decodedEnr)
+                                this.stateNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
                             }
                                 break;
                             case SubNetworkIds.HistoryNetwork: if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to History Subnetwork Routing Table if we don't already know it
-                                this.historyNetworkRoutingTable.add(decodedEnr)
+                                this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
                             };
                                 break;
                         }
@@ -315,7 +316,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.client.sendTalkResp(srcId, reqId, Buffer.from(pongMsg))
     }
 
-    private onTalkReq = async (srcId: string, sourceId: ENR | null, message: ITalkReqMessage) => {
+    private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
+        const srcId = src.nodeId
         switch (toHexString(message.protocol)) {
             case SubNetworkIds.StateNetwork: this.log(`Received State Subnetwork request`); break;
             case SubNetworkIds.HistoryNetwork: this.log(`Received History Subnetwork request`); break;
@@ -339,7 +341,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
     }
 
-    private onTalkResp = (srcId: string, sourceId: ENR | null, message: ITalkRespMessage) => {
+    private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
+        const srcId = src.nodeId
         this.log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
     }
 
@@ -499,7 +502,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 }
                 if (!this.stateNetworkRoutingTable.getValue(srcId)) {
                     this.log(`adding ${srcId} to stateNetwork routing table`)
-                    this.stateNetworkRoutingTable.add(enr!);
+                    this.stateNetworkRoutingTable.insertOrUpdate(enr!, EntryStatus.Connected);
                     const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
                     return
@@ -515,7 +518,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 }
                 if (!this.historyNetworkRoutingTable.getValue(srcId)) {
                     this.log(`adding ${srcId} to historyNetwork routing table`)
-                    this.historyNetworkRoutingTable.add(enr!);
+                    this.historyNetworkRoutingTable.insertOrUpdate(enr!, EntryStatus.Connected);
                     const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
                     return

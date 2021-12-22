@@ -2,9 +2,9 @@
 import { expect } from "chai";
 import { Multiaddr } from "multiaddr";
 
-import { PacketType, IPacket, NONCE_SIZE, MASKING_IV_SIZE } from "../../src/packet";
-import { UDPTransportService } from "../../src/transport";
-import { toHex } from "../../src/util";
+import { PacketType, IPacket, NONCE_SIZE, MASKING_IV_SIZE } from "../../../src/packet";
+import { UDPTransportService } from "../../../src/transport";
+import { toHex } from "../../../src/util";
 
 describe("UDP transport", () => {
   const address = "127.0.0.1";

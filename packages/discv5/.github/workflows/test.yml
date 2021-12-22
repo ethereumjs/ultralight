@@ -23,4 +23,6 @@ jobs:
       - name: Check Types
         run: yarn run check-types
       - name: Unit tests
-        run: yarn test
+        run: yarn test:unit
+      - name: E2e tests
+        run: yarn test:e2e
