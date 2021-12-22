@@ -72,9 +72,9 @@ tape('Client unit tests', async (t) => {
     td.when(node.client.sendTalkResp('def', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 1))).thenDo(() => t.pass('correctly handle findContent with small content request'))
     td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => t.pass('correctly handle findContent where no matching content'))
     td.when(node.client.sendTalkResp('jkl', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 0))).thenDo(() => t.pass('correctly handle findContent with large content request'))
-    node.handleFindContent('def', { request: findContentMessageWithShortContent })
-    node.handleFindContent('ghi', { request: findContentMessageWithNoContent })
-    node.handleFindContent('jkl', { request: findContentMessageWithLongContent })
+    node.handleFindContent('def', { protocol: SubNetworkIds.StateNetwork, request: findContentMessageWithShortContent })
+    node.handleFindContent('ghi', { protocol: SubNetworkIds.StateNetwork, request: findContentMessageWithNoContent })
+    node.handleFindContent('jkl', { protocol: SubNetworkIds.StateNetwork, request: findContentMessageWithLongContent })
     td.reset();
 
     t.end()
