@@ -182,10 +182,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     decoded.enrs.forEach((enr) => {
                         const decodedEnr = ENR.decode(Buffer.from(enr))
                         this.log(decodedEnr.nodeId)
-                        if (!this.client.getKadValue(decodedEnr.nodeId)) {
-                            // Add ENR to the discv5 routing table if not already known
-                            this.client.addEnr(decodedEnr)
-                        }
                         // TODO: Update routing table corresponding to `networkId` 
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             // Add node to History Subnetwork Routing Table if we don't already know it
@@ -474,9 +470,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @param customPayload payload of the PING/PONG message being decoded
      */
     private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload?: any) => {
+        console.log('srcId', srcId, networkId)
         const enr = this.client.getKadValue(srcId);
-        if (!enr) {
-            this.log(`no ENR found in routing table for ${srcId}`)
+        console.log(enr)
+        if (!enr && customPayload) {
+            this.log(`no ENR found in routing table for ${srcId} - can't be added to ${Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]} routing table`)
             return
         }
         switch (networkId) {
@@ -489,7 +487,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 }
                 if (!this.stateNetworkRoutingTable.getValue(srcId)) {
                     this.log(`adding ${srcId} to stateNetwork routing table`)
-                    this.stateNetworkRoutingTable.add(enr);
+                    this.stateNetworkRoutingTable.add(enr!);
                     const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
                     return
@@ -505,7 +503,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 }
                 if (!this.historyNetworkRoutingTable.getValue(srcId)) {
                     this.log(`adding ${srcId} to historyNetwork routing table`)
-                    this.historyNetworkRoutingTable.add(enr);
+                    this.historyNetworkRoutingTable.add(enr!);
                     const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
                     this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
                     return
