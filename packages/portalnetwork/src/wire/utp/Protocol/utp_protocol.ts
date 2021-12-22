@@ -33,6 +33,22 @@ export class UtpProtocol {
   }
   }
 
+  async initiateUtpFromAccept(remoteAddr: string, connectionId: number, contentKeys: Uint8Array[]) {
+        // Client received connectionId in an ACCEPT talkresp from a node at:  remoteAddr
+        log(`Requesting uTP stream connection with ${remoteAddr}...`);
+        log(`Opening uTP socket to send DATA to ${remoteAddr}`)
+        // Creates a new uTP socket for remoteAddr
+        const socket = new _UTPSocket(this, remoteAddr, "writing");
+        // TODO: FINDS CONTENT FROM DATABASE
+        // Loads database content to socket
+        socket.content = Buffer.concat([...contentKeys])
+        // Adds this socket to 'sockets' registry, wtih remoteAddr as key
+        this.sockets[remoteAddr] = socket;
+
+            // Sends Syn Packet to begin uTP connection process using connectionId
+    return this.sockets[remoteAddr].sendSynPacket(connectionId)
+  }
+
   async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<Buffer> {
     // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
     log(`Requesting uTP stream connection with ${remoteAddr}...`);
