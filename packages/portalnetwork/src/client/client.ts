@@ -83,7 +83,13 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             "0x03": testArray
         }
         this.historyNetworkDB = db ?? level()
-
+        this.client.on("enrAdded", (enr) => {
+            const distances = this.historyNetworkRoutingTable.buckets.map((bucket, index) => bucket.isEmpty() ? index : undefined).filter(distance => distance !== undefined)
+            if (distances.length > 0) {
+                // Populate subnetwork routing table for empty buckets in the routing table
+                this.sendFindNodes(enr.nodeId, Uint16Array.from(distances as any), SubNetworkIds.HistoryNetwork)
+            }
+        })
     }
 
     log = (msg: any) => {
@@ -166,7 +172,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @param dstId node id of peer
      * @param distances distances as defined by subnetwork for node ENRs being requested
      * @param networkId subnetwork id for message being
-     * @returns a `NodesMessage` or undefined
+     * @returns a {@link `NodesMessage`} or undefined
      */
     public sendFindNodes = async (dstId: string, distances: Uint16Array, networkId: SubNetworkIds) => {
         const findNodesMsg: FindNodesMessage = { distances: distances }
@@ -182,14 +188,20 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     decoded.enrs.forEach((enr) => {
                         const decodedEnr = ENR.decode(Buffer.from(enr))
                         this.log(decodedEnr.nodeId)
+                        // Add ENR to Discv5 routing table since we can't send messages to a node that's not in the discv5 table
+                        // (see discv5.service.sendRequest message)
+                        // TODO: Fix discv5.service.sendRequest to accept either a `NodeId` or an `ENR`
+                        this.client.addEnr(decodedEnr)
                         switch (networkId) {
                             case SubNetworkIds.StateNetwork: if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to State Subnetwork Routing Table if we don't already know it
+                                this.stateNetworkRoutingTable.add(decodedEnr)
                                 this.sendPing(decodedEnr.nodeId, SubNetworkIds.StateNetwork)
                             }
                                 break;
                             case SubNetworkIds.HistoryNetwork: if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to History Subnetwork Routing Table if we don't already know it
+                                this.historyNetworkRoutingTable.add(decodedEnr)
                                 this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
                             };
                                 break;
@@ -200,7 +212,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             }
         }
         catch (err: any) {
-            this.log(`Error sending FINDNODES to ${shortId(dstId)} - ${err.message}`)
+            this.log(`Error sending FINDNODES to ${shortId(dstId)} - ${err}`)
         }
     }
 
@@ -473,9 +485,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * @param customPayload payload of the PING/PONG message being decoded
      */
     private updateSubnetworkRoutingTable = (srcId: NodeId, networkId: SubNetworkIds, customPayload?: any) => {
-        console.log('srcId', srcId, networkId)
         const enr = this.client.getKadValue(srcId);
-        console.log(enr)
         if (!enr && customPayload) {
             this.log(`no ENR found in routing table for ${srcId} - can't be added to ${Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]} routing table`)
             return
