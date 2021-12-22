@@ -426,7 +426,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         const contentKey = toHexString(decodedContentMessage.contentKey)
         let value = Uint8Array.from([])
         switch (toHexString(message.protocol)) {
-            case SubNetworkIds.StateNetwork: value = this.stateNetworkState[contentKey]; break;
+            case SubNetworkIds.StateNetwork: {
+                value = this.stateNetworkState[contentKey] ?? value; break;
+            }
             case SubNetworkIds.HistoryNetwork: {
                 try {
                     value = await this.historyNetworkDB.get(contentKey);
@@ -434,9 +436,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 catch (err) {
                     console.log('Error retrieving content', err)
                 }
-            }
+            }; break;
         }
-
 
         if (value.length === 0) {
             // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
