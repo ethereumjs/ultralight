@@ -1,0 +1,1 @@
+{"version":3,"file":"create.js","sourceRoot":"","sources":["../../src/enr/create.ts"],"names":[],"mappings":";;;AAAA,kCAAgC;AAGhC,SAAgB,YAAY,CAAC,MAAc;IACzC,IAAI,MAAM,CAAC,MAAM,KAAK,EAAE,EAAE;QACxB,MAAM,IAAI,KAAK,CAAC,mCAAmC,CAAC,CAAC;KACtD;IACD,OAAO,YAAK,CAAC,MAAM,CAAC,CAAC;AACvB,CAAC;AALD,oCAKC"}
