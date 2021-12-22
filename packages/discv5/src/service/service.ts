@@ -850,5 +850,6 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.connectionUpdated(srcId, undefined, EntryStatus.Disconnected);
     clearInterval(this.connectedPeers.get(srcId) as NodeJS.Timer);
     this.connectedPeers.delete(srcId);
+    this.emit("sessionEnded", srcId)
   };
 }

@@ -30,7 +30,7 @@ export const App = () => {
   const [portal, setDiscv5] = React.useState<PortalNetwork>();
   const [enr, setENR] = React.useState<string>("");
   const [network, setNetwork] = React.useState<SubNetworkIds>(
-    SubNetworkIds.HistoryNetworkId
+    SubNetworkIds.HistoryNetwork
   );
   const [radius, setRadius] = React.useState("");
 
@@ -78,11 +78,11 @@ export const App = () => {
 
   const updateNetwork = (val: string) => {
     switch (val) {
-      case SubNetworkIds.HistoryNetworkId:
-        setNetwork(SubNetworkIds.HistoryNetworkId);
+      case SubNetworkIds.HistoryNetwork:
+        setNetwork(SubNetworkIds.HistoryNetwork);
         break;
-      case SubNetworkIds.StateNetworkId:
-        setNetwork(SubNetworkIds.StateNetworkId);
+      case SubNetworkIds.StateNetwork:
+        setNetwork(SubNetworkIds.StateNetwork);
         break;
     }
   };
@@ -132,10 +132,10 @@ export const App = () => {
               </Center>
               <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
                 <Stack direction="row">
-                  <Radio value={SubNetworkIds.StateNetworkId}>
+                  <Radio value={SubNetworkIds.StateNetwork}>
                     State Network
                   </Radio>
-                  <Radio value={SubNetworkIds.HistoryNetworkId}>
+                  <Radio value={SubNetworkIds.HistoryNetwork}>
                     History Network
                   </Radio>
                 </Stack>

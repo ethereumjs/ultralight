@@ -3,12 +3,12 @@ import { ContainerType, ByteVector, BigIntUintType, UnionType, ListType, byteTyp
 
 // Subnetwork IDs
 export enum SubNetworkIds {
-    StateNetworkId = '0x500a',
-    HistoryNetworkId = '0x500b',
-    TxGossipNetworkId = '0x500c',
-    HeaderGossipNetworkId = '0x500d',
-    CanonIndicesNetworkId = '0x500e',
-    UTPNetworkId = '0x757470'
+    StateNetwork = '0x500a',
+    HistoryNetwork = '0x500b',
+    TxGossipNetwork = '0x500c',
+    HeaderGossipNetwork = '0x500d',
+    CanonIndicesNetwork = '0x500e',
+    UTPNetwork = '0x757470'
 }
 
 // Ping/Pong Custom Data type -- currently identical for State and History networks
