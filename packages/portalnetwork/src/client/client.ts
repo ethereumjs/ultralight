@@ -75,8 +75,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.HistoryNetwork);
         })
         this.uTP = new UtpProtocol(this);
-        this.db = db ?? level()
-        this.client.on("enrAdded", (enr) => {
+        this.db = db ?? level();
+        (this.client as any).sessionService.on("established", (enr: ENR) => {
             const distances = this.historyNetworkRoutingTable.buckets.map((bucket, index) => bucket.isEmpty() ? index : undefined).filter(distance => distance !== undefined)
             if (distances.length > 0) {
                 // Populate subnetwork routing table for empty buckets in the routing table
