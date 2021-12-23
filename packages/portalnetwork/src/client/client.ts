@@ -33,9 +33,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     historyNetworkRoutingTable: PortalNetworkRoutingTable;
     uTP: UtpProtocol;
     nodeRadius: number;
-    // TODO: Replace with proper content database
-    stateNetworkState: state
-    historyNetworkDB: LevelUp
+    db: LevelUp
     /**
      * 
      * @param ip initial local IP address of node
@@ -77,13 +75,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.HistoryNetwork);
         })
         this.uTP = new UtpProtocol(this);
-        // Static data for testing portal network content related functionality - served on State Network requests
-        this.stateNetworkState = {
-            "0x01": Buffer.from('abc'),
-            "0x02": Buffer.from('efg'),
-            "0x03": testArray
-        }
-        this.historyNetworkDB = db ?? level()
+        this.db = db ?? level()
         this.client.on("enrAdded", (enr) => {
             const distances = this.historyNetworkRoutingTable.buckets.map((bucket, index) => bucket.isEmpty() ? index : undefined).filter(distance => distance !== undefined)
             if (distances.length > 0) {
@@ -104,6 +96,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * Starts the portal network client
      */
     public start = async () => {
+        // Dummy data inserted in the DB for testing
+        await this.db.put("0x01", "abc")
+        await this.db.put("0x02", "def")
+        await this.db.put("0x03", toHexString(testArray))
         await this.client.start()
     }
 
@@ -301,7 +297,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         if (!(key.startsWith('0x') || !(value.startsWith('0x')))) {
             throw new Error('content-keys and values must be hex strings')
         }
-        await this.historyNetworkDB.put(key, value, (err: any) => {
+        await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err}`)
         })
     }
@@ -433,11 +429,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         let value = Uint8Array.from([])
         switch (toHexString(message.protocol)) {
             case SubNetworkIds.StateNetwork: {
-                value = this.stateNetworkState[contentKey] ?? value; break;
+                value = Buffer.from(await this.db.get(contentKey)) ?? value; break;
             }
             case SubNetworkIds.HistoryNetwork: {
                 try {
-                    value = await this.historyNetworkDB.get(contentKey);
+                    value = await this.db.get(contentKey);
                 }
                 catch (err) {
                     console.log('Error retrieving content', err)
