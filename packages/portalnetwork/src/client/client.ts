@@ -433,7 +433,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             }
             case SubNetworkIds.HistoryNetwork: {
                 try {
-                    value = await this.db.get(contentKey);
+                    value = Buffer.from(await this.db.get(contentKey)) ?? value;
                 }
                 catch (err) {
                     console.log('Error retrieving content', err)
