@@ -61,7 +61,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   };
 
   const handleFindContent = (nodeId: string) => {
-    portal.sendFindContent(nodeId, Buffer.from(contentKey, "hex"), network);
+    portal.sendFindContent(
+      nodeId,
+      Buffer.from(contentKey.slice(2), "hex"),
+      network
+    );
   };
 
   const handleOffer = (nodeId: string) => {
