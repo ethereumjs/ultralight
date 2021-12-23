@@ -3,6 +3,7 @@ import { Packet, PacketType } from "..";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 import { Discv5 } from "@chainsafe/discv5";
+import { toHexString } from "@chainsafe/ssz";
 
 const log = debug("<uTP>");
 
@@ -39,9 +40,9 @@ export class UtpProtocol {
         log(`Opening uTP socket to send DATA to ${remoteAddr}`)
         // Creates a new uTP socket for remoteAddr
         const socket = new _UTPSocket(this, remoteAddr, "writing");
-        // TODO: FINDS CONTENT FROM DATABASE
+    const value = await this.portal.db.get(toHexString(contentKeys[0]))
         // Loads database content to socket
-        socket.content = Buffer.concat([...contentKeys])
+    socket.content = Buffer.from(value)
         // Adds this socket to 'sockets' registry, wtih remoteAddr as key
         this.sockets[remoteAddr] = socket;
 
