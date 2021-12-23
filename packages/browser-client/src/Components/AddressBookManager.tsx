@@ -63,7 +63,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   };
 
   const handleFindContent = (nodeId: string) => {
-    if (contentKey.slice(0, 1) !== "0x") {
+    if (contentKey.slice(0, 2) !== "0x") {
       setContentKey("");
       toast({
         title: "Error",
@@ -81,7 +81,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   };
 
   const handleOffer = (nodeId: string) => {
-    if (contentKey.slice(0, 1) !== "0x") {
+    if (contentKey.slice(0, 2) !== "0x") {
       setContentKey("");
       toast({
         title: "Error",
