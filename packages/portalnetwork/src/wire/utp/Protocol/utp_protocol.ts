@@ -96,8 +96,10 @@ export class UtpProtocol {
     log(`${this.contents[remoteAddr].length} bytes received. ${this.contents[remoteAddr].toString().slice(0, 20)} ...`)
     log(`${this.sockets[remoteAddr].readerContent.toString().slice(0,20)}`)
     // Closes socket (deletes from registry)
+    const compiledData = this.contents[remoteAddr]
     delete this.sockets[remoteAddr]
-    return this.contents[remoteAddr]
+    delete this.contents[remoteAddr]
+    return compiledData
   }
 
   async handleDataPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
