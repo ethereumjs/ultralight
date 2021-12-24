@@ -129,7 +129,7 @@ export class _UTPSocket extends EventEmitter {
     // Update socket from Packet Header
     this.updateSocketFromPacketHeader(packet);
     // Naive Solution -- Writes packet payload to content array (regardless of packet order)
-    this.content = Uint8Array.from([...this.content, ...packet.payload]);
+    this.content = Uint8Array.from([...(this.content ?? []), ...packet.payload]);
     log(`Connection State: Connected`);
     this.state = ConnectionState.Connected;
     log(`Sending packet payload to Reader`);
