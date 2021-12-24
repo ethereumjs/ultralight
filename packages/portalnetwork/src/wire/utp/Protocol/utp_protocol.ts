@@ -3,6 +3,7 @@ import { Packet, PacketType } from "..";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 import { Discv5 } from "@chainsafe/discv5";
+import { toHexString } from "@chainsafe/ssz";
 
 const log = debug("<uTP>");
 
@@ -31,6 +32,22 @@ export class UtpProtocol {
       case PacketType.ST_FIN: await this.handleFinPacket(packet, srcId, msgId);
       break;
   }
+  }
+
+  async initiateUtpFromAccept(remoteAddr: string, connectionId: number, contentKeys: Uint8Array[]) {
+        // Client received connectionId in an ACCEPT talkresp from a node at:  remoteAddr
+        log(`Requesting uTP stream connection with ${remoteAddr}...`);
+        log(`Opening uTP socket to send DATA to ${remoteAddr}`)
+        // Creates a new uTP socket for remoteAddr
+        const socket = new _UTPSocket(this, remoteAddr, "writing");
+    const value = await this.portal.db.get(toHexString(contentKeys[0]))
+        // Loads database content to socket
+    socket.content = Buffer.from(value)
+        // Adds this socket to 'sockets' registry, wtih remoteAddr as key
+        this.sockets[remoteAddr] = socket;
+
+            // Sends Syn Packet to begin uTP connection process using connectionId
+    return this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 
   async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<Buffer> {
@@ -79,8 +96,10 @@ export class UtpProtocol {
     log(`${this.contents[remoteAddr].length} bytes received. ${this.contents[remoteAddr].toString().slice(0, 20)} ...`)
     log(`${this.sockets[remoteAddr].readerContent.toString().slice(0,20)}`)
     // Closes socket (deletes from registry)
+    const compiledData = this.contents[remoteAddr]
     delete this.sockets[remoteAddr]
-    return this.contents[remoteAddr]
+    delete this.contents[remoteAddr]
+    return compiledData
   }
 
   async handleDataPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {

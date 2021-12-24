@@ -47,6 +47,8 @@ export class _UTPSocket extends EventEmitter {
   writer: utpWritingRunnable | undefined;
   reader: Reader;
   readerContent: Uint8Array;
+  reading: boolean;
+  writing: boolean;
   constructor(utp: UtpProtocol, remoteAddress: string, type: string) {
     super();
     this.utp = utp;
@@ -69,6 +71,8 @@ export class _UTPSocket extends EventEmitter {
     this.content = Uint8Array.from([]);
     this.reader = new Reader(this);
     this.readerContent = new Uint8Array();
+    this.reading = type === "reading"
+    this.writing = type === "writing"
   }
 
   async updateSocketFromPacketHeader(packet: Packet) {
@@ -110,30 +114,41 @@ export class _UTPSocket extends EventEmitter {
     this.ackNr = packet.header.seqNr
     log(`SYN packet accepted.  SYN ACK Received.  Connection State: Connected`);
     this.setState(ConnectionState.Connected);
-    log(`Sending SYN ACK ACK`);
-    await this.sendAckPacket().then((res) => {
-      log(`SYN ACK ACK sent...Reader listening for DATA stream...`);
-    });
+    if (this.reader) {
+      log(`Sending SYN ACK ACK`);
+      await this.sendAckPacket().then((res) => {
+        log(`SYN ACK ACK sent...Reader listening for DATA stream...`);
+      });
+    } else if (this.writer) {
+
+    }
+    
   }
 
   async handleDataPacket(packet: Packet): Promise<void> {
     // Update socket from Packet Header
     this.updateSocketFromPacketHeader(packet);
     // Naive Solution -- Writes packet payload to content array (regardless of packet order)
-    this.content = Uint8Array.from([...this.content, ...packet.payload]);
+    this.content = Uint8Array.from([...(this.content ?? []), ...packet.payload]);
     log(`Connection State: Connected`);
     this.state = ConnectionState.Connected;
     log(`Sending packet payload to Reader`);
-    await this.reader.addPacket(packet);
+    this.reader.addPacket(packet).then(async (expected) => {
+      let sn = this.seqNr
+      expected ?
+      await this.sendAckPacket().then((res) => {
+        log(`ACK sent.  seqNr: ${sn} ackNr: ${this.ackNr}`);
+        log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
+      }) :
+      await this.sendSelectiveAckPacket(packet).then((res) => {
+        log(`Packet Arrived Out of Order.  seqNr: ${sn} ackNr: ${this.ackNr}`);
+        log(`Sending Selective Ack`);
+    })
     // Send ACK if packet arrived in expected order.
     // TODO: Send SELECTIVE ACK if packet arrived out of order.
     // Call TIMEOUT if packet appears lost
-    let sn = this.seqNr
-    await this.sendAckPacket().then((res) => {
-      log(`ACK sent.  seqNr: ${sn} ackNr: ${this.ackNr}`);
-      log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`);
-    });
-  }
+  })}
+
   async handleStatePacket(packet: Packet): Promise<void> {
     // STATE packet is ACK for a specific DATA packet.
     // TODO: handle SELECTIVE ACK packet
@@ -141,7 +156,7 @@ export class _UTPSocket extends EventEmitter {
     this.state = ConnectionState.Connected;
     // The first STATE packet will be the SYN ACK (ackNr: 1) or the SYN ACK ACK (ackNr: Random + 1???)
     if (packet.header.ackNr == 1) {
-      this.handleSynAckPacket(packet);
+        this.handleSynAckPacket(packet);
     } else {
       if (packet.header.seqNr == 2) {
         log(
@@ -181,16 +196,26 @@ export class _UTPSocket extends EventEmitter {
   // Send SELECTIVE ACK
   // Already ACKED packets
 
-  sendSelectiveAck(
-    headerExtension: unknown,
-    timestampDiff: number,
-    spaceLeftInBuffer: number
-  ) {}
+  async sendSelectiveAck(
+    packet: Packet
+  ) 
+  {
+    const _packet = createAckPacket(
+      this.seqNr++,
+      this.sndConnectionId,
+      this.ackNr,
+      this.rtt_var,
+      this.cur_window
+    );
+    log(
+      `Sending ST_STATE packet ackNr: ${this.ackNr} seqNr: ${this.seqNr} to ${this.remoteAddress}`
+    );
+    await this.sendPacket(_packet, PacketType.ST_STATE);
+    log(`Incrementing SeqNre from ${this.seqNr-1} to ${this.seqNr}`);
+  }
 
-  sendSelectiveAckPacket(
-    headerExtension: unknown,
-    timestampDiff: number,
-    spaceLeftInBuffer: number
+  async sendSelectiveAckPacket(
+    packet: Packet
   ) {}
 
   ackAlreadyAcked(

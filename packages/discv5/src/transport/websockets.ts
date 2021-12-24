@@ -53,9 +53,7 @@ export class WebSocketTransportService
       if (data.length === 6) {
         const address = ip.decode(data.slice(0, 4));
         const port = data.readUIntBE(4, 2);
-        console.log(address, port);
         this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`);
-        console.log(this.multiaddr)
         this.emit("multiaddrUpdate", this.multiaddr);
         // eslint-disable-next-line no-empty
       } else {

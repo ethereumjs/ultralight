@@ -7,6 +7,7 @@ import {
   Text,
   VStack,
   Wrap,
+  useToast,
 } from "@chakra-ui/react";
 import debug from "debug";
 import { PortalNetwork } from "portalnetwork";
@@ -27,6 +28,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   const [peers, setPeers] = React.useState<string[]>([]);
   const [contentKey, setContentKey] = React.useState<string>("");
   const [distance, setDistance] = React.useState<string>("0");
+  const toast = useToast();
 
   React.useEffect(() => {
     portal.client.on("enrAdded", () => {
@@ -61,11 +63,39 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
   };
 
   const handleFindContent = (nodeId: string) => {
-    portal.sendFindContent(nodeId, Buffer.from(contentKey, "hex"), network);
+    if (contentKey.slice(0, 2) !== "0x") {
+      setContentKey("");
+      toast({
+        title: "Error",
+        description: "Content Key must be hex prefixed string",
+        status: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    portal.sendFindContent(
+      nodeId,
+      Buffer.from(contentKey.slice(2), "hex"),
+      network
+    );
   };
 
   const handleOffer = (nodeId: string) => {
-    portal.sendOffer(nodeId, [new Uint8Array(16).fill(0)], network);
+    if (contentKey.slice(0, 2) !== "0x") {
+      setContentKey("");
+      toast({
+        title: "Error",
+        description: "Content Key must be hex prefixed string",
+        status: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    portal.sendOffer(
+      nodeId,
+      [Buffer.from(contentKey.slice(2), "hex")],
+      network
+    );
   };
 
   const handleUtpStream = (nodeId: string) => {

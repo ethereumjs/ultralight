@@ -63,11 +63,13 @@ export const App = () => {
     await portal.start();
 
     portal.enableLog();
+
   };
 
   React.useEffect(() => {
     init();
   }, []);
+
 
   const copy = async () => {
     await setENR(
@@ -75,6 +77,7 @@ export const App = () => {
     );
     onCopy();
   };
+
 
   const updateNetwork = (val: string) => {
     switch (val) {
