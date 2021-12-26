@@ -5,6 +5,8 @@ import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
+import { Server as RPCServer } from 'jayson/promise'
+import { methods } from './rpc'
 const readline = require('readline')
 
 readline.emitKeypressEvents(process.stdin)
@@ -21,24 +23,38 @@ const args: any = yargs(hideBin(process.argv))
         default: true
     })
     .option('nat', {
-        describe: "NAT Traversal options for proxy",
+        describe: 'NAT Traversal options for proxy',
         choices: ['none', 'extip'],
-        default: "none",
+        default: 'none',
         string: true
+    })
+    .option('rpc', {
+        describe: 'Enable the JSON-RPC server with HTTP endpoint',
+        boolean: true,
+        default: true,
+    })
+    .option('rpcport', {
+        describe: 'HTTP-RPC server listening port',
+        default: 8545,
+    })
+    .option('rpcaddr', {
+        describe: 'HTTP-RPC server listening interface address',
+        default: 'localhost',
     }).argv
 
 let child: ChildProcessWithoutNullStreams
+
 const run = async () => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
-    enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"))
+    enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
     const portal = new PortalNetwork(
         {
             enr: enr,
             peerId: id,
-            multiaddr: new Multiaddr("/ip4/127.0.0.1/udp/0"),
-            transport: "wss",
-            proxyAddress: "ws://127.0.0.1:5050",
+            multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
+            transport: 'wss',
+            proxyAddress: 'ws://127.0.0.1:5050',
         },
         1
     )
@@ -50,6 +66,12 @@ const run = async () => {
         bootnodeId = ENR.decodeTxt(args.bootnode).nodeId
         console.log(`Press p to ping ${bootnodeId}`)
         console.log(`Press n to send FINDNODES to ${bootnodeId}`)
+    }
+    const { rpc, rpcport, rpcaddr } = args
+    if (rpc) {
+        const server = new RPCServer(methods)
+        server.http().listen(rpcport)
+        console.log(`Started JSON RPC Server address=http://${rpcaddr}:${rpcport}`)
     }
     process.stdin.on('keypress', async (str, key) => {
         switch (key.name) {
