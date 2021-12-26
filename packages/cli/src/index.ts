@@ -1,7 +1,7 @@
-import { ENR } from "@chainsafe/discv5";
-import { PortalNetwork, SubNetworkIds } from "portalnetwork";
-import PeerId from "peer-id";
-import { Multiaddr } from "multiaddr";
+import { ENR } from '@chainsafe/discv5'
+import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import PeerId from 'peer-id'
+import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
@@ -29,9 +29,9 @@ const args: any = yargs(hideBin(process.argv))
 
 let child: ChildProcessWithoutNullStreams
 const run = async () => {
-    const id = await PeerId.create({ keyType: "secp256k1" });
-    const enr = ENR.createFromPeerId(id);
-    enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
+    const id = await PeerId.create({ keyType: 'secp256k1' })
+    const enr = ENR.createFromPeerId(id)
+    enr.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"))
     const portal = new PortalNetwork(
         {
             enr: enr,
@@ -41,9 +41,9 @@ const run = async () => {
             proxyAddress: "ws://127.0.0.1:5050",
         },
         1
-    );
-    portal.enableLog();
-    await portal.start();
+    )
+    portal.enableLog()
+    await portal.start()
     let bootnodeId: string
     if (args.bootnode) {
         portal.client.addEnr(args.bootnode)
@@ -54,26 +54,27 @@ const run = async () => {
     process.stdin.on('keypress', async (str, key) => {
         switch (key.name) {
             case 'p': {
-                if (!bootnodeId) return;
-                console.log('Sending PING to', bootnodeId);
+                if (!bootnodeId) return
+                console.log('Sending PING to', bootnodeId)
                 const res = await portal.sendPing(bootnodeId, SubNetworkIds.HistoryNetwork)
-                console.log('Received PONG response', res);
-                break;
+                console.log('Received PONG response', res)
+                break
             }
             case 'n': {
-                if (!bootnodeId) return;
+                if (!bootnodeId) return
                 console.log('Sending FINDNODES to ', bootnodeId)
                 const res = await portal.sendFindNodes(bootnodeId, Uint16Array.from([0, 1, 2]), SubNetworkIds.HistoryNetwork)
                 console.log(res)
+                break
             }
             case 'e': {
                 console.log('Current ENR is:', portal.client.enr.encodeTxt())
-                break;
+                break
             }
             case 'c': if (key.ctrl) {
                 console.log('Exiting')
                 child?.kill(0)
-                process.exit(0);
+                process.exit(0)
             }
         }
     })
@@ -82,14 +83,14 @@ const run = async () => {
 const main = async () => {
     let proxyStarted = false
     if (args.proxy === true) {
-        //Spawn a child process that runs the proxy 
+        // Spawn a child process that runs the proxy 
         const file = require.resolve('../../proxy/dist/index.js')
         child = spawn(process.execPath, [file, args.nat])
         child.stdout.on('data', async (data) => {
             // Prints all proxy logs to the console
             console.log(data.toString())
             if (!proxyStarted && data.toString().includes("websocket server listening")) {
-                run();
+                run()
                 proxyStarted = true
             }
         })
