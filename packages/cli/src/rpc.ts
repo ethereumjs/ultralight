@@ -1,7 +1,9 @@
+import debug from 'debug'
+
+const log = debug('RPC')
 export const methods = {
-    'discv5_sendPing': async (params: any) => {
-        console.log('[RPC] discv5_sendPing request received:')
-        console.log(params)
-        return 'ok'
+    'discv5_nodeInfo': async () => {
+        log('discv5_nodeInfo request received')
+        return 'Ultralight-CLI: v0.0.1'
     },
 }

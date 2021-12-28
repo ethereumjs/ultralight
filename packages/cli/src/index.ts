@@ -58,7 +58,7 @@ const run = async () => {
         },
         1
     )
-    portal.enableLog()
+    portal.enableLog("discv5*, RPC*, portalnetwork*")
     await portal.start()
     let bootnodeId: string
     if (args.bootnode) {
