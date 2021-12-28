@@ -193,11 +193,13 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                             case SubNetworkIds.StateNetwork: if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to State Subnetwork Routing Table if we don't already know it
                                 this.stateNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+                                this.sendPing(decodedEnr.nodeId, networkId);
                             }
                                 break;
                             case SubNetworkIds.HistoryNetwork: if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to History Subnetwork Routing Table if we don't already know it
                                 this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+                                this.sendPing(decodedEnr.nodeId, networkId);
                             };
                                 break;
                         }
@@ -375,6 +377,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
                     // would be in bucket 0
                     this.historyNetworkRoutingTable.valuesOfDistance(distance + 1).forEach((enr) => {
+                        // Exclude ENR from resopnse if it matches the requesting node
+                        if (enr.nodeId === srcId) return
                         nodesPayload.total++;
                         nodesPayload.enrs.push(enr.encode())
                     })
