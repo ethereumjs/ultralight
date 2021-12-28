@@ -193,11 +193,13 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                             case SubNetworkIds.StateNetwork: if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to State Subnetwork Routing Table if we don't already know it
                                 this.stateNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+                                this.sendPing(decodedEnr.nodeId, networkId);
                             }
                                 break;
                             case SubNetworkIds.HistoryNetwork: if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                                 // Add node to History Subnetwork Routing Table if we don't already know it
                                 this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+                                this.sendPing(decodedEnr.nodeId, networkId);
                             };
                                 break;
                         }
