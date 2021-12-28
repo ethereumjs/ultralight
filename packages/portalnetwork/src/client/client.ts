@@ -375,6 +375,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
                     // would be in bucket 0
                     this.historyNetworkRoutingTable.valuesOfDistance(distance + 1).forEach((enr) => {
+                        // Exclude ENR from resopnse if it matches the requesting node
+                        if (enr.nodeId === srcId) return
                         nodesPayload.total++;
                         nodesPayload.enrs.push(enr.encode())
                     })
