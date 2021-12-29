@@ -305,10 +305,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             throw new Error('blockhash and values must be hex strings')
         }
         const encodedValue = Buffer.from(fromHexString(value))
+        let deserializedValue: Block | BlockHeader
         switch (contentType) {
             case HistoryNetworkContentTypes.BlockHeader: {
                 try {
-                    BlockHeader.fromRLPSerializedHeader(encodedValue)
+                    deserializedValue = BlockHeader.fromRLPSerializedHeader(encodedValue)
                 }
                 catch (err: any) {
                     this.log(`Invalid value provided for block header: ${err.toString()}`)
@@ -317,7 +318,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             }
             case HistoryNetworkContentTypes.BlockBody: {
                 try {
-                    Block.fromRLPSerializedBlock(encodedValue)
+                    deserializedValue = Block.fromRLPSerializedBlock(encodedValue)
                 }
                 catch (err: any) {
                     this.log(`Invalid value provided for block body: ${err.toString()}`)
