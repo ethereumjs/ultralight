@@ -60,6 +60,7 @@ const run = async () => {
     )
     portal.enableLog("discv5*, RPC*, portalnetwork*")
     await portal.start()
+    portal.addContentToHistory()
     let bootnodeId: string
     if (args.bootnode) {
         portal.client.addEnr(args.bootnode)
