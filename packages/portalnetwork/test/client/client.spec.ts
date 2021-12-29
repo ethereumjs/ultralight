@@ -66,19 +66,18 @@ tape('Client unit tests', async (t) => {
     })
 
     t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
-        st.plan(2)
+        st.plan(3)
         const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
         td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(findContentResponse)
         const res = await node.sendFindContent('abc', Uint8Array.from([1]), SubNetworkIds.HistoryNetwork)
         st.ok(Buffer.from(res).toString() === 'abc', 'received expected content from FINDCONTENT')
 
         const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
-        const getContentIdFromSerializedKey = td.func<any>()
-        td.replace('../../src/historySubnetwork', { getContentIdFromSerializedKey })
-
-        td.when(getContentIdFromSerializedKey(td.matchers.anything())).thenReturn('0x01', [], '0x03')
+        const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179, 37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182])
         td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => st.pass('correctly handle findContent where no matching content'))
+        td.when(node.client.sendTalkResp('def', td.matchers.contains('12345'), td.matchers.anything())).thenDo(() => st.pass('got correct content'))
         await node.handleFindContent('ghi', { protocol: fromHexString(SubNetworkIds.StateNetwork), request: findContentMessageWithNoContent })
+        await node.handleFindContent('def', { id: '12345', protocol: fromHexString(SubNetworkIds.HistoryNetwork), request: findContentMessageWithShortContent })
     })
 
     t.test('OFFER/ACCEPT message handlers', async (st) => {
