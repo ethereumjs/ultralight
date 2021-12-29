@@ -1,4 +1,4 @@
-import { Discv5, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
+import { Discv5, ENR, EntryStatus, fromHex, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
 import { decode, ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
 import { EventEmitter } from 'events'
 import debug from 'debug'
@@ -15,6 +15,8 @@ import { LevelUp } from 'levelup'
 import { INodeAddress } from "@chainsafe/discv5/lib/session/nodeInfo";
 import { MAX_PACKET_SIZE } from "@chainsafe/discv5/src/packet";
 import { getContentId, getContentIdFromSerializedKey, HistoryNetworkContentKeyUnionType } from "../historySubnetwork";
+import { HistoryNetworkContentTypes } from "../historySubnetwork/types";
+import { Block, BlockHeader } from "@ethereumjs/block";
 const level = require('level-mem')
 
 const _log = debug("portalnetwork")
@@ -292,14 +294,40 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
     /**
      * 
-     * @param key - hex string representation of history subnetwork content-key
-     * @param value - hex string representing RLP encoded block header, block body, or receipt
-     * @throws if `key` or `value` is not hex string
+     * @param chainId - decimal 
+     * @param blockHash - hex string representation of block hash
+     * @param contentType - content type of the data item being stored
+     * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
+     * @throws if `blockHash` or `value` is not hex string
      */
-    public addContentToHistory = async (key: string, value: string) => {
-        if (!(key.startsWith('0x') || !(value.startsWith('0x')))) {
-            throw new Error('content-keys and values must be hex strings')
+    public addContentToHistory = async (chainId: number, contentType: HistoryNetworkContentTypes, blockHash: string, value: string) => {
+        if (!(blockHash.startsWith('0x') || !(value.startsWith('0x')))) {
+            throw new Error('blockhash and values must be hex strings')
         }
+        const encodedValue = Buffer.from(fromHexString(value))
+        switch (contentType) {
+            case HistoryNetworkContentTypes.BlockHeader: {
+                try {
+                    BlockHeader.fromRLPSerializedHeader(encodedValue)
+                }
+                catch (err: any) {
+                    this.log(`Invalid value provided for block header: ${err.toString()}`)
+                };
+                break;
+            }
+            case HistoryNetworkContentTypes.BlockBody: {
+                try {
+                    Block.fromRLPSerializedBlock(encodedValue)
+                }
+                catch (err: any) {
+                    this.log(`Invalid value provided for block body: ${err.toString()}`)
+                }
+                break;
+            }
+            case HistoryNetworkContentTypes.Receipt: throw new Error('Receipts data not implemented')
+            default: throw new Error('unknown data type provided')
+        }
+        const key = toHexString(HistoryNetworkContentKeyUnionType.serialize({ selector: contentType, value: { chainId: chainId, blockHash: fromHexString(blockHash) } }))
         await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err}`)
         })

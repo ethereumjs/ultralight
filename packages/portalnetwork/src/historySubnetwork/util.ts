@@ -14,6 +14,11 @@ export const getContentId = (contentKey: HistoryNetworkContentKey, contentType: 
     return toHexString(SHA256.digest(encodedKey))
 }
 
+/**
+ * Generates the Content ID used to calculate the distance between a node ID and the content key
+ * @param contentKey a serialized content key 
+ * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
+ */
 export const getContentIdFromSerializedKey = (contentKey: Uint8Array) => {
     return toHexString(SHA256.digest(contentKey))
 }
