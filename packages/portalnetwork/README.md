@@ -28,7 +28,7 @@ When the client starts, Ultralight will try to connect to a bootnode (if provide
 ### History Network
 
 Content for the history network is stored in the DB as key/value pairs consisting of the below:
-- `key` -- hex string encoded representation of the serialized History Network `content-key`
+- `key` -- hex string encoded representation of the serialized History Network `content-key` (e.g. `0x00010088e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6` is the content Key for the header for Block 1 on mainnet)
 - `value` -- hex string encoded representation of the RLP serialized content (block header, block body, receipt)
 # Acknowledgements
 
