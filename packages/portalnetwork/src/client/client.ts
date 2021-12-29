@@ -241,7 +241,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 case 1: this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`); break;
                 case 2: {
                     this.log(`received ${decoded.value.length} ENRs`);
-                    decoded.value.forEach((enr) => this.log(`Node ID: ${ENR.decode(Buffer.from(decoded.value[0] as Uint8Array)).nodeId}`))
+                    decoded.value.forEach((enr) => this.log(`Node ID: ${ENR.decode(Buffer.from(enr as Uint8Array)).nodeId}`))
                     break;
                 };
             }
@@ -446,8 +446,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.ACCEPT, value: payload });
         await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
-
-
     }
 
     private handleFindContent = async (srcId: string, message: ITalkReqMessage) => {
