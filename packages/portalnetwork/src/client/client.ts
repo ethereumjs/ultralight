@@ -290,8 +290,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     /**
-     * 
-     * @param chainId - decimal 
+     * Convenience method to add content for the History Network to the DB
+     * @param chainId - decimal number representing chain Id
      * @param blockHash - hex string representation of block hash
      * @param contentType - content type of the data item being stored
      * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
