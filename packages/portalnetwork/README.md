@@ -23,6 +23,13 @@ When the client starts, Ultralight will try to connect to a bootnode (if provide
 - Nodes are also removed whenever a discv5 [session ends](https://github.com/ethereumjs/ultralight/blob/1b374767997d2feb5addd478d09fd94d6750da3b/packages/portalnetwork/src/client/client.ts#L71)) since Portal Network messages are dependent on an active discv5 session
 - Liveness checks are done every 5 minutes by the discv5 network and Portal Network subnetwork routing table liveness and nodes are removed from the subnetwork routing tables whenever a liveness check fails
 
+## Content Management
+
+### History Network
+
+Content for the history network is stored in the DB as key/value pairs consisting of the below:
+- `key` -- hex string encoded representation of the History Network `content-id` (e.g. `0xfac2ca64257e97b691a0ff405c4f8d62ab52a6e0f0d2f92e25022ca12a56a881` is the `content-id` for the header for Block 1 on mainnet)
+- `value` -- hex string encoded representation of the RLP serialized content (block header, block body, receipt)
 # Acknowledgements
 
 [Chainsafe's `discv5` implementation](https://github.com/ChainSafe/discv5) without which none of this would be possible

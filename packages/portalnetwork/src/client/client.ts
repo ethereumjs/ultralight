@@ -1,5 +1,5 @@
-import { Discv5, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
-import { ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
+import { Discv5, ENR, EntryStatus, fromHex, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
+import { decode, ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
 import { EventEmitter } from 'events'
 import debug from 'debug'
 import { fromHexString, toHexString } from "@chainsafe/ssz";
@@ -13,19 +13,14 @@ import PeerId from 'peer-id';
 import { Multiaddr } from 'multiaddr';
 import { LevelUp } from 'levelup'
 import { INodeAddress } from "@chainsafe/discv5/lib/session/nodeInfo";
+import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from "../historySubnetwork/types";
+import { Block, BlockHeader } from "@ethereumjs/block";
+import { getContentId, getContentIdFromSerializedKey } from "../historySubnetwork";
 const level = require('level-mem')
 
 const _log = debug("portalnetwork")
 
-type state = {
-    [key: string]: Uint8Array
-}
-
-let testArray = new Uint8Array(2000)
-for (let i = 0; i < 2000; i++) {
-    testArray[i] = Math.floor(Math.random() * 255)
-    
-}
+const MAX_PACKET_SIZE = 1280
 
 export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventEmitter }) {
     client: Discv5;
@@ -96,10 +91,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
      * Starts the portal network client
      */
     public start = async () => {
-        // Dummy data inserted in the DB for testing
-        await this.db.put("0x01", "abc")
-        await this.db.put("0x02", "def")
-        await this.db.put("0x03", toHexString(testArray))
+        // Hardcoded data for testing - block 1 from mainnet
+        const block1HeaderRlp = "0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4"
+        const block1Hash = "0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6"
+        this.addContentToHistory(1, HistoryNetworkContentTypes.BlockHeader, block1Hash, block1HeaderRlp)
         await this.client.start()
     }
 
@@ -240,7 +235,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 case 1: this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`); break;
                 case 2: {
                     this.log(`received ${decoded.value.length} ENRs`);
-                    decoded.value.forEach((enr) => this.log(`Node ID: ${ENR.decode(Buffer.from(decoded.value[0] as Uint8Array)).nodeId}`))
+                    decoded.value.forEach((enr) => this.log(`Node ID: ${ENR.decode(Buffer.from(enr as Uint8Array)).nodeId}`))
                     break;
                 };
             }
@@ -289,15 +284,42 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     /**
-     * 
-     * @param key - hex string representation of history subnetwork content-key
-     * @param value - hex string representing RLP encoded block header, block body, or receipt
-     * @throws if `key` or `value` is not hex string
+     * Convenience method to add content for the History Network to the DB
+     * @param chainId - decimal number representing chain Id
+     * @param blockHash - hex string representation of block hash
+     * @param contentType - content type of the data item being stored
+     * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
+     * @throws if `blockHash` or `value` is not hex string
      */
-    public addContentToHistory = async (key: string, value: string) => {
-        if (!(key.startsWith('0x') || !(value.startsWith('0x')))) {
-            throw new Error('content-keys and values must be hex strings')
+    public addContentToHistory = async (chainId: number, contentType: HistoryNetworkContentTypes, blockHash: string, value: string) => {
+        if (!(blockHash.startsWith('0x') || !(value.startsWith('0x')))) {
+            throw new Error('blockhash and values must be hex strings')
         }
+        const encodedValue = Buffer.from(fromHexString(value))
+        let deserializedValue: Block | BlockHeader
+        switch (contentType) {
+            case HistoryNetworkContentTypes.BlockHeader: {
+                try {
+                    deserializedValue = BlockHeader.fromRLPSerializedHeader(encodedValue)
+                }
+                catch (err: any) {
+                    this.log(`Invalid value provided for block header: ${err.toString()}`)
+                };
+                break;
+            }
+            case HistoryNetworkContentTypes.BlockBody: {
+                try {
+                    deserializedValue = Block.fromRLPSerializedBlock(encodedValue)
+                }
+                catch (err: any) {
+                    this.log(`Invalid value provided for block body: ${err.toString()}`)
+                }
+                break;
+            }
+            case HistoryNetworkContentTypes.Receipt: throw new Error('Receipts data not implemented')
+            default: throw new Error('unknown data type provided')
+        }
+        const key = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, contentType)
         await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err}`)
         })
@@ -418,8 +440,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         const encodedPayload = PortalWireMessageType.serialize({ selector: MessageCodes.ACCEPT, value: payload });
         await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
-
-
     }
 
     private handleFindContent = async (srcId: string, message: ITalkReqMessage) => {
@@ -428,11 +448,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
         //Check to see if value in locally maintained state network state
-        const contentKey = toHexString(decodedContentMessage.contentKey)
+        const lookupKey = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
         let value = Uint8Array.from([])
 
         try {
-            value = Buffer.from(await this.db.get(contentKey));
+            value = Buffer.from(await this.db.get(lookupKey));
         }
         catch (err: any) {
             this.log(`Error retrieving content -- ${err.toString}`)
@@ -440,9 +460,18 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
         if (value.length === 0) {
             // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
-            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
-        } else if (value && value.length < 1200) {
-            // TODO Replace 1200 with a global constant for MAX PACKET size
+            switch (toHexString(message.protocol)) {
+                case SubNetworkIds.HistoryNetwork: {
+                    const ENRs = this.historyNetworkRoutingTable.nearest(getContentIdFromSerializedKey(decodedContentMessage.contentKey), 1)
+                    this.log(`Found ${ENRs.length} closer to content than us`)
+                    const encodedEnrs = ENRs.map(enr => enr.encode())
+                    const payload = ContentMessageType.serialize({ selector: 0, value: encodedEnrs })
+                    this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+                }
+                default:
+                    this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+            }
+        } else if (value && value.length < MAX_PACKET_SIZE) {
             this.log('Found value for requested content' + Buffer.from(decodedContentMessage.contentKey).toString('hex') + value.slice(0, 10) + `...`)
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))

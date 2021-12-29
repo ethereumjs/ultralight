@@ -62,7 +62,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
     );
   };
 
-  const handleFindContent = (nodeId: string) => {
+  const handleFindContent = async (nodeId: string) => {
     if (contentKey.slice(0, 2) !== "0x") {
       setContentKey("");
       toast({
@@ -73,11 +73,12 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
       });
       return;
     }
-    portal.sendFindContent(
+    const res = await portal.sendFindContent(
       nodeId,
       Buffer.from(contentKey.slice(2), "hex"),
       network
     );
+    res instanceof Uint8Array && console.log(Buffer.from(res).toString("hex"));
   };
 
   const handleOffer = (nodeId: string) => {
