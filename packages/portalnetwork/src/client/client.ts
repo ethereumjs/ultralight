@@ -1,5 +1,5 @@
 import { Discv5, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
-import { ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
+import { decode, ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
 import { EventEmitter } from 'events'
 import debug from 'debug'
 import { fromHexString, toHexString } from "@chainsafe/ssz";
@@ -13,6 +13,8 @@ import PeerId from 'peer-id';
 import { Multiaddr } from 'multiaddr';
 import { LevelUp } from 'levelup'
 import { INodeAddress } from "@chainsafe/discv5/lib/session/nodeInfo";
+import { MAX_PACKET_SIZE } from "@chainsafe/discv5/src/packet";
+import { getContentId, getContentIdFromSerializedKey, HistoryNetworkContentKeyUnionType } from "../historySubnetwork";
 const level = require('level-mem')
 
 const _log = debug("portalnetwork")
@@ -428,11 +430,11 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
         //Check to see if value in locally maintained state network state
-        const contentKey = toHexString(decodedContentMessage.contentKey)
+        const lookupKey = toHexString(decodedContentMessage.contentKey)
         let value = Uint8Array.from([])
 
         try {
-            value = Buffer.from(await this.db.get(contentKey));
+            value = Buffer.from(await this.db.get(lookupKey));
         }
         catch (err: any) {
             this.log(`Error retrieving content -- ${err.toString}`)
@@ -440,9 +442,18 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
         if (value.length === 0) {
             // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
-            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
-        } else if (value && value.length < 1200) {
-            // TODO Replace 1200 with a global constant for MAX PACKET size
+            switch (toHexString(message.protocol)) {
+                case SubNetworkIds.HistoryNetwork: {
+                    const ENRs = this.historyNetworkRoutingTable.nearest(getContentIdFromSerializedKey(decodedContentMessage.contentKey), 1)
+                    this.log(`Found ${ENRs.length} closer to content than us`)
+                    const encodedEnrs = ENRs.map(enr => enr.encode())
+                    const payload = ContentMessageType.serialize({ selector: 0, value: encodedEnrs })
+                    this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+                }
+                default:
+                    this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+            }
+        } else if (value && value.length < MAX_PACKET_SIZE) {
             this.log('Found value for requested content' + Buffer.from(decodedContentMessage.contentKey).toString('hex') + value.slice(0, 10) + `...`)
             const payload = ContentMessageType.serialize({ selector: 1, value: value })
             this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))

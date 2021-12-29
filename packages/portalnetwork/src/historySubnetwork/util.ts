@@ -13,3 +13,7 @@ export const getContentId = (contentKey: HistoryNetworkContentKey, contentType: 
     const encodedKey = HistoryNetworkContentKeyUnionType.serialize({ selector: contentType, value: contentKey })
     return toHexString(SHA256.digest(encodedKey))
 }
+
+export const getContentIdFromSerializedKey = (contentKey: Uint8Array) => {
+    return toHexString(SHA256.digest(contentKey))
+}
