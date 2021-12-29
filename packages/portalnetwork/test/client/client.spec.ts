@@ -5,6 +5,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
 import { toBuffer } from '@chainsafe/discv5'
+import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
 
 tape('Client unit tests', async (t) => {
 
@@ -65,21 +66,19 @@ tape('Client unit tests', async (t) => {
     })
 
     t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
-        st.plan(4)
+        st.plan(2)
         const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
         td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(findContentResponse)
         const res = await node.sendFindContent('abc', Uint8Array.from([1]), SubNetworkIds.HistoryNetwork)
         st.ok(Buffer.from(res).toString() === 'abc', 'received expected content from FINDCONTENT')
 
-        const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 1])
         const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
-        const findContentMessageWithLongContent = Uint8Array.from([4, 4, 0, 0, 0, 3])
-        td.when(node.client.sendTalkResp('def', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 1))).thenDo(() => st.pass('correctly handle findContent with small content request'))
+        const getContentIdFromSerializedKey = td.func<any>()
+        td.replace('../../src/historySubnetwork', { getContentIdFromSerializedKey })
+
+        td.when(getContentIdFromSerializedKey(td.matchers.anything())).thenReturn('0x01', [], '0x03')
         td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => st.pass('correctly handle findContent where no matching content'))
-        td.when(node.client.sendTalkResp('jkl', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg[1] === 0))).thenDo(() => st.pass('correctly handle findContent with large content request'))
-        await node.handleFindContent('def', { protocol: fromHexString(SubNetworkIds.StateNetwork), request: findContentMessageWithShortContent })
         await node.handleFindContent('ghi', { protocol: fromHexString(SubNetworkIds.StateNetwork), request: findContentMessageWithNoContent })
-        await node.handleFindContent('jkl', { protocol: fromHexString(SubNetworkIds.StateNetwork), request: findContentMessageWithLongContent })
     })
 
     t.test('OFFER/ACCEPT message handlers', async (st) => {
@@ -107,7 +106,7 @@ tape('Client unit tests', async (t) => {
                 blockHash: fromHexString(block1Hash)
             }
         })
-        const val = await node.db.get(toHexString(contentKey))
+        const val = await node.db.get(getContentIdFromSerializedKey(contentKey))
         const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)))
         st.ok(header.number.eqn(1), 'retrieved block header based on content key')
     })

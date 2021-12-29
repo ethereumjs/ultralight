@@ -15,7 +15,7 @@ import { LevelUp } from 'levelup'
 import { INodeAddress } from "@chainsafe/discv5/lib/session/nodeInfo";
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from "../historySubnetwork/types";
 import { Block, BlockHeader } from "@ethereumjs/block";
-import { getContentIdFromSerializedKey } from "../historySubnetwork";
+import { getContentId, getContentIdFromSerializedKey } from "../historySubnetwork";
 const level = require('level-mem')
 
 const _log = debug("portalnetwork")
@@ -325,7 +325,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             case HistoryNetworkContentTypes.Receipt: throw new Error('Receipts data not implemented')
             default: throw new Error('unknown data type provided')
         }
-        const key = toHexString(HistoryNetworkContentKeyUnionType.serialize({ selector: contentType, value: { chainId: chainId, blockHash: fromHexString(blockHash) } }))
+        const key = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, contentType)
         await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err}`)
         })
@@ -454,7 +454,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(decoded)
         const decodedContentMessage = decoded.value as FindContentMessage
         //Check to see if value in locally maintained state network state
-        const lookupKey = toHexString(decodedContentMessage.contentKey)
+        const lookupKey = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
         let value = Uint8Array.from([])
 
         try {
