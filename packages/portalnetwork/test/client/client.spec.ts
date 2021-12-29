@@ -2,7 +2,9 @@ import tape from 'tape'
 import { MessageCodes, PingPongCustomDataType, PortalNetwork, PortalWireMessageType, SubNetworkIds } from '../../src/'
 import td from 'testdouble'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
+import { toBuffer } from '@chainsafe/discv5'
 
 tape('Client unit tests', async (t) => {
 
@@ -105,9 +107,9 @@ tape('Client unit tests', async (t) => {
                 blockHash: fromHexString(block1Hash)
             }
         })
-        const val = node.db.get(toHexString(contentKey))
-        console.log(val)
-        st.pass('ok!')
+        const val = await node.db.get(toHexString(contentKey))
+        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)))
+        st.ok(header.number.eqn(1), 'retrieved block header based on content key')
     })
     td.reset();
 

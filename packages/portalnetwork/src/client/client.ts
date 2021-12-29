@@ -13,17 +13,14 @@ import PeerId from 'peer-id';
 import { Multiaddr } from 'multiaddr';
 import { LevelUp } from 'levelup'
 import { INodeAddress } from "@chainsafe/discv5/lib/session/nodeInfo";
-import { MAX_PACKET_SIZE } from "@chainsafe/discv5/src/packet";
-import { getContentId, getContentIdFromSerializedKey, HistoryNetworkContentKeyUnionType } from "../historySubnetwork";
-import { HistoryNetworkContentTypes } from "../historySubnetwork/types";
+import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from "../historySubnetwork/types";
 import { Block, BlockHeader } from "@ethereumjs/block";
+import { getContentIdFromSerializedKey } from "../historySubnetwork";
 const level = require('level-mem')
 
 const _log = debug("portalnetwork")
 
-type state = {
-    [key: string]: Uint8Array
-}
+const MAX_PACKET_SIZE = 1280
 
 let testArray = new Uint8Array(2000)
 for (let i = 0; i < 2000; i++) {
