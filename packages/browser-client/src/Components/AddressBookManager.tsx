@@ -11,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import debug from "debug";
 import { PortalNetwork } from "portalnetwork";
+import { HistoryNetworkContentKeyUnionType } from "portalnetwork/dist/historySubnetwork/types";
 import { SubNetworkIds } from "portalnetwork/dist/wire";
 import { randUint16 } from "portalnetwork/dist/wire/utp";
 import React from "react";
@@ -67,15 +68,19 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
       setContentKey("");
       toast({
         title: "Error",
-        description: "Content Key must be hex prefixed string",
+        description: "Block Hash must be hex prefixed string",
         status: "error",
         duration: 3000,
       });
       return;
     }
+    const encodedContentKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 0,
+      value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), "hex") },
+    });
     const res = await portal.sendFindContent(
       nodeId,
-      Buffer.from(contentKey.slice(2), "hex"),
+      encodedContentKey,
       network
     );
     res instanceof Uint8Array && console.log(Buffer.from(res).toString("hex"));
@@ -127,7 +132,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
       {peers.length > 0 && (
         <>
           <Input
-            placeholder={"Content-Key"}
+            placeholder={"Block Hash"}
             onChange={(evt) => {
               setContentKey(evt.target.value);
             }}
