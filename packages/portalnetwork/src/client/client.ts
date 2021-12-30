@@ -232,7 +232,13 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     this.log(`received Connection ID ${id}`);
                     this.sendUtpStreamRequest(dstId, id)
                     break;
-                case 1: this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`); break;
+                case 1: {
+                    this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`);
+                    // TODO: Decide if we should store content received in 
+                    const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+                    await this.addContentToHistory(decodedKey.value.chainId, decodedKey.selector, toHexString(decodedKey.value.blockHash), Buffer.from(decoded.value as Uint8Array).toString())
+                    break;
+                }
                 case 2: {
                     this.log(`received ${decoded.value.length} ENRs`);
                     decoded.value.forEach((enr) => {
@@ -480,9 +486,15 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 case SubNetworkIds.HistoryNetwork: {
                     const ENRs = this.historyNetworkRoutingTable.nearest(getContentIdFromSerializedKey(decodedContentMessage.contentKey), 1)
                     this.log(`Found ${ENRs.length} closer to content than us`)
-                    const encodedEnrs = ENRs.map(enr => enr.encode())
-                    const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
-                    this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+                    const encodedEnrs = ENRs.map(enr => enr.nodeId !== srcId ? enr.encode() : undefined).filter(enr => enr !== undefined)
+                    if (encodedEnrs.length > 0) {
+                        // @ts-ignore
+                        const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
+                        this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
+                    }
+                    else {
+                        this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+                    }
                 }
                 default:
                     this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
