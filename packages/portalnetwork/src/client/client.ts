@@ -235,7 +235,14 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                 case 1: this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`); break;
                 case 2: {
                     this.log(`received ${decoded.value.length} ENRs`);
-                    decoded.value.forEach((enr) => this.log(`Node ID: ${ENR.decode(Buffer.from(enr as Uint8Array)).nodeId}`))
+                    decoded.value.forEach((enr) => {
+                        const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
+                        this.log(`Node ID: ${decodedEnr.nodeId}`)
+                        if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+                            this.client.addEnr(decodedEnr)
+                        }
+                        this.sendFindContent(decodedEnr.nodeId, key, networkId)
+                    })
                     break;
                 };
             }
