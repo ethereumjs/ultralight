@@ -7,6 +7,7 @@ import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
 import { methods } from './rpc'
+import { HistoryNetworkContentTypes } from 'portalnetwork/dist/historySubnetwork/types'
 const readline = require('readline')
 
 readline.emitKeypressEvents(process.stdin)
@@ -60,6 +61,7 @@ const run = async () => {
     )
     portal.enableLog("discv5*, RPC*, portalnetwork*")
     await portal.start()
+
     let bootnodeId: string
     if (args.bootnode) {
         portal.client.addEnr(args.bootnode)

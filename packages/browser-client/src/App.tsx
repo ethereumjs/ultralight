@@ -107,7 +107,7 @@ export const App = () => {
       <ColorModeSwitcher justifySelf="flex-end" />
       <HStack justifyContent={"space-between"}>
         <Flex>
-          <Box width={"20%"} height="100%">
+          <Box maxWidth={"20%"} height="100%">
             {portal && <Log portal={portal} />}
           </Box>
           <VStack width="70%">
