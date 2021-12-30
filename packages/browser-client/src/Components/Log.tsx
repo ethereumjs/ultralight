@@ -25,10 +25,14 @@ export default function Log(props: logProps) {
   });
 
   return (
-    <Box p={2}>
-      <chakra.Code height={'xl'} w={'100%'}  style={{ textAlign: "start" }}>
+    <Box w="20vw" p={2}>
+      <chakra.Code height={"xl"} w={"100%"} style={{ textAlign: "start" }}>
         {output.map((string, idx) => {
-          return <div style={{fontSize: "0.7rem"}} key={idx}>{string}</div>;
+          return (
+            <div style={{ fontSize: "0.7rem" }} key={idx}>
+              {string}
+            </div>
+          );
         })}
       </chakra.Code>
     </Box>
