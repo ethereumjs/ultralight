@@ -296,7 +296,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             throw new Error('blockhash and values must be hex strings')
         }
         const encodedValue = Buffer.from(fromHexString(value))
-        let deserializedValue: Block | BlockHeader
+        let deserializedValue: Block | BlockHeader | undefined = undefined
         switch (contentType) {
             case HistoryNetworkContentTypes.BlockHeader: {
                 try {
@@ -320,6 +320,15 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             default: throw new Error('unknown data type provided')
         }
         const key = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, contentType)
+        if (deserializedValue && contentType === HistoryNetworkContentTypes.BlockBody) {
+            const serializedHeader = "0x" + (deserializedValue as Block).header.serialize().toString('hex')
+            const headerKey = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, 0)
+            await this.db.put(headerKey, serializedHeader, (err: any) => {
+                if (err) this.log(`Error putting content in history DB: ${err}`)
+            })
+            console.log(deserializedValue.hash().toString('hex')) //@ts-ignore
+            console.log(deserializedValue.header.hash().toString('hex'))
+        }
         await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err}`)
         })
@@ -455,7 +464,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             value = Buffer.from(await this.db.get(lookupKey));
         }
         catch (err: any) {
-            this.log(`Error retrieving content -- ${err.toString}`)
+            this.log(`Error retrieving content -- ${err.toString()}`)
         }
 
         if (value.length === 0) {
@@ -465,7 +474,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     const ENRs = this.historyNetworkRoutingTable.nearest(getContentIdFromSerializedKey(decodedContentMessage.contentKey), 1)
                     this.log(`Found ${ENRs.length} closer to content than us`)
                     const encodedEnrs = ENRs.map(enr => enr.encode())
-                    const payload = ContentMessageType.serialize({ selector: 0, value: encodedEnrs })
+                    const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
                     this.client.sendTalkResp(srcId, message.id, Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]))
                 }
                 default:
