@@ -276,7 +276,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     }
 
     /**
-     * 
+     * Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
      * @param dstId node ID of a peer
      * @param contentKeys content keys being offered as specified by the subnetwork
      * @param networkId network ID of subnetwork being used
@@ -358,7 +358,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             console.log(deserializedValue.header.hash().toString('hex'))
         }
         await this.db.put(key, value, (err: any) => {
-            if (err) this.log(`Error putting content in history DB: ${err}`)
+            if (err) this.log(`Error putting content in history DB: ${err.toString()}`)
         })
     }
 
