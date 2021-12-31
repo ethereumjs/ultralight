@@ -349,17 +349,18 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         }
         const key = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, contentType)
         if (deserializedValue && contentType === HistoryNetworkContentTypes.BlockBody) {
+            // If content received is full block, store blockheader separately
+            // TODO: Figure out how to efficiently store block once but retrieve content based on either Block Header or Block Body content Type
             const serializedHeader = "0x" + (deserializedValue as Block).header.serialize().toString('hex')
             const headerKey = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, 0)
             await this.db.put(headerKey, serializedHeader, (err: any) => {
                 if (err) this.log(`Error putting content in history DB: ${err}`)
             })
-            console.log(deserializedValue.hash().toString('hex')) //@ts-ignore
-            console.log(deserializedValue.header.hash().toString('hex'))
         }
         await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err.toString()}`)
         })
+        const offerENRs = this.historyNetworkRoutingTable.nearest(key, 1)
     }
 
     private sendPong = async (srcId: string, reqId: bigint) => {
