@@ -210,7 +210,7 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
 
 
     /**
-     * 
+     * Starts recursive lookup for content corresponding to `key`
      * @param dstId node id of peer
      * @param key content key defined by the subnetwork spec
      * @param networkId subnetwork ID on which content is being sought
@@ -234,20 +234,35 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     break;
                 case 1: {
                     this.log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`);
-                    // TODO: Decide if we should store content received in 
                     const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+                    // Store content in local DB
                     await this.addContentToHistory(decodedKey.value.chainId, decodedKey.selector, toHexString(decodedKey.value.blockHash), Buffer.from(decoded.value as Uint8Array).toString())
                     break;
                 }
                 case 2: {
                     this.log(`received ${decoded.value.length} ENRs`);
-                    decoded.value.forEach((enr) => {
+                    decoded.value.forEach(async (enr) => {
                         const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
                         this.log(`Node ID: ${decodedEnr.nodeId}`)
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             this.client.addEnr(decodedEnr)
                         }
-                        this.sendFindContent(decodedEnr.nodeId, key, networkId)
+                        try {
+                            const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+                            await this.db.get(getContentId({ chainId: contentKey.value.chainId, blockHash: contentKey.value.blockHash }, contentKey.selector), (err) => {
+                                if (!err) {
+                                    throw new Error('content not found, continuing search')
+                                }
+                            })
+                            // If we already have content, end lookup and return early
+                            return
+                        }
+                        catch (err: any) {
+                            this.log(err.message)
+                            // We don't already have the request content so continue the lookup
+                            this.sendFindContent(decodedEnr.nodeId, key, networkId)    
+                        }
+
                     })
                     break;
                 };
