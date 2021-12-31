@@ -4,6 +4,7 @@ import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 import { Discv5 } from "@chainsafe/discv5";
 import { toHexString } from "@chainsafe/ssz";
+import { getContentIdFromSerializedKey } from "../../../historySubnetwork";
 
 const log = debug("<uTP>");
 
@@ -20,7 +21,7 @@ export class UtpProtocol {
     this.contents = {}
   }
 
-  async handleUtpPacket(packet: Packet, srcId: string ,msgId: bigint): Promise<void> {
+  async handleUtpPacket(packet: Packet, srcId: string, msgId: bigint): Promise<void> {
     // Client receives CONTENT talkreq message with uTP Network ID
     // Talkreq handler decodes CONTENT message, sends decoded message here
     // This reads the PacketType from the Packet Header, and sends each to different handler.
@@ -29,24 +30,28 @@ export class UtpProtocol {
       case PacketType.ST_DATA: await this.handleDataPacket(packet, srcId, msgId); break;
       case PacketType.ST_STATE: await this.handleStatePacket(packet, srcId, msgId); break;
       case PacketType.ST_RESET: await this.handleResetPacket; break;
-      case PacketType.ST_FIN: await this.handleFinPacket(packet, srcId, msgId);
+      case PacketType.ST_FIN: {
+        const content = await this.handleFinPacket(packet, srcId, msgId);
+        log(`content received over uTP ${toHexString(content)}`)
+      }
       break;
-  }
+    }
   }
 
   async initiateUtpFromAccept(remoteAddr: string, connectionId: number, contentKeys: Uint8Array[]) {
-        // Client received connectionId in an ACCEPT talkresp from a node at:  remoteAddr
-        log(`Requesting uTP stream connection with ${remoteAddr}...`);
-        log(`Opening uTP socket to send DATA to ${remoteAddr}`)
-        // Creates a new uTP socket for remoteAddr
-        const socket = new _UTPSocket(this, remoteAddr, "writing");
-    const value = await this.portal.db.get(toHexString(contentKeys[0]))
-        // Loads database content to socket
+    // Client received connectionId in an ACCEPT talkresp from a node at:  remoteAddr
+    log(`Requesting uTP stream connection with ${remoteAddr}...`);
+    log(`Opening uTP socket to send DATA to ${remoteAddr}`)
+    // Creates a new uTP socket for remoteAddr
+    const socket = new _UTPSocket(this, remoteAddr, "writing");
+    const value = await this.portal.db.get(getContentIdFromSerializedKey(contentKeys[0]))
+    console.log('value when sending over uTP', value)
+    // Loads database content to socket
     socket.content = Buffer.from(value)
-        // Adds this socket to 'sockets' registry, wtih remoteAddr as key
-        this.sockets[remoteAddr] = socket;
+    // Adds this socket to 'sockets' registry, wtih remoteAddr as key
+    this.sockets[remoteAddr] = socket;
 
-            // Sends Syn Packet to begin uTP connection process using connectionId
+    // Sends Syn Packet to begin uTP connection process using connectionId
     return this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 

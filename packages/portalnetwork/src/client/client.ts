@@ -1,12 +1,12 @@
-import { Discv5, ENR, EntryStatus, fromHex, IDiscv5CreateOptions, NodeId } from "@chainsafe/discv5";
-import { decode, ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
+import { Discv5, ENR, EntryStatus, fromHex, IDiscv5CreateOptions, log2Distance, NodeId } from "@chainsafe/discv5";
+import { ITalkReqMessage, ITalkRespMessage } from "@chainsafe/discv5/lib/message";
 import { EventEmitter } from 'events'
 import debug from 'debug'
 import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { StateNetworkRoutingTable } from "..";
 import { shortId } from "../util";
-import { bufferToPacket, PacketType, randUint16, Uint8, UtpProtocol } from '../wire/utp'
-import { PingPongCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, enrs, OfferMessage, AcceptMessage, PongMessage, ContentMessage, PingMessageType, PingMessage, PongMessageType } from "../wire";
+import { bufferToPacket, randUint16, UtpProtocol } from '../wire/utp'
+import { PingPongCustomDataType, MessageCodes, SubNetworkIds, FindNodesMessage, NodesMessage, PortalWireMessageType, FindContentMessage, ContentMessageType, OfferMessage, AcceptMessage, PongMessage, ContentMessage, PingMessage } from "../wire";
 import { PortalNetworkEventEmitter } from "./types";
 import { PortalNetworkRoutingTable } from ".";
 import PeerId from 'peer-id';
@@ -247,23 +247,15 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             this.client.addEnr(decodedEnr)
                         }
-                        try {
-                            const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
-                            await this.db.get(getContentId({ chainId: contentKey.value.chainId, blockHash: contentKey.value.blockHash }, contentKey.selector), (err) => {
-                                if (!err) {
-                                    throw new Error('content not found, continuing search')
-                                }
-                            })
-                            // If we already have content, end lookup and return early
-                            return
-                        }
-                        catch (err: any) {
-                            this.log(err.message)
-                            // We don't already have the request content so continue the lookup
-                            this.sendFindContent(decodedEnr.nodeId, key, networkId)    
-                        }
 
-                    })
+                        const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+                        await this.db.get(getContentId({ chainId: contentKey.value.chainId, blockHash: contentKey.value.blockHash }, contentKey.selector), (err) => {
+                            if (err) {
+                                this.log('content not found, continuing search')
+                                this.sendFindContent(decodedEnr.nodeId, key, networkId)
+                            }
+                        })
+                    })  
                     break;
                 };
             }
@@ -286,24 +278,28 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             contentKeys
         }
         const payload = PortalWireMessageType.serialize({ selector: MessageCodes.OFFER, value: offerMsg })
+        this.log(`Sending OFFER message to ${shortId(dstId)}`)
         const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
-        try {
-            const decoded = PortalWireMessageType.deserialize(res);
-            if (decoded.selector === MessageCodes.ACCEPT) {
-                this.log(`Received ACCEPT message from ${shortId(dstId)}`);
-                this.log(decoded.value);
-                let msg = decoded.value as AcceptMessage
-                let id = Buffer.from(msg.connectionId).readUInt16BE(0)
-                // Initiate uTP streams with serving of requested content
-                let requested: Uint8Array[] = contentKeys.filter((n, idx) => msg.contentKeys[idx] === true)            
-                await this.uTP.initiateUtpFromAccept(dstId, id, requested)
-                return msg.contentKeys
+        if (res.length > 0) {
+            try {
+                const decoded = PortalWireMessageType.deserialize(res);
+                if (decoded.selector === MessageCodes.ACCEPT) {
+                    this.log(`Received ACCEPT message from ${shortId(dstId)}`);
+                    this.log(decoded.value);
+                    let msg = decoded.value as AcceptMessage
+                    let id = Buffer.from(msg.connectionId).readUInt16BE(0)
+                    // Initiate uTP streams with serving of requested content
+                    let requested: Uint8Array[] = contentKeys.filter((n, idx) => msg.contentKeys[idx] === true)            
+                    console.log('accepted content keys', msg.contentKeys)
+                    console.log(HistoryNetworkContentKeyUnionType.deserialize(contentKeys[0]))
+                    await this.uTP.initiateUtpFromAccept(dstId, id, requested)
+                    return msg.contentKeys
+                }
+            }
+            catch (err: any) {
+                this.log(`Error sending to ${shortId(dstId)} - ${err.message}`)
             }
         }
-        catch (err: any) {
-            this.log(`Error sending to ${shortId(dstId)} - ${err.message}`)
-        }
-
     }
 
     public sendUtpStreamRequest = async (dstId: string, id: number) => {
@@ -361,6 +357,14 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
             if (err) this.log(`Error putting content in history DB: ${err.toString()}`)
         })
         const offerENRs = this.historyNetworkRoutingTable.nearest(key, 1)
+        if (offerENRs.length > 0) {
+            const encodedKey = HistoryNetworkContentKeyUnionType.serialize({ selector: contentType, value: { chainId: chainId, blockHash: fromHexString(blockHash) } })
+            offerENRs.forEach((enr) => {
+                if (log2Distance(enr.nodeId, key) < this.historyNetworkRoutingTable.getRadius(enr.nodeId)!) {
+                    this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
+                }
+            })
+        }
     }
 
     private sendPong = async (srcId: string, reqId: bigint) => {
@@ -463,9 +467,24 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         this.log(decoded)
         const msg = decoded.value as OfferMessage;
         if (msg.contentKeys.length > 0) {
-            await this.sendAccept(srcId, message)
-        } else {
-            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+            let offerAccepted = false
+            try {
+                await Promise.all(msg.contentKeys.map(async (contentKey) => {
+                    await this.db.get(getContentIdFromSerializedKey(contentKey), (err) => {
+                        if (err) {
+                            offerAccepted = true
+                            this.sendAccept(srcId, message)
+                        }
+                    })
+                }))
+                if (!offerAccepted) {
+                    this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+                }
+            }
+            catch {
+                // Send empty response if something goes wrong parsing content keys
+                this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+            }
         }
     }
 
