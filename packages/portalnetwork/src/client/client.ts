@@ -247,11 +247,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                         if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                             this.client.addEnr(decodedEnr)
                         }
-
                         const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
                         await this.db.get(getContentId({ chainId: contentKey.value.chainId, blockHash: contentKey.value.blockHash }, contentKey.selector), (err) => {
                             if (err) {
-                                this.log('content not found, continuing search')
+                                // Checks to see if content is already stored locally (from a previous lookup) and continues the lookup if not
                                 this.sendFindContent(decodedEnr.nodeId, key, networkId)
                             }
                         })
