@@ -356,6 +356,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
         await this.db.put(key, value, (err: any) => {
             if (err) this.log(`Error putting content in history DB: ${err.toString()}`)
         })
+
+        // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= log2Distance from the content)
+        // TODO: Make # nodes content is offered to configurable based on further discussion
         const offerENRs = this.historyNetworkRoutingTable.nearest(key, 1)
         if (offerENRs.length > 0) {
             const encodedKey = HistoryNetworkContentKeyUnionType.serialize({ selector: contentType, value: { chainId: chainId, blockHash: fromHexString(blockHash) } })
