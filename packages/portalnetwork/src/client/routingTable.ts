@@ -26,4 +26,13 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
     public removeFromRadiusMap = (nodeId: NodeId) => {
         this.radiusMap.delete(nodeId)
     }
+
+    /**
+     * Returns the last recorded radius of a peer with the corresponding `nodeId`
+     * @param nodeId nodeId of peer for whom radius is sought
+     * @returns radius of the peer corresponding to `nodeId`
+     */
+    public getRadius = (nodeId: NodeId) => {
+        return this.radiusMap.get(nodeId)
+    }
 }

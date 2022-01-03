@@ -85,7 +85,7 @@ tape('Client unit tests', async (t) => {
     t.test('OFFER/ACCEPT message handlers', async (st) => {
         st.plan(3)
         const acceptResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 3])
-        td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(null, acceptResponse, null)
+        td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve([], acceptResponse, [])
         let res = await node.sendOffer('abc', '', SubNetworkIds.HistoryNetwork)
         st.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
         node.uTP.initiateUtpFromAccept = td.func<any>()

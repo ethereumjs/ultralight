@@ -62,7 +62,7 @@ export const App = () => {
     );
     await portal.start();
 
-    portal.enableLog();
+    portal.enableLog("portalnetwork*, <uTP>*");
 
   };
 

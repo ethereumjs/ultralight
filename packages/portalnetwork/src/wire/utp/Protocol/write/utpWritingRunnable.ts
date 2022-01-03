@@ -1,11 +1,8 @@
-import { min } from "bn.js";
+
 import { log } from "debug";
 import { UtpProtocol } from "..";
 import {
-  Bytes32TimeStamp,
-  MAX_PACKET_SIZE,
   Packet,
-  PacketType,
   TWO_MINUTES,
   _UTPSocket,
 } from "../..";

@@ -91,17 +91,17 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({
       setContentKey("");
       toast({
         title: "Error",
-        description: "Content Key must be hex prefixed string",
+        description: "Block Hash must be hex prefixed string",
         status: "error",
         duration: 3000,
       });
       return;
     }
-    portal.sendOffer(
-      nodeId,
-      [Buffer.from(contentKey.slice(2), "hex")],
-      network
-    );
+    const encodedContentKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 0,
+      value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), "hex") },
+    });
+    portal.sendOffer(nodeId, [encodedContentKey], network);
   };
 
   const handleUtpStream = (nodeId: string) => {
