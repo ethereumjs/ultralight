@@ -114,7 +114,6 @@ export class UtpProtocol {
     // Congestion Control (CC) uses WINDOW_SIZE to determine packet sizes
     // CC also will TIMEOUT the stream if packets appear lost (if the seqNr falls behind by more than 3)
     log(`received CONTENT seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr} Length: ${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
-    console.log(packet.payload)
     await this.sockets[remoteAddr].handleDataPacket(packet)
     }
 
