@@ -3,7 +3,7 @@ import { Packet, PacketType } from "..";
 import { debug } from "debug";
 import { PortalNetwork } from "../../..";
 import { Discv5 } from "@chainsafe/discv5";
-import { toHexString } from "@chainsafe/ssz";
+import { fromHexString, toHexString } from "@chainsafe/ssz";
 import { getContentIdFromSerializedKey } from "../../../historySubnetwork";
 
 const log = debug("<uTP>");
@@ -45,9 +45,8 @@ export class UtpProtocol {
     // Creates a new uTP socket for remoteAddr
     const socket = new _UTPSocket(this, remoteAddr, "writing");
     const value = await this.portal.db.get(getContentIdFromSerializedKey(contentKeys[0]))
-    console.log('value when sending over uTP', value)
     // Loads database content to socket
-    socket.content = Buffer.from(value)
+    socket.content = fromHexString(value)
     // Adds this socket to 'sockets' registry, wtih remoteAddr as key
     this.sockets[remoteAddr] = socket;
 
@@ -115,6 +114,7 @@ export class UtpProtocol {
     // Congestion Control (CC) uses WINDOW_SIZE to determine packet sizes
     // CC also will TIMEOUT the stream if packets appear lost (if the seqNr falls behind by more than 3)
     log(`received CONTENT seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr} Length: ${packet.payload.length} Bytes: ${packet.payload.slice(0, 10)}... `)
+    console.log(packet.payload)
     await this.sockets[remoteAddr].handleDataPacket(packet)
     }
 
