@@ -289,8 +289,6 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
                     let id = Buffer.from(msg.connectionId).readUInt16BE(0)
                     // Initiate uTP streams with serving of requested content
                     let requested: Uint8Array[] = contentKeys.filter((n, idx) => msg.contentKeys[idx] === true)            
-                    console.log('accepted content keys', msg.contentKeys)
-                    console.log(HistoryNetworkContentKeyUnionType.deserialize(contentKeys[0]))
                     await this.uTP.initiateUtpFromAccept(dstId, id, requested)
                     return msg.contentKeys
                 }
