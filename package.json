@@ -15,7 +15,8 @@
     "start-browser-client": "npm run start -w=browser-client",
     "start-cli": "npm run start -w=cli",
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
-    "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy"
+    "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
+    "clean": "bash ./scripts/clean-root.sh"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.16.5",
