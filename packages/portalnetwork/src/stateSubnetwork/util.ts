@@ -10,7 +10,7 @@ export const distance = (id1: bigint, id2: bigint): bigint => {
     throw new Error('numeric representation of node id cannot be greater than 2^256')
   }
   let diff: bigint
-  id1 > id2 ? diff = id1 - id2 : diff = id2 - id1
-  diff > MID ? diff = MODULO - diff : diff
+  id1 > id2 ? (diff = id1 - id2) : (diff = id2 - id1)
+  diff > MID ? (diff = MODULO - diff) : diff
   return diff
 }
