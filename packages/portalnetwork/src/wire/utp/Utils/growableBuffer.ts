@@ -51,8 +51,8 @@ export class GrowableCircularBuffer<A> {
   items: Option<A>[]
   mask: number
   constructor(options?: IGCBOptions<A>) {
-    this.items = options?.items || new Array<Option<A>>()
-    this.mask = options?.mask || 0
+    this.items = options?.items ?? new Array<Option<A>>()
+    this.mask = options?.mask ?? 0
   }
 
   get(i: number): Option<A> {

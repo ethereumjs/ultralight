@@ -1,11 +1,5 @@
-import { Uint16, Uint32 } from '..'
-import { hrtime } from 'process'
-import { EXTENSION, ID_MASK, VERSION } from './constants'
-import { PacketHeader, SelectiveAckHeader } from '../Packets/PacketHeader'
-import { Packet } from '../Packets/Packet'
+import { Uint16 } from '..'
 import { Duration, Miliseconds } from '../Socket/socketTyping'
-import { minimalHeaderSize } from '../Packets/PacketTyping'
-import * as Convert from './Convert'
 
 export function MicrosecondTimeStamp(): number {
   // this is only a millisecond timestamp

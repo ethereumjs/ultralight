@@ -187,7 +187,7 @@ export class _UTPSocket extends EventEmitter {
   // Send SELECTIVE ACK
   // Already ACKED packets
 
-  async sendSelectiveAck(_packet: Packet) {
+  async sendSelectiveAck(__packet: Packet) {
     const _packet = createAckPacket(
       this.seqNr++,
       this.sndConnectionId,
