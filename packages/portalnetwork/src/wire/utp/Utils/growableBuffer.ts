@@ -35,7 +35,7 @@ export class Option<T> {
   }
 }
 
-export function none<T>(kind?: TypedPropertyDescriptor<T>): Option<T> {
+export function none<T>(_kind?: TypedPropertyDescriptor<T>): Option<T> {
   return new Option({ has: false })
 }
 
@@ -96,11 +96,8 @@ export class GrowableCircularBuffer<A> {
   //   # Increase size until is next power of 2 which consists given index
   getNextSize(currentSize: number, index: number): number {
     let newSize = currentSize
-    while (true) {
+    while (index < newSize) {
       newSize = newSize * 2
-      if (index < newSize) {
-        break
-      }
     }
     return newSize
   }

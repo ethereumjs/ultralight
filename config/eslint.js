@@ -31,10 +31,6 @@ module.exports = {
       {
         selector: 'interface',
         format: ['PascalCase', 'camelCase'],
-        custom: {
-          regex: '^I[A-Z]',
-          match: false,
-        },
       },
     ],
     'no-unused-vars': 'off',
@@ -48,7 +44,8 @@ module.exports = {
     'prettier/prettier': 'error',
     'no-redeclare': 'off',
     '@typescript-eslint/no-redeclare': ['error'],
-    'no-case-declarations': 'warn'
+    'no-case-declarations': 'warn',
+    'constructor-super': 'off'
   },
   parserOptions: {
     sourceType: 'module',

@@ -1,6 +1,5 @@
 import debug from 'debug'
 import {
-  packetToBuffer,
   UINT16MAX,
   Bytes32TimeStamp,
   DEF_HEADER_LENGTH,
@@ -73,7 +72,7 @@ export default class OutPacketBuffer {
           })
         }
       } else {
-        console.error(
+        this._log(
           'ERROR FOUND WRONG SEQ NR: ' +
             seqNrToAck +
             ' but returned ' +

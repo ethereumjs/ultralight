@@ -116,6 +116,7 @@ export class _UTPSocket extends EventEmitter {
         log(`SYN ACK ACK sent...Reader listening for DATA stream...`)
       })
     } else if (this.writer) {
+      // TODO : What should go here?
     }
   }
 
@@ -331,7 +332,7 @@ export class _UTPSocket extends EventEmitter {
       Bytes32TimeStamp()
     )
     this.writer = writer
-    this.writer.start().then((res) => {
+    this.writer.start().then(() => {
       log(`All Data sent...  Building FIN Packet...`)
       this.sendFinPacket()
     })

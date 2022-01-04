@@ -33,6 +33,7 @@ export class SkippedPacketBuffer {
       this.buffer[position] = pkt
     } catch (err) {
       if (err instanceof IOException) {
+        // eslint-disable-next-line no-console
         console.error(`seq: ${sequenceNumber} exp: ${this.expectedSequenceNumber}`)
         err.printStackTrace()
         this.dumpBuffer(`oob: ${err.getMessage()}`)
@@ -138,6 +139,7 @@ export class SkippedPacketBuffer {
   }
 
   dumpBuffer(string: string) {
+    // eslint-disable-next-line no-console
     console.log('dumping buffer' + string)
   }
 }

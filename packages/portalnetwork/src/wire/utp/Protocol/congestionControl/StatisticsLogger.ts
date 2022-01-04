@@ -214,6 +214,7 @@ export default class UtpDataLogger implements StatisticLogger {
       if (seconds != 0) {
         sendRate = bytesLength / 1024 / seconds
       }
+      // eslint-disable-next-line no-console
       console.debug('SENDRATE: ' + sendRate + 'kB/sec')
     }
   }

@@ -3,7 +3,7 @@ import { UtpProtocol } from '..'
 import { Packet, TWO_MINUTES, _UTPSocket } from '../..'
 // import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
 
-const MIN_RTO = TWO_MINUTES
+const _MIN_RTO = TWO_MINUTES
 export default class utpWritingRunnable {
   utp: UtpProtocol
   socket: _UTPSocket
@@ -65,7 +65,7 @@ export default class utpWritingRunnable {
     return this.contentMod.length > 900 ? 900 : this.contentMod.length
   }
 
-  getNextBytes(array: Uint8Array, idx: number = 100): Uint8Array {
+  getNextBytes(array: Uint8Array, _idx: number = 100): Uint8Array {
     const next = array.subarray(0, 500)
     const rest = array.slice(500)
     log(`sending ${next.length} bytes...`)
