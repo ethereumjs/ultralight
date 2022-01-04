@@ -84,7 +84,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param db a `level` compliant database provided by the module consumer - instantiates an in-memory DB if not provided
    */
   constructor(config: IDiscv5CreateOptions, radius = 1, db?: LevelUp) {
-    // eslint-disable-next-line constructor-superb
+    // eslint-disable-next-line constructor-super
     super()
     this.client = Discv5.create(config)
     this.nodeRadius = radius

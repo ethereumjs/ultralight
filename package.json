@@ -14,7 +14,8 @@
     "start-proxy": "npm run run-proxy -w=proxy",
     "start-browser-client": "npm run start -w=browser-client",
     "start-cli": "npm run start -w=cli",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
+    "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.16.5",
