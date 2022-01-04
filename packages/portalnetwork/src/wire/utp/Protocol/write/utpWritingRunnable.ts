@@ -1,28 +1,23 @@
-
-import { log } from "debug";
-import { UtpProtocol } from "..";
-import {
-  Packet,
-  TWO_MINUTES,
-  _UTPSocket,
-} from "../..";
+import { log } from 'debug'
+import { UtpProtocol } from '..'
+import { Packet, TWO_MINUTES, _UTPSocket } from '../..'
 // import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
 
-const MIN_RTO = TWO_MINUTES;
+const MIN_RTO = TWO_MINUTES
 export default class utpWritingRunnable {
-  utp: UtpProtocol;
-  socket: _UTPSocket;
-  content: Uint8Array;
-  lastAckReceived: Packet;
-  contentMod: Uint8Array;
-  writing: boolean;
-  finished: boolean;
-  canSendNextPacket: boolean;
+  utp: UtpProtocol
+  socket: _UTPSocket
+  content: Uint8Array
+  lastAckReceived: Packet
+  contentMod: Uint8Array
+  writing: boolean
+  finished: boolean
+  canSendNextPacket: boolean
   // timedoutPackets: Packet[];
   // waitingTime: number;
   // rto: number;
-  timestamp: number;
-  sentBytes: Map<Packet, Uint8Array>;
+  timestamp: number
+  sentBytes: Map<Packet, Uint8Array>
   constructor(
     utp: UtpProtocol,
     socket: _UTPSocket,
@@ -30,57 +25,57 @@ export default class utpWritingRunnable {
     content: Uint8Array,
     timestamp: number
   ) {
-    this.socket = socket;
-    this.utp = utp;
-    this.timestamp = timestamp;
+    this.socket = socket
+    this.utp = utp
+    this.timestamp = timestamp
     this.content = content
-    this.contentMod = this.content;
-    this.writing = false;
-    this.finished = false;
-    this.canSendNextPacket = true;
+    this.contentMod = this.content
+    this.writing = false
+    this.finished = false
+    this.canSendNextPacket = true
     // this.timedoutPackets = [];
-    this.sentBytes = new Map<Packet, Uint8Array>();
+    this.sentBytes = new Map<Packet, Uint8Array>()
     // this.waitingTime = 0;
     // this.rto = 0
-    this.lastAckReceived = synAck;
+    this.lastAckReceived = synAck
   }
 
   async start(): Promise<void> {
-    log(`starting to write`, this.content);
-    this.writing = this.content && true;
+    log(`starting to write`, this.content)
+    this.writing = this.content && true
     while (this.writing) {
       while (this.canSendNextPacket && !this.finished) {
         // let size = this.nextPacketSize();
-        let bytes = this.getNextBytes(this.contentMod);
+        const bytes = this.getNextBytes(this.contentMod)
         this.socket.sendDataPacket(bytes).then((p: Packet) => {
-          this.sentBytes.set(p, bytes);
-        });
+          this.sentBytes.set(p, bytes)
+        })
         if (this.contentMod.length == 0) {
-            this.canSendNextPacket = false
-            this.finished = true;
-            this.writing = false;
-            log("All Data Written");
-            return
+          this.canSendNextPacket = false
+          this.finished = true
+          this.writing = false
+          log('All Data Written')
+          return
         }
       }
     }
   }
 
   nextPacketSize(): number {
-    return this.contentMod.length > 900 ? 900 : this.contentMod.length;
+    return this.contentMod.length > 900 ? 900 : this.contentMod.length
   }
 
   getNextBytes(array: Uint8Array, idx: number = 100): Uint8Array {
-    let next = array.subarray(0, 500);
-    let rest = array.slice(500)
-    log(`sending ${next.length} bytes...`);
+    const next = array.subarray(0, 500)
+    const rest = array.slice(500)
+    log(`sending ${next.length} bytes...`)
     log(`${rest.length} bytes left`)
-    this.setContentMod(rest);
-    return next;
+    this.setContentMod(rest)
+    return next
   }
 
   setContentMod(subArray: Uint8Array) {
-    this.contentMod = subArray;
+    this.contentMod = subArray
   }
 
   // getNextPacket(): Packet {

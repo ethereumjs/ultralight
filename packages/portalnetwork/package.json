@@ -9,7 +9,9 @@
     "docs": "typedoc src/index.ts",
     "tape": "tape -r  ts-node/register",
     "test": "tape -r  ts-node/register 'test/!(integration)/**/*.spec.ts'",
-    "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'"
+    "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'",
+    "lint": "../../config/cli/lint.sh",
+    "lint:fix": "../../config/cli/lint-fix.sh"
   },
   "types": "dist/index.d.ts",
   "author": "acolytec3",
@@ -30,6 +32,8 @@
     "bn.js": "^5.2.0"
   },
   "devDependencies": {
+    "eslint": "^8.6.0",
+    "prettier": "^2.5.1",
     "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",

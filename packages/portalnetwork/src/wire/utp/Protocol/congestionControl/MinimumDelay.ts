@@ -1,23 +1,23 @@
-import { MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC } from "../..";
+import { MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC } from '../..'
 
 export default class MinimumDelay {
-  DELAY_SAMPLE_SIZE = 50;
-  ourTimeStamp: number;
-  minDelay: number;
-  theirTimeStamp: number;
-  theirMinDelay: number;
-  ourLastDelays: number[];
+  DELAY_SAMPLE_SIZE = 50
+  ourTimeStamp: number
+  minDelay: number
+  theirTimeStamp: number
+  theirMinDelay: number
+  ourLastDelays: number[]
 
   constructor() {
-    this.DELAY_SAMPLE_SIZE = 50;
-    this.ourTimeStamp = 0;
-    this.minDelay = 0;
-    this.theirTimeStamp = 0;
-    this.theirMinDelay = 0;
-    this.ourLastDelays = [];
+    this.DELAY_SAMPLE_SIZE = 50
+    this.ourTimeStamp = 0
+    this.minDelay = 0
+    this.theirTimeStamp = 0
+    this.theirMinDelay = 0
+    this.ourLastDelays = []
   }
   getCorrectedMinDelay() {
-    return this.minDelay;
+    return this.minDelay
   }
 
   /**
@@ -30,12 +30,12 @@ export default class MinimumDelay {
       timestamp - this.ourTimeStamp >= MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC ||
       (this.ourTimeStamp == 0 && this.minDelay == 0)
     ) {
-      this.ourTimeStamp = timestamp;
-      this.minDelay = difference;
+      this.ourTimeStamp = timestamp
+      this.minDelay = difference
     } else {
       if (difference < this.minDelay) {
-        this.ourTimeStamp = timestamp;
-        this.minDelay = difference;
+        this.ourTimeStamp = timestamp
+        this.minDelay = difference
       }
     }
   }
@@ -46,23 +46,22 @@ export default class MinimumDelay {
    */
   updateTheirDelay(theirDifference: number, timeStampNow: number): void {
     if (
-      timeStampNow - this.theirTimeStamp >=
-        MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC ||
+      timeStampNow - this.theirTimeStamp >= MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC ||
       (this.theirTimeStamp == 0 && this.theirMinDelay == 0)
     ) {
-      this.theirMinDelay = theirDifference;
-      this.theirTimeStamp = timeStampNow;
+      this.theirMinDelay = theirDifference
+      this.theirTimeStamp = timeStampNow
     } else {
       if (theirDifference < this.theirMinDelay) {
-        this.theirTimeStamp = timeStampNow;
-        this.minDelay += this.theirMinDelay - theirDifference;
-        this.theirMinDelay = theirDifference;
+        this.theirTimeStamp = timeStampNow
+        this.minDelay += this.theirMinDelay - theirDifference
+        this.theirMinDelay = theirDifference
       }
     }
   }
 
   getTheirMinDelay() {
-    return this.theirMinDelay;
+    return this.theirMinDelay
   }
 
   /**
@@ -71,9 +70,9 @@ export default class MinimumDelay {
    */
   addSample(ourDelay: number): void {
     while (this.ourLastDelays.length > this.DELAY_SAMPLE_SIZE) {
-      this.ourLastDelays.shift();
+      this.ourLastDelays.shift()
     }
-    this.ourLastDelays.push(ourDelay);
+    this.ourLastDelays.push(ourDelay)
   }
 
   /**
@@ -81,15 +80,15 @@ export default class MinimumDelay {
    * @return avg delay.
    */
   getRecentAverageDelay() {
-    let sum = 0;
+    let sum = 0
     this.ourLastDelays.forEach((delay) => {
-      sum += delay;
-    });
-    let sampleSize = this.ourLastDelays.length;
+      sum += delay
+    })
+    const sampleSize = this.ourLastDelays.length
     if (sampleSize == 0) {
-      return 0;
+      return 0
     } else {
-      return sum / sampleSize;
+      return sum / sampleSize
     }
   }
 }
