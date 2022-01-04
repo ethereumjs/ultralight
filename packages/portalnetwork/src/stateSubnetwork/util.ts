@@ -1,19 +1,16 @@
-import _BN from 'bn.js';
-const BN = _BN
-
-export const MODULO = new BN(2).pow(new BN(256))
-const MID = new BN(2).pow(new BN(255))
+export const MODULO = 2n ** 256n
+const MID = 2n ** 255n
 
 /** 
  * Calculates the distance between two ids using the distance function defined here 
  * https://github.com/ethereum/portal-network-specs/blob/master/state-network.md#distance-function
  */
-export const distance = (id1: _BN, id2: _BN): _BN => {
-    if (id1.gte(MODULO) || id2.gte(MODULO)) {
+export const distance = (id1: bigint, id2: bigint): bigint => {
+    if (id1 >= MODULO || id2 >= MODULO) {
         throw new Error('numeric representation of node id cannot be greater than 2^256')
     }
-    let diff: _BN
-    id1.gt(id2) ? diff = id1.sub(id2) : diff = id2.sub(id1)
-    diff.gt(MID) ? diff = MODULO.sub(diff) : diff
+    let diff: bigint
+    id1 > id2 ? diff = id1 - id2 : diff = id2 - id1
+    diff > MID ? diff = MODULO - diff : diff
     return diff
 }
