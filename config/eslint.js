@@ -45,7 +45,6 @@ module.exports = {
     'no-redeclare': 'off',
     '@typescript-eslint/no-redeclare': ['error'],
     'no-case-declarations': 'warn',
-    'constructor-super': 'off'
   },
   parserOptions: {
     sourceType: 'module',
