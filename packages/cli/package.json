@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "engines": {
-    "node": "^15"
+    "node": "^16"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
