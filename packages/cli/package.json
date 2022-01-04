@@ -27,7 +27,9 @@
     "yargs": "^17.3.0"
   },
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts",
+    "lint": "../../config/cli/lint.sh",
+    "lint:fix": "../../config/cli/lint-fix.sh"
   },
   "author": "acolytec3",
   "license": "MIT"
