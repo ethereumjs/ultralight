@@ -86,8 +86,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     super()
     this.client = Discv5.create(config)
     this.nodeRadius = radius
-    this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId, 5)
-    this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId, 5)
+    this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId)
+    this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId)
     this.client.on('talkReqReceived', this.onTalkReq)
     this.client.on('talkRespReceived', this.onTalkResp)
     this.client.on('sessionEnded', (srcId) => {
