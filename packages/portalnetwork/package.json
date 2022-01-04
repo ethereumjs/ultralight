@@ -20,17 +20,12 @@
     "@chainsafe/ssz": "^0.8.19",
     "@ethereumjs/block": "^3.6.0",
     "@types/levelup": "^4.3.3",
-    "bn.js": "^5.2.0",
     "debug": "^4.3.2",
     "level-mem": "^6.0.1",
     "strict-event-emitter-types": "^2.0.0",
     "tape": "^5.3.1"
   },
-  "peerDependencies": {
-    "bn.js": "^5.2.0"
-  },
   "devDependencies": {
-    "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
     "nyc": "^15.1.0",
