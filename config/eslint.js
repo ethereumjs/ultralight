@@ -13,7 +13,8 @@ module.exports = {
     'prettier.config.js',
     'typedoc.js',
     'packages/discv5/',
-    'docs'
+    'docs',
+    'test/'
   ],
   extends: ['eslint:recommended'],
   rules: {
