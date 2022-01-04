@@ -13,7 +13,7 @@ module.exports = {
     'prettier.config.js',
     'typedoc.js',
     'packages/discv5/',
-    'packages/brwoser-client',
+    'packages/browser-client',
     'docs',
     'test/'
   ],
