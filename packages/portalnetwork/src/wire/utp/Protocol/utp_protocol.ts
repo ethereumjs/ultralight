@@ -74,7 +74,7 @@ export class UtpProtocol {
     return this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 
-  async handleSynPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
+  async handleSynPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
     log(`Received incoming ST_SYN packet...uTP connection requested by ${remoteAddr}`)
     // Creates a new socket for remoteAddr
     const socket = new _UTPSocket(this, remoteAddr, 'writing')
@@ -90,7 +90,7 @@ export class UtpProtocol {
     await this.sockets[remoteAddr].handleIncomingConnectionRequest(packet)
   }
 
-  async handleStatePacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
+  async handleStatePacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
     // STATE packets, also known as ACK packets, are sent as response to SYN or DATA packets
     // And in some cases to STATE or FIN packets.
     log('Received ST_STATE packet from ' + remoteAddr)
@@ -98,7 +98,7 @@ export class UtpProtocol {
     // Socket will decode and process packet
     this.sockets[remoteAddr].handleStatePacket(packet)
   }
-  async handleFinPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<Uint8Array> {
+  async handleFinPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<Uint8Array> {
     // FIN packet is sent when sending node has sent all DATA packets.
     log(
       'Received ST_FIN packet from ' +
@@ -123,7 +123,7 @@ export class UtpProtocol {
     return compiledData
   }
 
-  async handleDataPacket(packet: Packet, remoteAddr: string, msgId: bigint): Promise<void> {
+  async handleDataPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
     // Socket will read seqNr from Packet Header.
     // If packet arrived in expected order, will respond with ACK (STATE Packet)
     // If packet arrived out of order, will respond with SELECTIVE ACK (STATE Packet)
@@ -138,7 +138,7 @@ export class UtpProtocol {
     await this.sockets[remoteAddr].handleDataPacket(packet)
   }
 
-  async handleResetPacket(packet: Packet, remoteAddr: string, msgId: bigint) {
+  async handleResetPacket(_packet: Packet, remoteAddr: string, _msgId: bigint) {
     // Closes socket (deletes from registry)
     delete this.sockets[remoteAddr]
     delete this.contents[remoteAddr]

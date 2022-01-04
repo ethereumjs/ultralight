@@ -35,13 +35,13 @@ export default class BlockingQueue {
     return p.utpPacket.header.seqNr === this.currentAckNumber + 1
   }
 
-  ack(ack_nr: number) {
+  ack(_ack_nr: number) {
     this.socket.sendAckPacket()
   }
 
-  selectiveAck(ack_nr: number) {}
+  selectiveAck(_ack_nr: number) {}
 
-  alreadyAcked(p: UtpPacketDTO): boolean {
+  alreadyAcked(_p: UtpPacketDTO): boolean {
     return true
   }
 

@@ -6,6 +6,36 @@ import { EXTENSION } from '..'
 
 const log = debug('<uTP>')
 
+export function packetToBuffer(packet: Packet): Buffer {
+  const buffer = Buffer.alloc(packet.header.length)
+  const p = packet.header.pType.toString(16)
+  const v = packet.header.version.toString(16)
+  const pv = p + v
+  const typeAndVer = parseInt(pv, 16)
+
+  buffer.writeUInt8(typeAndVer, 0)
+  buffer.writeUInt8(EXTENSION, 1)
+  buffer.writeUInt16BE(packet.header.connectionId, 2)
+  buffer.writeUInt32BE(packet.header.timestamp, 4)
+  buffer.writeUInt32BE(packet.header.timestampDiff as number, 8)
+  buffer.writeUInt32BE(packet.header.wndSize as number, 12)
+  buffer.writeUInt16BE(packet.header.seqNr, 16)
+  buffer.writeUInt16BE(packet.header.ackNr, 18)
+  if (packet.header.extension === 1) {
+    const p = packet.header as SelectiveAckHeader
+    buffer.writeUInt8(p.selectiveAckExtension.type, 20)
+    buffer.writeUInt8(p.selectiveAckExtension.len, 21)
+    Array.from([...p.selectiveAckExtension.bitmask.values()]).forEach((uint32) => {
+      buffer.writeUInt32BE(uint32, buffer.length - 1)
+    })
+  }
+
+  if (packet.payload) {
+    return Buffer.concat([buffer, Buffer.from(packet.payload)])
+  }
+  return buffer
+}
+
 export class Packet {
   header: PacketHeader | SelectiveAckHeader
   payload: Uint8Array
@@ -35,7 +65,7 @@ export function createSynPacket(rcvConnectionId: Uint16, seqNr: Uint16, ackNr?: 
     pType: PacketType.ST_SYN,
     connectionId: rcvConnectionId,
     seqNr: seqNr,
-    ackNr: ackNr || 0,
+    ackNr: ackNr ?? 0,
   })
   log('Creating ST_SYN Packet...')
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array() })
@@ -141,8 +171,8 @@ export function bufferToPacket(buffer: Buffer): Packet {
   const ptandver = buffer[0].toString(16)
   const ver = ptandver[1]
   const version = parseInt(ver, 16)
-  const extension = buffer.readUInt8(1)
-  let packet: Packet
+  //const extension = buffer.readUInt8(1)
+  //let packet: Packet
   // if (extension === 1) {
   //   let size = buffer.readUInt8(21);
   //   packet = new Packet({
@@ -165,7 +195,7 @@ export function bufferToPacket(buffer: Buffer): Packet {
   // }
 
   // else {
-  packet = new Packet({
+  const packet = new Packet({
     header: new PacketHeader({
       pType: buffer[0] >> 4,
       version: version,
@@ -181,35 +211,6 @@ export function bufferToPacket(buffer: Buffer): Packet {
   })
 
   return packet
-}
-export function packetToBuffer(packet: Packet): Buffer {
-  const buffer = Buffer.alloc(packet.header.length)
-  const p = packet.header.pType.toString(16)
-  const v = packet.header.version.toString(16)
-  const pv = p + v
-  const typeAndVer = parseInt(pv, 16)
-
-  buffer.writeUInt8(typeAndVer, 0)
-  buffer.writeUInt8(EXTENSION, 1)
-  buffer.writeUInt16BE(packet.header.connectionId, 2)
-  buffer.writeUInt32BE(packet.header.timestamp, 4)
-  buffer.writeUInt32BE(packet.header.timestampDiff as number, 8)
-  buffer.writeUInt32BE(packet.header.wndSize as number, 12)
-  buffer.writeUInt16BE(packet.header.seqNr, 16)
-  buffer.writeUInt16BE(packet.header.ackNr, 18)
-  if (packet.header.extension === 1) {
-    const p = packet.header as SelectiveAckHeader
-    buffer.writeUInt8(p.selectiveAckExtension.type, 20)
-    buffer.writeUInt8(p.selectiveAckExtension.len, 21)
-    Array.from([...p.selectiveAckExtension.bitmask.values()]).forEach((uint32) => {
-      buffer.writeUInt32BE(uint32, buffer.length - 1)
-    })
-  }
-
-  if (packet.payload) {
-    return Buffer.concat([buffer, Buffer.from(packet.payload)])
-  }
-  return buffer
 }
 
 export * from './PacketTyping'

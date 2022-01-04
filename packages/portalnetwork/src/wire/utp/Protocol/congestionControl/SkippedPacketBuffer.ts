@@ -1,5 +1,5 @@
 import { UINT16MAX } from '../..'
-import { ArrayIndexOutOfBoundsException, IOException } from '../../Utils/exceptions'
+import { IOException } from '../../Utils/exceptions'
 import { UtpPacketDTO } from '../../Packets/UtpPacketDTO'
 import { SelectiveAckHeaderExtension } from '../../Packets/Extentions'
 

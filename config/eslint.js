@@ -47,6 +47,7 @@ module.exports = {
     'prettier/prettier': 'error',
     'no-redeclare': 'off',
     '@typescript-eslint/no-redeclare': ['error'],
+    'no-case-declarations': 'warn'
   },
   parserOptions: {
     sourceType: 'module',

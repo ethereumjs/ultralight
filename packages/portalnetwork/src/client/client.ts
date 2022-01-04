@@ -2,7 +2,6 @@ import {
   Discv5,
   ENR,
   EntryStatus,
-  fromHex,
   IDiscv5CreateOptions,
   log2Distance,
   NodeId,
@@ -607,7 +606,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
     const id = randUint16()
-    const connectionId = await this.uTP.initiateConnectionRequest(srcId, id).then((res) => {
+    const connectionId = await this.uTP.initiateConnectionRequest(srcId, id).then((_res) => {
       return this.uTP.sockets[srcId].sndConnectionId
     })
     const payload: AcceptMessage = {
@@ -639,27 +638,29 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (value.length === 0) {
       // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
       switch (toHexString(message.protocol)) {
-        case SubNetworkIds.HistoryNetwork: {
-          const ENRs = this.historyNetworkRoutingTable.nearest(
-            getContentIdFromSerializedKey(decodedContentMessage.contentKey),
-            1
-          )
-          this.log(`Found ${ENRs.length} closer to content than us`)
-          const encodedEnrs = ENRs.map((enr) =>
-            enr.nodeId !== srcId ? enr.encode() : undefined
-          ).filter((enr) => enr !== undefined)
-          if (encodedEnrs.length > 0) {
-            // @ts-ignore
-            const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
-            this.client.sendTalkResp(
-              srcId,
-              message.id,
-              Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
+        case SubNetworkIds.HistoryNetwork:
+          {
+            const ENRs = this.historyNetworkRoutingTable.nearest(
+              getContentIdFromSerializedKey(decodedContentMessage.contentKey),
+              1
             )
-          } else {
-            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+            this.log(`Found ${ENRs.length} closer to content than us`)
+            const encodedEnrs = ENRs.map((enr) =>
+              enr.nodeId !== srcId ? enr.encode() : undefined
+            ).filter((enr) => enr !== undefined)
+            if (encodedEnrs.length > 0) {
+              // @ts-ignore
+              const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
+              this.client.sendTalkResp(
+                srcId,
+                message.id,
+                Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
+              )
+            } else {
+              this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+            }
           }
-        }
+          break
         default:
           this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }

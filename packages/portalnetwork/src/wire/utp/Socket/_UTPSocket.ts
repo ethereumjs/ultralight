@@ -99,7 +99,7 @@ export class _UTPSocket extends EventEmitter {
     log(`Setting Connection State: SynRecv`)
     this.state = ConnectionState.SynRecv
     log(`Sending SYN ACK to accept connection request...`)
-    await this.sendSynAckPacket().then((res) => {
+    await this.sendSynAckPacket().then(() => {
       log(`Incrementing seqNr from ${this.seqNr - 1} to ${this.seqNr}`)
       // Increments seqNr (***????????*****)
       // this.incrementSequenceNumber();
@@ -112,7 +112,7 @@ export class _UTPSocket extends EventEmitter {
     this.setState(ConnectionState.Connected)
     if (this.reader) {
       log(`Sending SYN ACK ACK`)
-      await this.sendAckPacket().then((res) => {
+      await this.sendAckPacket().then(() => {
         log(`SYN ACK ACK sent...Reader listening for DATA stream...`)
       })
     } else if (this.writer) {
@@ -130,11 +130,11 @@ export class _UTPSocket extends EventEmitter {
     this.reader.addPacket(packet).then(async (expected) => {
       const sn = this.seqNr
       expected
-        ? await this.sendAckPacket().then((res) => {
+        ? await this.sendAckPacket().then(() => {
             log(`ACK sent.  seqNr: ${sn} ackNr: ${this.ackNr}`)
             log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`)
           })
-        : await this.sendSelectiveAckPacket(packet).then((res) => {
+        : await this.sendSelectiveAckPacket(packet).then(() => {
             log(`Packet Arrived Out of Order.  seqNr: ${sn} ackNr: ${this.ackNr}`)
             log(`Sending Selective Ack`)
           })
@@ -157,7 +157,7 @@ export class _UTPSocket extends EventEmitter {
         log(`SYN ACK ACK Received, seqNr: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`)
         log(`Starting uTP data stream...`)
         this.content &&
-          (await this.write(this.content, packet).then((res) => {
+          (await this.write(this.content, packet).then(() => {
             log(`Finishing uTP data stream...`)
           }))
         // a STATE packet will ACK the FIN packet to close connection.
@@ -175,7 +175,7 @@ export class _UTPSocket extends EventEmitter {
     this.setState(ConnectionState.GotFin)
     this.updateSocketFromPacketHeader(packet)
     log(`Sending FIN ACK packet.`)
-    await this.sendAckPacket().then((res) => {
+    await this.sendAckPacket().then(() => {
       log(`Waiting for 0 in-flight packets.`)
       this.readerContent = this.reader.run()
       log(`Packet payloads compiled`)
@@ -187,7 +187,7 @@ export class _UTPSocket extends EventEmitter {
   // Send SELECTIVE ACK
   // Already ACKED packets
 
-  async sendSelectiveAck(packet: Packet) {
+  async sendSelectiveAck(_packet: Packet) {
     const _packet = createAckPacket(
       this.seqNr++,
       this.sndConnectionId,
@@ -202,9 +202,9 @@ export class _UTPSocket extends EventEmitter {
     log(`Incrementing SeqNre from ${this.seqNr - 1} to ${this.seqNr}`)
   }
 
-  async sendSelectiveAckPacket(packet: Packet) {}
+  async sendSelectiveAckPacket(_packet: Packet) {}
 
-  ackAlreadyAcked(headerExtension: unknown, timestampDiff: number, spaceLeftInBuffer: number) {}
+  //ackAlreadyAcked(headerExtension: unknown, timestampDiff: number, spaceLeftInBuffer: number) {}
 
   async sendAckPacket(): Promise<void> {
     const packet = createAckPacket(

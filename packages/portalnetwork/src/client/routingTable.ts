@@ -2,7 +2,7 @@ import { KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
 
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   private radiusMap: Map<NodeId, bigint>
-  constructor(nodeId: NodeId, kBucketSize: number) {
+  constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
   }

@@ -140,7 +140,7 @@ export default class OutPacketBuffer {
    * @throws SocketException
    */
   public getPacketsToResend(maxResend: number): UtpPacketDTO[] {
-    const currentTime = Bytes32TimeStamp()
+    // const currentTime = Bytes32TimeStamp()
     const unacked: UtpPacketDTO[] = []
     this.buffer.forEach((pkt: UtpPacketDTO) => {
       if (!pkt.isPacketAcked) {
@@ -167,7 +167,7 @@ export default class OutPacketBuffer {
 
   private updateResendTimeStamps(unackedPkt: UtpPacketDTO): void {
     unackedPkt.utpPacket.header.timestamp = Bytes32TimeStamp()
-    const newBytes: Uint8Array = packetToBuffer(unackedPkt.utpPacket)
+    //const newBytes: Uint8Array = packetToBuffer(unackedPkt.utpPacket)
     // TB: why create new datagram packet, can't it be reused?
     // TODO: ukackedPacket.datagram.getData()[x] = newtimestamp[0]
     // 		 ukackedPacket.datagram.getData()[x + 1] = newtimestamp[1]

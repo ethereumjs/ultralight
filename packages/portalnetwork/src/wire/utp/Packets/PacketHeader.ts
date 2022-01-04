@@ -17,11 +17,11 @@ export class PacketHeader {
 
   constructor(options: IPacketHeader) {
     this.pType = options.pType
-    this.version = options.version || VERSION
-    this.extension = options.extension || 0
+    this.version = options.version ?? VERSION
+    this.extension = options.extension ?? 0
     this.connectionId = options.connectionId
     this.timestamp = performance.now()
-    this.timestampDiff = options.timestampDiff || 0
+    this.timestampDiff = options.timestampDiff ?? 0
     this.wndSize = DEFAULT_WINDOW_SIZE
     this.seqNr = options.seqNr
     this.ackNr = options.ackNr
