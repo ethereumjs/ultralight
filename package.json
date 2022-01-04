@@ -16,6 +16,7 @@
     "start-cli": "npm run start -w=cli"
   },
   "devDependencies": {
+    "@babel/eslint-parser": "^7.16.5",
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "eslint-formatter-codeframe": "^7.32.1",
     "eslint-plugin-implicit-dependencies": "^1.1.0",
