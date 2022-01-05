@@ -14,7 +14,8 @@ module.exports = {
     'typedoc.js',
     'packages/discv5/',
     'docs',
-    'test/'
+    'test/',
+    '.eslintrc.js'
   ],
   extends: ['eslint:recommended'],
   rules: {
