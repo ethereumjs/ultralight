@@ -1,9 +1,9 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import tape from 'tape'
 import { Packet, PacketHeader, PacketType, SelectiveAckHeader } from '../../src/wire/utp/Packets'
 
 tape('uTP encoding tests', (t) => {
-    /*   t.test('SYN packet encoding test', (st) => {
+    t.test('SYN packet encoding test', (st) => {
            const synPacketHeader = new PacketHeader({
                pType: PacketType.ST_SYN,
                version: 1,
@@ -36,7 +36,7 @@ tape('uTP encoding tests', (t) => {
            const encodedPacket = ackPacket.encodePacket()
            st.strictEquals(toHexString(encodedPacket), "0x21002741005e885e36a7e8830010000041a72e6d", 'successfully encoded ACK packet')
            st.end()
-       })*/
+       })
     t.test('ACK packet with selective ACK encoding test', (st) => {
         const selectiveAckPacketHeader = new SelectiveAckHeader({
             pType: PacketType.ST_STATE,
@@ -50,12 +50,11 @@ tape('uTP encoding tests', (t) => {
             ackNr: 11885,
         }, Uint8Array.from([1, 0, 0, 128]))
         const selectiveAckPacket = new Packet({ header: selectiveAckPacketHeader, payload: Uint8Array.from([]) })
-        console.log('sel ack packet', Uint8Array.from(selectiveAckPacketHeader.encodeHeaderStream()))
         const encodedPacket = selectiveAckPacket.encodePacket()
-        st.strictEquals(Uint8Array.from(encodedPacket), (fromHexString("0x21012741005e885e36a7e8830010000041a72e6d000401000080")), "successfully encoded selective ACK packet")
+        st.strictEquals(toHexString(encodedPacket), "0x21012741005e885e36a7e8830010000041a72e6d000401000080", "successfully encoded selective ACK packet")
         st.end()
     })
-    /*
+
     t.test('DATA packet encoding test', (st) => {
         const dataPacketHeader = new PacketHeader({
             pType: PacketType.ST_DATA,
@@ -106,5 +105,5 @@ tape('uTP encoding tests', (t) => {
         const encodedPacket = resetPacket.encodePacket()
         st.strictEquals(toHexString(encodedPacket), "0x3100f34d2cc6cfbb0000000000000000d87541a7", 'successfully encoded RESET packet')
         st.end()
-    })*/
+    })
 })

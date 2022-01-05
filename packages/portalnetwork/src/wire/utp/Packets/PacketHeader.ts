@@ -66,14 +66,12 @@ export class SelectiveAckHeader extends PacketHeader {
     buffer.writeUInt32BE(this.timestampDiff as number, 8)
     buffer.writeUInt32BE(this.wndSize as number, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
-    buffer.writeUInt16BE(this.seqNr, 18)
+    buffer.writeUInt16BE(this.ackNr, 18)
     buffer.writeUInt8(this.selectiveAckExtension.type, 20)
     buffer.writeUInt8(this.selectiveAckExtension.len, 21)
-    console.log('before', Uint8Array.from(buffer))
     this.selectiveAckExtension.bitmask.forEach((value, idx) => {
       buffer.writeUInt8(value, 22 + idx)
     })
-    console.log('after', Uint8Array.from(buffer))
     return buffer
   }
 }

@@ -1,4 +1,3 @@
-export const EXTENSION = 0
 export const VERSION = 1
 export const MAX_UINT_8 = 0xff
 export const MAX_BYTE = MAX_UINT_8
