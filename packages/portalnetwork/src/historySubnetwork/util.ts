@@ -1,7 +1,7 @@
-import SHA256 from "@chainsafe/as-sha256";
-import { toHexString } from "@chainsafe/ssz";
-import { HistoryNetworkContentKey, HistoryNetworkContentKeyUnionType } from ".";
-import { HistoryNetworkContentTypes } from "./types";
+import SHA256 from '@chainsafe/as-sha256'
+import { toHexString } from '@chainsafe/ssz'
+import { HistoryNetworkContentKey, HistoryNetworkContentKeyUnionType } from '.'
+import { HistoryNetworkContentTypes } from './types'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -9,16 +9,22 @@ import { HistoryNetworkContentTypes } from "./types";
  * @param contentType a number identifying the type of content (block header, block body, receipt)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getContentId = (contentKey: HistoryNetworkContentKey, contentType: HistoryNetworkContentTypes) => {
-    const encodedKey = HistoryNetworkContentKeyUnionType.serialize({ selector: contentType, value: contentKey })
-    return toHexString(SHA256.digest(encodedKey))
+export const getContentId = (
+  contentKey: HistoryNetworkContentKey,
+  contentType: HistoryNetworkContentTypes
+) => {
+  const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
+    selector: contentType,
+    value: contentKey,
+  })
+  return toHexString(SHA256.digest(encodedKey))
 }
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content key
- * @param contentKey a serialized content key 
+ * @param contentKey a serialized content key
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
 export const getContentIdFromSerializedKey = (contentKey: Uint8Array) => {
-    return toHexString(SHA256.digest(contentKey))
+  return toHexString(SHA256.digest(contentKey))
 }

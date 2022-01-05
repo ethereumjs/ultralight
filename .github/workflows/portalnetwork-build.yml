@@ -1,7 +1,7 @@
 name: PortalNetwork
 on:
   push:
-    branches: [master, add-CI-for-tests]
+    branches: [master]
     tags: ['*']
   pull_request:
     types: [opened, reopened, synchronize]
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [14]
+        node-version: [16]
     steps:
       - uses: actions/checkout@v2
 
@@ -28,10 +28,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Use npm v7 for workspaces support
-        run: npm i -g npm@7
-
-      - run: npm i 
+      - run: npm i
         working-directory: ${{ github.workspace }}
 
+      - run: npm run lint
       - run: npm run test
