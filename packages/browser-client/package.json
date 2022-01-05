@@ -23,7 +23,9 @@
     "start": "craco start",
     "build-app": "craco build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "../../config/cli/lint.sh",
+    "lint:fix": "../../config/cli/lint-fix.sh"
   },
   "browserslist": {
     "production": [
