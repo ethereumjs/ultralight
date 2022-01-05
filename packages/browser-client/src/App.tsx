@@ -88,7 +88,7 @@ export const App = () => {
       rad = parseInt(radius)
       if (rad < 0) return
     } catch (err) {
-      console.log(err)
+      alert('something went wrong setting the radius')
       return
     }
     setRadius('')

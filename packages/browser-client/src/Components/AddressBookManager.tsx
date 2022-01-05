@@ -5,6 +5,7 @@ import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySub
 import { SubNetworkIds } from 'portalnetwork/dist/wire'
 import { randUint16 } from 'portalnetwork/dist/wire/utp'
 import React from 'react'
+import { toHexString } from './ShowInfo'
 
 type NodeManagerProps = {
   portal: PortalNetwork
@@ -62,7 +63,13 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
       value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), 'hex') },
     })
     const res = await portal.sendFindContent(nodeId, encodedContentKey, network)
-    res instanceof Uint8Array && console.log(Buffer.from(res).toString('hex'))
+    res instanceof Uint8Array &&
+      toast({
+        title: 'Found what we were looking for',
+        description: toHexString(res),
+        status: 'success',
+        duration: 3000,
+      })
   }
 
   const handleOffer = (nodeId: string) => {
