@@ -24,17 +24,12 @@ export function packetToBuffer(packet: Packet): Buffer {
     const p = packet.header as SelectiveAckHeader
     buffer.writeUInt8(p.selectiveAckExtension.type, 20)
     buffer.writeUInt8(p.selectiveAckExtension.len, 21)
-    p.selectiveAckExtension.bitmask.forEach((uint8) => {
-      buffer.writeUInt8(uint8, buffer.length - 1)
+    p.selectiveAckExtension.bitmask.forEach((uint8, idx) => {
+      buffer.writeUInt8(uint8, 22 + idx)
     })
   }
-
   if (packet.payload) {
-    return Buffer.concat([
-      buffer.slice(0, 2),
-      packet.header.encodeHeaderStream().slice(2),
-      Buffer.from(packet.payload),
-    ])
+    return Buffer.concat([buffer, Buffer.from(packet.payload)])
   }
   return buffer
 }
