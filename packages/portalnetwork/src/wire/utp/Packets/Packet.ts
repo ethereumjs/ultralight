@@ -25,8 +25,8 @@ export function packetToBuffer(packet: Packet): Buffer {
     const p = packet.header as SelectiveAckHeader
     buffer.writeUInt8(p.selectiveAckExtension.type, 20)
     buffer.writeUInt8(p.selectiveAckExtension.len, 21)
-    Array.from([...p.selectiveAckExtension.bitmask.values()]).forEach((uint32) => {
-      buffer.writeUInt32BE(uint32, buffer.length - 1)
+    p.selectiveAckExtension.bitmask.forEach((uint8) => {
+      buffer.writeUInt8(uint8, buffer.length - 1)
     })
   }
 

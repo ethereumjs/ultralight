@@ -12,7 +12,7 @@ export class UtpHeaderExtension {
 
 export class SelectiveAckHeaderExtension extends UtpHeaderExtension {
   constructor(bitmask: Uint8Array) {
-    super(1, bitmask)
+    super(0, bitmask)
     this.bitmask = bitmask
   }
 
