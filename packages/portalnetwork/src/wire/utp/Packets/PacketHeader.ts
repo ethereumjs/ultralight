@@ -1,4 +1,4 @@
-import { Uint16, Uint32, Uint8 } from '..'
+import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '..'
 import { VERSION, DEFAULT_WINDOW_SIZE } from '../Utils/constants'
 import { SelectiveAckHeaderExtension } from './Extentions'
 import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping'
@@ -20,7 +20,7 @@ export class PacketHeader {
     this.version = options.version ?? VERSION
     this.extension = options.extension ?? 0
     this.connectionId = options.connectionId
-    this.timestamp = options.timestamp ?? performance.now()
+    this.timestamp = options.timestamp ?? Bytes32TimeStamp()
     this.timestampDiff = options.timestampDiff ?? 0
     this.wndSize = options.wndSize ?? DEFAULT_WINDOW_SIZE
     this.seqNr = options.seqNr
