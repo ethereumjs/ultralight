@@ -4,12 +4,12 @@ import { Duration, Miliseconds } from '../Socket/socketTyping'
 export function MicrosecondTimeStamp(): number {
   // this is only a millisecond timestamp
   // process.hrtime.bigint() doesn't seem to work in the browser?
-  const time = performance.now()
+  const time = Date.now()
   return time * 1000
 }
 
 export function Bytes32TimeStamp(): number {
-  return Number(MicrosecondTimeStamp()) & 0xffff
+  return MicrosecondTimeStamp() & 0xffff
 }
 
 export function randUint16(): Uint16 {

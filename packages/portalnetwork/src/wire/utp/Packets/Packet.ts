@@ -2,6 +2,7 @@ import { protocolVersion, PacketType, IPacketOptions } from './PacketTyping'
 import { PacketHeader } from './PacketHeader'
 import { SelectiveAckHeader, Uint16, Uint32 } from '.'
 import { debug } from 'debug'
+import { Bytes32TimeStamp } from '..'
 
 const log = debug('<uTP>')
 
@@ -157,7 +158,7 @@ export function createFinPacket(connectionId: Uint16, ackNr: number, wndSize: nu
     version: protocolVersion,
     extension: 0,
     connectionId: connectionId,
-    timestamp: performance.now(),
+    timestamp: Bytes32TimeStamp(),
     timestampDiff: 0,
     wndSize: wndSize,
     seqNr: Number('eof_pkt') & 0xffff,
