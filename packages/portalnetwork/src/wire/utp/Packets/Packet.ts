@@ -16,8 +16,8 @@ export function packetToBuffer(packet: Packet): Buffer {
   buffer.writeUInt8(packet.header.extension, 1)
   buffer.writeUInt16BE(packet.header.connectionId, 2)
   buffer.writeUInt32BE(packet.header.timestamp, 4)
-  buffer.writeUInt32BE(packet.header.timestampDiff as number, 8)
-  buffer.writeUInt32BE(packet.header.wndSize as number, 12)
+  buffer.writeUInt32BE(packet.header.timestampDiff, 8)
+  buffer.writeUInt32BE(packet.header.wndSize, 12)
   buffer.writeUInt16BE(packet.header.seqNr, 16)
   buffer.writeUInt16BE(packet.header.ackNr, 18)
   if (packet.header.extension === 1) {
@@ -157,7 +157,7 @@ export function createFinPacket(connectionId: Uint16, ackNr: number, wndSize: nu
     version: protocolVersion,
     extension: 0,
     connectionId: connectionId,
-    timestamp: Date.now(),
+    timestamp: performance.now(),
     timestampDiff: 0,
     wndSize: wndSize,
     seqNr: Number('eof_pkt') & 0xffff,
