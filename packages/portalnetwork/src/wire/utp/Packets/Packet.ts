@@ -2,7 +2,6 @@ import { protocolVersion, PacketType, IPacketOptions } from './PacketTyping'
 import { PacketHeader } from './PacketHeader'
 import { SelectiveAckHeader, Uint16, Uint32 } from '.'
 import { debug } from 'debug'
-import { EXTENSION } from '..'
 
 const log = debug('<uTP>')
 
@@ -14,7 +13,7 @@ export function packetToBuffer(packet: Packet): Buffer {
   const typeAndVer = parseInt(pv, 16)
 
   buffer.writeUInt8(typeAndVer, 0)
-  buffer.writeUInt8(EXTENSION, 1)
+  buffer.writeUInt8(packet.header.extension, 1)
   buffer.writeUInt16BE(packet.header.connectionId, 2)
   buffer.writeUInt32BE(packet.header.timestamp, 4)
   buffer.writeUInt32BE(packet.header.timestampDiff as number, 8)
@@ -25,11 +24,10 @@ export function packetToBuffer(packet: Packet): Buffer {
     const p = packet.header as SelectiveAckHeader
     buffer.writeUInt8(p.selectiveAckExtension.type, 20)
     buffer.writeUInt8(p.selectiveAckExtension.len, 21)
-    Array.from([...p.selectiveAckExtension.bitmask.values()]).forEach((uint32) => {
-      buffer.writeUInt32BE(uint32, buffer.length - 1)
+    p.selectiveAckExtension.bitmask.forEach((uint8, idx) => {
+      buffer.writeUInt8(uint8, 22 + idx)
     })
   }
-
   if (packet.payload) {
     return Buffer.concat([buffer, Buffer.from(packet.payload)])
   }
@@ -55,6 +53,7 @@ export class Packet {
   }
 
   encodePacket(): Buffer {
+    // TODO - bring packetToBuffer code in here and remove separate helper function?
     const buffer = packetToBuffer(this)
     return buffer
   }

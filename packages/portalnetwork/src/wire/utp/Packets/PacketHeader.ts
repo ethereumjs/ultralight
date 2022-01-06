@@ -20,9 +20,9 @@ export class PacketHeader {
     this.version = options.version ?? VERSION
     this.extension = options.extension ?? 0
     this.connectionId = options.connectionId
-    this.timestamp = performance.now()
+    this.timestamp = options.timestamp ?? performance.now()
     this.timestampDiff = options.timestampDiff ?? 0
-    this.wndSize = DEFAULT_WINDOW_SIZE
+    this.wndSize = options.wndSize ?? DEFAULT_WINDOW_SIZE
     this.seqNr = options.seqNr
     this.ackNr = options.ackNr
     this.length = 20
@@ -40,10 +40,10 @@ export class PacketHeader {
     buffer[1] = 0
     buffer.writeUInt16BE(this.connectionId, 2)
     buffer.writeUInt32BE(this.timestamp, 4)
-    buffer.writeUInt32BE(this.timestampDiff as number, 8)
-    buffer.writeUInt32BE(this.wndSize as number, 12)
+    buffer.writeUInt32BE(this.timestampDiff, 8)
+    buffer.writeUInt32BE(this.wndSize, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
-    buffer.writeUInt16BE(this.seqNr, 18)
+    buffer.writeUInt16BE(this.ackNr, 18)
     return buffer
   }
 }
@@ -53,8 +53,8 @@ export class SelectiveAckHeader extends PacketHeader {
   constructor(options: IPacketHeader, bitmask: Uint8Array) {
     super(options)
     this.extension = 1
-    this.length = this.encodeHeaderStream().length
     this.selectiveAckExtension = new SelectiveAckHeaderExtension(bitmask)
+    this.length = this.encodeHeaderStream().length
   }
 
   encodeHeaderStream(): Buffer {
@@ -66,13 +66,12 @@ export class SelectiveAckHeader extends PacketHeader {
     buffer.writeUInt32BE(this.timestampDiff as number, 8)
     buffer.writeUInt32BE(this.wndSize as number, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
-    buffer.writeUInt16BE(this.seqNr, 18)
+    buffer.writeUInt16BE(this.ackNr, 18)
     buffer.writeUInt8(this.selectiveAckExtension.type, 20)
     buffer.writeUInt8(this.selectiveAckExtension.len, 21)
-    Array.from([...this.selectiveAckExtension.bitmask.values()]).forEach((value, idx) => {
-      buffer.writeUInt32BE(value, 22 + idx * 4)
+    this.selectiveAckExtension.bitmask.forEach((value, idx) => {
+      buffer.writeUInt8(value, 22 + idx)
     })
-
     return buffer
   }
 }
