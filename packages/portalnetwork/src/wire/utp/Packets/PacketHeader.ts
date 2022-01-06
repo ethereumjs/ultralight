@@ -43,7 +43,7 @@ export class PacketHeader {
     buffer.writeUInt32BE(this.timestampDiff, 8)
     buffer.writeUInt32BE(this.wndSize, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
-    buffer.writeUInt16BE(this.seqNr, 18)
+    buffer.writeUInt16BE(this.ackNr, 18)
     return buffer
   }
 }
