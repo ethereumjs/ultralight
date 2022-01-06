@@ -87,6 +87,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // eslint-disable-next-line constructor-super
     super()
     this.client = Discv5.create(config)
+    this.on('Stream', ((id, content) => { this.handleStreamedContent(id, content) }))
     this.nodeRadius = radius
     this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId)
     this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId)
@@ -520,6 +521,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     const srcId = src.nodeId
     this.log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
+  }
+
+  private handleStreamedContent(rcvId: number, content: Uint8Array) {
+    this.db.put(rcvId, content, (err) => {
+      this.log(`Error Writing to DB: ${err}`)
+    });
   }
 
   // TODO: Decide if we actually need this message since we should never get a CONTENT message in a TALKREQ message packet
