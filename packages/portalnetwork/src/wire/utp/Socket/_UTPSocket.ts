@@ -259,7 +259,7 @@ export class _UTPSocket extends EventEmitter {
 
   async sendFinPacket(): Promise<void> {
     const packet = createFinPacket(this.sndConnectionId, this.ackNr, this.cur_window)
-    log(`Sending FIN packet ${packet} to ${this.remoteAddress}`)
+    log(`Sending FIN packet to ${this.remoteAddress}`)
     log(`seqNr ${Number('eof pkt') & 0xffff}`)
     // *******************??????????????????????**********************
     // this.incrementSequenceNumber();
