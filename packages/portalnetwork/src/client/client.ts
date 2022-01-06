@@ -524,9 +524,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private handleStreamedContent(rcvId: number, content: Uint8Array) {
-    this.db.put(rcvId, content, (err) => {
-      this.log(`Error Writing to DB: ${err}`)
-    });
+    this.log(`received all content for ${rcvId}`)
   }
 
   // TODO: Decide if we actually need this message since we should never get a CONTENT message in a TALKREQ message packet
