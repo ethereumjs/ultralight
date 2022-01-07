@@ -54,6 +54,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   uTP: UtpProtocol
   nodeRadius: number
   db: LevelUp
+  private refreshListener: any
+
   /**
    *
    * @param ip initial local IP address of node
@@ -106,8 +108,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
-    // TODO: Clean up interval on client shutdown
-    setInterval(() => this.bucketRefresh(), 30000)
+    // Start kbucket refresh on 30 second interval
+    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   log = (msg: any) => {
@@ -136,6 +138,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.client.start()
   }
 
+  /**
+   * Stops the portal network client and cleans up listeners
+   */
+  public stop = async () => {
+    await this.client.stop()
+    clearInterval(this.refreshListener)
+  }
   /**
    *
    * @param namespaces comma separated list of logging namespaces
@@ -800,6 +809,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private bucketRefresh = async () => {
+    console.log('refreshing')
     const notFullBuckets = this.historyNetworkRoutingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }

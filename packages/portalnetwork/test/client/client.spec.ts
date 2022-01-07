@@ -4,12 +4,12 @@ import td from 'testdouble'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
-import { toBuffer } from '@chainsafe/discv5'
 import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
 
 tape('Client unit tests', async (t) => {
 
     const node = await PortalNetwork.createPortalNetwork('192.168.0.1', 'ws://192.168.0.2:5050') as any
+
     t.test('node initialization/startup', async (st) => {
         st.plan(4)
         st.ok(node.client.enr.getLocationMultiaddr('udp')!.toString().includes('192.168.0.1'), 'created portal network node with correct ip address')
@@ -112,6 +112,6 @@ tape('Client unit tests', async (t) => {
         st.ok(header.number.eqn(1), 'retrieved block header based on content key')
     })
     td.reset();
-
+    await node.stop()
     t.end()
 })
