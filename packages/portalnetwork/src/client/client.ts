@@ -11,7 +11,7 @@ import { EventEmitter } from 'events'
 import debug from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
-import { shortId } from '../util'
+import { generateRandomNodeIdAtDistance, shortId } from '../util'
 import { bufferToPacket, randUint16, UtpProtocol } from '../wire/utp'
 import {
   PingPongCustomDataType,
@@ -104,17 +104,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.uTP = new UtpProtocol(this)
     this.db = db ?? level()
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
-      const distances = this.historyNetworkRoutingTable.buckets
-        .map((bucket, index) => (bucket.isEmpty() ? index : undefined))
-        .filter((distance) => distance !== undefined)
-      if (distances.length > 0) {
-        // Populate subnetwork routing table for empty buckets in the routing table
-        this.sendFindNodes(
-          enr.nodeId,
-          Uint16Array.from(distances as any),
-          SubNetworkIds.HistoryNetwork
-        )
-      }
+      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
   }
 
@@ -805,5 +795,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.updateSubnetworkRoutingTable(dstId, networkId)
       return Buffer.from([0])
     }
+  }
+
+  private bucketRefresh = async () => {
+    const notFullBuckets = this.historyNetworkRoutingTable.buckets
+      .map((bucket, idx) => {
+        return { bucket: bucket, distance: idx }
+      })
+      .filter((pair) => pair.bucket.size() < 16)
+    const randomNotFullBucket = Math.trunc(Math.random() * 10)
+    const distance = notFullBuckets[randomNotFullBucket].distance
+    const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
+    this.client.findNode(randomNodeAtDistance)
   }
 }
