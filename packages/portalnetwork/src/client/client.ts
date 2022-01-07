@@ -806,6 +806,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       })
       .filter((pair) => pair.bucket.size() < 16)
     const randomNotFullBucket = Math.trunc(Math.random() * 10)
+    this.log(`Refreshing bucket at distance ${randomNotFullBucket}`)
     const distance = notFullBuckets[randomNotFullBucket].distance
     const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
     this.client.findNode(randomNodeAtDistance)
