@@ -54,7 +54,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   uTP: UtpProtocol
   nodeRadius: number
   db: LevelUp
-  private refreshListener: any
+  private refreshListener: ReturnType<typeof setInterval>
 
   /**
    *
