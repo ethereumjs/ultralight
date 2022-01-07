@@ -22,16 +22,17 @@
     "@chainsafe/ssz": "^0.8.19",
     "@ethereumjs/block": "^3.6.0",
     "@types/levelup": "^4.3.3",
+    "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "level-mem": "^6.0.1",
     "multiaddr": "^10.0.1",
     "peer-id": "^0.16.0",
-    "strict-event-emitter-types": "^2.0.0",
-    "tape": "^5.3.1"
+    "strict-event-emitter-types": "^2.0.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
+    "tape": "^5.3.1",
     "eslint": "^8.6.0",
     "nyc": "^15.1.0",
     "prettier": "^2.5.1",
