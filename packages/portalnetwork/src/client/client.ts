@@ -106,6 +106,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
+    // TODO: Clean up interval on client shutdown
+    setInterval(() => this.bucketRefresh(), 30000)
   }
 
   log = (msg: any) => {
