@@ -4,7 +4,7 @@
 
 ## Hierarchy
 
-- `KademliaRoutingTable`
+- `PortalNetworkRoutingTable`
 
   ↳ **`StateNetworkRoutingTable`**
 
@@ -20,20 +20,23 @@
 - [ \_emitterType](StateNetworkRoutingTable.md# _emittertype)
 - [ \_eventsType](StateNetworkRoutingTable.md# _eventstype)
 - [buckets](StateNetworkRoutingTable.md#buckets)
-- [k](StateNetworkRoutingTable.md#k)
 - [localId](StateNetworkRoutingTable.md#localid)
+
+### Accessors
+
 - [size](StateNetworkRoutingTable.md#size)
 
 ### Methods
 
-- [add](StateNetworkRoutingTable.md#add)
 - [addListener](StateNetworkRoutingTable.md#addlistener)
 - [clear](StateNetworkRoutingTable.md#clear)
 - [emit](StateNetworkRoutingTable.md#emit)
 - [eventNames](StateNetworkRoutingTable.md#eventnames)
 - [getMaxListeners](StateNetworkRoutingTable.md#getmaxlisteners)
+- [getRadius](StateNetworkRoutingTable.md#getradius)
 - [getValue](StateNetworkRoutingTable.md#getvalue)
 - [getWithPending](StateNetworkRoutingTable.md#getwithpending)
+- [insertOrUpdate](StateNetworkRoutingTable.md#insertorupdate)
 - [isEmpty](StateNetworkRoutingTable.md#isempty)
 - [listenerCount](StateNetworkRoutingTable.md#listenercount)
 - [listeners](StateNetworkRoutingTable.md#listeners)
@@ -45,14 +48,16 @@
 - [prependOnceListener](StateNetworkRoutingTable.md#prependoncelistener)
 - [random](StateNetworkRoutingTable.md#random)
 - [rawListeners](StateNetworkRoutingTable.md#rawlisteners)
+- [rawValues](StateNetworkRoutingTable.md#rawvalues)
 - [remove](StateNetworkRoutingTable.md#remove)
 - [removeAllListeners](StateNetworkRoutingTable.md#removealllisteners)
 - [removeById](StateNetworkRoutingTable.md#removebyid)
+- [removeFromRadiusMap](StateNetworkRoutingTable.md#removefromradiusmap)
 - [removeListener](StateNetworkRoutingTable.md#removelistener)
 - [setMaxListeners](StateNetworkRoutingTable.md#setmaxlisteners)
 - [update](StateNetworkRoutingTable.md#update)
+- [updateRadius](StateNetworkRoutingTable.md#updateradius)
 - [updateStatus](StateNetworkRoutingTable.md#updatestatus)
-- [updateValue](StateNetworkRoutingTable.md#updatevalue)
 - [values](StateNetworkRoutingTable.md#values)
 - [valuesOfDistance](StateNetworkRoutingTable.md#valuesofdistance)
 
@@ -60,24 +65,21 @@
 
 ### constructor
 
-• **new StateNetworkRoutingTable**(`localId`, `k`)
-
-Create a new routing table.
+• **new StateNetworkRoutingTable**(`nodeId`)
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `localId` | `string` | the ID of the local node |
-| `k` | `number` | the size of each bucket (k value) |
+| Name | Type |
+| :------ | :------ |
+| `nodeId` | `string` |
 
 #### Inherited from
 
-KademliaRoutingTable.constructor
+PortalNetworkRoutingTable.constructor
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:25
+[packages/portalnetwork/src/client/routingTable.ts:5](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/routingTable.ts#L5)
 
 ## Properties
 
@@ -87,7 +89,7 @@ node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:25
 
 #### Inherited from
 
-KademliaRoutingTable. \_emitType
+PortalNetworkRoutingTable. \_emitType
 
 #### Defined in
 
@@ -101,7 +103,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable. \_emitterType
+PortalNetworkRoutingTable. \_emitterType
 
 #### Defined in
 
@@ -115,7 +117,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable. \_eventsType
+PortalNetworkRoutingTable. \_eventsType
 
 #### Defined in
 
@@ -129,25 +131,11 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.buckets
+PortalNetworkRoutingTable.buckets
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:18
-
-___
-
-### k
-
-• **k**: `number`
-
-#### Inherited from
-
-KademliaRoutingTable.k
-
-#### Defined in
-
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:16
+packages/discv5/lib/kademlia/kademlia.d.ts:17
 
 ___
 
@@ -157,52 +145,31 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.localId
+PortalNetworkRoutingTable.localId
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:15
+packages/discv5/lib/kademlia/kademlia.d.ts:16
 
-___
+## Accessors
 
 ### size
 
-• **size**: `number`
-
-#### Inherited from
-
-KademliaRoutingTable.size
-
-#### Defined in
-
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:17
-
-## Methods
-
-### add
-
-▸ **add**(`value`, `status?`): `boolean`
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `value` | `ENR` |
-| `status?` | `EntryStatus` |
+• `get` **size**(): `number`
 
 #### Returns
 
-`boolean`
+`number`
 
 #### Inherited from
 
-KademliaRoutingTable.add
+PortalNetworkRoutingTable.size
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:27
+packages/discv5/lib/kademlia/kademlia.d.ts:25
 
-___
+## Methods
 
 ### addListener
 
@@ -228,7 +195,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.addListener
+PortalNetworkRoutingTable.addListener
 
 #### Defined in
 
@@ -249,7 +216,7 @@ node_modules/strict-event-emitter-types/types/src/index.d.ts:17
 
 #### Inherited from
 
-KademliaRoutingTable.addListener
+PortalNetworkRoutingTable.addListener
 
 #### Defined in
 
@@ -267,11 +234,11 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.clear
+PortalNetworkRoutingTable.clear
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:28
+packages/discv5/lib/kademlia/kademlia.d.ts:27
 
 ___
 
@@ -299,7 +266,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.emit
+PortalNetworkRoutingTable.emit
 
 #### Defined in
 
@@ -320,7 +287,7 @@ node_modules/strict-event-emitter-types/types/src/index.d.ts:27
 
 #### Inherited from
 
-KademliaRoutingTable.emit
+PortalNetworkRoutingTable.emit
 
 #### Defined in
 
@@ -332,35 +299,17 @@ ___
 
 ▸ **eventNames**(): (`string` \| `symbol`)[]
 
-Returns an array listing the events for which the emitter has registered
-listeners. The values in the array are strings or `Symbol`s.
-
-```js
-const EventEmitter = require('events');
-const myEE = new EventEmitter();
-myEE.on('foo', () => {});
-myEE.on('bar', () => {});
-
-const sym = Symbol('symbol');
-myEE.on(sym, () => {});
-
-console.log(myEE.eventNames());
-// Prints: [ 'foo', 'bar', Symbol(symbol) ]
-```
-
-**`since`** v6.0.0
-
 #### Returns
 
 (`string` \| `symbol`)[]
 
 #### Inherited from
 
-KademliaRoutingTable.eventNames
+PortalNetworkRoutingTable.eventNames
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:614
+node_modules/@types/node/globals.d.ts:655
 
 ___
 
@@ -368,22 +317,45 @@ ___
 
 ▸ **getMaxListeners**(): `number`
 
-Returns the current max listener value for the `EventEmitter` which is either
-set by `emitter.setMaxListeners(n)` or defaults to [defaultMaxListeners](PortalNetwork.md#defaultmaxlisteners).
-
-**`since`** v1.0.0
-
 #### Returns
 
 `number`
 
 #### Inherited from
 
-KademliaRoutingTable.getMaxListeners
+PortalNetworkRoutingTable.getMaxListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:471
+node_modules/@types/node/globals.d.ts:647
+
+___
+
+### getRadius
+
+▸ **getRadius**(`nodeId`): `undefined` \| `bigint`
+
+Returns the last recorded radius of a peer with the corresponding `nodeId`
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `nodeId` | `string` | nodeId of peer for whom radius is sought |
+
+#### Returns
+
+`undefined` \| `bigint`
+
+radius of the peer corresponding to `nodeId`
+
+#### Inherited from
+
+PortalNetworkRoutingTable.getRadius
+
+#### Defined in
+
+[packages/portalnetwork/src/client/routingTable.ts:34](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/routingTable.ts#L34)
 
 ___
 
@@ -405,11 +377,11 @@ Gets the ENR if stored, does not include pending values
 
 #### Inherited from
 
-KademliaRoutingTable.getValue
+PortalNetworkRoutingTable.getValue
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:37
+packages/discv5/lib/kademlia/kademlia.d.ts:57
 
 ___
 
@@ -431,11 +403,38 @@ Gets the IEntryFull if stored, includes pending values
 
 #### Inherited from
 
-KademliaRoutingTable.getWithPending
+PortalNetworkRoutingTable.getWithPending
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:41
+packages/discv5/lib/kademlia/kademlia.d.ts:61
+
+___
+
+### insertOrUpdate
+
+▸ **insertOrUpdate**(`value`, `status`): `InsertResult`
+
+Attempts to insert or update
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `value` | `ENR` |
+| `status` | `EntryStatus` |
+
+#### Returns
+
+`InsertResult`
+
+#### Inherited from
+
+PortalNetworkRoutingTable.insertOrUpdate
+
+#### Defined in
+
+packages/discv5/lib/kademlia/kademlia.d.ts:53
 
 ___
 
@@ -449,27 +448,23 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.isEmpty
+PortalNetworkRoutingTable.isEmpty
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:26
+packages/discv5/lib/kademlia/kademlia.d.ts:26
 
 ___
 
 ### listenerCount
 
-▸ **listenerCount**(`eventName`): `number`
-
-Returns the number of listeners listening to the event named `eventName`.
-
-**`since`** v3.2.0
+▸ **listenerCount**(`type`): `number`
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event being listened for |
+| Name | Type |
+| :------ | :------ |
+| `type` | `string` \| `symbol` |
 
 #### Returns
 
@@ -477,35 +472,23 @@ Returns the number of listeners listening to the event named `eventName`.
 
 #### Inherited from
 
-KademliaRoutingTable.listenerCount
+PortalNetworkRoutingTable.listenerCount
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:561
+node_modules/@types/node/globals.d.ts:651
 
 ___
 
 ### listeners
 
-▸ **listeners**(`eventName`): `Function`[]
-
-Returns a copy of the array of listeners for the event named `eventName`.
-
-```js
-server.on('connection', (stream) => {
-  console.log('someone connected!');
-});
-console.log(util.inspect(server.listeners('connection')));
-// Prints: [ [Function] ]
-```
-
-**`since`** v0.1.26
+▸ **listeners**(`event`): `Function`[]
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `string` \| `symbol` |
 
 #### Returns
 
@@ -513,11 +496,11 @@ console.log(util.inspect(server.listeners('connection')));
 
 #### Inherited from
 
-KademliaRoutingTable.listeners
+PortalNetworkRoutingTable.listeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:484
+node_modules/@types/node/globals.d.ts:648
 
 ___
 
@@ -540,27 +523,23 @@ array of `limit` nearest nodes
 
 #### Overrides
 
-KademliaRoutingTable.nearest
+PortalNetworkRoutingTable.nearest
 
 #### Defined in
 
-[src/dht/dht.ts:13](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/dht/dht.ts#L13)
+[packages/portalnetwork/src/stateSubnetwork/routingTable.ts:12](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/stateSubnetwork/routingTable.ts#L12)
 
 ___
 
 ### off
 
-▸ **off**(`eventName`, `listener`): `EventEmitter`
-
-Alias for `emitter.removeListener()`.
-
-**`since`** v10.0.0
+▸ **off**(`event`, `listener`): `EventEmitter`
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `string` \| `symbol` |
 | `listener` | (...`args`: `any`[]) => `void` |
 
 #### Returns
@@ -569,11 +548,11 @@ Alias for `emitter.removeListener()`.
 
 #### Inherited from
 
-KademliaRoutingTable.off
+PortalNetworkRoutingTable.off
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:444
+node_modules/@types/node/globals.d.ts:644
 
 ___
 
@@ -601,7 +580,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.on
+PortalNetworkRoutingTable.on
 
 #### Defined in
 
@@ -622,7 +601,7 @@ node_modules/strict-event-emitter-types/types/src/index.d.ts:15
 
 #### Inherited from
 
-KademliaRoutingTable.on
+PortalNetworkRoutingTable.on
 
 #### Defined in
 
@@ -654,7 +633,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.once
+PortalNetworkRoutingTable.once
 
 #### Defined in
 
@@ -675,7 +654,7 @@ node_modules/strict-event-emitter-types/types/src/index.d.ts:25
 
 #### Inherited from
 
-KademliaRoutingTable.once
+PortalNetworkRoutingTable.once
 
 #### Defined in
 
@@ -685,29 +664,14 @@ ___
 
 ### prependListener
 
-▸ **prependListener**(`eventName`, `listener`): `EventEmitter`
-
-Adds the `listener` function to the _beginning_ of the listeners array for the
-event named `eventName`. No checks are made to see if the `listener` has
-already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
-times.
-
-```js
-server.prependListener('connection', (stream) => {
-  console.log('someone connected!');
-});
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v6.0.0
+▸ **prependListener**(`event`, `listener`): `EventEmitter`
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event. |
-| `listener` | (...`args`: `any`[]) => `void` | The callback function |
+| Name | Type |
+| :------ | :------ |
+| `event` | `string` \| `symbol` |
+| `listener` | (...`args`: `any`[]) => `void` |
 
 #### Returns
 
@@ -715,37 +679,24 @@ Returns a reference to the `EventEmitter`, so that calls can be chained.
 
 #### Inherited from
 
-KademliaRoutingTable.prependListener
+PortalNetworkRoutingTable.prependListener
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:579
+node_modules/@types/node/globals.d.ts:653
 
 ___
 
 ### prependOnceListener
 
-▸ **prependOnceListener**(`eventName`, `listener`): `EventEmitter`
-
-Adds a **one-time**`listener` function for the event named `eventName` to the_beginning_ of the listeners array. The next time `eventName` is triggered, this
-listener is removed, and then invoked.
-
-```js
-server.prependOnceListener('connection', (stream) => {
-  console.log('Ah, we have our first user!');
-});
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v6.0.0
+▸ **prependOnceListener**(`event`, `listener`): `EventEmitter`
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event. |
-| `listener` | (...`args`: `any`[]) => `void` | The callback function |
+| Name | Type |
+| :------ | :------ |
+| `event` | `string` \| `symbol` |
+| `listener` | (...`args`: `any`[]) => `void` |
 
 #### Returns
 
@@ -753,11 +704,11 @@ Returns a reference to the `EventEmitter`, so that calls can be chained.
 
 #### Inherited from
 
-KademliaRoutingTable.prependOnceListener
+PortalNetworkRoutingTable.prependOnceListener
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:595
+node_modules/@types/node/globals.d.ts:654
 
 ___
 
@@ -771,52 +722,23 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.random
+PortalNetworkRoutingTable.random
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:45
+packages/discv5/lib/kademlia/kademlia.d.ts:66
 
 ___
 
 ### rawListeners
 
-▸ **rawListeners**(`eventName`): `Function`[]
-
-Returns a copy of the array of listeners for the event named `eventName`,
-including any wrappers (such as those created by `.once()`).
-
-```js
-const emitter = new EventEmitter();
-emitter.once('log', () => console.log('log once'));
-
-// Returns a new Array with a function `onceWrapper` which has a property
-// `listener` which contains the original listener bound above
-const listeners = emitter.rawListeners('log');
-const logFnWrapper = listeners[0];
-
-// Logs "log once" to the console and does not unbind the `once` event
-logFnWrapper.listener();
-
-// Logs "log once" to the console and removes the listener
-logFnWrapper();
-
-emitter.on('log', () => console.log('log persistently'));
-// Will return a new Array with a single function bound by `.on()` above
-const newListeners = emitter.rawListeners('log');
-
-// Logs "log persistently" twice
-newListeners[0]();
-emitter.emit('log');
-```
-
-**`since`** v9.4.0
+▸ **rawListeners**(`event`): `Function`[]
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `string` \| `symbol` |
 
 #### Returns
 
@@ -824,17 +746,39 @@ emitter.emit('log');
 
 #### Inherited from
 
-KademliaRoutingTable.rawListeners
+PortalNetworkRoutingTable.rawListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:514
+node_modules/@types/node/globals.d.ts:649
+
+___
+
+### rawValues
+
+▸ **rawValues**(): `IEntry`<`ENR`\>[]
+
+#### Returns
+
+`IEntry`<`ENR`\>[]
+
+#### Inherited from
+
+PortalNetworkRoutingTable.rawValues
+
+#### Defined in
+
+packages/discv5/lib/kademlia/kademlia.d.ts:65
 
 ___
 
 ### remove
 
-▸ **remove**(`value`): `undefined` \| `ENR`
+▸ **remove**(`value`): `undefined` \| `IEntry`<`ENR`\>
+
+Removes a node from the routing table.
+
+Returns the entry if it existed.
 
 #### Parameters
 
@@ -844,31 +788,21 @@ ___
 
 #### Returns
 
-`undefined` \| `ENR`
+`undefined` \| `IEntry`<`ENR`\>
 
 #### Inherited from
 
-KademliaRoutingTable.remove
+PortalNetworkRoutingTable.remove
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:30
+packages/discv5/lib/kademlia/kademlia.d.ts:39
 
 ___
 
 ### removeAllListeners
 
 ▸ **removeAllListeners**(`event?`): `EventEmitter`
-
-Removes all listeners, or those of the specified `eventName`.
-
-It is bad practice to remove listeners added elsewhere in the code,
-particularly when the `EventEmitter` instance was created by some other
-component or module (e.g. sockets or file streams).
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v0.1.26
 
 #### Parameters
 
@@ -882,17 +816,21 @@ Returns a reference to the `EventEmitter`, so that calls can be chained.
 
 #### Inherited from
 
-KademliaRoutingTable.removeAllListeners
+PortalNetworkRoutingTable.removeAllListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:455
+node_modules/@types/node/globals.d.ts:645
 
 ___
 
 ### removeById
 
-▸ **removeById**(`id`): `undefined` \| `ENR`
+▸ **removeById**(`id`): `undefined` \| `IEntry`<`ENR`\>
+
+Removes a node from the routing table.
+
+Returns the entry if it existed.
 
 #### Parameters
 
@@ -902,15 +840,41 @@ ___
 
 #### Returns
 
-`undefined` \| `ENR`
+`undefined` \| `IEntry`<`ENR`\>
 
 #### Inherited from
 
-KademliaRoutingTable.removeById
+PortalNetworkRoutingTable.removeById
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:29
+packages/discv5/lib/kademlia/kademlia.d.ts:33
+
+___
+
+### removeFromRadiusMap
+
+▸ **removeFromRadiusMap**(`nodeId`): `void`
+
+Delete a node from the `radiusMap`
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `nodeId` | `string` | node to be deleted from radius map |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+PortalNetworkRoutingTable.removeFromRadiusMap
+
+#### Defined in
+
+[packages/portalnetwork/src/client/routingTable.ts:25](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/routingTable.ts#L25)
 
 ___
 
@@ -938,7 +902,7 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.removeListener
+PortalNetworkRoutingTable.removeListener
 
 #### Defined in
 
@@ -959,7 +923,7 @@ node_modules/strict-event-emitter-types/types/src/index.d.ts:21
 
 #### Inherited from
 
-KademliaRoutingTable.removeListener
+PortalNetworkRoutingTable.removeListener
 
 #### Defined in
 
@@ -970,15 +934,6 @@ ___
 ### setMaxListeners
 
 ▸ **setMaxListeners**(`n`): `EventEmitter`
-
-By default `EventEmitter`s will print a warning if more than `10` listeners are
-added for a particular event. This is a useful default that helps finding
-memory leaks. The `emitter.setMaxListeners()` method allows the limit to be
-modified for this specific `EventEmitter` instance. The value can be set to`Infinity` (or `0`) to indicate an unlimited number of listeners.
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v0.3.5
 
 #### Parameters
 
@@ -992,42 +947,75 @@ Returns a reference to the `EventEmitter`, so that calls can be chained.
 
 #### Inherited from
 
-KademliaRoutingTable.setMaxListeners
+PortalNetworkRoutingTable.setMaxListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:465
+node_modules/@types/node/globals.d.ts:646
 
 ___
 
 ### update
 
-▸ **update**(`value`, `status`): `boolean`
+▸ **update**(`value`, `status?`): `UpdateResult`
+
+Updates a node's value if it exists in the table.
+
+Optionally the connection state can be modified.
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `value` | `ENR` |
-| `status` | `EntryStatus` |
+| `status?` | `EntryStatus` |
 
 #### Returns
 
-`boolean`
+`UpdateResult`
 
 #### Inherited from
 
-KademliaRoutingTable.update
+PortalNetworkRoutingTable.update
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:33
+packages/discv5/lib/kademlia/kademlia.d.ts:49
+
+___
+
+### updateRadius
+
+▸ **updateRadius**(`nodeId`, `radius`): `void`
+
+Updates the radius of content a node is interested in
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `nodeId` | `string` | id of node on which to update radius |
+| `radius` | `bigint` | radius to be set for node |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+PortalNetworkRoutingTable.updateRadius
+
+#### Defined in
+
+[packages/portalnetwork/src/client/routingTable.ts:16](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/routingTable.ts#L16)
 
 ___
 
 ### updateStatus
 
-▸ **updateStatus**(`id`, `status`): `boolean`
+▸ **updateStatus**(`id`, `status`): `UpdateResult`
+
+Updates a node's status if it exists in the table.
 
 #### Parameters
 
@@ -1038,39 +1026,15 @@ ___
 
 #### Returns
 
-`boolean`
+`UpdateResult`
 
 #### Inherited from
 
-KademliaRoutingTable.updateStatus
+PortalNetworkRoutingTable.updateStatus
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:32
-
-___
-
-### updateValue
-
-▸ **updateValue**(`value`): `boolean`
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `value` | `ENR` |
-
-#### Returns
-
-`boolean`
-
-#### Inherited from
-
-KademliaRoutingTable.updateValue
-
-#### Defined in
-
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:31
+packages/discv5/lib/kademlia/kademlia.d.ts:43
 
 ___
 
@@ -1084,11 +1048,11 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.values
+PortalNetworkRoutingTable.values
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:44
+packages/discv5/lib/kademlia/kademlia.d.ts:64
 
 ___
 
@@ -1108,8 +1072,8 @@ ___
 
 #### Inherited from
 
-KademliaRoutingTable.valuesOfDistance
+PortalNetworkRoutingTable.valuesOfDistance
 
 #### Defined in
 
-node_modules/@chainsafe/discv5/lib/kademlia/kademlia.d.ts:43
+packages/discv5/lib/kademlia/kademlia.d.ts:63
