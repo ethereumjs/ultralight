@@ -63,6 +63,16 @@ export class UtpProtocol {
     return this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 
+  async awaitConnectionRequest(remoteAddr: string, connectionId: number): Promise<number> {
+    // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
+    log(`sending id: ${connectionId} Awaiting uTP stream request from ${remoteAddr}...`)
+    // Creates a new uTP socket for remoteAddr
+    const socket = new _UTPSocket(this, remoteAddr, 'reading')
+    // Adds this socket to 'sockets' registry, wtih remoteAddr as key
+    this.sockets[remoteAddr] = socket
+    // Sends Syn Packet to begin uTP connection process using connectionId
+    return this.sockets[remoteAddr].sndConnectionId
+  }
   async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<Buffer> {
     // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
     log(`Requesting uTP stream connection with ${remoteAddr}...`)
@@ -75,19 +85,24 @@ export class UtpProtocol {
   }
 
   async handleSynPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
-    log(`Received incoming ST_SYN packet...uTP connection requested by ${remoteAddr}`)
-    // Creates a new socket for remoteAddr
-    const socket = new _UTPSocket(this, remoteAddr, 'writing')
-    // Adds this socket to 'sockets' registry wtih remoteAddr as key
-    this.sockets[remoteAddr] = socket
-    // Passes content from "Database" to the socket
-    this.sockets[remoteAddr].content = this.contents[remoteAddr]
-    // Socket processes the SYN packet
-    // Accepts connection by sending a SYN ACK - which is a STATE packet
-    log(
-      `Accepting uTP stream request...  Sending SYN ACK...  Preparing to send ${this.contents}...`
-    )
-    await this.sockets[remoteAddr].handleIncomingConnectionRequest(packet)
+    if (this.sockets[remoteAddr]) {
+      log(`Accepting uTP stream request...  Sending SYN ACK...  Listening for data...`)
+      await this.sockets[remoteAddr].handleIncomingStreamRequest(packet)
+    } else {
+      log(`Received incoming ST_SYN packet...uTP connection requested by ${remoteAddr}`)
+      // Creates a new socket for remoteAddr
+      const socket = new _UTPSocket(this, remoteAddr, 'writing')
+      // Adds this socket to 'sockets' registry wtih remoteAddr as key
+      this.sockets[remoteAddr] = socket
+      // Passes content from "Database" to the socket
+      this.sockets[remoteAddr].content = this.contents[remoteAddr]
+      // Socket processes the SYN packet
+      // Accepts connection by sending a SYN ACK - which is a STATE packet
+      log(
+        `Accepting uTP stream request...  Sending SYN ACK...  Preparing to send ${this.contents}...`
+      )
+      await this.sockets[remoteAddr].handleIncomingConnectionRequest(packet)
+    }
   }
 
   async handleStatePacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {

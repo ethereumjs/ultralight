@@ -105,18 +105,34 @@ export class _UTPSocket extends EventEmitter {
       // this.incrementSequenceNumber();
     })
   }
+  // handles SYN packets
+  async handleIncomingStreamRequest(packet: Packet): Promise<void> {
+    // sndConnectionId and rcvConnectionId calculated from packet header
+    this.setConnectionIdsFromPacket(packet)
+    this.ackNr = packet.header.seqNr
+    // TODO: Figure out SeqNr and AckNr initializing and incrementation
+
+    log(`Setting Connection State: SynRecv`)
+    this.state = ConnectionState.SynRecv
+    log(`Sending SYN ACK to accept connection request...`)
+    await this.sendSynAckPacket().then(() => {
+      log(`Incrementing seqNr from ${this.seqNr - 1} to ${this.seqNr}`)
+      // Increments seqNr (***????????*****)
+      // this.incrementSequenceNumber();
+    })
+  }
 
   async handleSynAckPacket(packet: Packet): Promise<void> {
     this.ackNr = packet.header.seqNr
     log(`SYN packet accepted.  SYN ACK Received.  Connection State: Connected`)
     this.setState(ConnectionState.Connected)
-    if (this.reader) {
+    if (this.reading) {
       log(`Sending SYN ACK ACK`)
       await this.sendAckPacket().then(() => {
         log(`SYN ACK ACK sent...Reader listening for DATA stream...`)
       })
-    } else if (this.writer) {
-      // TODO : What should go here?
+    } else if (this.writing) {
+      this.write(this.content, packet)
     }
   }
 
