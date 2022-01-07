@@ -4,7 +4,7 @@
 
 ## Hierarchy
 
-- `EventEmitter`
+- `TypeRecord`<`EventEmitter`, `IPortalNetworkEvents`, `IPortalNetworkEvents`, `this`\> & `Pick`<`EventEmitter`, ``"off"`` \| ``"removeAllListeners"`` \| ``"setMaxListeners"`` \| ``"getMaxListeners"`` \| ``"listeners"`` \| ``"rawListeners"`` \| ``"listenerCount"`` \| ``"prependListener"`` \| ``"prependOnceListener"`` \| ``"eventNames"``\> & `Pick`<`OverriddenMethods`<`EventEmitter`, `IPortalNetworkEvents`, `IPortalNetworkEvents`\>, ``"on"`` \| ``"addListener"`` \| ``"removeListener"`` \| ``"once"`` \| ``"emit"``\>
 
   ↳ **`PortalNetwork`**
 
@@ -16,26 +16,37 @@
 
 ### Properties
 
+- [ \_emitType](PortalNetwork.md# _emittype)
+- [ \_emitterType](PortalNetwork.md# _emittertype)
+- [ \_eventsType](PortalNetwork.md# _eventstype)
 - [client](PortalNetwork.md#client)
+- [db](PortalNetwork.md#db)
+- [historyNetworkRoutingTable](PortalNetwork.md#historynetworkroutingtable)
+- [nodeRadius](PortalNetwork.md#noderadius)
+- [refreshListener](PortalNetwork.md#refreshlistener)
 - [stateNetworkRoutingTable](PortalNetwork.md#statenetworkroutingtable)
 - [uTP](PortalNetwork.md#utp)
-- [captureRejectionSymbol](PortalNetwork.md#capturerejectionsymbol)
-- [captureRejections](PortalNetwork.md#capturerejections)
-- [defaultMaxListeners](PortalNetwork.md#defaultmaxlisteners)
-- [errorMonitor](PortalNetwork.md#errormonitor)
+
+### Accessors
+
+- [radius](PortalNetwork.md#radius)
 
 ### Methods
 
+- [addContentToHistory](PortalNetwork.md#addcontenttohistory)
 - [addListener](PortalNetwork.md#addlistener)
+- [bucketRefresh](PortalNetwork.md#bucketrefresh)
 - [emit](PortalNetwork.md#emit)
 - [enableLog](PortalNetwork.md#enablelog)
 - [eventNames](PortalNetwork.md#eventnames)
 - [getMaxListeners](PortalNetwork.md#getmaxlisteners)
+- [handleContent](PortalNetwork.md#handlecontent)
 - [handleFindContent](PortalNetwork.md#handlefindcontent)
 - [handleFindNodes](PortalNetwork.md#handlefindnodes)
 - [handleOffer](PortalNetwork.md#handleoffer)
 - [handlePing](PortalNetwork.md#handleping)
-- [handleUTPStreamRequest](PortalNetwork.md#handleutpstreamrequest)
+- [handleStreamedContent](PortalNetwork.md#handlestreamedcontent)
+- [handleUTP](PortalNetwork.md#handleutp)
 - [listenerCount](PortalNetwork.md#listenercount)
 - [listeners](PortalNetwork.md#listeners)
 - [log](PortalNetwork.md#log)
@@ -55,35 +66,81 @@
 - [sendOffer](PortalNetwork.md#sendoffer)
 - [sendPing](PortalNetwork.md#sendping)
 - [sendPong](PortalNetwork.md#sendpong)
+- [sendPortalNetworkMessage](PortalNetwork.md#sendportalnetworkmessage)
 - [sendUtpStreamRequest](PortalNetwork.md#sendutpstreamrequest)
 - [setMaxListeners](PortalNetwork.md#setmaxlisteners)
 - [start](PortalNetwork.md#start)
-- [getEventListeners](PortalNetwork.md#geteventlisteners)
-- [listenerCount](PortalNetwork.md#listenercount)
-- [on](PortalNetwork.md#on)
-- [once](PortalNetwork.md#once)
+- [stop](PortalNetwork.md#stop)
+- [updateSubnetworkRoutingTable](PortalNetwork.md#updatesubnetworkroutingtable)
+- [createPortalNetwork](PortalNetwork.md#createportalnetwork)
 
 ## Constructors
 
 ### constructor
 
-• **new PortalNetwork**(`config`)
+• **new PortalNetwork**(`config`, `radius?`, `db?`)
+
+Portal Network constructor
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `config` | `IDiscv5CreateOptions` |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `config` | `IDiscv5CreateOptions` | `undefined` | a dictionary of `IDiscv5CreateOptions` for configuring the discv5 networking layer |
+| `radius` | `number` | `1` | defines the radius of data the node is interesting in storing |
+| `db?` | `LevelUp`<`AbstractLevelDOWN`<`any`, `any`\>, `AbstractIterator`<`any`, `any`\>\> | `undefined` | a `level` compliant database provided by the module consumer - instantiates an in-memory DB if not provided |
 
 #### Overrides
 
-EventEmitter.constructor
+(EventEmitter as { new (): PortalNetworkEventEmitter }).constructor
 
 #### Defined in
 
-[src/portalnetwork/client.ts:20](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L20)
+[packages/portalnetwork/src/client/client.ts:88](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L88)
 
 ## Properties
+
+###  \_emitType
+
+• `Optional` ** \_emitType**: `IPortalNetworkEvents`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }). \_emitType
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:7
+
+___
+
+###  \_emitterType
+
+• `Optional` ** \_emitterType**: `EventEmitter`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }). \_emitterType
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:5
+
+___
+
+###  \_eventsType
+
+• `Optional` ** \_eventsType**: `IPortalNetworkEvents`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }). \_eventsType
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:6
+
+___
 
 ### client
 
@@ -91,7 +148,47 @@ EventEmitter.constructor
 
 #### Defined in
 
-[src/portalnetwork/client.ts:16](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L16)
+[packages/portalnetwork/src/client/client.ts:51](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L51)
+
+___
+
+### db
+
+• **db**: `LevelUp`<`AbstractLevelDOWN`<`any`, `any`\>, `AbstractIterator`<`any`, `any`\>\>
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:56](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L56)
+
+___
+
+### historyNetworkRoutingTable
+
+• **historyNetworkRoutingTable**: `PortalNetworkRoutingTable`
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:53](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L53)
+
+___
+
+### nodeRadius
+
+• **nodeRadius**: `number`
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:55](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L55)
+
+___
+
+### refreshListener
+
+• `Private` **refreshListener**: `Timeout`
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:57](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L57)
 
 ___
 
@@ -101,7 +198,7 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:17](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L17)
+[packages/portalnetwork/src/client/client.ts:52](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L52)
 
 ___
 
@@ -111,167 +208,192 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:18](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L18)
+[packages/portalnetwork/src/client/client.ts:54](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L54)
 
-___
+## Accessors
 
-### captureRejectionSymbol
+### radius
 
-▪ `Static` `Readonly` **captureRejectionSymbol**: typeof [`captureRejectionSymbol`](PortalNetwork.md#capturerejectionsymbol)
+• `get` **radius**(): `number`
 
-#### Inherited from
+#### Returns
 
-EventEmitter.captureRejectionSymbol
+`number`
 
-#### Defined in
-
-node_modules/@types/node/events.d.ts:273
-
-___
-
-### captureRejections
-
-▪ `Static` **captureRejections**: `boolean`
-
-Sets or gets the default captureRejection value for all emitters.
-
-#### Inherited from
-
-EventEmitter.captureRejections
+the node's current radius
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:278
+[packages/portalnetwork/src/client/client.ts:162](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L162)
 
-___
+• `set` **radius**(`value`): `void`
 
-### defaultMaxListeners
+Updates the node's radius for interested content
 
-▪ `Static` **defaultMaxListeners**: `number`
+**`throws`** if `value` is outside correct range
 
-#### Inherited from
+#### Parameters
 
-EventEmitter.defaultMaxListeners
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `value` | `number` | number representing the new radius |
 
-#### Defined in
+#### Returns
 
-node_modules/@types/node/events.d.ts:279
+`void`
 
-___
-
-### errorMonitor
-
-▪ `Static` `Readonly` **errorMonitor**: typeof [`errorMonitor`](PortalNetwork.md#errormonitor)
-
-This symbol shall be used to install a listener for only monitoring `'error'`
-events. Listeners installed using this symbol are called before the regular
-`'error'` listeners are called.
-
-Installing a listener using this symbol does not change the behavior once an
-`'error'` event is emitted, therefore the process will still crash if no
-regular `'error'` listener is installed.
-
-#### Inherited from
-
-EventEmitter.errorMonitor
+the node's current radius
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:272
+[packages/portalnetwork/src/client/client.ts:171](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L171)
 
 ## Methods
 
+### addContentToHistory
+
+▸ **addContentToHistory**(`chainId`, `contentType`, `blockHash`, `value`): `Promise`<`void`\>
+
+Convenience method to add content for the History Network to the DB
+
+**`throws`** if `blockHash` or `value` is not hex string
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `chainId` | `number` | decimal number representing chain Id |
+| `contentType` | `HistoryNetworkContentTypes` | content type of the data item being stored |
+| `blockHash` | `string` | hex string representation of block hash |
+| `value` | `string` | hex string representing RLP encoded blockheader, block body, or block receipt |
+
+#### Returns
+
+`Promise`<`void`\>
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:393](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L393)
+
+___
+
 ### addListener
 
-▸ **addListener**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
+▸ **addListener**<`P`, `T`\>(`event`, `listener`): `T`
 
-Alias for `emitter.on(eventName, listener)`.
+#### Type parameters
 
-**`since`** v0.1.26
+| Name | Type |
+| :------ | :------ |
+| `P` | extends keyof `IPortalNetworkEvents` |
+| `T` | `T` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
-| `listener` | (...`args`: `any`[]) => `void` |
+| `event` | `P` |
+| `listener` | (...`args`: `ListenerType`<`IPortalNetworkEvents`[`P`]\>) => `void` |
 
 #### Returns
 
-[`PortalNetwork`](PortalNetwork.md)
+`T`
 
 #### Inherited from
 
-EventEmitter.addListener
+(EventEmitter as { new (): PortalNetworkEventEmitter }).addListener
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:299
+node_modules/strict-event-emitter-types/types/src/index.d.ts:17
+
+▸ **addListener**(`event`, `listener`): `void`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | typeof `assignmentCompatibilityHack` |
+| `listener` | (...`args`: `any`[]) => `any` |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).addListener
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:18
+
+___
+
+### bucketRefresh
+
+▸ `Private` **bucketRefresh**(): `Promise`<`void`\>
+
+#### Returns
+
+`Promise`<`void`\>
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:811](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L811)
 
 ___
 
 ### emit
 
-▸ **emit**(`eventName`, ...`args`): `boolean`
+▸ **emit**<`P`, `T`\>(`event`, ...`args`): `T`
 
-Synchronously calls each of the listeners registered for the event named`eventName`, in the order they were registered, passing the supplied arguments
-to each.
+#### Type parameters
 
-Returns `true` if the event had listeners, `false` otherwise.
-
-```js
-const EventEmitter = require('events');
-const myEmitter = new EventEmitter();
-
-// First listener
-myEmitter.on('event', function firstListener() {
-  console.log('Helloooo! first listener');
-});
-// Second listener
-myEmitter.on('event', function secondListener(arg1, arg2) {
-  console.log(`event with parameters ${arg1}, ${arg2} in second listener`);
-});
-// Third listener
-myEmitter.on('event', function thirdListener(...args) {
-  const parameters = args.join(', ');
-  console.log(`event with parameters ${parameters} in third listener`);
-});
-
-console.log(myEmitter.listeners('event'));
-
-myEmitter.emit('event', 1, 2, 3, 4, 5);
-
-// Prints:
-// [
-//   [Function: firstListener],
-//   [Function: secondListener],
-//   [Function: thirdListener]
-// ]
-// Helloooo! first listener
-// event with parameters 1, 2 in second listener
-// event with parameters 1, 2, 3, 4, 5 in third listener
-```
-
-**`since`** v0.1.26
+| Name | Type |
+| :------ | :------ |
+| `P` | extends keyof `IPortalNetworkEvents` |
+| `T` | `T` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `P` |
+| `...args` | `ListenerType`<`IPortalNetworkEvents`[`P`]\> |
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).emit
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:27
+
+▸ **emit**(`event`, ...`args`): `void`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | typeof `assignmentCompatibilityHack` |
 | `...args` | `any`[] |
 
 #### Returns
 
-`boolean`
+`void`
 
 #### Inherited from
 
-EventEmitter.emit
+(EventEmitter as { new (): PortalNetworkEventEmitter }).emit
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:555
+node_modules/strict-event-emitter-types/types/src/index.d.ts:28
 
 ___
 
@@ -283,7 +405,7 @@ ___
 
 | Name | Type | Default value | Description |
 | :------ | :------ | :------ | :------ |
-| `namespaces` | `string` | `"portalnetwork*,discv5:service*,<uTP>*"` | comma separated list of logging namespaces defaults to "portalnetwork*, discv5*" |
+| `namespaces` | `string` | `'portalnetwork*,discv5:service*,<uTP>*,<uTP>:Reader*'` | comma separated list of logging namespaces defaults to "portalnetwork*, discv5:service, <uTP>*,<uTP>:Reader*" |
 
 #### Returns
 
@@ -291,7 +413,7 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:47](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L47)
+[packages/portalnetwork/src/client/client.ts:153](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L153)
 
 ___
 
@@ -299,35 +421,17 @@ ___
 
 ▸ **eventNames**(): (`string` \| `symbol`)[]
 
-Returns an array listing the events for which the emitter has registered
-listeners. The values in the array are strings or `Symbol`s.
-
-```js
-const EventEmitter = require('events');
-const myEE = new EventEmitter();
-myEE.on('foo', () => {});
-myEE.on('bar', () => {});
-
-const sym = Symbol('symbol');
-myEE.on(sym, () => {});
-
-console.log(myEE.eventNames());
-// Prints: [ 'foo', 'bar', Symbol(symbol) ]
-```
-
-**`since`** v6.0.0
-
 #### Returns
 
 (`string` \| `symbol`)[]
 
 #### Inherited from
 
-EventEmitter.eventNames
+(EventEmitter as { new (): PortalNetworkEventEmitter }).eventNames
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:614
+node_modules/@types/node/globals.d.ts:655
 
 ___
 
@@ -335,28 +439,23 @@ ___
 
 ▸ **getMaxListeners**(): `number`
 
-Returns the current max listener value for the `EventEmitter` which is either
-set by `emitter.setMaxListeners(n)` or defaults to [defaultMaxListeners](PortalNetwork.md#defaultmaxlisteners).
-
-**`since`** v1.0.0
-
 #### Returns
 
 `number`
 
 #### Inherited from
 
-EventEmitter.getMaxListeners
+(EventEmitter as { new (): PortalNetworkEventEmitter }).getMaxListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:471
+node_modules/@types/node/globals.d.ts:647
 
 ___
 
-### handleFindContent
+### handleContent
 
-▸ `Private` **handleFindContent**(`srcId`, `message`): `void`
+▸ `Private` **handleContent**(`srcId`, `message`): `void`
 
 #### Parameters
 
@@ -371,7 +470,28 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:241](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L241)
+[packages/portalnetwork/src/client/client.ts:541](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L541)
+
+___
+
+### handleFindContent
+
+▸ `Private` **handleFindContent**(`srcId`, `message`): `Promise`<`void`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `srcId` | `string` |
+| `message` | `ITalkReqMessage` |
+
+#### Returns
+
+`Promise`<`void`\>
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:641](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L641)
 
 ___
 
@@ -392,7 +512,7 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:192](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L192)
+[packages/portalnetwork/src/client/client.ts:560](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L560)
 
 ___
 
@@ -413,7 +533,7 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:217](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L217)
+[packages/portalnetwork/src/client/client.ts:597](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L597)
 
 ___
 
@@ -434,20 +554,42 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:181](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L181)
+[packages/portalnetwork/src/client/client.ts:548](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L548)
 
 ___
 
-### handleUTPStreamRequest
+### handleStreamedContent
 
-▸ `Private` **handleUTPStreamRequest**(`srcId`, `message`): `Promise`<`void`\>
+▸ `Private` **handleStreamedContent**(`rcvId`, `content`): `void`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `rcvId` | `number` |
+| `content` | `Uint8Array` |
+
+#### Returns
+
+`void`
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:529](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L529)
+
+___
+
+### handleUTP
+
+▸ `Private` **handleUTP**(`srcId`, `msgId`, `packetBuffer`): `Promise`<`void`\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `srcId` | `string` |
-| `message` | `ITalkReqMessage` |
+| `msgId` | `bigint` |
+| `packetBuffer` | `Buffer` |
 
 #### Returns
 
@@ -455,23 +597,19 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:252](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L252)
+[packages/portalnetwork/src/client/client.ts:723](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L723)
 
 ___
 
 ### listenerCount
 
-▸ **listenerCount**(`eventName`): `number`
-
-Returns the number of listeners listening to the event named `eventName`.
-
-**`since`** v3.2.0
+▸ **listenerCount**(`type`): `number`
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event being listened for |
+| Name | Type |
+| :------ | :------ |
+| `type` | `string` \| `symbol` |
 
 #### Returns
 
@@ -479,35 +617,23 @@ Returns the number of listeners listening to the event named `eventName`.
 
 #### Inherited from
 
-EventEmitter.listenerCount
+(EventEmitter as { new (): PortalNetworkEventEmitter }).listenerCount
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:561
+node_modules/@types/node/globals.d.ts:651
 
 ___
 
 ### listeners
 
-▸ **listeners**(`eventName`): `Function`[]
-
-Returns a copy of the array of listeners for the event named `eventName`.
-
-```js
-server.on('connection', (stream) => {
-  console.log('someone connected!');
-});
-console.log(util.inspect(server.listeners('connection')));
-// Prints: [ [Function] ]
-```
-
-**`since`** v0.1.26
+▸ **listeners**(`event`): `Function`[]
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `string` \| `symbol` |
 
 #### Returns
 
@@ -515,11 +641,11 @@ console.log(util.inspect(server.listeners('connection')));
 
 #### Inherited from
 
-EventEmitter.listeners
+(EventEmitter as { new (): PortalNetworkEventEmitter }).listeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:484
+node_modules/@types/node/globals.d.ts:648
 
 ___
 
@@ -539,101 +665,97 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:29](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L29)
+[packages/portalnetwork/src/client/client.ts:115](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L115)
 
 ___
 
 ### off
 
-▸ **off**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
-
-Alias for `emitter.removeListener()`.
-
-**`since`** v10.0.0
+▸ **off**(`event`, `listener`): `EventEmitter`
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `string` \| `symbol` |
 | `listener` | (...`args`: `any`[]) => `void` |
 
 #### Returns
 
-[`PortalNetwork`](PortalNetwork.md)
+`EventEmitter`
 
 #### Inherited from
 
-EventEmitter.off
+(EventEmitter as { new (): PortalNetworkEventEmitter }).off
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:444
+node_modules/@types/node/globals.d.ts:644
 
 ___
 
 ### on
 
-▸ **on**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
+▸ **on**<`P`, `T`\>(`event`, `listener`): `T`
 
-Adds the `listener` function to the end of the listeners array for the
-event named `eventName`. No checks are made to see if the `listener` has
-already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
-times.
+#### Type parameters
 
-```js
-server.on('connection', (stream) => {
-  console.log('someone connected!');
-});
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-By default, event listeners are invoked in the order they are added. The`emitter.prependListener()` method can be used as an alternative to add the
-event listener to the beginning of the listeners array.
-
-```js
-const myEE = new EventEmitter();
-myEE.on('foo', () => console.log('a'));
-myEE.prependListener('foo', () => console.log('b'));
-myEE.emit('foo');
-// Prints:
-//   b
-//   a
-```
-
-**`since`** v0.1.101
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event. |
-| `listener` | (...`args`: `any`[]) => `void` | The callback function |
-
-#### Returns
-
-[`PortalNetwork`](PortalNetwork.md)
-
-#### Inherited from
-
-EventEmitter.on
-
-#### Defined in
-
-node_modules/@types/node/events.d.ts:330
-
-___
-
-### onTalkReq
-
-▸ `Private` **onTalkReq**(`srcId`, `sourceId`, `message`): `Promise`<`void`\>
+| Name | Type |
+| :------ | :------ |
+| `P` | extends keyof `IPortalNetworkEvents` |
+| `T` | `T` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `srcId` | `string` |
+| `event` | `P` |
+| `listener` | (...`args`: `ListenerType`<`IPortalNetworkEvents`[`P`]\>) => `void` |
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).on
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:15
+
+▸ **on**(`event`, `listener`): `void`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | typeof `assignmentCompatibilityHack` |
+| `listener` | (...`args`: `any`[]) => `any` |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).on
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:16
+
+___
+
+### onTalkReq
+
+▸ `Private` **onTalkReq**(`src`, `sourceId`, `message`): `Promise`<`void`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `src` | `INodeAddress` |
 | `sourceId` | ``null`` \| `ENR` |
 | `message` | `ITalkReqMessage` |
 
@@ -643,19 +765,19 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:154](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L154)
+[packages/portalnetwork/src/client/client.ts:472](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L472)
 
 ___
 
 ### onTalkResp
 
-▸ `Private` **onTalkResp**(`srcId`, `sourceId`, `message`): `void`
+▸ `Private` **onTalkResp**(`src`, `sourceId`, `message`): `void`
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `srcId` | `string` |
+| `src` | `INodeAddress` |
 | `sourceId` | ``null`` \| `ENR` |
 | `message` | `ITalkRespMessage` |
 
@@ -665,177 +787,122 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:177](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L177)
+[packages/portalnetwork/src/client/client.ts:524](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L524)
 
 ___
 
 ### once
 
-▸ **once**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
+▸ **once**<`P`, `T`\>(`event`, `listener`): `T`
 
-Adds a **one-time**`listener` function for the event named `eventName`. The
-next time `eventName` is triggered, this listener is removed and then invoked.
+#### Type parameters
 
-```js
-server.once('connection', (stream) => {
-  console.log('Ah, we have our first user!');
-});
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-By default, event listeners are invoked in the order they are added. The`emitter.prependOnceListener()` method can be used as an alternative to add the
-event listener to the beginning of the listeners array.
-
-```js
-const myEE = new EventEmitter();
-myEE.once('foo', () => console.log('a'));
-myEE.prependOnceListener('foo', () => console.log('b'));
-myEE.emit('foo');
-// Prints:
-//   b
-//   a
-```
-
-**`since`** v0.3.0
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event. |
-| `listener` | (...`args`: `any`[]) => `void` | The callback function |
-
-#### Returns
-
-[`PortalNetwork`](PortalNetwork.md)
-
-#### Inherited from
-
-EventEmitter.once
-
-#### Defined in
-
-node_modules/@types/node/events.d.ts:359
-
-___
-
-### prependListener
-
-▸ **prependListener**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
-
-Adds the `listener` function to the _beginning_ of the listeners array for the
-event named `eventName`. No checks are made to see if the `listener` has
-already been added. Multiple calls passing the same combination of `eventName`and `listener` will result in the `listener` being added, and called, multiple
-times.
-
-```js
-server.prependListener('connection', (stream) => {
-  console.log('someone connected!');
-});
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v6.0.0
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event. |
-| `listener` | (...`args`: `any`[]) => `void` | The callback function |
-
-#### Returns
-
-[`PortalNetwork`](PortalNetwork.md)
-
-#### Inherited from
-
-EventEmitter.prependListener
-
-#### Defined in
-
-node_modules/@types/node/events.d.ts:579
-
-___
-
-### prependOnceListener
-
-▸ **prependOnceListener**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
-
-Adds a **one-time**`listener` function for the event named `eventName` to the_beginning_ of the listeners array. The next time `eventName` is triggered, this
-listener is removed, and then invoked.
-
-```js
-server.prependOnceListener('connection', (stream) => {
-  console.log('Ah, we have our first user!');
-});
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v6.0.0
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `eventName` | `string` \| `symbol` | The name of the event. |
-| `listener` | (...`args`: `any`[]) => `void` | The callback function |
-
-#### Returns
-
-[`PortalNetwork`](PortalNetwork.md)
-
-#### Inherited from
-
-EventEmitter.prependOnceListener
-
-#### Defined in
-
-node_modules/@types/node/events.d.ts:595
-
-___
-
-### rawListeners
-
-▸ **rawListeners**(`eventName`): `Function`[]
-
-Returns a copy of the array of listeners for the event named `eventName`,
-including any wrappers (such as those created by `.once()`).
-
-```js
-const emitter = new EventEmitter();
-emitter.once('log', () => console.log('log once'));
-
-// Returns a new Array with a function `onceWrapper` which has a property
-// `listener` which contains the original listener bound above
-const listeners = emitter.rawListeners('log');
-const logFnWrapper = listeners[0];
-
-// Logs "log once" to the console and does not unbind the `once` event
-logFnWrapper.listener();
-
-// Logs "log once" to the console and removes the listener
-logFnWrapper();
-
-emitter.on('log', () => console.log('log persistently'));
-// Will return a new Array with a single function bound by `.on()` above
-const newListeners = emitter.rawListeners('log');
-
-// Logs "log persistently" twice
-newListeners[0]();
-emitter.emit('log');
-```
-
-**`since`** v9.4.0
+| Name | Type |
+| :------ | :------ |
+| `P` | extends keyof `IPortalNetworkEvents` |
+| `T` | `T` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
+| `event` | `P` |
+| `listener` | (...`args`: `ListenerType`<`IPortalNetworkEvents`[`P`]\>) => `void` |
+
+#### Returns
+
+`T`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).once
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:25
+
+▸ **once**(`event`, `listener`): `void`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | typeof `assignmentCompatibilityHack` |
+| `listener` | (...`args`: `any`[]) => `any` |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).once
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:26
+
+___
+
+### prependListener
+
+▸ **prependListener**(`event`, `listener`): `EventEmitter`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | `string` \| `symbol` |
+| `listener` | (...`args`: `any`[]) => `void` |
+
+#### Returns
+
+`EventEmitter`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).prependListener
+
+#### Defined in
+
+node_modules/@types/node/globals.d.ts:653
+
+___
+
+### prependOnceListener
+
+▸ **prependOnceListener**(`event`, `listener`): `EventEmitter`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | `string` \| `symbol` |
+| `listener` | (...`args`: `any`[]) => `void` |
+
+#### Returns
+
+`EventEmitter`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).prependOnceListener
+
+#### Defined in
+
+node_modules/@types/node/globals.d.ts:654
+
+___
+
+### rawListeners
+
+▸ **rawListeners**(`event`): `Function`[]
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | `string` \| `symbol` |
 
 #### Returns
 
@@ -843,27 +910,17 @@ emitter.emit('log');
 
 #### Inherited from
 
-EventEmitter.rawListeners
+(EventEmitter as { new (): PortalNetworkEventEmitter }).rawListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:514
+node_modules/@types/node/globals.d.ts:649
 
 ___
 
 ### removeAllListeners
 
-▸ **removeAllListeners**(`event?`): [`PortalNetwork`](PortalNetwork.md)
-
-Removes all listeners, or those of the specified `eventName`.
-
-It is bad practice to remove listeners added elsewhere in the code,
-particularly when the `EventEmitter` instance was created by some other
-component or module (e.g. sockets or file streams).
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v0.1.26
+▸ **removeAllListeners**(`event?`): `EventEmitter`
 
 #### Parameters
 
@@ -873,119 +930,68 @@ Returns a reference to the `EventEmitter`, so that calls can be chained.
 
 #### Returns
 
-[`PortalNetwork`](PortalNetwork.md)
+`EventEmitter`
 
 #### Inherited from
 
-EventEmitter.removeAllListeners
+(EventEmitter as { new (): PortalNetworkEventEmitter }).removeAllListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:455
+node_modules/@types/node/globals.d.ts:645
 
 ___
 
 ### removeListener
 
-▸ **removeListener**(`eventName`, `listener`): [`PortalNetwork`](PortalNetwork.md)
+▸ **removeListener**<`P`, `T`\>(`event`, `listener`): `T`
 
-Removes the specified `listener` from the listener array for the event named`eventName`.
+#### Type parameters
 
-```js
-const callback = (stream) => {
-  console.log('someone connected!');
-};
-server.on('connection', callback);
-// ...
-server.removeListener('connection', callback);
-```
-
-`removeListener()` will remove, at most, one instance of a listener from the
-listener array. If any single listener has been added multiple times to the
-listener array for the specified `eventName`, then `removeListener()` must be
-called multiple times to remove each instance.
-
-Once an event is emitted, all listeners attached to it at the
-time of emitting are called in order. This implies that any`removeListener()` or `removeAllListeners()` calls _after_ emitting and_before_ the last listener finishes execution will
-not remove them from`emit()` in progress. Subsequent events behave as expected.
-
-```js
-const myEmitter = new MyEmitter();
-
-const callbackA = () => {
-  console.log('A');
-  myEmitter.removeListener('event', callbackB);
-};
-
-const callbackB = () => {
-  console.log('B');
-};
-
-myEmitter.on('event', callbackA);
-
-myEmitter.on('event', callbackB);
-
-// callbackA removes listener callbackB but it will still be called.
-// Internal listener array at time of emit [callbackA, callbackB]
-myEmitter.emit('event');
-// Prints:
-//   A
-//   B
-
-// callbackB is now removed.
-// Internal listener array [callbackA]
-myEmitter.emit('event');
-// Prints:
-//   A
-```
-
-Because listeners are managed using an internal array, calling this will
-change the position indices of any listener registered _after_ the listener
-being removed. This will not impact the order in which listeners are called,
-but it means that any copies of the listener array as returned by
-the `emitter.listeners()` method will need to be recreated.
-
-When a single function has been added as a handler multiple times for a single
-event (as in the example below), `removeListener()` will remove the most
-recently added instance. In the example the `once('ping')`listener is removed:
-
-```js
-const ee = new EventEmitter();
-
-function pong() {
-  console.log('pong');
-}
-
-ee.on('ping', pong);
-ee.once('ping', pong);
-ee.removeListener('ping', pong);
-
-ee.emit('ping');
-ee.emit('ping');
-```
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v0.1.26
+| Name | Type |
+| :------ | :------ |
+| `P` | extends keyof `IPortalNetworkEvents` |
+| `T` | `T` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `eventName` | `string` \| `symbol` |
-| `listener` | (...`args`: `any`[]) => `void` |
+| `event` | `P` |
+| `listener` | (...`args`: `any`[]) => `any` |
 
 #### Returns
 
-[`PortalNetwork`](PortalNetwork.md)
+`T`
 
 #### Inherited from
 
-EventEmitter.removeListener
+(EventEmitter as { new (): PortalNetworkEventEmitter }).removeListener
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:439
+node_modules/strict-event-emitter-types/types/src/index.d.ts:21
+
+▸ **removeListener**(`event`, `listener`): `void`
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `event` | typeof `assignmentCompatibilityHack` |
+| `listener` | (...`args`: `any`[]) => `any` |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+(EventEmitter as { new (): PortalNetworkEventEmitter }).removeListener
+
+#### Defined in
+
+node_modules/strict-event-emitter-types/types/src/index.d.ts:22
 
 ___
 
@@ -1006,36 +1012,41 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:229](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L229)
+[packages/portalnetwork/src/client/client.ts:625](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L625)
 
 ___
 
 ### sendFindContent
 
-▸ **sendFindContent**(`dstId`, `key`): `void`
+▸ **sendFindContent**(`dstId`, `key`, `networkId`): `Promise`<`undefined` \| `Uint8Array` \| [`enrs`](../modules.md#enrs)\>
+
+Starts recursive lookup for content corresponding to `key`
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `dstId` | `string` |
-| `key` | `Uint8Array` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `dstId` | `string` | node id of peer |
+| `key` | `Uint8Array` | content key defined by the subnetwork spec |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | subnetwork ID on which content is being sought |
 
 #### Returns
 
-`void`
+`Promise`<`undefined` \| `Uint8Array` \| [`enrs`](../modules.md#enrs)\>
+
+the value of the FOUNDCONTENT response or undefined
 
 #### Defined in
 
-[src/portalnetwork/client.ts:103](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L103)
+[packages/portalnetwork/src/client/client.ts:277](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L277)
 
 ___
 
 ### sendFindNodes
 
-▸ **sendFindNodes**(`dstId`, `distances`): `void`
+▸ **sendFindNodes**(`dstId`, `distances`, `networkId`): `Promise`<`undefined` \| [`NodesMessage`](../modules.md#nodesmessage)\>
 
-Sends a Portal Network Wire Protocol FINDNODES request to a peer requesting other node ENRs
+Sends a Portal Network FINDNODES request to a peer requesting other node ENRs
 
 #### Parameters
 
@@ -1043,41 +1054,47 @@ Sends a Portal Network Wire Protocol FINDNODES request to a peer requesting othe
 | :------ | :------ | :------ |
 | `dstId` | `string` | node id of peer |
 | `distances` | `Uint16Array` | distances as defined by subnetwork for node ENRs being requested |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | subnetwork id for message being |
 
 #### Returns
 
-`void`
+`Promise`<`undefined` \| [`NodesMessage`](../modules.md#nodesmessage)\>
+
+a {@link `NodesMessage`} or undefined
 
 #### Defined in
 
-[src/portalnetwork/client.ts:85](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L85)
+[packages/portalnetwork/src/client/client.ts:218](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L218)
 
 ___
 
 ### sendOffer
 
-▸ **sendOffer**(`dstId`, `contentKeys`): `void`
+▸ **sendOffer**(`dstId`, `contentKeys`, `networkId`): `Promise`<`undefined` \| `List`<`Boolean`\>\>
+
+Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `dstId` | `string` |
-| `contentKeys` | `Uint8Array`[] |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `dstId` | `string` | node ID of a peer |
+| `contentKeys` | `Uint8Array`[] | content keys being offered as specified by the subnetwork |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | network ID of subnetwork being used |
 
 #### Returns
 
-`void`
+`Promise`<`undefined` \| `List`<`Boolean`\>\>
 
 #### Defined in
 
-[src/portalnetwork/client.ts:118](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L118)
+[packages/portalnetwork/src/client/client.ts:349](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L349)
 
 ___
 
 ### sendPing
 
-▸ **sendPing**(`dstId`): `void`
+▸ **sendPing**(`dstId`, `networkId`): `Promise`<`undefined` \| [`PongMessage`](../modules.md#pongmessage)\>
 
 Sends a Portal Network Wire Protocol PING message to a specified node
 
@@ -1086,14 +1103,17 @@ Sends a Portal Network Wire Protocol PING message to a specified node
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `dstId` | `string` | the nodeId of the peer to send a ping to |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | subnetwork ID |
 
 #### Returns
 
-`void`
+`Promise`<`undefined` \| [`PongMessage`](../modules.md#pongmessage)\>
+
+the PING payload specified by the subnetwork or undefined
 
 #### Defined in
 
-[src/portalnetwork/client.ts:56](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L56)
+[packages/portalnetwork/src/client/client.ts:185](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L185)
 
 ___
 
@@ -1114,19 +1134,44 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:140](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L140)
+[packages/portalnetwork/src/client/client.ts:459](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L459)
+
+___
+
+### sendPortalNetworkMessage
+
+▸ `Private` **sendPortalNetworkMessage**(`dstId`, `payload`, `networkId`): `Promise`<`Buffer`\>
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `dstId` | `string` | `NodeId` of message recipient |
+| `payload` | `Buffer` | `Buffer` serialized payload of message |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | Subnetwork ID of Subnetwork message is being sent on |
+
+#### Returns
+
+`Promise`<`Buffer`\>
+
+response from `dstId` as `Buffer` or null `Buffer`
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:796](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L796)
 
 ___
 
 ### sendUtpStreamRequest
 
-▸ **sendUtpStreamRequest**(`dstId`): `Promise`<`void`\>
+▸ **sendUtpStreamRequest**(`dstId`, `id`): `Promise`<`void`\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `dstId` | `string` |
+| `id` | `number` |
 
 #### Returns
 
@@ -1134,22 +1179,13 @@ ___
 
 #### Defined in
 
-[src/portalnetwork/client.ts:135](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L135)
+[packages/portalnetwork/src/client/client.ts:380](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L380)
 
 ___
 
 ### setMaxListeners
 
-▸ **setMaxListeners**(`n`): [`PortalNetwork`](PortalNetwork.md)
-
-By default `EventEmitter`s will print a warning if more than `10` listeners are
-added for a particular event. This is a useful default that helps finding
-memory leaks. The `emitter.setMaxListeners()` method allows the limit to be
-modified for this specific `EventEmitter` instance. The value can be set to`Infinity` (or `0`) to indicate an unlimited number of listeners.
-
-Returns a reference to the `EventEmitter`, so that calls can be chained.
-
-**`since`** v0.3.5
+▸ **setMaxListeners**(`n`): `EventEmitter`
 
 #### Parameters
 
@@ -1159,15 +1195,15 @@ Returns a reference to the `EventEmitter`, so that calls can be chained.
 
 #### Returns
 
-[`PortalNetwork`](PortalNetwork.md)
+`EventEmitter`
 
 #### Inherited from
 
-EventEmitter.setMaxListeners
+(EventEmitter as { new (): PortalNetworkEventEmitter }).setMaxListeners
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:465
+node_modules/@types/node/globals.d.ts:646
 
 ___
 
@@ -1183,310 +1219,70 @@ Starts the portal network client
 
 #### Defined in
 
-[src/portalnetwork/client.ts:38](https://github.com/ethereumjs/portalnetwork/blob/52c3050/src/portalnetwork/client.ts#L38)
+[packages/portalnetwork/src/client/client.ts:132](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L132)
 
 ___
 
-### getEventListeners
+### stop
 
-▸ `Static` **getEventListeners**(`emitter`, `name`): `Function`[]
+▸ **stop**(): `Promise`<`void`\>
 
-Returns a copy of the array of listeners for the event named `eventName`.
-
-For `EventEmitter`s this behaves exactly the same as calling `.listeners` on
-the emitter.
-
-For `EventTarget`s this is the only way to get the event listeners for the
-event target. This is useful for debugging and diagnostic purposes.
-
-```js
-const { getEventListeners, EventEmitter } = require('events');
-
-{
-  const ee = new EventEmitter();
-  const listener = () => console.log('Events are fun');
-  ee.on('foo', listener);
-  getEventListeners(ee, 'foo'); // [listener]
-}
-{
-  const et = new EventTarget();
-  const listener = () => console.log('Events are fun');
-  et.addEventListener('foo', listener);
-  getEventListeners(et, 'foo'); // [listener]
-}
-```
-
-**`since`** v15.2.0
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `emitter` | `DOMEventTarget` \| `EventEmitter` |
-| `name` | `string` \| `symbol` |
+Stops the portal network client and cleans up listeners
 
 #### Returns
 
-`Function`[]
-
-#### Inherited from
-
-EventEmitter.getEventListeners
+`Promise`<`void`\>
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:262
+[packages/portalnetwork/src/client/client.ts:144](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L144)
 
 ___
 
-### listenerCount
+### updateSubnetworkRoutingTable
 
-▸ `Static` **listenerCount**(`emitter`, `eventName`): `number`
+▸ `Private` **updateSubnetworkRoutingTable**(`srcId`, `networkId`, `customPayload?`): `void`
 
-A class method that returns the number of listeners for the given `eventName`registered on the given `emitter`.
-
-```js
-const { EventEmitter, listenerCount } = require('events');
-const myEmitter = new EventEmitter();
-myEmitter.on('event', () => {});
-myEmitter.on('event', () => {});
-console.log(listenerCount(myEmitter, 'event'));
-// Prints: 2
-```
-
-**`since`** v0.9.12
-
-**`deprecated`** Since v3.2.0 - Use `listenerCount` instead.
+This method maintains the liveness of peers in the Subnetwork routing tables.  If a PONG message is received from
+an unknown peer for a given subnetwork, that peer is added to the corresponding subnetwork routing table.  If this
+method is called with no `customPayload`, this indicates the peer corresponding to `srcId` should be removed from
+the specified subnetwork routing table.
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `emitter` | `EventEmitter` | The emitter to query |
-| `eventName` | `string` \| `symbol` | The event name |
+| `srcId` | `string` | nodeId of peer being updated in subnetwork routing table |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | subnetwork Id of routing table being updated |
+| `customPayload?` | `any` | payload of the PING/PONG message being decoded |
 
 #### Returns
 
-`number`
-
-#### Inherited from
-
-EventEmitter.listenerCount
+`void`
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:234
+[packages/portalnetwork/src/client/client.ts:739](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L739)
 
 ___
 
-### on
+### createPortalNetwork
 
-▸ `Static` **on**(`emitter`, `eventName`, `options?`): `AsyncIterableIterator`<`any`\>
-
-```js
-const { on, EventEmitter } = require('events');
-
-(async () => {
-  const ee = new EventEmitter();
-
-  // Emit later on
-  process.nextTick(() => {
-    ee.emit('foo', 'bar');
-    ee.emit('foo', 42);
-  });
-
-  for await (const event of on(ee, 'foo')) {
-    // The execution of this inner block is synchronous and it
-    // processes one event at a time (even with await). Do not use
-    // if concurrent execution is required.
-    console.log(event); // prints ['bar'] [42]
-  }
-  // Unreachable here
-})();
-```
-
-Returns an `AsyncIterator` that iterates `eventName` events. It will throw
-if the `EventEmitter` emits `'error'`. It removes all listeners when
-exiting the loop. The `value` returned by each iteration is an array
-composed of the emitted event arguments.
-
-An `AbortSignal` can be used to cancel waiting on events:
-
-```js
-const { on, EventEmitter } = require('events');
-const ac = new AbortController();
-
-(async () => {
-  const ee = new EventEmitter();
-
-  // Emit later on
-  process.nextTick(() => {
-    ee.emit('foo', 'bar');
-    ee.emit('foo', 42);
-  });
-
-  for await (const event of on(ee, 'foo', { signal: ac.signal })) {
-    // The execution of this inner block is synchronous and it
-    // processes one event at a time (even with await). Do not use
-    // if concurrent execution is required.
-    console.log(event); // prints ['bar'] [42]
-  }
-  // Unreachable here
-})();
-
-process.nextTick(() => ac.abort());
-```
-
-**`since`** v13.6.0, v12.16.0
+▸ `Static` **createPortalNetwork**(`ip`, `proxyAddress?`): `Promise`<[`PortalNetwork`](PortalNetwork.md)\>
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `emitter` | `EventEmitter` | - |
-| `eventName` | `string` | The name of the event being listened for |
-| `options?` | `StaticEventEmitterOptions` | - |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `ip` | `string` | `undefined` | initial local IP address of node |
+| `proxyAddress` | `string` | `'127.0.0.1'` | IP address of proxy |
 
 #### Returns
 
-`AsyncIterableIterator`<`any`\>
+`Promise`<[`PortalNetwork`](PortalNetwork.md)\>
 
-that iterates `eventName` events emitted by the `emitter`
-
-#### Inherited from
-
-EventEmitter.on
+a new PortalNetwork instance
 
 #### Defined in
 
-node_modules/@types/node/events.d.ts:217
-
-___
-
-### once
-
-▸ `Static` **once**(`emitter`, `eventName`, `options?`): `Promise`<`any`[]\>
-
-Creates a `Promise` that is fulfilled when the `EventEmitter` emits the given
-event or that is rejected if the `EventEmitter` emits `'error'` while waiting.
-The `Promise` will resolve with an array of all the arguments emitted to the
-given event.
-
-This method is intentionally generic and works with the web platform [EventTarget](https://dom.spec.whatwg.org/#interface-eventtarget) interface, which has no special`'error'` event
-semantics and does not listen to the `'error'` event.
-
-```js
-const { once, EventEmitter } = require('events');
-
-async function run() {
-  const ee = new EventEmitter();
-
-  process.nextTick(() => {
-    ee.emit('myevent', 42);
-  });
-
-  const [value] = await once(ee, 'myevent');
-  console.log(value);
-
-  const err = new Error('kaboom');
-  process.nextTick(() => {
-    ee.emit('error', err);
-  });
-
-  try {
-    await once(ee, 'myevent');
-  } catch (err) {
-    console.log('error happened', err);
-  }
-}
-
-run();
-```
-
-The special handling of the `'error'` event is only used when `events.once()`is used to wait for another event. If `events.once()` is used to wait for the
-'`error'` event itself, then it is treated as any other kind of event without
-special handling:
-
-```js
-const { EventEmitter, once } = require('events');
-
-const ee = new EventEmitter();
-
-once(ee, 'error')
-  .then(([err]) => console.log('ok', err.message))
-  .catch((err) => console.log('error', err.message));
-
-ee.emit('error', new Error('boom'));
-
-// Prints: ok boom
-```
-
-An `AbortSignal` can be used to cancel waiting for the event:
-
-```js
-const { EventEmitter, once } = require('events');
-
-const ee = new EventEmitter();
-const ac = new AbortController();
-
-async function foo(emitter, event, signal) {
-  try {
-    await once(emitter, event, { signal });
-    console.log('event emitted!');
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('Waiting for the event was canceled!');
-    } else {
-      console.error('There was an error', error.message);
-    }
-  }
-}
-
-foo(ee, 'foo', ac.signal);
-ac.abort(); // Abort waiting for the event
-ee.emit('foo'); // Prints: Waiting for the event was canceled!
-```
-
-**`since`** v11.13.0, v10.16.0
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `emitter` | `NodeEventTarget` |
-| `eventName` | `string` \| `symbol` |
-| `options?` | `StaticEventEmitterOptions` |
-
-#### Returns
-
-`Promise`<`any`[]\>
-
-#### Inherited from
-
-EventEmitter.once
-
-#### Defined in
-
-node_modules/@types/node/events.d.ts:157
-
-▸ `Static` **once**(`emitter`, `eventName`, `options?`): `Promise`<`any`[]\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `emitter` | `DOMEventTarget` |
-| `eventName` | `string` |
-| `options?` | `StaticEventEmitterOptions` |
-
-#### Returns
-
-`Promise`<`any`[]\>
-
-#### Inherited from
-
-EventEmitter.once
-
-#### Defined in
-
-node_modules/@types/node/events.d.ts:158
+[packages/portalnetwork/src/client/client.ts:65](https://github.com/ethereumjs/ultralight/blob/193f6f0/packages/portalnetwork/src/client/client.ts#L65)
