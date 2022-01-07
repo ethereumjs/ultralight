@@ -1,5 +1,4 @@
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
-// eslint-disable-next-line
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 
 export const shortId = (nodeId: string) => {
