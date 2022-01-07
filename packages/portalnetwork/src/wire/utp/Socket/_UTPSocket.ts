@@ -20,7 +20,7 @@ import { Discv5 } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
 import { SubNetworkIds } from '../..'
 import { debug } from 'debug'
-import utpWritingRunnable from '../Protocol/write/utpWritingRunnable'
+import Writer from '../Protocol/write/Writer'
 import Reader from '../Protocol/read/Reader'
 
 const log = debug('<uTP>')
@@ -44,7 +44,7 @@ export class _UTPSocket extends EventEmitter {
   ourDelay: number
   sendRate: number
   CCONTROL_TARGET: number
-  writer: utpWritingRunnable | undefined
+  writer: Writer | undefined
   reader: Reader
   readerContent: Uint8Array
   reading: boolean
@@ -340,13 +340,7 @@ export class _UTPSocket extends EventEmitter {
   }
 
   async write(content: Uint8Array, synAck: Packet): Promise<void> {
-    const writer: utpWritingRunnable = new utpWritingRunnable(
-      this.utp,
-      this,
-      synAck,
-      content,
-      Bytes32TimeStamp()
-    )
+    const writer: Writer = new Writer(this.utp, this, synAck, content, Bytes32TimeStamp())
     this.writer = writer
     this.writer.start().then(() => {
       log(`All Data sent...  Building FIN Packet...`)
