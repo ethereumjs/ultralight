@@ -7,7 +7,6 @@ interface ContentManagerProps {
   portal: PortalNetwork
 }
 export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
-  console.log(portal.client.enr.nodeId)
   const handleUpload = async (evt: React.ChangeEvent<HTMLInputElement>) => {
     const files = evt.target.files
     const reader = new FileReader()
@@ -21,13 +20,13 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
               const diff =
                 distance(
                   portal.client.enr.nodeId,
-                  getContentId({ chainId: 1, blockHash: fromHex(a[0]) }, 1)
+                  getContentId({ chainId: 1, blockHash: fromHex(a[0].slice(2)) }, 1).slice(2)
                 ) -
                 distance(
                   portal.client.enr.nodeId,
-                  getContentId({ chainId: 1, blockHash: fromHex(b[0]) }, 1)
+                  getContentId({ chainId: 1, blockHash: fromHex(b[0].slice(2)) }, 1).slice(2)
                 )
-              const res = diff > 0n ? -1 : 1
+              const res = diff < 0n ? -1 : 1
               return res
             })
             .slice(0, 10)
@@ -36,7 +35,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
                 block[0],
                 log2Distance(
                   portal.client.enr.nodeId,
-                  getContentId({ chainId: 1, blockHash: fromHex(block[0]) }, 1)
+                  getContentId({ chainId: 1, blockHash: fromHex(block[0].slice(2)) }, 1).slice(2)
                 )
               )
               portal.addContentToHistory(1, 1, block[0], (block[1] as any).rlp)
