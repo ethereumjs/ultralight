@@ -20,7 +20,7 @@ import { Discv5 } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
 import { SubNetworkIds } from '../..'
 import { debug } from 'debug'
-import utpWritingRunnable from '../Protocol/write/utpWritingRunnable'
+import Writer from '../Protocol/write/Writer'
 import Reader from '../Protocol/read/Reader'
 
 const log = debug('<uTP>')
@@ -44,7 +44,7 @@ export class _UTPSocket extends EventEmitter {
   ourDelay: number
   sendRate: number
   CCONTROL_TARGET: number
-  writer: utpWritingRunnable | undefined
+  writer: Writer | undefined
   reader: Reader
   readerContent: Uint8Array
   reading: boolean
@@ -105,18 +105,34 @@ export class _UTPSocket extends EventEmitter {
       // this.incrementSequenceNumber();
     })
   }
+  // handles SYN packets
+  async handleIncomingStreamRequest(packet: Packet): Promise<void> {
+    // sndConnectionId and rcvConnectionId calculated from packet header
+    this.setConnectionIdsFromPacket(packet)
+    this.ackNr = packet.header.seqNr
+    // TODO: Figure out SeqNr and AckNr initializing and incrementation
+
+    log(`Setting Connection State: SynRecv`)
+    this.state = ConnectionState.SynRecv
+    log(`Sending SYN ACK to accept connection request...`)
+    await this.sendSynAckPacket().then(() => {
+      log(`Incrementing seqNr from ${this.seqNr - 1} to ${this.seqNr}`)
+      // Increments seqNr (***????????*****)
+      // this.incrementSequenceNumber();
+    })
+  }
 
   async handleSynAckPacket(packet: Packet): Promise<void> {
     this.ackNr = packet.header.seqNr
     log(`SYN packet accepted.  SYN ACK Received.  Connection State: Connected`)
     this.setState(ConnectionState.Connected)
-    if (this.reader) {
+    if (this.reading) {
       log(`Sending SYN ACK ACK`)
       await this.sendAckPacket().then(() => {
         log(`SYN ACK ACK sent...Reader listening for DATA stream...`)
       })
-    } else if (this.writer) {
-      // TODO : What should go here?
+    } else if (this.writing) {
+      this.write(this.content, packet)
     }
   }
 
@@ -324,13 +340,7 @@ export class _UTPSocket extends EventEmitter {
   }
 
   async write(content: Uint8Array, synAck: Packet): Promise<void> {
-    const writer: utpWritingRunnable = new utpWritingRunnable(
-      this.utp,
-      this,
-      synAck,
-      content,
-      Bytes32TimeStamp()
-    )
+    const writer: Writer = new Writer(this.utp, this, synAck, content, Bytes32TimeStamp())
     this.writer = writer
     this.writer.start().then(() => {
       log(`All Data sent...  Building FIN Packet...`)

@@ -624,7 +624,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
     const id = randUint16()
-    const connectionId = await this.uTP.initiateConnectionRequest(srcId, id).then((_res) => {
+    const connectionId = await this.uTP.awaitConnectionRequest(srcId, id).then((_res) => {
       return this.uTP.sockets[srcId].sndConnectionId
     })
     const payload: AcceptMessage = {

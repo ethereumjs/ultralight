@@ -4,7 +4,7 @@ import { Packet, TWO_MINUTES, _UTPSocket } from '../..'
 // import { UtpWriteFuture, UtpWriteFutureImpl } from "./UtpWriteFuture";
 
 const _MIN_RTO = TWO_MINUTES
-export default class utpWritingRunnable {
+export default class Writer {
   utp: UtpProtocol
   socket: _UTPSocket
   content: Uint8Array
