@@ -4,12 +4,12 @@ import td from 'testdouble'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
-import { toBuffer } from '@chainsafe/discv5'
 import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
 
 tape('Client unit tests', async (t) => {
 
     const node = await PortalNetwork.createPortalNetwork('192.168.0.1', 'ws://192.168.0.2:5050') as any
+
     t.test('node initialization/startup', async (st) => {
         st.plan(4)
         st.ok(node.client.enr.getLocationMultiaddr('udp')!.toString().includes('192.168.0.1'), 'created portal network node with correct ip address')
@@ -68,9 +68,10 @@ tape('Client unit tests', async (t) => {
     t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
         st.plan(3)
         const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
+        node.log = td.func<any>()
+        td.when(node.log(td.matchers.contains('received content abc'))).thenDo(() => st.pass('received content!'))
         td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(findContentResponse)
         const res = await node.sendFindContent('abc', Uint8Array.from([1]), SubNetworkIds.HistoryNetwork)
-        st.ok(Buffer.from(res).toString() === 'abc', 'received expected content from FINDCONTENT')
 
         const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
         const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179, 37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182])
@@ -80,10 +81,11 @@ tape('Client unit tests', async (t) => {
         await node.handleFindContent('def', { id: '12345', protocol: fromHexString(SubNetworkIds.HistoryNetwork), request: findContentMessageWithShortContent })
     })
 
+    td.reset()
     t.test('OFFER/ACCEPT message handlers', async (st) => {
         st.plan(3)
         const acceptResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 3])
-        td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(null, acceptResponse, null)
+        td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve([], acceptResponse, [])
         let res = await node.sendOffer('abc', '', SubNetworkIds.HistoryNetwork)
         st.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
         node.uTP.initiateUtpFromAccept = td.func<any>()
@@ -110,6 +112,6 @@ tape('Client unit tests', async (t) => {
         st.ok(header.number.eqn(1), 'retrieved block header based on content key')
     })
     td.reset();
-
+    await node.stop()
     t.end()
 })

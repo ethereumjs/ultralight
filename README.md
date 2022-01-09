@@ -26,7 +26,7 @@ discv5:service Node unknown, requesting ENR. Node: 6a75259ee66cd763534eb8c800f3d
 discv5:service Sending PING to 6a75259ee66cd763534eb8c800f3d336c7e06d3899e3435c64f99bdd7f2be0c0 +92ms
 discv5:service Received TALKREQ message from Node: 6a75259ee66cd763534eb8c800f3d336c7e06d3899e3435c64f99bdd7f2be0c0 +5ms
 ```
-- Try the other buttons in the browser and see what happens.  (Hint: Enter `03` in the "Content-Key" input and press the "Send Find Content Request")
+- Try the other buttons in the browser and see what happens.  (Hint: Enter `0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6` - the hash for Block 1 from the Ethereum Mainnet in the "Content-Key" input and press the "Send Find Content Request")
 
 ## Detailed Node Usage/Interop Instructions
 
@@ -45,7 +45,7 @@ The `portalnetwork` library is the application layer needed to interact with the
 
 ### [`Ultralight-Proxy`](./packages/proxy)
 
-This a simple nodejs server that accepts incoming websocket connections from browser clients and routes their messages on to other Portal Network clients
+This a simple nodejs server that accepts incoming websocket connections from clients running the `portalnetwork` module and routes their messages on to other Portal Network clients
 ### [`Ultralight-Browser-Client`](./packages/browser-client)
 
 This is a technical demonstration of a web application that uses the `portalnetwork` module to connect to the Portal Network

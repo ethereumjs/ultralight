@@ -4,7 +4,9 @@
   "devDependencies": {
     "@types/ws": "^7.4.7",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3"
+    "typescript": "^4.4.3",
+    "eslint": "^8.6.0",
+    "prettier": "^2.5.1"
   },
   "dependencies": {
     "@leichtgewicht/ip-codec": "^2.0.3",
@@ -13,6 +15,8 @@
   },
   "scripts": {
     "run-proxy": "ts-node src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "../../config/cli/lint.sh",
+    "lint:fix": "../../config/cli/lint-fix.sh"
   }
 }

@@ -4,10 +4,9 @@
   "description": "",
   "main": "index.js",
   "engines": {
-    "node": "^15"
+    "node": "^16"
   },
   "devDependencies": {
-    "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
     "@types/yargs": "^17.0.7",
@@ -18,14 +17,18 @@
   "dependencies": {
     "@chainsafe/discv5": "^0.6.6",
     "debug": "^4.3.3",
+    "eslint": "^8.6.0",
     "jayson": "^3.6.6",
     "multiaddr": "^10.0.0",
     "peer-id": "^0.15.2",
     "portalnetwork": "^0.0.1",
+    "prettier": "^2.5.1",
     "yargs": "^17.3.0"
   },
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts",
+    "lint": "../../config/cli/lint.sh",
+    "lint:fix": "../../config/cli/lint-fix.sh"
   },
   "author": "acolytec3",
   "license": "MIT"
