@@ -6,7 +6,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
-import { methods } from './rpc'
+import { RPCManager } from './rpc'
 import { HistoryNetworkContentTypes } from 'portalnetwork/dist/historySubnetwork/types'
 const readline = require('readline')
 
@@ -71,6 +71,8 @@ const run = async () => {
     }
     const { rpc, rpcport, rpcaddr } = args
     if (rpc) {
+        const manager = new RPCManager(portal)
+        const methods = manager.getMethods()
         const server = new RPCServer(methods)
         server.http().listen(rpcport)
         console.log(`Started JSON RPC Server address=http://${rpcaddr}:${rpcport}`)
