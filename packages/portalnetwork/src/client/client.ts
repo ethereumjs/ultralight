@@ -645,7 +645,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
 
     if (value.length === 0) {
-      // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
       switch (toHexString(message.protocol)) {
         case SubNetworkIds.HistoryNetwork:
           {
@@ -653,6 +652,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               getContentIdFromSerializedKey(decodedContentMessage.contentKey),
               1
             )
+            // TODO: Verify that ENRs are actually closer than us to content
             this.log(`Found ${ENRs.length} closer to content than us`)
             const encodedEnrs = ENRs.map((enr) =>
               enr.nodeId !== srcId ? enr.encode() : undefined
