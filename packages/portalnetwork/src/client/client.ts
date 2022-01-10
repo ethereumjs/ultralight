@@ -709,8 +709,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  // private handleContent = async (srcId: string, message: Italk)
-
+  /**
+   *
+   * @param srcId nodeID that uTP packet originates from
+   * @param msgId uTP message ID
+   * @param packetBuffer uTP packet encoded to Buffer
+   */
   private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
     await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
     const packet = bufferToPacket(packetBuffer)
