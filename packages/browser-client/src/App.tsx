@@ -25,6 +25,7 @@ import { Multiaddr } from 'multiaddr'
 import ShowInfo from './Components/ShowInfo'
 import AddressBookManager from './Components/AddressBookManager'
 import Log from './Components/Log'
+import { ContentManager } from './Components/ContentManager'
 export const App = () => {
   const [portal, setDiscv5] = React.useState<PortalNetwork>()
   const [enr, setENR] = React.useState<string>('')
@@ -96,6 +97,7 @@ export const App = () => {
   }
   return (
     <ChakraProvider theme={theme}>
+      {portal && <ContentManager portal={portal} />}
       <ColorModeSwitcher justifySelf="flex-end" />
       <HStack justifyContent={'space-between'}>
         <Flex>
