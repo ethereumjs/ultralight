@@ -1,7 +1,7 @@
 import { Button, Box } from '@chakra-ui/react'
 import { PortalNetwork, getContentId } from 'portalnetwork'
 import React from 'react'
-import { distance, log2Distance, fromHex } from '@chainsafe/discv5'
+import { distance, fromHex } from '@chainsafe/discv5'
 
 interface ContentManagerProps {
   portal: PortalNetwork
@@ -29,15 +29,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
               const res = diff < 0n ? -1 : 1
               return res
             })
-            .slice(0, 10)
+            .slice(0, 100)
             .forEach((block) => {
-              console.log(
-                block[0],
-                log2Distance(
-                  portal.client.enr.nodeId,
-                  getContentId({ chainId: 1, blockHash: fromHex(block[0].slice(2)) }, 1).slice(2)
-                )
-              )
               portal.addContentToHistory(1, 1, block[0], (block[1] as any).rlp)
             })
         }

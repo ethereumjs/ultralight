@@ -433,10 +433,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       await this.db.put(headerKey, serializedHeader, (err: any) => {
         if (err) this.log(`Error putting content in history DB: ${err}`)
       })
+      this.log(`added blockheader for ${blockHash} to content DB`)
     }
     await this.db.put(key, value, (err: any) => {
       if (err) this.log(`Error putting content in history DB: ${err.toString()}`)
     })
+    this.log(
+      `added ${Object.keys(HistoryNetworkContentTypes)[
+      Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+      ]
+      } for ${blockHash} to content db`
+    )
 
     // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= log2Distance from the content)
     // TODO: Make # nodes content is offered to configurable based on further discussion
