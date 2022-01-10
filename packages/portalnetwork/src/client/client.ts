@@ -439,9 +439,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (err) this.log(`Error putting content in history DB: ${err.toString()}`)
     })
     this.log(
-      `added ${Object.keys(HistoryNetworkContentTypes)[
-      Object.values(HistoryNetworkContentTypes).indexOf(contentType)
-      ]
+      `added ${
+        Object.keys(HistoryNetworkContentTypes)[
+          Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+        ]
       } for ${blockHash} to content db`
     )
 
@@ -816,7 +817,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private bucketRefresh = async () => {
-    console.log('refreshing')
+    // TODO Rework bucket refresh logic given most nodes will be at log2distance ~>240
     const notFullBuckets = this.historyNetworkRoutingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
