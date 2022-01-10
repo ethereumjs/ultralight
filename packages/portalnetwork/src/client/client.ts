@@ -25,7 +25,6 @@ import {
   OfferMessage,
   AcceptMessage,
   PongMessage,
-  ContentMessage,
   PingMessage,
 } from '../wire'
 import { PortalNetworkEventEmitter } from './types'
@@ -508,7 +507,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.handleFindContent(srcId, message)
         break
       case MessageCodes.CONTENT:
-        this.handleContent(srcId, message)
+        this.log(`ACCEPT message not expected in TALKREQ`)
         break
       case MessageCodes.OFFER:
         this.handleOffer(srcId, message)
@@ -535,14 +534,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       toHexString(header.hash()),
       toHexString(content)
     )
-  }
-
-  // TODO: Decide if we actually need this message since we should never get a CONTENT message in a TALKREQ message packet
-  private handleContent(srcId: string, message: ITalkReqMessage) {
-    const decoded = PortalWireMessageType.deserialize(message.request)
-    const payload = decoded.value as ContentMessage
-    const packet = payload.content as Uint8Array
-    this.handleUTP(srcId, message.id, Buffer.from(packet))
   }
 
   private handlePing = (srcId: string, message: ITalkReqMessage) => {
@@ -654,7 +645,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
 
     if (value.length === 0) {
-      // TODO: Replace with correct FINDCONTENT response (e.g. nodes closer to content from routing table)
       switch (toHexString(message.protocol)) {
         case SubNetworkIds.HistoryNetwork:
           {
@@ -662,6 +652,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               getContentIdFromSerializedKey(decodedContentMessage.contentKey),
               1
             )
+            // TODO: Verify that ENRs are actually closer than us to content
             this.log(`Found ${ENRs.length} closer to content than us`)
             const encodedEnrs = ENRs.map((enr) =>
               enr.nodeId !== srcId ? enr.encode() : undefined
@@ -718,8 +709,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  // private handleContent = async (srcId: string, message: Italk)
-
+  /**
+   *
+   * @param srcId nodeID that uTP packet originates from
+   * @param msgId uTP message ID
+   * @param packetBuffer uTP packet encoded to Buffer
+   */
   private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
     await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
     const packet = bufferToPacket(packetBuffer)
@@ -808,8 +803,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
+  /**
+   * Follows below algorithm to refresh a bucket in the History Network routing table
+   * 1: Look at your routing table and select the first N buckets which are not full.
+   * Any value of N < 10 is probably fine here.
+   * 2: Randomly pick one of these buckets.  eighting this random selection to prefer
+   * "larger" buckets can be done here to prioritize finding the easier to find nodes first.
+   * 3: Randomly generate a NodeID that falls within this bucket.
+   * Do the random lookup on this node-id.
+   * The lookup is conducted at the `discv5` routing table level since `discv5` already
+   * has the lookup logic built and any nodes found via the discv5 lookup will be adding to
+   * the History Network Routing Table if they support that subnetwork.
+   */
   private bucketRefresh = async () => {
-    console.log('refreshing')
     const notFullBuckets = this.historyNetworkRoutingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
