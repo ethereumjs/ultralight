@@ -1,7 +1,7 @@
 import { ByteVectorType, ContainerType, NumberUintType, Union, UnionType } from '@chainsafe/ssz'
 
 /**
- * @property chainId - decimal number representing the chain ID (e.g. Ethereum Mainnet is 1)
+ * @property chainId - integer representing the chain ID (e.g. Ethereum Mainnet is 1)
  * @property blockHash - byte representation of the hex encoded block hash
  *
  */
