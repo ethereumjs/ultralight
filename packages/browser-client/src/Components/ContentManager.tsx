@@ -1,7 +1,7 @@
 import { Button, Box } from '@chakra-ui/react'
 import { PortalNetwork, getContentId } from 'portalnetwork'
 import React from 'react'
-import { distance, fromHex } from '@chainsafe/discv5'
+import { distance } from '@chainsafe/discv5'
 
 interface ContentManagerProps {
   portal: PortalNetwork
@@ -18,14 +18,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
           arrayData
             .sort((a, b) => {
               const diff =
-                distance(
-                  portal.client.enr.nodeId,
-                  getContentId({ chainId: 1, blockHash: fromHex(a[0].slice(2)) }, 1).slice(2)
-                ) -
-                distance(
-                  portal.client.enr.nodeId,
-                  getContentId({ chainId: 1, blockHash: fromHex(b[0].slice(2)) }, 1).slice(2)
-                )
+                distance(portal.client.enr.nodeId, getContentId(1, a[0], 1).slice(2)) -
+                distance(portal.client.enr.nodeId, getContentId(1, b[0], 1).slice(2))
               const res = diff < 0n ? -1 : 1
               return res
             })
