@@ -83,8 +83,6 @@ export class _UTPSocket extends EventEmitter {
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encodePacket()
-    console.log(packet.header)
-    console.log(this.sndConnectionId)
     await this.client.sendTalkReq(this.remoteAddress, msg, fromHexString(SubNetworkIds.UTPNetwork))
     log(`${PacketType[type]} packet sent to ${this.remoteAddress}.`)
     type === 1 && log('uTP stream clsed.')
@@ -180,7 +178,7 @@ export class _UTPSocket extends EventEmitter {
             log(`Finishing uTP data stream...`)
           }))
         // a STATE packet will ACK the FIN packet to close connection.
-      } else if (packet.header.ackNr === (Number('eof_pkt') & 0xffff)) {
+      } else if (packet.header.ackNr === this.seqNr) {
         log(`FIN acked`)
         return
       } else {
@@ -277,9 +275,9 @@ export class _UTPSocket extends EventEmitter {
   }
 
   async sendFinPacket(): Promise<void> {
-    const packet = createFinPacket(this.sndConnectionId, this.ackNr, this.cur_window)
+    const packet = createFinPacket(this.sndConnectionId, this.seqNr, this.ackNr, this.cur_window)
     log(`Sending FIN packet to ${this.remoteAddress}`)
-    log(`seqNr ${Number('eof pkt') & 0xffff}`)
+    log(`seqNr ${this.seqNr}`)
     // *******************??????????????????????**********************
     // this.incrementSequenceNumber();
     await this.sendPacket(packet, PacketType.ST_FIN)
