@@ -83,6 +83,8 @@ export class _UTPSocket extends EventEmitter {
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encodePacket()
+    console.log(packet.header)
+    console.log(this.sndConnectionId)
     await this.client.sendTalkReq(this.remoteAddress, msg, fromHexString(SubNetworkIds.UTPNetwork))
     log(`${PacketType[type]} packet sent to ${this.remoteAddress}.`)
     type === 1 && log('uTP stream clsed.')
@@ -259,6 +261,7 @@ export class _UTPSocket extends EventEmitter {
   async sendSynPacket(connectionId: number): Promise<Buffer> {
     // Initiates a uTP connection from a ConnectionId
     this.rcvConnectionId = connectionId
+    this.sndConnectionId = connectionId + 1
     this.ackNr = randUint16()
     log(`Initializing ackNr to random Uint16.......${this.ackNr}`)
     const packet = createSynPacket(this.rcvConnectionId, 1, 0xffff)
