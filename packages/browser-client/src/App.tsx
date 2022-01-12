@@ -2,9 +2,9 @@ import * as React from 'react'
 import {
   ChakraProvider,
   Box,
+  Flex,
   theme,
   Heading,
-  Button,
   Text,
   Tooltip,
   useClipboard,
@@ -12,10 +12,6 @@ import {
   RadioGroup,
   Radio,
   Stack,
-  HStack,
-  Flex,
-  Input,
-  Center,
 } from '@chakra-ui/react'
 import { ColorModeSwitcher } from './ColorModeSwitcher'
 import { ENR } from '@chainsafe/discv5'
@@ -24,13 +20,12 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import ShowInfo from './Components/ShowInfo'
 import AddressBookManager from './Components/AddressBookManager'
-import Log from './Components/Log'
+
 import { ContentManager } from './Components/ContentManager'
 export const App = () => {
   const [portal, setDiscv5] = React.useState<PortalNetwork>()
   const [enr, setENR] = React.useState<string>('')
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
-  const [radius, setRadius] = React.useState('')
 
   const { onCopy } = useClipboard(enr) // eslint-disable-line
 
@@ -83,63 +78,35 @@ export const App = () => {
     }
   }
 
-  const updateRadius = () => {
-    let rad = portal?.radius
-    try {
-      rad = parseInt(radius)
-      if (rad < 0) return
-    } catch (err) {
-      alert('something went wrong setting the radius')
-      return
-    }
-    setRadius('')
-    if (portal) portal.radius = rad
-  }
   return (
     <ChakraProvider theme={theme}>
-      {portal && <ContentManager portal={portal} />}
       <ColorModeSwitcher justifySelf="flex-end" />
-      <HStack justifyContent={'space-between'}>
-        <Flex>
-          {portal && <Log portal={portal} />}
-          <VStack width="70%">
-            <Heading textAlign="center">Ultralight Node Interface</Heading>
-            <Box textAlign="center" fontSize="xl">
-              {portal && <ShowInfo portal={portal} />}
-              <Tooltip label="click to copy">
-                <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
-                  {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
-                </Text>
-              </Tooltip>
-            </Box>
-            <Box>
-              <Center>
-                <Heading paddingBottom={2} size="lg">
-                  Local Node Management
-                </Heading>
-              </Center>
-              <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
-                <Stack direction="row">
-                  <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
-                  <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
-                </Stack>
-              </RadioGroup>
-              <HStack>
-                <Input
-                  w="150px"
-                  placeholder="Radius"
-                  value={radius}
-                  onChange={(evt) => setRadius(evt.target.value)}
-                />
-                <Button onClick={updateRadius} disabled={!portal || !radius} w="155px">
-                  Update Radius
-                </Button>
-              </HStack>
-            </Box>
-            <Box>{portal && <AddressBookManager portal={portal} network={network} />}</Box>
+      <Flex justify="center">
+        <VStack width="70%">
+          <Heading textAlign="center">Ultralight Node Interface</Heading>
+          <Box textAlign="center" fontSize="xl">
+            {portal && <ShowInfo portal={portal} />}
+            <Tooltip label="click to copy">
+              <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
+                {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
+              </Text>
+            </Tooltip>
+          </Box>
+          <VStack justify="center">
+            <Heading paddingBottom={2} size="lg">
+              Local Node Management
+            </Heading>
+            <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
+              <Stack direction="row">
+                <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
+                <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
+              </Stack>
+            </RadioGroup>
+            {portal && <ContentManager portal={portal} />}
           </VStack>
-        </Flex>
-      </HStack>
+          {portal && <AddressBookManager portal={portal} network={network} />}
+        </VStack>
+      </Flex>
     </ChakraProvider>
   )
 }

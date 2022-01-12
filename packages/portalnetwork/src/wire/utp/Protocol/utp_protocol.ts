@@ -39,6 +39,10 @@ export class UtpProtocol {
         await this.handleResetPacket
         break
       case PacketType.ST_FIN:
+        if (this.sockets[srcId].writing) {
+          log(`received unexpected FIN packet while sending data to ${srcId}`)
+          break
+        }
         {
           const content = await this.handleFinPacket(packet, srcId, msgId)
           log(`content received over uTP ${toHexString(content)}`)
@@ -60,7 +64,7 @@ export class UtpProtocol {
     this.sockets[remoteAddr] = socket
 
     // Sends Syn Packet to begin uTP connection process using connectionId
-    return this.sockets[remoteAddr].sendSynPacket(connectionId)
+    await this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 
   async awaitConnectionRequest(remoteAddr: string, connectionId: number): Promise<number> {
@@ -73,7 +77,7 @@ export class UtpProtocol {
     // Sends Syn Packet to begin uTP connection process using connectionId
     return this.sockets[remoteAddr].sndConnectionId
   }
-  async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<Buffer> {
+  async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<void> {
     // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
     log(`Requesting uTP stream connection with ${remoteAddr}...`)
     // Creates a new uTP socket for remoteAddr
@@ -81,7 +85,7 @@ export class UtpProtocol {
     // Adds this socket to 'sockets' registry, wtih remoteAddr as key
     this.sockets[remoteAddr] = socket
     // Sends Syn Packet to begin uTP connection process using connectionId
-    return this.sockets[remoteAddr].sendSynPacket(connectionId)
+    await this.sockets[remoteAddr].sendSynPacket(connectionId)
   }
 
   async handleSynPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
