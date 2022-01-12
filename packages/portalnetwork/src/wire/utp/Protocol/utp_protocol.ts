@@ -39,6 +39,10 @@ export class UtpProtocol {
         await this.handleResetPacket
         break
       case PacketType.ST_FIN:
+        if (this.sockets[srcId].writing) {
+          log(`received unexpected FIN packet while sending data to ${srcId}`)
+          break
+        }
         {
           const content = await this.handleFinPacket(packet, srcId, msgId)
           log(`content received over uTP ${toHexString(content)}`)
