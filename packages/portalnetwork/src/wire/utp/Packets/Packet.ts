@@ -152,7 +152,12 @@ export function createResetPacket(seqNr: Uint16, sndConnectionId: Uint16, ackNr:
   log('Creating ST_RESET Packet...')
   return new Packet({ header: h, payload: new Uint8Array() })
 }
-export function createFinPacket(connectionId: Uint16, ackNr: number, wndSize: number): Packet {
+export function createFinPacket(
+  connectionId: Uint16,
+  seqNr: number,
+  ackNr: number,
+  wndSize: number
+): Packet {
   const h = new PacketHeader({
     pType: PacketType.ST_FIN,
     version: protocolVersion,
@@ -161,7 +166,7 @@ export function createFinPacket(connectionId: Uint16, ackNr: number, wndSize: nu
     timestamp: Bytes32TimeStamp(),
     timestampDiff: 0,
     wndSize: wndSize,
-    seqNr: Number('eof_pkt') & 0xffff,
+    seqNr: seqNr,
     ackNr: ackNr,
   })
   log('Creating ST_FIN Packet...')
