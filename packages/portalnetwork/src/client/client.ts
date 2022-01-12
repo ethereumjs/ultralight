@@ -315,19 +315,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
                 this.client.addEnr(decodedEnr)
               }
-              const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
-              await this.db.get(
-                getContentId(
-                  { chainId: contentKey.value.chainId, blockHash: contentKey.value.blockHash },
-                  contentKey.selector
-                ),
-                (err) => {
-                  if (err) {
-                    // Checks to see if content is already stored locally (from a previous lookup) and continues the lookup if not
-                    this.sendFindContent(decodedEnr.nodeId, key, networkId)
-                  }
+              await this.db.get(getContentIdFromSerializedKey(key), (err) => {
+                if (err) {
+                  // Checks to see if content is already stored locally (from a previous lookup) and continues the lookup if not
+                  this.sendFindContent(decodedEnr.nodeId, key, networkId)
                 }
-              )
+              })
             })
             break
           }
@@ -422,13 +415,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       default:
         throw new Error('unknown data type provided')
     }
-    const key = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, contentType)
+    const key = getContentId(chainId, blockHash, contentType)
     if (deserializedValue && contentType === HistoryNetworkContentTypes.BlockBody) {
       // If content received is full block, store blockheader separately
       // TODO: Figure out how to efficiently store block once but retrieve content based on either Block Header or Block Body content Type
       const serializedHeader =
         '0x' + (deserializedValue as Block).header.serialize().toString('hex')
-      const headerKey = getContentId({ chainId: chainId, blockHash: fromHexString(blockHash) }, 0)
+      const headerKey = getContentId(chainId, blockHash, 0)
       await this.db.put(headerKey, serializedHeader, (err: any) => {
         if (err) this.log(`Error putting content in history DB: ${err}`)
       })

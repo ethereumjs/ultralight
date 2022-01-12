@@ -1,6 +1,6 @@
 import SHA256 from '@chainsafe/as-sha256'
-import { toHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKey, HistoryNetworkContentKeyUnionType } from '.'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { HistoryNetworkContentKeyUnionType } from '.'
 import { HistoryNetworkContentTypes } from './types'
 
 /**
@@ -10,12 +10,16 @@ import { HistoryNetworkContentTypes } from './types'
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
 export const getContentId = (
-  contentKey: HistoryNetworkContentKey,
+  chainId: number,
+  blockHash: string,
   contentType: HistoryNetworkContentTypes
 ) => {
   const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
     selector: contentType,
-    value: contentKey,
+    value: {
+      chainId: chainId,
+      blockHash: fromHexString(blockHash),
+    },
   })
   return toHexString(SHA256.digest(encodedKey))
 }
