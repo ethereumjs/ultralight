@@ -11,13 +11,19 @@ const MAX_PACKET_SIZE = 1280
 
 const servers: WS.Server[] = []
 
-const args: any = yargs(hideBin(process.argv)).option('nat', {
-  describe: 'NAT Traversal options for proxy',
-  choices: ['extip', 'localhost', 'lan'],
-  default: 'localhost',
-  array: true,
-  string: true,
-}).argv
+const args: any = yargs(hideBin(process.argv))
+  .option('nat', {
+    describe: 'NAT Traversal options for proxy',
+    choices: ['extip', 'localhost', 'lan'],
+    default: 'localhost',
+    array: true,
+    string: true,
+  })
+  .option('ip', {
+    describe: 'IP address on local network',
+    string: true,
+    optional: true,
+  }).argv
 
 const startServer = async (ws: WS.Server, extip = false) => {
   let remoteAddr = ws.options.host
@@ -101,7 +107,12 @@ args.nat.forEach((arg: string) => {
       break
     case 'lan':
       {
-        const ws = new WS.Server({ host: '192.168.0.194', port: 5050, clientTracking: true })
+        if (!args.ip) {
+          console.error('Must provide IP address for LAN option')
+          console.log('Exiting...')
+          process.exit(1)
+        }
+        const ws = new WS.Server({ host: args.ip, port: 5050, clientTracking: true })
         startServer(ws, args.nat.includes('extip'))
       }
       break
