@@ -24,9 +24,9 @@ const args: any = yargs(hideBin(process.argv))
   })
   .option('nat', {
     describe: 'NAT Traversal options for proxy',
-    choices: ['none', 'extip'],
-    default: 'none',
-    string: true,
+    choices: ['localhost', 'lan', 'extip'],
+    default: 'localhost',
+    array: true,
   })
   .option('rpc', {
     describe: 'Enable the JSON-RPC server with HTTP endpoint',
@@ -113,7 +113,7 @@ const main = async () => {
   if (args.proxy === true) {
     // Spawn a child process that runs the proxy
     const file = require.resolve('../../proxy/dist/index.js')
-    child = spawn(process.execPath, [file, args.nat])
+    child = spawn(process.execPath, [file, '--nat', args.nat])
     child.stdout.on('data', async (data) => {
       // Prints all proxy logs to the console
       console.log(data.toString())

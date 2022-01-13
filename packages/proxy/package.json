@@ -11,10 +11,12 @@
   "dependencies": {
     "@leichtgewicht/ip-codec": "^2.0.3",
     "stun": "^2.1.0",
-    "ws": "^8.2.2"
+    "ws": "^8.2.2",
+    "yargs": "^17.3.0",
+    "debug": "^4.3.3"
   },
   "scripts": {
-    "run-proxy": "ts-node src/index.ts",
+    "start": "ts-node src/index.ts",
     "build": "tsc",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"

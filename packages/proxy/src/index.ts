@@ -1,18 +1,33 @@
 import WS from 'ws'
 import * as dgram from 'dgram'
 import ipCodec from '@leichtgewicht/ip-codec'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 const stun = require('stun')
 
 // TODO - replace console logs with debug logger
 
 const MAX_PACKET_SIZE = 1280
 
-const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
+const servers: WS.Server[] = []
 
-const main = async () => {
-  const args = process.argv.slice(2)
-  let remoteAddr = '127.0.0.1'
-  if (args[0] === 'extip') {
+const args: any = yargs(hideBin(process.argv))
+  .option('nat', {
+    describe: 'NAT Traversal options for proxy',
+    choices: ['extip', 'localhost', 'lan'],
+    default: 'localhost',
+    array: true,
+    string: true,
+  })
+  .option('ip', {
+    describe: 'IP address on local network',
+    string: true,
+    optional: true,
+  }).argv
+
+const startServer = async (ws: WS.Server, extip = false) => {
+  let remoteAddr = ws.options.host
+  if (extip) {
     try {
       const res = await stun.request('stun.l.google.com:19302')
       remoteAddr = res.getXorAddress().address
@@ -46,7 +61,7 @@ const main = async () => {
       }
     }
     // Send external IP address/port to websocket client to update ENR
-    const bAddress = ipCodec.encode(remoteAddr)
+    const bAddress = ipCodec.encode(remoteAddr!)
     const bPort = Buffer.alloc(2)
     bPort.writeUIntBE(udpsocket.address().port, 0, 2)
     websocket.send(Buffer.concat([bAddress, bPort]))
@@ -71,12 +86,36 @@ const main = async () => {
 
 function stop(): void {
   console.log('proxy server shutting down...')
-  ws.removeAllListeners()
-  ws.close()
+  servers.forEach((server) => {
+    server.removeAllListeners()
+    server.close()
+  })
   process.exit(0)
 }
 
 process.on('SIGTERM', () => stop())
 process.on('SIGINT', () => stop())
 
-main()
+args.nat.forEach((arg: string) => {
+  switch (arg) {
+    case 'localhost':
+      {
+        const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
+        startServer(ws, args.nat.includes('extip'))
+        servers.push(ws)
+      }
+      break
+    case 'lan':
+      {
+        if (!args.ip) {
+          console.error('Must provide IP address for LAN option')
+          console.log('Exiting...')
+          process.exit(1)
+        }
+        const ws = new WS.Server({ host: args.ip, port: 5050, clientTracking: true })
+        startServer(ws, args.nat.includes('extip'))
+        servers.push(ws)
+      }
+      break
+  }
+})
