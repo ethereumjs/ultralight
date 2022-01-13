@@ -114,6 +114,7 @@ args.nat.forEach((arg: string) => {
         }
         const ws = new WS.Server({ host: args.ip, port: 5050, clientTracking: true })
         startServer(ws, args.nat.includes('extip'))
+        servers.push(ws)
       }
       break
   }
