@@ -17,7 +17,6 @@ import { ConnectionState } from '.'
 
 import EventEmitter from 'events'
 import { Discv5 } from '@chainsafe/discv5'
-import { fromHexString } from '@chainsafe/ssz'
 import { SubNetworkIds } from '../..'
 import { debug } from 'debug'
 import Writer from '../Protocol/write/Writer'
