@@ -19,21 +19,13 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
   const [distance, setDistance] = React.useState<string>('0')
   const toast = useToast()
 
-  React.useEffect(() => {
-    portal.client.on('enrAdded', () => {
-      const peerENRs = portal.client.kadValues()
-      const newPeers = peerENRs.map((peer) => peer.nodeId)
-      setPeers(newPeers)
-    })
-  }, [])
-
   const log = debug('discv5:service')
 
   const handleClick = () => {
     if (enr) {
-      portal.client.addEnr(enr)
+      portal.sendPing(enr, network)
       setEnr('')
-      const peerENRs = portal.client.kadValues()
+      const peerENRs = portal.historyNetworkRoutingTable.values()
       const newPeers = peerENRs.map((peer) => peer.nodeId)
       setPeers(newPeers)
     }
