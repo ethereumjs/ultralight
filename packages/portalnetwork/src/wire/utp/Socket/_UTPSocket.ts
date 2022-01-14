@@ -83,7 +83,11 @@ export class _UTPSocket extends EventEmitter {
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encodePacket()
-    await this.client.sendTalkReq(this.remoteAddress, msg, fromHexString(SubNetworkIds.UTPNetwork))
+    await this.utp.portal.sendPortalNetworkMessage(
+      this.remoteAddress,
+      msg,
+      SubNetworkIds.UTPNetwork
+    )
     log(`${PacketType[type]} packet sent to ${this.remoteAddress}.`)
     type === 1 && log('uTP stream closed.')
     return msg

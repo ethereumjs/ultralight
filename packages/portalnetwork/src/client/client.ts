@@ -181,7 +181,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param networkId subnetwork ID
    * @returns the PING payload specified by the subnetwork or undefined
    */
-  public sendPing = async (dstId: string, networkId: SubNetworkIds) => {
+
+  sendPing = async (nodeId: string, networkId: SubNetworkIds) => {
+    let dstId
+    if (nodeId.startsWith('enr')) {
+      const enr = ENR.decodeTxt(nodeId)
+      this.historyNetworkRoutingTable.insertOrUpdate(enr, EntryStatus.Connected)
+      dstId = enr.nodeId
+    } else {
+      dstId = nodeId
+    }
     const payload = PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) })
     const pingMsg = PortalWireMessageType.serialize({
       selector: MessageCodes.PING,
@@ -191,7 +200,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       },
     })
     try {
-      this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
+      this.log(`Sending PING to ${shortId(dstId)} for ${SubNetworkIds.HistoryNetwork} subnetwork`)
       const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(pingMsg), networkId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
         this.log(`Received PONG from ${shortId(dstId)}`)
@@ -240,7 +249,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             // Add ENR to Discv5 routing table since we can't send messages to a node that's not in the discv5 table
             // (see discv5.service.sendRequest message)
             // TODO: Fix discv5.service.sendRequest to accept either a `NodeId` or an `ENR`
-            this.client.addEnr(decodedEnr)
+            //this.client.addEnr(decodedEnr)
             switch (networkId) {
               case SubNetworkIds.StateNetwork:
                 if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
@@ -313,7 +322,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
               this.log(`Node ID: ${decodedEnr.nodeId}`)
               if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                this.client.addEnr(decodedEnr)
+                this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               }
               await this.db.get(getContentIdFromSerializedKey(key), (err) => {
                 if (err) {
@@ -789,17 +798,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param networkId Subnetwork ID of Subnetwork message is being sent on
    * @returns response from `dstId` as `Buffer` or null `Buffer`
    */
-  private sendPortalNetworkMessage = async (
+  public sendPortalNetworkMessage = async (
     dstId: NodeId,
     payload: Buffer,
     networkId: SubNetworkIds
   ): Promise<Buffer> => {
+    const enr = this.historyNetworkRoutingTable.getValue(dstId)
+    console.log('found enr to send to', enr)
     try {
-      const res = await this.client.sendTalkReq(dstId, payload, fromHexString(networkId))
+      const res = await this.client.sendTalkReq(dstId, payload, fromHexString(networkId), enr)
       return res
     } catch (err: any) {
       this.log(`Error sending TALKREQ message: ${err.message}`)
-      this.updateSubnetworkRoutingTable(dstId, networkId)
+      if (networkId !== SubNetworkIds.UTPNetwork) {
+        this.updateSubnetworkRoutingTable(dstId, networkId)
+      }
       return Buffer.from([0])
     }
   }

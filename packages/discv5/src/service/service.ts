@@ -360,9 +360,14 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   /**
    * Send TALKREQ message to dstId and returns response
    */
-  public async sendTalkReq(dstId: string, payload: Buffer, protocol: string | Uint8Array): Promise<Buffer> {
+  public async sendTalkReq(
+    dstId: string,
+    payload: Buffer,
+    protocol: string | Uint8Array,
+    remoteEnr?: ENR
+  ): Promise<Buffer> {
     return await new Promise((resolve, reject) => {
-      const enr = this.findEnr(dstId);
+      const enr = remoteEnr ?? this.findEnr(dstId);
       if (!enr) {
         log("Talkreq requested an unknown ENR, node: %s", dstId);
         return;
@@ -385,9 +390,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   /**
    * Send TALKRESP message to requesting node
    */
-  public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array): Promise<void> {
+  public async sendTalkResp(srcId: NodeId, requestId: RequestId, payload: Uint8Array, remoteEnr?: ENR): Promise<void> {
     const msg = createTalkResponseMessage(requestId, payload);
-    const enr = this.findEnr(srcId);
+    const enr = remoteEnr ?? this.findEnr(srcId);
     const addr = enr?.getLocationMultiaddr("udp");
     if (enr && addr) {
       log(`Sending TALKRESP message to node ${enr.id}`);
