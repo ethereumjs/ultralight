@@ -1,6 +1,5 @@
 import debug from 'debug'
 import { PortalNetwork, getContentId } from 'portalnetwork'
-import { fromHex } from '@chainsafe/discv5'
 
 const log = debug('RPC')
 
@@ -16,7 +15,7 @@ export class RPCManager {
       log(
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
-      const lookupKey = getContentId({ chainId: 1, blockHash: fromHex(blockHash.slice(2)) }, 0)
+      const lookupKey = getContentId(1, blockHash, 0)
       const value = await this._client.db.get(lookupKey)
       if (value) {
         return value
