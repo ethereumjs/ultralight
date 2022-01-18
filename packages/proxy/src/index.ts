@@ -98,6 +98,7 @@ process.on('SIGINT', () => stop())
 
 args.nat.forEach((arg: string) => {
   switch (arg) {
+    case 'extip':
     case 'localhost':
       {
         const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
