@@ -4,7 +4,7 @@ import td from 'testdouble'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
-import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
+import { getContentId, getContentIdFromSerializedKey } from '../../src/historySubnetwork'
 
 tape('Client unit tests', async (t) => {
 
@@ -67,12 +67,12 @@ tape('Client unit tests', async (t) => {
 
     t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
         st.plan(3)
+        const key = HistoryNetworkContentKeyUnionType.serialize({ selector: 1, value: { chainId: 1, blockHash: fromHexString('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6') } })
         const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
-        node.log = td.func<any>()
-        td.when(node.log(td.matchers.contains('received content abc'))).thenDo(() => st.pass('received content!'))
+        node.addContentToHistory = td.func<any>()
         td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(findContentResponse)
-        const res = await node.sendFindContent('abc', Uint8Array.from([1]), SubNetworkIds.HistoryNetwork)
-
+        const res = await node.sendFindContent('abc', key, SubNetworkIds.HistoryNetwork)
+        st.deepEqual(res, [97, 98, 99], 'got correct content')
         const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
         const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179, 37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182])
         td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => st.pass('correctly handle findContent where no matching content'))
