@@ -1,5 +1,4 @@
 import { Button, Heading, HStack, Input, Text, VStack, Wrap, useToast } from '@chakra-ui/react'
-import debug from 'debug'
 import { PortalNetwork } from 'portalnetwork'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
 import { SubNetworkIds } from 'portalnetwork/dist/wire'
@@ -19,16 +18,27 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
   const [distance, setDistance] = React.useState<string>('0')
   const toast = useToast()
 
-  const log = debug('discv5:service')
+  const updateAddressBook = () => {
+    const peerENRs = portal.historyNetworkRoutingTable.values()
+    const newPeers = peerENRs.map((peer) => peer.nodeId)
+    setPeers(newPeers)
+  }
+
+  React.useEffect(() => {
+    portal.on('NodeAdded', () => updateAddressBook())
+    portal.on('NodeRemoved', () => updateAddressBook())
+    return () => {
+      portal.removeAllListeners()
+    }
+  }, [])
 
   const handleClick = () => {
     if (enr) {
       portal.sendPing(enr, network)
       setEnr('')
-      const peerENRs = portal.historyNetworkRoutingTable.values()
-      const newPeers = peerENRs.map((peer) => peer.nodeId)
-      setPeers(newPeers)
+      updateAddressBook()
     }
+    updateAddressBook()
   }
 
   const handlePing = (nodeId: string) => {
@@ -86,21 +96,12 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
     portal.sendUtpStreamRequest(nodeId, randUint16())
   }
 
-  const nodeLookup = () => {
-    log('discv5:service Starting a new lookup...')
-
-    portal.client.findRandomNode().then((res) => {
-      log(`finished. ${res.length} found`)
-    })
-  }
-
   return (
     <VStack paddingTop={2}>
       <Heading size="lg">Address Book Manager</Heading>
       <Input value={enr} placeholder={'Node ENR'} onChange={(evt) => setEnr(evt.target.value)} />
       <HStack>
         <Button onClick={handleClick}>Add Node</Button>
-        <Button onClick={() => nodeLookup()}> Start Random Node Lookup</Button>
       </HStack>
 
       {peers.length > 0 && (

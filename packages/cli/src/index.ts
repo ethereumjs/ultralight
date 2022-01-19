@@ -7,15 +7,11 @@ import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
 import { RPCManager } from './rpc'
-const readline = require('readline')
-
-readline.emitKeypressEvents(process.stdin)
-process.stdin.setRawMode(true)
 
 const args: any = yargs(hideBin(process.argv))
   .option('bootnode', {
     describe: 'ENR of Bootnode',
-    default: '',
+    string: true,
   })
   .option('proxy', {
     describe: 'Start proxy service',
@@ -61,12 +57,8 @@ const run = async () => {
   portal.enableLog('discv5*, RPC*, portalnetwork*')
   await portal.start()
 
-  let bootnodeId: string
   if (args.bootnode) {
-    portal.client.addEnr(args.bootnode)
-    bootnodeId = ENR.decodeTxt(args.bootnode).nodeId
-    console.log(`Press p to ping ${bootnodeId}`)
-    console.log(`Press n to send FINDNODES to ${bootnodeId}`)
+    portal.sendPing(args.bootnode, SubNetworkIds.HistoryNetwork)
   }
   const { rpc, rpcport, rpcaddr } = args
   if (rpc) {
@@ -76,38 +68,6 @@ const run = async () => {
     server.http().listen(rpcport)
     console.log(`Started JSON RPC Server address=http://${rpcaddr}:${rpcport}`)
   }
-  process.stdin.on('keypress', async (str, key) => {
-    switch (key.name) {
-      case 'p': {
-        if (!bootnodeId) return
-        console.log('Sending PING to', bootnodeId)
-        const res = await portal.sendPing(bootnodeId, SubNetworkIds.HistoryNetwork)
-        console.log('Received PONG response', res)
-        break
-      }
-      case 'n': {
-        if (!bootnodeId) return
-        console.log('Sending FINDNODES to ', bootnodeId)
-        const res = await portal.sendFindNodes(
-          bootnodeId,
-          Uint16Array.from([0, 1, 2]),
-          SubNetworkIds.HistoryNetwork
-        )
-        console.log(res)
-        break
-      }
-      case 'e': {
-        console.log('Current ENR is:', portal.client.enr.encodeTxt())
-        break
-      }
-      case 'c':
-        if (key.ctrl) {
-          console.log('Exiting')
-          child?.kill(0)
-          process.exit(0)
-        }
-    }
-  })
 }
 
 const main = async () => {
@@ -128,6 +88,8 @@ const main = async () => {
       // Prints all proxy errors to the console
       console.log(data.toString())
     })
+  } else {
+    run()
   }
 }
 
