@@ -61,10 +61,10 @@ export class UtpProtocol {
     // Loads database content to socket
     socket.content = fromHexString(value)
     // Adds this socket to 'sockets' registry, wtih remoteAddr as key
-    this.sockets[remoteAddr] = socket
+    this.sockets[remoteAddr + connectionId] = socket
 
     // Sends Syn Packet to begin uTP connection process using connectionId
-    await this.sockets[remoteAddr].sendSynPacket(connectionId)
+    await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
   }
 
   async awaitConnectionRequest(remoteAddr: string, connectionId: number): Promise<number> {
@@ -73,9 +73,9 @@ export class UtpProtocol {
     // Creates a new uTP socket for remoteAddr
     const socket = new _UTPSocket(this, remoteAddr, 'reading')
     // Adds this socket to 'sockets' registry, wtih remoteAddr as key
-    this.sockets[remoteAddr] = socket
+    this.sockets[remoteAddr + connectionId] = socket
     // Sends Syn Packet to begin uTP connection process using connectionId
-    return this.sockets[remoteAddr].sndConnectionId
+    return this.sockets[remoteAddr + connectionId].sndConnectionId
   }
   async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<void> {
     // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
@@ -83,29 +83,34 @@ export class UtpProtocol {
     // Creates a new uTP socket for remoteAddr
     const socket = new _UTPSocket(this, remoteAddr, 'reading')
     // Adds this socket to 'sockets' registry, wtih remoteAddr as key
-    this.sockets[remoteAddr] = socket
+    this.sockets[remoteAddr + connectionId] = socket
     // Sends Syn Packet to begin uTP connection process using connectionId
-    await this.sockets[remoteAddr].sendSynPacket(connectionId)
+    await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
   }
 
   async handleSynPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
-    if (this.sockets[remoteAddr]) {
+    if (this.sockets[remoteAddr + packet.header.connectionId]) {
       log(`Accepting uTP stream request...  Sending SYN ACK...  Listening for data...`)
-      await this.sockets[remoteAddr].handleIncomingStreamRequest(packet)
+      await this.sockets[remoteAddr + packet.header.connectionId].handleIncomingStreamRequest(
+        packet
+      )
     } else {
       log(`Received incoming ST_SYN packet...uTP connection requested by ${remoteAddr}`)
       // Creates a new socket for remoteAddr
       const socket = new _UTPSocket(this, remoteAddr, 'writing')
       // Adds this socket to 'sockets' registry wtih remoteAddr as key
-      this.sockets[remoteAddr] = socket
+      this.sockets[remoteAddr + packet.header.connectionId] = socket
       // Passes content from "Database" to the socket
-      this.sockets[remoteAddr].content = this.contents[remoteAddr]
+      this.sockets[remoteAddr + packet.header.connectionId].content =
+        this.contents[remoteAddr + packet.header.connectionId]
       // Socket processes the SYN packet
       // Accepts connection by sending a SYN ACK - which is a STATE packet
       log(
         `Accepting uTP stream request...  Sending SYN ACK...  Preparing to send ${this.contents}...`
       )
-      await this.sockets[remoteAddr].handleIncomingConnectionRequest(packet)
+      await this.sockets[remoteAddr + packet.header.connectionId].handleIncomingConnectionRequest(
+        packet
+      )
     }
   }
 
@@ -115,7 +120,7 @@ export class UtpProtocol {
     log('Received ST_STATE packet from ' + remoteAddr)
     log('seqnr: ' + packet.header.seqNr + 'acknr:' + packet.header.ackNr)
     // Socket will decode and process packet
-    this.sockets[remoteAddr].handleStatePacket(packet)
+    this.sockets[remoteAddr + packet.header.connectionId].handleStatePacket(packet)
   }
   async handleFinPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<Uint8Array> {
     // FIN packet is sent when sending node has sent all DATA packets.
@@ -125,20 +130,26 @@ export class UtpProtocol {
         '.  Socket will close when all packets have been processed.'
     )
     // Socket should remain open untill all DATA packets have been received.
-    await this.sockets[remoteAddr].handleFinPacket(packet)
+    await this.sockets[remoteAddr + packet.header.connectionId].handleFinPacket(packet)
     // Socket will compile Packets, and reassemble the full payload.
-    this.contents[remoteAddr] = this.sockets[remoteAddr].content
+    this.contents[remoteAddr + packet.header.connectionId] =
+      this.sockets[remoteAddr + packet.header.connectionId].content
     // TODO -- Test reader with out of order packets/ lost packets
     log(
-      `${this.contents[remoteAddr].length} bytes received. ${this.contents[remoteAddr]
+      `${this.contents[remoteAddr + packet.header.connectionId].length} 
+      bytes received. ${this.contents[remoteAddr + packet.header.connectionId]
         .toString()
         .slice(0, 20)} ...`
     )
-    log(`${this.sockets[remoteAddr].readerContent.toString().slice(0, 20)}`)
+    log(
+      `${this.sockets[remoteAddr + packet.header.connectionId].readerContent
+        .toString()
+        .slice(0, 20)}`
+    )
     // Closes socket (deletes from registry)
-    const compiledData = this.contents[remoteAddr]
-    delete this.sockets[remoteAddr]
-    delete this.contents[remoteAddr]
+    const compiledData = this.contents[remoteAddr + packet.header.connectionId]
+    delete this.sockets[remoteAddr + packet.header.connectionId]
+    delete this.contents[remoteAddr + packet.header.connectionId]
     return compiledData
   }
 
@@ -154,13 +165,13 @@ export class UtpProtocol {
         packet.payload.length
       } Bytes: ${packet.payload.slice(0, 10)}... `
     )
-    await this.sockets[remoteAddr].handleDataPacket(packet)
+    await this.sockets[remoteAddr + packet.header.connectionId].handleDataPacket(packet)
   }
 
-  async handleResetPacket(_packet: Packet, remoteAddr: string, _msgId: bigint) {
+  async handleResetPacket(packet: Packet, remoteAddr: string, _msgId: bigint) {
     // Closes socket (deletes from registry)
-    delete this.sockets[remoteAddr]
-    delete this.contents[remoteAddr]
+    delete this.sockets[remoteAddr + packet.header.connectionId]
+    delete this.contents[remoteAddr + packet.header.connectionId]
     log('Got Reset Packet...Deleting socket from registry.')
   }
 }
