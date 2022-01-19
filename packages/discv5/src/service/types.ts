@@ -36,6 +36,11 @@ export interface IDiscv5Events {
   talkRespReceived: (nodeAddr: INodeAddress, enr: ENR | null, message: ITalkRespMessage) => void;
 
   /**
+   * A session is established with a connected peer
+   */
+  sessionEstablished: (nodeId: NodeId) => void;
+
+  /**
    * A session is terminated with a connected peer
    */
   sessionEnded: (nodeId: NodeId) => void;

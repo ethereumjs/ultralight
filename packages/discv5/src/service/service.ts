@@ -674,6 +674,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     const nodeId = enr.nodeId;
     log("Session established with Node: %s, Direction: %s", nodeId, ConnectionDirection[direction]);
     this.connectionUpdated(nodeId, { type: ConnectionStatusType.Connected, enr, direction });
+    this.emit("sessionEstablished", nodeId);
   };
 
   private handleWhoAreYouRequest = (nodeAddr: INodeAddress, nonce: Buffer): void => {
