@@ -7,6 +7,7 @@ export interface IPortalNetworkEvents {
   Stream: (connectionId: number, content: Uint8Array) => void
   NodeAdded: (nodeId: NodeId, networkId: SubNetworkIds) => void
   NodeRemoved: (nodeId: NodeId, networkId: SubNetworkIds) => void
+  ContentAdded: (content: any) => void
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>
