@@ -828,12 +828,18 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.lookup(randomNodeAtDistance)
   }
 
+  /**
+   * Queries the 5 nearest nodes in the history network routing table for nodes in the kbucket and recursively
+   * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
+   * @param nodeSought nodeId of node sought in lookup
+   */
   private lookup = async (nodeSought: NodeId) => {
     const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
     const newPeers: ENR[] = []
     let finished = false
     while (!finished && closestPeers.length > 0) {
       const nearestPeer = closestPeers.shift()
+      // Calculates log2distance between queried peer and `nodeSought`
       const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, nodeSought)
       // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
       const res = await this.sendFindNodes(
