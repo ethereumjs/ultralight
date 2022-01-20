@@ -22,7 +22,6 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'NAT Traversal options for proxy',
     choices: ['localhost', 'lan', 'extip'],
     default: 'localhost',
-    array: true,
   })
   .option('rpc', {
     describe: 'Enable the JSON-RPC server with HTTP endpoint',
