@@ -41,7 +41,6 @@ import {
 } from '../historySubnetwork/types'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
-import { nodeId } from '@chainsafe/discv5/src/enr/v4'
 const level = require('level-mem')
 
 const log = debug('portalnetwork')
