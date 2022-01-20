@@ -857,6 +857,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             ) {
               // if peer received is closer than peer that sent ENR, add to front of `closestPeers` list
               closestPeers.unshift(decodedEnr)
+              // Add newly found peers to list for storing in routing table
               newPeers.push(decodedEnr)
             }
           }
