@@ -1,5 +1,6 @@
 import {
   Discv5,
+  distance,
   ENR,
   EntryStatus,
   IDiscv5CreateOptions,
@@ -40,6 +41,7 @@ import {
 } from '../historySubnetwork/types'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
+import { nodeId } from '@chainsafe/discv5/src/enr/v4'
 const level = require('level-mem')
 
 const log = debug('portalnetwork')
@@ -823,6 +825,48 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     log(`Refreshing bucket at distance ${randomNotFullBucket}`)
     const distance = notFullBuckets[randomNotFullBucket].distance
     const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-    this.client.findNode(randomNodeAtDistance)
+    this.lookup(randomNodeAtDistance)
+  }
+
+  private lookup = async (nodeSought: NodeId) => {
+    const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
+    const newPeers: ENR[] = []
+    let finished = false
+    while (!finished && closestPeers.length > 0) {
+      const nearestPeer = closestPeers.shift()
+      const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, nodeSought)
+      // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
+      const res = await this.sendFindNodes(
+        closestPeers[0].nodeId,
+        Uint16Array.from([distanceToSoughtPeer]),
+        SubNetworkIds.HistoryNetwork
+      )
+
+      if (res?.enrs) {
+        const distanceFromSoughtNodeToQueriedNode = distance(closestPeers[0].nodeId, nodeSought)
+        res.enrs.forEach((enr) => {
+          if (!finished) {
+            const decodedEnr = ENR.decode(Buffer.from(enr))
+            if (decodedEnr.nodeId === nodeSought) {
+              // `nodeSought` was found -- add to table and terminate lookup
+              finished = true
+              this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
+            } else if (
+              distance(decodedEnr.nodeId, nodeSought) < distanceFromSoughtNodeToQueriedNode
+            ) {
+              // if peer received is closer than peer that sent ENR, add to front of `closestPeers` list
+              closestPeers.unshift(decodedEnr)
+              newPeers.push(decodedEnr)
+            }
+          }
+        })
+      }
+    }
+    newPeers.forEach((enr) => {
+      // Add all newly found peers to the subnetwork routing table
+      this.historyNetworkRoutingTable.insertOrUpdate(enr, EntryStatus.Connected)
+      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+    })
   }
 }
