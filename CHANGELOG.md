@@ -1,3 +1,9 @@
+# 0.6.7 - (2022-01-20)
+
+### Features
+
+- Refresh implementation [#155](https://github.com/ChainSafe/discv5/pull/155)
+
 # 0.6.6 - (2021-11-15)
 
 ### Features
