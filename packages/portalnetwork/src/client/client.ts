@@ -295,7 +295,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               decodedKey.value.chainId,
               decodedKey.selector,
               toHexString(decodedKey.value.blockHash),
-              Buffer.from(decoded.value as Uint8Array).toString() 
+              Buffer.from(decoded.value as Uint8Array).toString()
             )
             break
           }
@@ -317,7 +317,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             break
           }
         }
-        this.emit('ContentAdded', decoded.value)
+        // this.emit('ContentAdded', decoded.value)
 
         return decoded.value
       }
@@ -420,11 +420,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         if (err) log(`Error putting content in history DB: ${err}`)
       })
       log(`added blockheader for ${blockHash} to content DB`)
-      this.client.emit('contentAdded', headerKey)
     }
     await this.db.put(key, value, (err: any) => {
       if (err) log(`Error putting content in history DB: ${err.toString()}`)
     })
+    this.emit('ContentAdded', blockHash, value)
     log(
       `added ${
         Object.keys(HistoryNetworkContentTypes)[
