@@ -819,12 +819,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
-      .filter((pair) => pair.bucket.size() < 16)
-    const randomNotFullBucket = Math.trunc(Math.random() * 10)
-    log(`Refreshing bucket at distance ${randomNotFullBucket}`)
-    const distance = notFullBuckets[randomNotFullBucket].distance
-    const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-    this.lookup(randomNodeAtDistance)
+      .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
+    if (notFullBuckets.length > 0) {
+      const randomDistance = Math.trunc(Math.random() * 10)
+      const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
+      log(`Refreshing bucket at distance ${distance}`)
+      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
+      this.lookup(randomNodeAtDistance)
+    }
   }
 
   /**
