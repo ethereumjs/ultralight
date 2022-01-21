@@ -221,7 +221,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       value: findNodesMsg,
     })
     try {
-      log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
+      log(`Sending FINDNODES to ${shortId(dstId)} for ${networkId} subnetwork`)
       const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         log(`Received NODES from ${shortId(dstId)}`)
