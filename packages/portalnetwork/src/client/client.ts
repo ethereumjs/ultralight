@@ -317,7 +317,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             break
           }
         }
-        // this.emit('ContentAdded', decoded.value)
 
         return decoded.value
       }
