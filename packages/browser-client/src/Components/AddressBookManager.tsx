@@ -108,6 +108,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
         <>
           <Input
             placeholder={'Block Hash'}
+            defaultValue={'0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'}
             onChange={(evt) => {
               setContentKey(evt.target.value)
             }}
