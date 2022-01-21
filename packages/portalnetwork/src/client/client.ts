@@ -832,22 +832,26 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
    * @param nodeSought nodeId of node sought in lookup
    */
-  private lookup = async (nodeSought: NodeId) => {
+  public lookup = async (nodeSought: NodeId) => {
     const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
     const newPeers: ENR[] = []
     let finished = false
-    while (!finished && closestPeers.length > 0) {
+    while (!finished) {
+      if (closestPeers.length === 0) {
+        finished = true
+        continue
+      }
       const nearestPeer = closestPeers.shift()
       // Calculates log2distance between queried peer and `nodeSought`
       const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, nodeSought)
       // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
       const res = await this.sendFindNodes(
-        closestPeers[0].nodeId,
+        nearestPeer!.nodeId,
         Uint16Array.from([distanceToSoughtPeer]),
         SubNetworkIds.HistoryNetwork
       )
 
-      if (res?.enrs) {
+      if (res?.enrs && res.enrs.length > 0) {
         const distanceFromSoughtNodeToQueriedNode = distance(closestPeers[0].nodeId, nodeSought)
         res.enrs.forEach((enr) => {
           if (!finished) {
