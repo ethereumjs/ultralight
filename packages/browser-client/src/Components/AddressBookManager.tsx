@@ -1,7 +1,7 @@
 import { Button, Heading, HStack, Input, Text, VStack, Wrap, useToast } from '@chakra-ui/react'
-import { PortalNetwork } from 'portalnetwork'
+import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
-import { SubNetworkIds } from 'portalnetwork/dist/wire'
 import { randUint16 } from 'portalnetwork/dist/wire/utp'
 import React from 'react'
 import { toHexString } from './ShowInfo'
@@ -41,6 +41,10 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
     updateAddressBook()
   }
 
+  const handleFindRandom = () => {
+    const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
+    portal.lookup(lookupNode)
+  }
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, network)
   }
@@ -102,6 +106,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
       <Input value={enr} placeholder={'Node ENR'} onChange={(evt) => setEnr(evt.target.value)} />
       <HStack>
         <Button onClick={handleClick}>Add Node</Button>
+        <Button onClick={handleFindRandom}>Lookup Node</Button>
       </HStack>
 
       {peers.length > 0 && (
