@@ -125,16 +125,14 @@ export default function ShowBlockContent(props: ShowBlockContentProps) {
         {keys.map((key) => {
           return (
             db.get(key) && (
-              <AccordionItem>
-                <p>
-                  <AccordionButton>
-                    <Box>
-                      Block: <br />
-                      {key}
-                    </Box>
-                    <AccordionIcon />
-                  </AccordionButton>
-                </p>
+              <AccordionItem key={key}>
+                <AccordionButton>
+                  <Box>
+                    Block: <br />
+                    {key}
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
                 <AccordionPanel pb={4}>{display(db.get(key)!)}</AccordionPanel>
               </AccordionItem>
             )

@@ -2,7 +2,6 @@ import * as React from 'react'
 import {
   ChakraProvider,
   Box,
-  Flex,
   theme,
   Heading,
   Text,
@@ -14,7 +13,6 @@ import {
   Stack,
   Input,
   Button,
-  HStack,
 } from '@chakra-ui/react'
 import { ColorModeSwitcher } from './ColorModeSwitcher'
 import { ENR } from '@chainsafe/discv5'
@@ -88,55 +86,51 @@ export const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <ColorModeSwitcher justifySelf="flex-end" />
-      <Flex justify="center">
-        <HStack>
+      <VStack align="center">
+        <VStack width="70%">
+          <Heading textAlign="center">Ultralight Node Interface</Heading>
+          <Box textAlign="center" fontSize="xl">
+            {portal && <ShowInfo portal={portal} />}
+            <Tooltip label="click to copy">
+              <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
+                {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
+              </Text>
+            </Tooltip>
+          </Box>
+          <VStack justify="center">
+            <Heading paddingBottom={2} size="lg">
+              Local Node Management
+            </Heading>
+            <Stack direction="row">
+              <Input
+                onChange={(evt) => {
+                  setProxy(evt.target.value)
+                }}
+                defaultValue={'127.0.0.1'}
+                placeholder="Proxy IP Address"
+              />
+              {portal ? (
+                <Button onClick={stopNode}>Stop Node</Button>
+              ) : (
+                <Button onClick={init}>Start Node</Button>
+              )}
+            </Stack>
+            <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
+              <Stack direction="row">
+                <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
+                <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
+              </Stack>
+            </RadioGroup>
+            {portal && <ContentManager portal={portal} />}
+          </VStack>
+          {portal && <AddressBookManager portal={portal} network={network} />}
+        </VStack>
+        {portal && (
           <>
-            <VStack width="70%">
-              <Heading textAlign="center">Ultralight Node Interface</Heading>
-              <Box textAlign="center" fontSize="xl">
-                {portal && <ShowInfo portal={portal} />}
-                <Tooltip label="click to copy">
-                  <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
-                    {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
-                  </Text>
-                </Tooltip>
-              </Box>
-              <VStack justify="center">
-                <Heading paddingBottom={2} size="lg">
-                  Local Node Management
-                </Heading>
-                <Stack direction="row">
-                  <Input
-                    onChange={(evt) => {
-                      setProxy(evt.target.value)
-                    }}
-                    defaultValue={'127.0.0.1'}
-                    placeholder="Proxy IP Address"
-                  />
-                  {portal ? (
-                    <Button onClick={stopNode}>Stop Node</Button>
-                  ) : (
-                    <Button onClick={init}>Start Node</Button>
-                  )}
-                </Stack>
-                <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
-                  <Stack direction="row">
-                    <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
-                    <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
-                  </Stack>
-                </RadioGroup>
-                {portal && <ContentManager portal={portal} />}
-              </VStack>
-              {portal && <AddressBookManager portal={portal} network={network} />}
-            </VStack>
+            <ShowBlockContent portal={portal} />
           </>
-          {portal && (
-            <>
-              <ShowBlockContent portal={portal} />
-            </>
-          )}
-        </HStack>
-      </Flex>
+        )}
+      </VStack>
     </ChakraProvider>
   )
 }
