@@ -7,6 +7,7 @@
     "@chakra-ui/react": "^1.0.0",
     "@emotion/react": "^11.0.0",
     "@emotion/styled": "^11.0.0",
+    "ethers": "^5.5.3",
     "framer-motion": "^4.0.0",
     "multiaddr": "^10.0.0",
     "peer-id": "^0.15.2",
