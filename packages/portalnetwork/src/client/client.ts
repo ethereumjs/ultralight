@@ -1,5 +1,6 @@
 import {
   Discv5,
+  distance,
   ENR,
   EntryStatus,
   IDiscv5CreateOptions,
@@ -220,7 +221,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       value: findNodesMsg,
     })
     try {
-      log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
+      log(`Sending FINDNODES to ${shortId(dstId)} for ${networkId} subnetwork`)
       const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         log(`Received NODES from ${shortId(dstId)}`)
@@ -825,11 +826,66 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
-      .filter((pair) => pair.bucket.size() < 16)
-    const randomNotFullBucket = Math.trunc(Math.random() * 10)
-    log(`Refreshing bucket at distance ${randomNotFullBucket}`)
-    const distance = notFullBuckets[randomNotFullBucket].distance
-    const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-    this.client.findNode(randomNodeAtDistance)
+      .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
+    if (notFullBuckets.length > 0) {
+      const randomDistance = Math.trunc(Math.random() * 10)
+      const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
+      log(`Refreshing bucket at distance ${distance}`)
+      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
+      this.lookup(randomNodeAtDistance)
+    }
+  }
+
+  /**
+   * Queries the 5 nearest nodes in the history network routing table for nodes in the kbucket and recursively
+   * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
+   * @param nodeSought nodeId of node sought in lookup
+   */
+  public lookup = async (nodeSought: NodeId) => {
+    const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
+    const newPeers: ENR[] = []
+    let finished = false
+    while (!finished) {
+      if (closestPeers.length === 0) {
+        finished = true
+        continue
+      }
+      const nearestPeer = closestPeers.shift()
+      // Calculates log2distance between queried peer and `nodeSought`
+      const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, nodeSought)
+      // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
+      const res = await this.sendFindNodes(
+        nearestPeer!.nodeId,
+        Uint16Array.from([distanceToSoughtPeer]),
+        SubNetworkIds.HistoryNetwork
+      )
+
+      if (res?.enrs && res.enrs.length > 0) {
+        const distanceFromSoughtNodeToQueriedNode = distance(closestPeers[0].nodeId, nodeSought)
+        res.enrs.forEach((enr) => {
+          if (!finished) {
+            const decodedEnr = ENR.decode(Buffer.from(enr))
+            if (decodedEnr.nodeId === nodeSought) {
+              // `nodeSought` was found -- add to table and terminate lookup
+              finished = true
+              this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
+            } else if (
+              distance(decodedEnr.nodeId, nodeSought) < distanceFromSoughtNodeToQueriedNode
+            ) {
+              // if peer received is closer than peer that sent ENR, add to front of `closestPeers` list
+              closestPeers.unshift(decodedEnr)
+              // Add newly found peers to list for storing in routing table
+              newPeers.push(decodedEnr)
+            }
+          }
+        })
+      }
+    }
+    newPeers.forEach((enr) => {
+      // Add all newly found peers to the subnetwork routing table
+      this.historyNetworkRoutingTable.insertOrUpdate(enr, EntryStatus.Connected)
+      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+    })
   }
 }
