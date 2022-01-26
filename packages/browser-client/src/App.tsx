@@ -25,7 +25,6 @@ import ShowInfo from './Components/ShowInfo'
 import AddressBookManager from './Components/AddressBookManager'
 
 import { ContentManager } from './Components/ContentManager'
-import ShowBlockContent from './Components/ShowBlockContent'
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [enr, setENR] = React.useState<string>('')
@@ -130,11 +129,6 @@ export const App = () => {
               {portal && <AddressBookManager portal={portal} network={network} />}
             </VStack>
           </>
-          {portal && (
-            <>
-              <ShowBlockContent portal={portal} />
-            </>
-          )}
         </HStack>
       </Flex>
     </ChakraProvider>
