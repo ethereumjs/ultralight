@@ -66,6 +66,22 @@ export class UtpProtocol {
     // Sends Syn Packet to begin uTP connection process using connectionId
     await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
   }
+  async initiateUtpTest(remoteAddr: string, connectionId: number) {
+    // Client received connectionId in an ACCEPT talkresp from a node at:  remoteAddr
+    log(`Requesting uTP stream connection with ${remoteAddr}...`)
+    log(`Opening uTP socket to send DATA to ${remoteAddr}`)
+    // Creates a new uTP socket for remoteAddr
+    const socket = new _UTPSocket(this, remoteAddr, 'writing')
+    const value = new Uint8Array(2000)
+    value.fill(1)
+    // Loads database content to socket
+    socket.content = value
+    // Adds this socket to 'sockets' registry, wtih remoteAddr as key
+    this.sockets[remoteAddr + connectionId] = socket
+
+    // Sends Syn Packet to begin uTP connection process using connectionId
+    await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
+  }
 
   async awaitConnectionRequest(remoteAddr: string, connectionId: number): Promise<number> {
     // Client received connectionId in a talkreq or talkresp from a node at:  remoteAddr
@@ -165,7 +181,7 @@ export class UtpProtocol {
         packet.payload.length
       } Bytes: ${packet.payload.slice(0, 10)}... `
     )
-    await this.sockets[remoteAddr + packet.header.connectionId].handleDataPacket(packet)
+    await this.sockets[remoteAddr + (packet.header.connectionId - 1)].handleDataPacket(packet)
   }
 
   async handleResetPacket(packet: Packet, remoteAddr: string, _msgId: bigint) {

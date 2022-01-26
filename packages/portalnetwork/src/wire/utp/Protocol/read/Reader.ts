@@ -16,22 +16,19 @@ export default class Reader {
     this.inOrder = new Array<Packet>()
     this.reading = true
     this.gotFinPacket = false
-    this.nextSeqNr = 66000
+    this.nextSeqNr = 2
     this.lastSeqNr = null
   }
 
   async addPacket(packet: Packet): Promise<boolean> {
     log(`Packet Received.  seqNr: ${packet.header.seqNr}`)
-    if (packet.header.seqNr === 66000) {
-      this.nextSeqNr = packet.header.seqNr
-      this.lastSeqNr = packet.header.seqNr
-      this.packets.push(packet)
+    this.packets.push(packet)
+    if (packet.header.seqNr === this.nextSeqNr) {
+      this.nextSeqNr++
       return true
     } else {
       this.packets.push(packet)
-      if (packet.header.seqNr === this.lastSeqNr) {
-        return true
-      } else return false
+      return false
     }
   }
 
