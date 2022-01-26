@@ -14,7 +14,10 @@ type NodeManagerProps = {
 const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => {
   const [enr, setEnr] = React.useState<string>('')
   const [peers, setPeers] = React.useState<string[]>([])
-  const [contentKey, setContentKey] = React.useState<string>('')
+  // Default content key (i.e. Block Hash for Block 1 from Mainnet) to test lookups/offers
+  const [contentKey, setContentKey] = React.useState<string>(
+    '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
+  )
   const [distance, setDistance] = React.useState<string>('0')
   const toast = useToast()
 
