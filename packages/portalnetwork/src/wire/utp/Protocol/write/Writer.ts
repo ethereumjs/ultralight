@@ -8,7 +8,6 @@ export default class Writer {
   utp: UtpProtocol
   socket: _UTPSocket
   content: Uint8Array
-  lastAckReceived: Packet
   contentMod: Uint8Array
   writing: boolean
   finished: boolean
@@ -18,13 +17,7 @@ export default class Writer {
   // rto: number;
   timestamp: number
   sentBytes: Map<Packet, Uint8Array>
-  constructor(
-    utp: UtpProtocol,
-    socket: _UTPSocket,
-    synAck: Packet,
-    content: Uint8Array,
-    timestamp: number
-  ) {
+  constructor(utp: UtpProtocol, socket: _UTPSocket, content: Uint8Array, timestamp: number) {
     this.socket = socket
     this.utp = utp
     this.timestamp = timestamp
@@ -37,7 +30,6 @@ export default class Writer {
     this.sentBytes = new Map<Packet, Uint8Array>()
     // this.waitingTime = 0;
     // this.rto = 0
-    this.lastAckReceived = synAck
   }
 
   async start(): Promise<void> {
@@ -48,6 +40,7 @@ export default class Writer {
         // let size = this.nextPacketSize();
         const bytes = this.getNextBytes(this.contentMod)
         this.socket.sendDataPacket(bytes).then((p: Packet) => {
+          // this.socket.seqNrs.push(p.header.seqNr)
           this.sentBytes.set(p, bytes)
         })
         if (this.contentMod.length == 0) {

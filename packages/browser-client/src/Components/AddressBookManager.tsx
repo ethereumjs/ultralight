@@ -14,7 +14,10 @@ type NodeManagerProps = {
 const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => {
   const [enr, setEnr] = React.useState<string>('')
   const [peers, setPeers] = React.useState<string[]>([])
-  const [contentKey, setContentKey] = React.useState<string>('')
+  // Default content key (i.e. Block Hash for Block 1 from Mainnet) to test lookups/offers
+  const [contentKey, setContentKey] = React.useState<string>(
+    '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
+  )
   const [distance, setDistance] = React.useState<string>('0')
   const toast = useToast()
 
@@ -97,7 +100,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
   }
 
   const handleUtpStream = (nodeId: string) => {
-    portal.sendUtpStreamRequest(nodeId, randUint16())
+    portal.UtpStreamTest(nodeId, randUint16())
   }
 
   return (
@@ -113,6 +116,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
         <>
           <Input
             placeholder={'Block Hash'}
+            defaultValue={'0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'}
             onChange={(evt) => {
               setContentKey(evt.target.value)
             }}
@@ -135,7 +139,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
               <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
               <Button onClick={() => handleFindContent(peer)}>Send Find Content Request</Button>
               <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
-              <Button onClick={() => handleUtpStream(peer)}>Start uTP Stream</Button>
+              <Button onClick={() => handleUtpStream(peer)}>Start uTP Stream Test</Button>
             </Wrap>
           </HStack>
         ))}

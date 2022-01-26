@@ -106,6 +106,7 @@ export const App = () => {
                 onChange={(evt) => {
                   setProxy(evt.target.value)
                 }}
+                defaultValue={'127.0.0.1'}
                 placeholder="Proxy IP Address"
               />
               {portal ? (

@@ -291,6 +291,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`)
             const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
             // Store content in local DB
+
             await this.addContentToHistory(
               decodedKey.value.chainId,
               decodedKey.selector,
@@ -317,6 +318,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             break
           }
         }
+
         return decoded.value
       }
     } catch (err: any) {
@@ -364,6 +366,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendUtpStreamRequest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
     await this.uTP.initiateConnectionRequest(dstId, id)
+  }
+  public UtpStreamTest = async (dstId: string, id: number) => {
+    // Initiate a uTP stream request with a SYN packet
+    await this.uTP.initiateUtpTest(dstId, id)
   }
 
   /**
@@ -422,6 +428,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.db.put(key, value, (err: any) => {
       if (err) log(`Error putting content in history DB: ${err.toString()}`)
     })
+    this.emit('ContentAdded', blockHash, value)
     log(
       `added ${
         Object.keys(HistoryNetworkContentTypes)[
