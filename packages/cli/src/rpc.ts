@@ -1,3 +1,4 @@
+import { ENR } from '@chainsafe/discv5'
 import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds } from 'portalnetwork'
 
@@ -28,10 +29,10 @@ export class RPCManager {
     },
     portal_addBootNode: async (params: [string]) => {
       const [enr] = params
-      log(`portal_addBootNode request received. enr: ${enr.slice(0, 15)}...`)
+      const encodedENR = ENR.decodeTxt(enr)
+      log(`portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`)
       const res = await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
-      log(res?.enrSeq)
-      return res?.enrSeq ? 'node added' : 'node not found'
+      return res?.enrSeq ? `ENR added for ${encodedENR.nodeId.slice(0, 15)}...` : 'Node not found'
     },
   }
 
