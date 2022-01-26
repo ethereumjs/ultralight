@@ -93,7 +93,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
   }
 
   const handleUtpStream = (nodeId: string) => {
-    portal.sendUtpStreamRequest(nodeId, randUint16())
+    portal.UtpStreamTest(nodeId, randUint16())
   }
 
   return (
@@ -131,7 +131,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
               <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
               <Button onClick={() => handleFindContent(peer)}>Send Find Content Request</Button>
               <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
-              <Button onClick={() => handleUtpStream(peer)}>Start uTP Stream</Button>
+              <Button onClick={() => handleUtpStream(peer)}>Start uTP Stream Test</Button>
             </Wrap>
           </HStack>
         ))}

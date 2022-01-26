@@ -366,6 +366,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // Initiate a uTP stream request with a SYN packet
     await this.uTP.initiateConnectionRequest(dstId, id)
   }
+  public UtpStreamTest = async (dstId: string, id: number) => {
+    // Initiate a uTP stream request with a SYN packet
+    await this.uTP.initiateUtpTest(dstId, id)
+  }
 
   /**
    * Convenience method to add content for the History Network to the DB
