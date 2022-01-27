@@ -147,15 +147,14 @@ export class _UTPSocket extends EventEmitter {
     log(`Sending packet payload to Reader`)
     const expected = await this.reader.addPacket(packet)
     if (expected) {
-      await this.sendAckPacket().then(() => {
-        log(`ACK sent.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
-        log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`)
-      })
+      this.ackNrs.push(this.seqNr)
+      await this.sendAckPacket()
+      log(`ACK sent.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
+      log(`Incrementing seqNr from ${this.seqNr} to ${this.seqNr + 1}`)
     } else {
-      await this.sendSelectiveAckPacket(packet).then(() => {
-        log(`Packet Arrived Out of Order.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
-        log(`Sending Selective Ack`)
-      })
+      await this.sendSelectiveAckPacket(packet)
+      log(`Packet Arrived Out of Order.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
+      log(`Sending Selective Ack`)
     }
     // Send ACK if packet arrived in expected order.
     // TODO: Send SELECTIVE ACK if packet arrived out of order.
@@ -198,11 +197,12 @@ export class _UTPSocket extends EventEmitter {
     this.state = ConnectionState.GotFin
     this.updateSocketFromPacketHeader(packet)
     log(`Sending FIN ACK packet.`)
-    await this.sendAckPacket().then(() => {
+    await this.sendAckPacket()
+    if (this.seqNrs.every((val, index) => val === this.ackNrs[index])) {
       log(`Waiting for 0 in-flight packets.`)
-      this.readerContent = this.reader.run()
+      this.readerContent = this.reader.run() ?? Uint8Array.from([])
       log(`Packet payloads compiled`)
-    })
+    }
   }
 
   // TODO
