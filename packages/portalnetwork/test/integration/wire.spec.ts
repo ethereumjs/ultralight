@@ -4,10 +4,13 @@ import PeerId from 'peer-id'
 import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
+import { fromHexString } from '@chainsafe/ssz'
+import { HistoryNetworkContentKeyUnionType } from '../../src/historySubnetwork'
 
 
 tape('Portal Wire Spec Testing', async (t) => {
-    t.test('clients should start and connect', { timeout: 20000 }, (st) => {
+    t.test('clients should start and connect', (st) => {
         const file = require.resolve('../../../proxy/dist/index.js')
         const child = spawn(process.execPath, [file])
         let portal1: PortalNetwork
@@ -18,7 +21,6 @@ tape('Portal Wire Spec Testing', async (t) => {
                 st.pass('proxy started successfully')
                 setupNetwork()
             }
-            console.log(data.toString())
         })
         const end = async () => {
             child.stdout.removeAllListeners()
@@ -55,16 +57,22 @@ tape('Portal Wire Spec Testing', async (t) => {
                 },
                 1
             );
-            portal1.client.on("multiaddrUpdated", () => portal2.start())
-            portal2.client.on("multiaddrUpdated", async () => {
+            portal1.client.once("multiaddrUpdated", () => portal2.start())
+            portal1.once("Stream", () => console.log('THIS IS THE STREAM'))
+            portal2.client.once("multiaddrUpdated", async () => {
                 portal2.historyNetworkRoutingTable.insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
                 const res = await portal2.sendPing(portal1.client.enr.nodeId, SubNetworkIds.HistoryNetwork)
                 if (res?.enrSeq === 5n) {
                     st.pass('nodes connected and played PING/PONG')
+                    const testBlock = require('./testBlock.json')
+                    await portal2.addContentToHistory(1, HistoryNetworkContentTypes.BlockBody, testBlock.blockHash, testBlock.rlp)
+                    await portal2.sendOffer(portal1.client.enr.nodeId, [HistoryNetworkContentKeyUnionType.serialize({ selector: 0, value: { chainId: 1, blockHash: fromHexString(testBlock.blockHash) } })], SubNetworkIds.HistoryNetwork)
                 }
-                await portal2.UtpStreamTest(portal1.client.enr.nodeId, 1234)
-                end()
             })
+
+            //    portal2.enableLog()
+            portal1.enableLog()
+
             await portal1.start()
         }
     })

@@ -157,8 +157,9 @@ export class UtpProtocol {
     this.contents[socketKey] = this.sockets[socketKey].content
     // TODO -- Test reader with out of order packets/ lost packets
     log(
-      `${this.contents[socketKey].length} 
-      bytes received. ${this.contents[socketKey].toString().slice(0, 20)} ...`
+      `${this.contents[socketKey].length} bytes received. ${this.contents[socketKey]
+        .toString()
+        .slice(0, 20)} ...`
     )
     log(`${this.sockets[socketKey].readerContent.toString().slice(0, 20)}`)
     // Closes socket (deletes from registry)

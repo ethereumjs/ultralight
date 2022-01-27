@@ -523,7 +523,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     const srcId = src.nodeId
-    log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
+    log(`TALKRESPONSE message received from ${srcId}, ${message.response.toString()}`)
   }
 
   private handleStreamedContent(rcvId: number, content: Uint8Array) {
@@ -592,39 +592,47 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     log(decoded)
     const msg = decoded.value as OfferMessage
     if (msg.contentKeys.length > 0) {
-      let offerAccepted = false
       try {
-        await Promise.all(
-          msg.contentKeys.map(async (contentKey) => {
-            await this.db.get(getContentIdFromSerializedKey(contentKey), (err) => {
-              if (err) {
-                offerAccepted = true
-                this.sendAccept(srcId, message)
-              }
-            })
-          })
-        )
-        if (!offerAccepted) {
-          this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        if (msg.contentKeys.length > 0) {
+          const contentIds = Array(msg.contentKeys.length).fill(false)
+          let offerAccepted = false
+          for (let x = 0; x < msg.contentKeys.length; x++) {
+            try {
+              await this.db.get(getContentIdFromSerializedKey(msg.contentKeys[x]))
+            } catch (err) {
+              offerAccepted = true
+              contentIds[x] = true
+              log(`Found some interesting content from ${shortId(srcId)}`)
+            }
+          }
+          if (offerAccepted) {
+            this.sendAccept(srcId, message, contentIds)
+          }
         }
       } catch {
+        log(`Something went wrong handling offer message`)
         // Send empty response if something goes wrong parsing content keys
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }
     }
   }
 
-  private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
+  private sendAccept = async (
+    srcId: string,
+    message: ITalkReqMessage,
+    desiredContentKeys: boolean[]
+  ) => {
     const id = randUint16()
     const connectionId = await this.uTP.awaitConnectionRequest(srcId, id)
     const payload: AcceptMessage = {
       connectionId: new Uint8Array(2).fill(connectionId),
-      contentKeys: [true],
+      contentKeys: desiredContentKeys,
     }
     const encodedPayload = PortalWireMessageType.serialize({
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
+    log(`sending ACCEPT to ${shortId(srcId)} with connection`)
     await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
   }
 
@@ -633,10 +641,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     log(`Received FINDCONTENT request from ${shortId(srcId)}`)
     log(decoded)
     const decodedContentMessage = decoded.value as FindContentMessage
-    //Check to see if value in locally maintained state network state
+    //Check to see if value in content db
     const lookupKey = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
-
     try {
       value = Buffer.from(await this.db.get(lookupKey))
     } catch (err: any) {

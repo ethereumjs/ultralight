@@ -47,7 +47,6 @@ export default class Reader {
     })
     log(`${compiled.length} Bytes Received.`)
     log(`${Uint8Array.from(compiled).toString().slice(0, 20)}...`)
-
     this.socket.utp.portal.emit('Stream', this.socket.sndConnectionId, compiled)
 
     return Uint8Array.from(compiled)
@@ -85,7 +84,7 @@ export default class Reader {
     } else {
       log(`Expected: ${this.nextSeqNr}`)
       log(`Got ${seqNrs.toString()}`)
-      return Uint8Array.of(...seqNrs)
+      return Uint8Array.from([...seqNrs])
     }
   }
 }
