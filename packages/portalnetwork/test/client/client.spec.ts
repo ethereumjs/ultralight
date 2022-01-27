@@ -1,26 +1,23 @@
 import tape from 'tape'
 import { MessageCodes, PingPongCustomDataType, PortalNetwork, PortalWireMessageType, SubNetworkIds } from '../../src/'
 import td from 'testdouble'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
-import { getContentId, getContentIdFromSerializedKey } from '../../src/historySubnetwork'
+import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
 
 tape('Client unit tests', async (t) => {
 
     const node = await PortalNetwork.createPortalNetwork('192.168.0.1', 'ws://192.168.0.2:5050') as any
 
     t.test('node initialization/startup', async (st) => {
-        st.plan(4)
+        st.plan(2)
         st.ok(node.client.enr.getLocationMultiaddr('udp')!.toString().includes('192.168.0.1'), 'created portal network node with correct ip address')
 
         node.client.start = td.func<any>()
         td.when(node.client.start()).thenResolve(undefined)
         await node.start();
         st.pass('client should start')
-
-        st.throws(() => node.radius = 257, 'should not be able to set radius greater than 256')
-        st.throws(() => node.radius = -1, 'radius cannot be negative');
     })
 
     t.test('PING/PONG message handlers', async (st) => {
@@ -110,8 +107,14 @@ tape('Client unit tests', async (t) => {
         const val = await node.db.get(getContentIdFromSerializedKey(contentKey))
         const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)))
         st.ok(header.number.eqn(1), 'retrieved block header based on content key')
+        st.end()
     })
-    td.reset();
-    await node.stop()
+
+    t.test('test cleanup', (st) => {
+        td.reset();
+        node.stop()
+        st.end()
+    })
+
     t.end()
 })
