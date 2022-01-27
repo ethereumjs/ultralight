@@ -54,7 +54,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   uTP: UtpProtocol
   nodeRadius: number
   db: LevelUp
-  private refreshListener: ReturnType<typeof setInterval>
+  private refreshListener?: ReturnType<typeof setInterval>
 
   /**
    *
@@ -108,8 +108,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
-    // Start kbucket refresh on 30 second interval
-    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -122,6 +120,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
     this.addContentToHistory(1, HistoryNetworkContentTypes.BlockHeader, block1Hash, block1HeaderRlp)
     await this.client.start()
+    // Start kbucket refresh on 30 second interval
+    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -129,7 +129,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public stop = async () => {
     await this.client.stop()
-    clearInterval(this.refreshListener)
+    await this.removeAllListeners()
+    await this.db.removeAllListeners()
+    await this.db.close()
+    this.refreshListener && clearInterval(this.refreshListener)
   }
   /**
    *
