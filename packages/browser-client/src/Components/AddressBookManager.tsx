@@ -2,7 +2,6 @@ import { Button, Heading, HStack, Input, Text, VStack, Wrap, useToast } from '@c
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
-import { randUint16 } from 'portalnetwork/dist/wire/utp'
 import React from 'react'
 import { toHexString } from './ShowInfo'
 
@@ -19,6 +18,8 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
     '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
   )
   const [distance, setDistance] = React.useState<string>('0')
+  const [utpConId, setUtpConId] = React.useState<number>()
+
   const toast = useToast()
 
   const updateAddressBook = () => {
@@ -99,10 +100,16 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
     portal.sendOffer(nodeId, [encodedContentKey], network)
   }
 
-  const handleUtpStream = (nodeId: string) => {
-    portal.UtpStreamTest(nodeId, randUint16())
+  const handleUtp = (nodeId: string) => {
+    if (utpConId) {
+      portal.uTP.initiateUtpTest(nodeId, utpConId)
+    } else {
+      toast({
+        title: 'No connection ID found',
+        status: 'error',
+      })
+    }
   }
-
   return (
     <VStack paddingTop={2}>
       <Heading size="lg">Address Book Manager</Heading>
@@ -111,7 +118,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
         <Button onClick={handleClick}>Add Node</Button>
         <Button onClick={handleFindRandom}>Lookup Node</Button>
       </HStack>
-
+      <Input
+        placeholder="Connection ID"
+        onChange={(evt) => setUtpConId(parseInt(evt.target.value))}
+        value={utpConId}
+      />
       {peers.length > 0 && (
         <>
           <Input
@@ -133,13 +144,15 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
       {peers.length > 0 &&
         peers.map((peer) => (
           <HStack key={Math.random().toString()}>
-            <Text>{peer.slice(10)}...</Text>
+            <Text>{peer.slice(0, 25)}...</Text>
             <Wrap spacing="5px">
               <Button onClick={() => handlePing(peer)}>Send Ping</Button>
               <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
               <Button onClick={() => handleFindContent(peer)}>Send Find Content Request</Button>
               <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
-              <Button onClick={() => handleUtpStream(peer)}>Start uTP Stream Test</Button>
+            </Wrap>
+            <Wrap>
+              <Button onClick={() => handleUtp(peer)}>Start UTP Connection</Button>
             </Wrap>
           </HStack>
         ))}
