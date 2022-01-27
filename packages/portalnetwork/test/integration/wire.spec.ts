@@ -7,8 +7,8 @@ import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 
 
-tape('Client start-up', async (t) => {
-    t.test('clients should start up', { timeout: 20000 }, (st) => {
+tape('Portal Wire Spec Testing', async (t) => {
+    t.test('clients should start and connect', { timeout: 20000 }, (st) => {
         const file = require.resolve('../../../proxy/dist/index.js')
         const child = spawn(process.execPath, [file])
         let portal1: PortalNetwork
