@@ -1,4 +1,3 @@
-var wtf = require('wtfnode');
 import tape from 'tape'
 import { spawn } from 'child_process'
 import PeerId from 'peer-id'
