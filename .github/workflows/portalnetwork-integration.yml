@@ -1,7 +1,7 @@
-name: PortalNetwork
+name: PortalNetwork Integration Tests
 on:
   push:
-    branches: [master, integration]
+    branches: [master]
     tags: ['*']
   pull_request:
     types: [opened, reopened, synchronize]

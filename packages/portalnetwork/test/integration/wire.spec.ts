@@ -55,8 +55,6 @@ tape('Portal Wire Spec Testing', async (t) => {
                 },
                 1
             );
-            portal1.enableLog()
-            portal2.enableLog()
             portal1.client.on("multiaddrUpdated", () => portal2.start())
             portal2.client.on("multiaddrUpdated", async () => {
                 portal2.historyNetworkRoutingTable.insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
@@ -64,6 +62,7 @@ tape('Portal Wire Spec Testing', async (t) => {
                 if (res?.enrSeq === 5n) {
                     st.pass('nodes connected and played PING/PONG')
                 }
+                await portal2.UtpStreamTest(portal1.client.enr.nodeId, 1234)
                 end()
             })
             await portal1.start()
