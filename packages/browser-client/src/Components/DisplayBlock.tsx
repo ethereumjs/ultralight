@@ -5,7 +5,6 @@ import { Block, BlockHeader } from '@ethereumjs/block'
 import Common from '@ethereumjs/common'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { toBuffer } from 'ethereumjs-util'
-import { useEffect, useState } from 'react'
 
 interface DisplayBlockProps {
   rlpHeader: string
@@ -13,18 +12,11 @@ interface DisplayBlockProps {
 
 export default function DisplayBlock(props: DisplayBlockProps) {
   const rlpHeader = props.rlpHeader
+  const chain = 'mainnet'
+  const common = new Common({ chain: chain })
+  const blockHeader = BlockHeader.fromRLPSerializedHeader(toBuffer(rlpHeader), { common: common })
 
-  const [chain, setChain] = useState<string>('mainnet')
-  const [common, setCommon] = useState<Common>(new Common({ chain: 'mainnet' }))
-  const [blockHeader, setBlockHeader] = useState<BlockHeader>(
-    BlockHeader.fromRLPSerializedHeader(toBuffer(rlpHeader), { common: common })
-  )
-  const [block, setBlock] = useState<Block>(new Block(blockHeader))
-
-  useEffect(() => {
-    const c = new Common({ chain: chain })
-    setCommon(c)
-  }, [chain])
+  const block = new Block(blockHeader)
 
   //   const json = block.toJSON
 
