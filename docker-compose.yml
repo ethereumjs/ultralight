@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+
+  ultralight1:
+    build: .
+    ports:
+      - "8545:8545/tcp"
+    expose:
+      - "1-65535/udp" # apparently this doesn't actually do anything and is more for documentation - https://docs.docker.com/engine/reference/builder/#expose
+                      # all of the ports will already be exposed within the local docker network
+    environment:
+      - nat=localhost
+      - rpcport=8545
+      
+  ultralight2:
+    build: .
+    ports:
+      - "8546:8546/tcp"
+    expose:
+      - "1-65535/udp"
+    environment:
+      - nat=localhost
+      - rpcport=8546
