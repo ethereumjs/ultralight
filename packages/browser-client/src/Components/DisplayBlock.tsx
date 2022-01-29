@@ -14,11 +14,8 @@ import {
   Text,
   Link,
 } from '@chakra-ui/react'
-// eslint-disable-next-line implicit-dependencies/no-implicit
 import { Block, BlockHeader, JsonHeader } from '@ethereumjs/block'
-// eslint-disable-next-line implicit-dependencies/no-implicit
 import Common from '@ethereumjs/common'
-// eslint-disable-next-line implicit-dependencies/no-implicit
 import { toBuffer } from 'ethereumjs-util'
 
 interface DisplayBlockProps {
