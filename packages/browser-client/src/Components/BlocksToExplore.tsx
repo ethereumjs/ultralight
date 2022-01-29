@@ -13,6 +13,7 @@ import DisplayBlock from './DisplayBlock'
 
 interface BlocksToExploreProps {
   portal: PortalNetwork
+  findContent: any
 }
 
 export default function BlocksToExplore(props: BlocksToExploreProps) {
@@ -42,7 +43,7 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
   }, [])
 
   function display(rlpHeader: string) {
-    return <DisplayBlock rlpHeader={rlpHeader} />
+    return <DisplayBlock findContent={props.findContent} rlpHeader={rlpHeader} />
   }
 
   //   function blockAccordion() {
