@@ -23,7 +23,6 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import ShowInfo from './Components/ShowInfo'
 import AddressBookManager from './Components/AddressBookManager'
-
 import { ContentManager } from './Components/ContentManager'
 import BlocksToExplore from './Components/BlocksToExplore'
 export const App = () => {
@@ -31,6 +30,7 @@ export const App = () => {
   const [enr, setENR] = React.useState<string>('')
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
   const [proxy, setProxy] = React.useState('127.0.0.1')
+  const [finding, setFinding] = React.useState<string>()
   const { onCopy } = useClipboard(enr) // eslint-disable-line
 
   const init = async () => {
@@ -126,9 +126,9 @@ export const App = () => {
               </RadioGroup>
               {portal && <ContentManager portal={portal} />}
             </VStack>
-            {portal && <AddressBookManager portal={portal} network={network} />}
+            {portal && <AddressBookManager finding={finding} portal={portal} network={network} />}
           </VStack>
-          <VStack>{portal && <BlocksToExplore portal={portal} />}</VStack>
+          <VStack>{portal && <BlocksToExplore findContent={setFinding} portal={portal} />}</VStack>
         </HStack>
       </Flex>
     </ChakraProvider>
