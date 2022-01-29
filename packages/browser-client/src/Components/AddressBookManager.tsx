@@ -8,9 +8,10 @@ import { toHexString } from './ShowInfo'
 type NodeManagerProps = {
   portal: PortalNetwork
   network: SubNetworkIds
+  finding: string | undefined
 }
 
-const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => {
+const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, finding }) => {
   const [enr, setEnr] = React.useState<string>('')
   const [peers, setPeers] = React.useState<string[]>([])
   // Default content key (i.e. Block Hash for Block 1 from Mainnet) to test lookups/offers
@@ -110,6 +111,12 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
       })
     }
   }
+
+  React.useEffect(() => {
+    finding && setContentKey(finding)
+    peers.forEach((peer) => handleFindNodes(peer))
+  }, [finding])
+
   return (
     <VStack paddingTop={2}>
       <Heading size="lg">Address Book Manager</Heading>
@@ -128,6 +135,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network }) => 
           <Input
             placeholder={'Block Hash'}
             defaultValue={'0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'}
+            value={contentKey}
             onChange={(evt) => {
               setContentKey(evt.target.value)
             }}
