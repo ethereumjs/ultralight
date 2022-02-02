@@ -31,32 +31,23 @@ export default function DisplayBlock(props: DisplayBlockProps) {
   const block = new Block(blockHeader)
   const json = block.toJSON()
   const header: JsonHeader = json.header!
-  const headerObj: Record<string, string | number> = {
-    baseFee: header.baseFee!,
-    baseFeePerGas: header.baseFeePerGas!,
-    bloom: parseInt(header.bloom!.toString()),
-    coinbase: header.coinbase!,
-    difficutly: header.difficulty!,
-    extraData: header.extraData!,
-    gasLimit: header.gasLimit!,
-    gasUsed: header.gasUsed!,
-    logsBloom: Number(header.logsBloom!),
-    mixHash: header.mixHash!,
-    nonce: header.nonce!,
-    number: Number(header.number!),
-    parentHash: header.parentHash!,
-    receiptTrie: header.receiptTrie!,
-    stateRoot: header.stateRoot!,
-    timestamp: new Date(parseInt(header.timestamp!)).toString(),
-    transactionsTrie: header.transactionsTrie!,
-    uncleHash: header.uncleHash!,
-  }
+
+  const obj = Object.entries(header)
   const tx = json.transactions
-  // const uncles = json.uncleHeaders
+
   function handleClick(hash: string) {
     props.findContent(hash)
   }
 
+  const formatValue = (value: string): string | number => {
+    const valueLength = value.slice(2).length
+    if (valueLength >= 40 && valueLength <= 64) {
+      return value
+    } else if (valueLength < 32) {
+      return parseInt(value, 16)
+    }
+    return value.slice(0, 32) + '...'
+  }
   return (
     <Container>
       <Box>
@@ -70,17 +61,15 @@ export default function DisplayBlock(props: DisplayBlockProps) {
             <TabPanel>
               <Table size={'sm'} variant="simple">
                 <Thead>
-                  {Object.keys(headerObj).map((key, idx) => {
+                  {obj.map((key) => {
                     return (
-                      <Tr key={idx}>
-                        <Th>{key}</Th>
+                      <Tr key={key[0] + key[1]}>
+                        <Th>{key[0]}</Th>
                         <Td>
-                          {key === 'parentHash' ? (
-                            <Link onClick={() => handleClick(headerObj[key] as string)}>
-                              {headerObj[key]}
-                            </Link>
+                          {key[0] === 'parentHash' ? (
+                            <Link onClick={() => handleClick(key[1] as string)}>{key[1]}</Link>
                           ) : (
-                            headerObj[key]
+                            formatValue(key[1])
                           )}
                         </Td>
                       </Tr>
