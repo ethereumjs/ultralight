@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+
+  proxy:
+    build: packages/proxy/.
+    network_mode: "host"
+
+  ultralight1:
+    build: .
+    network_mode: "host"
+    ports:
+      - "8545:8545/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - nat=localhost
+      - rpcport=8545
+      - proxy=false
+      
+  ultralight2:
+    build: .
+    network_mode: "host"
+    ports:
+      - "8546:8546/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - nat=localhost
+      - rpcport=8546
+      - proxy=false
