@@ -1,22 +1,22 @@
 import tape from 'tape'
-import { spawn } from 'child_process'
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import PeerId from 'peer-id'
-import { ENR } from '@chainsafe/discv5'
+import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { HistoryNetworkContentKeyUnionType } from '../../src/historySubnetwork'
+import { BlockHeader } from '@ethereumjs/block'
 
-tape('Client start-up', async (t) => {
-    const file = require.resolve('../../../proxy/dist/index.js')
-    const child = spawn(process.execPath, [file])
-    child.stdout.on('data', async (data) => {
-        if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
-            t.pass('proxy started successfully')
-        }
-    })
-    child.stderr.on('data', (data) => {
-        console.log(data.toString())
-        t.fail('proxy encountered an error')
-    })
+const end = async (child: ChildProcessWithoutNullStreams, nodes: PortalNetwork[], st: tape.Test) => {
+    child.stdout.removeAllListeners()
+    child.kill('SIGINT')
+    nodes.forEach(async (node) => await node.stop())
+    st.end()
+}
+
+const setupNetwork = async () => {
     const id1 = await PeerId.create({ keyType: "secp256k1" });
     const enr1 = ENR.createFromPeerId(id1);
     enr1.setLocationMultiaddr(new Multiaddr("/ip4/127.0.0.1/udp/0"));
@@ -42,23 +42,67 @@ tape('Client start-up', async (t) => {
             proxyAddress: "ws://127.0.0.1:5050",
         },
         1
-    );/*
-    portal2.client.on("multiaddrUpdated", async () => {
-        console.log('updated portal1 multiaddr')
-        t.pass('updated second multiaddr')
-        portal1.client.addEnr(portal2.client.enr);
+    );
+    return [portal1, portal2]
+}
 
-        const res = await portal1.sendPing(portal2.client.enr.nodeId, SubNetworkIds.HistoryNetwork)
-        console.log(res)
-        child.kill()
-        await portal1.client.stop();
-        await portal2.client.stop();
-        t.end(0)
-    })*/
-    portal1.enableLog()
-    portal2.enableLog()
-    await portal1.start();
+tape('Portal Wire Spec Testing', async (t) => {
+    t.test('clients should start and connect', (st) => {
+        const file = require.resolve('../../../proxy/dist/index.js')
+        const child = spawn(process.execPath, [file])
+        let portal1: PortalNetwork
+        let portal2: PortalNetwork
 
-    await portal2.start();
+        child.stdout.on('data', async (data) => {
+            if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
+                st.pass('proxy started successfully')
+                const nodes = await setupNetwork()
+                portal1 = nodes[0]
+                portal2 = nodes[1]
 
+                portal1.client.once("multiaddrUpdated", () => portal2.start())
+
+                portal2.client.once("multiaddrUpdated", async () => {
+                    portal2.historyNetworkRoutingTable.insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
+                    const res = await portal2.sendPing(portal1.client.enr.nodeId, SubNetworkIds.HistoryNetwork)
+                    if (res?.enrSeq === 5n) {
+                        st.pass('nodes connected and played PING/PONG')
+                        end(child, [portal1, portal2], st)
+                    }
+                })
+                portal1.start()
+            }
+        })
+    })
+
+    t.test('node should stream block to another', (st) => {
+        const file = require.resolve('../../../proxy/dist/index.js')
+        const child = spawn(process.execPath, [file])
+        let portal1: PortalNetwork
+        let portal2: PortalNetwork
+
+        child.stdout.on('data', async (data) => {
+            if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
+                const nodes = await setupNetwork()
+                portal1 = nodes[0]
+                portal2 = nodes[1]
+
+                portal1.once("Stream", (_, content) => {
+                    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
+                    st.equals(toHexString(header.hash()), "0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220", 'OFFER/ACCEPT/uTP Stream succeeded')
+                    end(child, [portal1, portal2], st)
+                })
+
+                portal1.client.once("multiaddrUpdated", () => portal2.start())
+
+                portal2.client.once("multiaddrUpdated", async () => {
+                    portal2.historyNetworkRoutingTable.insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
+                    const testBlock = require('./testBlock.json')
+                    await portal2.addContentToHistory(1, HistoryNetworkContentTypes.BlockBody, testBlock.blockHash, testBlock.rlp)
+                    const res = await portal2.sendOffer(portal1.client.enr.nodeId, [HistoryNetworkContentKeyUnionType.serialize({ selector: 0, value: { chainId: 1, blockHash: fromHexString(testBlock.blockHash) } })], SubNetworkIds.HistoryNetwork)
+                })
+                portal1.start()
+            }
+        })
+    })
 })

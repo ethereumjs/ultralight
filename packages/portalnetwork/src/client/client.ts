@@ -1,5 +1,6 @@
 import {
   Discv5,
+  distance,
   ENR,
   EntryStatus,
   IDiscv5CreateOptions,
@@ -53,7 +54,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   uTP: UtpProtocol
   nodeRadius: number
   db: LevelUp
-  private refreshListener: ReturnType<typeof setInterval>
+  private refreshListener?: ReturnType<typeof setInterval>
 
   /**
    *
@@ -107,8 +108,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
-    // Start kbucket refresh on 30 second interval
-    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -121,6 +120,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
     this.addContentToHistory(1, HistoryNetworkContentTypes.BlockHeader, block1Hash, block1HeaderRlp)
     await this.client.start()
+    // Start kbucket refresh on 30 second interval
+    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -128,7 +129,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public stop = async () => {
     await this.client.stop()
-    clearInterval(this.refreshListener)
+    await this.removeAllListeners()
+    await this.db.removeAllListeners()
+    await this.db.close()
+    this.refreshListener && clearInterval(this.refreshListener)
   }
   /**
    *
@@ -220,7 +224,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       value: findNodesMsg,
     })
     try {
-      log(`Sending FINDNODES to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
+      log(`Sending FINDNODES to ${shortId(dstId)} for ${networkId} subnetwork`)
       const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         log(`Received NODES from ${shortId(dstId)}`)
@@ -290,6 +294,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`)
             const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
             // Store content in local DB
+
             await this.addContentToHistory(
               decodedKey.value.chainId,
               decodedKey.selector,
@@ -316,6 +321,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             break
           }
         }
+
         return decoded.value
       }
     } catch (err: any) {
@@ -363,6 +369,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendUtpStreamRequest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
     await this.uTP.initiateConnectionRequest(dstId, id)
+  }
+  public UtpStreamTest = async (dstId: string, id: number) => {
+    // Initiate a uTP stream request with a SYN packet
+    await this.uTP.initiateUtpTest(dstId, id)
   }
 
   /**
@@ -421,6 +431,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.db.put(key, value, (err: any) => {
       if (err) log(`Error putting content in history DB: ${err.toString()}`)
     })
+    this.emit('ContentAdded', blockHash, value)
     log(
       `added ${
         Object.keys(HistoryNetworkContentTypes)[
@@ -512,7 +523,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     const srcId = src.nodeId
-    log(`TALKRESPONSE message received from ${srcId}, ${message.toString()}`)
+    log(`TALKRESPONSE message received from ${srcId}, ${message.response.toString()}`)
   }
 
   private handleStreamedContent(rcvId: number, content: Uint8Array) {
@@ -581,41 +592,47 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     log(decoded)
     const msg = decoded.value as OfferMessage
     if (msg.contentKeys.length > 0) {
-      let offerAccepted = false
       try {
-        await Promise.all(
-          msg.contentKeys.map(async (contentKey) => {
-            await this.db.get(getContentIdFromSerializedKey(contentKey), (err) => {
-              if (err) {
-                offerAccepted = true
-                this.sendAccept(srcId, message)
-              }
-            })
-          })
-        )
-        if (!offerAccepted) {
-          this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        if (msg.contentKeys.length > 0) {
+          const contentIds = Array(msg.contentKeys.length).fill(false)
+          let offerAccepted = false
+          for (let x = 0; x < msg.contentKeys.length; x++) {
+            try {
+              await this.db.get(getContentIdFromSerializedKey(msg.contentKeys[x]))
+            } catch (err) {
+              offerAccepted = true
+              contentIds[x] = true
+              log(`Found some interesting content from ${shortId(srcId)}`)
+            }
+          }
+          if (offerAccepted) {
+            this.sendAccept(srcId, message, contentIds)
+          }
         }
       } catch {
+        log(`Something went wrong handling offer message`)
         // Send empty response if something goes wrong parsing content keys
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }
     }
   }
 
-  private sendAccept = async (srcId: string, message: ITalkReqMessage) => {
+  private sendAccept = async (
+    srcId: string,
+    message: ITalkReqMessage,
+    desiredContentKeys: boolean[]
+  ) => {
     const id = randUint16()
-    const connectionId = await this.uTP.awaitConnectionRequest(srcId, id).then((_res) => {
-      return this.uTP.sockets[srcId].sndConnectionId
-    })
+    const connectionId = await this.uTP.awaitConnectionRequest(srcId, id)
     const payload: AcceptMessage = {
       connectionId: new Uint8Array(2).fill(connectionId),
-      contentKeys: [true],
+      contentKeys: desiredContentKeys,
     }
     const encodedPayload = PortalWireMessageType.serialize({
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
+    log(`sending ACCEPT to ${shortId(srcId)} with connection`)
     await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
   }
 
@@ -624,10 +641,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     log(`Received FINDCONTENT request from ${shortId(srcId)}`)
     log(decoded)
     const decodedContentMessage = decoded.value as FindContentMessage
-    //Check to see if value in locally maintained state network state
+    //Check to see if value in content db
     const lookupKey = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
-
     try {
       value = Buffer.from(await this.db.get(lookupKey))
     } catch (err: any) {
@@ -818,11 +834,66 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
-      .filter((pair) => pair.bucket.size() < 16)
-    const randomNotFullBucket = Math.trunc(Math.random() * 10)
-    log(`Refreshing bucket at distance ${randomNotFullBucket}`)
-    const distance = notFullBuckets[randomNotFullBucket].distance
-    const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-    this.client.findNode(randomNodeAtDistance)
+      .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
+    if (notFullBuckets.length > 0) {
+      const randomDistance = Math.trunc(Math.random() * 10)
+      const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
+      log(`Refreshing bucket at distance ${distance}`)
+      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
+      this.lookup(randomNodeAtDistance)
+    }
+  }
+
+  /**
+   * Queries the 5 nearest nodes in the history network routing table for nodes in the kbucket and recursively
+   * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
+   * @param nodeSought nodeId of node sought in lookup
+   */
+  public lookup = async (nodeSought: NodeId) => {
+    const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
+    const newPeers: ENR[] = []
+    let finished = false
+    while (!finished) {
+      if (closestPeers.length === 0) {
+        finished = true
+        continue
+      }
+      const nearestPeer = closestPeers.shift()
+      // Calculates log2distance between queried peer and `nodeSought`
+      const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, nodeSought)
+      // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
+      const res = await this.sendFindNodes(
+        nearestPeer!.nodeId,
+        Uint16Array.from([distanceToSoughtPeer]),
+        SubNetworkIds.HistoryNetwork
+      )
+
+      if (res?.enrs && res.enrs.length > 0) {
+        const distanceFromSoughtNodeToQueriedNode = distance(closestPeers[0].nodeId, nodeSought)
+        res.enrs.forEach((enr) => {
+          if (!finished) {
+            const decodedEnr = ENR.decode(Buffer.from(enr))
+            if (decodedEnr.nodeId === nodeSought) {
+              // `nodeSought` was found -- add to table and terminate lookup
+              finished = true
+              this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
+            } else if (
+              distance(decodedEnr.nodeId, nodeSought) < distanceFromSoughtNodeToQueriedNode
+            ) {
+              // if peer received is closer than peer that sent ENR, add to front of `closestPeers` list
+              closestPeers.unshift(decodedEnr)
+              // Add newly found peers to list for storing in routing table
+              newPeers.push(decodedEnr)
+            }
+          }
+        })
+      }
+    }
+    newPeers.forEach((enr) => {
+      // Add all newly found peers to the subnetwork routing table
+      this.historyNetworkRoutingTable.insertOrUpdate(enr, EntryStatus.Connected)
+      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+    })
   }
 }
