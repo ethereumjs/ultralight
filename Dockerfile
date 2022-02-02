@@ -8,4 +8,5 @@ COPY . .
 RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 ENV nat=
 ENV rpcport=
-CMD npm run start -w=cli -- --nat=${nat} --rpcport=${rpcport}
+ENV proxy=
+CMD npm run start -w=cli -- --nat=${nat} --rpcport=${rpcport} --proxy=${proxy}

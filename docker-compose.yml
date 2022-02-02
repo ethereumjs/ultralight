@@ -1,23 +1,30 @@
 version: "3.9"
 services:
 
+  proxy:
+    build: packages/proxy/.
+    network_mode: "host"
+
   ultralight1:
     build: .
+    network_mode: "host"
     ports:
       - "8545:8545/tcp"
-    expose:
-      - "1-65535/udp" # apparently this doesn't actually do anything and is more for documentation - https://docs.docker.com/engine/reference/builder/#expose
-                      # all of the ports will already be exposed within the local docker network
+      - "1-65535/udp"
+
     environment:
       - nat=localhost
       - rpcport=8545
+      - proxy=false
       
   ultralight2:
     build: .
+    network_mode: "host"
     ports:
       - "8546:8546/tcp"
-    expose:
       - "1-65535/udp"
+
     environment:
       - nat=localhost
       - rpcport=8546
+      - proxy=false
