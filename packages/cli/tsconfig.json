@@ -1,6 +1,7 @@
 {
   "include": ["./src"],
   "exclude": ["./dist"],
+  "references": [{"path": "../portalnetwork/tsconfig.json" }, {"path": "../discv5/tsconfig.json" }],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 

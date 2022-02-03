@@ -2,7 +2,11 @@
   "name": "ultralight",
   "private": true,
   "workspaces": [
-    "./packages/*"
+    "./packages/discv5",
+    "./packages/portalnetwork",
+    "./packages/cli",
+    "./packages/browser-client",
+    "./packages/proxy"
   ],
   "engines": {
     "npm": ">=7"
