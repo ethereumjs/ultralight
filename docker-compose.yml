@@ -2,11 +2,11 @@ version: "3.9"
 services:
 
   proxy:
-    build: packages/proxy/.
+    image: ultralight/proxy
     network_mode: "host"
 
   ultralight1:
-    build: .
+    image: ultralight/cli
     network_mode: "host"
     ports:
       - "8545:8545/tcp"
@@ -18,7 +18,7 @@ services:
       - proxy=false
       
   ultralight2:
-    build: .
+    image: ultralight/cli
     network_mode: "host"
     ports:
       - "8546:8546/tcp"
