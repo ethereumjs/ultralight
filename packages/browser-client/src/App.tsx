@@ -14,7 +14,6 @@ import {
   Stack,
   Input,
   Button,
-  HStack,
 } from '@chakra-ui/react'
 import { ColorModeSwitcher } from './ColorModeSwitcher'
 import { ENR } from '@chainsafe/discv5'
@@ -31,7 +30,7 @@ export const App = () => {
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
   const [proxy, setProxy] = React.useState('127.0.0.1')
   const [finding, setFinding] = React.useState<string>()
-  const { onCopy } = useClipboard(enr) // eslint-disable-line
+  const { onCopy } = useClipboard(enr)
 
   const init = async () => {
     if (portal?.client.isStarted()) {
@@ -89,47 +88,45 @@ export const App = () => {
     <ChakraProvider theme={theme}>
       <ColorModeSwitcher justifySelf="flex-end" />
       <Flex justify="center">
-        <HStack>
-          <VStack width="70%">
-            <Heading textAlign="center">Ultralight Node Interface</Heading>
-            <Box textAlign="center" fontSize="xl">
-              {portal && <ShowInfo portal={portal} />}
-              <Tooltip label="click to copy">
-                <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
-                  {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
-                </Text>
-              </Tooltip>
-            </Box>
-            <VStack justify="center">
-              <Heading paddingBottom={2} size="lg">
-                Local Node Management
-              </Heading>
+        <VStack width="70%">
+          <Heading textAlign="center">Ultralight Node Interface</Heading>
+          <Box textAlign="center" fontSize="xl">
+            {portal && <ShowInfo portal={portal} />}
+            <Tooltip label="click to copy">
+              <Text fontSize={'1rem'} onClick={copy} wordBreak="break-all" cursor="pointer">
+                {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
+              </Text>
+            </Tooltip>
+          </Box>
+          <VStack justify="center">
+            <Heading paddingBottom={2} size="lg">
+              Local Node Management
+            </Heading>
+            <Stack direction="row">
+              <Input
+                onChange={(evt) => {
+                  setProxy(evt.target.value)
+                }}
+                defaultValue={'127.0.0.1'}
+                placeholder="Proxy IP Address"
+              />
+              {portal ? (
+                <Button onClick={stopNode}>Stop Node</Button>
+              ) : (
+                <Button onClick={init}>Start Node</Button>
+              )}
+            </Stack>
+            <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
               <Stack direction="row">
-                <Input
-                  onChange={(evt) => {
-                    setProxy(evt.target.value)
-                  }}
-                  defaultValue={'127.0.0.1'}
-                  placeholder="Proxy IP Address"
-                />
-                {portal ? (
-                  <Button onClick={stopNode}>Stop Node</Button>
-                ) : (
-                  <Button onClick={init}>Start Node</Button>
-                )}
+                <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
+                <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
               </Stack>
-              <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
-                <Stack direction="row">
-                  <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
-                  <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
-                </Stack>
-              </RadioGroup>
-              {portal && <ContentManager portal={portal} />}
-            </VStack>
-            {portal && <AddressBookManager finding={finding} portal={portal} network={network} />}
+            </RadioGroup>
+            {portal && <ContentManager portal={portal} />}
           </VStack>
-          <VStack>{portal && <BlocksToExplore findContent={setFinding} portal={portal} />}</VStack>
-        </HStack>
+          {portal && <AddressBookManager finding={finding} portal={portal} network={network} />}
+          {portal && <BlocksToExplore findContent={setFinding} portal={portal} />}
+        </VStack>
       </Flex>
     </ChakraProvider>
   )
