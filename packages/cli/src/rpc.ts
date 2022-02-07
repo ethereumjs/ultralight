@@ -1,7 +1,7 @@
-import { ENR } from '@chainsafe/discv5'
+import { ENR, fromHex, toHex } from '@chainsafe/discv5'
 import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds } from 'portalnetwork'
-
+import { Block } from '@ethereumjs/block'
 const log = debug('RPC')
 
 export class RPCManager {
@@ -33,6 +33,17 @@ export class RPCManager {
       log(`portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`)
       const res = await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
       return res?.enrSeq ? `ENR added for ${encodedENR.nodeId.slice(0, 15)}...` : 'Node not found'
+    },
+    portal_addBlockToHistory: async (params: [string]) => {
+      const [rlpHex] = params
+      try {
+        const block = Block.fromRLPSerializedBlock(fromHex(rlpHex.slice(2)))
+        this._client.addContentToHistory(1, 1, '0x' + toHex(block.header.hash()), rlpHex)
+        return `blockheader for ${'0x' + toHex(block.header.hash())} added to content DB`
+      } catch (err: any) {
+        log(`Error trying to load block to DB. ${err.message.toString()}`)
+        return `internal error`
+      }
     },
   }
 
