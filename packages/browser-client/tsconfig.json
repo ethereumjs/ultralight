@@ -1,4 +1,5 @@
 {
+  "references": [{"path": "../discv5/tsconfig.json" }, {"path":"../portalnetwork/tsconfig.json"}],
   "compilerOptions": {
     "target": "es2020",
     "lib": [

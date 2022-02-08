@@ -3,7 +3,6 @@ import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
 import React from 'react'
-import { toHexString } from './ShowInfo'
 
 type NodeManagerProps = {
   portal: PortalNetwork
@@ -58,7 +57,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
     portal.sendFindNodes(nodeId, Uint16Array.from([parseInt(distance)]), network)
   }
 
-  const handleFindContent = async (nodeId: string) => {
+  const handleFindContent = async () => {
     if (contentKey.slice(0, 2) !== '0x') {
       setContentKey('')
       toast({
@@ -69,10 +68,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
       })
       return
     }
-    const encodedContentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 0,
-      value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), 'hex') },
-    })
+
     const res = await portal.contentLookup(0, contentKey)
     if (typeof res === 'string') {
       toast({
@@ -81,6 +77,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
         status: 'success',
         duration: 3000,
       })
+    }
   }
 
   const handleOffer = (nodeId: string) => {
