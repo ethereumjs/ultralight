@@ -41,6 +41,7 @@ import {
 } from '../historySubnetwork/types'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
+import { Lookup } from '../wire'
 const level = require('level-mem')
 
 const log = debug('portalnetwork')
@@ -263,6 +264,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
+  public contentLookup = async (contentType: HistoryNetworkContentTypes, blockHash: string) => {
+    const lookup = new Lookup(this, contentType, blockHash)
+    const res = await lookup.startLookup()
+    return res
+  }
+
   /**
    * Starts recursive lookup for content corresponding to `key`
    * @param dstId node id of peer
@@ -288,7 +295,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             log(`received Connection ID ${id}`)
             this.sendUtpStreamRequest(dstId, id)
-            break
+            return id
           }
           case 1: {
             log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`)
@@ -301,28 +308,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               toHexString(decodedKey.value.blockHash),
               Buffer.from(decoded.value as Uint8Array).toString()
             )
-            break
+            return Buffer.from(decoded.value as Uint8Array).toString()
           }
           case 2: {
             log(`received ${decoded.value.length} ENRs`)
-            decoded.value.forEach(async (enr) => {
-              const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
-              log(`Node ID: ${decodedEnr.nodeId}`)
-              if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              }
-              await this.db.get(getContentIdFromSerializedKey(key), (err) => {
-                if (err) {
-                  // Checks to see if content is already stored locally (from a previous lookup) and continues the lookup if not
-                  this.sendFindContent(decodedEnr.nodeId, key, networkId)
-                }
-              })
-            })
-            break
+            if (decoded.value.length === 1) {
+              return [decoded.value]
+            } else return decoded.value
           }
         }
-
-        return decoded.value
       }
     } catch (err: any) {
       log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
@@ -840,7 +834,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
       log(`Refreshing bucket at distance ${distance}`)
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-      this.lookup(randomNodeAtDistance)
+      this.nodeLookup(randomNodeAtDistance)
     }
   }
 
@@ -849,7 +843,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
    * @param nodeSought nodeId of node sought in lookup
    */
-  public lookup = async (nodeSought: NodeId) => {
+  public nodeLookup = async (nodeSought: NodeId) => {
     const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
     const newPeers: ENR[] = []
     let finished = false

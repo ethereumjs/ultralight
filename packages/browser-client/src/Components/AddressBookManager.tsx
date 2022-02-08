@@ -73,11 +73,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
       selector: 0,
       value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), 'hex') },
     })
-    const res = await portal.sendFindContent(nodeId, encodedContentKey, network)
-    res instanceof Uint8Array &&
+    const res = await portal.contentLookup(0, contentKey)
+    if (typeof res === 'string') {
       toast({
         title: 'Found what we were looking for',
-        description: toHexString(res),
+        description: res,
         status: 'success',
         duration: 3000,
       })
