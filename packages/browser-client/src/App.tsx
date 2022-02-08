@@ -116,7 +116,7 @@ export const App = () => {
                 <Button onClick={init}>Start Node</Button>
               )}
             </Stack>
-            <RadioGroup onChange={updateNetwork} value={network} spacing={1}>
+            <RadioGroup onChange={updateNetwork} value={network}>
               <Stack direction="row">
                 <Radio value={SubNetworkIds.StateNetwork}>State Network</Radio>
                 <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>

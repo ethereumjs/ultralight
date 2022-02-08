@@ -47,7 +47,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleFindRandom = () => {
     const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
-    portal.lookup(lookupNode)
+    portal.nodeLookup(lookupNode)
   }
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, network)
@@ -153,7 +153,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
             <Wrap spacing="5px">
               <Button onClick={() => handlePing(peer)}>Send Ping</Button>
               <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
-              <Button onClick={() => handleFindContent(peer)}>Send Find Content Request</Button>
+              <Button onClick={() => handleFindContent()}>Send Find Content Request</Button>
               <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
             </Wrap>
             <Wrap>

@@ -19,7 +19,8 @@
     "react-icons": "^3.0.0",
     "react-scripts": "4.0.3",
     "rlp": "^3.0.0",
-    "web-vitals": "^0.2.2"
+    "web-vitals": "^0.2.2",
+    "typescript": "^4.4.2"
   },
   "scripts": {
     "start": "craco start",
@@ -59,7 +60,6 @@
     "debug": "^4.3.2",
     "eslint": "^8.6.0",
     "prettier": "^2.5.1",
-    "ts-node": "^10.3.1",
-    "typescript": "^4.4.2"
+    "ts-node": "^10.3.1"
   }
 }

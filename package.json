@@ -23,8 +23,8 @@
     "clean": "bash ./scripts/clean-root.sh"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "4.27.0",
-    "@typescript-eslint/parser": "4.27.0",
+    "@typescript-eslint/eslint-plugin": "5.0.0",
+    "@typescript-eslint/parser": "5.0.0",
     "eslint-formatter-codeframe": "^7.32.1",
     "eslint-plugin-implicit-dependencies": "^1.1.0",
     "eslint-plugin-prettier": "^4.0.0"

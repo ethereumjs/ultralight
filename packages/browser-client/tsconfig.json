@@ -1,5 +1,4 @@
 {
-  "references": [{"path": "../discv5/tsconfig.json" }, {"path":"../portalnetwork/tsconfig.json"}],
   "compilerOptions": {
     "target": "es2020",
     "lib": [
@@ -19,9 +18,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "rootDir": "./src",
+    "composite": true
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "dist"
   ]
 }
