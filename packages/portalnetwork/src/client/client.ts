@@ -48,7 +48,7 @@ const log = debug('portalnetwork')
 
 const MAX_PACKET_SIZE = 1280
 
-export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventEmitter }) {
+export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   client: Discv5
   stateNetworkRoutingTable: StateNetworkRoutingTable
   historyNetworkRoutingTable: PortalNetworkRoutingTable
@@ -106,9 +106,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     })
     this.uTP = new UtpProtocol(this)
     this.db = db ?? level()
-      ; (this.client as any).sessionService.on('established', (enr: ENR) => {
-        this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
-      })
+    ;(this.client as any).sessionService.on('established', (enr: ENR) => {
+      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+    })
   }
 
   /**
@@ -426,9 +426,10 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     })
     this.emit('ContentAdded', blockHash, contentType, value)
     log(
-      `added ${Object.keys(HistoryNetworkContentTypes)[
-      Object.values(HistoryNetworkContentTypes).indexOf(contentType)
-      ]
+      `added ${
+        Object.keys(HistoryNetworkContentTypes)[
+          Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+        ]
       } for ${blockHash} to content db`
     )
 
@@ -679,9 +680,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     } else if (value && value.length < MAX_PACKET_SIZE) {
       log(
         'Found value for requested content' +
-        Buffer.from(decodedContentMessage.contentKey).toString('hex') +
-        value.slice(0, 10) +
-        `...`
+          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
+          value.slice(0, 10) +
+          `...`
       )
       const payload = ContentMessageType.serialize({ selector: 1, value: value })
       this.client.sendTalkResp(
@@ -692,9 +693,9 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     } else {
       log(
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.' +
-        Buffer.from(decodedContentMessage.contentKey).toString('hex') +
-        value.slice(0, 10) +
-        `...`
+          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
+          value.slice(0, 10) +
+          `...`
       )
       this.uTP.contents[srcId] = value
       log(`Generating Random Connection Id...`)
@@ -742,7 +743,8 @@ export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventE
     const enr = this.client.getKadValue(srcId)
     if (!enr && customPayload) {
       log(
-        `no ENR found in routing table for ${srcId} - can't be added to ${Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
+        `no ENR found in routing table for ${srcId} - can't be added to ${
+          Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
         } routing table`
       )
       return
