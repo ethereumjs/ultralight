@@ -69,13 +69,13 @@ export class _UTPSocket extends EventEmitter {
     this.sendRate = 0
     this.CCONTROL_TARGET = DELAY_TARGET
     this.content = Uint8Array.from([])
-    this.reader = new Reader(this)
     this.readerContent = new Uint8Array()
     this.reading = type === 'reading'
     this.writing = type === 'writing'
     this.seqNrs = []
     this.ackNrs = []
-    this.logger = this.utp.log.extend(this.remoteAddress)
+    this.logger = this.utp.log.extend(this.remoteAddress.slice(0, 10))
+    this.reader = new Reader(this)
   }
 
   async updateSocketFromPacketHeader(packet: Packet) {
