@@ -51,6 +51,8 @@ typings/
 # Output of 'npm pack'
 *.tgz
 
+# Output of `yarn build`
+lib
 
 # IDEA folder
 .idea
@@ -72,4 +74,3 @@ typings/
 
 # others
 package-lock.json
-lib

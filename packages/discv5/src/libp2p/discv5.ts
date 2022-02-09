@@ -140,7 +140,7 @@ async function sleep(ms: number, signal: AbortSignal): Promise<void> {
     if (signal.aborted) return reject(new Error());
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    let onDone: () => void = () => {};
+    let onDone: () => void = () => { };
 
     const timeout = setTimeout(() => {
       onDone();
