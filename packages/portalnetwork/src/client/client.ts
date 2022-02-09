@@ -312,9 +312,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           }
           case 2: {
             log(`received ${decoded.value.length} ENRs`)
-            if (decoded.value.length === 1) {
-              return [decoded.value]
-            } else return decoded.value
+            return decoded.value
           }
         }
       }
@@ -420,12 +418,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       await this.db.put(headerKey, serializedHeader, (err: any) => {
         if (err) log(`Error putting content in history DB: ${err}`)
       })
-      log(`added blockheader for ${blockHash} to content DB`)
+      log(`added BlockHeader for ${blockHash} to content DB`)
+      this.emit('ContentAdded', blockHash, 0, serializedHeader)
     }
     await this.db.put(key, value, (err: any) => {
       if (err) log(`Error putting content in history DB: ${err.toString()}`)
     })
-    this.emit('ContentAdded', blockHash, value)
+    this.emit('ContentAdded', blockHash, contentType, value)
     log(
       `added ${
         Object.keys(HistoryNetworkContentTypes)[
@@ -648,16 +647,20 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       switch (toHexString(message.protocol)) {
         case SubNetworkIds.HistoryNetwork:
           {
-            const ENRs = this.historyNetworkRoutingTable.nearest(
-              getContentIdFromSerializedKey(decodedContentMessage.contentKey),
-              1
-            )
-            // TODO: Verify that ENRs are actually closer than us to content
-            log(`Found ${ENRs.length} closer to content than us`)
-            const encodedEnrs = ENRs.map((enr) =>
-              enr.nodeId !== srcId ? enr.encode() : undefined
-            ).filter((enr) => enr !== undefined)
+            const contentId = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
+            // TODO: Decide if we should send more than 3 nodes back in a response since we likely exceed
+            // UDP talkresp packet size with more than 3 ENRs at 300 bytes per ENR
+            const ENRs = this.historyNetworkRoutingTable.nearest(contentId, 3)
+            const encodedEnrs = ENRs.map((enr) => {
+              // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
+              // contentId than this node
+              return enr.nodeId !== srcId &&
+                distance(enr.nodeId, contentId) < distance(this.client.enr.nodeId, contentId)
+                ? enr.encode()
+                : undefined
+            }).filter((enr) => enr !== undefined)
             if (encodedEnrs.length > 0) {
+              log(`Found ${encodedEnrs.length} closer to content than us`)
               // @ts-ignore
               const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
               this.client.sendTalkResp(
@@ -666,6 +669,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
               )
             } else {
+              log(`Found no ENRs closer to content than us`)
               this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
             }
           }
