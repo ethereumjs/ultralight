@@ -3,7 +3,7 @@ import StrictEventEmitter from "strict-event-emitter-types";
 import debug from "debug";
 import { Multiaddr } from "multiaddr";
 
-import { ITransportService, WebSocketTransportService } from "../transport";
+import { ITransportService } from "../transport";
 import {
   PacketType,
   IPacket,

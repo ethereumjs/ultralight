@@ -9,9 +9,8 @@ import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
  */
 export class UDPTransportService
-  extends (EventEmitter as { new (): TransportEventEmitter })
-  implements ITransportService
-{
+  extends (EventEmitter as { new(): TransportEventEmitter })
+  implements ITransportService {
   public multiaddr: Multiaddr;
   private socket!: dgram.Socket;
   private srcId: string;

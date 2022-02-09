@@ -99,17 +99,17 @@ export enum ConnectionStatusType {
 
 export type ConnectionStatus =
   | {
-      type: ConnectionStatusType.Connected;
-      enr: ENR;
-      direction: ConnectionDirection;
-    }
+    type: ConnectionStatusType.Connected;
+    enr: ENR;
+    direction: ConnectionDirection;
+  }
   | {
-      type: ConnectionStatusType.PongReceived;
-      enr: ENR;
-    }
+    type: ConnectionStatusType.PongReceived;
+    enr: ENR;
+  }
   | {
-      type: ConnectionStatusType.Disconnected;
-    };
+    type: ConnectionStatusType.Disconnected;
+  };
 
 export type ENRInput = ENR | string;
 
