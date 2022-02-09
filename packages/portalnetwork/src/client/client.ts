@@ -48,7 +48,7 @@ const log = debug('portalnetwork')
 
 const MAX_PACKET_SIZE = 1280
 
-export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
+export class PortalNetwork extends (EventEmitter as { new(): PortalNetworkEventEmitter }) {
   client: Discv5
   stateNetworkRoutingTable: StateNetworkRoutingTable
   historyNetworkRoutingTable: PortalNetworkRoutingTable
@@ -106,9 +106,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.uTP = new UtpProtocol(this)
     this.db = db ?? level()
-    ;(this.client as any).sessionService.on('established', (enr: ENR) => {
-      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
-    })
+      ; (this.client as any).sessionService.on('established', (enr: ENR) => {
+        this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+      })
   }
 
   /**
@@ -312,9 +312,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           }
           case 2: {
             log(`received ${decoded.value.length} ENRs`)
-            if (decoded.value.length === 1) {
-              return [decoded.value]
-            } else return decoded.value
+            return decoded.value
           }
         }
       }
@@ -420,17 +418,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       await this.db.put(headerKey, serializedHeader, (err: any) => {
         if (err) log(`Error putting content in history DB: ${err}`)
       })
-      log(`added blockheader for ${blockHash} to content DB`)
+      log(`added BlockHeader for ${blockHash} to content DB`)
+      this.emit('ContentAdded', blockHash, 0, serializedHeader)
     }
     await this.db.put(key, value, (err: any) => {
       if (err) log(`Error putting content in history DB: ${err.toString()}`)
     })
-    this.emit('ContentAdded', blockHash, value)
+    this.emit('ContentAdded', blockHash, contentType, value)
     log(
-      `added ${
-        Object.keys(HistoryNetworkContentTypes)[
-          Object.values(HistoryNetworkContentTypes).indexOf(contentType)
-        ]
+      `added ${Object.keys(HistoryNetworkContentTypes)[
+      Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+      ]
       } for ${blockHash} to content db`
     )
 
@@ -648,16 +646,20 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       switch (toHexString(message.protocol)) {
         case SubNetworkIds.HistoryNetwork:
           {
-            const ENRs = this.historyNetworkRoutingTable.nearest(
-              getContentIdFromSerializedKey(decodedContentMessage.contentKey),
-              1
-            )
-            // TODO: Verify that ENRs are actually closer than us to content
-            log(`Found ${ENRs.length} closer to content than us`)
-            const encodedEnrs = ENRs.map((enr) =>
-              enr.nodeId !== srcId ? enr.encode() : undefined
-            ).filter((enr) => enr !== undefined)
+            const contentId = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
+            // TODO: Decide if we should send more than 3 nodes back in a response since we likely exceed
+            // UDP talkresp packet size with more than 3 ENRs at 300 bytes per ENR
+            const ENRs = this.historyNetworkRoutingTable.nearest(contentId, 3)
+            const encodedEnrs = ENRs.map((enr) => {
+              // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
+              // contentId than this node
+              return enr.nodeId !== srcId &&
+                distance(enr.nodeId, contentId) < distance(this.client.enr.nodeId, contentId)
+                ? enr.encode()
+                : undefined
+            }).filter((enr) => enr !== undefined)
             if (encodedEnrs.length > 0) {
+              log(`Found ${encodedEnrs.length} closer to content than us`)
               // @ts-ignore
               const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
               this.client.sendTalkResp(
@@ -666,6 +668,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
               )
             } else {
+              log(`Found no ENRs closer to content than us`)
               this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
             }
           }
@@ -676,9 +679,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } else if (value && value.length < MAX_PACKET_SIZE) {
       log(
         'Found value for requested content' +
-          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
-          value.slice(0, 10) +
-          `...`
+        Buffer.from(decodedContentMessage.contentKey).toString('hex') +
+        value.slice(0, 10) +
+        `...`
       )
       const payload = ContentMessageType.serialize({ selector: 1, value: value })
       this.client.sendTalkResp(
@@ -689,9 +692,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } else {
       log(
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.' +
-          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
-          value.slice(0, 10) +
-          `...`
+        Buffer.from(decodedContentMessage.contentKey).toString('hex') +
+        value.slice(0, 10) +
+        `...`
       )
       this.uTP.contents[srcId] = value
       log(`Generating Random Connection Id...`)
@@ -739,8 +742,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const enr = this.client.getKadValue(srcId)
     if (!enr && customPayload) {
       log(
-        `no ENR found in routing table for ${srcId} - can't be added to ${
-          Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
+        `no ENR found in routing table for ${srcId} - can't be added to ${Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
         } routing table`
       )
       return

@@ -25,9 +25,11 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
   }
 
   useEffect(() => {
-    portal.on('ContentAdded', (key, data) => {
-      addNew(key, data)
-      setCurKey(key)
+    portal.on('ContentAdded', (key, contentType, data) => {
+      if (contentType === 0) {
+        addNew(key, data)
+        setCurKey(key)
+      }
     })
   }, [])
 

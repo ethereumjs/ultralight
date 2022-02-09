@@ -1,16 +1,19 @@
-import { ENR, distance, NodeId } from '@chainsafe/discv5'
+import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
+import { debug } from 'debug'
 import { getContentId, PortalNetwork, SubNetworkIds } from '..'
 import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
+import { shortId } from '../util'
 
 type lookupPeer = {
   nodeId: NodeId
   distance: bigint
 }
 
+const log = debug('portalnetwork:lookup')
 export class Lookup {
   private client: PortalNetwork
   private lookupPeers: lookupPeer[]
@@ -51,6 +54,7 @@ export class Lookup {
       }
       const nearestPeer = this.lookupPeers.shift()
       this.contacted.push(nearestPeer!.nodeId)
+      log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.client.sendFindContent(
         nearestPeer!.nodeId,
         encodedKey,
@@ -59,17 +63,20 @@ export class Lookup {
 
       if (typeof res === 'string') {
         // findContent returned data sought
+        log(`received content corresponding to ${shortId(this.blockHash)}`)
         finished = true
         return res
       }
 
       if (typeof res === 'number') {
         // findContent returned uTP connection ID
+        log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
         finished = true
         return res
       }
       // findContent request returned ENRs of nodes closer to content
       if (res) {
+        log(`received ${res.length} ENRs for closer nodes`)
         res.forEach((enr) => {
           if (!finished) {
             const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
@@ -86,6 +93,12 @@ export class Lookup {
                 // if distance to content is greater than all other peers, add to end of lookupPeer list
                 this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
               }
+            }
+            if (!this.client.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+              this.client.historyNetworkRoutingTable.insertOrUpdate(
+                decodedEnr,
+                EntryStatus.Connected
+              )
             }
           }
         })
