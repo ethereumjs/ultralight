@@ -3,7 +3,6 @@ import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
 import React from 'react'
-import { toHexString } from './ShowInfo'
 
 type NodeManagerProps = {
   portal: PortalNetwork
@@ -48,7 +47,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleFindRandom = () => {
     const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
-    portal.lookup(lookupNode)
+    portal.nodeLookup(lookupNode)
   }
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, network)
@@ -58,7 +57,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
     portal.sendFindNodes(nodeId, Uint16Array.from([parseInt(distance)]), network)
   }
 
-  const handleFindContent = async (nodeId: string) => {
+  const handleFindContent = async () => {
     if (contentKey.slice(0, 2) !== '0x') {
       setContentKey('')
       toast({
@@ -69,18 +68,16 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
       })
       return
     }
-    const encodedContentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 0,
-      value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), 'hex') },
-    })
-    const res = await portal.sendFindContent(nodeId, encodedContentKey, network)
-    res instanceof Uint8Array &&
+
+    const res = await portal.contentLookup(0, contentKey)
+    if (typeof res === 'string') {
       toast({
         title: 'Found what we were looking for',
-        description: toHexString(res),
+        description: res,
         status: 'success',
         duration: 3000,
       })
+    }
   }
 
   const handleOffer = (nodeId: string) => {
@@ -156,7 +153,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
             <Wrap spacing="5px">
               <Button onClick={() => handlePing(peer)}>Send Ping</Button>
               <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
-              <Button onClick={() => handleFindContent(peer)}>Send Find Content Request</Button>
+              <Button onClick={() => handleFindContent()}>Send Find Content Request</Button>
               <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
             </Wrap>
             <Wrap>
