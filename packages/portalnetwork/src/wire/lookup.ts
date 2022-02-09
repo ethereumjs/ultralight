@@ -1,6 +1,6 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import debug from 'debug'
+import { debug } from 'debug'
 import { getContentId, PortalNetwork, SubNetworkIds } from '..'
 import {
   HistoryNetworkContentKeyUnionType,
@@ -8,13 +8,12 @@ import {
 } from '../historySubnetwork/types'
 import { shortId } from '../util'
 
-const log = debug('portalnetwork:lookup')
-
 type lookupPeer = {
   nodeId: NodeId
   distance: bigint
 }
 
+const log = debug('portalnetwork:lookup')
 export class Lookup {
   private client: PortalNetwork
   private lookupPeers: lookupPeer[]
