@@ -19,6 +19,7 @@ module.exports = {
   ],
   extends: ['eslint:recommended'],
   rules: {
+    'no-empty': 'off',
     'no-console': 'warn',
     'no-debugger': 'error',
     'prefer-const': 'error',
