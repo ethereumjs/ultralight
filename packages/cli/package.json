@@ -24,6 +24,7 @@
     "multiaddr": "^10.0.0",
     "peer-id": "^0.15.2",
     "portalnetwork": "^0.0.1",
+    "rlp": "^3.0.0",
     "yargs": "^17.3.0"
   },
   "scripts": {

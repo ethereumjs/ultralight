@@ -1,7 +1,8 @@
 import { ENR, fromHex, toHex } from '@chainsafe/discv5'
 import debug from 'debug'
-import { PortalNetwork, getContentId, SubNetworkIds } from 'portalnetwork'
+import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
+import rlp from 'rlp'
 const log = debug('RPC')
 
 export class RPCManager {
@@ -18,10 +19,16 @@ export class RPCManager {
       )
       // lookup block header in DB and return if found
       const headerlookupKey = getContentId(1, blockHash, 0)
+      const bodylookupKey = includeTransactions && getContentId(1, blockHash, 1)
       let value
       try {
-        value = await this._client.db.get(headerlookupKey)
-      } catch { }
+        const header = await this._client.db.get(headerlookupKey)
+        const body = includeTransactions ? await this._client.db.get(bodylookupKey) : [[], []]
+        console.log(header, body)
+        value = reassembleBlock(fromHex(header.slice(2)), fromHex(body.slice(2)))
+      } catch (err) {
+        log(err)
+      }
       if (value) {
         return value
       }
@@ -49,7 +56,19 @@ export class RPCManager {
       const [rlpHex] = params
       try {
         const block = Block.fromRLPSerializedBlock(fromHex(rlpHex.slice(2)))
-        this._client.addContentToHistory(1, 1, '0x' + toHex(block.header.hash()), rlpHex)
+        await this._client.addContentToHistory(
+          1,
+          0,
+          '0x' + toHex(block.header.hash()),
+          block.header.serialize()
+        )
+        const decodedBlock = rlp.decode(rlpHex)
+        await this._client.addContentToHistory(
+          1,
+          1,
+          '0x' + toHex(block.header.hash()),
+          rlp.encode([decodedBlock[1], decodedBlock[2]])
+        )
         return `blockheader for ${'0x' + toHex(block.header.hash())} added to content DB`
       } catch (err: any) {
         log(`Error trying to load block to DB. ${err.message.toString()}`)

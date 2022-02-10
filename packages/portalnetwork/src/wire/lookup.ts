@@ -61,7 +61,7 @@ export class Lookup {
         SubNetworkIds.HistoryNetwork
       )
 
-      if (typeof res === 'string') {
+      if (res instanceof Uint8Array) {
         // findContent returned data sought
         log(`received content corresponding to ${shortId(this.blockHash)}`)
         finished = true

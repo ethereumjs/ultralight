@@ -12,7 +12,7 @@ import { EventEmitter } from 'events'
 import debug from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
-import { generateRandomNodeIdAtDistance, shortId } from '../util'
+import { generateRandomNodeIdAtDistance, reassembleBlock, shortId } from '../util'
 import { bufferToPacket, randUint16, UtpProtocol } from '../wire/utp'
 import {
   PingPongCustomDataType,
@@ -27,6 +27,7 @@ import {
   AcceptMessage,
   PongMessage,
   PingMessage,
+  enrs,
 } from '../wire'
 import { PortalNetworkEventEmitter } from './types'
 import { PortalNetworkRoutingTable } from '.'
@@ -34,6 +35,7 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
+import rlp from 'rlp'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import {
   HistoryNetworkContentKeyUnionType,
@@ -119,15 +121,28 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const block1HeaderRlp =
       '0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4'
     const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-    this.addContentToHistory(1, HistoryNetworkContentTypes.BlockHeader, block1Hash, block1HeaderRlp)
+    this.addContentToHistory(
+      1,
+      HistoryNetworkContentTypes.BlockHeader,
+      block1Hash,
+      fromHexString(block1HeaderRlp)
+    )
     const block304583Rlp =
       '0xf90a4ff90218a0be8361d665ca0c7921df4419522c1319c3012d4adbea5c6229c84ec86fbf52f2a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479452bc44d5378309ee2abf1539bf71de1b7d7be3b5a01aef82504fc10469532521faa4426ee8c5331ac9c0ef1af7bcab967f5aa6e1a1a092ed465e40f9ee2e3a9e9f4f8ecb1f11923bb0376d976312d6c40576439be150a0a5cf019118b22b15a360e97c35c75a7dbc871318c4f3ba462837b186653c2a4db90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008605ddae9bb8d28304a5c7832ff7688306050e845609aaad98d783010103844765746887676f312e342e32856c696e7578a031538fbc9699fc6b359fc26ea2d94bb2556d7d999b101650c78c88f71d61133888b78f1aed8ad0d52af90830f904ad8201d5850ce1a0813e832f4d60945be6129ce8f523753131eb11c6f719f5b72e0e1180b90444d810612b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000741ba0fda17baa8772b9257525c04787d781376fdbc025ae0d0393b1bd8e7b5540b332a01f4d64f42b3aa203b9178d2deb19aa6d0dad24e48c8edf848d226952ed2aef48f86e82a7fe850ba43b74008261a89429fb2ca00f91f16b065ef332ac7948d4cc16a0658802a85985c3fa0c80801ca064fe9b4332507cb713828e738fb3a4a4fc373727185ea81dc6e95957c06f9214a0011966a5748baa542b32cbf3fb3fc46512d0f0704e53ed63a4f86e47a0a8db51f86e82a7ff850ba43b74008261a894715831b632c51081b507af551f534a50fcbb3690888c387839b61ea000801ca0d4f91a0dda2327f1fd4c5741c291979fc5cdb31f6ed8777465150eb5e0f19c62a079d14b7cae5864f2d6ee2e733e4c5c8a48522c7dbd79e79d2a7d41d159c046e8f86e82a800850ba43b74008261a8943a4cc071e426cffba54c267391e401e820a5e472887f554460d4725000801ba0cb0c573e605053d01b800b30388023357d953c9af2cbebe36a6b2b033936fe7fa010d7e92941b4e4760e8b3b2d4f40e495766ad7ffffa5bc62593bd3f6765ca759f86e82a801850ba43b74008261a894d5fda805ff27942da5b6b27884255bf7bfdc6f4f881a2d10c27aa21600801ba0a4a02d9fc9178bc7a42b504649b88624a40085621275f1351b68e939b238e316a0376c96e16bfe6a4c35ecfbccf0b0deaa456db7a81e29d3c4f9390248c49485f6f86e82a802850ba43b74008261a894b48dbbdc7118253be140f43098e2a0bec43fcbf988d7a97439797f8000801ba05328ac567dea32b748c82311e9d002fa13e17a39072db38797762b9ea633139aa0531c49ae4f6a508b2c900a44f386d85d75682af45201b977abd6e3630535ed21f86e82a803850ba43b74008261a894bc0f4f3338f099e578819a8d87976df731b6ee7e881d4f6e1cba82d700801ba08bdd1820eea89f2c3176de03b7be89df5d5b636e082bfc399dfbac7a8d1d8f71a05a05466e3ad65ca9cf87cbbb517d3869623f82c6e02419f081da5101e145225ff86e82a804850ba43b74008261a8941cc77ed71531833bac1ea0e757cd150dcd297920881755213637cf0c00801ba042e7a7352afbd48b13039b40eafa8e0783a1f671f6c969bd509924c12de89e3aa07a88806b8729125c6bb2ba2e552dff0af9c2d178df9201c80923cf13997b163df86e82a805850ba43b74008261a89451033f1a1a59cb6a1bf6ca2087a53bd202ac1c838838221051d9b89c00801ca0328e9a7e2cf52b9a85d34cfb9545b307cb136da2c2e6f3ec4b6a385020b3b055a05427804ddf8c34fdca86dde482b45495d84b63ad9190a98b01332d0528667243c0'
     const block304583Hash = '0xca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f'
+    const block304583 = rlp.decode(block304583Rlp)
+    const block = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(block304583Rlp)))
+    await this.addContentToHistory(
+      1,
+      HistoryNetworkContentTypes.BlockHeader,
+      block304583Hash,
+      Uint8Array.from(block.header.serialize())
+    )
     await this.addContentToHistory(
       1,
       HistoryNetworkContentTypes.BlockBody,
       block304583Hash,
-      block304583Rlp
+      rlp.encode([block304583[1], block304583[2]])
     )
 
     await this.client.start()
@@ -293,7 +308,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
-    log(`Sending FINDCONTENT to ${shortId(dstId)} for ${SubNetworkIds.StateNetwork} subnetwork`)
+    log(`Sending FINDCONTENT to ${shortId(dstId)} for ${networkId} subnetwork`)
     const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
     try {
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
@@ -303,7 +318,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         switch (decoded.selector) {
           case 0: {
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
-            log(`received Connection ID ${id}`)
+            log(`received uTP Connection ID ${id}`)
             this.sendUtpStreamRequest(dstId, id)
             return id
           }
@@ -316,13 +331,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               decodedKey.value.chainId,
               decodedKey.selector,
               toHexString(decodedKey.value.blockHash),
-              Buffer.from(decoded.value as Uint8Array).toString()
+              decoded.value as Uint8Array
             )
-            return Buffer.from(decoded.value as Uint8Array).toString()
+            return decoded.value as Uint8Array
           }
           case 2: {
             log(`received ${decoded.value.length} ENRs`)
-            return decoded.value
+            return decoded.value as enrs
           }
         }
       }
@@ -389,27 +404,35 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     chainId: number,
     contentType: HistoryNetworkContentTypes,
     blockHash: string,
-    value: string
+    value: Uint8Array
   ) => {
-    if (!(blockHash.startsWith('0x') || !value.startsWith('0x'))) {
-      throw new Error('blockhash and values must be hex strings')
-    }
-    const encodedValue = Buffer.from(fromHexString(value))
-    let deserializedValue: Block | BlockHeader | undefined = undefined
+    let _deserializedValue: Block | BlockHeader | undefined = undefined
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          deserializedValue = BlockHeader.fromRLPSerializedHeader(encodedValue)
+          _deserializedValue = BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
         } catch (err: any) {
           log(`Invalid value provided for block header: ${err.toString()}`)
+          return
         }
         break
       }
       case HistoryNetworkContentTypes.BlockBody: {
         try {
-          deserializedValue = Block.fromRLPSerializedBlock(encodedValue)
+          const headerContentId = getContentId(1, blockHash, HistoryNetworkContentTypes.BlockHeader)
+          let serializedHeader
+          try {
+            serializedHeader = await this.db.get(headerContentId)
+          } catch {
+            // Don't store block body where we don't have the header since we can't validate the data
+            // TODO: Retrieve header from network if not available locally
+            return
+          }
+          // Verify we can construct a valid block from the header and body provided
+          reassembleBlock(fromHexString(serializedHeader), value)
         } catch (err: any) {
           log(`Invalid value provided for block body: ${err.toString()}`)
+          return
         }
         break
       }
@@ -419,22 +442,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         throw new Error('unknown data type provided')
     }
     const key = getContentId(chainId, blockHash, contentType)
-    if (deserializedValue && contentType === HistoryNetworkContentTypes.BlockBody) {
-      // If content received is full block, store blockheader separately
-      // TODO: Figure out how to efficiently store block once but retrieve content based on either Block Header or Block Body content Type
-      const serializedHeader =
-        '0x' + (deserializedValue as Block).header.serialize().toString('hex')
-      const headerKey = getContentId(chainId, blockHash, 0)
-      await this.db.put(headerKey, serializedHeader, (err: any) => {
-        if (err) log(`Error putting content in history DB: ${err}`)
-      })
-      log(`added BlockHeader for ${blockHash} to content DB`)
-      this.emit('ContentAdded', blockHash, 0, serializedHeader)
-    }
-    await this.db.put(key, value, (err: any) => {
+    await this.db.put(key, toHexString(value), (err: any) => {
       if (err) log(`Error putting content in history DB: ${err.toString()}`)
     })
-    this.emit('ContentAdded', blockHash, contentType, value)
+    this.emit('ContentAdded', blockHash, contentType, toHexString(value))
     log(
       `added ${
         Object.keys(HistoryNetworkContentTypes)[
@@ -443,7 +454,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       } for ${blockHash} to content db`
     )
 
-    // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= log2Distance from the content)
+    // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= distance from the content)
     // TODO: Make # nodes content is offered to configurable based on further discussion
     const offerENRs = this.historyNetworkRoutingTable.nearest(key, 1)
     if (offerENRs.length > 0) {
@@ -452,9 +463,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         value: { chainId: chainId, blockHash: fromHexString(blockHash) },
       })
       offerENRs.forEach((enr) => {
-        if (
-          log2Distance(enr.nodeId, key) < this.historyNetworkRoutingTable.getRadius(enr.nodeId)!
-        ) {
+        if (distance(enr.nodeId, key) < this.historyNetworkRoutingTable.getRadius(enr.nodeId)!) {
           this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
         }
       })
@@ -536,7 +545,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       1,
       HistoryNetworkContentTypes.BlockHeader,
       toHexString(header.hash()),
-      toHexString(content)
+      content
     )
   }
 

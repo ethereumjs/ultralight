@@ -1,5 +1,7 @@
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
+import { Block, BlockBuffer, BlockHeader } from '@ethereumjs/block'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
+import rlp from 'rlp'
 
 export const shortId = (nodeId: string) => {
   return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
@@ -20,4 +22,11 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
   }
   const xorNumericDistance = BigInt(parseInt(binaryDistance.join(''), 2))
   return toHex(toBufferBE(toBigIntBE(fromHex(nodeId)) ^ xorNumericDistance, 32))
+}
+
+export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
+  const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(rawHeader))
+  const decodedBody = rlp.decode(rawBody)
+  // Verify we can construct a valid block from the header and body provided
+  return Block.fromValuesArray([header.raw(), ...decodedBody] as BlockBuffer)
 }
