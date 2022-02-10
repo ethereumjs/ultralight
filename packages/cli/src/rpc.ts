@@ -17,15 +17,26 @@ export class RPCManager {
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
       // lookup block header in DB and return if found
-      const lookupKey = getContentId(1, blockHash, 0)
-      const value = await this._client.db.get(lookupKey)
+      const headerlookupKey = getContentId(1, blockHash, 0)
+      let value
+      try {
+        value = await this._client.db.get(headerlookupKey)
+      } catch { }
       if (value) {
         return value
       }
-      // TODO: Add sendFindContent to this to retrieve from network if not found in local DB
+      // Request block header from network
+      let res
+      try {
+        res = await this._client.contentLookup(0, blockHash)
+      } catch { }
+
+      if (res) {
+        return res
+      }
       // TODO: Add logic to compile block header and block body into one response since network
       // will return them separately
-      return 'Block not found in DB'
+      return 'Block not found'
     },
     portal_addBootNode: async (params: [string]) => {
       const [enr] = params
