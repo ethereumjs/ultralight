@@ -41,6 +41,10 @@ export class Lookup {
       selector: this.contentType,
       value: { chainId: 1, blockHash: fromHexString(this.blockHash) },
     })
+    /* try {
+      const res = await this.client.db.get(this.contentId)
+      return res
+    } catch { }*/
     this.client.historyNetworkRoutingTable.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
@@ -60,47 +64,50 @@ export class Lookup {
         encodedKey,
         SubNetworkIds.HistoryNetwork
       )
-
-      if (res instanceof Uint8Array) {
-        // findContent returned data sought
-        log(`received content corresponding to ${shortId(this.blockHash)}`)
-        finished = true
-        return res
+      if (!res) {
+        return
       }
-
-      if (typeof res === 'number') {
-        // findContent returned uTP connection ID
-        log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
-        finished = true
-        return res
-      }
-      // findContent request returned ENRs of nodes closer to content
-      if (res) {
-        log(`received ${res.length} ENRs for closer nodes`)
-        res.forEach((enr) => {
-          if (!finished) {
-            const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
-            const dist = distance(decodedEnr.nodeId, this.contentId)
-            if (this.lookupPeers.length === 0) {
-              // if no peers currently in lookup table, add to beginning of list
-              this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
-            } else {
-              const index = this.lookupPeers.findIndex((peer) => peer.distance > dist)
-              if (index > -1) {
-                // add peer to lookupPeer list if distance from content is less than at least one current lookupPeer
-                this.lookupPeers.splice(index - 1, 0, { nodeId: decodedEnr.nodeId, distance: dist })
-              } else {
-                // if distance to content is greater than all other peers, add to end of lookupPeer list
+      switch (res.selector) {
+        case 0: {
+          // findContent returned uTP connection ID
+          log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
+          finished = true
+          return res.value
+        }
+        case 1:
+          {
+            // findContent returned data sought
+            log(`received content corresponding to ${shortId(this.blockHash)}`)
+            finished = true
+            return res.value
+          }
+        case 2: {
+          // findContent request returned ENRs of nodes closer to content
+          log(`received ${res.value.length} ENRs for closer nodes`)
+          res.value.forEach((enr) => {
+            if (!finished) {
+              const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
+              const dist = distance(decodedEnr.nodeId, this.contentId)
+              if (this.lookupPeers.length === 0) {
+                // if no peers currently in lookup table, add to beginning of list
                 this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
+              } else {
+                const index = this.lookupPeers.findIndex((peer) => peer.distance > dist)
+                if (index > -1) {
+                  // add peer to lookupPeer list if distance from content is less than at least one current lookupPeer
+                  this.lookupPeers.splice(index - 1, 0, { nodeId: decodedEnr.nodeId, distance: dist })
+                } else {
+                  // if distance to content is greater than all other peers, add to end of lookupPeer list
+                  this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
+                }
+              }
+              if (!this.client.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
+                this.client.historyNetworkRoutingTable.insertOrUpdate(
+                  decodedEnr,
+                  EntryStatus.Connected
+                )
               }
             }
-            if (!this.client.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-              this.client.historyNetworkRoutingTable.insertOrUpdate(
-                decodedEnr,
-                EntryStatus.Connected
-              )
-            }
-          }
         })
       }
     }

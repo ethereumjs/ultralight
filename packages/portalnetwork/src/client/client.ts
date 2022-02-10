@@ -320,7 +320,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             log(`received uTP Connection ID ${id}`)
             this.sendUtpStreamRequest(dstId, id)
-            return id
+            break
           }
           case 1: {
             log(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`)
@@ -331,15 +331,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               decodedKey.value.chainId,
               decodedKey.selector,
               toHexString(decodedKey.value.blockHash),
-              decoded.value as Uint8Array
+              fromHexString(toHexString(decoded.value as Uint8Array))
             )
-            return decoded.value as Uint8Array
+            break
           }
           case 2: {
             log(`received ${decoded.value.length} ENRs`)
-            return decoded.value as enrs
+            break
           }
         }
+        return decoded
       }
     } catch (err: any) {
       log(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
