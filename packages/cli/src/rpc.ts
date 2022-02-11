@@ -3,6 +3,7 @@ import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
 import rlp from 'rlp'
+import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
 const log = debug('RPC')
 
 export class RPCManager {
@@ -52,24 +53,11 @@ export class RPCManager {
       const res = await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
       return res?.enrSeq ? `ENR added for ${encodedENR.nodeId.slice(0, 15)}...` : 'Node not found'
     },
-    portal_addBlockToHistory: async (params: [string]) => {
-      const [rlpHex] = params
+    portal_addBlockToHistory: async (params: [string, string]) => {
+      const [blockHash, rlpHex] = params
       try {
-        const block = Block.fromRLPSerializedBlock(fromHex(rlpHex.slice(2)))
-        await this._client.addContentToHistory(
-          1,
-          0,
-          '0x' + toHex(block.header.hash()),
-          block.header.serialize()
-        )
-        const decodedBlock = rlp.decode(rlpHex)
-        await this._client.addContentToHistory(
-          1,
-          1,
-          '0x' + toHex(block.header.hash()),
-          rlp.encode([decodedBlock[1], decodedBlock[2]])
-        )
-        return `blockheader for ${'0x' + toHex(block.header.hash())} added to content DB`
+        addRLPSerializedBlock(rlpHex, blockHash, this._client)
+        return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
         log(`Error trying to load block to DB. ${err.message.toString()}`)
         return `internal error`

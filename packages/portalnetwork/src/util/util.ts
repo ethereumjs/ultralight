@@ -1,7 +1,10 @@
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
+import { fromHexString } from '@chainsafe/ssz'
 import { Block, BlockBuffer, BlockHeader } from '@ethereumjs/block'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import rlp from 'rlp'
+import { PortalNetwork } from '..'
+import { HistoryNetworkContentTypes } from '../historySubnetwork/types'
 
 export const shortId = (nodeId: string) => {
   return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
@@ -29,4 +32,24 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
   const decodedBody = rlp.decode(rawBody)
   // Verify we can construct a valid block from the header and body provided
   return Block.fromValuesArray([header.raw(), ...decodedBody] as BlockBuffer)
+}
+
+export const addRLPSerializedBlock = async (
+  rlpHex: string,
+  blockHash: string,
+  portal: PortalNetwork
+) => {
+  const decodedBlock = rlp.decode(fromHexString(rlpHex))
+  await portal.addContentToHistory(
+    1,
+    HistoryNetworkContentTypes.BlockHeader,
+    blockHash,
+    rlp.encode(decodedBlock[0])
+  )
+  await portal.addContentToHistory(
+    1,
+    HistoryNetworkContentTypes.BlockBody,
+    blockHash,
+    rlp.encode([decodedBlock[1], decodedBlock[2]])
+  )
 }
