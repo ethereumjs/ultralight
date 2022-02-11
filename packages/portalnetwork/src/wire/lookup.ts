@@ -74,13 +74,12 @@ export class Lookup {
           finished = true
           return res.value
         }
-        case 1:
-          {
-            // findContent returned data sought
-            log(`received content corresponding to ${shortId(this.blockHash)}`)
-            finished = true
-            return res.value
-          }
+        case 1: {
+          // findContent returned data sought
+          log(`received content corresponding to ${shortId(this.blockHash)}`)
+          finished = true
+          return res.value
+        }
         case 2: {
           // findContent request returned ENRs of nodes closer to content
           log(`received ${res.value.length} ENRs for closer nodes`)
@@ -95,7 +94,10 @@ export class Lookup {
                 const index = this.lookupPeers.findIndex((peer) => peer.distance > dist)
                 if (index > -1) {
                   // add peer to lookupPeer list if distance from content is less than at least one current lookupPeer
-                  this.lookupPeers.splice(index - 1, 0, { nodeId: decodedEnr.nodeId, distance: dist })
+                  this.lookupPeers.splice(index - 1, 0, {
+                    nodeId: decodedEnr.nodeId,
+                    distance: dist,
+                  })
                 } else {
                   // if distance to content is greater than all other peers, add to end of lookupPeer list
                   this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
@@ -108,7 +110,8 @@ export class Lookup {
                 )
               }
             }
-        })
+          })
+        }
       }
     }
   }
