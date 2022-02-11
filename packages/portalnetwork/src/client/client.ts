@@ -878,7 +878,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       )
 
       if (res?.enrs && res.enrs.length > 0) {
-        const distanceFromSoughtNodeToQueriedNode = distance(closestPeers[0].nodeId, nodeSought)
+        const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, nodeSought)
         res.enrs.forEach((enr) => {
           if (!finished) {
             const decodedEnr = ENR.decode(Buffer.from(enr))
