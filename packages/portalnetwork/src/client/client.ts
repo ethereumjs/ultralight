@@ -833,12 +833,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * "larger" buckets can be done here to prioritize finding the easier to find nodes first.
    * 3: Randomly generate a NodeID that falls within this bucket.
    * Do the random lookup on this node-id.
-   * The lookup is conducted at the `discv5` routing table level since `discv5` already
-   * has the lookup logic built and any nodes found via the discv5 lookup will be adding to
-   * the History Network Routing Table if they support that subnetwork.
    */
   private bucketRefresh = async () => {
-    // TODO Rework bucket refresh logic given most nodes will be at log2distance ~>240
     const notFullBuckets = this.historyNetworkRoutingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
