@@ -6,6 +6,7 @@ import { BlockHeader } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType, HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
 import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
 
+
 tape('Client unit tests', async (t) => {
 
     const node = await PortalNetwork.createPortalNetwork('192.168.0.1', 'ws://192.168.0.2:5050') as any
@@ -69,7 +70,7 @@ tape('Client unit tests', async (t) => {
         node.addContentToHistory = td.func<any>()
         td.when(node.sendPortalNetworkMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())).thenResolve(findContentResponse)
         const res = await node.sendFindContent('abc', key, SubNetworkIds.HistoryNetwork)
-        st.deepEqual(res, 'abc', 'got correct content')
+        st.deepEqual(res.value, [97, 98, 99], 'got correct content')
         const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
         const findContentMessageWithShortContent = Uint8Array.from([4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179, 37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182])
         td.when(node.client.sendTalkResp('ghi', td.matchers.anything(), td.matchers.argThat((arg: Buffer) => arg.length === 0))).thenDo(() => st.pass('correctly handle findContent where no matching content'))

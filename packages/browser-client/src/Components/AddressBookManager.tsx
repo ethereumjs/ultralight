@@ -68,7 +68,6 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
       })
       return
     }
-
     const res = await portal.contentLookup(0, contentKey)
     if (typeof res === 'string') {
       toast({
@@ -127,16 +126,19 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
         onChange={(evt) => setUtpConId(parseInt(evt.target.value))}
         value={utpConId}
       />
+      <VStack>
+        <Input
+          placeholder={'Block Hash'}
+          defaultValue={'0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'}
+          value={contentKey}
+          onChange={(evt) => {
+            setContentKey(evt.target.value)
+          }}
+        />
+      </VStack>
+      <Button onClick={() => handleFindContent()}>Send Find Content Request</Button>
       {peers.length > 0 && (
         <>
-          <Input
-            placeholder={'Block Hash'}
-            defaultValue={'0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'}
-            value={contentKey}
-            onChange={(evt) => {
-              setContentKey(evt.target.value)
-            }}
-          />
           <Input
             placeholder={'Distance'}
             onChange={(evt) => {
@@ -153,7 +155,6 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
             <Wrap spacing="5px">
               <Button onClick={() => handlePing(peer)}>Send Ping</Button>
               <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
-              <Button onClick={() => handleFindContent()}>Send Find Content Request</Button>
               <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
             </Wrap>
             <Wrap>

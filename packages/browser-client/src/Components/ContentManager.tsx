@@ -2,6 +2,9 @@ import { Button, Box } from '@chakra-ui/react'
 import { PortalNetwork, getContentId } from 'portalnetwork'
 import React from 'react'
 import { distance } from '@chainsafe/discv5'
+import { Block } from '@ethereumjs/block'
+import { HistoryNetworkContentTypes } from 'portalnetwork/dist/historySubnetwork/types'
+import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
 
 interface ContentManagerProps {
   portal: PortalNetwork
@@ -24,8 +27,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
               return res
             })
             .slice(0, 100)
-            .forEach((block) => {
-              portal.addContentToHistory(1, 1, block[0], (block[1] as any).rlp)
+            .forEach(async (block) => {
+              addRLPSerializedBlock((block[1] as any).rlp, block[0], portal)
             })
         }
       }
