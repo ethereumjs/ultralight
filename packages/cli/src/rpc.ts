@@ -21,29 +21,31 @@ export class RPCManager {
       // lookup block header in DB and return if found
       const headerlookupKey = getContentId(1, blockHash, 0)
       const bodylookupKey = includeTransactions && getContentId(1, blockHash, 1)
-      let value
+      let header
+      let body
+      let block
       try {
-        const header = await this._client.db.get(headerlookupKey)
-        const body = includeTransactions ? await this._client.db.get(bodylookupKey) : [[], []]
-        console.log(header, body)
-        value = reassembleBlock(fromHex(header.slice(2)), fromHex(body.slice(2)))
+        header = await this._client.db.get(headerlookupKey)
+        body = includeTransactions ? await this._client.db.get(bodylookupKey) : rlp.encode([[], []])
+        block = reassembleBlock(
+          fromHex(header.slice(2)),
+          typeof body === 'string' ? fromHex(body.slice(2)) : body
+        )
+        return block
       } catch (err) {
         log(err)
       }
-      if (value) {
-        return value
-      }
-      // Request block header from network
-      let res
+      // If block isn't in local DB, request block from network
       try {
-        res = await this._client.contentLookup(0, blockHash)
+        header = await this._client.contentLookup(0, blockHash)
+        body = includeTransactions
+          ? await this._client.contentLookup(1, blockHash)
+          : rlp.encode([[], []])
+        // TODO: Figure out why block body isn't coming back as Uint8Array
+        block = reassembleBlock(header as Uint8Array, Uint8Array.from(body as Uint8Array))
+        return block
       } catch { }
 
-      if (res) {
-        return res
-      }
-      // TODO: Add logic to compile block header and block body into one response since network
-      // will return them separately
       return 'Block not found'
     },
     portal_addBootNode: async (params: [string]) => {
