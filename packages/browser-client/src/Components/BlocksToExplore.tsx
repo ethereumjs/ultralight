@@ -1,5 +1,4 @@
 import { Box, Grid, GridItem, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
-import { BlockHeader } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
 import { getContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
 import { ReactElement, useEffect, useState } from 'react'
@@ -11,22 +10,22 @@ interface BlocksToExploreProps {
 }
 
 export default function BlocksToExplore(props: BlocksToExploreProps) {
-  const [keys, setKeys] = useState<Record<string, number>>({})
+  const [keys, setKeys] = useState<string[]>([])
   const [curKey, setCurKey] = useState<string>()
   const [_display, setDisplay] = useState<ReactElement>()
   const [menu, setMenu] = useState<ReactElement>(<></>)
 
   const portal = props.portal
 
-  function addKey(key: string, contentType: number) {
+  function addKey(key: string) {
     const k = keys
-    k[key] = contentType
+    k.push(key)
     setKeys(k)
   }
 
   async function handleChangeKey(key: string) {
     setCurKey(key)
-    const headerLookupKey = getContentId(1, key, keys[key])
+    const headerLookupKey = getContentId(1, key, 0)
     const header = await portal.db.get(headerLookupKey)
     let body
     try {
@@ -39,13 +38,12 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    portal.on('ContentAdded', async (key, contentType, data) => {
-      addKey(key, contentType)
+    portal.on('ContentAdded', async (key, _contentType, _data) => {
+      addKey(key)
       setMenu(
         <Menu>
           <MenuOptionGroup onChange={(k) => handleChangeKey(k as string)}>
-            {Object.keys(keys).map((key, idx) => {
+            {keys.map((key, idx) => {
               return (
                 <MenuItemOption key={idx} value={key}>
                   {key.slice(0, 12)}...

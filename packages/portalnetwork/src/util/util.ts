@@ -1,6 +1,6 @@
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { Block, BlockBuffer, BlockHeader } from '@ethereumjs/block'
+import { Block, BlockBuffer } from '@ethereumjs/block'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import rlp from 'rlp'
 import { PortalNetwork } from '..'
