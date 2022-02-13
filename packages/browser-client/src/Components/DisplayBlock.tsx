@@ -11,17 +11,15 @@ import {
   Th,
   Text,
 } from '@chakra-ui/react'
-import { JsonBlock, JsonHeader } from '@ethereumjs/block'
+import { Block } from '@ethereumjs/block'
 
 interface DisplayBlockProps {
-  header: JsonHeader
-  block?: JsonBlock
+  block: Block
 }
 
 export default function DisplayBlock(props: DisplayBlockProps) {
-  const header = Object.entries(props.header)
-  const tx: string[] = []
-
+  const header = Object.entries(props.block!.header!.toJSON())
+  const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   return (
     <Box>
       <Tabs>
@@ -53,7 +51,7 @@ export default function DisplayBlock(props: DisplayBlockProps) {
                 {tx && (
                   <Tr>
                     <Th>tx</Th>
-                    <Th>{tx}</Th>
+                    <Th wordBreak={'break-all'}>{tx}</Th>
                   </Tr>
                 )}
               </Thead>
@@ -61,7 +59,7 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           </TabPanel>
           <TabPanel>Uncles</TabPanel>
           <TabPanel>
-            <Text>{JSON.stringify(props.header)}</Text>
+            <Text>{JSON.stringify(props.block.header.toJSON())}</Text>
           </TabPanel>
         </TabPanels>
       </Tabs>

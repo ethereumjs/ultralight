@@ -37,10 +37,9 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  * @returns a `Block` object assembled from the header and body provided
  */
 export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
-  const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(rawHeader))
-  const decodedBody = rlp.decode(rawBody)
-  // Verify we can construct a valid block from the header and body provided
-  return Block.fromValuesArray([header.raw(), ...decodedBody] as BlockBuffer)
+  //const decodedBody = rlp.decode(rawBody)
+  //@ts-ignore
+  return Block.fromValuesArray([rlp.decode(rawHeader), ...rlp.decode(rawBody)] as BlockBuffer)
 }
 
 /**

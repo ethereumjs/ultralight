@@ -1,6 +1,7 @@
 import { Box, Grid, GridItem, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
 import { BlockHeader } from '@ethereumjs/block'
-import { getContentId, PortalNetwork } from 'portalnetwork'
+import { rlp } from 'ethereumjs-util'
+import { getContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
 import { ReactElement, useEffect, useState } from 'react'
 import DisplayBlock from './DisplayBlock'
 
@@ -26,9 +27,15 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
   async function handleChangeKey(key: string) {
     setCurKey(key)
     const headerLookupKey = getContentId(1, key, keys[key])
-    const _header = await portal.db.get(headerLookupKey)
-    const header = BlockHeader.fromRLPSerializedHeader(_header)
-    setDisplay(<DisplayBlock header={header.toJSON()} />)
+    const header = await portal.db.get(headerLookupKey)
+    let body
+    try {
+      body = await portal.db.get(getContentId(1, key, 1))
+    } catch {
+      body = rlp.encode([[], []])
+    }
+    const block = reassembleBlock(header, body)
+    setDisplay(<DisplayBlock block={block} />)
   }
 
   useEffect(() => {
