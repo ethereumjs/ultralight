@@ -2,8 +2,6 @@ import { Button, Box } from '@chakra-ui/react'
 import { PortalNetwork, getContentId } from 'portalnetwork'
 import React from 'react'
 import { distance } from '@chainsafe/discv5'
-import { Block } from '@ethereumjs/block'
-import { HistoryNetworkContentTypes } from 'portalnetwork/dist/historySubnetwork/types'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
 
 interface ContentManagerProps {

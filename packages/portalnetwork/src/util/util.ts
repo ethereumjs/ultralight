@@ -1,6 +1,6 @@
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { Block, BlockBuffer, BlockHeader } from '@ethereumjs/block'
+import { Block, BlockBuffer } from '@ethereumjs/block'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import rlp from 'rlp'
 import { PortalNetwork } from '..'
@@ -37,10 +37,9 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  * @returns a `Block` object assembled from the header and body provided
  */
 export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
-  const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(rawHeader))
-  const decodedBody = rlp.decode(rawBody)
-  // Verify we can construct a valid block from the header and body provided
-  return Block.fromValuesArray([header.raw(), ...decodedBody] as BlockBuffer)
+  //const decodedBody = rlp.decode(rawBody)
+  //@ts-ignore
+  return Block.fromValuesArray([rlp.decode(rawHeader), ...rlp.decode(rawBody)] as BlockBuffer)
 }
 
 /**

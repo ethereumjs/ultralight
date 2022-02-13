@@ -1,5 +1,4 @@
 import {
-  Container,
   Box,
   TabPanels,
   TabPanel,
@@ -10,84 +9,60 @@ import {
   Thead,
   Tr,
   Th,
-  Td,
   Text,
-  Link,
 } from '@chakra-ui/react'
-import { Block, BlockHeader, JsonHeader } from '@ethereumjs/block'
-import Common from '@ethereumjs/common'
-import { toBuffer } from 'ethereumjs-util'
+import { Block } from '@ethereumjs/block'
 
 interface DisplayBlockProps {
-  rlpHeader: string
-  findContent: any
+  block: Block
 }
 
 export default function DisplayBlock(props: DisplayBlockProps) {
-  const rlpHeader = props.rlpHeader
-  const chain = 'mainnet'
-  const common = new Common({ chain: chain })
-  const blockHeader = BlockHeader.fromRLPSerializedHeader(toBuffer(rlpHeader), { common: common })
-  const block = new Block(blockHeader)
-  const json = block.toJSON()
-  const header: JsonHeader = json.header!
-
-  const obj = Object.entries(header)
-  const tx = json.transactions
-
-  function handleClick(hash: string) {
-    props.findContent(hash)
-  }
-
-  const formatValue = (value: string): string | number => {
-    const valueLength = value.slice(2).length
-    if (valueLength >= 40 && valueLength <= 64) {
-      return value
-    } else if (valueLength < 32) {
-      return parseInt(value, 16)
-    }
-    return value.slice(0, 32) + '...'
-  }
+  const header = Object.entries(props.block!.header!.toJSON())
+  const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   return (
-    <Container>
-      <Box>
-        <Tabs>
-          <TabList>
-            <Tab>Header</Tab>
-            <Tab>Transactions</Tab>
-            <Tab>Uncles</Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel>
-              <Table size={'sm'} variant="simple">
-                <Thead>
-                  {obj.map((key) => {
+    <Box>
+      <Tabs>
+        <TabList>
+          <Tab>Header</Tab>
+          <Tab>Transactions</Tab>
+          <Tab>Uncles</Tab>
+          <Tab>JSON</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            <Table size={'sm'} variant="simple">
+              <Thead>
+                {header &&
+                  header.map((key) => {
                     return (
                       <Tr key={key[0] + key[1]}>
                         <Th>{key[0]}</Th>
-                        <Td>
-                          {key[0] === 'parentHash' ? (
-                            <Link onClick={() => handleClick(key[1] as string)}>{key[1]}</Link>
-                          ) : (
-                            formatValue(key[1])
-                          )}
-                        </Td>
+                        <Th wordBreak={'break-all'}>{key[1]}</Th>
                       </Tr>
                     )
                   })}
-                </Thead>
-              </Table>
-            </TabPanel>
-            <TabPanel>
-              TXs
-              {tx?.map((t, idx) => {
-                return <Text key={idx}>{t}</Text>
-              })}
-            </TabPanel>
-            <TabPanel>Uncles</TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
-    </Container>
+              </Thead>
+            </Table>
+          </TabPanel>
+          <TabPanel>
+            <Table size={'sm'} variant="simple">
+              <Thead>
+                {tx && (
+                  <Tr>
+                    <Th>tx</Th>
+                    <Th wordBreak={'break-all'}>{tx}</Th>
+                  </Tr>
+                )}
+              </Thead>
+            </Table>
+          </TabPanel>
+          <TabPanel>Uncles</TabPanel>
+          <TabPanel>
+            <Text>{JSON.stringify(props.block.header.toJSON())}</Text>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Box>
   )
 }
