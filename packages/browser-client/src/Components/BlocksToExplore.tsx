@@ -19,7 +19,11 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
 
   function addKey(key: string) {
     const k = keys
-    k.push(key)
+    if (k.findIndex((value) => key === value) === -1) k.push(key)
+    if (k.length > 10) {
+      k.shift()
+    }
+
     setKeys(k)
   }
 
