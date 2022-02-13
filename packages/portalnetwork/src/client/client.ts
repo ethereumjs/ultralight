@@ -39,7 +39,6 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
-import rlp from 'rlp'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import {
   HistoryNetworkContentKeyUnionType,
