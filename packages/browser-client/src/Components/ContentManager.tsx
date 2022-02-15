@@ -48,8 +48,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
   }
 
   return (
-    <Box>
-      <Button onClick={handleClick}>Load Content File</Button>
-    </Box>
+    <Button width={'100%'} onClick={handleClick}>
+      Load Content File
+    </Button>
   )
 }

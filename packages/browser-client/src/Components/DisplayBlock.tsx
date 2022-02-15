@@ -10,8 +10,10 @@ import {
   Tr,
   Th,
   Text,
+  Heading,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
+import { toHexString } from './ShowInfo'
 
 interface DisplayBlockProps {
   block: Block
@@ -22,6 +24,12 @@ export default function DisplayBlock(props: DisplayBlockProps) {
   const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   return (
     <Box>
+      <Heading padding={4} size="md" textAlign={'center'}>
+        Block Explorer
+      </Heading>
+      <Heading paddingBottom={4} size="sm" textAlign={'center'}>
+        {toHexString(props.block.hash())}
+      </Heading>
       <Tabs>
         <TabList>
           <Tab>Header</Tab>
@@ -59,7 +67,7 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           </TabPanel>
           <TabPanel>Uncles</TabPanel>
           <TabPanel>
-            <Text>{JSON.stringify(props.block.header.toJSON())}</Text>
+            <Text wordBreak={'break-all'}>{JSON.stringify(props.block.header.toJSON())}</Text>
           </TabPanel>
         </TabPanels>
       </Tabs>

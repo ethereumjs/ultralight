@@ -1,8 +1,23 @@
-import { Button, Heading, HStack, Input, Text, VStack, Wrap, useToast } from '@chakra-ui/react'
+import {
+  Button,
+  Heading,
+  HStack,
+  Input,
+  Text,
+  VStack,
+  Wrap,
+  useToast,
+  Grid,
+  GridItem,
+  MenuOptionGroup,
+  Menu,
+  MenuItemOption,
+} from '@chakra-ui/react'
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import FindContent from './FindContent'
 
 type NodeManagerProps = {
   portal: PortalNetwork
@@ -14,11 +29,12 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
   const [enr, setEnr] = React.useState<string>('')
   const [peers, setPeers] = React.useState<string[]>([])
   // Default content key (i.e. Block Hash for Block 1 from Mainnet) to test lookups/offers
-  const [contentKey, setContentKey] = React.useState<string>(
-    '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-  )
   const [distance, setDistance] = React.useState<string>('0')
   const [utpConId, setUtpConId] = React.useState<number>()
+  const [contentKey, setContentKey] = useState<string>(
+    '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
+  )
+  const [peer, setPeer] = useState<string>('')
 
   const toast = useToast()
 
@@ -45,40 +61,6 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
     updateAddressBook()
   }
 
-  const handleFindRandom = () => {
-    const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
-    portal.nodeLookup(lookupNode)
-  }
-  const handlePing = (nodeId: string) => {
-    portal.sendPing(nodeId, network)
-  }
-
-  const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(nodeId, Uint16Array.from([parseInt(distance)]), network)
-  }
-
-  const handleFindContent = async () => {
-    if (contentKey.slice(0, 2) !== '0x') {
-      setContentKey('')
-      toast({
-        title: 'Error',
-        description: 'Block Hash must be hex prefixed string',
-        status: 'error',
-        duration: 3000,
-      })
-      return
-    }
-    const res = await portal.contentLookup(0, contentKey)
-    if (typeof res === 'string') {
-      toast({
-        title: 'Found what we were looking for',
-        description: res,
-        status: 'success',
-        duration: 3000,
-      })
-    }
-  }
-
   const handleOffer = (nodeId: string) => {
     if (contentKey.slice(0, 2) !== '0x') {
       setContentKey('')
@@ -97,6 +79,18 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
     portal.sendOffer(nodeId, [encodedContentKey], network)
   }
 
+  const handleFindRandom = () => {
+    const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
+    portal.nodeLookup(lookupNode)
+  }
+  const handlePing = (nodeId: string) => {
+    portal.sendPing(nodeId, network)
+  }
+
+  const handleFindNodes = (nodeId: string) => {
+    portal.sendFindNodes(nodeId, Uint16Array.from([parseInt(distance)]), network)
+  }
+
   const handleUtp = (nodeId: string) => {
     if (utpConId) {
       portal.uTP.initiateUtpTest(nodeId, utpConId)
@@ -108,60 +102,87 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
     }
   }
 
+  useEffect(() => {
+    setPeer(peers[peers.length - 1])
+  }, [peers])
+
   React.useEffect(() => {
     finding && setContentKey(finding)
+
     peers.forEach((peer) => handleFindNodes(peer))
   }, [finding])
 
   return (
-    <VStack paddingTop={2}>
-      <Heading size="lg">Address Book Manager</Heading>
+    <VStack>
+      <Heading padding={2} size="md">
+        Address Book Manager
+      </Heading>
       <Input value={enr} placeholder={'Node ENR'} onChange={(evt) => setEnr(evt.target.value)} />
-      <HStack>
-        <Button onClick={handleClick}>Add Node</Button>
-        <Button onClick={handleFindRandom}>Lookup Node</Button>
-      </HStack>
+      <Button width={'100%'} onClick={handleClick}>
+        Add Node
+      </Button>
       <Input
         placeholder="Connection ID"
         onChange={(evt) => setUtpConId(parseInt(evt.target.value))}
         value={utpConId}
       />
-      <VStack>
-        <Input
-          placeholder={'Block Hash'}
-          defaultValue={'0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'}
-          value={contentKey}
-          onChange={(evt) => {
-            setContentKey(evt.target.value)
-          }}
-        />
-      </VStack>
-      <Button onClick={() => handleFindContent()}>Send Find Content Request</Button>
-      {peers.length > 0 && (
-        <>
-          <Input
-            placeholder={'Distance'}
-            onChange={(evt) => {
-              setDistance(evt.target.value)
-            }}
-          />
-        </>
-      )}
+      <Button width={'100%'} onClick={handleFindRandom}>
+        Lookup Node
+      </Button>
 
-      {peers.length > 0 &&
-        peers.map((peer) => (
-          <HStack key={Math.random().toString()}>
-            <Text>{peer.slice(0, 25)}...</Text>
-            <Wrap spacing="5px">
-              <Button onClick={() => handlePing(peer)}>Send Ping</Button>
-              <Button onClick={() => handleFindNodes(peer)}>Request Nodes from Peer</Button>
-              <Button onClick={() => handleOffer(peer)}>Send Offer</Button>
-            </Wrap>
-            <Wrap>
-              <Button onClick={() => handleUtp(peer)}>Start UTP Connection</Button>
-            </Wrap>
-          </HStack>
-        ))}
+      {peers.length > 0 && (
+        <Grid rowGap={2} columnGap={1} templateColumns={'7'} templateRows={'5'}>
+          <GridItem colSpan={7}>
+            <Heading size="sm" textAlign={'center'}>
+              Communicate with Peers
+            </Heading>
+          </GridItem>
+          <GridItem rowSpan={5}>
+            <Menu autoSelect>
+              <MenuOptionGroup onChange={(p) => setPeer(p as string)}>
+                {peers.map((_peer, idx) => (
+                  <MenuItemOption
+                    paddingStart={0}
+                    bgColor={peer === _peer ? 'lightblue' : 'white'}
+                    key={idx}
+                    value={_peer}
+                  >
+                    {_peer.slice(0, 25)}...
+                  </MenuItemOption>
+                ))}
+              </MenuOptionGroup>
+            </Menu>
+          </GridItem>
+          <GridItem colStart={4} rowStart={2}>
+            <Button size="sm" width={'100%'} onClick={() => handlePing(peer)}>
+              Send Ping
+            </Button>
+          </GridItem>
+          <GridItem rowStart={3} colStart={4}>
+            <Input
+              placeholder={'Distance'}
+              onChange={(evt) => {
+                setDistance(evt.target.value)
+              }}
+            />
+          </GridItem>
+          <GridItem colStart={4} rowStart={4}>
+            <Button size="sm" onClick={() => handleFindNodes(peer)}>
+              Request Nodes from Peer
+            </Button>
+          </GridItem>
+          <GridItem colStart={4} rowStart={5}>
+            <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
+              Send Offer
+            </Button>
+          </GridItem>
+          <GridItem colStart={4} rowStart={6}>
+            <Button width={'100%'} size="sm" onClick={() => handleUtp(peer)}>
+              Start UTP Connection
+            </Button>
+          </GridItem>
+        </Grid>
+      )}
     </VStack>
   )
 }

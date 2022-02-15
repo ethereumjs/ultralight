@@ -14,6 +14,9 @@ import {
   Stack,
   Input,
   Button,
+  HStack,
+  Grid,
+  GridItem,
 } from '@chakra-ui/react'
 import { ColorModeSwitcher } from './ColorModeSwitcher'
 import { ENR } from '@chainsafe/discv5'
@@ -24,12 +27,16 @@ import ShowInfo from './Components/ShowInfo'
 import AddressBookManager from './Components/AddressBookManager'
 import { ContentManager } from './Components/ContentManager'
 import BlocksToExplore from './Components/BlocksToExplore'
+import FindContent from './Components/FindContent'
+import { Block } from '@ethereumjs/block'
+import DisplayBlock from './Components/DisplayBlock'
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [enr, setENR] = React.useState<string>('')
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
   const [proxy, setProxy] = React.useState('127.0.0.1')
   const [finding, setFinding] = React.useState<string>()
+  const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
 
   const init = async () => {
@@ -122,10 +129,25 @@ export const App = () => {
                 <Radio value={SubNetworkIds.HistoryNetwork}>History Network</Radio>
               </Stack>
             </RadioGroup>
-            {portal && <ContentManager portal={portal} />}
+            <Grid columnGap={4} templateColumns={'2'}>
+              <GridItem>
+                {portal && (
+                  <AddressBookManager finding={finding} portal={portal} network={network} />
+                )}
+              </GridItem>
+              <GridItem colStart={2}>
+                {portal && (
+                  <FindContent
+                    setBlock={setBlock}
+                    portal={portal}
+                    finding={finding}
+                    network={network}
+                  />
+                )}
+              </GridItem>
+            </Grid>
           </VStack>
-          {portal && <AddressBookManager finding={finding} portal={portal} network={network} />}
-          {portal && <BlocksToExplore findContent={setFinding} portal={portal} />}
+          {portal && block && <DisplayBlock block={block!} />}
         </VStack>
       </Flex>
     </ChakraProvider>
