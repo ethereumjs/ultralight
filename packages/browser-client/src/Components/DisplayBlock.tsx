@@ -10,8 +10,11 @@ import {
   Tr,
   Th,
   Text,
+  Heading,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
+import SelectTx from './SelectTx'
+import { toHexString } from './ShowInfo'
 
 interface DisplayBlockProps {
   block: Block
@@ -19,9 +22,16 @@ interface DisplayBlockProps {
 
 export default function DisplayBlock(props: DisplayBlockProps) {
   const header = Object.entries(props.block!.header!.toJSON())
+  const txList = props.block.transactions
   const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   return (
     <Box>
+      <Heading padding={4} size="md" textAlign={'center'}>
+        Block Explorer
+      </Heading>
+      <Heading paddingBottom={4} size="sm" textAlign={'center'}>
+        {toHexString(props.block.hash())}
+      </Heading>
       <Tabs>
         <TabList>
           <Tab>Header</Tab>
@@ -45,21 +55,10 @@ export default function DisplayBlock(props: DisplayBlockProps) {
               </Thead>
             </Table>
           </TabPanel>
-          <TabPanel>
-            <Table size={'sm'} variant="simple">
-              <Thead>
-                {tx && (
-                  <Tr>
-                    <Th>tx</Th>
-                    <Th wordBreak={'break-all'}>{tx}</Th>
-                  </Tr>
-                )}
-              </Thead>
-            </Table>
-          </TabPanel>
+          <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
           <TabPanel>Uncles</TabPanel>
           <TabPanel>
-            <Text>{JSON.stringify(props.block.header.toJSON())}</Text>
+            <Text wordBreak={'break-all'}>{JSON.stringify(props.block.header.toJSON())}</Text>
           </TabPanel>
         </TabPanels>
       </Tabs>

@@ -1,4 +1,4 @@
-import { Button, Box } from '@chakra-ui/react'
+import { Button } from '@chakra-ui/react'
 import { PortalNetwork, getContentId } from 'portalnetwork'
 import React from 'react'
 import { distance } from '@chainsafe/discv5'
@@ -48,8 +48,8 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
   }
 
   return (
-    <Box>
-      <Button onClick={handleClick}>Load Content File</Button>
-    </Box>
+    <Button width={'100%'} onClick={handleClick}>
+      Load Content File
+    </Button>
   )
 }

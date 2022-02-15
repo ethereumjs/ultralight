@@ -1,18 +1,19 @@
-import { Box, Grid, GridItem, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
+import { Box, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
+import { Block } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
 import { getContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
-import { ReactElement, useEffect, useState } from 'react'
-import DisplayBlock from './DisplayBlock'
+import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
 
 interface BlocksToExploreProps {
   portal: PortalNetwork
   findContent: any
+  setBlock: Dispatch<SetStateAction<Block | undefined>>
 }
 
 export default function BlocksToExplore(props: BlocksToExploreProps) {
   const [keys, setKeys] = useState<string[]>([])
   const [curKey, setCurKey] = useState<string>()
-  const [_display, setDisplay] = useState<ReactElement>()
+  const [_display, _setDisplay] = useState<ReactElement>()
   const [menu, setMenu] = useState<ReactElement>(<></>)
 
   const portal = props.portal
@@ -38,7 +39,7 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
       body = rlp.encode([[], []])
     }
     const block = reassembleBlock(header, body)
-    setDisplay(<DisplayBlock block={block} />)
+    props.setBlock(block)
   }
 
   useEffect(() => {
@@ -67,8 +68,12 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
         <MenuOptionGroup defaultValue={curKey} onChange={(k) => handleChangeKey(k as string)}>
           {keys.map((key, idx) => {
             return (
-              <MenuItemOption key={idx} value={key}>
-                {key.slice(0, 12)}...
+              <MenuItemOption
+                key={idx}
+                value={key}
+                bgColor={curKey === key ? 'lightblue' : 'white'}
+              >
+                {key.slice(0, 10)}...
               </MenuItemOption>
             )
           })}
@@ -84,15 +89,13 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
   }, [keys])
 
   return (
-    <Grid templateColumns={'repeat(12, 1fr)'} outline={'solid black'} alignItems={'start'}>
-      <GridItem colSpan={2}>
-        <Box style={{ paddingBottom: '500%' }} borderColor={'black'} borderWidth={'thin'}>
-          {menu && menu}
-        </Box>
-      </GridItem>
-      <GridItem colStart={4} colSpan={9}>
-        <Box>{_display}</Box>
-      </GridItem>
-    </Grid>
+    <Box borderColor={'black'} borderWidth={'thin'}>
+      {menu && menu}
+    </Box>
   )
+}
+{
+  /* <GridItem colStart={4} colSpan={9}>
+      <Box>{_display}</Box>
+    </GridItem> */
 }
