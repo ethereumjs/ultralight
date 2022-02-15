@@ -1,11 +1,8 @@
 import {
   Button,
   Heading,
-  HStack,
   Input,
-  Text,
   VStack,
-  Wrap,
   useToast,
   Grid,
   GridItem,
@@ -17,7 +14,6 @@ import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
 import React, { useEffect, useState } from 'react'
-import FindContent from './FindContent'
 
 type NodeManagerProps = {
   portal: PortalNetwork

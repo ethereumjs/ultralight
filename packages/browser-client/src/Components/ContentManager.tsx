@@ -1,4 +1,4 @@
-import { Button, Box } from '@chakra-ui/react'
+import { Button } from '@chakra-ui/react'
 import { PortalNetwork, getContentId } from 'portalnetwork'
 import React from 'react'
 import { distance } from '@chainsafe/discv5'

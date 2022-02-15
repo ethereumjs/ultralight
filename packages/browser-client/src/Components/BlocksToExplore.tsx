@@ -1,9 +1,8 @@
-import { Box, Grid, GridItem, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
+import { Box, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
 import { getContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
 import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
-import DisplayBlock from './DisplayBlock'
 
 interface BlocksToExploreProps {
   portal: PortalNetwork
@@ -14,7 +13,7 @@ interface BlocksToExploreProps {
 export default function BlocksToExplore(props: BlocksToExploreProps) {
   const [keys, setKeys] = useState<string[]>([])
   const [curKey, setCurKey] = useState<string>()
-  const [_display, setDisplay] = useState<ReactElement>()
+  const [_display, _setDisplay] = useState<ReactElement>()
   const [menu, setMenu] = useState<ReactElement>(<></>)
 
   const portal = props.portal

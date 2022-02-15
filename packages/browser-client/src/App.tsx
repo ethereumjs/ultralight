@@ -14,7 +14,6 @@ import {
   Stack,
   Input,
   Button,
-  HStack,
   Grid,
   GridItem,
 } from '@chakra-ui/react'
@@ -25,8 +24,6 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import ShowInfo from './Components/ShowInfo'
 import AddressBookManager from './Components/AddressBookManager'
-import { ContentManager } from './Components/ContentManager'
-import BlocksToExplore from './Components/BlocksToExplore'
 import FindContent from './Components/FindContent'
 import { Block } from '@ethereumjs/block'
 import DisplayBlock from './Components/DisplayBlock'
@@ -35,7 +32,7 @@ export const App = () => {
   const [enr, setENR] = React.useState<string>('')
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
   const [proxy, setProxy] = React.useState('127.0.0.1')
-  const [finding, setFinding] = React.useState<string>()
+  const [finding, _setFinding] = React.useState<string>()
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
 

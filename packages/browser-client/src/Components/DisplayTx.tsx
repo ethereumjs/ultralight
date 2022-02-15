@@ -1,26 +1,9 @@
-import { fromHex, toHex } from '@chainsafe/discv5'
-import {
-  Box,
-  Heading,
-  HStack,
-  Tab,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  VStack,
-} from '@chakra-ui/react'
-// eslint-disable-next-line implicit-dependencies/no-implicit
-import * as TX from '@ethereumjs/tx'
-import { TransactionsBuffer } from '@ethereumjs/block'
-import { rlp } from 'ethereumjs-util'
+import { Box, Table, Tbody, Td, Tr } from '@chakra-ui/react'
+import { TypedTransaction } from '@ethereumjs/tx'
 import { toHexString } from './ShowInfo'
 
 interface DisplayTxProps {
-  tx: TX.TypedTransaction
+  tx: TypedTransaction
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
