@@ -53,7 +53,7 @@ tape('Portal Wire Spec Testing', async (t) => {
         let portal1: PortalNetwork
         let portal2: PortalNetwork
 
-        child.stdout.on('data', async (data) => {
+        child.stderr.on('data', async (data) => {
             if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
                 st.pass('proxy started successfully')
                 const nodes = await setupNetwork()
@@ -81,7 +81,7 @@ tape('Portal Wire Spec Testing', async (t) => {
         let portal1: PortalNetwork
         let portal2: PortalNetwork
 
-        child.stdout.on('data', async (data) => {
+        child.stderr.on('data', async (data) => {
             if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
                 const nodes = await setupNetwork()
                 portal1 = nodes[0]

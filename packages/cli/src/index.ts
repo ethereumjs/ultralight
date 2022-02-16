@@ -7,7 +7,7 @@ import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
 import { RPCManager } from './rpc'
-
+import dgram from 'dgram'
 const args: any = yargs(hideBin(process.argv))
   .option('bootnode', {
     describe: 'ENR of Bootnode',
@@ -53,9 +53,8 @@ const run = async () => {
     },
     1
   )
-  portal.enableLog('discv5*, RPC*, portalnetwork*')
+  portal.enableLog('discv5*, RPC*, portalnetwork*, proxy*')
   await portal.start()
-
   if (args.bootnode) {
     portal.sendPing(args.bootnode, SubNetworkIds.HistoryNetwork)
   }
@@ -71,21 +70,17 @@ const run = async () => {
 
 const main = async () => {
   let proxyStarted = false
+
   if (args.proxy === true) {
     // Spawn a child process that runs the proxy
     const file = require.resolve('../../proxy/dist/index.js')
     child = spawn(process.execPath, [file, '--nat', args.nat])
-    child.stdout.on('data', async (data) => {
-      // Prints all proxy logs to the console
-      console.log(data.toString())
+    child.stderr.on('data', (data) => {
       if (!proxyStarted && data.toString().includes('websocket server listening')) {
         run()
         proxyStarted = true
+        child.stderr.removeAllListeners()
       }
-    })
-    child.stderr.on('data', (data) => {
-      // Prints all proxy errors to the console
-      console.log(data.toString())
     })
   } else {
     run()
