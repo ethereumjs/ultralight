@@ -1,6 +1,5 @@
 import WS from 'ws'
 import * as dgram from 'dgram'
-import ipCodec from '@leichtgewicht/ip-codec'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 const stun = require('stun')
@@ -61,14 +60,21 @@ const startServer = async (ws: WS.Server, extip = false) => {
       }
     }
     // Send external IP address/port to websocket client to update ENR
-    const bAddress = ipCodec.encode(remoteAddr!)
+    const remoteAddrArray = remoteAddr!.split('.')
+    const bAddress = Uint8Array.from([
+      parseInt(remoteAddrArray[0]),
+      parseInt(remoteAddrArray[1]),
+      parseInt(remoteAddrArray[2]),
+      parseInt(remoteAddrArray[3]),
+    ])
     const bPort = Buffer.alloc(2)
     bPort.writeUIntBE(udpsocket.address().port, 0, 2)
     websocket.send(Buffer.concat([bAddress, bPort]))
     console.log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
     websocket.on('message', (data) => {
       try {
-        const address = ipCodec.decode(Buffer.from(data.slice(0, 4) as ArrayBuffer))
+        const bAddress = Buffer.from(data.slice(0, 4) as ArrayBuffer)
+        const address = `${bAddress[0]}.${bAddress[1]}.${bAddress[2]}.${bAddress[3]}`
         const port = Buffer.from(data as ArrayBuffer).readUIntBE(4, 2)
         const payload = Buffer.from(data.slice(6) as ArrayBuffer)
         console.log('outbound message to', address, port)
