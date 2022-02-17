@@ -5,6 +5,9 @@ module.exports = {
     es6: true,
     node: true,
   },
+  parserOptions: {
+
+  },
   ignorePatterns: [
     'node_modules/',
     'dist/',
@@ -14,7 +17,6 @@ module.exports = {
     'typedoc.js',
     'packages/discv5/',
     'docs',
-    'test/',
     '.eslintrc.js'
   ],
   extends: ['eslint:recommended'],

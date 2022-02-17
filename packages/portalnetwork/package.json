@@ -4,8 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsc --declaration --watch",
-    "build": "tsc --declaration",
+    "dev": "tsc --watch ./tsconfig.prod.json",
+    "build": "tsc ./tsconfig.prod.json",
     "docs": "typedoc src/index.ts",
     "tape": "tape -r  ts-node/register",
     "test": "tape -r  ts-node/register 'test/!(integration)/**/*.spec.ts'",
