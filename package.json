@@ -20,7 +20,8 @@
     "start-cli": "npm run start -w=cli -- --nat=localhost",
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy -w=cli",
     "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
-    "clean": "bash ./scripts/clean-root.sh"
+    "clean": "bash ./scripts/clean-root.sh",
+    "devnet": "bash ./scripts/devnet.sh"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "5.0.0",
