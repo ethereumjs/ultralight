@@ -8,7 +8,7 @@ Node v15+, NPM v7+
 
 ## Quick Start
 
-Clone this repo and run `npm i` from the root directory.  This project leverage [`npm workspaces`](https://docs.npmjs.com/cli/v7/using-npm/workspaces) so requires NPM v7 or above.
+Clone this repo and run `npm i` from the root directory.  This project leverages [`npm workspaces`](https://docs.npmjs.com/cli/v7/using-npm/workspaces) so requires NPM v7 or above.
 
 - Start the cli - `npm run start-cli` - and press `e` to print the current ENR to the screen.
 - Copy this ENR which should start with `enr:-IS...`
