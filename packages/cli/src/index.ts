@@ -7,7 +7,7 @@ import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
 import { RPCManager } from './rpc'
-import dgram from 'dgram'
+
 const args: any = yargs(hideBin(process.argv))
   .option('bootnode', {
     describe: 'ENR of Bootnode',

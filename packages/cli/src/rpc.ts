@@ -1,7 +1,6 @@
-import { ENR, fromHex, toHex } from '@chainsafe/discv5'
+import { ENR, fromHex } from '@chainsafe/discv5'
 import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
-import { Block } from '@ethereumjs/block'
 import rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
 const log = debug('RPC')
