@@ -64,6 +64,10 @@ export class RPCManager {
         return `internal error`
       }
     },
+    portal_nodeEnr: async () => {
+      const enr = this._client.client.enr.encodeTxt()
+      return enr
+    },
   }
 
   constructor(client: PortalNetwork) {
