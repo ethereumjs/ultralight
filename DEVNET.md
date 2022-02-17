@@ -29,3 +29,5 @@ Note: The block data file should contain a json object of the below structure wh
     },
 }
 ```
+
+The first million blocks from Ethereum mainnet can be acquired [here](https://gateway.ipfs.io/ipfs/QmZVRv8iAez6AdWFxBeFTdTfmFceES7tdSXD2e828WfJhG) 
