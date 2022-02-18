@@ -64,12 +64,12 @@ const setupMetrics = () => {
     knownHistoryNodes: new PromClient.Gauge({
       name: 'ultralight_known_history_network_peers',
       help: 'how many peers are in history network routing table',
-      collect: () => { },
+      collect: () => {},
     }),
     knownDiscv5Nodes: new PromClient.Gauge({
       name: 'ultralight_known_discv5_peers',
       help: 'how many peers are in discv5 routing table',
-      collect: () => { },
+      collect: () => {},
     }),
     totalContentLookups: new PromClient.Counter({
       name: 'ultralight_total_content_lookups',

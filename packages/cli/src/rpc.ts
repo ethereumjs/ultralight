@@ -43,7 +43,7 @@ export class RPCManager {
         // TODO: Figure out why block body isn't coming back as Uint8Array
         block = reassembleBlock(header as Uint8Array, Uint8Array.from(body as Uint8Array))
         return block
-      } catch { }
+      } catch {}
 
       return 'Block not found'
     },
