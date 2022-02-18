@@ -33,7 +33,7 @@ import {
   PongMessage,
   PingMessage,
 } from '../wire'
-import { PortalNetworkEventEmitter } from './types'
+import { PortalNetworkEventEmitter, PortalNetworkMetrics } from './types'
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
@@ -61,6 +61,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   nodeRadius: number
   db: LevelUp
   private refreshListener?: ReturnType<typeof setInterval>
+  metrics: PortalNetworkMetrics | undefined
 
   /**
    *
@@ -91,7 +92,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param radius defines the radius of data the node is interesting in storing
    * @param db a `level` compliant database provided by the module consumer - instantiates an in-memory DB if not provided
    */
-  constructor(config: IDiscv5CreateOptions, radius = 1, db?: LevelUp) {
+  constructor(
+    config: IDiscv5CreateOptions,
+    radius = 1,
+    db?: LevelUp,
+    metrics?: PortalNetworkMetrics
+  ) {
     // eslint-disable-next-line constructor-super
     super()
     this.client = Discv5.create(config)
@@ -114,6 +120,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
+    if (metrics) {
+      this.metrics = metrics
+      this.metrics.knownDiscv5Nodes.collect = () =>
+        this.metrics?.knownDiscv5Nodes.set(this.client.kadValues().length)
+      this.metrics.knownHistoryNodes.collect = () =>
+        this.metrics?.knownHistoryNodes.set(this.historyNetworkRoutingTable.size)
+    }
   }
 
   /**

@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsc --watch ./tsconfig.prod.json",
+    "dev": "tsc --watch",
     "build": "tsc",
     "docs": "typedoc src/index.ts",
     "tape": "tape -r  ts-node/register",

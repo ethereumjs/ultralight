@@ -7,7 +7,8 @@ counter=1
 while [ $counter -le $1 ]
 do
   port=$((8545+$counter))
-  node dist/index.js --nat=localhost --proxy=false --rpc --rpcport=$port &
+  metrics=$((18545 + $counter))
+  node dist/index.js --nat=localhost --proxy=false --rpc --rpcPort=$port --metrics=true --metricsPort=$metrics &
   counter=$(($counter+1))
 done
 

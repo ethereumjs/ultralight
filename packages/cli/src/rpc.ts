@@ -3,7 +3,7 @@ import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
 import rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
-const log = debug('RPC')
+const log = debug('ultralight:RPC')
 
 export class RPCManager {
   public _client: PortalNetwork
@@ -43,7 +43,7 @@ export class RPCManager {
         // TODO: Figure out why block body isn't coming back as Uint8Array
         block = reassembleBlock(header as Uint8Array, Uint8Array.from(body as Uint8Array))
         return block
-      } catch { }
+      } catch {}
 
       return 'Block not found'
     },
