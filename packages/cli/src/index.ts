@@ -5,7 +5,7 @@ import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
-import { client, Server as RPCServer } from 'jayson/promise'
+import { Server as RPCServer } from 'jayson/promise'
 import http from 'http'
 import * as PromClient from 'prom-client'
 import { RPCManager } from './rpc'
@@ -57,31 +57,30 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
   res.end(await register.metrics())
 }
 
-const setupMetrics = (portal: PortalNetwork) => {
-  register.registerMetric(
-    new PromClient.Gauge({
-      name: 'history_network_peers',
-      help: 'how many peers are in history network',
-      collect() {
-        this.set(portal.historyNetworkRoutingTable.size)
-      },
-    })
-  )
-
-  register.registerMetric(
-    new PromClient.Gauge({
-      name: 'discv5_peers',
-      help: 'how many peers are in discv5 table',
-      collect() {
-        this.set(portal.client.kadValues().length)
-      },
-    })
-  )
+const setupMetrics = () => {
+  return {
+    knownHistoryNodes: new PromClient.Gauge({
+      name: 'known_history_network_peers',
+      help: 'how many peers are in history network routing table',
+      collect: () => { },
+    }),
+    knownDiscv5Nodes: new PromClient.Gauge({
+      name: 'known_discv5_peers',
+      help: 'how many peers are in discv5 routing table',
+      collect: () => { },
+    }),
+    totalContentLookups: new PromClient.Counter({
+      name: 'total_content_lookups',
+      help: 'total number of content lookups initiated',
+    }),
+  }
 }
+
 const run = async () => {
   const id = await PeerId.create({ keyType: 'secp256k1' })
   const enr = ENR.createFromPeerId(id)
   enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
+  const metrics = setupMetrics()
   const portal = new PortalNetwork(
     {
       enr: enr,
@@ -90,13 +89,17 @@ const run = async () => {
       transport: 'wss',
       proxyAddress: 'ws://127.0.0.1:5050',
     },
-    1
+    1,
+    undefined,
+    metrics
   )
   portal.enableLog('discv5*, RPC*, portalnetwork*, proxy*')
   const metricsServer = http.createServer(reportMetrics)
 
   if (args.metrics) {
-    setupMetrics(portal)
+    Object.entries(metrics).forEach((entry) => {
+      register.registerMetric(entry[1])
+    })
     metricsServer.listen(args.metricsPort)
   }
   await portal.start()

@@ -11,3 +11,18 @@ export interface IPortalNetworkEvents {
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>
+
+interface IGauge {
+  inc(value?: number): void
+  set(value: number): void
+  collect?(): void
+}
+
+interface ICounter {
+  inc(value?: number): void
+}
+export interface PortalNetworkMetrics {
+  totalContentLookups: ICounter
+  knownHistoryNodes: IGauge
+  knownDiscv5Nodes: IGauge
+}
