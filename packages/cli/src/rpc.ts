@@ -3,7 +3,7 @@ import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
 import rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
-const log = debug('RPC')
+const log = debug('ultralight:RPC')
 
 export class RPCManager {
   public _client: PortalNetwork

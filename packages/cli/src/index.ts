@@ -8,7 +8,9 @@ import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
 import http from 'http'
 import * as PromClient from 'prom-client'
+import debug from 'debug'
 import { RPCManager } from './rpc'
+const log = debug('ultralight')
 
 const args: any = yargs(hideBin(process.argv))
   .option('bootnode', {
@@ -93,7 +95,7 @@ const run = async () => {
     undefined,
     metrics
   )
-  portal.enableLog('discv5*, RPC*, portalnetwork*, proxy*')
+  portal.enableLog('discv5*, ultralight*, portalnetwork*, proxy*')
   const metricsServer = http.createServer(reportMetrics)
 
   if (args.metrics) {
@@ -101,18 +103,18 @@ const run = async () => {
       register.registerMetric(entry[1])
     })
     metricsServer.listen(args.metricsPort)
+    log(`Started Metrics Server address=http://${args.rpcAddr}:${args.metricsPort}`)
   }
   await portal.start()
   if (args.bootnode) {
     portal.sendPing(args.bootnode, SubNetworkIds.HistoryNetwork)
   }
-  const { rpc, rpcPort, rpcAddr } = args
-  if (rpc) {
+  if (args.rpc) {
     const manager = new RPCManager(portal)
     const methods = manager.getMethods()
     const server = new RPCServer(methods)
-    server.http().listen(rpcPort)
-    console.log(`Started JSON RPC Server address=http://${rpcAddr}:${rpcPort}`)
+    server.http().listen(args.rpcPort)
+    log(`Started JSON RPC Server address=http://${args.rpcAddr}:${args.rpcPort}`)
   }
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
