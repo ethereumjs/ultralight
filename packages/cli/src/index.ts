@@ -5,7 +5,9 @@ import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
-import { Server as RPCServer } from 'jayson/promise'
+import { client, Server as RPCServer } from 'jayson/promise'
+import http from 'http'
+import * as PromClient from 'prom-client'
 import { RPCManager } from './rpc'
 
 const args: any = yargs(hideBin(process.argv))
@@ -28,17 +30,54 @@ const args: any = yargs(hideBin(process.argv))
     boolean: true,
     default: true,
   })
-  .option('rpcport', {
+  .option('rpcPort', {
     describe: 'HTTP-RPC server listening port',
     default: 8545,
   })
-  .option('rpcaddr', {
+  .option('rpcAddr', {
     describe: 'HTTP-RPC server listening interface address',
     default: 'localhost',
+  })
+  .options('metrics', {
+    describe: 'Turn on Prometheus metrics reporting',
+    boolean: true,
+    default: false,
+  })
+  .options('metricsPort', {
+    describe: 'Port exposed for metrics scraping',
+    number: true,
+    default: 18545,
   }).argv
 
 let child: ChildProcessWithoutNullStreams
+const register = new PromClient.Registry()
 
+const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  res.writeHead(200)
+  res.end(await register.metrics())
+}
+
+const setupMetrics = (portal: PortalNetwork) => {
+  register.registerMetric(
+    new PromClient.Gauge({
+      name: 'history_network_peers',
+      help: 'how many peers are in history network',
+      collect() {
+        this.set(portal.historyNetworkRoutingTable.size)
+      },
+    })
+  )
+
+  register.registerMetric(
+    new PromClient.Gauge({
+      name: 'discv5_peers',
+      help: 'how many peers are in discv5 table',
+      collect() {
+        this.set(portal.client.kadValues().length)
+      },
+    })
+  )
+}
 const run = async () => {
   const id = await PeerId.create({ keyType: 'secp256k1' })
   const enr = ENR.createFromPeerId(id)
@@ -54,18 +93,33 @@ const run = async () => {
     1
   )
   portal.enableLog('discv5*, RPC*, portalnetwork*, proxy*')
+  const metricsServer = http.createServer(reportMetrics)
+
+  if (args.metrics) {
+    setupMetrics(portal)
+    metricsServer.listen(args.metricsPort)
+  }
   await portal.start()
   if (args.bootnode) {
     portal.sendPing(args.bootnode, SubNetworkIds.HistoryNetwork)
   }
-  const { rpc, rpcport, rpcaddr } = args
+  const { rpc, rpcPort, rpcAddr } = args
   if (rpc) {
     const manager = new RPCManager(portal)
     const methods = manager.getMethods()
     const server = new RPCServer(methods)
-    server.http().listen(rpcport)
-    console.log(`Started JSON RPC Server address=http://${rpcaddr}:${rpcport}`)
+    server.http().listen(rpcPort)
+    console.log(`Started JSON RPC Server address=http://${rpcAddr}:${rpcPort}`)
   }
+  process.on('SIGINT', async () => {
+    console.log('Caught close signal, shutting down...')
+    await portal.stop()
+    child.kill(0)
+    if (metricsServer.listening) {
+      metricsServer.close()
+    }
+    process.exit()
+  })
 }
 
 const main = async () => {
