@@ -30,6 +30,7 @@
   },
   "scripts": {
     "start": "ts-node src/index.ts",
+    "dev": "tsc --watch",
     "build": "tsc",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"

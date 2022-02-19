@@ -75,6 +75,14 @@ const setupMetrics = () => {
       name: 'ultralight_total_content_lookups',
       help: 'total number of content lookups initiated',
     }),
+    successfulContentLookups: new PromClient.Counter({
+      name: 'ultralight_successful_content_lookups',
+      help: 'how many content lookups successfully returned content',
+    }),
+    failedContentLookups: new PromClient.Counter({
+      name: 'ultralight_failed_content_lookups',
+      help: 'how many content lookups failed to return content',
+    }),
   }
 }
 

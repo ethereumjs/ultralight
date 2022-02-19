@@ -55,7 +55,8 @@ export class Lookup {
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
-        continue
+        this.client.metrics?.failedContentLookups.inc()
+        return
       }
       const nearestPeer = this.lookupPeers.shift()
       this.contacted.push(nearestPeer!.nodeId)
@@ -66,13 +67,15 @@ export class Lookup {
         SubNetworkIds.HistoryNetwork
       )
       if (!res) {
-        return
+        // Node didn't respond
+        continue
       }
       switch (res.selector) {
         case 0: {
           // findContent returned uTP connection ID
           log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
           finished = true
+          this.client.metrics?.successfulContentLookups.inc()
           return res.value
         }
         case 1: {
