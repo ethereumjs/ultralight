@@ -37,7 +37,6 @@ export class Lookup {
    * @param block1Hash hex prefixed string corresponding to blockhash
    */
   public startLookup = async () => {
-    this.client.metrics?.totalContentLookups.inc()
     const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: this.contentType,
       value: { chainId: 1, blockHash: fromHexString(this.blockHash) },
@@ -55,7 +54,6 @@ export class Lookup {
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
-        this.client.metrics?.failedContentLookups.inc()
         return
       }
       const nearestPeer = this.lookupPeers.shift()
@@ -75,7 +73,6 @@ export class Lookup {
           // findContent returned uTP connection ID
           log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
           finished = true
-          this.client.metrics?.successfulContentLookups.inc()
           return res.value
         }
         case 1: {
