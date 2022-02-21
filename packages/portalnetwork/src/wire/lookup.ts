@@ -55,6 +55,7 @@ export class Lookup {
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
+        this.client.metrics?.failedContentLookups.inc()
         return
       }
       const nearestPeer = this.lookupPeers.shift()
@@ -80,6 +81,7 @@ export class Lookup {
           // findContent returned data sought
           log(`received content corresponding to ${shortId(this.blockHash)}`)
           finished = true
+          this.client.metrics?.successfulContentLookups.inc()
           return res.value
         }
         case 2: {
