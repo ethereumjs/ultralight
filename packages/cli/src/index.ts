@@ -61,19 +61,27 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const setupMetrics = () => {
   return {
-    knownHistoryNodes: new PromClient.Gauge({
-      name: 'ultralight_known_history_network_peers',
-      help: 'how many peers are in history network routing table',
-      collect: () => {},
-    }),
     knownDiscv5Nodes: new PromClient.Gauge({
       name: 'ultralight_known_discv5_peers',
       help: 'how many peers are in discv5 routing table',
-      collect: () => {},
+      async collect() {},
     }),
-    totalContentLookups: new PromClient.Counter({
+    knownHistoryNodes: new PromClient.Gauge({
+      name: 'ultralight_known_history_peers',
+      help: 'how many peers are in discv5 routing table',
+      async collect() {},
+    }),
+    totalContentLookups: new PromClient.Gauge<string>({
       name: 'ultralight_total_content_lookups',
       help: 'total number of content lookups initiated',
+    }),
+    successfulContentLookups: new PromClient.Counter({
+      name: 'ultralight_successful_content_lookups',
+      help: 'how many content lookups successfully returned content',
+    }),
+    failedContentLookups: new PromClient.Counter({
+      name: 'ultralight_failed_content_lookups',
+      help: 'how many content lookups failed to return content',
     }),
   }
 }

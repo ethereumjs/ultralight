@@ -17,6 +17,7 @@ export class RPCManager {
       log(
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
+      this._client.metrics?.totalContentLookups.inc()
       // lookup block header in DB and return if found
       const headerlookupKey = getContentId(1, blockHash, 0)
       const bodylookupKey = includeTransactions && getContentId(1, blockHash, 1)
@@ -30,6 +31,7 @@ export class RPCManager {
           fromHex(header.slice(2)),
           typeof body === 'string' ? fromHex(body.slice(2)) : body
         )
+        this._client.metrics?.successfulContentLookups.inc()
         return block
       } catch (err) {
         log(err)
@@ -42,9 +44,10 @@ export class RPCManager {
           : rlp.encode([[], []])
         // TODO: Figure out why block body isn't coming back as Uint8Array
         block = reassembleBlock(header as Uint8Array, Uint8Array.from(body as Uint8Array))
+        this._client.metrics?.successfulContentLookups.inc()
         return block
       } catch {}
-
+      this._client.metrics?.failedContentLookups.inc()
       return 'Block not found'
     },
     portal_addBootNode: async (params: [string]) => {

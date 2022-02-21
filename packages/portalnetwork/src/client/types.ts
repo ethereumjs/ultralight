@@ -25,4 +25,6 @@ export interface PortalNetworkMetrics {
   totalContentLookups: ICounter
   knownHistoryNodes: IGauge
   knownDiscv5Nodes: IGauge
+  successfulContentLookups: ICounter
+  failedContentLookups: ICounter
 }

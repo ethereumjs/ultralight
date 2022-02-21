@@ -45,7 +45,7 @@ export class Lookup {
     try {
       const res = await this.client.db.get(this.contentId)
       return res
-    } catch { }
+    } catch {}
     this.client.historyNetworkRoutingTable.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
@@ -55,7 +55,7 @@ export class Lookup {
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
-        continue
+        return
       }
       const nearestPeer = this.lookupPeers.shift()
       this.contacted.push(nearestPeer!.nodeId)
@@ -66,7 +66,8 @@ export class Lookup {
         SubNetworkIds.HistoryNetwork
       )
       if (!res) {
-        return
+        // Node didn't respond
+        continue
       }
       switch (res.selector) {
         case 0: {
