@@ -17,6 +17,7 @@ export class RPCManager {
       log(
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
+      this._client.metrics?.totalContentLookups.inc()
       // lookup block header in DB and return if found
       const headerlookupKey = getContentId(1, blockHash, 0)
       const bodylookupKey = includeTransactions && getContentId(1, blockHash, 1)

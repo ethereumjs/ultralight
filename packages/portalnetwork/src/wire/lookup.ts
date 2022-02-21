@@ -37,6 +37,7 @@ export class Lookup {
    * @param block1Hash hex prefixed string corresponding to blockhash
    */
   public startLookup = async () => {
+    this.client.metrics?.totalContentLookups.inc()
     const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: this.contentType,
       value: { chainId: 1, blockHash: fromHexString(this.blockHash) },
