@@ -10,7 +10,6 @@ import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { RPCManager } from './rpc'
-const log = debug('ultralight')
 
 const args: any = yargs(hideBin(process.argv))
   .option('bootnode', {
@@ -89,6 +88,8 @@ const setupMetrics = () => {
 const run = async () => {
   const id = await PeerId.create({ keyType: 'secp256k1' })
   const enr = ENR.createFromPeerId(id)
+  const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
+
   enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
   const metrics = setupMetrics()
   const portal = new PortalNetwork(
@@ -103,7 +104,7 @@ const run = async () => {
     undefined,
     metrics
   )
-  portal.enableLog('discv5*, ultralight*, portalnetwork*, proxy*')
+  portal.enableLog('*ultralight*, *portalnetwork*, proxy*')
   const metricsServer = http.createServer(reportMetrics)
 
   if (args.metrics) {

@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import debug from "debug";
+import debug, { Debugger } from "debug";
 import { randomBytes } from "libp2p-crypto";
 import { Multiaddr } from "multiaddr";
 import PeerId from "peer-id";
@@ -37,7 +37,6 @@ import { IDiscv5Config, defaultConfig } from "../config";
 import { createNodeContact, getNodeAddress, getNodeId, INodeAddress, NodeContact } from "../session/nodeInfo";
 import { BufferCallback, ConnectionStatus, ConnectionStatusType } from ".";
 
-const log = debug("discv5:service");
 
 /**
  * Discovery v5 is a protocol designed for encrypted peer discovery and topic advertisement. Each peer/node
@@ -74,13 +73,15 @@ export interface IDiscv5CreateOptions {
  *
  * Additionally, the service offers events when peers are added to the peer table or discovered via lookup.
  */
-export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
+export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   /**
    * Configuration
    */
   private config: IDiscv5Config;
 
   private started = false;
+
+  private log: Debugger;
 
   /**
    * Session service that establishes sessions with peers
@@ -162,6 +163,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       metrics.activeSessionCount.collect = () => metrics.activeSessionCount.set(discv5.sessionService.sessionsSize());
       metrics.lookupCount.collect = () => metrics.lookupCount.set(this.nextLookupId - 1);
     }
+    this.log = debug(this.enr.nodeId.slice(0, 5)).extend("discv5:service");
   }
 
   /**
@@ -195,10 +197,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   public async start(): Promise<void> {
     if (this.started) {
-      log("Starting discv5 service failed -- already started");
+      this.log("Starting discv5 service failed -- already started");
       return;
     }
-    log(`Starting discv5 service with node id ${this.enr.nodeId}`);
+    this.log(`Starting discv5 service with node id ${this.enr.nodeId}`);
     this.kbuckets.on("pendingEviction", this.onPendingEviction);
     this.kbuckets.on("appliedEviction", this.onAppliedEviction);
     this.sessionService.on("established", this.onEstablished);
@@ -209,7 +211,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.sessionService.transport.on("multiaddrUpdate", (addr) => {
       this.enr.setLocationMultiaddr(addr);
       this.emit("multiaddrUpdated", addr);
-      log("Updated ENR based on public multiaddr to", this.enr.encodeTxt(this.keypair.privateKey));
+      this.log("Updated ENR based on public multiaddr to", this.enr.encodeTxt(this.keypair.privateKey));
     });
     await this.sessionService.start();
     this.started = true;
@@ -220,10 +222,10 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   public async stop(): Promise<void> {
     if (!this.started) {
-      log("Stopping discv5 service -- already stopped");
+      this.log("Stopping discv5 service -- already stopped");
       return;
     }
-    log("Stopping discv5 service");
+    this.log("Stopping discv5 service");
     this.kbuckets.off("pendingEviction", this.onPendingEviction);
     this.kbuckets.off("appliedEviction", this.onAppliedEviction);
     this.kbuckets.clear();
@@ -261,7 +263,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
       decodedEnr.encode();
     } catch (e) {
-      log("Unable to add enr: %o", enr);
+      this.log("Unable to add enr: %o", enr);
       return;
     }
     if (this.kbuckets.insertOrUpdate(decodedEnr, EntryStatus.Disconnected) === InsertResult.Inserted) {
@@ -309,7 +311,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    */
   public async findNode(target: NodeId): Promise<ENR[]> {
     const lookupId = this.nextLookupId;
-    log("Starting a new lookup. Id: %d", lookupId);
+    this.log("Starting a new lookup. Id: %d", lookupId);
     if (this.nextLookupId >= 2 ** 32) {
       this.nextLookupId = 1;
     } else {
@@ -322,7 +324,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return await new Promise((resolve) => {
       lookup.on("peer", (peer: NodeId) => this.sendLookup(lookupId, peer, lookup.createRpcRequest(peer)));
       lookup.on("finished", (closest: NodeId[]) => {
-        log("Lookup Id: %d finished, %d total found", lookupId, closest.length);
+        this.log("Lookup Id: %d finished, %d total found", lookupId, closest.length);
         resolve(closest.map((nodeId) => this.findEnr(nodeId) as ENR).filter((enr) => enr));
         this.activeLookups.delete(lookupId);
       });
@@ -369,7 +371,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     return await new Promise((resolve, reject) => {
       const enr = remoteEnr ?? this.findEnr(dstId);
       if (!enr) {
-        log("Talkreq requested an unknown ENR, node: %s", dstId);
+        this.log("Talkreq requested an unknown ENR, node: %s", dstId);
         return;
       }
 
@@ -395,18 +397,18 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     const enr = remoteEnr ?? this.findEnr(srcId);
     const addr = enr?.getLocationMultiaddr("udp");
     if (enr && addr) {
-      log(`Sending TALKRESP message to node ${enr.id}`);
+      this.log(`Sending TALKRESP message to node ${enr.id}`);
       try {
         this.sessionService.sendResponse({ nodeId: srcId, socketAddr: addr }, msg);
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.TALKRESP] });
       } catch (e) {
-        log("Failed to send a TALKRESP response. Error: %s", (e as Error).message);
+        this.log("Failed to send a TALKRESP response. Error: %s", (e as Error).message);
       }
     } else {
       if (!addr && enr) {
-        log(`No ip + udp port found for node ${srcId}`);
+        this.log(`No ip + udp port found for node ${srcId}`);
       } else {
-        log(`Node ${srcId} not found`);
+        this.log(`Node ${srcId} not found`);
       }
     }
   }
@@ -449,7 +451,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   private sendLookup(lookupId: number, peer: NodeId, request: RequestMessage): void {
     const enr = this.findEnr(peer);
     if (!enr || !enr.getLocationMultiaddr("udp")) {
-      log("Lookup %s requested an unknown ENR or ENR w/o UDP", lookupId);
+      this.log("Lookup %s requested an unknown ENR or ENR w/o UDP", lookupId);
       this.activeLookups.get(lookupId)?.onFailure(peer);
       return;
     }
@@ -471,13 +473,13 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     this.activeRequests.set(activeRequest.request.id, activeRequest);
 
     const nodeAddr = getNodeAddress(activeRequest.contact);
-    log("Sending %s to node: %o", MessageType[activeRequest.request.type], nodeAddr);
+    this.log("Sending %s to node: %o", MessageType[activeRequest.request.type], nodeAddr);
     try {
       this.sessionService.sendRequest(activeRequest.contact, activeRequest.request);
       this.metrics?.sentMessageCount.inc({ type: MessageType[activeRequest.request.type] });
     } catch (e) {
       this.activeRequests.delete(activeRequest.request.id);
-      log("Error sending RPC to node: %o, :Error: %s", nodeAddr, (e as Error).message);
+      this.log("Error sending RPC to node: %o, :Error: %s", nodeAddr, (e as Error).message);
     }
   }
 
@@ -494,7 +496,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         switch (this.kbuckets.insertOrUpdate(newStatus.enr, EntryStatus.Connected)) {
           case InsertResult.Inserted: {
             // We added this peer to the table
-            log("New connected node added to routing table: %s", nodeId);
+            this.log("New connected node added to routing table: %s", nodeId);
             clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
             this.connectedPeers.set(
               nodeId,
@@ -515,7 +517,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
           case InsertResult.UpdatedAndPromoted:
           case InsertResult.StatusUpdatedAndPromoted: {
             // The node was promoted
-            log("Node promoted to connected: %s", nodeId);
+            this.log("Node promoted to connected: %s", nodeId);
             clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
             this.connectedPeers.set(
               nodeId,
@@ -534,7 +536,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
 
           case InsertResult.FailedBucketFull:
           case InsertResult.FailedInvalidSelfUpdate:
-            log("Could not insert node: %s", nodeId);
+            this.log("Could not insert node: %s", nodeId);
             clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
             this.connectedPeers.delete(nodeId);
             break;
@@ -546,7 +548,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         switch (this.kbuckets.update(newStatus.enr, EntryStatus.Connected)) {
           case UpdateResult.FailedBucketFull:
           case UpdateResult.FailedKeyNonExistant: {
-            log("Could not update ENR from pong. Node: %s", nodeId);
+            this.log("Could not update ENR from pong. Node: %s", nodeId);
             clearInterval(this.connectedPeers.get(nodeId) as NodeJS.Timeout);
             this.connectedPeers.delete(nodeId);
             break;
@@ -560,11 +562,11 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         switch (this.kbuckets.updateStatus(nodeId, EntryStatus.Disconnected)) {
           case UpdateResult.FailedBucketFull:
           case UpdateResult.FailedKeyNonExistant: {
-            log("Could not update node to disconnected, Node: %s", nodeId);
+            this.log("Could not update node to disconnected, Node: %s", nodeId);
             break;
           }
           default: {
-            log("Node set to disconnected: %s", nodeId);
+            this.log("Node set to disconnected: %s", nodeId);
             break;
           }
         }
@@ -624,7 +626,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
             case UpdateResult.FailedKeyNonExistant: {
               clearInterval(this.connectedPeers.get(enr.nodeId) as NodeJS.Timeout);
               this.connectedPeers.delete(enr.nodeId);
-              log("Failed to update discovered ENR. Node: %s", enr.nodeId);
+              this.log("Failed to update discovered ENR. Node: %s", enr.nodeId);
               continue;
             }
           }
@@ -644,7 +646,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
             lookup.untrustedEnrs[enrNodeId] = enr;
           }
         }
-        log("%d peers found for lookup Id: %d, Node: %s", others.length, lookupId, srcId);
+        this.log("%d peers found for lookup Id: %d, Node: %s", others.length, lookupId, srcId);
         lookup.onSuccess(
           srcId,
           others.map((enr) => enr.nodeId)
@@ -672,7 +674,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
 
     const nodeId = enr.nodeId;
-    log("Session established with Node: %s, Direction: %s", nodeId, ConnectionDirection[direction]);
+    this.log("Session established with Node: %s, Direction: %s", nodeId, ConnectionDirection[direction]);
     this.connectionUpdated(nodeId, { type: ConnectionStatusType.Connected, enr, direction });
     this.emit("sessionEstablished", nodeId);
   };
@@ -681,9 +683,9 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // Check what our latest known ENR is for this node
     const enr = this.findEnr(nodeAddr.nodeId) ?? null;
     if (enr) {
-      log("Received WHOAREYOU, Node known, Node: %o", nodeAddr);
+      this.log("Received WHOAREYOU, Node known, Node: %o", nodeAddr);
     } else {
-      log("Received WHOAREYOU, Node unknown, requesting ENR. Node: %o", nodeAddr);
+      this.log("Received WHOAREYOU, Node unknown, requesting ENR. Node: %o", nodeAddr);
     }
     this.sessionService.sendChallenge(nodeAddr, nonce, enr);
   };
@@ -705,7 +707,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       case MessageType.TALKREQ:
         return this.handleTalkReq(nodeAddr, request as ITalkReqMessage);
       default:
-        log("Received request which is unimplemented");
+        this.log("Received request which is unimplemented");
         // TODO Implement all RPC methods
         return;
     }
@@ -721,7 +723,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     }
 
     // build the Pong response
-    log("Sending PONG response to node: %o", nodeAddr);
+    this.log("Sending PONG response to node: %o", nodeAddr);
     try {
       const srcOpts = nodeAddr.socketAddr.toOptions();
       this.sessionService.sendResponse(
@@ -730,7 +732,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       );
       this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.PONG] });
     } catch (e) {
-      log("Failed to send Pong. Error %s", (e as Error).message);
+      this.log("Failed to send Pong. Error %s", (e as Error).message);
     }
   }
 
@@ -753,12 +755,12 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     });
     nodes = nodes.slice(0, 15);
     if (nodes.length === 0) {
-      log("Sending empty NODES response to %o", nodeAddr);
+      this.log("Sending empty NODES response to %o", nodeAddr);
       try {
         this.sessionService.sendResponse(nodeAddr, createNodesMessage(id, 0, nodes));
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.NODES] });
       } catch (e) {
-        log("Failed to send a NODES response. Error: %s", (e as Error).message);
+        this.log("Failed to send a NODES response. Error: %s", (e as Error).message);
       }
       return;
     }
@@ -770,20 +772,20 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // So, the total empty packet size can be at most 92
     const nodesPerPacket = Math.floor((MAX_PACKET_SIZE - 92) / MAX_RECORD_SIZE);
     const total = Math.ceil(nodes.length / nodesPerPacket);
-    log("Sending %d NODES responses to %o", total, nodeAddr);
+    this.log("Sending %d NODES responses to %o", total, nodeAddr);
     for (let i = 0; i < nodes.length; i += nodesPerPacket) {
       const _nodes = nodes.slice(i, i + nodesPerPacket);
       try {
         this.sessionService.sendResponse(nodeAddr, createNodesMessage(id, total, _nodes));
         this.metrics?.sentMessageCount.inc({ type: MessageType[MessageType.NODES] });
       } catch (e) {
-        log("Failed to send a NODES response. Error: %s", (e as Error).message);
+        this.log("Failed to send a NODES response. Error: %s", (e as Error).message);
       }
     }
   }
 
   private handleTalkReq = (nodeAddr: INodeAddress, message: ITalkReqMessage): void => {
-    log("Received TALKREQ message from Node: %o", nodeAddr);
+    this.log("Received TALKREQ message from Node: %o", nodeAddr);
     this.emit("talkReqReceived", nodeAddr, this.findEnr(nodeAddr.nodeId) ?? null, message);
   };
 
@@ -799,7 +801,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
 
     const activeRequest = this.activeRequests.get(response.id);
     if (!activeRequest) {
-      log("Received an RPC response which doesn't match a request. Id: &s", response.id);
+      this.log("Received an RPC response which doesn't match a request. Id: &s", response.id);
       return;
     }
     this.activeRequests.delete(response.id);
@@ -807,7 +809,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // Check that the responder matches the expected request
     const requestNodeAddr = getNodeAddress(activeRequest.contact);
     if (requestNodeAddr.nodeId !== nodeAddr.nodeId || !requestNodeAddr.socketAddr.equals(nodeAddr.socketAddr)) {
-      log(
+      this.log(
         "Received a response from an unexpected address. Expected %o, received %o, request id: %s",
         requestNodeAddr,
         nodeAddr,
@@ -818,7 +820,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
 
     // Check that the response type matches the request
     if (!requestMatchesResponse(activeRequest.request, response)) {
-      log("Node gave an incorrect response type. Ignoring response from: %o", nodeAddr);
+      this.log("Node gave an incorrect response type. Ignoring response from: %o", nodeAddr);
       return;
     }
 
@@ -840,13 +842,13 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
   };
 
   private handlePong(nodeAddr: INodeAddress, activeRequest: IActiveRequest, message: IPongMessage): void {
-    log("Received a PONG response from %o", nodeAddr);
+    this.log("Received a PONG response from %o", nodeAddr);
 
     if (this.config.enrUpdate) {
       const winningVote = this.addrVotes.addVote(nodeAddr.nodeId, message);
       const currentAddr = this.enr.getLocationMultiaddr("udp");
       if (winningVote && (!currentAddr || winningVote.multiaddrStr !== currentAddr.toString())) {
-        log("Local ENR (IP & UDP) updated: %s", winningVote.multiaddrStr);
+        this.log("Local ENR (IP & UDP) updated: %s", winningVote.multiaddrStr);
         const votedAddr = new Multiaddr(winningVote.multiaddrStr);
         this.enr.setLocationMultiaddr(votedAddr);
         this.emit("multiaddrUpdated", votedAddr);
@@ -860,7 +862,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     const enr = this.findEnr(nodeAddr.nodeId);
     if (enr) {
       if (enr.seq < message.enrSeq) {
-        log("Requesting an ENR update from node: %o", nodeAddr);
+        this.log("Requesting an ENR update from node: %o", nodeAddr);
         this.sendRpcRequest({
           contact: activeRequest.contact,
           request: createFindNodeMessage([0]),
@@ -876,7 +878,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     // Datagrams have a max size of 1280 and ENRs have a max size of 300 bytes.
     // There should be no more than 5 responses to return 16 peers
     if (message.total > 5) {
-      log("NODES response has a total larger than 5, nodes will be truncated");
+      this.log("NODES response has a total larger than 5, nodes will be truncated");
     }
 
     // Filter out any nodes that are not of the correct distance
@@ -889,7 +891,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     if (message.total > 1) {
       const currentResponse = this.activeNodesResponses.get(message.id) || { count: 1, enrs: [] };
       this.activeNodesResponses.delete(message.id);
-      log("NODES response: %d of %d received, length: %d", currentResponse.count, message.total, message.enrs.length);
+      this.log("NODES response: %d of %d received, length: %d", currentResponse.count, message.total, message.enrs.length);
       // If there are more requests coming, store the nodes and wait for another response
       if (currentResponse.count < 5 && currentResponse.count < message.total) {
         currentResponse.count += 1;
@@ -902,7 +904,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       // Have received all the Nodes responses we are willing to accept
       message.enrs.push(...currentResponse.enrs);
     }
-    log(
+    this.log(
       "Received NODES response of length: %d, total: %d, from node: %o",
       message.enrs.length,
       message.total,
@@ -919,7 +921,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
     activeRequest: IActiveRequest<ITalkReqMessage, BufferCallback>,
     message: ITalkRespMessage
   ): void => {
-    log("Received TALKRESP message from Node: %o", nodeAddr);
+    this.log("Received TALKRESP message from Node: %o", nodeAddr);
     this.emit("talkRespReceived", nodeAddr, this.findEnr(nodeAddr.nodeId) ?? null, message);
     if (activeRequest.callback) {
       activeRequest.callback(null, message.response);
@@ -930,7 +932,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
    * A session could not be established or an RPC request timed out
    */
   private rpcFailure = (rpcId: bigint, error: RequestErrorType): void => {
-    log("RPC error, removing request. Reason: %s, id %s", RequestErrorType[error], rpcId);
+    this.log("RPC error, removing request. Reason: %s, id %s", RequestErrorType[error], rpcId);
     const req = this.activeRequests.get(rpcId);
     if (!req) {
       return;
@@ -952,7 +954,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         this.activeNodesResponses.delete(request.id);
 
         if (nodesResponse.enrs.length) {
-          log("NODES response failed, but was partially processed from Node: %s", nodeId);
+          this.log("NODES response failed, but was partially processed from Node: %s", nodeId);
           // If its a query, mark it as a success, to process the partial collection of its peers
           this.discovered(nodeId, nodesResponse.enrs, lookupId);
         }
@@ -962,7 +964,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
         if (lookup) {
           lookup.onFailure(nodeId);
         } else {
-          log("Failed %s request: %O for node: %s", MessageType[request.type], request, nodeId);
+          this.log("Failed %s request: %O for node: %s", MessageType[request.type], request, nodeId);
         }
       }
     } else {
@@ -971,7 +973,7 @@ export class Discv5 extends (EventEmitter as { new(): Discv5EventEmitter }) {
       if (lookup) {
         lookup.onFailure(nodeId);
       } else {
-        log("Failed %s request: %O for node: %s", MessageType[request.type], request, nodeId);
+        this.log("Failed %s request: %O for node: %s", MessageType[request.type], request, nodeId);
       }
     }
 
