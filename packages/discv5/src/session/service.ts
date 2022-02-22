@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import StrictEventEmitter from "strict-event-emitter-types";
-import debug from "debug";
+import debug, { Debugger } from "debug";
 import { Multiaddr } from "multiaddr";
 
 import { ITransportService } from "../transport";
@@ -35,7 +35,6 @@ import LRUCache from "lru-cache";
 import { ConnectionDirection, ERR_INVALID_SIG, NodeAddressString } from ".";
 import { TimeoutMap } from "../util";
 
-const log = debug("discv5:sessionService");
 
 /**
  * Session management for the Discv5 Discovery service.
@@ -72,6 +71,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    * Configuration
    */
   private config: ISessionConfig;
+
+  private log: Debugger
 
   /**
    * Pending raw requests. A list of raw messages we are awaiting a response from the remote.
@@ -136,14 +137,15 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     this.pendingRequests = new Map();
     this.activeChallenges = new LRUCache({ maxAge: config.requestTimeout * 2 });
     this.sessions = new LRUCache({ maxAge: config.sessionTimeout, max: config.sessionCacheCapacity });
+    this.log = debug(this.enr.nodeId.slice(0, 5)).extend("discv5:sessionService");
   }
 
   /**
    * Starts the session service, starting the underlying transport service.
    */
   public async start(): Promise<void> {
-    log(`Starting session service with node id ${this.enr.nodeId}`);
-    this.transport.on("decodeError", (err, ma) => log("Error processing packet", err, ma));
+    this.log(`Starting session service with node id ${this.enr.nodeId}`);
+    this.transport.on("decodeError", (err, ma) => this.log("Error processing packet", err, ma));
     this.transport.on("packet", this.processInboundPacket);
     await this.transport.start();
   }
@@ -152,7 +154,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
    * Stops the session service, stopping the underlying transport service.
    */
   public async stop(): Promise<void> {
-    log("Stopping session service");
+    this.log("Stopping session service");
     this.transport.removeListener("packet", this.processInboundPacket);
     await this.transport.stop();
     this.activeRequests.clear();
@@ -174,13 +176,13 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const nodeAddrStr = nodeAddressToString(nodeAddr);
 
     if (nodeAddr.socketAddr.equals(this.transport.multiaddr)) {
-      log("Filtered request to self");
+      this.log("Filtered request to self");
       return;
     }
 
     // If there is already an active request for this node, add to the pending requests
     if (this.activeRequests.get(nodeAddrStr)) {
-      log("Request queued for node: %o", nodeAddr);
+      this.log("Request queued for node: %o", nodeAddr);
       let pendingRequests = this.pendingRequests.get(nodeAddrStr);
       if (!pendingRequests) {
         pendingRequests = [];
@@ -198,7 +200,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       initiatingSession = false;
     } else {
       // No session exists, start a new handshake
-      log("No session established, sending a random packet to: %o", nodeAddr);
+      this.log("No session established, sending a random packet to: %o", nodeAddr);
 
       // We are initiating a new session
       packet = createRandomPacket(this.enr.nodeId);
@@ -232,7 +234,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // Check for an established session
     const session = this.sessions.get(nodeAddrStr);
     if (!session) {
-      log("Response could not be sent, no session exists to node: %o", nodeAddr);
+      this.log("Response could not be sent, no session exists to node: %o", nodeAddr);
       return;
     }
 
@@ -241,7 +243,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     try {
       packet = session.encryptMessage(this.enr.nodeId, nodeAddr.nodeId, encode(response));
     } catch (e) {
-      log("Could not encrypt response: %s", e);
+      this.log("Could not encrypt response: %s", e);
       return;
     }
 
@@ -256,13 +258,13 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const nodeAddrStr = nodeAddressToString(nodeAddr);
 
     if (this.activeChallenges.peek(nodeAddrStr)) {
-      log("WHOAREYOU already sent. %o", nodeAddr);
+      this.log("WHOAREYOU already sent. %o", nodeAddr);
       return;
     }
 
     // Ignore this request if the session is already established
     if (this.sessions.get(nodeAddrStr)) {
-      log("Session already established. WHOAREYOU not sent to %o", nodeAddr);
+      this.log("Session already established. WHOAREYOU not sent to %o", nodeAddr);
       return;
     }
 
@@ -275,7 +277,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const packet = createWhoAreYouPacket(nonce, enrSeq);
     const challengeData = encodeChallengeData(packet.maskingIv, packet.header);
 
-    log("Sending WHOAREYOU to %o", nodeAddr);
+    this.log("Sending WHOAREYOU to %o", nodeAddr);
     this.send(nodeAddr, packet);
 
     this.activeChallenges.set(nodeAddrStr, { data: challengeData, remoteEnr: remoteEnr ?? undefined });
@@ -298,7 +300,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     try {
       authdata = decodeWhoAreYouAuthdata(packet.header.authdata);
     } catch (e) {
-      log("Cannot decode WHOAREYOU authdata from %s: %s", src.toString(), e);
+      this.log("Cannot decode WHOAREYOU authdata from %s: %s", src.toString(), e);
       return;
     }
     const nonce = packet.header.nonce.toString("hex");
@@ -309,7 +311,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     // Check for an active request
     const nodeAddr = this.activeRequestsNonceMapping.get(nonce);
     if (!nodeAddr) {
-      log(
+      this.log(
         "Received a WHOAREYOU packet that references an unknown or expired request. source: %s, token: %s",
         src.toString(),
         nonce
@@ -319,7 +321,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
 
     // Verify that the src_addresses match
     if (!nodeAddr.socketAddr.equals(src)) {
-      log(
+      this.log(
         // eslint-disable-next-line max-len
         "Received a WHOAREYOU packet for a message with a non-expected source. Source %s, expected_source: %s message_nonce %s",
         src.toString(),
@@ -336,7 +338,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const nodeAddrStr = nodeAddressToString(nodeAddr);
     const requestCall = this.activeRequests.get(nodeAddrStr);
     if (!requestCall) {
-      log(
+      this.log(
         // eslint-disable-next-line max-len
         "Active request mappings are not in sync. Message_id %s, node_address %o doesn't exist in active request mapping",
         nonce,
@@ -351,7 +353,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     if (requestNonce !== nonce) {
       // This could theoretically happen if a peer uses the same node id across
       // different connections.
-      log(
+      this.log(
         "Received a WHOAREYOU from a non expected source. Source: %o, message_nonce %s , expected_nonce: %s",
         requestCall.contact,
         nonce,
@@ -360,13 +362,13 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       return;
     }
 
-    log("Received a WHOAREYOU packet. source: %s", src.toString());
+    this.log("Received a WHOAREYOU packet. source: %s", src.toString());
 
     // We do not allow multiple WHOAREYOU packets for a single challenge request. If we have
     // already sent a WHOAREYOU ourselves, we drop sessions who send us a WHOAREYOU in
     // response.
     if (requestCall.handshakeSent) {
-      log("Authentication response already sent. Dropping session. Node: %s", requestCall.contact);
+      this.log("Authentication response already sent. Dropping session. Node: %s", requestCall.contact);
       this.failRequest(requestCall, RequestErrorType.InvalidRemotePacket, true);
       return;
     }
@@ -418,7 +420,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
         }
 
         // We already know the ENR. Send the handshake response packet
-        log("Sending authentication response to node: %o", nodeAddr);
+        this.log("Sending authentication response to node: %o", nodeAddr);
 
         requestCall.packet = authPacket;
         requestCall.handshakeSent = true;
@@ -438,7 +440,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
         // Don't know the ENR. Establish the session, but request an ENR
 
         // Send the handshake response packet
-        log("Sending authentication response to node: %o", nodeAddr);
+        this.log("Sending authentication response to node: %o", nodeAddr);
 
         requestCall.packet = authPacket;
         requestCall.handshakeSent = true;
@@ -481,7 +483,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     try {
       authdata = decodeHandshakeAuthdata(packet.header.authdata);
     } catch (e) {
-      log("Unable to decode handkshake authdata: %s", e);
+      this.log("Unable to decode handkshake authdata: %s", e);
       return;
     }
     const nodeAddr = {
@@ -490,11 +492,11 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     };
     const nodeAddrStr = nodeAddressToString(nodeAddr);
 
-    log("Received an authentication message from: %o", nodeAddr);
+    this.log("Received an authentication message from: %o", nodeAddr);
 
     const challenge = this.activeChallenges.get(nodeAddrStr);
     if (!challenge) {
-      log("Received an authenticated header without a matching WHOAREYOU request. %o", nodeAddr);
+      this.log("Received an authenticated header without a matching WHOAREYOU request. %o", nodeAddr);
       return;
     }
     this.activeChallenges.del(nodeAddrStr);
@@ -535,10 +537,10 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       }
     } catch (e) {
       if ((e as Error).name === ERR_INVALID_SIG) {
-        log("Authentication header contained invalid signature. Ignoring packet from: %o", nodeAddr);
+        this.log("Authentication header contained invalid signature. Ignoring packet from: %o", nodeAddr);
         this.activeChallenges.set(nodeAddrStr, challenge);
       } else {
-        log("Invalid Authentication header. Dropping session. %s", e);
+        this.log("Invalid Authentication header. Dropping session. %s", e);
         this.failSession(nodeAddr, RequestErrorType.InvalidRemotePacket, true);
       }
     }
@@ -549,7 +551,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     try {
       authdata = decodeMessageAuthdata(packet.header.authdata);
     } catch (e) {
-      log("Cannot decode message authdata: %s", e);
+      this.log("Cannot decode message authdata: %s", e);
       return;
     }
     const nodeAddr = {
@@ -562,8 +564,8 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const session = this.sessions.get(nodeAddrStr);
     if (!session) {
       // Received a message without a session.
-      log("Received a message without a session. from: %o", nodeAddr);
-      log("Requesting a WHOAREYOU packet to be sent.");
+      this.log("Received a message without a session. from: %o", nodeAddr);
+      this.log("Requesting a WHOAREYOU packet to be sent.");
 
       // spawn a WHOAREYOU event to check for highest known ENR
       this.emit("whoAreYouRequest", nodeAddr, packet.header.nonce);
@@ -583,7 +585,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       // It is likely the node sending this message has dropped their session.
       // In this case, this message is a random packet and we should reply with a WHOAREYOU.
       // This means we need to drop the current session and re-establish.
-      log("Message from node: %o is not encrypted with known session keys. Requesting a WHOAREYOU packet", nodeAddr);
+      this.log("Message from node: %o is not encrypted with known session keys. Requesting a WHOAREYOU packet", nodeAddr);
       this.failSession(nodeAddr, RequestErrorType.InvalidRemotePacket, true);
 
       // If we haven't already sent a WhoAreYou,
@@ -592,7 +594,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       if (!this.activeChallenges.peek(nodeAddrStr)) {
         this.emit("whoAreYouRequest", nodeAddr, packet.header.nonce);
       } else {
-        log("WHOAREYOU packet already sent: %o", nodeAddr);
+        this.log("WHOAREYOU packet already sent: %o", nodeAddr);
       }
       return;
     }
@@ -600,11 +602,11 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     try {
       message = decode(encodedMessage);
     } catch (e) {
-      log("Failed to decode message. Error: %s", (e as Error).message);
+      this.log("Failed to decode message. Error: %s", (e as Error).message);
       return;
     }
 
-    log("Received message from: %o", nodeAddr);
+    this.log("Received message from: %o", nodeAddr);
 
     if (isRequestType(message.type)) {
       // report the request to the application
@@ -632,7 +634,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
             }
           }
 
-          log("Session failed invalid ENR response");
+          this.log("Session failed invalid ENR response");
           this.failSession(nodeAddr, RequestErrorType.InvalidRemoteENR, true);
           return;
         }
@@ -655,12 +657,12 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     if (!requestCall) {
       // This is likely a late response and we have already failed the request.
       // These get dropped here.
-      log("Late response from node: %o", nodeAddr);
+      this.log("Late response from node: %o", nodeAddr);
       return;
     }
 
     if (requestCall.request.id !== response.id) {
-      log("Received an RPC Response to an unknown request. Likely late response. %o", nodeAddr);
+      this.log("Received an RPC Response to an unknown request. Likely late response. %o", nodeAddr);
       return;
     }
     this.activeRequests.delete(nodeAddrStr);
@@ -718,7 +720,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
     const nodeAddrStr = nodeAddressToString(nodeAddr);
     const currentSession = this.sessions.get(nodeAddrStr);
 
-    log("New session with: %o", nodeAddr);
+    this.log("New session with: %o", nodeAddr);
     if (currentSession) {
       currentSession.update(session);
     } else {
@@ -738,7 +740,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
 
   private handleRequestTimeout(nodeAddr: INodeAddress, requestCall: IRequestCall): void {
     if (requestCall.retries >= this.config.requestRetries) {
-      log("Request timed out with %o", nodeAddr);
+      this.log("Request timed out with %o", nodeAddr);
 
       // Remove the associated nonce mapping
       this.activeRequestsNonceMapping.delete(requestCall.packet.header.nonce.toString("hex"));
@@ -751,7 +753,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
       const nodeAddrStr = nodeAddressToString(nodeAddr);
 
       // increment the request retry count and restart the timeout
-      log("Resending message to: %o", nodeAddr);
+      this.log("Resending message to: %o", nodeAddr);
       this.send(nodeAddr, requestCall.packet);
       requestCall.retries++;
       this.activeRequests.set(nodeAddrStr, requestCall);
@@ -771,7 +773,7 @@ export class SessionService extends (EventEmitter as { new(): StrictEventEmitter
           this.pendingRequests.delete(nodeAddrStr);
         }
 
-        log("Sending next awaiting message. Node: %o", request[0]);
+        this.log("Sending next awaiting message. Node: %o", request[0]);
         this.sendRequest(request[0], request[1]);
       }
     }

@@ -18,7 +18,7 @@ export class UtpProtocol {
     this.client = portal.client
     this.sockets = {}
     this.contents = {}
-    this.log = debug('<uTP>')
+    this.log = debug(this.client.enr.nodeId.slice(0, 5)).extend('<uTP>')
   }
   /**
    * Reads PacketType from Header and sends to hanlder
