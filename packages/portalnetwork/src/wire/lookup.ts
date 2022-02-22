@@ -1,6 +1,6 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { debug } from 'debug'
+import { Debugger } from 'debug'
 import { getContentId, PortalNetwork, SubNetworkIds } from '..'
 import {
   HistoryNetworkContentKeyUnionType,
@@ -13,7 +13,6 @@ type lookupPeer = {
   distance: bigint
 }
 
-const log = debug('portalnetwork:lookup')
 export class Lookup {
   private client: PortalNetwork
   private lookupPeers: lookupPeer[]
@@ -21,6 +20,8 @@ export class Lookup {
   private contentId: string
   private contentType: HistoryNetworkContentTypes
   private blockHash: string
+  private log: Debugger
+
   constructor(portal: PortalNetwork, contentType: HistoryNetworkContentTypes, blockHash: string) {
     this.client = portal
     this.lookupPeers = []
@@ -28,6 +29,7 @@ export class Lookup {
     this.contentId = getContentId(1, blockHash, contentType)
     this.blockHash = blockHash
     this.contentType = contentType
+    this.log = this.client.logger.extend('lookup', ':')
   }
 
   /**
@@ -60,7 +62,7 @@ export class Lookup {
       }
       const nearestPeer = this.lookupPeers.shift()
       this.contacted.push(nearestPeer!.nodeId)
-      log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
+      this.log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.client.sendFindContent(
         nearestPeer!.nodeId,
         encodedKey,
@@ -73,20 +75,20 @@ export class Lookup {
       switch (res.selector) {
         case 0: {
           // findContent returned uTP connection ID
-          log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
+          this.log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
           finished = true
           return res.value
         }
         case 1: {
           // findContent returned data sought
-          log(`received content corresponding to ${shortId(this.blockHash)}`)
+          this.log(`received content corresponding to ${shortId(this.blockHash)}`)
           finished = true
           this.client.metrics?.successfulContentLookups.inc()
           return res.value
         }
         case 2: {
           // findContent request returned ENRs of nodes closer to content
-          log(`received ${res.value.length} ENRs for closer nodes`)
+          this.log(`received ${res.value.length} ENRs for closer nodes`)
           res.value.forEach((enr) => {
             if (!finished) {
               const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
