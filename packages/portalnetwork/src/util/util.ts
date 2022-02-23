@@ -2,7 +2,7 @@ import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
 import { Block, BlockBuffer } from '@ethereumjs/block'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
-import rlp from 'rlp'
+import * as rlp from 'rlp'
 import { PortalNetwork } from '..'
 import { HistoryNetworkContentTypes } from '../historySubnetwork/types'
 
@@ -37,9 +37,16 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  * @returns a `Block` object assembled from the header and body provided
  */
 export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
-  //const decodedBody = rlp.decode(rawBody)
+  const decodedBody = rlp.decode(rawBody)
   //@ts-ignore
-  return Block.fromValuesArray([rlp.decode(rawHeader), ...rlp.decode(rawBody)] as BlockBuffer)
+  return Block.fromValuesArray(
+    //@ts-ignore
+    [
+      rlp.decode(Buffer.from(rawHeader)),
+      (decodedBody as Buffer[])[0],
+      (decodedBody as Buffer[])[1],
+    ] as BlockBuffer
+  )
 }
 
 /**
@@ -58,12 +65,12 @@ export const addRLPSerializedBlock = async (
     1,
     HistoryNetworkContentTypes.BlockHeader,
     blockHash,
-    rlp.encode(decodedBlock[0])
+    rlp.encode((decodedBlock as Buffer[])[0])
   )
   await portal.addContentToHistory(
     1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
-    rlp.encode([decodedBlock[1], decodedBlock[2]])
+    rlp.encode([(decodedBlock as any)[1], (decodedBlock as any)[2]])
   )
 }

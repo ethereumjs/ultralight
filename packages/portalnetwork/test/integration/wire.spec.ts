@@ -35,7 +35,7 @@ const setupNetwork = async () => {
       transport: 'wss',
       proxyAddress: 'ws://127.0.0.1:5050',
     },
-    1
+    2n ** 256n
   )
   const portal2 = new PortalNetwork(
     {
@@ -45,7 +45,7 @@ const setupNetwork = async () => {
       transport: 'wss',
       proxyAddress: 'ws://127.0.0.1:5050',
     },
-    1
+    2n ** 256n
   )
   return [portal1, portal2]
 }

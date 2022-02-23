@@ -81,7 +81,11 @@ export class Lookup {
         }
         case 1: {
           // findContent returned data sought
-          this.log(`received content corresponding to ${shortId(this.blockHash)}`)
+          this.log(
+            `received content corresponding to ${
+              Object.keys(HistoryNetworkContentTypes)[this.contentType]
+            }${shortId(this.blockHash)}`
+          )
           finished = true
           this.client.metrics?.successfulContentLookups.inc()
           return res.value

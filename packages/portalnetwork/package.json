@@ -29,7 +29,7 @@
     "multiaddr": "^10.0.1",
     "peer-id": "^0.16.0",
     "prom-client": "^14.0.1",
-    "rlp": "^3.0.0",
+    "rlp": "2.2.4",
     "strict-event-emitter-types": "^2.0.0"
   },
   "devDependencies": {

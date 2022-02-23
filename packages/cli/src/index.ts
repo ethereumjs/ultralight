@@ -100,7 +100,7 @@ const run = async () => {
       transport: 'wss',
       proxyAddress: 'ws://127.0.0.1:5050',
     },
-    1,
+    2n ** 256n,
     undefined,
     metrics
   )

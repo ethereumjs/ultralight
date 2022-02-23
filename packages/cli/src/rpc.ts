@@ -1,20 +1,20 @@
 import { ENR, fromHex } from '@chainsafe/discv5'
-import debug from 'debug'
+import { debug, Debugger } from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
-import rlp from 'rlp'
+import * as rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
-const log = debug('ultralight:RPC')
 
 export class RPCManager {
   public _client: PortalNetwork
+  private log: Debugger
   private _methods: { [key: string]: Function } = {
     discv5_nodeInfo: async () => {
-      log('discv5_nodeInfo request received')
+      this.log('discv5_nodeInfo request received')
       return 'Ultralight-CLI: v0.0.1'
     },
     eth_getBlockByHash: async (params: [string, boolean]) => {
       const [blockHash, includeTransactions] = params
-      log(
+      this.log(
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
       // lookup block header in DB and return if found
@@ -32,25 +32,31 @@ export class RPCManager {
         )
         this._client.metrics?.successfulContentLookups.inc()
         return block
-      } catch (err) {
-        log(err)
+      } catch (err: any) {
+        this.log(err.message)
       }
       // If block isn't in local DB, request block from network
       try {
         header = await this._client.contentLookup(0, blockHash)
+        if (!header) {
+          return 'Block not found'
+        }
         body = includeTransactions
           ? await this._client.contentLookup(1, blockHash)
           : rlp.encode([[], []])
         // TODO: Figure out why block body isn't coming back as Uint8Array
-        block = reassembleBlock(header as Uint8Array, Uint8Array.from(body as Uint8Array))
+        block = reassembleBlock(header as Uint8Array, body)
         return block
-      } catch { }
-      return 'Block not found'
+      } catch {
+        return 'Block not found'
+      }
     },
     portal_addBootNode: async (params: [string]) => {
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
-      log(`portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`)
+      this.log(
+        `portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`
+      )
       const res = await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
       return res?.enrSeq ? `ENR added for ${encodedENR.nodeId.slice(0, 15)}...` : 'Node not found'
     },
@@ -60,7 +66,7 @@ export class RPCManager {
         addRLPSerializedBlock(rlpHex, blockHash, this._client)
         return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
-        log(`Error trying to load block to DB. ${err.message.toString()}`)
+        this.log(`Error trying to load block to DB. ${err.message.toString()}`)
         return `internal error`
       }
     },
@@ -72,6 +78,7 @@ export class RPCManager {
 
   constructor(client: PortalNetwork) {
     this._client = client
+    this.log = debug(this._client.client.enr.nodeId.slice(0, 5)).extend('ultralight', ':')
   }
 
   public getMethods() {
