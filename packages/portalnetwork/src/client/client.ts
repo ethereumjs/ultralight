@@ -170,7 +170,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * defaults to "portalnetwork*, discv5:service, <uTP>*,<uTP>:Reader*"
    */
   public enableLog = (
-    namespaces: string = 'portalnetwork*,discv5:service*,<uTP>*,<uTP>:Reader*'
+    namespaces: string = '*portalnetwork*,*discv5:service*,*<uTP>*,*<uTP>:Reader*'
   ) => {
     debug.enable(namespaces)
   }

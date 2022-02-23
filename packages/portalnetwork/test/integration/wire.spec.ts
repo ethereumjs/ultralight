@@ -51,7 +51,7 @@ const setupNetwork = async () => {
 }
 
 tape('Portal Wire Spec Testing', async (t) => {
-  t.test('clients should start and connect', (st) => {
+  t.test('clients should start and connect', { timeout: 10000 }, (st) => {
     const file = require.resolve('../../../proxy/dist/index.js')
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
@@ -85,7 +85,7 @@ tape('Portal Wire Spec Testing', async (t) => {
     })
   })
 
-  t.test('node should stream block to another', (st) => {
+  t.test('node should stream block to another', { timeout: 10000 }, (st) => {
     const file = require.resolve('../../../proxy/dist/index.js')
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
