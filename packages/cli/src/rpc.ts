@@ -8,7 +8,7 @@ import {
   HistoryNetworkContentKeyUnionType,
 } from 'portalnetwork'
 import * as rlp from 'rlp'
-import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
+import { addRLPSerializedBlock, shortId } from 'portalnetwork/dist/util'
 import { isValidId } from './util'
 
 export class RPCManager {
@@ -96,21 +96,21 @@ export class RPCManager {
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },
-    portal_offer: async (params: [string, string]) => {
-      const [dstId, blockHash] = params
-      if (!isValidId(dstId)) {
+    portal_offer: async (params: [string, string, number]) => {
+      const [dstId, blockHash, contentType] = params
+      if (!isValidId(dstId) || contentType < 0 || contentType > 2) {
         return 'invalid parameters'
       }
       const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 0,
+        selector: contentType,
         value: {
           chainId: 1,
           blockHash: fromHex(blockHash.slice(2)),
         },
       })
       const res = await this._client.sendOffer(dstId, [contentKey], SubNetworkIds.HistoryNetwork)
-      this.log(`response received to Offer ${res?.toString()}`)
-      return res
+      this.log(`response received to offer ${res?.toString()}`)
+      return `${shortId(dstId)} ${res ? 'accepted' : 'rejected'} offer`
     },
   }
 
