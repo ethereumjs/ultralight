@@ -1,4 +1,3 @@
-import { toHex } from '@chainsafe/discv5'
 import {
   Menu,
   MenuButton,

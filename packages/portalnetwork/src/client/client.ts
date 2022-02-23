@@ -45,7 +45,6 @@ import {
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import rlp from 'rlp'
 import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
 import { Lookup } from '../wire'
 const level = require('level-mem')
@@ -417,7 +416,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          console.log('adding header', value)
           _deserializedValue = BlockHeader.fromRLPSerializedHeader(
             Buffer.from(fromHexString(toHexString(value)))
           )

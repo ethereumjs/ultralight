@@ -1,7 +1,7 @@
 import { ENR, fromHex } from '@chainsafe/discv5'
 import debug from 'debug'
 import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
-import rlp from 'rlp'
+import * as rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
 const log = debug('ultralight:RPC')
 
@@ -38,23 +38,18 @@ export class RPCManager {
       // If block isn't in local DB, request block from network
       try {
         header = await this._client.contentLookup(0, blockHash)
-        console.log('header', header)
         if (!header) {
           return 'Block not found'
         }
         body = includeTransactions
           ? await this._client.contentLookup(1, blockHash)
           : rlp.encode([[], []])
-        console.log('body', body)
         // TODO: Figure out why block body isn't coming back as Uint8Array
         block = reassembleBlock(header as Uint8Array, body)
-        console.log(block)
         return block
-      } catch (err) {
-        console.log(err)
-      return 'Block not found'
+      } catch {
+        return 'Block not found'
       }
-
     },
     portal_addBootNode: async (params: [string]) => {
       const [enr] = params
