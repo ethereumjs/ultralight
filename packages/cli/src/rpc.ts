@@ -71,14 +71,30 @@ export class RPCManager {
       }
     },
     portal_nodeEnr: async () => {
+      this.log(`portal_nodeEnr request received`)
       const enr = this._client.client.enr.encodeTxt()
       return enr
+    },
+    portal_findNodes: async (params: [string, number[]]) => {
+      const [dstId, distances] = params
+      if (/[^a-z0-9\s]+/.test(dstId) || dstId.length !== 64) {
+        // Check for invalid characters in dstId and invalid length
+        return 'invalid node id'
+      }
+      this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
+      const res = await this._client.sendFindNodes(
+        dstId,
+        Uint16Array.from(distances),
+        SubNetworkIds.HistoryNetwork
+      )
+      this.log(`response received to findNodes ${res?.toString()}`)
+      return `${res?.total ?? 0} nodes returned`
     },
   }
 
   constructor(client: PortalNetwork) {
     this._client = client
-    this.log = debug(this._client.client.enr.nodeId.slice(0, 5)).extend('ultralight', ':')
+    this.log = debug(this._client.client.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
   }
 
   public getMethods() {
