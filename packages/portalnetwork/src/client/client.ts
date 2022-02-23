@@ -45,6 +45,7 @@ import {
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
 import { Block, BlockHeader } from '@ethereumjs/block'
+import rlp from 'rlp'
 import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
 import { Lookup } from '../wire'
 const level = require('level-mem')
@@ -56,7 +57,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   stateNetworkRoutingTable: StateNetworkRoutingTable
   historyNetworkRoutingTable: PortalNetworkRoutingTable
   uTP: UtpProtocol
-  nodeRadius: number
+  nodeRadius: bigint
   db: LevelUp
   private refreshListener?: ReturnType<typeof setInterval>
   metrics: PortalNetworkMetrics | undefined
@@ -80,7 +81,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         transport: 'wss',
         proxyAddress: proxyAddress,
       },
-      1
+      2n ** 256n
     )
   }
 
@@ -93,7 +94,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   constructor(
     config: IDiscv5CreateOptions,
-    radius = 1,
+    radius = 2n ** 256n,
     db?: LevelUp,
     metrics?: PortalNetworkMetrics
   ) {
@@ -187,9 +188,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param value number representing the new radius
    * @throws if `value` is outside correct range
    */
-  public set radius(value: number) {
-    if (value > 256 || value < 0) {
-      throw new Error('radius must be between 0 and 256')
+  public set radius(value: bigint) {
+    if (value < 0n) {
+      throw new Error('radius must be greater than 0')
     }
     this.nodeRadius = value
   }
@@ -416,7 +417,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          _deserializedValue = BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          console.log('adding header', value)
+          _deserializedValue = BlockHeader.fromRLPSerializedHeader(
+            Buffer.from(fromHexString(toHexString(value)))
+          )
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return

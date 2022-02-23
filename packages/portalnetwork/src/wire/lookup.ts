@@ -47,7 +47,7 @@ export class Lookup {
     try {
       const res = await this.client.db.get(this.contentId)
       return res
-    } catch {}
+    } catch { }
     this.client.historyNetworkRoutingTable.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
@@ -81,7 +81,10 @@ export class Lookup {
         }
         case 1: {
           // findContent returned data sought
-          this.log(`received content corresponding to ${shortId(this.blockHash)}`)
+          this.log(
+            `received content corresponding to ${Object.keys(HistoryNetworkContentTypes)[this.contentType]
+            }${shortId(this.blockHash)}`
+          )
           finished = true
           this.client.metrics?.successfulContentLookups.inc()
           return res.value
