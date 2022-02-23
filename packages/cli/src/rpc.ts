@@ -1,8 +1,15 @@
 import { ENR, fromHex } from '@chainsafe/discv5'
 import { debug, Debugger } from 'debug'
-import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
+import {
+  PortalNetwork,
+  getContentId,
+  SubNetworkIds,
+  reassembleBlock,
+  HistoryNetworkContentKeyUnionType,
+} from 'portalnetwork'
 import * as rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
+import { isValidId } from './util'
 
 export class RPCManager {
   public _client: PortalNetwork
@@ -77,8 +84,7 @@ export class RPCManager {
     },
     portal_findNodes: async (params: [string, number[]]) => {
       const [dstId, distances] = params
-      if (/[^a-z0-9\s]+/.test(dstId) || dstId.length !== 64) {
-        // Check for invalid characters in dstId and invalid length
+      if (!isValidId(dstId)) {
         return 'invalid node id'
       }
       this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
@@ -89,6 +95,22 @@ export class RPCManager {
       )
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
+    },
+    portal_offer: async (params: [string, string]) => {
+      const [dstId, blockHash] = params
+      if (!isValidId(dstId)) {
+        return 'invalid parameters'
+      }
+      const contentKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 0,
+        value: {
+          chainId: 1,
+          blockHash: fromHex(blockHash.slice(2)),
+        },
+      })
+      const res = await this._client.sendOffer(dstId, [contentKey], SubNetworkIds.HistoryNetwork)
+      this.log(`response received to Offer ${res?.toString()}`)
+      return res
     },
   }
 
