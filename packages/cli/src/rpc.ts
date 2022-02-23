@@ -1,8 +1,15 @@
 import { ENR, fromHex } from '@chainsafe/discv5'
 import { debug, Debugger } from 'debug'
-import { PortalNetwork, getContentId, SubNetworkIds, reassembleBlock } from 'portalnetwork'
+import {
+  PortalNetwork,
+  getContentId,
+  SubNetworkIds,
+  reassembleBlock,
+  HistoryNetworkContentKeyUnionType,
+} from 'portalnetwork'
 import * as rlp from 'rlp'
-import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
+import { addRLPSerializedBlock, shortId } from 'portalnetwork/dist/util'
+import { isValidId } from './util'
 
 export class RPCManager {
   public _client: PortalNetwork
@@ -71,14 +78,45 @@ export class RPCManager {
       }
     },
     portal_nodeEnr: async () => {
+      this.log(`portal_nodeEnr request received`)
       const enr = this._client.client.enr.encodeTxt()
       return enr
+    },
+    portal_findNodes: async (params: [string, number[]]) => {
+      const [dstId, distances] = params
+      if (!isValidId(dstId)) {
+        return 'invalid node id'
+      }
+      this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
+      const res = await this._client.sendFindNodes(
+        dstId,
+        Uint16Array.from(distances),
+        SubNetworkIds.HistoryNetwork
+      )
+      this.log(`response received to findNodes ${res?.toString()}`)
+      return `${res?.total ?? 0} nodes returned`
+    },
+    portal_offer: async (params: [string, string, number]) => {
+      const [dstId, blockHash, contentType] = params
+      if (!isValidId(dstId) || contentType < 0 || contentType > 2) {
+        return 'invalid parameters'
+      }
+      const contentKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: contentType,
+        value: {
+          chainId: 1,
+          blockHash: fromHex(blockHash.slice(2)),
+        },
+      })
+      const res = await this._client.sendOffer(dstId, [contentKey], SubNetworkIds.HistoryNetwork)
+      this.log(`response received to offer ${res?.toString()}`)
+      return `${shortId(dstId)} ${res ? 'accepted' : 'rejected'} offer`
     },
   }
 
   constructor(client: PortalNetwork) {
     this._client = client
-    this.log = debug(this._client.client.enr.nodeId.slice(0, 5)).extend('ultralight', ':')
+    this.log = debug(this._client.client.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
   }
 
   public getMethods() {

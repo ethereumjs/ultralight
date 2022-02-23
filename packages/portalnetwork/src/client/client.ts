@@ -831,6 +831,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     networkId: SubNetworkIds
   ): Promise<Buffer> => {
     const enr = this.historyNetworkRoutingTable.getValue(dstId)
+    if (!enr) {
+      this.logger(`${shortId(dstId)} not found in routing table`)
+      return Buffer.from([0])
+    }
     try {
       const res = await this.client.sendTalkReq(dstId, payload, fromHexString(networkId), enr)
       return res
