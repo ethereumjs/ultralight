@@ -12,6 +12,10 @@ import debug from 'debug'
 import { RPCManager } from './rpc'
 
 const args: any = yargs(hideBin(process.argv))
+  .option('pk', {
+    describe: 'base64 string encoded protobuf serialized private key',
+    string: true,
+  })
   .option('bootnode', {
     describe: 'ENR of Bootnode',
     string: true,
@@ -86,10 +90,14 @@ const setupMetrics = () => {
 }
 
 const run = async () => {
-  const id = await PeerId.create({ keyType: 'secp256k1' })
+  let id: PeerId
+  if (!args.pk) {
+    id = await PeerId.create({ keyType: 'secp256k1' })
+  } else {
+    id = await PeerId.createFromPrivKey(args.pk)
+  }
   const enr = ENR.createFromPeerId(id)
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
-
   enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
   const metrics = setupMetrics()
   const portal = new PortalNetwork(
