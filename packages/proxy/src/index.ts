@@ -23,7 +23,18 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'IP address on local network',
     string: true,
     optional: true,
+  })
+  .option('packetLoss', {
+    describe: 'simulated network issues',
+    number: true,
+    optional: true,
   }).argv
+
+console.log(args)
+if ((args.packetLoss && args.packetLoss < 0) || args.packetLoss >= 1) {
+  log('packet loss parameter must be between 0 and 1. Exiting...')
+  process.exit(0)
+}
 
 const startServer = async (ws: WS.Server, extip = false) => {
   let remoteAddr = ws.options.host
@@ -73,6 +84,13 @@ const startServer = async (ws: WS.Server, extip = false) => {
     websocket.send(Buffer.concat([bAddress, bPort]))
     log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
     websocket.on('message', (data) => {
+      if (args.packetLoss) {
+        const num = Math.random()
+        if (num <= args.packetLoss) {
+          log('simulating packet loss')
+          return
+        }
+      }
       try {
         const bAddress = Buffer.from(data.slice(0, 4) as ArrayBuffer)
         const address = `${bAddress[0]}.${bAddress[1]}.${bAddress[2]}.${bAddress[3]}`
