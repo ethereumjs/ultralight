@@ -51,7 +51,7 @@ export const App = () => {
         transport: 'wss',
         proxyAddress: `ws://${proxy}:5050`,
       },
-      1
+      2n ** 256n
     )
     // eslint-disable-next-line no-undef
     ;(window as any).portal = portal
@@ -65,7 +65,7 @@ export const App = () => {
     )
     await node.start()
 
-    node.enableLog('portalnetwork*, <uTP>*,discv5*')
+    node.enableLog()
   }
 
   const stopNode = async () => {
