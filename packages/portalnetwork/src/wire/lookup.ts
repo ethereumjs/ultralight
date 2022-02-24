@@ -39,6 +39,7 @@ export class Lookup {
    * @param block1Hash hex prefixed string corresponding to blockhash
    */
   public startLookup = async () => {
+    const routingTable = this.client.routingTables.get(SubNetworkIds.HistoryNetwork)
     this.client.metrics?.totalContentLookups.inc()
     const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: this.contentType,
@@ -48,7 +49,7 @@ export class Lookup {
       const res = await this.client.db.get(this.contentId)
       return res
     } catch {}
-    this.client.historyNetworkRoutingTable.nearest(this.contentId, 5).forEach((peer) => {
+    routingTable!.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
     })
@@ -113,11 +114,8 @@ export class Lookup {
                   this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
                 }
               }
-              if (!this.client.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                this.client.historyNetworkRoutingTable.insertOrUpdate(
-                  decodedEnr,
-                  EntryStatus.Connected
-                )
+              if (!routingTable!.getValue(decodedEnr.nodeId)) {
+                routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               }
             }
           })

@@ -35,7 +35,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
   const toast = useToast()
 
   const updateAddressBook = () => {
-    const peerENRs = portal.historyNetworkRoutingTable.values()
+    const peerENRs = portal.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
     const newPeers = peerENRs.map((peer) => peer.nodeId)
     setPeers(newPeers)
   }
