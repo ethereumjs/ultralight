@@ -30,9 +30,9 @@ const main = async () => {
     for (let x = 0; x < args.numBlocks; x++) {
         await client.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
     }
-
+    const enr = await client.request('portal_nodeEnr', [])
     for (let x = 1; x < args.numNodes; x++) {
-        const enr = await client.request('portal_nodeEnr', [])
+
         client = Client.http({ port: args.rpcPort + x })
         await client.request('portal_addBootNode', [enr.result])
     }
