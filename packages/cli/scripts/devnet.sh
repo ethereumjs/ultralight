@@ -1,10 +1,26 @@
 #!/bin/sh
 set -e
 
-node ../proxy/dist/index.js --nat=localhost &
+usage() {
+    echo 'Usage: ./devnet.sh [-n number of nodes] [-l percent packet loss]'
+}
+
+NODES=1
+LOSS=0
+
+while getopts "n:l::" c
+do
+    case $c in
+        n) NODES=$OPTARG ;;
+        l) LOSS=$OPTARG ;;
+        h|?) usage ;;
+    esac
+done
+
+node ../proxy/dist/index.js --nat=localhost --packetLoss=$LOSS &
 sleep 3
 counter=1
-while [ $counter -le $1 ]
+while [ $counter -le $NODES ]
 do
   port=$((8545+$counter))
   metrics=$((18545 + $counter))
