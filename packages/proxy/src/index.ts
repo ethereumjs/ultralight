@@ -32,8 +32,8 @@ const args: any = yargs(hideBin(process.argv))
     optional: true,
   }).argv
 
-if ((args.packetLoss && args.packetLoss < 0) || args.packetLoss >= 1) {
-  log('packet loss parameter must be between 0 and 1. Exiting...')
+if ((args.packetLoss && args.packetLoss < 0) || args.packetLoss >= 100) {
+  log('packet loss parameter must be between 0 and 100. Exiting...')
   process.exit(0)
 }
 
@@ -118,8 +118,7 @@ const startServer = async (ws: WS.Server, extip = false) => {
     websocket.on('message', (data) => {
       if (args.packetLoss) {
         metrics.totalPacketsSent.inc()
-        const num = Math.random()
-        if (num <= args.packetLoss) {
+        if (Math.random() * 100 <= args.packetLoss) {
           metrics.totalPacketsDropped.inc()
           log('simulating packet loss')
           return

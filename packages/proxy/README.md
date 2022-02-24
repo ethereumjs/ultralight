@@ -16,5 +16,7 @@ By default, it only listens on `localhost`/`127.0.0.1`.  To have your proxy list
 
 To make your proxy public facing, run `npm run start --nat extip` and the proxy will get its public IP address from a STUN server and route all traffic via the external IP address.
 
+### Simulated packet loss
 
+To test the portal network client under adverse network conditions, the `--packetLoss` parameter can be passed to the proxy to simulate a packet drop rate.  Any value between 0 and 100 can be passed so `--packetLoss=20` would indicate that approximately 20% of packets will be dropped.
 
