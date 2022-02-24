@@ -67,10 +67,9 @@ tape('Portal Wire Spec Testing', async (t) => {
         portal1.client.once('multiaddrUpdated', () => portal2.start())
 
         portal2.client.once('multiaddrUpdated', async () => {
-          portal2.historyNetworkRoutingTable.insertOrUpdate(
-            portal1.client.enr,
-            EntryStatus.Connected
-          )
+          portal2.routingTables
+            .get(SubNetworkIds.HistoryNetwork)!
+            .insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
           const res = await portal2.sendPing(
             portal1.client.enr.nodeId,
             SubNetworkIds.HistoryNetwork
@@ -90,6 +89,7 @@ tape('Portal Wire Spec Testing', async (t) => {
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
     let portal2: PortalNetwork
+    st.teardown(() => end(child, [portal1, portal2], st))
 
     child.stderr.on('data', async (data) => {
       if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
@@ -109,10 +109,9 @@ tape('Portal Wire Spec Testing', async (t) => {
         portal1.client.once('multiaddrUpdated', () => portal2.start())
 
         portal2.client.once('multiaddrUpdated', async () => {
-          portal2.historyNetworkRoutingTable.insertOrUpdate(
-            portal1.client.enr,
-            EntryStatus.Connected
-          )
+          portal2.routingTables
+            .get(SubNetworkIds.HistoryNetwork)!
+            .insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
           const testBlock = Block.fromRLPSerializedBlock(
             Buffer.from(fromHexString(require('./testBlock.json').rlp))
           )
