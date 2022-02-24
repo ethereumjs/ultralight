@@ -5,13 +5,14 @@ import { hideBin } from 'yargs/helpers'
 import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
-const stun = require('stun')
+import https from 'https'
 const log = debug('proxy')
 debug.enable('proxy')
 
 const MAX_PACKET_SIZE = 1280
 
 const servers: WS.Server[] = []
+let externalIp: string | undefined
 
 const args: any = yargs(hideBin(process.argv))
   .option('nat', {
@@ -69,14 +70,12 @@ if (args.packetLoss) {
 }
 
 const startServer = async (ws: WS.Server, extip = false) => {
-  let remoteAddr = ws.options.host
+  let remoteAddr: string | undefined
+
   if (extip) {
-    try {
-      const res = await stun.request('stun.l.google.com:19302')
-      remoteAddr = res.getXorAddress().address
-    } catch (err) {
-      log('error getting public IP', err)
-    }
+    remoteAddr = externalIp
+  } else {
+    remoteAddr = ws.options.host
   }
 
   log(`websocket server listening on ${remoteAddr}:5050`)
@@ -157,27 +156,48 @@ function stop(): void {
 process.on('SIGTERM', () => stop())
 process.on('SIGINT', () => stop())
 
-args.nat.forEach((arg: string) => {
-  switch (arg) {
-    case 'extip':
-    case 'localhost':
-      {
-        const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
-        startServer(ws, args.nat.includes('extip'))
-        servers.push(ws)
-      }
-      break
-    case 'lan':
-      {
-        if (!args.ip) {
-          log('Must provide IP address for LAN option')
-          log('Exiting...')
-          process.exit(1)
+const main = () => {
+  args.nat.forEach((arg: string) => {
+    switch (arg) {
+      case 'extip':
+        {
+          const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
+          startServer(ws, true)
+          servers.push(ws)
         }
-        const ws = new WS.Server({ host: args.ip, port: 5050, clientTracking: true })
-        startServer(ws, args.nat.includes('extip'))
-        servers.push(ws)
-      }
-      break
-  }
-})
+        break
+      case 'localhost':
+        {
+          const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
+          startServer(ws, false)
+          servers.push(ws)
+        }
+        break
+      case 'lan':
+        {
+          if (!args.ip) {
+            log('Must provide IP address for LAN option')
+            log('Exiting...')
+            process.exit(1)
+          }
+          const ws = new WS.Server({ host: args.ip, port: 5050, clientTracking: true })
+          startServer(ws, args.nat.includes('extip'))
+          servers.push(ws)
+        }
+        break
+    }
+  })
+}
+
+if (args.nat.find((entry: string) => entry === 'extip')) {
+  https.get('https://api.ipify.org', (res) => {
+    let data = ''
+    res.on('data', (chunk) => (data += chunk))
+    res.on('end', () => {
+      externalIp = data
+      main()
+    })
+  })
+} else {
+  main()
+}
