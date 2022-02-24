@@ -2,6 +2,8 @@ import WS from 'ws'
 import * as dgram from 'dgram'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
+import http from 'http'
+import * as PromClient from 'prom-client'
 import debug from 'debug'
 const stun = require('stun')
 const log = debug('proxy')
@@ -30,10 +32,40 @@ const args: any = yargs(hideBin(process.argv))
     optional: true,
   }).argv
 
-console.log(args)
 if ((args.packetLoss && args.packetLoss < 0) || args.packetLoss >= 1) {
   log('packet loss parameter must be between 0 and 1. Exiting...')
   process.exit(0)
+}
+
+const register = new PromClient.Registry()
+
+const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  res.writeHead(200)
+  res.end(await register.metrics())
+}
+
+const setupMetrics = () => {
+  return {
+    totalPacketsSent: new PromClient.Counter({
+      name: 'proxy_total_packets_sent',
+      help: 'how many packets have been sent',
+    }),
+    totalPacketsDropped: new PromClient.Counter({
+      name: 'proxy_total_packets_dropped',
+      help: 'how many packets have been dropped',
+    }),
+  }
+}
+
+const metricsServer = http.createServer(reportMetrics)
+let metrics: any
+
+if (args.packetLoss) {
+  metrics = setupMetrics()
+  Object.entries(metrics).forEach((entry: any) => {
+    register.registerMetric(entry[1])
+  })
+  metricsServer.listen(5051)
 }
 
 const startServer = async (ws: WS.Server, extip = false) => {
@@ -85,8 +117,10 @@ const startServer = async (ws: WS.Server, extip = false) => {
     log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
     websocket.on('message', (data) => {
       if (args.packetLoss) {
+        metrics.totalPacketsSent.inc()
         const num = Math.random()
         if (num <= args.packetLoss) {
+          metrics.totalPacketsDropped.inc()
           log('simulating packet loss')
           return
         }
@@ -115,6 +149,9 @@ function stop(): void {
     server.removeAllListeners()
     server.close()
   })
+  if (args.packetLoss) {
+    metricsServer.close()
+  }
   process.exit(0)
 }
 

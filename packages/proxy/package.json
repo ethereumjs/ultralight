@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "debug": "^4.3.3",
+    "prom-client": "^14.0.1",
     "stun": "^2.1.0",
     "ws": "^8.2.2",
     "yargs": "^17.3.0"
