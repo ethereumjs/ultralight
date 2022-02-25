@@ -35,7 +35,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
   const toast = useToast()
 
   const updateAddressBook = () => {
-    const peerENRs = portal.historyNetworkRoutingTable.values()
+    const peerENRs = portal.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
     const newPeers = peerENRs.map((peer) => peer.nodeId)
     setPeers(newPeers)
   }
@@ -77,7 +77,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleFindRandom = () => {
     const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
-    portal.nodeLookup(lookupNode)
+    portal.nodeLookup(lookupNode, SubNetworkIds.HistoryNetwork)
   }
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, network)
@@ -89,7 +89,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleUtp = (nodeId: string) => {
     if (utpConId) {
-      portal.uTP.initiateUtpTest(nodeId, utpConId)
+      portal.uTP.initiateUtpTest(nodeId, utpConId, SubNetworkIds.HistoryNetwork)
     } else {
       toast({
         title: 'No connection ID found',

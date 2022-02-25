@@ -1,7 +1,8 @@
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import EventEmitter from 'events'
 import { NodeId } from '@chainsafe/discv5'
-import { SubNetworkIds } from '..'
+import { StateNetworkRoutingTable, SubNetworkIds } from '..'
+import { PortalNetworkRoutingTable } from '.'
 
 export interface IPortalNetworkEvents {
   Stream: (connectionId: number, content: Uint8Array) => void
@@ -12,6 +13,7 @@ export interface IPortalNetworkEvents {
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>
 
+export type RoutingTable = PortalNetworkRoutingTable | StateNetworkRoutingTable
 interface IGauge {
   inc(value?: number): void
   set(value: number): void

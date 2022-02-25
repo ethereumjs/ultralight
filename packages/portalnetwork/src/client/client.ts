@@ -33,7 +33,7 @@ import {
   PongMessage,
   PingMessage,
 } from '../wire'
-import { PortalNetworkEventEmitter, PortalNetworkMetrics } from './types'
+import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from './types'
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
@@ -44,7 +44,7 @@ import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { BlockHeader } from '@ethereumjs/block'
 import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
 import { Lookup } from '../wire'
 const level = require('level-mem')
@@ -53,8 +53,7 @@ const MAX_PACKET_SIZE = 1280
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   client: Discv5
-  stateNetworkRoutingTable: StateNetworkRoutingTable
-  historyNetworkRoutingTable: PortalNetworkRoutingTable
+  routingTables: Map<SubNetworkIds, RoutingTable>
   uTP: UtpProtocol
   nodeRadius: bigint
   db: LevelUp
@@ -105,8 +104,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.handleStreamedContent(id, content)
     })
     this.nodeRadius = radius
-    this.stateNetworkRoutingTable = new StateNetworkRoutingTable(this.client.enr.nodeId)
-    this.historyNetworkRoutingTable = new PortalNetworkRoutingTable(this.client.enr.nodeId)
+    this.routingTables = new Map()
+    Object.values(SubNetworkIds).forEach((networkId) => {
+      if (networkId !== SubNetworkIds.UTPNetwork) {
+        this.routingTables.set(
+          networkId as SubNetworkIds,
+          networkId === SubNetworkIds.StateNetwork
+            ? new StateNetworkRoutingTable(this.client.enr.nodeId)
+            : new PortalNetworkRoutingTable(this.client.enr.nodeId)
+        )
+      }
+    })
     this.client.on('talkReqReceived', this.onTalkReq)
     this.client.on('talkRespReceived', this.onTalkResp)
     this.client.on('sessionEnded', (srcId) => {
@@ -125,7 +133,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.metrics.knownDiscv5Nodes.collect = () =>
         this.metrics?.knownDiscv5Nodes.set(this.client.kadValues().length)
       this.metrics.knownHistoryNodes.collect = () =>
-        this.metrics?.knownHistoryNodes.set(this.historyNetworkRoutingTable.size)
+        this.metrics?.knownHistoryNodes.set(
+          this.routingTables.get(SubNetworkIds.HistoryNetwork)!.size
+        )
     }
   }
 
@@ -206,7 +216,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     let dstId
     if (nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
-      this.historyNetworkRoutingTable.insertOrUpdate(enr, EntryStatus.Connected)
+      this.routingTables.get(networkId)!.insertOrUpdate(enr, EntryStatus.Connected)
       dstId = enr.nodeId
     } else {
       dstId = nodeId
@@ -263,32 +273,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
         if (decoded) {
           this.logger(`Received ${decoded.total} ENRs from ${shortId(dstId)}`)
+          const routingTable = this.routingTables.get(networkId)
           decoded.enrs.forEach((enr) => {
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
-            // Add ENR to Discv5 routing table since we can't send messages to a node that's not in the discv5 table
-            // (see discv5.service.sendRequest message)
-            // TODO: Fix discv5.service.sendRequest to accept either a `NodeId` or an `ENR`
-            //this.client.addEnr(decodedEnr)
-            switch (networkId) {
-              case SubNetworkIds.StateNetwork:
-                if (!this.stateNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                  // Add node to State Subnetwork Routing Table if we don't already know it
-                  this.stateNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-                  this.sendPing(decodedEnr.nodeId, networkId)
-                }
-                break
-              case SubNetworkIds.HistoryNetwork:
-                if (!this.historyNetworkRoutingTable.getValue(decodedEnr.nodeId)) {
-                  // Add node to History Subnetwork Routing Table if we don't already know it
-                  this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-                  this.sendPing(decodedEnr.nodeId, networkId)
-                }
-                break
+            if (!routingTable!.getValue(decodedEnr.nodeId)) {
+              routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              this.sendPing(decodedEnr.nodeId, networkId)
             }
           })
+          return decoded
         }
-        return decoded
       }
     } catch (err: any) {
       this.logger(`Error sending FINDNODES to ${shortId(dstId)} - ${err}`)
@@ -380,7 +375,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           const requested: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
-          await this.uTP.initiateUtpFromAccept(dstId, id, requested)
+          await this.uTP.initiateUtpFromAccept(dstId, id, requested, networkId)
           return msg.contentKeys
         }
       } catch (err: any) {
@@ -391,11 +386,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   public sendUtpStreamRequest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateConnectionRequest(dstId, id)
+    await this.uTP.initiateConnectionRequest(dstId, id, SubNetworkIds.HistoryNetwork)
   }
   public UtpStreamTest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateUtpTest(dstId, id)
+    await this.uTP.initiateUtpTest(dstId, id, SubNetworkIds.HistoryNetwork)
   }
 
   /**
@@ -412,13 +407,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     blockHash: string,
     value: Uint8Array
   ) => {
-    let _deserializedValue: Block | BlockHeader | undefined = undefined
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          _deserializedValue = BlockHeader.fromRLPSerializedHeader(
-            Buffer.from(fromHexString(toHexString(value)))
-          )
+          BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(toHexString(value))))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return
@@ -464,14 +456,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= distance from the content)
     // TODO: Make # nodes content is offered to configurable based on further discussion
-    const offerENRs = this.historyNetworkRoutingTable.nearest(key, 1)
+    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
+    const offerENRs = routingTable!.nearest(key, 1)
     if (offerENRs.length > 0) {
       const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
         value: { chainId: chainId, blockHash: fromHexString(blockHash) },
       })
       offerENRs.forEach((enr) => {
-        if (distance(enr.nodeId, key) < this.historyNetworkRoutingTable.getRadius(enr.nodeId)!) {
+        if (distance(enr.nodeId, key) < routingTable!.getRadius(enr.nodeId)!) {
           this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
         }
       })
@@ -585,12 +578,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         if (distance > 0) {
           // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
           // would be in bucket 0
-          this.historyNetworkRoutingTable.valuesOfDistance(distance + 1).forEach((enr) => {
-            // Exclude ENR from resopnse if it matches the requesting node
-            if (enr.nodeId === srcId) return
-            nodesPayload.total++
-            nodesPayload.enrs.push(enr.encode())
-          })
+          this.routingTables
+            .get(toHexString(message.protocol) as SubNetworkIds)!
+            .valuesOfDistance(distance + 1)
+            .forEach((enr) => {
+              // Exclude ENR from resopnse if it matches the requesting node
+              if (enr.nodeId === srcId) return
+              nodesPayload.total++
+              nodesPayload.enrs.push(enr.encode())
+            })
         }
       })
       // Send the client's ENR if a node at distance 0 is requested
@@ -645,7 +641,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     desiredContentKeys: boolean[]
   ) => {
     const id = randUint16()
-    const connectionId = await this.uTP.awaitConnectionRequest(srcId, id)
+    const connectionId = await this.uTP.awaitConnectionRequest(
+      srcId,
+      id,
+      toHexString(message.protocol) as SubNetworkIds
+    )
     const payload: AcceptMessage = {
       connectionId: new Uint8Array(2).fill(connectionId),
       contentKeys: desiredContentKeys,
@@ -679,7 +679,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const contentId = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
             // TODO: Decide if we should send more than 3 nodes back in a response since we likely exceed
             // UDP talkresp packet size with more than 3 ENRs at 300 bytes per ENR
-            const ENRs = this.historyNetworkRoutingTable.nearest(contentId, 3)
+            const ENRs = this.routingTables
+              .get(toHexString(message.protocol) as SubNetworkIds)!
+              .nearest(contentId, 3)
             const encodedEnrs = ENRs.map((enr) => {
               // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
               // contentId than this node
@@ -778,43 +780,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       )
       return
     }
-    switch (networkId) {
-      case SubNetworkIds.StateNetwork: {
-        if (!customPayload) {
-          this.stateNetworkRoutingTable.removeById(srcId)
-          this.stateNetworkRoutingTable.removeFromRadiusMap(srcId)
-          this.logger(`removed ${srcId} from State Network Routing Table`)
-          this.emit('NodeRemoved', srcId, SubNetworkIds.StateNetwork)
-          return
-        }
-        if (!this.stateNetworkRoutingTable.getValue(srcId)) {
-          this.logger(`adding ${srcId} to stateNetwork routing table`)
-          this.stateNetworkRoutingTable.insertOrUpdate(enr!, EntryStatus.Connected)
-          const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
-          this.stateNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
-          this.emit('NodeAdded', srcId, SubNetworkIds.StateNetwork)
-          return
-        }
-        break
-      }
-      case SubNetworkIds.HistoryNetwork: {
-        if (!customPayload) {
-          this.historyNetworkRoutingTable.removeById(srcId)
-          this.historyNetworkRoutingTable.removeFromRadiusMap(srcId)
-          this.logger(`removed ${srcId} from History Network Routing Table`)
-          this.emit('NodeRemoved', srcId, SubNetworkIds.HistoryNetwork)
-          return
-        }
-        if (!this.historyNetworkRoutingTable.getValue(srcId)) {
-          this.logger(`adding ${srcId} to historyNetwork routing table`)
-          this.historyNetworkRoutingTable.insertOrUpdate(enr!, EntryStatus.Connected)
-          const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
-          this.historyNetworkRoutingTable.updateRadius(srcId, decodedPayload.radius)
-          this.emit('NodeAdded', srcId, SubNetworkIds.HistoryNetwork)
-          return
-        }
-        break
-      }
+    const routingTable = this.routingTables.get(networkId)
+    if (!customPayload) {
+      routingTable!.removeById(srcId)
+      routingTable!.removeFromRadiusMap(srcId)
+      this.logger(`removed ${srcId} from State Network Routing Table`)
+      this.emit('NodeRemoved', srcId, SubNetworkIds.StateNetwork)
+      return
+    }
+    if (!routingTable!.getValue(srcId)) {
+      this.logger(`adding ${srcId} to stateNetwork routing table`)
+      routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
+      const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+      routingTable!.updateRadius(srcId, decodedPayload.radius)
+      this.emit('NodeAdded', srcId, SubNetworkIds.StateNetwork)
+      return
     }
   }
 
@@ -828,15 +808,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendPortalNetworkMessage = async (
     dstId: NodeId,
     payload: Buffer,
-    networkId: SubNetworkIds
+    networkId: SubNetworkIds,
+    utpMessage?: boolean
   ): Promise<Buffer> => {
-    const enr = this.historyNetworkRoutingTable.getValue(dstId)
+    const enr = this.routingTables.get(networkId)!.getValue(dstId)
     if (!enr) {
       this.logger(`${shortId(dstId)} not found in routing table`)
       return Buffer.from([0])
     }
+    const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
-      const res = await this.client.sendTalkReq(dstId, payload, fromHexString(networkId), enr)
+      const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err.message}`)
@@ -857,8 +839,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Do the random lookup on this node-id.
    */
   private bucketRefresh = async () => {
-    const notFullBuckets = this.historyNetworkRoutingTable.buckets
-      .map((bucket, idx) => {
+    const notFullBuckets = this.routingTables
+      .get(SubNetworkIds.HistoryNetwork)!
+      .buckets.map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
@@ -867,17 +850,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
       this.logger(`Refreshing bucket at distance ${distance}`)
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-      this.nodeLookup(randomNodeAtDistance)
+      this.nodeLookup(randomNodeAtDistance, SubNetworkIds.HistoryNetwork)
     }
   }
 
   /**
-   * Queries the 5 nearest nodes in the history network routing table for nodes in the kbucket and recursively
+   * Queries the 5 nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
    * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
    * @param nodeSought nodeId of node sought in lookup
+   * @param networkId `SubNetworkId` of the routing table to be queried
    */
-  public nodeLookup = async (nodeSought: NodeId) => {
-    const closestPeers = this.historyNetworkRoutingTable.nearest(nodeSought, 5)
+  public nodeLookup = async (nodeSought: NodeId, networkId: SubNetworkIds) => {
+    const routingTable = this.routingTables.get(networkId)
+    const closestPeers = routingTable!.nearest(nodeSought, 5)
     const newPeers: ENR[] = []
     let finished = false
     while (!finished) {
@@ -903,7 +888,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             if (decodedEnr.nodeId === nodeSought) {
               // `nodeSought` was found -- add to table and terminate lookup
               finished = true
-              this.historyNetworkRoutingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
             } else if (
               distance(decodedEnr.nodeId, nodeSought) < distanceFromSoughtNodeToQueriedNode
@@ -919,7 +904,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     newPeers.forEach((enr) => {
       // Add all newly found peers to the subnetwork routing table
-      this.historyNetworkRoutingTable.insertOrUpdate(enr, EntryStatus.Connected)
+      routingTable!.insertOrUpdate(enr, EntryStatus.Connected)
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
     })
   }
