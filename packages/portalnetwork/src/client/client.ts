@@ -375,7 +375,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           const requested: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
-          await this.uTP.initiateUtpFromAccept(dstId, id, requested)
+          await this.uTP.initiateUtpFromAccept(dstId, id, requested, networkId)
           return msg.contentKeys
         }
       } catch (err: any) {
@@ -386,11 +386,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   public sendUtpStreamRequest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateConnectionRequest(dstId, id)
+    await this.uTP.initiateConnectionRequest(dstId, id, SubNetworkIds.HistoryNetwork)
   }
   public UtpStreamTest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateUtpTest(dstId, id)
+    await this.uTP.initiateUtpTest(dstId, id, SubNetworkIds.HistoryNetwork)
   }
 
   /**
@@ -641,7 +641,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     desiredContentKeys: boolean[]
   ) => {
     const id = randUint16()
-    const connectionId = await this.uTP.awaitConnectionRequest(srcId, id)
+    const connectionId = await this.uTP.awaitConnectionRequest(
+      srcId,
+      id,
+      toHexString(message.protocol) as SubNetworkIds
+    )
     const payload: AcceptMessage = {
       connectionId: new Uint8Array(2).fill(connectionId),
       contentKeys: desiredContentKeys,
@@ -804,15 +808,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendPortalNetworkMessage = async (
     dstId: NodeId,
     payload: Buffer,
-    networkId: SubNetworkIds
+    networkId: SubNetworkIds,
+    utpMessage?: boolean
   ): Promise<Buffer> => {
     const enr = this.routingTables.get(networkId)!.getValue(dstId)
     if (!enr) {
       this.logger(`${shortId(dstId)} not found in routing table`)
       return Buffer.from([0])
     }
+    const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
-      const res = await this.client.sendTalkReq(dstId, payload, fromHexString(networkId), enr)
+      const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err.message}`)

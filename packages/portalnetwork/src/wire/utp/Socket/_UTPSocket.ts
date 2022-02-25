@@ -49,7 +49,8 @@ export class _UTPSocket extends EventEmitter {
   seqNrs: number[]
   ackNrs: number[]
   logger: Debugger
-  constructor(utp: UtpProtocol, remoteAddress: string, type: string) {
+  subnetwork: SubNetworkIds
+  constructor(utp: UtpProtocol, remoteAddress: string, type: string, networkId: SubNetworkIds) {
     super()
     this.utp = utp
     this.client = utp.client
@@ -76,6 +77,7 @@ export class _UTPSocket extends EventEmitter {
     this.ackNrs = []
     this.logger = this.utp.log.extend(this.remoteAddress.slice(0, 10))
     this.reader = new Reader(this)
+    this.subnetwork = networkId
   }
 
   async updateSocketFromPacketHeader(packet: Packet) {
@@ -85,11 +87,13 @@ export class _UTPSocket extends EventEmitter {
   }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
+    this.content
     const msg = packet.encodePacket()
     await this.utp.portal.sendPortalNetworkMessage(
       this.remoteAddress,
       msg,
-      SubNetworkIds.UTPNetwork
+      SubNetworkIds.HistoryNetwork,
+      true
     )
     this.logger(
       `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`

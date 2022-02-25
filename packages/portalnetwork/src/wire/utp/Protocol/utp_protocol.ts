@@ -1,7 +1,7 @@
 import { _UTPSocket } from '../Socket/_UTPSocket'
 import { Packet, PacketType } from '..'
 import { debug, Debugger } from 'debug'
-import { PortalNetwork } from '../../..'
+import { PortalNetwork, SubNetworkIds } from '../../..'
 import { Discv5 } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
 import { getContentIdFromSerializedKey } from '../../../historySubnetwork'
@@ -59,31 +59,44 @@ export class UtpProtocol {
    * @param contentKeys payload from ACCEPT message
    */
 
-  async initiateUtpFromAccept(remoteAddr: string, connectionId: number, contentKeys: Uint8Array[]) {
-    const socket = new _UTPSocket(this, remoteAddr, 'writing')
+  async initiateUtpFromAccept(
+    remoteAddr: string,
+    connectionId: number,
+    contentKeys: Uint8Array[],
+    networkId: SubNetworkIds
+  ) {
+    const socket = new _UTPSocket(this, remoteAddr, 'writing', networkId)
     const value = await this.portal.db.get(getContentIdFromSerializedKey(contentKeys[0]))
     socket.content = fromHexString(value)
     this.sockets[remoteAddr + connectionId] = socket
     await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
   }
 
-  async initiateUtpTest(remoteAddr: string, connectionId: number) {
+  async initiateUtpTest(remoteAddr: string, connectionId: number, networkId: SubNetworkIds) {
     this.log(`Requesting uTP stream connection with ${remoteAddr}...`)
-    const socket = new _UTPSocket(this, remoteAddr, 'writing')
+    const socket = new _UTPSocket(this, remoteAddr, 'writing', networkId)
     this.sockets[remoteAddr + connectionId] = socket
     await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
   }
 
-  async awaitConnectionRequest(remoteAddr: string, connectionId: number): Promise<number> {
+  async awaitConnectionRequest(
+    remoteAddr: string,
+    connectionId: number,
+    networkId: SubNetworkIds
+  ): Promise<number> {
     this.log(`sending id: ${connectionId} Awaiting uTP stream request from ${remoteAddr}...`)
-    const socket = new _UTPSocket(this, remoteAddr, 'reading')
+    const socket = new _UTPSocket(this, remoteAddr, 'reading', networkId)
     this.sockets[remoteAddr + connectionId] = socket
     return this.sockets[remoteAddr + connectionId].sndConnectionId
   }
 
-  async initiateConnectionRequest(remoteAddr: string, connectionId: number): Promise<void> {
+  async initiateConnectionRequest(
+    remoteAddr: string,
+    connectionId: number,
+    networkId: SubNetworkIds
+  ): Promise<void> {
     this.log(`Requesting uTP stream connection with ${remoteAddr}...`)
-    const socket = new _UTPSocket(this, remoteAddr, 'reading')
+    const socket = new _UTPSocket(this, remoteAddr, 'reading', networkId)
     this.sockets[remoteAddr + connectionId] = socket
     await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)
   }
@@ -93,7 +106,9 @@ export class UtpProtocol {
     if (this.sockets[socketKey]) {
       await this.sockets[socketKey].handleIncomingConnectionRequest(packet)
     } else {
-      const socket = new _UTPSocket(this, remoteAddr, 'writing')
+      // TODO: Figure out how to set network ID when receiving SYN packet with no socket (or
+      // should we even create a socket if we weren't already expecting it?)
+      const socket = new _UTPSocket(this, remoteAddr, 'writing', SubNetworkIds.HistoryNetwork)
       this.sockets[socketKey] = socket
       this.sockets[socketKey].content = this.contents[socketKey]
       await this.sockets[socketKey].handleIncomingConnectionRequest(packet)

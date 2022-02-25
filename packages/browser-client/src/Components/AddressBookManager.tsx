@@ -89,7 +89,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleUtp = (nodeId: string) => {
     if (utpConId) {
-      portal.uTP.initiateUtpTest(nodeId, utpConId)
+      portal.uTP.initiateUtpTest(nodeId, utpConId, SubNetworkIds.HistoryNetwork)
     } else {
       toast({
         title: 'No connection ID found',

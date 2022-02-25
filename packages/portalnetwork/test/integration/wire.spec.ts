@@ -63,7 +63,6 @@ tape('Portal Wire Spec Testing', async (t) => {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-
         portal1.client.once('multiaddrUpdated', () => portal2.start())
 
         portal2.client.once('multiaddrUpdated', async () => {
@@ -89,7 +88,7 @@ tape('Portal Wire Spec Testing', async (t) => {
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
     let portal2: PortalNetwork
-    st.teardown(() => end(child, [portal1, portal2], st))
+    tape.onFailure(() => end(child, [portal1, portal2], st))
 
     child.stderr.on('data', async (data) => {
       if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
