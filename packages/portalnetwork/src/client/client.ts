@@ -844,17 +844,18 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
       this.logger(`Refreshing bucket at distance ${distance}`)
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-      this.nodeLookup(randomNodeAtDistance)
+      this.nodeLookup(randomNodeAtDistance, SubNetworkIds.HistoryNetwork)
     }
   }
 
   /**
-   * Queries the 5 nearest nodes in the history network routing table for nodes in the kbucket and recursively
+   * Queries the 5 nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
    * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
    * @param nodeSought nodeId of node sought in lookup
+   * @param networkId `SubNetworkId` of the routing table to be queried
    */
-  public nodeLookup = async (nodeSought: NodeId) => {
-    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
+  public nodeLookup = async (nodeSought: NodeId, networkId: SubNetworkIds) => {
+    const routingTable = this.routingTables.get(networkId)
     const closestPeers = routingTable!.nearest(nodeSought, 5)
     const newPeers: ENR[] = []
     let finished = false
