@@ -87,7 +87,6 @@ export class _UTPSocket extends EventEmitter {
   }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
-    this.content
     const msg = packet.encodePacket()
     await this.utp.portal.sendPortalNetworkMessage(
       this.remoteAddress,
