@@ -77,7 +77,7 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleFindRandom = () => {
     const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
-    portal.nodeLookup(lookupNode)
+    portal.nodeLookup(lookupNode, SubNetworkIds.HistoryNetwork)
   }
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, network)
