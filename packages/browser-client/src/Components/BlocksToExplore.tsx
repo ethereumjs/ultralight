@@ -1,7 +1,8 @@
+import { fromHex } from '@chainsafe/discv5'
 import { Box, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
-import { getContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
+import { getHistoryNetworkContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
 import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
 
 interface BlocksToExploreProps {
@@ -30,15 +31,15 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
 
   async function handleChangeKey(key: string) {
     setCurKey(key)
-    const headerLookupKey = getContentId(1, key, 0)
+    const headerLookupKey = getHistoryNetworkContentId(1, key, 0)
     const header = await portal.db.get(headerLookupKey)
     let body
     try {
-      body = await portal.db.get(getContentId(1, key, 1))
+      body = await portal.db.get(getHistoryNetworkContentId(1, key, 1))
     } catch {
       body = rlp.encode([[], []])
     }
-    const block = reassembleBlock(header, body)
+    const block = reassembleBlock(fromHex(header.slice(2)), fromHex(body.slice(2)))
     props.setBlock(block)
   }
 

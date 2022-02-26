@@ -1,6 +1,9 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import tape from 'tape'
-import { getContentId, HistoryNetworkContentKeyUnionType } from '../../src/historySubnetwork'
+import {
+  getHistoryNetworkContentId,
+  HistoryNetworkContentKeyUnionType,
+} from '../../src/historySubnetwork'
 import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
 
 tape('History Subnetwork contentKey serialization/deserialization', async (t) => {
@@ -10,7 +13,11 @@ tape('History Subnetwork contentKey serialization/deserialization', async (t) =>
     selector: HistoryNetworkContentTypes.BlockHeader,
     value: { chainId: chainId, blockHash: fromHexString(blockHash) },
   })
-  let contentId = getContentId(chainId, blockHash, HistoryNetworkContentTypes.BlockHeader)
+  let contentId = getHistoryNetworkContentId(
+    chainId,
+    blockHash,
+    HistoryNetworkContentTypes.BlockHeader
+  )
   t.equals(
     toHexString(encodedKey),
     '0x000f00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -27,7 +34,7 @@ tape('History Subnetwork contentKey serialization/deserialization', async (t) =>
     selector: HistoryNetworkContentTypes.BlockBody,
     value: { chainId, blockHash: fromHexString(blockHash) },
   })
-  contentId = getContentId(chainId, blockHash, HistoryNetworkContentTypes.BlockBody)
+  contentId = getHistoryNetworkContentId(chainId, blockHash, HistoryNetworkContentTypes.BlockBody)
   t.equals(
     toHexString(encodedKey),
     '0x011400d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -44,7 +51,7 @@ tape('History Subnetwork contentKey serialization/deserialization', async (t) =>
     selector: HistoryNetworkContentTypes.Receipt,
     value: { chainId, blockHash: fromHexString(blockHash) },
   })
-  contentId = getContentId(chainId, blockHash, HistoryNetworkContentTypes.Receipt)
+  contentId = getHistoryNetworkContentId(chainId, blockHash, HistoryNetworkContentTypes.Receipt)
   t.equals(
     toHexString(encodedKey),
     '0x020400d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',

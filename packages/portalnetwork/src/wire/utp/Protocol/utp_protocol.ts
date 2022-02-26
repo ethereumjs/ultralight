@@ -4,7 +4,7 @@ import { debug, Debugger } from 'debug'
 import { PortalNetwork, SubNetworkIds } from '../../..'
 import { Discv5 } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { getContentIdFromSerializedKey } from '../../../historySubnetwork'
+import { serializedContentKeyToContentId } from '../../../util'
 
 export class UtpProtocol {
   portal: PortalNetwork
@@ -66,7 +66,7 @@ export class UtpProtocol {
     networkId: SubNetworkIds
   ) {
     const socket = new _UTPSocket(this, remoteAddr, 'writing', networkId)
-    const value = await this.portal.db.get(getContentIdFromSerializedKey(contentKeys[0]))
+    const value = await this.portal.db.get(serializedContentKeyToContentId(contentKeys[0]))
     socket.content = fromHexString(value)
     this.sockets[remoteAddr + connectionId] = socket
     await this.sockets[remoteAddr + connectionId].sendSynPacket(connectionId)

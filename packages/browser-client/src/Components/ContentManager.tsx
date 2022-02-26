@@ -1,8 +1,7 @@
 import { Button } from '@chakra-ui/react'
-import { PortalNetwork, getContentId } from 'portalnetwork'
+import { PortalNetwork, addRLPSerializedBlock, getHistoryNetworkContentId } from 'portalnetwork'
 import React from 'react'
 import { distance } from '@chainsafe/discv5'
-import { addRLPSerializedBlock } from 'portalnetwork/dist/util'
 
 interface ContentManagerProps {
   portal: PortalNetwork
@@ -19,12 +18,15 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
           arrayData
             .sort((a, b) => {
               const diff =
-                distance(portal.client.enr.nodeId, getContentId(1, a[0], 1).slice(2)) -
-                distance(portal.client.enr.nodeId, getContentId(1, b[0], 1).slice(2))
+                distance(
+                  portal.client.enr.nodeId,
+                  getHistoryNetworkContentId(1, a[0], 1).slice(2)
+                ) -
+                distance(portal.client.enr.nodeId, getHistoryNetworkContentId(1, b[0], 1).slice(2))
               const res = diff < 0n ? -1 : 1
               return res
             })
-            .slice(0, 100)
+            .slice(0, 10)
             .forEach(async (block) => {
               addRLPSerializedBlock((block[1] as any).rlp, block[0], portal)
             })
