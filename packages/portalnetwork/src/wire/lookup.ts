@@ -1,12 +1,8 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
-import { fromHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { getContentId, PortalNetwork, SubNetworkIds } from '..'
-import {
-  HistoryNetworkContentKeyUnionType,
-  HistoryNetworkContentTypes,
-} from '../historySubnetwork/types'
-import { shortId } from '../util'
+import { PortalNetwork, SubNetworkIds } from '..'
+import { serializedContentKeyToContentId, shortId } from '../util'
 
 type lookupPeer = {
   nodeId: NodeId
@@ -18,17 +14,17 @@ export class Lookup {
   private lookupPeers: lookupPeer[]
   private contacted: NodeId[]
   private contentId: string
-  private contentType: HistoryNetworkContentTypes
-  private blockHash: string
+  private contentKey: Uint8Array
+  private networkId: SubNetworkIds
   private log: Debugger
 
-  constructor(portal: PortalNetwork, contentType: HistoryNetworkContentTypes, blockHash: string) {
+  constructor(portal: PortalNetwork, contentKey: Uint8Array, networkId: SubNetworkIds) {
     this.client = portal
     this.lookupPeers = []
     this.contacted = []
-    this.contentId = getContentId(1, blockHash, contentType)
-    this.blockHash = blockHash
-    this.contentType = contentType
+    this.contentKey = contentKey
+    this.networkId = networkId
+    this.contentId = serializedContentKeyToContentId(contentKey)
     this.log = this.client.logger.extend('lookup', ':')
   }
 
@@ -41,10 +37,6 @@ export class Lookup {
   public startLookup = async () => {
     const routingTable = this.client.routingTables.get(SubNetworkIds.HistoryNetwork)
     this.client.metrics?.totalContentLookups.inc()
-    const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: this.contentType,
-      value: { chainId: 1, blockHash: fromHexString(this.blockHash) },
-    })
     try {
       const res = await this.client.db.get(this.contentId)
       return res
@@ -66,8 +58,8 @@ export class Lookup {
       this.log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.client.sendFindContent(
         nearestPeer!.nodeId,
-        encodedKey,
-        SubNetworkIds.HistoryNetwork
+        this.contentKey,
+        this.networkId
       )
       if (!res) {
         // Node didn't respond
@@ -82,11 +74,7 @@ export class Lookup {
         }
         case 1: {
           // findContent returned data sought
-          this.log(
-            `received content corresponding to ${
-              Object.keys(HistoryNetworkContentTypes)[this.contentType]
-            }${shortId(this.blockHash)}`
-          )
+          this.log(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
           finished = true
           this.client.metrics?.successfulContentLookups.inc()
           return res.value

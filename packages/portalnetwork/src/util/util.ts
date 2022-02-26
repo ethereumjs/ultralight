@@ -1,10 +1,7 @@
+import SHA256 from '@chainsafe/as-sha256'
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
-import { fromHexString } from '@chainsafe/ssz'
-import { Block, BlockBuffer } from '@ethereumjs/block'
+import { toHexString } from '@chainsafe/ssz'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
-import * as rlp from 'rlp'
-import { PortalNetwork } from '..'
-import { HistoryNetworkContentTypes } from '../historySubnetwork/types'
 
 /**
  *  Shortens a Node ID to a readable length
@@ -31,46 +28,10 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
 }
 
 /**
- * Assembles RLP encoded block headers and bodies from the portal network into a `Block` object
- * @param rawHeader RLP encoded block header as Uint8Array
- * @param rawBody RLP encoded block body consisting of transactions and uncles as nested Uint8Arrays
- * @returns a `Block` object assembled from the header and body provided
+ * Generates the Content ID used to calculate the distance between a node ID and the content key
+ * @param contentKey a serialized content key
+ * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
-  const decodedBody = rlp.decode(rawBody)
-  //@ts-ignore
-  return Block.fromValuesArray(
-    //@ts-ignore
-    [
-      rlp.decode(Buffer.from(rawHeader)),
-      (decodedBody as Buffer[])[0],
-      (decodedBody as Buffer[])[1],
-    ] as BlockBuffer
-  )
-}
-
-/**
- * Takes an RLP encoded block as a hex string and adds the block header and block body to the `portal` content DB
- * @param rlpHex RLP encoded block as hex string
- * @param blockHash block hash as 0x prefixed hext string
- * @param portal a running `PortalNetwork` client
- */
-export const addRLPSerializedBlock = async (
-  rlpHex: string,
-  blockHash: string,
-  portal: PortalNetwork
-) => {
-  const decodedBlock = rlp.decode(fromHexString(rlpHex))
-  await portal.addContentToHistory(
-    1,
-    HistoryNetworkContentTypes.BlockHeader,
-    blockHash,
-    rlp.encode((decodedBlock as Buffer[])[0])
-  )
-  await portal.addContentToHistory(
-    1,
-    HistoryNetworkContentTypes.BlockBody,
-    blockHash,
-    rlp.encode([(decodedBlock as any)[1], (decodedBlock as any)[2]])
-  )
+export const serializedContentKeyToContentId = (contentKey: Uint8Array) => {
+  return toHexString(SHA256.digest(contentKey))
 }

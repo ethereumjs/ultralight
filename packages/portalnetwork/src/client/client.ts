@@ -12,12 +12,7 @@ import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
-import {
-  addRLPSerializedBlock,
-  generateRandomNodeIdAtDistance,
-  reassembleBlock,
-  shortId,
-} from '../util'
+import { generateRandomNodeIdAtDistance, serializedContentKeyToContentId, shortId } from '../util'
 import { bufferToPacket, randUint16, UtpProtocol } from '../wire/utp'
 import {
   PingPongCustomDataType,
@@ -45,7 +40,11 @@ import {
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
 import { BlockHeader } from '@ethereumjs/block'
-import { getContentId, getContentIdFromSerializedKey } from '../historySubnetwork'
+import {
+  addRLPSerializedBlock,
+  getHistoryNetworkContentId,
+  reassembleBlock,
+} from '../historySubnetwork'
 import { Lookup } from '../wire'
 const level = require('level-mem')
 
@@ -290,8 +289,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  public contentLookup = async (contentType: HistoryNetworkContentTypes, blockHash: string) => {
-    const lookup = new Lookup(this, contentType, blockHash)
+  public historyNetworkContentLookup = async (
+    contentType: HistoryNetworkContentTypes,
+    blockHash: string
+  ) => {
+    const contentKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: contentType,
+      value: { chainId: 1, blockHash: fromHexString(blockHash) },
+    })
+    const lookup = new Lookup(this, contentKey, SubNetworkIds.HistoryNetwork)
     const res = await lookup.startLookup()
     return res
   }
@@ -419,7 +425,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
       case HistoryNetworkContentTypes.BlockBody: {
         try {
-          const headerContentId = getContentId(1, blockHash, HistoryNetworkContentTypes.BlockHeader)
+          const headerContentId = getHistoryNetworkContentId(
+            1,
+            blockHash,
+            HistoryNetworkContentTypes.BlockHeader
+          )
           let serializedHeader
           try {
             serializedHeader = await this.db.get(headerContentId)
@@ -441,7 +451,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       default:
         throw new Error('unknown data type provided')
     }
-    const key = getContentId(chainId, blockHash, contentType)
+    const key = getHistoryNetworkContentId(chainId, blockHash, contentType)
     await this.db.put(key, toHexString(value), (err: any) => {
       if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
@@ -616,7 +626,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           let offerAccepted = false
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
-              await this.db.get(getContentIdFromSerializedKey(msg.contentKeys[x]))
+              await this.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
             } catch (err) {
               offerAccepted = true
               contentIds[x] = true
@@ -664,7 +674,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(decoded)
     const decodedContentMessage = decoded.value as FindContentMessage
     //Check to see if value in content db
-    const lookupKey = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
+    const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
     try {
       value = Buffer.from(fromHexString(await this.db.get(lookupKey)))
@@ -676,7 +686,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       switch (toHexString(message.protocol)) {
         case SubNetworkIds.HistoryNetwork:
           {
-            const contentId = getContentIdFromSerializedKey(decodedContentMessage.contentKey)
+            const contentId = serializedContentKeyToContentId(decodedContentMessage.contentKey)
             // TODO: Decide if we should send more than 3 nodes back in a response since we likely exceed
             // UDP talkresp packet size with more than 3 ENRs at 300 bytes per ENR
             const ENRs = this.routingTables

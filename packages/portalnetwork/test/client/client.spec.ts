@@ -13,7 +13,7 @@ import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
 } from '../../src/historySubnetwork/types'
-import { getContentIdFromSerializedKey } from '../../src/historySubnetwork'
+import { serializedContentKeyToContentId } from '../../src/util'
 
 tape('Client unit tests', async (t) => {
   const node = (await PortalNetwork.createPortalNetwork(
@@ -204,7 +204,7 @@ tape('Client unit tests', async (t) => {
         blockHash: fromHexString(block1Hash),
       },
     })
-    const val = await node.db.get(getContentIdFromSerializedKey(contentKey))
+    const val = await node.db.get(serializedContentKeyToContentId(contentKey))
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)))
     st.ok(header.number.eqn(1), 'retrieved block header based on content key')
     st.end()

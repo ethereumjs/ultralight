@@ -2,13 +2,13 @@ import { ENR, fromHex } from '@chainsafe/discv5'
 import { debug, Debugger } from 'debug'
 import {
   PortalNetwork,
-  getContentId,
+  getHistoryNetworkContentId,
   SubNetworkIds,
   reassembleBlock,
   HistoryNetworkContentKeyUnionType,
 } from 'portalnetwork'
 import * as rlp from 'rlp'
-import { addRLPSerializedBlock, shortId } from 'portalnetwork/dist/util'
+import { addRLPSerializedBlock, shortId } from 'portalnetwork'
 import { isValidId } from './util'
 
 export class RPCManager {
@@ -25,8 +25,8 @@ export class RPCManager {
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
       // lookup block header in DB and return if found
-      const headerlookupKey = getContentId(1, blockHash, 0)
-      const bodylookupKey = includeTransactions && getContentId(1, blockHash, 1)
+      const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
+      const bodylookupKey = includeTransactions && getHistoryNetworkContentId(1, blockHash, 1)
       let header
       let body
       let block
@@ -44,12 +44,12 @@ export class RPCManager {
       }
       // If block isn't in local DB, request block from network
       try {
-        header = await this._client.contentLookup(0, blockHash)
+        header = await this._client.historyNetworkContentLookup(0, blockHash)
         if (!header) {
           return 'Block not found'
         }
         body = includeTransactions
-          ? await this._client.contentLookup(1, blockHash)
+          ? await this._client.historyNetworkContentLookup(1, blockHash)
           : rlp.encode([[], []])
         // TODO: Figure out why block body isn't coming back as Uint8Array
         block = reassembleBlock(header as Uint8Array, body)
