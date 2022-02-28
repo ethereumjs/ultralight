@@ -1,12 +1,4 @@
-import {
-  Discv5,
-  distance,
-  ENR,
-  EntryStatus,
-  IDiscv5CreateOptions,
-  log2Distance,
-  NodeId,
-} from '@chainsafe/discv5'
+import { Discv5, distance, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/lib/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
@@ -27,6 +19,7 @@ import {
   AcceptMessage,
   PongMessage,
   PingMessage,
+  NodeLookup,
 } from '../wire'
 import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from './types'
 import { PortalNetworkRoutingTable } from '.'
@@ -45,7 +38,7 @@ import {
   getHistoryNetworkContentId,
   reassembleBlock,
 } from '../historySubnetwork'
-import { Lookup } from '../wire'
+import { ContentLookup } from '../wire'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -297,7 +290,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       selector: contentType,
       value: { chainId: 1, blockHash: fromHexString(blockHash) },
     })
-    const lookup = new Lookup(this, contentKey, SubNetworkIds.HistoryNetwork)
+    const lookup = new ContentLookup(this, contentKey, SubNetworkIds.HistoryNetwork)
     const res = await lookup.startLookup()
     return res
   }
@@ -860,62 +853,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
       this.logger(`Refreshing bucket at distance ${distance}`)
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-      this.nodeLookup(randomNodeAtDistance, SubNetworkIds.HistoryNetwork)
+      const lookup = new NodeLookup(this, randomNodeAtDistance, SubNetworkIds.HistoryNetwork)
+      await lookup.startLookup()
     }
-  }
-
-  /**
-   * Queries the 5 nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
-   * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
-   * @param nodeSought nodeId of node sought in lookup
-   * @param networkId `SubNetworkId` of the routing table to be queried
-   */
-  public nodeLookup = async (nodeSought: NodeId, networkId: SubNetworkIds) => {
-    const routingTable = this.routingTables.get(networkId)
-    const closestPeers = routingTable!.nearest(nodeSought, 5)
-    const newPeers: ENR[] = []
-    let finished = false
-    while (!finished) {
-      if (closestPeers.length === 0) {
-        finished = true
-        continue
-      }
-      const nearestPeer = closestPeers.shift()
-      // Calculates log2distance between queried peer and `nodeSought`
-      const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, nodeSought)
-      // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
-      const res = await this.sendFindNodes(
-        nearestPeer!.nodeId,
-        Uint16Array.from([distanceToSoughtPeer]),
-        SubNetworkIds.HistoryNetwork
-      )
-
-      if (res?.enrs && res.enrs.length > 0) {
-        const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, nodeSought)
-        res.enrs.forEach((enr) => {
-          if (!finished) {
-            const decodedEnr = ENR.decode(Buffer.from(enr))
-            if (decodedEnr.nodeId === nodeSought) {
-              // `nodeSought` was found -- add to table and terminate lookup
-              finished = true
-              routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              this.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
-            } else if (
-              distance(decodedEnr.nodeId, nodeSought) < distanceFromSoughtNodeToQueriedNode
-            ) {
-              // if peer received is closer than peer that sent ENR, add to front of `closestPeers` list
-              closestPeers.unshift(decodedEnr)
-              // Add newly found peers to list for storing in routing table
-              newPeers.push(decodedEnr)
-            }
-          }
-        })
-      }
-    }
-    newPeers.forEach((enr) => {
-      // Add all newly found peers to the subnetwork routing table
-      routingTable!.insertOrUpdate(enr, EntryStatus.Connected)
-      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
-    })
   }
 }

@@ -9,7 +9,7 @@ type lookupPeer = {
   distance: bigint
 }
 
-export class Lookup {
+export class ContentLookup {
   private client: PortalNetwork
   private lookupPeers: lookupPeer[]
   private contacted: NodeId[]

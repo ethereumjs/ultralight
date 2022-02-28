@@ -1,2 +1,3 @@
 export * from './types'
-export { Lookup } from './lookup'
+export { ContentLookup } from './contentLookup'
+export { NodeLookup } from './nodeLookup'
