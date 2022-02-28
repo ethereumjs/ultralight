@@ -64,8 +64,8 @@ export class RPCManager {
       this.log(
         `portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`
       )
-      const res = await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
-      return res?.enrSeq ? `ENR added for ${encodedENR.nodeId.slice(0, 15)}...` : 'Node not found'
+      await this._client.addBootNode(enr, SubNetworkIds.HistoryNetwork)
+      return `Bootnode added for ${encodedENR.nodeId.slice(0, 15)}...`
     },
     portal_addBlockToHistory: async (params: [string, string]) => {
       const [blockHash, rlpHex] = params
