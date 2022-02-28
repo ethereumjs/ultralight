@@ -1,6 +1,12 @@
 import { ENR, distance, EntryStatus, log2Distance } from '@chainsafe/discv5'
 import { Debugger } from 'debug'
-import { PortalNetwork, SubNetworkIds } from '..'
+import { PortalNetwork, shortId, SubNetworkIds } from '..'
+
+// This class implements a version of the the lookup algorithm defined in the Kademlia paper
+// https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf.
+
+const k = 16 // Kademlia constant for max nodes to be retrieved by `nodeLookup`
+const a = 3 // Concurrency parameter defined in Kademlia paper
 
 export class NodeLookup {
   private client: PortalNetwork
@@ -12,21 +18,22 @@ export class NodeLookup {
     this.client = portal
     this.networkId = networkId
     this.nodeSought = nodeId
-    this.log = this.client.logger.extend('lookup', ':')
+    this.log = this.client.logger.extend('nodeLookup', ':')
   }
 
   /**
-   * Queries the 5 nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
+   * Queries the `a` nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
    * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
    * @param nodeSought nodeId of node sought in lookup
    * @param networkId `SubNetworkId` of the routing table to be queried
    */
   public startLookup = async () => {
+    this.log(`starting lookup for ${shortId(this.nodeSought)}`)
     const routingTable = this.client.routingTables.get(this.networkId)
-    const closestPeers = routingTable!.nearest(this.nodeSought, 5)
+    const closestPeers = routingTable!.nearest(this.nodeSought, a)
     const newPeers: ENR[] = []
     let finished = false
-    while (!finished) {
+    while (!finished && newPeers.length <= k) {
       if (closestPeers.length === 0) {
         finished = true
         continue
@@ -38,7 +45,7 @@ export class NodeLookup {
       const res = await this.client.sendFindNodes(
         nearestPeer!.nodeId,
         Uint16Array.from([distanceToSoughtPeer]),
-        SubNetworkIds.HistoryNetwork
+        this.networkId
       )
 
       if (res?.enrs && res.enrs.length > 0) {
@@ -50,7 +57,7 @@ export class NodeLookup {
               // `nodeSought` was found -- add to table and terminate lookup
               finished = true
               routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              this.client.sendPing(decodedEnr.nodeId, SubNetworkIds.HistoryNetwork)
+              this.client.sendPing(decodedEnr.nodeId, this.networkId)
             } else if (
               distance(decodedEnr.nodeId, this.nodeSought) < distanceFromSoughtNodeToQueriedNode
             ) {
@@ -63,10 +70,13 @@ export class NodeLookup {
         })
       }
     }
-    newPeers.forEach((enr) => {
+    this.log(
+      `finished node lookup for ${shortId(this.nodeSought)} and found ${newPeers.length} new peers`
+    )
+    newPeers.forEach(async (enr) => {
       // Add all newly found peers to the subnetwork routing table
-      routingTable!.insertOrUpdate(enr, EntryStatus.Connected)
-      this.client.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+      const res = await this.client.sendPing(enr.nodeId, this.networkId)
+      if (res) routingTable!.insertOrUpdate(enr, EntryStatus.Connected)
     })
   }
 }
