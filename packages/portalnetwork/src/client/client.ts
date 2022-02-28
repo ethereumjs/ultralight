@@ -1,4 +1,12 @@
-import { Discv5, distance, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
+import {
+  Discv5,
+  distance,
+  ENR,
+  EntryStatus,
+  IDiscv5CreateOptions,
+  log2Distance,
+  NodeId,
+} from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/lib/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
@@ -161,19 +169,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public stop = async () => {
     await this.client.stop()
+    await this.client.removeAllListeners()
     await this.removeAllListeners()
     await this.db.removeAllListeners()
     await this.db.close()
     this.refreshListener && clearInterval(this.refreshListener)
   }
+
   /**
    *
    * @param namespaces comma separated list of logging namespaces
-   * defaults to "portalnetwork*, discv5:service, <uTP>*,<uTP>:Reader*"
+   * defaults to "portalnetwork*, discv5:service, <uTP>*"
    */
-  public enableLog = (
-    namespaces: string = '*portalnetwork*,*discv5:service*,*<uTP>*,*<uTP>:Reader*'
-  ) => {
+  public enableLog = (namespaces: string = '*portalnetwork*,*discv5:service*,*<uTP>*') => {
     debug.enable(namespaces)
   }
 
@@ -197,14 +205,37 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   /**
+   * Adds a bootnode which triggers a `findNodes` request to the Bootnode for nodes farther away
+   * @param bootnode `string` encoded ENR of a bootnode
+   * @param networkId network ID of the subnetwork routing table to add the bootnode to
+   */
+  public addBootNode = async (bootnode: string, networkId: SubNetworkIds) => {
+    const enr = ENR.decodeTxt(bootnode)
+    const routingTable = this.routingTables.get(networkId)
+    if (!routingTable) {
+      throw new Error('invalid subnetwork ID provided')
+    }
+    routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+    const dist = log2Distance(enr.nodeId, this.client.enr.nodeId)
+    const distancesSought = []
+    for (let x = dist + 1; x < 256; x++) {
+      // Identify all k-buckets farther than the bootnode that are currently empty
+      if (routingTable.valuesOfDistance(x).length === 0) {
+        distancesSought.push(x)
+      }
+    }
+    // Requests nodes in all empty k-buckets farther away than bootnode
+    this.sendFindNodes(enr.nodeId, Uint16Array.from(distancesSought), networkId)
+  }
+
+  /**
    * Sends a Portal Network Wire Protocol PING message to a specified node
    * @param dstId the nodeId of the peer to send a ping to
    * @param payload custom payload to be sent in PING message
    * @param networkId subnetwork ID
    * @returns the PING payload specified by the subnetwork or undefined
    */
-
-  sendPing = async (nodeId: string, networkId: SubNetworkIds) => {
+  public sendPing = async (nodeId: string, networkId: SubNetworkIds) => {
     let dstId
     if (nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
