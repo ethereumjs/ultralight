@@ -5,7 +5,7 @@ There are a collection of scripts in the `cli` package's `scripts` directory to 
 ## Starting the devnet
 
 1. Build all packages -- `npm i`
-2. From `packages/cli`, run the devnet script -- `bash scripts/devnet.sh -n [Number of nodes to start] -l [Amount of packet loss to simuliate (i.e. 1-100)]`
+2. From `packages/cli`, run the devnet script -- `bash scripts/devnet.sh -n [Number of nodes to start] -l [Amount of packet loss to simuliate (i.e. 0-100)]`
 3. Observe logs to confirm nodes are running
 4. Press `Ctrl+c` to shutdown the devnet at any time
 
@@ -37,11 +37,15 @@ The first million blocks from Ethereum mainnet can be acquired [here](https://ga
 
 ## Monitoring the devnet
 
-The devnet script starts each node up with a Prometheus metrics server running at the port number of the RPC + 10000.  The metrics can be scraped by Prometheus by adding the below configuration option to your `prometheus.yml` config file.  Update the `targets` based on how many nodes you have started.  Note that `localhost:5051` points to the proxy and reports how many packets have been sent and how many dropped, assuming you provided a value on packet loss.  
+The devnet script starts each node up with a Prometheus metrics server running at the RPC port number + 10000.  The `seeder` script outputs a file called `targets.json` with a list of targets to the current directory that can be provided to Prometheus for metric scraping.  Add the below to your `prometheus.yml` config file.   Note that `localhost:5051` points to the proxy and reports how many packets have been sent and how many dropped, assuming you provided a value on packet loss.  
 ```yaml
 scrape_configs:
   - job_name: "ultralight_devnet"
 
+    file_sd_configs:
+      - files:
+        - '/path/to/targets.json'
+    
     static_configs:
-      - targets: ["localhost:18546", "localhost:18547"...,"localhost:5051"]
+      - targets: ["localhost:5051"]
 ```
