@@ -40,7 +40,7 @@ export class ContentLookup {
     try {
       const res = await this.client.db.get(this.contentId)
       return res
-    } catch { }
+    } catch {}
     routingTable!.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
