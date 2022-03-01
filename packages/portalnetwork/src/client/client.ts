@@ -283,6 +283,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     distances: Uint16Array,
     networkId: SubNetworkIds
   ) => {
+    this.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances: distances }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDNODES,
@@ -292,6 +293,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${networkId} subnetwork`)
       const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
+        this.metrics?.nodesMessagesReceived.inc()
         this.logger(`Received NODES from ${shortId(dstId)}`)
         const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
         if (decoded) {
@@ -334,6 +336,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (dstId: string, key: Uint8Array, networkId: SubNetworkIds) => {
+    this.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDCONTENT,
@@ -343,6 +346,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(payload), networkId)
     try {
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
+        this.metrics?.contentMessagesReceived.inc()
         this.logger(`Received FOUNDCONTENT from ${shortId(dstId)}`)
         // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
         const decoded = ContentMessageType.deserialize(res.slice(1))
@@ -384,6 +388,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param networkId network ID of subnetwork being used
    */
   public sendOffer = async (dstId: string, contentKeys: Uint8Array[], networkId: SubNetworkIds) => {
+    this.metrics?.offerMessagesSent.inc()
     const offerMsg: OfferMessage = {
       contentKeys,
     }
@@ -397,6 +402,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       try {
         const decoded = PortalWireMessageType.deserialize(res)
         if (decoded.selector === MessageCodes.ACCEPT) {
+          this.metrics?.acceptMessagesReceived.inc()
           this.logger(`Received ACCEPT message from ${shortId(dstId)}`)
           this.logger(decoded.value)
           const msg = decoded.value as AcceptMessage
@@ -548,18 +554,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
+        this.metrics?.findNodesMessagesReceived.inc()
         this.handleFindNodes(srcId, message)
         break
       case MessageCodes.NODES:
         this.logger(`NODES message not expected in TALKREQ`)
         break
       case MessageCodes.FINDCONTENT:
+        this.metrics?.findContentMessagesReceived.inc()
         this.handleFindContent(srcId, message)
         break
       case MessageCodes.CONTENT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
         break
       case MessageCodes.OFFER:
+        this.metrics?.offerMessagesReceived.inc()
         this.handleOffer(srcId, message)
         break
       case MessageCodes.ACCEPT:
@@ -633,6 +642,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         value: nodesPayload,
       })
       this.client.sendTalkResp(srcId, message.id, encodedPayload)
+      this.metrics?.nodesMessagesSent.inc()
     } else {
       this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
     }
@@ -674,6 +684,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     message: ITalkReqMessage,
     desiredContentKeys: boolean[]
   ) => {
+    this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
     const connectionId = await this.uTP.awaitConnectionRequest(
       srcId,
@@ -693,6 +704,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private handleFindContent = async (srcId: string, message: ITalkReqMessage) => {
+    this.metrics?.contentMessagesSent.inc()
     const decoded = PortalWireMessageType.deserialize(message.request)
     this.logger(`Received FINDCONTENT request from ${shortId(srcId)}`)
     this.logger(decoded)

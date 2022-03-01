@@ -86,6 +86,54 @@ const setupMetrics = () => {
       name: 'ultralight_failed_content_lookups',
       help: 'how many content lookups failed to return content',
     }),
+    offerMessagesSent: new PromClient.Counter({
+      name: 'ultralight_offer_messages_sent',
+      help: 'how many offer messages have been sent',
+    }),
+    offerMessagesReceived: new PromClient.Counter({
+      name: 'ultralight_offer_messages_received',
+      help: 'how many offer messages have been received',
+    }),
+    acceptMessagesSent: new PromClient.Counter({
+      name: 'ultralight_accept_messages_sent',
+      help: 'how many accept messages have been sent',
+    }),
+    acceptMessagesReceived: new PromClient.Counter({
+      name: 'ultralight_accept_messages_received',
+      help: 'how many accept messages have been received',
+    }),
+    findContentMessagesSent: new PromClient.Counter({
+      name: 'ultralight_findContent_messages_sent',
+      help: 'how many findContent messages have been sent',
+    }),
+    findContentMessagesReceived: new PromClient.Counter({
+      name: 'ultralight_findContent_messages_received',
+      help: 'how many findContent messages have been received',
+    }),
+    contentMessagesSent: new PromClient.Counter({
+      name: 'ultralight_content_messages_sent',
+      help: 'how many content messages have been sent',
+    }),
+    contentMessagesReceived: new PromClient.Counter({
+      name: 'ultralight_content_messages_received',
+      help: 'how many content messages have been received',
+    }),
+    findNodesMessagesSent: new PromClient.Counter({
+      name: 'ultralight_findNodes_messages_sent',
+      help: 'how many findNodes messages have been sent',
+    }),
+    findNodesMessagesReceived: new PromClient.Counter({
+      name: 'ultralight_findNodes_messages_received',
+      help: 'how many findNodes messages have been received',
+    }),
+    nodesMessagesSent: new PromClient.Counter({
+      name: 'ultralight_nodes_messages_sent',
+      help: 'how many nodes messages have been sent',
+    }),
+    nodesMessagesReceived: new PromClient.Counter({
+      name: 'ultralight_nodes_messages_received',
+      help: 'how many nodes messages have been received',
+    }),
   }
 }
 
