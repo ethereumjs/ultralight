@@ -10,7 +10,7 @@ import {
   Menu,
   MenuItemOption,
 } from '@chakra-ui/react'
-import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { PortalNetwork, SubNetworkIds, NodeLookup } from 'portalnetwork'
 import { generateRandomNodeIdAtDistance } from 'portalnetwork/dist/util'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork/dist/historySubnetwork/types'
 import React, { useEffect, useState } from 'react'
@@ -77,7 +77,8 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
 
   const handleFindRandom = () => {
     const lookupNode = generateRandomNodeIdAtDistance(portal.client.enr.nodeId, 240)
-    portal.nodeLookup(lookupNode, SubNetworkIds.HistoryNetwork)
+    const nodeLookup = new NodeLookup(portal, lookupNode, SubNetworkIds.HistoryNetwork)
+    nodeLookup.startLookup()
   }
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, network)
