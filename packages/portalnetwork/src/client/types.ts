@@ -29,4 +29,16 @@ export interface PortalNetworkMetrics {
   knownDiscv5Nodes: IGauge
   successfulContentLookups: ICounter
   failedContentLookups: ICounter
+  offerMessagesSent: ICounter
+  offerMessagesReceived: ICounter
+  acceptMessagesSent: ICounter
+  acceptMessagesReceived: ICounter
+  findContentMessagesSent: ICounter
+  findContentMessagesReceived: ICounter
+  contentMessagesSent: ICounter
+  contentMessagesReceived: ICounter
+  findNodesMessagesSent: ICounter
+  findNodesMessagesReceived: ICounter
+  nodesMessagesSent: ICounter
+  nodesMessagesReceived: ICounter
 }
