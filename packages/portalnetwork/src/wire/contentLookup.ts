@@ -7,12 +7,13 @@ import { serializedContentKeyToContentId, shortId } from '../util'
 type lookupPeer = {
   nodeId: NodeId
   distance: bigint
+  hasContent?: boolean
 }
 
 export class ContentLookup {
   private client: PortalNetwork
   private lookupPeers: lookupPeer[]
-  private contacted: NodeId[]
+  private contacted: lookupPeer[]
   private contentId: string
   private contentKey: Uint8Array
   private networkId: SubNetworkIds
@@ -54,10 +55,13 @@ export class ContentLookup {
         return
       }
       const nearestPeer = this.lookupPeers.shift()
-      this.contacted.push(nearestPeer!.nodeId)
+      if (!nearestPeer) {
+        return
+      }
+
       this.log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.client.sendFindContent(
-        nearestPeer!.nodeId,
+        nearestPeer.nodeId,
         this.contentKey,
         this.networkId
       )
@@ -70,12 +74,14 @@ export class ContentLookup {
           // findContent returned uTP connection ID
           this.log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
           finished = true
+          nearestPeer.hasContent = true
           return res.value
         }
         case 1: {
           // findContent returned data sought
           this.log(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
           finished = true
+          nearestPeer.hasContent = true
           this.client.metrics?.successfulContentLookups.inc()
           return res.value
         }
@@ -109,6 +115,12 @@ export class ContentLookup {
           })
         }
       }
+      this.contacted.push(nearestPeer!)
     }
+    this.contacted.forEach((peer) => {
+      if (!peer.hasContent) {
+        this.client.sendOffer(peer.nodeId, [this.contentKey], this.networkId)
+      }
+    })
   }
 }

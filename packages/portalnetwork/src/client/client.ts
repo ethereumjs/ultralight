@@ -1,12 +1,4 @@
-import {
-  Discv5,
-  distance,
-  ENR,
-  EntryStatus,
-  IDiscv5CreateOptions,
-  log2Distance,
-  NodeId,
-} from '@chainsafe/discv5'
+import { Discv5, distance, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/lib/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
@@ -120,8 +112,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.client.on('sessionEnded', (srcId) => {
       // Remove node from subnetwork routing tables when a session is ended by discv5
       // (i.e. failed a liveness check)
-      this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.StateNetwork)
-      this.updateSubnetworkRoutingTable(srcId, SubNetworkIds.HistoryNetwork)
+      this.routingTables.forEach((table, networkId) => {
+        if (table.size > 0 && table.getValue(srcId)) {
+          this.updateSubnetworkRoutingTable(srcId, networkId)
+        }
+      })
     })
     this.uTP = new UtpProtocol(this)
     this.db = db ?? level()
@@ -205,7 +200,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   /**
-   * Adds a bootnode which triggers a `findNodes` request to the Bootnode for nodes farther away
+   * Adds a bootnode which triggers a `findNodes` request to the Bootnode tp popute the routing table
    * @param bootnode `string` encoded ENR of a bootnode
    * @param networkId network ID of the subnetwork routing table to add the bootnode to
    */
@@ -215,16 +210,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (!routingTable) {
       throw new Error('invalid subnetwork ID provided')
     }
+    // TODO: Move this insertion to `updateNetworkRoutingTable`
     routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-    const dist = log2Distance(enr.nodeId, this.client.enr.nodeId)
+    this.emit('NodeAdded', enr.nodeId, networkId)
     const distancesSought = []
-    for (let x = dist + 1; x < 256; x++) {
-      // Identify all k-buckets farther than the bootnode that are currently empty
+    for (let x = 239; x < 256; x++) {
+      // Ask for nodes in all log2distances 239 - 256
       if (routingTable.valuesOfDistance(x).length === 0) {
         distancesSought.push(x)
       }
     }
-    // Requests nodes in all empty k-buckets farther away than bootnode
+    // Requests nodes in all empty k-buckets
     this.sendFindNodes(enr.nodeId, Uint16Array.from(distancesSought), networkId)
   }
 
@@ -239,6 +235,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     let dstId
     if (nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
+      // TODO: Move this to `updateNetworkRoutingTable`
       this.routingTables.get(networkId)!.insertOrUpdate(enr, EntryStatus.Connected)
       dstId = enr.nodeId
     } else {
@@ -303,6 +300,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
             if (!routingTable!.getValue(decodedEnr.nodeId)) {
+              // TODO: Move this to `updateNetworkRoutingTable`
               routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               this.sendPing(decodedEnr.nodeId, networkId)
             }
@@ -527,9 +525,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     const srcId = src.nodeId
     switch (toHexString(message.protocol)) {
-      case SubNetworkIds.StateNetwork:
-        this.logger(`Received State Subnetwork request`)
-        break
+      // TODO: Add handling for other subnetworks as functionality is added
       case SubNetworkIds.HistoryNetwork:
         this.logger(`Received History Subnetwork request`)
         break
@@ -817,6 +813,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     networkId: SubNetworkIds,
     customPayload?: any
   ) => {
+    // TODO: Adjust this method to accept a NodeId or an ENR so we're not tied to the discv5 routing table
     const enr = this.client.getKadValue(srcId)
     if (!enr && customPayload) {
       this.logger(
@@ -830,18 +827,26 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (!customPayload) {
       routingTable!.removeById(srcId)
       routingTable!.removeFromRadiusMap(srcId)
-      this.logger(`removed ${srcId} from State Network Routing Table`)
-      this.emit('NodeRemoved', srcId, SubNetworkIds.StateNetwork)
+      this.logger(
+        `removed ${srcId} from ${
+          Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
+        } Routing Table`
+      )
+      this.emit('NodeRemoved', srcId, networkId)
       return
     }
     if (!routingTable!.getValue(srcId)) {
-      this.logger(`adding ${srcId} to stateNetwork routing table`)
+      this.logger(
+        `adding ${srcId} to ${
+          Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
+        } routing table`
+      )
       routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
-      const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
-      routingTable!.updateRadius(srcId, decodedPayload.radius)
-      this.emit('NodeAdded', srcId, SubNetworkIds.StateNetwork)
-      return
     }
+    const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+    routingTable!.updateRadius(srcId, decodedPayload.radius)
+    this.emit('NodeAdded', srcId, networkId)
+    return
   }
 
   /**
