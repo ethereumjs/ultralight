@@ -32,7 +32,7 @@ import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import {
   addRLPSerializedBlock,
   getHistoryNetworkContentId,
@@ -93,6 +93,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.client = Discv5.create(config)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.on('Stream', (id, content, contentType) => {
+      this.handleStreamedContent(id, content, contentType)
     })
     this.nodeRadius = radius
     this.routingTables = new Map()
@@ -351,7 +352,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           case 0: {
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             this.logger(`received uTP Connection ID ${id}`)
-            this.sendUtpStreamRequest(dstId, id)
+            const contentType = HistoryNetworkContentKeyUnionType.deserialize(key)
+              .selector as HistoryNetworkContentTypes
+            await this.uTP.handleFoundContent(dstId, id, networkId, contentType)
             break
           }
           case 1: {
@@ -408,7 +411,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           const requested: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
-          await this.uTP.initiateUtpFromAccept(dstId, id, requested, networkId)
+          const contentTypes: HistoryNetworkContentTypes[] = requested.map((contentTypeUnion) => {
+            return HistoryNetworkContentKeyUnionType.deserialize(contentTypeUnion)
+              .selector as HistoryNetworkContentTypes
+          })
+          await this.uTP.handleAccept(dstId, id, requested, contentTypes, networkId)
           return msg.contentKeys
         }
       } catch (err: any) {
@@ -417,10 +424,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  public sendUtpStreamRequest = async (dstId: string, id: number) => {
-    // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateConnectionRequest(dstId, id, SubNetworkIds.HistoryNetwork)
-  }
+  // public sendUtpStreamRequest = async (dstId: string, id: number) => {
+  //   // Initiate a uTP stream request with a SYN packet
+  //   await this.uTP.initiateConnectionRequest(dstId, id, SubNetworkIds.HistoryNetwork)
+  // }
   public UtpStreamTest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
     await this.uTP.initiateUtpTest(dstId, id, SubNetworkIds.HistoryNetwork)
@@ -586,13 +593,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) {
     this.logger(`received all content for ${rcvId}`)
     if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
-    this.addContentToHistory(
-      1,
-      HistoryNetworkContentTypes.BlockHeader,
-      toHexString(header.hash()),
-      content
-    )
+      const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
+      this.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        toHexString(header.hash()),
+        content
+      )
     } else if (contentType === HistoryNetworkContentTypes.BlockBody) {
       const blockBody = Block.fromRLPSerializedBlock(Buffer.from(content))
       this.addContentToHistory(
@@ -677,7 +684,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             }
           }
           if (offerAccepted) {
-            this.sendAccept(srcId, message, contentIds)
+            const contentTypes = msg.contentKeys.map((key) => {
+              return HistoryNetworkContentKeyUnionType.deserialize(key)
+                .selector as HistoryNetworkContentTypes
+            })
+            this.sendAccept(srcId, message, contentIds, contentTypes)
           }
         }
       } catch {
@@ -691,17 +702,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private sendAccept = async (
     srcId: string,
     message: ITalkReqMessage,
-    desiredContentKeys: boolean[]
+    desiredContentKeys: boolean[],
+    desiredContentTypes: HistoryNetworkContentTypes[]
   ) => {
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
-    const connectionId = await this.uTP.awaitConnectionRequest(
-      srcId,
-      id,
-      toHexString(message.protocol) as SubNetworkIds
-    )
+    const subNetworkId = toHexString(message.protocol) as SubNetworkIds
+    await this.uTP.acceptOffer(srcId, id, desiredContentTypes, subNetworkId)
+
     const payload: AcceptMessage = {
-      connectionId: new Uint8Array(2).fill(connectionId),
+      connectionId: new Uint8Array(2).fill(id),
       contentKeys: desiredContentKeys,
     }
     const encodedPayload = PortalWireMessageType.serialize({
