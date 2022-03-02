@@ -21,10 +21,12 @@ import { SubNetworkIds } from '../..'
 import { Debugger } from 'debug'
 import Writer from '../Protocol/write/Writer'
 import Reader from '../Protocol/read/Reader'
+import { HistoryNetworkContentTypes } from '../../../historySubnetwork/types'
 
 export class _UTPSocket extends EventEmitter {
   utp: UtpProtocol
   content: Uint8Array
+  contentType: HistoryNetworkContentTypes
   remoteAddress: string
   seqNr: number
   client: Discv5
@@ -50,7 +52,13 @@ export class _UTPSocket extends EventEmitter {
   ackNrs: number[]
   logger: Debugger
   subnetwork: SubNetworkIds
-  constructor(utp: UtpProtocol, remoteAddress: string, type: string, networkId: SubNetworkIds) {
+  constructor(
+    utp: UtpProtocol,
+    remoteAddress: string,
+    type: string,
+    networkId: SubNetworkIds,
+    contentType: HistoryNetworkContentTypes
+  ) {
     super()
     this.utp = utp
     this.client = utp.client
@@ -70,6 +78,7 @@ export class _UTPSocket extends EventEmitter {
     this.sendRate = 0
     this.CCONTROL_TARGET = DELAY_TARGET
     this.content = Uint8Array.from([])
+    this.contentType = contentType
     this.readerContent = new Uint8Array()
     this.reading = type === 'reading'
     this.writing = type === 'writing'
