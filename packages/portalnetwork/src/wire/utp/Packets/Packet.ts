@@ -1,10 +1,7 @@
 import { protocolVersion, PacketType, IPacketOptions } from './PacketTyping'
 import { PacketHeader } from './PacketHeader'
 import { SelectiveAckHeader, Uint16, Uint32 } from '.'
-import { debug } from 'debug'
 import { Bytes32TimeStamp } from '..'
-
-const log = debug('<uTP>')
 
 export function packetToBuffer(packet: Packet): Buffer {
   const buffer = Buffer.alloc(packet.header.length)
@@ -67,7 +64,6 @@ export function createSynPacket(rcvConnectionId: Uint16, seqNr: Uint16, ackNr?: 
     seqNr: seqNr,
     ackNr: ackNr ?? 0,
   })
-  log('Creating ST_SYN Packet...')
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array() })
   return packet
 }
@@ -87,7 +83,6 @@ export function createAckPacket(
     timestampDiff: rtt_var,
   })
 
-  log('Creating ST_STATE Packet...')
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array(0) })
   return packet
 }
@@ -110,7 +105,6 @@ export function createSelectiveAckPacket(
     new Uint8Array(1)
   )
 
-  log('Creating ST_STATE Packet...')
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array(0) })
   return packet
 }
@@ -134,7 +128,6 @@ export function createDataPacket(
     ackNr: ackNr,
   })
   const packet: Packet = new Packet({ header: h, payload: payload })
-  log('Creating ST_DATA Packet...')
   return packet
 }
 export function createResetPacket(seqNr: Uint16, sndConnectionId: Uint16, ackNr: Uint16): Packet {
@@ -149,7 +142,6 @@ export function createResetPacket(seqNr: Uint16, sndConnectionId: Uint16, ackNr:
     seqNr: seqNr,
     ackNr: ackNr,
   })
-  log('Creating ST_RESET Packet...')
   return new Packet({ header: h, payload: new Uint8Array() })
 }
 export function createFinPacket(
@@ -169,7 +161,6 @@ export function createFinPacket(
     seqNr: seqNr,
     ackNr: ackNr,
   })
-  log('Creating ST_FIN Packet...')
   return new Packet({ header: h, payload: new Uint8Array() })
 }
 export function bufferToPacket(buffer: Buffer): Packet {
