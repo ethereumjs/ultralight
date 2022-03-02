@@ -29,8 +29,9 @@ export class _UTPSocket extends EventEmitter {
   contentType: HistoryNetworkContentTypes
   remoteAddress: string
   seqNr: number
-  client: Discv5
   ackNr: number
+  finNr: number | undefined
+  client: Discv5
   sndConnectionId: number
   rcvConnectionId: number
   max_window: number
@@ -50,6 +51,7 @@ export class _UTPSocket extends EventEmitter {
   writing: boolean
   seqNrs: number[]
   ackNrs: number[]
+  nextAck: number | undefined
   logger: Debugger
   subnetwork: SubNetworkIds
   constructor(
@@ -109,116 +111,6 @@ export class _UTPSocket extends EventEmitter {
     return msg
   }
 
-  async handleIncomingConnectionRequest(packet: Packet): Promise<void> {
-    this.setConnectionIdsFromPacket(packet)
-    this.ackNr = packet.header.seqNr
-    this.logger(`Connection State: SynRecv`)
-    this.state = ConnectionState.SynRecv
-    await this.sendSynAckPacket()
-  }
-
-  async handleSynAckPacket(packet: Packet): Promise<void> {
-    this.ackNr = packet.header.seqNr - 1
-    this.logger(`Connection State: Connected`)
-    this.state = ConnectionState.Connected
-    if (this.reading) {
-      this.sendAckPacket().then(() => {
-        this.logger(`Reader listening for DATA packets...`)
-      })
-    } else if (this.writing) {
-      this.write(this.content)
-    }
-  }
-
-  async handleDataPacket(packet: Packet): Promise<void> {
-    this.updateSocketFromPacketHeader(packet)
-    // Naive Solution -- Writes packet payload to content array (regardless of packet order)
-    this.content = Uint8Array.from([...(this.content ?? []), ...packet.payload])
-    this.logger(`Connection State: Connected`)
-    this.state = ConnectionState.Connected
-    const expected = await this.reader.addPacket(packet)
-    if (expected) {
-      this.ackNrs.push(this.seqNr)
-      await this.sendAckPacket()
-    } else {
-      await this.sendSelectiveAckPacket(packet)
-      this.logger(`Packet Arrived Out of Order.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
-      this.logger(`Sending Selective Ack`)
-    }
-  }
-
-  async handleStatePacket(packet: Packet): Promise<void> {
-    await this.updateSocketFromPacketHeader(packet)
-    if (this.state === ConnectionState.SynSent && packet.header.ackNr === 1) {
-      this.state = ConnectionState.Connected
-      this.handleSynAckPacket(packet)
-    } else {
-      if (packet.header.seqNr == 2) {
-        this.content
-          ? this.write(this.content).then(() => this.logger(`Finishing uTP data stream...`))
-          : await this.sendFinPacket()
-      } else if (packet.header.ackNr === this.seqNr) {
-        this.logger(`FIN acked`)
-        return
-      } else {
-        this.ackNrs.push(packet.header.ackNr)
-        this.logger(`expecting ${this.seqNrs}.  got ${this.ackNrs}`)
-        if (this.seqNrs.every((val, index) => val === this.ackNrs[index])) {
-          this.logger(`all data packets acked.  Closing Stream.`)
-          this.sendFinPacket()
-        }
-      }
-    }
-  }
-
-  async handleFinPacket(packet: Packet): Promise<void> {
-    this.logger(`Connection State: GotFin`)
-    this.state = ConnectionState.GotFin
-    this.updateSocketFromPacketHeader(packet)
-    await this.sendAckPacket()
-    if (this.seqNrs.every((val, index) => val === this.ackNrs[index])) {
-      this.logger(`Waiting for 0 in-flight packets.`)
-      this.readerContent = this.reader.run() ?? Uint8Array.from([])
-      this.logger(`Packet payloads compiled`)
-    }
-  }
-
-  async sendSelectiveAck(__packet: Packet) {
-    const _packet = createAckPacket(
-      this.seqNr++,
-      this.sndConnectionId,
-      this.ackNr,
-      this.rtt_var,
-      this.cur_window
-    )
-    await this.sendPacket(_packet, PacketType.ST_STATE)
-  }
-
-  async sendSelectiveAckPacket(_packet: Packet) {}
-
-  async sendAckPacket(): Promise<void> {
-    const packet = createAckPacket(
-      this.seqNr++,
-      this.sndConnectionId,
-      this.ackNr,
-      this.rtt_var,
-      this.cur_window
-    )
-    await this.sendPacket(packet, PacketType.ST_STATE)
-  }
-  async sendSynAckPacket(): Promise<void> {
-    const seq = randUint16()
-    this.seqNr = seq
-    const packet = createAckPacket(
-      this.seqNr++,
-      this.sndConnectionId,
-      this.ackNr,
-      this.rtt_var,
-      this.cur_window
-    )
-    await this.sendPacket(packet, PacketType.ST_STATE)
-  }
-
   async sendSynPacket(connectionId: number): Promise<void> {
     // Initiates a uTP connection from a ConnectionId
     this.rcvConnectionId = connectionId
@@ -232,14 +124,76 @@ export class _UTPSocket extends EventEmitter {
     await this.sendPacket(packet, PacketType.ST_SYN)
   }
 
-  async sendFinPacket(): Promise<void> {
-    const packet = createFinPacket(this.sndConnectionId, this.seqNr, this.ackNr, this.cur_window)
-    await this.sendPacket(packet, PacketType.ST_FIN)
+  async handleSynPacket(packet: Packet): Promise<void> {
+    // this.setConnectionIdsFromPacket(packet)
+    this.ackNr = packet.header.seqNr
+    this.nextAck = this.ackNr + 1
+    this.logger(`Connection State: SynRecv`)
+    this.state = ConnectionState.SynRecv
+    await this.sendSynAckPacket()
   }
 
-  async sendResetPacket() {
-    const packet = createResetPacket(this.seqNr++, this.sndConnectionId, this.ackNr)
-    await this.sendPacket(packet, PacketType.ST_RESET)
+  async sendSynAckPacket(): Promise<void> {
+    this.seqNr = randUint16()
+    const packet = createAckPacket(
+      this.seqNr++,
+      this.sndConnectionId,
+      this.ackNr,
+      this.rtt_var,
+      this.cur_window
+    )
+    await this.sendPacket(packet, PacketType.ST_STATE)
+  }
+
+  async handleSynAckPacket(packet: Packet): Promise<void> {
+    this.ackNr = packet.header.seqNr
+    this.logger(`Connection State: Connected`)
+    this.state = ConnectionState.Connected
+    if (this.reading) {
+      this.sendAckPacket().then(() => {
+        this.logger(`Reader listening for DATA packets...`)
+      })
+    } else if (this.writing) {
+      this.write(this.content)
+    }
+  }
+  async sendAckPacket(): Promise<void> {
+    const packet = createAckPacket(
+      this.seqNr++,
+      this.sndConnectionId,
+      this.ackNr,
+      this.rtt_var,
+      this.cur_window
+    )
+    this.logger(
+      `Creating ST_STATE packet seq: ${packet.header.seqNr}, ackNr: ${packet.header.ackNr}`
+    )
+    await this.sendPacket(packet, PacketType.ST_STATE)
+  }
+
+  async handleStatePacket(packet: Packet): Promise<void> {
+    await this.updateSocketFromPacketHeader(packet)
+    if (this.state === ConnectionState.SynSent && packet.header.ackNr === 1) {
+      this.logger(`Connection State: Connected`)
+      this.state = ConnectionState.Connected
+      this.handleSynAckPacket(packet)
+    } else {
+      if (packet.header.seqNr == 2) {
+        this.content
+          ? this.write(this.content).then(() => this.logger(`Finishing uTP data stream...`))
+          : await this.sendFinPacket()
+      } else if (packet.header.ackNr === this.finNr) {
+        this.logger(`FIN acked`)
+        return
+      } else {
+        this.ackNrs.push(packet.header.ackNr)
+        this.logger(`expecting ${this.nextAck}.  got ${packet.header.ackNr}`)
+        if (this.seqNrs.every((val, index) => val === this.ackNrs[index])) {
+          this.logger(`all data packets acked.  Closing Stream.`)
+          this.sendFinPacket()
+        }
+      }
+    }
   }
 
   async sendDataPacket(payload: Uint8Array): Promise<Packet> {
@@ -255,6 +209,59 @@ export class _UTPSocket extends EventEmitter {
     this.seqNrs.push(packet.header.seqNr)
     await this.sendPacket(packet, PacketType.ST_DATA)
     return packet
+  }
+
+  async handleDataPacket(packet: Packet): Promise<void> {
+    this.updateSocketFromPacketHeader(packet)
+    const expected = await this.reader.addPacket(packet)
+    if (expected) {
+      this.ackNrs.push(this.seqNr)
+      await this.sendAckPacket()
+    } else {
+      this.ackNrs.push(this.seqNr)
+      await this.sendSelectiveAck(packet)
+      this.logger(`Packet Arrived Out of Order.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
+      this.logger(`Sending Selective Ack`)
+    }
+  }
+
+  async sendFinPacket(): Promise<void> {
+    const packet = createFinPacket(this.sndConnectionId, this.seqNr, this.ackNr, this.cur_window)
+    this.finNr = packet.header.seqNr
+    await this.sendPacket(packet, PacketType.ST_FIN)
+  }
+
+  async handleFinPacket(packet: Packet): Promise<void> {
+    this.logger(`Connection State: GotFin`)
+    this.state = ConnectionState.GotFin
+    this.updateSocketFromPacketHeader(packet)
+    const finNr = packet.header.seqNr
+    let finished = false
+    while (!finished) {
+      this.logger(`Waiting for ${finNr - this.ackNrs.length} in-flight packets.`)
+      finished = this.seqNrs.every((val, index) => val === this.ackNrs[index])
+    }
+    this.logger(`Received ${this.ackNrs.length} Packets. Expected ${finNr}`)
+    this.logger(`Waiting for 0 in-flight packets.`)
+    this.readerContent = this.reader.run() ?? Uint8Array.from([])
+    this.logger(`Packet payloads compiled`)
+    await this.sendAckPacket()
+  }
+
+  async sendSelectiveAck(__packet: Packet) {
+    const _packet = createAckPacket(
+      this.seqNr++,
+      this.sndConnectionId,
+      this.ackNr,
+      this.rtt_var,
+      this.cur_window
+    )
+    await this.sendPacket(_packet, PacketType.ST_STATE)
+  }
+
+  async sendResetPacket() {
+    const packet = createResetPacket(this.seqNr++, this.sndConnectionId, this.ackNr)
+    await this.sendPacket(packet, PacketType.ST_RESET)
   }
 
   startDataTransfer(data: Uint8Array) {

@@ -134,11 +134,9 @@ export class UtpProtocol {
     networkId: SubNetworkIds,
     contentType: HistoryNetworkContentTypes
   ): Promise<void> {
-    this.log(
-      `Preparing to receive FOUNDCONTENT stream.  Sending uTP ConnectionId: ${connectionId} Awaiting uTP stream request from ${remoteAddr}...`
-    )
     const socket = new _UTPSocket(this, remoteAddr, 'reading', networkId, contentType)
     const socketKey = this.getSocketKey(remoteAddr, connectionId)
+    this.log(`Opening "Socket: ${socketKey.slice(0, 5)}..." to receive FOUNDCONTENT stream.`)
     this.sockets[socketKey] = socket
     await this.sockets[socketKey].sendSynPacket(connectionId)
   }
@@ -169,7 +167,7 @@ export class UtpProtocol {
   async handleSynPacket(packet: Packet, remoteAddr: string, _msgId: bigint): Promise<void> {
     const socketKey = this.getSocketKey(remoteAddr, packet.header.connectionId)
     if (this.sockets[socketKey]) {
-      await this.sockets[socketKey].handleIncomingConnectionRequest(packet)
+      await this.sockets[socketKey].handleSynPacket(packet)
       this.sockets[socketKey].logger('SYN Packet Received')
     } else {
       this.log(`Why did I get a SYN packet from ${remoteAddr}??`)
