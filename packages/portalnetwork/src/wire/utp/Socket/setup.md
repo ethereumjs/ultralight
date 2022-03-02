@@ -19,7 +19,7 @@
 - B is **Writer**
 
 - A - sends FindContent
-- B - sends FOUNDCONTENT and connection-ID 
+- B - sends FOUNDCONTENT and connection-ID
   - Opens a WRITING socket using connectionID
 - A - Opens a READING socket using 'connection-ID'
   - sends SYN with seqNr: 1, ackNr: RANDA
@@ -44,8 +44,8 @@
 - A - Triggers uTP protocol
 
   - UTP - For each piece of -content
-    - Opens a WRITING socket using connectionId
-    - A sends SYN packet with seqNr: 1, ackNr: RANDA
+    - A Opens a WRITING socket using connectionId
+      - Sends SYN packet with seqNr: 1, ackNr: RANDA
     - B sends SYN-ACK packet with seqNr: RANDB, ackNr: 1
     - A sends DATA packet with seqNr: 2, ackNr: RANDB
     - B sends ACK packet with seqNr: RANDB+1, ackNr: 2
