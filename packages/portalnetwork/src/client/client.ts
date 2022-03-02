@@ -264,6 +264,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
       this.updateSubnetworkRoutingTable(dstId, networkId)
+      return undefined
     }
   }
 
