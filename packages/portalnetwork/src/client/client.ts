@@ -359,15 +359,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             break
           }
           case 1: {
-            this.logger(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`)
+            this.logger(`received content`)
+            this.logger(decoded.value)
             const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
             // Store content in local DB
-            await this.addContentToHistory(
-              decodedKey.value.chainId,
-              decodedKey.selector,
-              toHexString(decodedKey.value.blockHash),
-              decoded.value as Uint8Array
-            )
+            try {
+              this.logger(`Adding content to DB`)
+              this.addContentToHistory(
+                decodedKey.value.chainId,
+                decodedKey.selector,
+                toHexString(Buffer.from(decodedKey.value.blockHash)),
+                decoded.value as Uint8Array
+              )
+            } catch {
+              this.logger('Error adding content to DB')
+            }
             break
           }
           case 2: {
@@ -425,10 +431,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  // public sendUtpStreamRequest = async (dstId: string, id: number) => {
-  //   // Initiate a uTP stream request with a SYN packet
-  //   await this.uTP.initiateConnectionRequest(dstId, id, SubNetworkIds.HistoryNetwork)
-  // }
   public UtpStreamTest = async (dstId: string, id: number) => {
     // Initiate a uTP stream request with a SYN packet
     await this.uTP.initiateUtpTest(dstId, id, SubNetworkIds.HistoryNetwork)
@@ -448,10 +450,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     blockHash: string,
     value: Uint8Array
   ) => {
+    const contentId = getHistoryNetworkContentId(chainId, blockHash, contentType)
+
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(toHexString(value))))
+          BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          this.db.put(contentId, toHexString(value), (err: any) => {
+            if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+          })
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return
@@ -460,21 +467,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
       case HistoryNetworkContentTypes.BlockBody: {
         try {
-          const headerContentId = getHistoryNetworkContentId(
-            1,
-            blockHash,
-            HistoryNetworkContentTypes.BlockHeader
-          )
-          let serializedHeader
           try {
-            serializedHeader = await this.db.get(headerContentId)
+            const headerContentId = getHistoryNetworkContentId(
+              1,
+              blockHash,
+              HistoryNetworkContentTypes.BlockHeader
+            )
+            const serializedHeader = await this.db.get(headerContentId)
+            // Verify we can construct a valid block from the header and body provided
+            reassembleBlock(fromHexString(serializedHeader), value)
+            this.db.put(contentId, toHexString(value), (err: any) => {
+              if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+            })
           } catch {
+            this.logger(`Will not store block body where we don't have the header.`)
             // Don't store block body where we don't have the header since we can't validate the data
             // TODO: Retrieve header from network if not available locally
             return
           }
-          // Verify we can construct a valid block from the header and body provided
-          reassembleBlock(fromHexString(serializedHeader), value)
         } catch (err: any) {
           this.logger(`Invalid value provided for block body: ${err.toString()}`)
           return
@@ -486,10 +496,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       default:
         throw new Error('unknown data type provided')
     }
-    const key = getHistoryNetworkContentId(chainId, blockHash, contentType)
-    await this.db.put(key, toHexString(value), (err: any) => {
-      if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
-    })
+    // await this.db.put(key, toHexString(value), (err: any) => {
+    //   if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+    // })
     this.emit('ContentAdded', blockHash, contentType, toHexString(value))
     this.logger(
       `added ${
@@ -502,14 +511,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= distance from the content)
     // TODO: Make # nodes content is offered to configurable based on further discussion
     const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
-    const offerENRs = routingTable!.nearest(key, 1)
+    const offerENRs = routingTable!.nearest(contentId, 1)
     if (offerENRs.length > 0) {
       const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
         value: { chainId: chainId, blockHash: fromHexString(blockHash) },
       })
       offerENRs.forEach((enr) => {
-        if (distance(enr.nodeId, key) < routingTable!.getRadius(enr.nodeId)!) {
+        if (distance(enr.nodeId, contentId) < routingTable!.getRadius(enr.nodeId)!) {
           this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
         }
       })
@@ -584,7 +593,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     const srcId = src.nodeId
-    this.logger(`TALKRESPONSE message received from ${srcId}, ${message.response.toString()}`)
+    this.logger(`TALKRESPONSE message received from ${srcId}`)
   }
 
   private handleStreamedContent(
@@ -782,6 +791,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           `...`
       )
       const payload = ContentMessageType.serialize({ selector: 1, value: value })
+      this.logger(`Sending requested content to ${srcId}`)
+      this.logger(Uint8Array.from(value))
       this.client.sendTalkResp(
         srcId,
         message.id,
@@ -794,13 +805,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           value.slice(0, 10) +
           `...`
       )
-      this.uTP.contents[srcId] = value
       this.logger(`Generating Random Connection Id...`)
       const _id = randUint16()
+      await this.uTP.sendFoundContent(srcId, _id, value, 1, SubNetworkIds.HistoryNetwork)
       const idBuffer = Buffer.alloc(2)
       idBuffer.writeUInt16BE(_id, 0)
       const id = Uint8Array.from(idBuffer)
-      this.logger(`Sending FOUND_CONTENT message with CONNECTION ID: ${_id}`)
+      this.logger(
+        `Sending FOUND_CONTENT message with CONNECTION ID: ${_id}, waiting for uTP SYN Packet`
+      )
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendTalkResp(
         srcId,
