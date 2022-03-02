@@ -92,8 +92,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     super()
     this.client = Discv5.create(config)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
-    this.on('Stream', (id, content) => {
-      this.handleStreamedContent(id, content)
+    this.on('Stream', (id, content, contentType) => {
     })
     this.nodeRadius = radius
     this.routingTables = new Map()
@@ -580,8 +579,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(`TALKRESPONSE message received from ${srcId}, ${message.response.toString()}`)
   }
 
-  private handleStreamedContent(rcvId: number, content: Uint8Array) {
+  private handleStreamedContent(
+    rcvId: number,
+    content: Uint8Array,
+    contentType: HistoryNetworkContentTypes
+  ) {
     this.logger(`received all content for ${rcvId}`)
+    if (contentType === HistoryNetworkContentTypes.BlockHeader) {
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
     this.addContentToHistory(
       1,
@@ -589,6 +593,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       toHexString(header.hash()),
       content
     )
+    } else if (contentType === HistoryNetworkContentTypes.BlockBody) {
+      const blockBody = Block.fromRLPSerializedBlock(Buffer.from(content))
+      this.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockBody,
+        toHexString(blockBody.hash()),
+        content
+      )
+    }
   }
 
   private handlePing = (srcId: string, message: ITalkReqMessage) => {
