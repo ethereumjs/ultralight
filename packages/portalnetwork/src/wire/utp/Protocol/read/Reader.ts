@@ -43,7 +43,12 @@ export default class Reader {
     })
     this.logger(`${compiled.length} Bytes Received.`)
     this.logger(`${Uint8Array.from(compiled).toString().slice(0, 20)}...`)
-    this.socket.utp.portal.emit('Stream', this.socket.sndConnectionId, compiled)
+    this.socket.utp.portal.emit(
+      'Stream',
+      this.socket.sndConnectionId,
+      compiled,
+      this.socket.contentType
+    )
     return Uint8Array.from(compiled)
   }
 
