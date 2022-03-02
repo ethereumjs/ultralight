@@ -18,7 +18,7 @@ export enum SubNetworkIds {
   HistoryNetwork = '0x500b',
   TxGossipNetwork = '0x500c',
   HeaderGossipNetwork = '0x500d',
-  CanonIndicesNetwork = '0x500e',
+  CanonicalIndicesNetwork = '0x500e',
   UTPNetwork = '0x757470',
 }
 
