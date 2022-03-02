@@ -210,7 +210,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (!routingTable) {
       throw new Error('invalid subnetwork ID provided')
     }
+    // TODO: Move this insertion to `updateNetworkRoutingTable`
     routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+    this.emit('NodeAdded', enr.nodeId, networkId)
     //  const dist = log2Distance(enr.nodeId, this.client.enr.nodeId)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
@@ -234,6 +236,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     let dstId
     if (nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
+      // TODO: Move this to `updateNetworkRoutingTable`
       this.routingTables.get(networkId)!.insertOrUpdate(enr, EntryStatus.Connected)
       dstId = enr.nodeId
     } else {
@@ -298,6 +301,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
             if (!routingTable!.getValue(decodedEnr.nodeId)) {
+              // TODO: Move this to `updateNetworkRoutingTable`
               routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               this.sendPing(decodedEnr.nodeId, networkId)
             }
@@ -812,6 +816,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     networkId: SubNetworkIds,
     customPayload?: any
   ) => {
+    // TODO: Adjust this method to accept a NodeId or an ENR so we're not tied to the discv5 routing table
     const enr = this.client.getKadValue(srcId)
     if (!enr && customPayload) {
       this.logger(
@@ -840,11 +845,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         } routing table`
       )
       routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
-      const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
-      routingTable!.updateRadius(srcId, decodedPayload.radius)
-      this.emit('NodeAdded', srcId, networkId)
-      return
     }
+    const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+    routingTable!.updateRadius(srcId, decodedPayload.radius)
+    this.emit('NodeAdded', srcId, networkId)
+    return
   }
 
   /**
