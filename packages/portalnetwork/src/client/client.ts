@@ -200,7 +200,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   /**
-   * Adds a bootnode which triggers a `findNodes` request to the Bootnode for nodes farther away
+   * Adds a bootnode which triggers a `findNodes` request to the Bootnode tp popute the routing table
    * @param bootnode `string` encoded ENR of a bootnode
    * @param networkId network ID of the subnetwork routing table to add the bootnode to
    */
@@ -213,15 +213,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Move this insertion to `updateNetworkRoutingTable`
     routingTable.insertOrUpdate(enr, EntryStatus.Connected)
     this.emit('NodeAdded', enr.nodeId, networkId)
-    //  const dist = log2Distance(enr.nodeId, this.client.enr.nodeId)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
-      // Identify all k-buckets farther than the bootnode that are currently empty
+      // Ask for nodes in all log2distances 239 - 256
       if (routingTable.valuesOfDistance(x).length === 0) {
         distancesSought.push(x)
       }
     }
-    // Requests nodes in all empty k-buckets farther away than bootnode
+    // Requests nodes in all empty k-buckets
     this.sendFindNodes(enr.nodeId, Uint16Array.from(distancesSought), networkId)
   }
 
@@ -526,9 +525,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     const srcId = src.nodeId
     switch (toHexString(message.protocol)) {
-      //  case SubNetworkIds.StateNetwork:
-      //    this.logger(`Received State Subnetwork request`)
-      //    break
+      // TODO: Add handling for other subnetworks as functionality is added
       case SubNetworkIds.HistoryNetwork:
         this.logger(`Received History Subnetwork request`)
         break
