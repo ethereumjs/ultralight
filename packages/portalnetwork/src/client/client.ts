@@ -92,8 +92,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     super()
     this.client = Discv5.create(config)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
-    this.on('Stream', (id, content, contentType) => {
-      this.handleStreamedContent(id, content, contentType)
+    this.on('Stream', (id, content, contentType, blockHash) => {
+      this.handleStreamedContent(id, content, contentType, blockHash)
     })
     this.nodeRadius = radius
     this.routingTables = new Map()
@@ -353,9 +353,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           case 0: {
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             this.logger(`received uTP Connection ID ${id}`)
-            const contentType = HistoryNetworkContentKeyUnionType.deserialize(key)
-              .selector as HistoryNetworkContentTypes
-            await this.uTP.handleFoundContent(dstId, id, networkId, contentType)
+            const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+            const contentType = contentKey.selector as HistoryNetworkContentTypes
+            const contentHash = contentKey.value.blockHash
+            await this.uTP.handleFoundContent(dstId, id, networkId, contentType, contentHash)
             break
           }
           case 1: {
@@ -599,23 +600,22 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private handleStreamedContent(
     rcvId: number,
     content: Uint8Array,
-    contentType: HistoryNetworkContentTypes
+    contentType: HistoryNetworkContentTypes,
+    blockHash: Uint8Array
   ) {
     this.logger(`received all content for ${rcvId}`)
     if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-      const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
       this.addContentToHistory(
         1,
         HistoryNetworkContentTypes.BlockHeader,
-        toHexString(header.hash()),
+        toHexString(blockHash),
         content
       )
     } else if (contentType === HistoryNetworkContentTypes.BlockBody) {
-      const blockBody = Block.fromRLPSerializedBlock(Buffer.from(content))
       this.addContentToHistory(
         1,
         HistoryNetworkContentTypes.BlockBody,
-        toHexString(blockBody.hash()),
+        toHexString(blockHash),
         content
       )
     }

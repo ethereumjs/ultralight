@@ -5,7 +5,10 @@ import { PortalNetwork, SubNetworkIds } from '../../..'
 import { Discv5 } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
 import { serializedContentKeyToContentId } from '../../../util'
-import { HistoryNetworkContentTypes } from '../../../historySubnetwork/types'
+import {
+  HistoryNetworkContentTypes,
+  HistoryNetworkContentKey,
+} from '../../../historySubnetwork/types'
 import { check } from 'prettier'
 
 const testArray = fromHexString(
@@ -132,11 +135,12 @@ export class UtpProtocol {
     remoteAddr: string,
     connectionId: number,
     networkId: SubNetworkIds,
-    contentType: HistoryNetworkContentTypes
+    contentType: HistoryNetworkContentTypes,
+    blockHash: Uint8Array
   ): Promise<void> {
-    const socket = new _UTPSocket(this, remoteAddr, 'reading', networkId, contentType)
+    const socket = new _UTPSocket(this, remoteAddr, 'reading', networkId, contentType, blockHash)
     const socketKey = this.getSocketKey(remoteAddr, connectionId)
-    this.log(`Opening "Socket: ${socketKey.slice(0, 5)}..." to receive FOUNDCONTENT stream.`)
+    this.log(`Opening "Socket: ${remoteAddr.slice(0, 5)}..." to receive FOUNDCONTENT stream.`)
     this.sockets[socketKey] = socket
     await this.sockets[socketKey].sendSynPacket(connectionId)
   }

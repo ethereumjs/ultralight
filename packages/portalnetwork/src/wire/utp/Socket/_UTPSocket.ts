@@ -27,6 +27,7 @@ export class _UTPSocket extends EventEmitter {
   utp: UtpProtocol
   content: Uint8Array
   contentType: HistoryNetworkContentTypes
+  blockHash: Uint8Array | undefined
   remoteAddress: string
   seqNr: number
   ackNr: number
@@ -45,7 +46,7 @@ export class _UTPSocket extends EventEmitter {
   sendRate: number
   CCONTROL_TARGET: number
   writer: Writer | undefined
-  reader: Reader
+  reader: Reader | undefined
   readerContent: Uint8Array
   reading: boolean
   writing: boolean
@@ -59,7 +60,8 @@ export class _UTPSocket extends EventEmitter {
     remoteAddress: string,
     type: string,
     networkId: SubNetworkIds,
-    contentType: HistoryNetworkContentTypes
+    contentType: HistoryNetworkContentTypes,
+    blockHash?: Uint8Array
   ) {
     super()
     this.utp = utp
@@ -87,8 +89,9 @@ export class _UTPSocket extends EventEmitter {
     this.seqNrs = []
     this.ackNrs = []
     this.logger = this.utp.log.extend(this.remoteAddress.slice(0, 10))
-    this.reader = new Reader(this)
+    // this.reader = new Reader(this)
     this.subnetwork = networkId
+    this.blockHash = blockHash
   }
 
   async updateSocketFromPacketHeader(packet: Packet) {
@@ -126,6 +129,9 @@ export class _UTPSocket extends EventEmitter {
 
   async handleSynPacket(packet: Packet): Promise<void> {
     // this.setConnectionIdsFromPacket(packet)
+    if (this.reading) {
+      this.reader = new Reader(this, 2, this.blockHash!)
+    }
     this.ackNr = packet.header.seqNr
     this.nextAck = this.ackNr + 1
     this.logger(`Connection State: SynRecv`)
@@ -150,6 +156,7 @@ export class _UTPSocket extends EventEmitter {
     this.logger(`Connection State: Connected`)
     this.state = ConnectionState.Connected
     if (this.reading) {
+      this.reader = new Reader(this, packet.header.seqNr, this.blockHash!)
       this.sendAckPacket().then(() => {
         this.logger(`Reader listening for DATA packets...`)
       })
@@ -213,7 +220,7 @@ export class _UTPSocket extends EventEmitter {
 
   async handleDataPacket(packet: Packet): Promise<void> {
     this.updateSocketFromPacketHeader(packet)
-    const expected = await this.reader.addPacket(packet)
+    const expected = await this.reader!.addPacket(packet)
     if (expected) {
       this.ackNrs.push(this.seqNr)
       await this.sendAckPacket()
@@ -243,7 +250,7 @@ export class _UTPSocket extends EventEmitter {
     }
     this.logger(`Received ${this.ackNrs.length} Packets. Expected ${finNr}`)
     this.logger(`Waiting for 0 in-flight packets.`)
-    this.readerContent = this.reader.run() ?? Uint8Array.from([])
+    this.readerContent = this.reader!.run() ?? Uint8Array.from([])
     this.logger(`Packet payloads compiled`)
     await this.sendAckPacket()
   }

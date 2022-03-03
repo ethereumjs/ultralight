@@ -1,5 +1,6 @@
 import { Debugger } from 'debug'
 import { Packet, _UTPSocket } from '../..'
+import { HistoryNetworkContentTypes } from '../../../../historySubnetwork/types'
 
 export default class Reader {
   packets: Packet[]
@@ -10,24 +11,27 @@ export default class Reader {
   nextSeqNr: number
   lastSeqNr: number | null
   logger: Debugger
-  constructor(socket: _UTPSocket) {
+  blockHash: Uint8Array
+  constructor(socket: _UTPSocket, startingSeqNr: number, blockHash: Uint8Array) {
     this.socket = socket
     this.packets = new Array<Packet>()
     this.inOrder = new Array<Packet>()
     this.reading = true
     this.gotFinPacket = false
-    this.nextSeqNr = 2
+    this.nextSeqNr = startingSeqNr + 1
     this.lastSeqNr = null
-    this.logger = this.socket.logger.extend('READING')
+    this.logger = this.socket.logger.extend('READ')
+    this.blockHash = blockHash
   }
 
   async addPacket(packet: Packet): Promise<boolean> {
+    this.logger(`Reading packet S:${packet.header.seqNr} A:${packet.header.ackNr}`)
     this.packets.push(packet)
     if (packet.header.seqNr === this.nextSeqNr) {
+      this.inOrder.push(packet)
       this.nextSeqNr++
       return true
     } else {
-      this.packets.push(packet)
       return false
     }
   }
@@ -42,12 +46,13 @@ export default class Reader {
       compiled = Buffer.concat([compiled, Buffer.from(p.payload)])
     })
     this.logger(`${compiled.length} Bytes Received.`)
-    this.logger(`${Uint8Array.from(compiled).toString().slice(0, 20)}...`)
+    this.logger(Uint8Array.from(compiled))
     this.socket.utp.portal.emit(
       'Stream',
       this.socket.sndConnectionId,
       compiled,
-      this.socket.contentType
+      HistoryNetworkContentTypes.BlockBody,
+      this.blockHash
     )
     return Uint8Array.from(compiled)
   }

@@ -28,7 +28,7 @@ export default class Writer {
   }
 
   async start(): Promise<void> {
-    this.logger(`starting to write`, this.content)
+    this.logger(`starting to write`, Uint8Array.from(this.content))
     this.writing = this.content && true
     while (this.writing) {
       while (this.canSendNextPacket && !this.finished) {

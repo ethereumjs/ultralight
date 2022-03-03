@@ -9,7 +9,8 @@ export interface IPortalNetworkEvents {
   Stream: (
     connectionId: number,
     content: Uint8Array,
-    contentType: HistoryNetworkContentTypes
+    contentType: HistoryNetworkContentTypes,
+    blockHash: Uint8Array
   ) => void
   NodeAdded: (nodeId: NodeId, networkId: SubNetworkIds) => void
   NodeRemoved: (nodeId: NodeId, networkId: SubNetworkIds) => void
