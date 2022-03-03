@@ -157,3 +157,9 @@ export const PortalWireMessageType = new UnionType<Union<MessageTypeUnion>>({
     AcceptMessageType,
   ],
 })
+
+export const UtpContentListType = new ContainerType({
+  fields: {
+    contentItems: new ListType({ elementType: ByteList, limit: 64 }),
+  },
+})
