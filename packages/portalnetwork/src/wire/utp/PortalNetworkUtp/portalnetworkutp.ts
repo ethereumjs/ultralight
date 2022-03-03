@@ -25,5 +25,15 @@ export class PortalNetworkUTP {
     this.logger = portal.logger.extend(`uTP`)
     this.openHistoryNetworkRequests = new Map<UtpRequestKey, HistoryNetworkContentRequest>()
   }
+  handleNewHistoryNetworkRequest(
+    type: `snd` | `rcv`,
+    contentKey: HistoryNetworkContentKey,
+    peerId: string,
+    content?: Uint8Array
+  ) {
+    const uTP: UtpProtocol = new UtpProtocol()
+    const key: UtpRequestKey = { contentKey, peerId }
+    const newRequest: HistoryNetworkContentRequest = { type, uTP, content }
+    this.openHistoryNetworkRequests.set(key, newRequest)
   }
 }
