@@ -134,6 +134,14 @@ const setupMetrics = () => {
       name: 'ultralight_nodes_messages_received',
       help: 'how many nodes messages have been received',
     }),
+    totalBytesReceived: new PromClient.Counter({
+      name: 'ultralight_total_bytes_received',
+      help: 'how many bytes have been received in Portal Network message payloads',
+    }),
+    totalBytesSent: new PromClient.Counter({
+      name: 'ultralight_total_bytes_sent',
+      help: 'how many bytes have been sent in Portal Network message payloads',
+    }),
   }
 }
 

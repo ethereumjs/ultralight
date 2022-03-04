@@ -523,6 +523,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
+    this.metrics?.totalBytesReceived.inc(message.request.length)
     const srcId = src.nodeId
     switch (toHexString(message.protocol)) {
       // TODO: Add handling for other subnetworks as functionality is added
@@ -576,6 +577,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
+    this.metrics?.totalBytesReceived.inc(message.response.length)
     const srcId = src.nodeId
     this.logger(`TALKRESPONSE message received from ${srcId}, ${message.response.toString()}`)
   }
@@ -869,6 +871,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
+      this.metrics?.totalBytesSent.inc(payload.length)
       const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
