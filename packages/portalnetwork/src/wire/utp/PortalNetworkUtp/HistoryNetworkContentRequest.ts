@@ -1,20 +1,26 @@
-import { Debugger } from 'debug'
-import { _UTPSocket } from '..'
-import { HistoryNetworkContentKey } from '../../..'
+import { UtpSocket } from '..'
+import Reader from '../Protocol/read/Reader'
+import Writer from '../Protocol/write/Writer'
+import { sendSynPacket } from './PacketSenders'
+import { RequestCode } from './portalnetworkutp'
+
+export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., etc...
 
 export class HistoryNetworkContentRequest {
-  requestCode: number
-  contentKey: HistoryNetworkContentKey
+  requestCode: RequestCode
+  contentKey: Uint8Array
   content: Uint8Array | undefined
   socketKey: string | undefined
-  socket: _UTPSocket
+  socket: UtpSocket
+  reader: Reader | undefined
+  writer: Writer | undefined
 
   constructor(
-    requestCode: number,
-    contentKey: HistoryNetworkContentKey,
+    requestCode: RequestCode,
+    contentKey: Uint8Array,
     content: Uint8Array | undefined,
     socketKey: string | undefined,
-    socket: _UTPSocket
+    socket: UtpSocket
   ) {
     this.requestCode = requestCode
     this.contentKey = contentKey
@@ -26,14 +32,14 @@ export class HistoryNetworkContentRequest {
   init(): void {
     switch (this.requestCode) {
       case 0:
-        this.socket.sendSynPacket()
+        sendSynPacket(this.socket)
         break
       case 1:
         break
       case 2:
         break
       case 3:
-        this.socket.sendSynPacket()
+        sendSynPacket(this.socket)
         break
     }
   }
