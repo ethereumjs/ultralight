@@ -41,4 +41,6 @@ export interface PortalNetworkMetrics {
   findNodesMessagesReceived: ICounter
   nodesMessagesSent: ICounter
   nodesMessagesReceived: ICounter
+  totalBytesReceived: ICounter
+  totalBytesSent: ICounter
 }
