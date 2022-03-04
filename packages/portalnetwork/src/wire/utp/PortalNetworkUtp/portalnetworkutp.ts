@@ -3,7 +3,9 @@ import { Debugger } from 'debug'
 import { bufferToPacket, Packet, PacketType, randUint16, UtpProtocol, _UTPSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { HistoryNetworkContentKey, PortalNetwork } from '../../..'
+import { BasicUtp } from './BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
+import { sendSynAckPacket } from './PacketSenders'
 
 type UtpRequestKey = string
 type UtpSocketKey = string
@@ -20,14 +22,14 @@ function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
 export class PortalNetworkUTP {
   portal: PortalNetwork
   client: Discv5
-  protocol: UtpProtocol
+  protocol: BasicUtp
   openHistoryNetworkRequests: Record<UtpSocketKey, HistoryNetworkContentRequest> // TODO enable other networks
   logger: Debugger
 
   constructor(portal: PortalNetwork) {
     this.portal = portal
     this.client = portal.client
-    this.protocol = new UtpProtocol(this)
+    this.protocol = new BasicUtp()
     this.logger = portal.logger.extend(`uTP`)
     this.openHistoryNetworkRequests = {}
   }
@@ -104,23 +106,23 @@ export class PortalNetworkUTP {
     let socket: _UTPSocket
     switch (requestCode) {
       case 0:
-        socket = new _UTPSocket(this, peerId, sndId, rcvId, 'write', requestCode, content!)
+        socket = this.protocol.createNewSocket(peerId, sndId, rcvId, 'write', content!)
         return socket
       case 1:
-        socket = new _UTPSocket(this, peerId, sndId, rcvId, 'read', requestCode)
+        socket = this.protocol.createNewSocket(peerId, sndId, rcvId, 'read')
         return socket
       case 2:
-        socket = new _UTPSocket(this, peerId, sndId, rcvId, 'write', requestCode, content)
+        socket = this.protocol.createNewSocket(peerId, sndId, rcvId, 'write', content)
         return socket
       case 3:
-        socket = new _UTPSocket(this, peerId, sndId, rcvId, 'read', requestCode)
+        socket = this.protocol.createNewSocket(peerId, sndId, rcvId, 'read')
         return socket
       default:
         return undefined
     }
   }
 
-  async handleUtpPacket(packetBuffer: Buffer, srcId: string, msgId: bigint): Promise<void> {
+  async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
     const request = this.openHistoryNetworkRequests[requestKey!]
     const packet = bufferToPacket(packetBuffer)
@@ -159,11 +161,13 @@ export class PortalNetworkUTP {
 
   async handleSynPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
+    let startingSeqNr: number = 0
     try {
       switch (requestCode) {
         case 0:
           this.logger(`SYN received for FINDCONTENT request`)
-          await request.socket.sendSynAckPacket()
+          startingSeqNr = packet.header.seqNr
+          await this.protocol.handleSynPacket(request.socket, packet, startingSeqNr)
           break
         case 1:
           this.logger(`Why did I get a SYN?`)
@@ -173,7 +177,8 @@ export class PortalNetworkUTP {
           break
         case 3:
           this.logger('SYN received for OFFER/ACCEPT')
-          await request.socket.sendSynAckPacket()
+          startingSeqNr = packet.header.ackNr
+          await this.protocol.handleSynPacket(request.socket, packet, startingSeqNr)
           break
       }
     } catch {

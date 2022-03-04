@@ -11,7 +11,6 @@ import {
 } from '..'
 
 export async function sendSynPacket(socket: _UTPSocket): Promise<void> {
-  // Initiates a uTP connection from a ConnectionId
   const packet = createSynPacket(socket.rcvConnectionId, socket.seqNr++, socket.ackNr)
   socket.state = ConnectionState.SynSent
   await socket.sendPacket(packet, PacketType.ST_SYN)
@@ -63,7 +62,7 @@ export async function sendFinPacket(socket: _UTPSocket): Promise<void> {
   socket.finNr = packet.header.seqNr
   await socket.sendPacket(packet, PacketType.ST_FIN)
 }
-export async function sendSelectiveAck(socket: _UTPSocket) {
+export async function sendSelectiveAckPacket(socket: _UTPSocket) {
   const received: number[] = socket.received
   const _packet = createSelectiveAckPacket(
     socket.seqNr++,
