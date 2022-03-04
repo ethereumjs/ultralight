@@ -2,7 +2,7 @@ import { UtpSocket } from '..'
 import Reader from '../Protocol/read/Reader'
 import Writer from '../Protocol/write/Writer'
 import { sendSynPacket } from './PacketSenders'
-import { RequestCode } from './portalnetworkutp'
+import { RequestCode } from './PortalNetworkUTP'
 
 export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., etc...
 
