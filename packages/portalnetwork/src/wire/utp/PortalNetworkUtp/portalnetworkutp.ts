@@ -7,6 +7,12 @@ import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
 
 type UtpRequestKey = string
 type UtpSocketKey = string
+enum RequestCode {
+  FOUNDNDCONTENT_WRITE = 0,
+  FINDCONTENT_READ = 1,
+  OFFER_WRITE = 2,
+  ACCECPT_READ = 3,
+}
 
 function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return remoteAddr + sndId + rcvId
