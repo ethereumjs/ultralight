@@ -55,7 +55,7 @@ const args: any = yargs(hideBin(process.argv))
     number: true,
     default: 18545,
   })
-  .options('datadir', {
+  .options('dataDir', {
     describe: 'data directory where content is stored',
     string: true,
     optional: true,
