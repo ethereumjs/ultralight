@@ -813,7 +813,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       )
       this.logger(`Generating Random Connection Id...`)
       const _id = randUint16()
-      await this.uTP.sendFoundContent(srcId, _id, value, 1, SubNetworkIds.HistoryNetwork)
+      await this.uTP.handleNewHistoryNetworkRequest(
+        [decodedContentMessage.contentKey],
+        srcId,
+        _id,
+        RequestCode.FOUNDNDCONTENT_WRITE,
+        [value]
+      )
       const idBuffer = Buffer.alloc(2)
       idBuffer.writeUInt16BE(_id, 0)
       const id = Uint8Array.from(idBuffer)
@@ -837,8 +843,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
     await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
-    const packet = bufferToPacket(packetBuffer)
-    await this.uTP.handleUtpPacket(packet, srcId, msgId)
+    await this.uTP.handleUtpPacket(packetBuffer, srcId)
   }
 
   /**
