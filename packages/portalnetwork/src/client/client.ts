@@ -355,7 +355,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             this.logger(`received uTP Connection ID ${id}`)
             await this.uTP.handleNewHistoryNetworkRequest(
-              key,
+              [key],
               dstId,
               id,
               RequestCode.FINDCONTENT_READ
@@ -426,7 +426,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             return HistoryNetworkContentKeyUnionType.deserialize(contentTypeUnion)
               .selector as HistoryNetworkContentTypes
           })
-          await this.uTP.handleAccept(dstId, id, requested, contentTypes, networkId)
+          await this.uTP.handleNewHistoryNetworkRequest(
+            contentKeys,
+            dstId,
+            id,
+            RequestCode.OFFER_WRITE,
+            requested
+          )
+
           return msg.contentKeys
         }
       } catch (err: any) {
