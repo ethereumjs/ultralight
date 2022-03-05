@@ -119,7 +119,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         }
       })
     })
-    this.uTP = new UtpProtocol(this)
+    this.uTP = new PortalNetworkUTP(this)
     this.db = db ?? level()
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
