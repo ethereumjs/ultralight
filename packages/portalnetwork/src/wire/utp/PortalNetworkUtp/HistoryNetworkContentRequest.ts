@@ -9,18 +9,18 @@ export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., 
 export class HistoryNetworkContentRequest {
   requestCode: RequestCode
   contentKey: Uint8Array
-  content: Uint8Array | undefined
-  socketKey: string | undefined
   socket: UtpSocket
-  reader: ContentReader | undefined
-  writer: ContentWriter | undefined
+  socketKey: string
+  content?: Uint8Array
+  reader?: ContentReader
+  writer?: ContentWriter
 
   constructor(
     requestCode: RequestCode,
     contentKey: Uint8Array,
-    content: Uint8Array | undefined,
-    socketKey: string | undefined,
-    socket: UtpSocket
+    socket: UtpSocket,
+    socketKey: string,
+    content?: Uint8Array
   ) {
     this.requestCode = requestCode
     this.contentKey = contentKey
@@ -29,17 +29,17 @@ export class HistoryNetworkContentRequest {
     this.socket = socket
   }
 
-  init(): void {
+  async init(): Promise<void> {
     switch (this.requestCode) {
       case 0:
-        sendSynPacket(this.socket)
+        await sendSynPacket(this.socket)
         break
       case 1:
         break
       case 2:
         break
       case 3:
-        sendSynPacket(this.socket)
+        await sendSynPacket(this.socket)
         break
     }
   }
