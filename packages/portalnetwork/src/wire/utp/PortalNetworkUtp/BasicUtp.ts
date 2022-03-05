@@ -24,11 +24,13 @@ export class BasicUtp {
     remoteAddr: string,
     sndId: number,
     rcvId: number,
+    seqNr: number,
+    ackNr: number,
     type: 'write' | 'read',
     logger: Debugger,
     content?: Uint8Array
   ) {
-    return new UtpSocket(this, remoteAddr, sndId, rcvId, type, logger, content)
+    return new UtpSocket(this, remoteAddr, sndId, rcvId, seqNr, ackNr, type, logger, content)
   }
 
   createNewReader(

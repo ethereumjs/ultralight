@@ -47,6 +47,8 @@ export class UtpSocket extends EventEmitter {
     remoteAddress: string,
     sndId: number,
     rcvId: number,
+    seqNr: number,
+    ackNr: number,
     type: 'read' | 'write',
     logger: Debugger,
     content?: Uint8Array
@@ -57,8 +59,8 @@ export class UtpSocket extends EventEmitter {
     this.remoteAddress = remoteAddress
     this.rcvConnectionId = rcvId
     this.sndConnectionId = sndId
-    this.seqNr = type === 'write' ? randUint16() : 0
-    this.ackNr = type === 'read' ? 0 : randUint16()
+    this.seqNr = seqNr
+    this.ackNr = ackNr
     this.max_window = DEFAULT_WINDOW_SIZE
     this.cur_window = this.max_window
     this.reply_micro = 0

@@ -32,14 +32,14 @@ export class HistoryNetworkContentRequest {
   async init(): Promise<void> {
     switch (this.requestCode) {
       case 0:
-        await sendSynPacket(this.socket)
         break
       case 1:
+        await sendSynPacket(this.socket)
         break
       case 2:
+        await sendSynPacket(this.socket)
         break
       case 3:
-        await sendSynPacket(this.socket)
         break
     }
   }
