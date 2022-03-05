@@ -700,10 +700,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             }
           }
           if (offerAccepted) {
-            const contentTypes = msg.contentKeys.map((key) => {
-              return HistoryNetworkContentKeyUnionType.deserialize(key)
-                .selector as HistoryNetworkContentTypes
-            })
             this.sendAccept(srcId, message, contentIds, msg.contentKeys)
           }
         }
