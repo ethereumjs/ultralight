@@ -39,7 +39,7 @@ import {
   reassembleBlock,
 } from '../historySubnetwork'
 import { ContentLookup } from '../wire'
-import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
+import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -354,10 +354,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           case 0: {
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             this.logger(`received uTP Connection ID ${id}`)
-            const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
-            const contentType = contentKey.selector as HistoryNetworkContentTypes
-            const contentHash = contentKey.value.blockHash
-            await this.uTP.handleFoundContent(dstId, id, networkId, contentType, contentHash)
+            await this.uTP.handleNewHistoryNetworkRequest(
+              key,
+              dstId,
+              id,
+              RequestCode.FINDCONTENT_READ
+            )
             break
           }
           case 1: {
