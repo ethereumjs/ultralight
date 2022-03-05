@@ -27,6 +27,11 @@ const args: any = yargs(hideBin(process.argv))
     boolean: true,
     default: true,
   })
+  .option('singleNodeMode', {
+    describe: 'set proxy in single node mode',
+    boolean: true,
+    default: false,
+  })
   .option('nat', {
     describe: 'NAT Traversal options for proxy',
     choices: ['localhost', 'lan', 'extip'],
@@ -45,17 +50,17 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'HTTP-RPC server listening interface address',
     default: 'localhost',
   })
-  .options('metrics', {
+  .option('metrics', {
     describe: 'Turn on Prometheus metrics reporting',
     boolean: true,
     default: false,
   })
-  .options('metricsPort', {
+  .option('metricsPort', {
     describe: 'Port exposed for metrics scraping',
     number: true,
     default: 18545,
   })
-  .options('dataDir', {
+  .option('dataDir', {
     describe: 'data directory where content is stored',
     string: true,
     optional: true,
@@ -96,7 +101,7 @@ const run = async () => {
     db,
     metrics
   )
-  portal.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
+  portal.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5:service*')
   const metricsServer = http.createServer(reportMetrics)
 
   if (args.metrics) {
@@ -134,7 +139,12 @@ const main = async () => {
   if (args.proxy === true) {
     // Spawn a child process that runs the proxy
     const file = require.resolve('../../proxy/dist/index.js')
-    child = spawn(process.execPath, [file, '--nat', args.nat])
+    const argList = ['--nat', args.nat]
+    if (args.singleNodeMode) {
+      argList.push('--singleNodeMode')
+      argList.push(5052)
+    }
+    child = spawn(process.execPath, [file, ...argList])
     child.stderr.on('data', (data) => {
       if (!proxyStarted && data.toString().includes('websocket server listening')) {
         run()
