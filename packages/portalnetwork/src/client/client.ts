@@ -422,10 +422,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           const requested: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
-          const contentTypes: HistoryNetworkContentTypes[] = requested.map((contentTypeUnion) => {
-            return HistoryNetworkContentKeyUnionType.deserialize(contentTypeUnion)
-              .selector as HistoryNetworkContentTypes
-          })
           await this.uTP.handleNewHistoryNetworkRequest(
             contentKeys,
             dstId,
