@@ -53,16 +53,6 @@ export class PortalNetworkUTP {
     requestCode: RequestCode,
     contents?: Uint8Array[]
   ) {
-    // const sndId =
-    //   requestCode === 0
-    //     ? connectionId
-    //     : requestCode === 1
-    //     ? connectionId + 1
-    //     : requestCode === 2
-    //     ? connectionId + 1
-    //     : requestCode === 3
-    //     ? connectionId
-    //     : 0
     let sndId
     let rcvId
     let socket: UtpSocket
@@ -70,14 +60,14 @@ export class PortalNetworkUTP {
     let newRequest: HistoryNetworkContentRequest
     switch (requestCode) {
       case 0:
-        sndId = connectionId
-        rcvId = connectionId + 1
+        sndId = connectionId + 1
+        rcvId = connectionId
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents![0])!
         socketKey = createSocketKey(peerId, sndId, rcvId)
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
           contentKeys[0],
-          socket!,
+          socket,
           socketKey,
           contents![0]
         )
@@ -89,14 +79,14 @@ export class PortalNetworkUTP {
         }
         break
       case 1:
-        sndId = connectionId + 1
-        rcvId = connectionId
+        sndId = connectionId
+        rcvId = connectionId + 1
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
         socketKey = createSocketKey(peerId, sndId, rcvId)
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
           contentKeys[0],
-          socket!,
+          socket,
           socketKey
         )
         if (this.openHistoryNetworkRequests[socketKey]) {
@@ -108,14 +98,14 @@ export class PortalNetworkUTP {
         break
       case 2:
         contents?.forEach(async (content, idx) => {
-          sndId = connectionId - 1
-          rcvId = connectionId
+          sndId = connectionId
+          rcvId = connectionId + 1
           socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)!
           socketKey = createSocketKey(peerId, sndId, rcvId)
           newRequest = new HistoryNetworkContentRequest(
             requestCode,
             contentKeys[idx],
-            socket!,
+            socket,
             socketKey,
             contents![0]
           )
@@ -129,11 +119,11 @@ export class PortalNetworkUTP {
         break
       case 3:
         contentKeys.forEach(async (key) => {
-          sndId = connectionId
-          rcvId = connectionId - 1
+          sndId = connectionId + 1
+          rcvId = connectionId
           socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
           socketKey = createSocketKey(peerId, sndId, rcvId)
-          newRequest = new HistoryNetworkContentRequest(requestCode, key, socket!, socketKey)
+          newRequest = new HistoryNetworkContentRequest(requestCode, key, socket, socketKey)
           if (this.openHistoryNetworkRequests[socketKey]) {
             this.logger(`Request already Open`)
           } else {
@@ -317,15 +307,6 @@ export class PortalNetworkUTP {
   }
   async handleResetPacket(request: HistoryNetworkContentRequest) {
     const requestCode = request.requestCode
-    const connectionId =
-      requestCode === 0
-        ? request.socket.sndConnectionId
-        : requestCode === 1
-        ? request.socket.rcvConnectionId
-        : requestCode === 2
-        ? request.socket.rcvConnectionId
-        : request.socket.sndConnectionId
-
     delete this.openHistoryNetworkRequests[requestCode]
     const newSocket = this.createPortalNetworkUTPSocket(
       requestCode,
@@ -341,7 +322,7 @@ export class PortalNetworkUTP {
       request.socketKey,
       request.content ?? request.content
     )
-    await request.init()
+    await newRequest.init()
   }
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
