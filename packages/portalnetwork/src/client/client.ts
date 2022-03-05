@@ -39,6 +39,7 @@ import {
   reassembleBlock,
 } from '../historySubnetwork'
 import { ContentLookup } from '../wire'
+import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -46,7 +47,7 @@ const MAX_PACKET_SIZE = 1280
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   client: Discv5
   routingTables: Map<SubNetworkIds, RoutingTable>
-  uTP: UtpProtocol
+  uTP: PortalNetworkUTP
   nodeRadius: bigint
   db: LevelUp
   private refreshListener?: ReturnType<typeof setInterval>
