@@ -1,6 +1,6 @@
 import { UtpSocket } from '..'
-import Reader from '../Protocol/read/Reader'
-import Writer from '../Protocol/write/Writer'
+import ContentReader from '../Protocol/read/ContentReader'
+import ContentWriter from '../Protocol/write/ContentWriter'
 import { sendSynPacket } from './PacketSenders'
 import { RequestCode } from './PortalNetworkUTP'
 
@@ -12,8 +12,8 @@ export class HistoryNetworkContentRequest {
   content: Uint8Array | undefined
   socketKey: string | undefined
   socket: UtpSocket
-  reader: Reader | undefined
-  writer: Writer | undefined
+  reader: ContentReader | undefined
+  writer: ContentWriter | undefined
 
   constructor(
     requestCode: RequestCode,
