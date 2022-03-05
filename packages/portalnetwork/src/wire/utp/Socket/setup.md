@@ -20,9 +20,9 @@
 
 - A - sends FindContent
 - B - sends FOUNDCONTENT and connection-ID
-  - Opens a WRITING socket using connectionID
-- A - Opens a READING socket using 'connection-ID'
-  - sends SYN with seqNr: 1, ackNr: RANDA
+  - Opens a WRITING socket using connectionID as 'rcvID' connectionId+1 as 'sndId' 
+- A - Opens a READING socket using 'connection-ID' as 'sndId' connectionId+1 as 'rcvId'
+  - sends SYN with seqNr: 1, ackNr:
 - B - Sends SYN-ACK with seqNr: RANDB, ackNr: 1
 - A - Sends SYN-ACK-ACK with seqNr: 2, ackNr: RANDB
 - B - Sends DATA with seqNr: RANDB + 1, ackNr: 2
@@ -40,11 +40,11 @@
 
 - A - sends Offer (array)
 - B - sends Accept (array and connectionId)
-  - Opens READING socket using connectionId
+  - Opens READING socket using connectionId as 'rcvId' connectionId+1 as 'sndId'
 - A - Triggers uTP protocol
 
   - UTP - For each piece of -content
-    - A Opens a WRITING socket using connectionId
+    - A Opens a WRITING socket using connectionId as 'sndId' connectionId+1 as 'rcvId'
       - Sends SYN packet with seqNr: 1, ackNr: RANDA
     - B sends SYN-ACK packet with seqNr: RANDB, ackNr: 1
     - A sends DATA packet with seqNr: 2, ackNr: RANDB
