@@ -704,7 +704,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               return HistoryNetworkContentKeyUnionType.deserialize(key)
                 .selector as HistoryNetworkContentTypes
             })
-            this.sendAccept(srcId, message, contentIds, contentTypes)
+            this.sendAccept(srcId, message, contentIds, msg.contentKeys)
           }
         }
       } catch {
@@ -718,17 +718,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private sendAccept = async (
     srcId: string,
     message: ITalkReqMessage,
-    desiredContentKeys: boolean[],
-    desiredContentTypes: HistoryNetworkContentTypes[]
+    desiredContentAccepts: boolean[],
+    desiredContentKeys: Uint8Array[]
   ) => {
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
-    const subNetworkId = toHexString(message.protocol) as SubNetworkIds
-    await this.uTP.acceptOffer(srcId, id, desiredContentTypes, subNetworkId)
+    await this.uTP.handleNewHistoryNetworkRequest(
+      desiredContentKeys,
+      srcId,
+      id,
+      RequestCode.ACCECPT_READ
+    )
 
     const payload: AcceptMessage = {
       connectionId: new Uint8Array(2).fill(id),
-      contentKeys: desiredContentKeys,
+      contentKeys: desiredContentAccepts,
     }
     const encodedPayload = PortalWireMessageType.serialize({
       selector: MessageCodes.ACCEPT,
