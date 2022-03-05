@@ -4,3 +4,4 @@ build
 lib
 *.tsbuildinfo
 .nyc_output
+targets.json
