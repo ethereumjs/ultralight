@@ -1,7 +1,8 @@
-import { Packet, _UTPSocket } from '..'
-import Reader from '../Protocol/read/Reader'
-import Writer from '../Protocol/write/Writer'
-import { handleSynPacket } from './PacketHandlers'
+import { Debugger } from 'debug'
+import { Packet, UtpSocket } from '..'
+import { SubNetworkIds } from '../..'
+import ContentReader from '../Protocol/read/ContentReader'
+import ContentWriter from '../Protocol/write/ContentWriter'
 import {
   sendDataPacket,
   sendSynAckPacket,
@@ -13,57 +14,70 @@ import {
 } from './PacketSenders'
 
 export class BasicUtp {
+  send: (peerId: string, msg: Buffer, networkId: SubNetworkIds) => Promise<void>
+
+  constructor(send: (peerId: string, msg: Buffer, networkId: SubNetworkIds) => Promise<void>) {
+    this.send = send
+  }
+
   createNewSocket(
     remoteAddr: string,
     sndId: number,
     rcvId: number,
     type: 'write' | 'read',
+    logger: Debugger,
     content?: Uint8Array
   ) {
-    return new _UTPSocket(this, remoteAddr, sndId, rcvId, type, content)
+    return new UtpSocket(this, remoteAddr, sndId, rcvId, type, logger, content)
   }
 
-  createNewReader() {}
-  createNewWriter() {}
+  createNewReader(
+    socket: UtpSocket,
+    startingSeqNr: number,
+    streamer: (content: Uint8Array) => void
+  ) {
+    return new ContentReader(socket, startingSeqNr, streamer)
+  }
+  createNewWriter(socket: UtpSocket, startingSeqNr: number) {
+    return new ContentWriter(this, socket, startingSeqNr)
+  }
 
-  async sendSynPacket(socket: _UTPSocket) {
+  async sendSynPacket(socket: UtpSocket) {
     await sendSynPacket(socket)
   }
-  async sendSynAckPacket(socket: _UTPSocket) {
+  async sendSynAckPacket(socket: UtpSocket) {
     await sendSynAckPacket(socket)
   }
-  async sendStatePacket(socket: _UTPSocket) {
+  async sendStatePacket(socket: UtpSocket) {
     await sendAckPacket(socket)
   }
-  async sendSelectiveAckPacket(socket: _UTPSocket) {
+  async sendSelectiveAckPacket(socket: UtpSocket) {
     await sendSelectiveAckPacket(socket)
   }
-  async sendDataPacket(socket: _UTPSocket, payload: Uint8Array) {
+  async sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<number> {
     await sendDataPacket(socket, payload)
+    return socket.seqNr
   }
-  async sendResetPacket(socket: _UTPSocket) {
+  async sendResetPacket(socket: UtpSocket) {
     await sendResetPacket(socket)
   }
-  async sendFinPacket(socket: _UTPSocket) {
+  async sendFinPacket(socket: UtpSocket) {
     await sendFinPacket(socket)
   }
 
-  async handleSynPacket(socket: _UTPSocket, packet: Packet, startingSeqNr: number) {
-    await socket.handleSynPacket(packet, startingSeqNr)
+  async handleSynPacket(socket: UtpSocket, packet: Packet) {
+    await socket.handleSynPacket(packet)
   }
-  async handleSynAckPacket(socket: _UTPSocket, packet: Packet) {
-    await socket.handleSynAckPacket(packet)
-  }
-  async handleStatePacket(socket: _UTPSocket, packet: Packet) {
+  async handleSynAckPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleStatePacket(packet)
   }
-  async handleDataPacket(socket: _UTPSocket, packet: Packet) {
+  async handleStatePacket(socket: UtpSocket, packet: Packet) {
+    await socket.handleStatePacket(packet)
+  }
+  async handleDataPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleDataPacket(packet)
   }
-  async handleResetPacket(socket: _UTPSocket) {
-    await socket.handleResetPacket()
-  }
-  async handleFinPacket(socket: _UTPSocket, packet: Packet) {
+  async handleFinPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleFinPacket(packet)
   }
 }
