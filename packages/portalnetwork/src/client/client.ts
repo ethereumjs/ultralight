@@ -659,7 +659,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
               await this.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
+              this.logger(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
+              this.logger(err)
               offerAccepted = true
               contentIds[x] = true
               this.logger(`Found some interesting content from ${shortId(srcId)}`)
@@ -669,6 +671,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             this.sendAccept(srcId, message, contentIds)
           }
         }
+        this.logger('We already have all this content')
+        this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       } catch {
         this.logger(`Something went wrong handling offer message`)
         // Send empty response if something goes wrong parsing content keys

@@ -31,6 +31,11 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'simulated network issues',
     number: true,
     optional: true,
+  })
+  .option('singleNodeMode', {
+    describe: 'set proxy to single node mode to give a persistent ENR',
+    number: true,
+    optional: true,
   }).argv
 
 if ((args.packetLoss && args.packetLoss < 0) || args.packetLoss >= 100) {
@@ -80,6 +85,11 @@ const startServer = async (ws: WS.Server, extip = false) => {
 
   log(`websocket server listening on ${remoteAddr}:5050`)
   ws.on('connection', async (websocket, req) => {
+    if (args.singleNodeMode && ws.clients.size > 1) {
+      log(`Proxy is running in single node mode so closing additional socket request`)
+      websocket.close()
+      return
+    }
     const udpsocket = dgram.createSocket({
       recvBufferSize: 16 * MAX_PACKET_SIZE,
       sendBufferSize: MAX_PACKET_SIZE,
@@ -96,7 +106,7 @@ const startServer = async (ws: WS.Server, extip = false) => {
     let foundPort = false
     while (!foundPort) {
       try {
-        await udpsocket.bind()
+        args.singleNodeMode ? await udpsocket.bind(args.singleNodeMode) : await udpsocket.bind()
         foundPort = true
       } catch (err) {
         log(err)
