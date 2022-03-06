@@ -53,15 +53,18 @@ export class PortalNetworkUTP {
     peerId: string,
     connectionId: number,
     requestCode: RequestCode,
-    contents: Uint8Array[]
+    contents?: Uint8Array[]
   ) {
     let sndId
     let rcvId
-    let socket: UtpSocket
+    let socket
     let socketKey
     let newRequest: HistoryNetworkContentRequest
     switch (requestCode) {
       case 0:
+        if (contents === undefined) {
+          throw new Error('No contents to write')
+        }
         sndId = connectionId + 1
         rcvId = connectionId
         socket = this.createPortalNetworkUTPSocket(
@@ -70,14 +73,16 @@ export class PortalNetworkUTP {
           randUint16(),
           1,
           contents[0]
-        )!
+        )
+        if (socket === undefined) {
+          throw new Error('Error in Socket Creation')
+        }
         socketKey = createSocketKey(peerId, sndId, rcvId)
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
           contentKeys[0],
           socket,
-          socketKey,
-          contents[0]
+          socketKey
         )
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
@@ -89,7 +94,10 @@ export class PortalNetworkUTP {
       case 1:
         sndId = connectionId
         rcvId = connectionId + 1
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)
+        if (socket === undefined) {
+          throw new Error('Error in Socket Creation')
+        }
         socketKey = createSocketKey(peerId, sndId, rcvId)
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
@@ -105,10 +113,19 @@ export class PortalNetworkUTP {
         }
         break
       case 2:
+        if (contents === undefined) {
+          throw new Error('No contents to write')
+        }
         contents.forEach(async (content, idx) => {
+          if (content === undefined) {
+            throw new Error('Contents Undefined')
+          }
           sndId = connectionId
           rcvId = connectionId + 1
-          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, 0, randUint16(), content)!
+          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, 0, randUint16(), content)
+          if (socket === undefined) {
+            throw new Error('Error in Socket Creation')
+          }
           socketKey = createSocketKey(peerId, sndId, rcvId)
           newRequest = new HistoryNetworkContentRequest(
             requestCode,
@@ -129,7 +146,10 @@ export class PortalNetworkUTP {
         contentKeys.forEach(async (key) => {
           sndId = connectionId + 1
           rcvId = connectionId
-          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, randUint16(), 1)!
+          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, randUint16(), 1)
+          if (socket === undefined) {
+            throw new Error('Error in Socket Creation')
+          }
           socketKey = createSocketKey(peerId, sndId, rcvId)
           newRequest = new HistoryNetworkContentRequest(requestCode, key, socket, socketKey)
           if (this.openHistoryNetworkRequests[socketKey]) {
@@ -200,8 +220,6 @@ export class PortalNetworkUTP {
           this.logger
         )
         return socket
-      default:
-        return undefined
     }
   }
 
@@ -246,12 +264,12 @@ export class PortalNetworkUTP {
   getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
     const packet = bufferToPacket(packetBuffer)
     const connId = packet.header.connectionId
-    const send = createSocketKey(peerId, connId, connId + 1)
-    const rcv = createSocketKey(peerId, connId, connId - 1)
-    if (this.openHistoryNetworkRequests[send]) {
-      return send
-    } else if (this.openHistoryNetworkRequests[rcv]) {
-      return rcv
+    const keyA = createSocketKey(peerId, connId, connId + 1)
+    const keyB = createSocketKey(peerId, connId, connId - 1)
+    if (this.openHistoryNetworkRequests[keyA]) {
+      return keyA
+    } else if (this.openHistoryNetworkRequests[keyB]) {
+      return keyB
     } else {
       this.logger('Cannot Find Open Request for this message')
       return ''
@@ -372,10 +390,10 @@ export class PortalNetworkUTP {
     try {
       switch (requestCode) {
         case 0:
-          throw new Error('Why did I get a FIN packet?')
-        case 1:
           request.socket.handleFinPacket(packet)
           break
+        case 1:
+          throw new Error('Why did I get a FIN packet?')
         case 2:
           throw new Error('Why did I get a FIN packet?')
         case 3:
