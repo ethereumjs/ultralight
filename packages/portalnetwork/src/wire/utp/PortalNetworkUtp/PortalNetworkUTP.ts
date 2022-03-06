@@ -15,7 +15,7 @@ export enum RequestCode {
 }
 
 function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
-  return remoteAddr + sndId + rcvId
+  return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
 export class PortalNetworkUTP {
   portal: PortalNetwork
@@ -67,13 +67,7 @@ export class PortalNetworkUTP {
         }
         sndId = connectionId + 1
         rcvId = connectionId
-        socket = this.createPortalNetworkUTPSocket(
-          requestCode,
-          peerId,
-          randUint16(),
-          1,
-          contents[0]
-        )
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
         }
@@ -88,6 +82,7 @@ export class PortalNetworkUTP {
           this.logger(`Request already Open`)
         } else {
           this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.logger(`Opening request with key: ${socketKey}`)
           await newRequest.init()
         }
         break
@@ -109,6 +104,7 @@ export class PortalNetworkUTP {
           this.logger(`Request already Open`)
         } else {
           this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.logger(`Opening request with key: ${socketKey}`)
           await newRequest.init()
         }
         break
@@ -138,6 +134,7 @@ export class PortalNetworkUTP {
             this.logger(`Request already Open`)
           } else {
             this.openHistoryNetworkRequests[socketKey] = newRequest
+            this.logger(`Opening request with key: ${socketKey}`)
             await newRequest.init()
           }
         })
@@ -156,6 +153,7 @@ export class PortalNetworkUTP {
             this.logger(`Request already Open`)
           } else {
             this.openHistoryNetworkRequests[socketKey] = newRequest
+            this.logger(`Opening request with key: ${socketKey}`)
             await newRequest.init()
           }
         })
@@ -264,20 +262,28 @@ export class PortalNetworkUTP {
   getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
     const packet = bufferToPacket(packetBuffer)
     const connId = packet.header.connectionId
-    const keyA = createSocketKey(peerId, connId, connId + 1)
-    const keyB = createSocketKey(peerId, connId, connId - 1)
-    if (this.openHistoryNetworkRequests[keyA]) {
+    const idA = connId + 1
+    const idB = connId - 1
+    const keyA = createSocketKey(peerId, connId, idA)
+    const keyB = createSocketKey(peerId, idA, connId)
+    const keyC = createSocketKey(peerId, connId, idB)
+    const keyD = createSocketKey(peerId, idB, connId)
+    if (this.openHistoryNetworkRequests[keyA] !== undefined) {
       return keyA
-    } else if (this.openHistoryNetworkRequests[keyB]) {
+    } else if (this.openHistoryNetworkRequests[keyB] !== undefined) {
       return keyB
+    } else if (this.openHistoryNetworkRequests[keyC] !== undefined) {
+      return keyC
+    } else if (this.openHistoryNetworkRequests[keyD] !== undefined) {
+      return keyD
     } else {
-      this.logger('Cannot Find Open Request for this message')
+      this.logger(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} of ${keyD}`)
       return ''
     }
   }
 
   async handleSynPacket(request: HistoryNetworkContentRequest, packet: Packet) {
-    const key = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
+    const key = request.contentKey
     const type = key.selector
     const requestCode = request.requestCode
     let startingSeqNr: number = 0
@@ -334,7 +340,8 @@ export class PortalNetworkUTP {
             request.socket.handleStatePacket(packet)
             break
           case 1:
-            throw new Error('Why did I get a STATE packet?')
+            request.socket.handleStatePacket(packet)
+            break
           case 2:
             request.socket.handleStatePacket(packet)
             break
@@ -378,7 +385,7 @@ export class PortalNetworkUTP {
     )
     const newRequest = new HistoryNetworkContentRequest(
       requestCode,
-      request.contentKey,
+      HistoryNetworkContentKeyUnionType.serialize(request.contentKey),
       newSocket!,
       request.socketKey,
       request.content ?? request.content
