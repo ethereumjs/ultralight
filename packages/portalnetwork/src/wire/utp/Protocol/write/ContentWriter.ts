@@ -10,57 +10,62 @@ export default class ContentWriter {
   content: Uint8Array
   writing: boolean
   sentChunks: number[]
-  dataChunks: Map<number, Uint8Array>
-  logger: Debugger
+  dataChunks: Record<number, Uint8Array>
   constructor(protocol: BasicUtp, socket: UtpSocket, startingSeqNr: number) {
     this.protocol = protocol
     this.socket = socket
-    this.content = this.socket.content
+    this.content = socket.content
     this.startingSeqNr = startingSeqNr
     this.writing = false
-    this.dataChunks = new Map<number, Uint8Array>()
+    this.dataChunks = this.chunk(this.content, 500)
     this.sentChunks = []
-    this.logger = this.socket.logger.extend('WRITE')
-    this.chunk(this.content, 500)
   }
 
   async start(): Promise<void> {
     let seqNr = this.startingSeqNr
-    this.logger(`starting to write`, Uint8Array.from(this.content))
-    this.writing = Object.keys(this.dataChunks).length > this.sentChunks.length
+    this.socket.logger(`starting to write:`)
+    this.socket.logger(Uint8Array.from(this.content))
+    this.writing = true
+    let bytes
     while (this.writing) {
-      const bytes = this.dataChunks.get(seqNr)
-      seqNr = await this.protocol.sendDataPacket(this.socket, bytes!)
+      bytes = this.dataChunks[seqNr]
+      seqNr = await this.protocol.sendDataPacket(this.socket, bytes)
+      this.socket.logger(`${seqNr} sent.`)
       this.sentChunks.push(seqNr)
       this.writing = Object.keys(this.dataChunks).length > this.sentChunks.length
     }
-    this.logger('All Data Written')
+    this.socket.logger('All Data Written')
     return
   }
 
   async startAgain(seqNr: number) {
-    this.logger(`starting again from ${seqNr}`, Uint8Array.from(this.content))
+    this.socket.logger(`starting again from ${seqNr}`, Uint8Array.from(this.content))
     this.writing = Object.keys(this.dataChunks).length > this.sentChunks.length
     this.sentChunks = this.sentChunks.filter((n) => n < seqNr)
     while (this.writing) {
-      const bytes = this.dataChunks.get(seqNr)
+      const bytes = this.dataChunks[seqNr]
       seqNr = await this.protocol.sendDataPacket(this.socket, bytes!)
       this.sentChunks.push(seqNr)
       this.writing = Object.keys(this.dataChunks).length > this.sentChunks.length
     }
-    this.logger('All Data Written')
+    this.socket.logger('All Data Written')
   }
 
-  chunk(content: Uint8Array, size: number) {
+  chunk(content: Uint8Array, size: number): Record<number, Uint8Array> {
     let seqNr = this.startingSeqNr
     let contentMod = content
     let next = contentMod.subarray(0, size)
     let rest = contentMod.subarray(size)
+    const dataChunks: Record<number, Uint8Array> = {}
     while (contentMod.length > 0) {
-      this.dataChunks.set(seqNr++, next)
+      dataChunks[seqNr] = next
+      this.socket.dataNrs.push(seqNr)
+      seqNr++
       next = contentMod.subarray(0, size)
       rest = contentMod.subarray(size)
       contentMod = rest
     }
+    this.socket.logger(`Ready to send ${Object.keys(dataChunks).length}`)
+    return dataChunks
   }
 }

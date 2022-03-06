@@ -47,15 +47,20 @@ export class BasicUtp {
     )
   }
 
-  createNewReader(
+  async createNewReader(
     socket: UtpSocket,
     startingDataNr: number,
     streamer: (content: Uint8Array) => void
   ) {
     return new ContentReader(socket, startingDataNr, streamer)
   }
-  createNewWriter(socket: UtpSocket, startingDataNr: number) {
+
+  async createNewWriter(socket: UtpSocket, startingDataNr: number) {
     return new ContentWriter(this, socket, startingDataNr)
+  }
+
+  async startDataTransfer(socket: UtpSocket) {
+    await socket.startDataTransfer()
   }
 
   async sendSynPacket(socket: UtpSocket) {

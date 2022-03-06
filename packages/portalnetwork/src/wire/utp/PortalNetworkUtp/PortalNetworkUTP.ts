@@ -164,7 +164,11 @@ export class PortalNetworkUTP {
               )
             }
             const startingSeqNr = 2
-            const reader = this.protocol.createNewReader(newRequest.socket, startingSeqNr, streamer)
+            const reader = await this.protocol.createNewReader(
+              newRequest.socket,
+              startingSeqNr,
+              streamer
+            )
             newRequest.reader = reader
             await newRequest.init()
           }
@@ -327,16 +331,17 @@ export class PortalNetworkUTP {
       this.logger('Request Type Not Implemented')
     }
   }
-  async handleStatePacket(request: HistoryNetworkContentRequest, packet: Packet) {
+  async handleStatePacket(request: HistoryNetworkContentRequest, packet: Packet): Promise<void> {
     const requestCode = request.requestCode
     switch (requestCode) {
       case 0:
         if (packet.header.seqNr === 2) {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
           const startingSeqNr = packet.header.ackNr + 1
-          const writer = this.protocol.createNewWriter(request.socket, startingSeqNr)
+          const writer = await this.protocol.createNewWriter(request.socket, startingSeqNr)
           request.writer = writer
-          await request.socket.startDataTransfer(request.content!, request.writer!)
+          // await request.socket.startDataTransfer(request.content!, request.writer!)
+          await writer.start()
         } else {
           request.socket.handleStatePacket(packet)
         }
@@ -356,20 +361,25 @@ export class PortalNetworkUTP {
             )
           }
           const startingSeqNr = request.socket.seqNr + 1
-          const reader = this.protocol.createNewReader(request.socket, startingSeqNr, streamer)
+          const reader = await this.protocol.createNewReader(
+            request.socket,
+            startingSeqNr,
+            streamer
+          )
           request.reader = reader
           // await this.protocol.handleStatePacket(request.socket, packet)
+          request.socket.updateSocketFromPacketHeader(packet)
           await this.protocol.sendStatePacket(request.socket)
         } else {
-          request.socket.handleStatePacket(packet)
+          this.protocol.handleStatePacket(request.socket, packet)
         }
         break
       case 2:
         if (packet.header.ackNr === 1) {
           this.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
-          await request.socket.startDataTransfer(request.content!, request.writer!)
+          await this.protocol.startDataTransfer(request.socket)
         } else {
-          request.socket.handleStatePacket(packet)
+          this.protocol.handleStatePacket(request.socket, packet)
         }
         break
       case 3:

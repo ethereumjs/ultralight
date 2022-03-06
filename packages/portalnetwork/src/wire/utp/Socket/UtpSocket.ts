@@ -57,7 +57,7 @@ export class UtpSocket extends EventEmitter {
     content?: Uint8Array
   ) {
     super()
-    this.content = content ?? Uint8Array.from([])
+    this.content = content ? Uint8Array.from(content) : Uint8Array.from([])
     this.utp = utp
     this.remoteAddress = remoteAddress
     this.rcvConnectionId = rcvId
@@ -115,7 +115,7 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendDataPacket(packet: Packet): Promise<void> {
-    await sendDataPacket(this, packet.payload)
+    await this.sendPacket(packet, PacketType.ST_DATA)
   }
 
   async sendStatePacket(packet: Packet): Promise<void> {
@@ -162,8 +162,12 @@ export class UtpSocket extends EventEmitter {
       while (!finished) {
         finished = this.dataNrs.every((val, index) => val === this.ackNrs[index])
       }
+      if (!this.compare()) {
+        this.logger(
+          `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
+        )
+      }
       this.logger(`all data packets acked`)
-      await sendFinPacket(this)
     }
   }
 
@@ -208,9 +212,11 @@ export class UtpSocket extends EventEmitter {
     await sendAckPacket(this)
   }
 
-  async startDataTransfer(data: Uint8Array, writer: ContentWriter) {
-    this.logger(`Beginning transfer of ${data}...to ${this.remoteAddress}`)
-    await this.write(writer)
+  async startDataTransfer(): Promise<void> {
+    this.logger(`Beginning transfer of ${this.content.length} bytes...`)
+    this.logger(this.content)
+    await this.write()
+    return
   }
 
   updateRTT(packetRTT: number) {
@@ -219,16 +225,9 @@ export class UtpSocket extends EventEmitter {
     this.rtt += (packetRTT - this.rtt) / 8
   }
 
-  async write(writer: ContentWriter): Promise<void> {
-    writer.start().then(() => {
-      let compared = this.compare()
-      if (!compared) {
-        this.logger(
-          `AckNr's expected: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
-        )
-        compared = this.compare()
-      }
-    })
+  async write(): Promise<void> {
+    await this.writer?.start()
+    return
   }
 
   compare(): boolean {
