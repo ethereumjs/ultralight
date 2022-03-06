@@ -26,22 +26,36 @@ export class BasicUtp {
     rcvId: number,
     seqNr: number,
     ackNr: number,
+    nextSeq: number | undefined,
+    nextAck: number | undefined,
     type: 'write' | 'read',
     logger: Debugger,
     content?: Uint8Array
   ) {
-    return new UtpSocket(this, remoteAddr, sndId, rcvId, seqNr, ackNr, type, logger, content)
+    return new UtpSocket(
+      this,
+      remoteAddr,
+      sndId,
+      rcvId,
+      seqNr,
+      ackNr,
+      nextSeq,
+      nextAck,
+      type,
+      logger,
+      content
+    )
   }
 
   createNewReader(
     socket: UtpSocket,
-    startingSeqNr: number,
+    startingDataNr: number,
     streamer: (content: Uint8Array) => void
   ) {
-    return new ContentReader(socket, startingSeqNr, streamer)
+    return new ContentReader(socket, startingDataNr, streamer)
   }
-  createNewWriter(socket: UtpSocket, startingSeqNr: number) {
-    return new ContentWriter(this, socket, startingSeqNr)
+  createNewWriter(socket: UtpSocket, startingDataNr: number) {
+    return new ContentWriter(this, socket, startingDataNr)
   }
 
   async sendSynPacket(socket: UtpSocket) {
