@@ -358,7 +358,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               [key],
               dstId,
               id,
-              RequestCode.FINDCONTENT_READ
+              RequestCode.FINDCONTENT_READ,
+              []
             )
             break
           }
@@ -718,7 +719,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       desiredContentKeys,
       srcId,
       id,
-      RequestCode.ACCECPT_READ
+      RequestCode.ACCECPT_READ,
+      []
     )
 
     const payload: AcceptMessage = {
