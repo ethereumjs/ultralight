@@ -2,16 +2,24 @@
 
 - Reading Socket
 
-  - FindContent
-    - Sends SYN
   - Accept
     - Receives SYN
+  - FindContent
+    - Sends SYN
 
 - Writing Socket
   - Offer
     - Sends SYN
   - FoundContent
     - Receives SYN
+
+0: FOUNDCONTENT_WRITE
+1: FINDCONTENT_READ - SYN
+2: OFFER_WRITE - SYN
+3: ACCEPT_READ
+
+
+
 
 ## FindContent / FoundContent
 
