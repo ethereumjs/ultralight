@@ -154,6 +154,18 @@ export class PortalNetworkUTP {
           } else {
             this.openHistoryNetworkRequests[socketKey] = newRequest
             this.logger(`Opening request with key: ${socketKey}`)
+            const streamer = (content: Uint8Array) => {
+              this.portal.emit(
+                'Stream',
+                0,
+                content,
+                newRequest.contentKey.selector,
+                newRequest.contentKey.value.blockHash
+              )
+            }
+            const startingSeqNr = 2
+            const reader = this.protocol.createNewReader(newRequest.socket, startingSeqNr, streamer)
+            newRequest.reader = reader
             await newRequest.init()
           }
         })
@@ -179,6 +191,8 @@ export class PortalNetworkUTP {
           rcvId,
           randUint16(),
           0,
+          1,
+          undefined,
           'write',
           this.logger,
           content
@@ -191,6 +205,8 @@ export class PortalNetworkUTP {
           rcvId,
           0,
           randUint16(),
+          undefined,
+          1,
           'read',
           this.logger
         )
@@ -202,6 +218,8 @@ export class PortalNetworkUTP {
           rcvId,
           0,
           randUint16(),
+          undefined,
+          1,
           'write',
           this.logger,
           content
@@ -214,6 +232,8 @@ export class PortalNetworkUTP {
           rcvId,
           randUint16(),
           0,
+          1,
+          undefined,
           'read',
           this.logger
         )
@@ -286,20 +306,10 @@ export class PortalNetworkUTP {
     const key = request.contentKey
     const type = key.selector
     const requestCode = request.requestCode
-    let startingSeqNr: number = 0
-    let streamer
-    let reader
-    let writer
     try {
       switch (requestCode) {
         case 0:
           this.logger(`SYN received to initiate stream for FINDCONTENT request`)
-          startingSeqNr = packet.header.seqNr
-          streamer = (content: Uint8Array) => {
-            this.portal.emit('Stream', 0, content, type, key.value.blockHash)
-          }
-          reader = this.protocol.createNewReader(request.socket, startingSeqNr, streamer)
-          request.reader = reader
           await this.protocol.handleSynPacket(request.socket, packet)
           break
         case 1:
@@ -310,9 +320,6 @@ export class PortalNetworkUTP {
           break
         case 3:
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
-          startingSeqNr = packet.header.ackNr
-          writer = this.protocol.createNewWriter(request.socket, startingSeqNr)
-          request.writer = writer
           await this.protocol.handleSynPacket(request.socket, packet)
           break
       }
@@ -322,35 +329,52 @@ export class PortalNetworkUTP {
   }
   async handleStatePacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
-    if (requestCode === 0 && packet.header.ackNr === 1) {
-      this.logger(`SYN-ACK received.  Beginning DATA stream`)
-      await request.socket.startDataTransfer(request.content!, request.writer!)
-    } else if (requestCode === 2 && packet.header.ackNr === 1) {
-      this.logger(
-        'SYN-ACK received for OFFERACCEPT request.  Sending SYN-ACK-ACK and listening for DATA'
-      )
-      this.protocol.handleStatePacket(request.socket, packet)
-    } else if (requestCode === 3 && packet.header.seqNr === 2) {
-      this.logger('SYN-ACK-ACK packet received.  Beginning DATA stream.')
-      await request.socket.startDataTransfer(request.content!, request.writer!)
-    } else {
-      try {
-        switch (requestCode) {
-          case 0:
-            request.socket.handleStatePacket(packet)
-            break
-          case 1:
-            request.socket.handleStatePacket(packet)
-            break
-          case 2:
-            request.socket.handleStatePacket(packet)
-            break
-          case 3:
-            throw new Error('Why did I get a STATE packet?')
+    switch (requestCode) {
+      case 0:
+        if (packet.header.seqNr === 2) {
+          this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
+          const startingSeqNr = packet.header.ackNr + 1
+          const writer = this.protocol.createNewWriter(request.socket, startingSeqNr)
+          request.writer = writer
+          await request.socket.startDataTransfer(request.content!, request.writer!)
+        } else {
+          request.socket.handleStatePacket(packet)
         }
-      } catch {
-        this.logger('Request Type Not Implemented')
-      }
+        break
+      case 1:
+        if (packet.header.ackNr === 1) {
+          this.logger(
+            `SYN-ACK received for FINDCONTENT request.  Sending SYN-ACK-ACK.  Waiting for DATA.`
+          )
+          const streamer = (content: Uint8Array) => {
+            this.portal.emit(
+              'Stream',
+              0,
+              content,
+              request.contentKey.selector,
+              request.contentKey.value.blockHash
+            )
+          }
+          const startingSeqNr = request.socket.seqNr + 1
+          const reader = this.protocol.createNewReader(request.socket, startingSeqNr, streamer)
+          request.reader = reader
+          // await this.protocol.handleStatePacket(request.socket, packet)
+          await this.protocol.sendStatePacket(request.socket)
+        } else {
+          request.socket.handleStatePacket(packet)
+        }
+        break
+      case 2:
+        if (packet.header.ackNr === 1) {
+          this.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
+          await request.socket.startDataTransfer(request.content!, request.writer!)
+        } else {
+          request.socket.handleStatePacket(packet)
+        }
+        break
+      case 3:
+        this.logger('Why did I get a STATE packet?')
+        break
     }
   }
 
