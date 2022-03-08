@@ -76,8 +76,8 @@ export class BasicUtp {
     await sendSelectiveAckPacket(socket)
   }
   async sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<number> {
-    await sendDataPacket(socket, payload)
-    return socket.seqNr
+    const seqNr = await sendDataPacket(socket, payload)
+    return seqNr
   }
   async sendResetPacket(socket: UtpSocket) {
     await sendResetPacket(socket)
@@ -92,13 +92,19 @@ export class BasicUtp {
   async handleSynAckPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleStatePacket(packet)
   }
-  async handleStatePacket(socket: UtpSocket, packet: Packet) {
-    await socket.handleStatePacket(packet)
+  async handleStatePacket(socket: UtpSocket, packet: Packet): Promise<void | boolean> {
+    const done = await socket.handleStatePacket(packet)
+    if (done === true) {
+      return true
+    } else {
+      return false
+    }
   }
   async handleDataPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleDataPacket(packet)
   }
-  async handleFinPacket(socket: UtpSocket, packet: Packet) {
-    await socket.handleFinPacket(packet)
+  async handleFinPacket(socket: UtpSocket, packet: Packet): Promise<Uint8Array | undefined> {
+    const content = await socket.handleFinPacket(packet)
+    return content
   }
 }
