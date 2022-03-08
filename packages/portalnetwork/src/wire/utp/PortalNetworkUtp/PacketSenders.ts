@@ -17,7 +17,7 @@ export async function sendSynPacket(socket: UtpSocket): Promise<void> {
 
 export async function sendSynAckPacket(socket: UtpSocket): Promise<void> {
   const packet = createAckPacket(
-    socket.seqNr + 1,
+    socket.seqNr,
     socket.sndConnectionId,
     socket.ackNr,
     socket.rtt_var,
@@ -25,21 +25,21 @@ export async function sendSynAckPacket(socket: UtpSocket): Promise<void> {
   )
   await socket.sendSynAckPacket(packet)
 }
-export async function sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<void> {
+export async function sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<number> {
   const packet = createDataPacket(
-    socket.seqNr + 1,
+    socket.seqNr,
     socket.sndConnectionId,
     socket.ackNr,
     socket.max_window,
     payload,
     socket.rtt_var
   )
-  socket.dataNrs.push(packet.header.seqNr)
-  await socket.sendDataPacket(packet)
+  const seqNr = await socket.sendDataPacket(packet)
+  return seqNr
 }
 export async function sendAckPacket(socket: UtpSocket): Promise<void> {
   const packet = createAckPacket(
-    socket.seqNr + 1,
+    socket.seqNr,
     socket.sndConnectionId,
     socket.ackNr,
     socket.rtt_var,
@@ -54,7 +54,7 @@ export async function sendResetPacket(socket: UtpSocket): Promise<void> {
 export async function sendFinPacket(socket: UtpSocket): Promise<void> {
   const packet = createFinPacket(
     socket.sndConnectionId,
-    socket.seqNr + 1,
+    socket.seqNr,
     socket.ackNr,
     socket.cur_window
   )
@@ -64,7 +64,7 @@ export async function sendFinPacket(socket: UtpSocket): Promise<void> {
 export async function sendSelectiveAckPacket(socket: UtpSocket) {
   // const received: number[] = socket.received
   const _packet = createSelectiveAckPacket(
-    socket.seqNr + 1,
+    socket.seqNr,
     socket.sndConnectionId,
     socket.ackNr,
     socket.rtt_var,
