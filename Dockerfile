@@ -22,4 +22,4 @@ COPY --from=BUILD_IMAGE /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 ENV nat=
 ENV rpcport=
 ENV proxy=
-CMD node /app/packages/cli/dist/index.js --nat=${nat} --rpcport=${rpcport} --proxy=${proxy}
+CMD node /app/packages/cli/dist/index.js --nat=${nat} --rpcport=${rpcport} --proxy=${proxy} --dataDir="./data"
