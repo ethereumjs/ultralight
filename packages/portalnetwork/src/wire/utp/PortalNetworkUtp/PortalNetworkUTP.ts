@@ -307,8 +307,6 @@ export class PortalNetworkUTP {
   }
 
   async handleSynPacket(request: HistoryNetworkContentRequest, packet: Packet) {
-    const key = request.contentKey
-    const type = key.selector
     const requestCode = request.requestCode
     try {
       switch (requestCode) {
