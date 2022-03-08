@@ -1,3 +1,3 @@
-export * from './utp_protocol'
+export * from './BasicUtp'
 export * from './read'
 export * from './write'

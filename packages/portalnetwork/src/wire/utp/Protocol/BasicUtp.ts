@@ -1,8 +1,8 @@
 import { Debugger } from 'debug'
 import { Packet, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
-import ContentReader from '../Protocol/read/ContentReader'
-import ContentWriter from '../Protocol/write/ContentWriter'
+import ContentReader from './read/ContentReader'
+import ContentWriter from './write/ContentWriter'
 import {
   sendDataPacket,
   sendSynAckPacket,
@@ -11,7 +11,7 @@ import {
   sendResetPacket,
   sendFinPacket,
   sendAckPacket,
-} from './PacketSenders'
+} from '../Packets/PacketSenders'
 
 export class BasicUtp {
   send: (peerId: string, msg: Buffer, networkId: SubNetworkIds) => Promise<void>

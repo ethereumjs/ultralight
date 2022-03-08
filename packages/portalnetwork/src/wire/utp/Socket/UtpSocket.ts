@@ -6,8 +6,8 @@ import { SubNetworkIds } from '../..'
 import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'
-import { BasicUtp } from '../PortalNetworkUtp/BasicUtp'
-import { sendAckPacket } from '../PortalNetworkUtp/PacketSenders'
+import { BasicUtp } from '../Protocol/BasicUtp'
+import { sendAckPacket } from '../Packets/PacketSenders'
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'
   utp: BasicUtp

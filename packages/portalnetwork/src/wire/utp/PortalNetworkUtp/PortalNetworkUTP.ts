@@ -3,7 +3,7 @@ import { Debugger } from 'debug'
 import { bufferToPacket, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork } from '../../..'
-import { BasicUtp } from './BasicUtp'
+import { BasicUtp } from '../Protocol/BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
 
 type UtpSocketKey = string

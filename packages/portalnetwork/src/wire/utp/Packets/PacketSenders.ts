@@ -62,7 +62,6 @@ export async function sendFinPacket(socket: UtpSocket): Promise<void> {
   await socket.sendFinPacket(packet)
 }
 export async function sendSelectiveAckPacket(socket: UtpSocket) {
-  // const received: number[] = socket.received
   const _packet = createSelectiveAckPacket(
     socket.seqNr,
     socket.sndConnectionId,

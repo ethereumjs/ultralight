@@ -1,7 +1,6 @@
 import { Debugger } from 'debug'
 import { TWO_MINUTES, UtpSocket } from '../..'
-import { BasicUtp } from '../../PortalNetworkUtp/BasicUtp'
-import { sendDataPacket } from '../../PortalNetworkUtp/PacketSenders'
+import { BasicUtp } from '../BasicUtp'
 
 const _MIN_RTO = TWO_MINUTES
 export default class ContentWriter {
