@@ -18,6 +18,25 @@
 2: OFFER_WRITE - SYN
 3: ACCEPT_READ
 
+            expect                     snd 
+
+0     1  :  randA  syn
+                                randB     :  1  syn-ack
+      2  :  randB  syn-ack-ack
+                                randB + 1 :  2  data
+      3  :  randB + 1  ack
+                                randB + 2 :  3  data    
+
+
+1                                1  :  randA  syn
+      randB      :  1  syn-ack
+                                 2  :  randB  syn-ack-ack
+      randB + 1  :  2  data
+                                  3  :  randB + 1  ask
+      randB + 2  :  3  data
+
+
+
 
 
 
