@@ -368,7 +368,6 @@ export class PortalNetworkUTP {
           )
           request.reader = reader
           // await this.protocol.handleStatePacket(request.socket, packet)
-          request.socket.updateSocketFromPacketHeader(packet)
           await this.protocol.sendStatePacket(request.socket)
         } else {
           this.protocol.handleStatePacket(request.socket, packet)
