@@ -31,18 +31,18 @@ const args: any = yargs(hideBin(process.argv))
     }).argv
 
 const main = async () => {
-  let client = Client.http({ port: args.rpcPort })
+  let bootNode = Client.http({ port: args.rpcPort })
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
   for (let x = 0; x < args.numBlocks; x++) {
-    await client.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
+    await bootNode.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
   }
-  const enr = await client.request('portal_nodeEnr', [])
+  const bootNodeEnr = await bootNode.request('portal_nodeEnr', [])
   const targets = [`localhost:1${args.rpcPort}`]
   for (let x = 1; x < args.numNodes; x++) {
       targets.push(`localhost:1${args.rpcPort + x}`)
-      client = Client.http({ port: args.rpcPort + x })
-      await client.request('portal_addBootNode', [enr.result])
+    const client = Client.http({ port: args.rpcPort + x })
+    await client.request('portal_addBootNode', [bootNodeEnr.result])
   }
   let targetBlob = [Object.assign({
       "targets": targets,
@@ -59,7 +59,7 @@ const main = async () => {
 
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })
-    await _client.request('portal_ping', [enr.result])
+    await _client.request('portal_ping', [bootNodeEnr.result])
   }
   // for (let x = 1; x < args.numNodes; x++) {
   //   const _client = Client.http({ port: args.rpcPort + x })
@@ -67,7 +67,8 @@ const main = async () => {
   // }
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })
-    await _client.request('portal_utp_offer_test', [enr.result])
+    const enr = await _client.request('portal_nodeEnr', [])
+    await bootNode.request('portal_utp_offer_test', [enr.result, blocks[args.numBlocks - 1][0]])
   }
   // for (let x = 1; x < args.numNodes; x++) {
   //   const _client = Client.http({ port: args.rpcPort + x })

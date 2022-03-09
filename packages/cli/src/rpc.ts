@@ -165,15 +165,15 @@ export class RPCManager {
       )
       return `Some uTP happened`
     },
-    portal_utp_offer_test: async (params: [string]) => {
+    portal_utp_offer_test: async (params: [string, string]) => {
       this.log(`portal_utp_offer_test request received`)
-      const [enr] = params
+      const [enr, blockhash] = params
       const encodedENR = ENR.decodeTxt(enr)
       const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 1,
+        selector: 0,
         value: {
           chainId: 1,
-          blockHash: fromHex('ca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f'),
+          blockHash: fromHex(blockhash.slice(2)),
         },
       })
 

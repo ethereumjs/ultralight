@@ -717,6 +717,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             this.logger(`Accepting an OFFER`)
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
             this.sendAccept(srcId, message, contentIds, desiredKeys)
+          } else {
+            this.logger(`Declining an OFFER since no interesting content`)
+            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
           }
         } catch {
           this.logger(`Something went wrong handling offer message`)
@@ -740,7 +743,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     desiredContentKeys: Uint8Array[]
   ) => {
     this.logger(
-      `sending ACCEPT to ${shortId(srcId)} for ${desiredContentAccepts.length} pieces of content.`
+      `sending ACCEPT to ${shortId(srcId)} for ${desiredContentKeys.length} pieces of content.`
     )
 
     this.metrics?.acceptMessagesSent.inc()
