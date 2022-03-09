@@ -77,9 +77,10 @@ export class PortalNetworkUTP {
         socketKey = createSocketKey(peerId, sndId, rcvId)
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
-          contentKeys[0],
+          [contentKeys[0]],
           socket,
-          socketKey
+          socketKey,
+          [undefined]
         )
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
@@ -97,12 +98,9 @@ export class PortalNetworkUTP {
           throw new Error('Error in Socket Creation')
         }
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new HistoryNetworkContentRequest(
-          requestCode,
-          contentKeys[0],
-          socket,
-          socketKey
-        )
+        newRequest = new HistoryNetworkContentRequest(requestCode, contentKeys, socket, socketKey, [
+          undefined,
+        ])
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
         } else {
@@ -115,66 +113,50 @@ export class PortalNetworkUTP {
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
-        contents.forEach(async (content, idx) => {
-          if (content === undefined) {
-            throw new Error('Contents Undefined')
-          }
-          sndId = connectionId
-          rcvId = connectionId + 1
-          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, 0, randUint16(), content)
-          if (socket === undefined) {
-            throw new Error('Error in Socket Creation')
-          }
-          socketKey = createSocketKey(peerId, sndId, rcvId)
-          newRequest = new HistoryNetworkContentRequest(
-            requestCode,
-            contentKeys[idx],
-            socket,
-            socketKey,
-            contents[idx]
-          )
-          if (this.openHistoryNetworkRequests[socketKey]) {
-            this.logger(`Request already Open`)
-          } else {
-            this.openHistoryNetworkRequests[socketKey] = newRequest
-            this.logger(`Opening request with key: ${socketKey}`)
-            await newRequest.init()
-          }
-        })
+        sndId = connectionId
+        rcvId = connectionId + 1
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])
+        if (socket === undefined) {
+          throw new Error('Error in Socket Creation')
+        }
+        socketKey = createSocketKey(peerId, sndId, rcvId)
+        newRequest = new HistoryNetworkContentRequest(
+          requestCode,
+          [contentKeys[0]],
+          socket,
+          socketKey,
+          [contents[0]]
+        )
+        if (this.openHistoryNetworkRequests[socketKey]) {
+          this.logger(`Request already Open`)
+        } else {
+          this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.logger(`Opening request with key: ${socketKey}`)
+          await newRequest.init()
+        }
         break
       case 3:
-        contentKeys.forEach(async (key) => {
-          sndId = connectionId + 1
-          rcvId = connectionId
-          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, randUint16(), 1)
-          if (socket === undefined) {
-            throw new Error('Error in Socket Creation')
-          }
-          socketKey = createSocketKey(peerId, sndId, rcvId)
-          newRequest = new HistoryNetworkContentRequest(requestCode, key, socket, socketKey)
-          if (this.openHistoryNetworkRequests[socketKey]) {
-            this.logger(`Request already Open`)
-          } else {
-            this.openHistoryNetworkRequests[socketKey] = newRequest
-            this.logger(`Opening request with key: ${socketKey}`)
-            const streamer = async (content: Uint8Array) => {
-              await this.portal.addContentToHistory(
-                1,
-                newRequest.contentKey.selector,
-                toHexString(newRequest.contentKey.value.blockHash),
-                content
-              )
-            }
-            const startingSeqNr = 2
-            const reader = await this.protocol.createNewReader(
-              newRequest.socket,
-              startingSeqNr,
-              streamer
-            )
-            newRequest.reader = reader
-            await newRequest.init()
-          }
-        })
+        sndId = connectionId + 1
+        rcvId = connectionId
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)
+        if (socket === undefined) {
+          throw new Error('Error in Socket Creation')
+        }
+        socketKey = createSocketKey(peerId, sndId, rcvId)
+        newRequest = new HistoryNetworkContentRequest(
+          requestCode,
+          contentKeys,
+          socket,
+          socketKey,
+          []
+        )
+        if (this.openHistoryNetworkRequests[socketKey]) {
+          this.logger(`Request already Open`)
+        } else {
+          this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.logger(`Opening request with key: ${socketKey}`)
+          await newRequest.init()
+        }
         break
     }
     // const rcvId = requestCode % 2 === 0 ? sndId - 1 : sndId + 1
@@ -441,10 +423,10 @@ export class PortalNetworkUTP {
     )
     const newRequest = new HistoryNetworkContentRequest(
       requestCode,
-      HistoryNetworkContentKeyUnionType.serialize(request.contentKey),
+      [HistoryNetworkContentKeyUnionType.serialize(request.contentKey)],
       newSocket!,
       request.socketKey,
-      request.content ?? request.content
+      request.content ? [request.content] : [undefined]
     )
     await newRequest.init()
   }

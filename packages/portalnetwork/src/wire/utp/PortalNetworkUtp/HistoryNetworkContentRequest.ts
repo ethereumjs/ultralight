@@ -19,14 +19,14 @@ export class HistoryNetworkContentRequest {
 
   constructor(
     requestCode: RequestCode,
-    contentKey: Uint8Array,
+    contentKey: Uint8Array[],
     socket: UtpSocket,
     socketKey: string,
-    content?: Uint8Array
+    content: Uint8Array[] | undefined[]
   ) {
     this.requestCode = requestCode
-    this.contentKey = HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(contentKey))
-    this.content = content
+    this.contentKey = HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(contentKey[0]))
+    this.content = content[0] ?? undefined
     this.socketKey = socketKey
     this.socket = socket
   }

@@ -419,6 +419,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.logger(decoded.value)
           const msg = decoded.value as AcceptMessage
           const id = Buffer.from(msg.connectionId).readUInt16BE(0)
+
           // Initiate uTP streams with serving of requested content
           const requestedKeys: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
@@ -756,9 +757,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       RequestCode.ACCECPT_READ,
       []
     )
+    const idBuffer = Buffer.alloc(2)
+    idBuffer.writeUInt16BE(id, 0)
 
     const payload: AcceptMessage = {
-      connectionId: new Uint8Array(2).fill(id),
+      connectionId: idBuffer,
       contentKeys: desiredContentAccepts,
     }
     const encodedPayload = PortalWireMessageType.serialize({
