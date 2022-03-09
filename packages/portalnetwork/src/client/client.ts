@@ -424,18 +424,20 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             (n, idx) => msg.contentKeys[idx] === true
           )
           const requestedData: Uint8Array[] = []
-          requestedKeys.forEach(async (key) => {
-            let value = Uint8Array.from([])
-            const lookupKey = serializedContentKeyToContentId(key)
-
-            try {
-              value = Buffer.from(fromHexString(await this.db.get(lookupKey)))
-              requestedData.push(value)
-            } catch (err: any) {
-              this.logger(`Error retrieving content -- ${err.toString()}`)
-              requestedData.push(value)
-            }
-          })
+          await Promise.all(
+            requestedKeys.map(async (key) => {
+              let value = Uint8Array.from([])
+              const lookupKey = serializedContentKeyToContentId(key)
+              this.logger(`lookup keys ${key} ${lookupKey}`)
+              try {
+                value = fromHexString(await this.db.get(lookupKey))
+                requestedData.push(value)
+              } catch (err: any) {
+                this.logger(`Error retrieving content -- ${err.toString()}`)
+                requestedData.push(value)
+              }
+            })
+          )
 
           await this.uTP.handleNewHistoryNetworkRequest(
             requestedKeys,
