@@ -61,15 +61,14 @@ const main = async () => {
     const _client = Client.http({ port: args.rpcPort + x })
     await _client.request('portal_ping', [enr.result])
   }
-  for (let x = 1; x < args.numNodes; x++) {
-    const _client = Client.http({ port: args.rpcPort + x })
-    await _client.request('portal_utp_find_content_test', [enr.result])
-  }
   // for (let x = 1; x < args.numNodes; x++) {
   //   const _client = Client.http({ port: args.rpcPort + x })
-  //   const enr = await _client.request('portal_nodeEnr', [])
-  //   await client.request('portal_utp_offer_test', [enr.result])
+  //   await _client.request('portal_utp_find_content_test', [enr.result])
   // }
+  for (let x = 1; x < args.numNodes; x++) {
+    const _client = Client.http({ port: args.rpcPort + x })
+    await _client.request('portal_utp_offer_test', [enr.result])
+  }
   // for (let x = 1; x < args.numNodes; x++) {
   //   const _client = Client.http({ port: args.rpcPort + x })
   //   // const enr = await _client.request('portal_nodeEnr', [])

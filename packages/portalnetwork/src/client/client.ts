@@ -420,15 +420,29 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           const msg = decoded.value as AcceptMessage
           const id = Buffer.from(msg.connectionId).readUInt16BE(0)
           // Initiate uTP streams with serving of requested content
-          const requested: Uint8Array[] = contentKeys.filter(
+          const requestedKeys: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
+          const requestedData: Uint8Array[] = []
+          requestedKeys.forEach(async (key) => {
+            let value = Uint8Array.from([])
+            const lookupKey = serializedContentKeyToContentId(key)
+
+            try {
+              value = Buffer.from(fromHexString(await this.db.get(lookupKey)))
+              requestedData.push(value)
+            } catch (err: any) {
+              this.logger(`Error retrieving content -- ${err.toString()}`)
+              requestedData.push(value)
+            }
+          })
+
           await this.uTP.handleNewHistoryNetworkRequest(
-            contentKeys,
+            requestedKeys,
             dstId,
             id,
             RequestCode.OFFER_WRITE,
-            requested
+            requestedData
           )
 
           return msg.contentKeys
@@ -678,13 +692,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private handleOffer = async (srcId: string, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
-    this.logger(`Received OFFER request from ${shortId(srcId)}`)
     this.logger(decoded)
     const msg = decoded.value as OfferMessage
-    if (msg.contentKeys.length > 0) {
-      try {
-        if (msg.contentKeys.length > 0) {
-          const contentIds = Array(msg.contentKeys.length).fill(false)
+    this.logger(
+      `Received OFFER request from ${shortId(srcId)} with ${
+        msg.contentKeys.length
+      } pieces of content.`
+    )
+    try {
+      if (msg.contentKeys.length > 0) {
+        try {
+          const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
           let offerAccepted = false
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
@@ -696,14 +714,22 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             }
           }
           if (offerAccepted) {
-            this.sendAccept(srcId, message, contentIds, msg.contentKeys)
+            this.logger(`Accepting an OFFER`)
+            const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
+            this.sendAccept(srcId, message, contentIds, desiredKeys)
           }
+        } catch {
+          this.logger(`Something went wrong handling offer message`)
+          // Send empty response if something goes wrong parsing content keys
+          this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
         }
-      } catch {
-        this.logger(`Something went wrong handling offer message`)
+      } else {
+        this.logger(`Something was wrong with OFFER message`)
         // Send empty response if something goes wrong parsing content keys
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }
+    } catch {
+      this.logger(`Error Processing OFFER msg`)
     }
   }
 
@@ -713,6 +739,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[]
   ) => {
+    this.logger(
+      `sending ACCEPT to ${shortId(srcId)} for ${desiredContentAccepts.length} pieces of content.`
+    )
+
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
     await this.uTP.handleNewHistoryNetworkRequest(
@@ -731,7 +761,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    this.logger(`sending ACCEPT to ${shortId(srcId)} with connection`)
     await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
   }
 

@@ -169,21 +169,15 @@ export class RPCManager {
       this.log(`portal_utp_offer_test request received`)
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
-      await this._client.sendOffer(
-        encodedENR.nodeId,
-        [
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 1,
-            value: {
-              chainId: 1,
-              blockHash: fromHex(
-                '46b332ceda6777098fe7943929e76a5fcea772a866c0fb1d170ec65c46c7e3ae'
-              ),
-            },
-          }),
-        ],
-        SubNetworkIds.HistoryNetwork
-      )
+      const contentKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 1,
+        value: {
+          chainId: 1,
+          blockHash: fromHex('ca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f'),
+        },
+      })
+
+      await this._client.sendOffer(encodedENR.nodeId, [contentKey], SubNetworkIds.HistoryNetwork)
       return `Some uTP happened`
     },
   }
