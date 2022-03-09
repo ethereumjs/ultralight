@@ -428,7 +428,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             requestedKeys.map(async (key) => {
               let value = Uint8Array.from([])
               const lookupKey = serializedContentKeyToContentId(key)
-              this.logger(`lookup keys ${key} ${lookupKey}`)
               try {
                 value = fromHexString(await this.db.get(lookupKey))
                 requestedData.push(value)
