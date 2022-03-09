@@ -38,7 +38,9 @@ export default class ContentWriter {
       bytes = this.dataChunks[this.socket.seqNr]
       this.sentChunks.push(this.socket.seqNr)
       this.socket.logger(
-        `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${this.socket.seqNr}`
+        `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${
+          this.socket.seqNr
+        }.  size: ${this.dataChunks[this.socket.seqNr].length}`
       )
       const sent = await sendDataPacket(this.socket, bytes)
       this.socket.logger(sent)
@@ -64,6 +66,7 @@ export default class ContentWriter {
   }
 
   chunk(content: Uint8Array, size: number): Record<number, Uint8Array> {
+    let arrayMod = content
     this.logger(`Preparing`)
     this.logger(content)
     this.logger(`For transfer as ${size} byte chunks.`)
@@ -72,9 +75,11 @@ export default class ContentWriter {
     const total = full + partial
     const dataChunks: Record<number, Uint8Array> = {}
     for (let i = 0; i < total; i++) {
-      const start = i * size
-      const end = start + size < total ? start + size : undefined
-      dataChunks[i + this.startingSeqNr] = content.subarray(start, end)
+      const start = 0
+      const end = arrayMod.length > 500 ? 500 : undefined
+      dataChunks[i + this.startingSeqNr] = arrayMod.subarray(start, end)
+      arrayMod = arrayMod.subarray(end)
+
       this.socket.dataNrs.push(i + this.startingSeqNr)
     }
     this.logger(`Ready to send ${total} Packets`)

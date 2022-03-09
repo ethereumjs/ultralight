@@ -441,14 +441,14 @@ export class PortalNetworkUTP {
     try {
       switch (requestCode) {
         case 0:
-          request.socket.handleFinPacket(packet)
-          break
-        case 1:
           throw new Error('Why did I get a FIN packet?')
+        case 1:
+          await request.socket.handleFinPacket(packet)
+          break
         case 2:
           throw new Error('Why did I get a FIN packet?')
         case 3:
-          request.socket.handleFinPacket(packet)
+          await request.socket.handleFinPacket(packet)
           break
       }
     } catch {

@@ -8,6 +8,7 @@ import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders'
+import { PacketHeader } from '../Packets'
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'
   utp: BasicUtp
@@ -157,21 +158,20 @@ export class UtpSocket extends EventEmitter {
     this.logger(
       `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
     )
+    const expected = this.nextSeq === packet.header.seqNr
     this.nextSeq = packet.header.seqNr + 1
     this.nextAck = packet.header.ackNr + 1
     this.seqNr = packet.header.ackNr + 1
     this.ackNr = packet.header.seqNr
     // this.updateSocketFromPacketHeader(packet)
     try {
-      const expected = await this.reader!.addPacket(packet)
+      await this.reader!.addPacket(packet)
       if (expected === true) {
         this.ackNrs.push(this.seqNr)
         await this.utp.sendStatePacket(this)
       } else if (expected === false) {
         this.ackNrs.push(this.seqNr)
-        this.logger(`Packet Arrived Out of Order.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
-        this.logger(`Sending Selective Ack`)
-        await sendAckPacket(this)
+        await this.utp.sendStatePacket(this)
       } else {
         throw new Error('Packet Read Error')
       }
@@ -193,7 +193,8 @@ export class UtpSocket extends EventEmitter {
       this.logger('Problem with Reader.run()')
     }
     this.logger(`Packet payloads compiled`)
-    await sendAckPacket(this)
+    this.logger(this.readerContent)
+    await this.utp.sendStatePacket(this)
     return this.readerContent
   }
 
