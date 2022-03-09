@@ -10,8 +10,12 @@ export default class ContentReader {
   nextDataNr: number | undefined
   lastDataNr: number | undefined
   logger: Debugger
-  streamer: (content: Uint8Array) => void
-  constructor(socket: UtpSocket, startingDataNr: number, streamer: (content: Uint8Array) => void) {
+  streamer: (content: Uint8Array) => Promise<void>
+  constructor(
+    socket: UtpSocket,
+    startingDataNr: number,
+    streamer: (content: Uint8Array) => Promise<void>
+  ) {
     this.socket = socket
     this.packets = new Array<Packet>()
     this.inOrder = new Array<Packet>()
@@ -41,16 +45,15 @@ export default class ContentReader {
     return this.packets.length > 0
   }
 
-  compile(packets: Packet[]): Uint8Array {
+  async compile(packets: Packet[]): Promise<Uint8Array> {
     let compiled = Buffer.from([])
     packets.forEach((p) => {
       compiled = Buffer.concat([compiled, Buffer.from(p.payload)])
     })
     this.logger(`${compiled.length} Bytes Received.`)
     this.logger(Uint8Array.from(compiled))
-    if (this.streamer) {
-      this.streamer(compiled)
-    }
+    // await this.streamer(compiled)
+
     return Uint8Array.from(compiled)
   }
 
@@ -59,7 +62,7 @@ export default class ContentReader {
       return a.header.seqNr - b.header.seqNr
     })
     try {
-      const compiled = this.compile(sortedPackets)
+      const compiled = await this.compile(sortedPackets)
       this.streamer(compiled)
       return compiled
     } catch {

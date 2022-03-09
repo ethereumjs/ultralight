@@ -51,7 +51,7 @@ export class BasicUtp {
   async createNewReader(
     socket: UtpSocket,
     startingDataNr: number,
-    streamer: (content: Uint8Array) => void
+    streamer: (content: Uint8Array) => Promise<void>
   ) {
     return new ContentReader(socket, startingDataNr, streamer)
   }

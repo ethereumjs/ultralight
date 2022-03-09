@@ -1,4 +1,5 @@
-import { Discv5 } from '@chainsafe/discv5'
+import { Discv5, toHex } from '@chainsafe/discv5'
+import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { bufferToPacket, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
@@ -156,13 +157,12 @@ export class PortalNetworkUTP {
           } else {
             this.openHistoryNetworkRequests[socketKey] = newRequest
             this.logger(`Opening request with key: ${socketKey}`)
-            const streamer = (content: Uint8Array) => {
-              this.portal.emit(
-                'Stream',
-                0,
-                content,
+            const streamer = async (content: Uint8Array) => {
+              await this.portal.addContentToHistory(
+                1,
                 newRequest.contentKey.selector,
-                newRequest.contentKey.value.blockHash
+                toHexString(newRequest.contentKey.value.blockHash),
+                content
               )
             }
             const startingSeqNr = 2
@@ -317,6 +317,8 @@ export class PortalNetworkUTP {
       switch (requestCode) {
         case 0:
           this.logger(`SYN received to initiate stream for FINDCONTENT request`)
+          this.logger(`Should be RANDOM-1`)
+          this.logger(`${packet.header.seqNr} - ${packet.header.ackNr}`)
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = randUint16()
           writer = await this.protocol.createNewWriter(request.socket, request.socket.seqNr + 1)
@@ -346,12 +348,19 @@ export class PortalNetworkUTP {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = packet.header.ackNr + 1
-          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextSeq = 3
           request.socket.nextAck = packet.header.ackNr + 1
           await request.writer?.start()
           await sendFinPacket(request.socket)
         } else {
-          request.socket.handleStatePacket(packet)
+          request.socket.logger('Ack Packet Received.')
+          request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
+          request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
+          request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = packet.header.ackNr + 1
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
+          await this.protocol.handleStatePacket(request.socket, packet)
         }
         break
       case 1:
@@ -359,13 +368,14 @@ export class PortalNetworkUTP {
           this.logger(
             `SYN-ACK received for FINDCONTENT request.  Sending SYN-ACK-ACK.  Waiting for DATA.`
           )
-          const streamer = (content: Uint8Array) => {
-            this.portal.emit(
-              'Stream',
-              0,
-              content,
+          this.logger(`Expecting: RANDOM-1`)
+          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
+          const streamer = async (content: Uint8Array) => {
+            await this.portal.addContentToHistory(
+              1,
               request.contentKey.selector,
-              request.contentKey.value.blockHash
+              toHexString(request.contentKey.value.blockHash),
+              content
             )
           }
           const startingSeqNr = request.socket.seqNr + 1
@@ -381,6 +391,8 @@ export class PortalNetworkUTP {
           request.reader = reader
           await this.protocol.sendStatePacket(request.socket)
         } else {
+          this.logger(`Expecting: ${request.socket.nextSeq} - ${request.socket.nextAck}`)
+          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
           this.protocol.handleStatePacket(request.socket, packet)
         }
         break
@@ -438,12 +450,23 @@ export class PortalNetworkUTP {
   }
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
+    const streamer = async (content: Uint8Array) => {
+      await this.portal.addContentToHistory(
+        1,
+        request.contentKey.selector,
+        toHexString(request.contentKey.value.blockHash),
+        content
+      )
+    }
+    let content
     try {
       switch (requestCode) {
         case 0:
           throw new Error('Why did I get a FIN packet?')
         case 1:
-          await request.socket.handleFinPacket(packet)
+          content = await request.socket.handleFinPacket(packet)
+          streamer(content!)
+          request.socket.logger(`Closing uTP Socket`)
           break
         case 2:
           throw new Error('Why did I get a FIN packet?')

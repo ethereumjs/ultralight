@@ -60,6 +60,7 @@ export class UtpSocket extends EventEmitter {
     this.sndConnectionId = sndId
     this.seqNr = seqNr
     this.ackNr = ackNr
+    this.finNr = undefined
     this.max_window = DEFAULT_WINDOW_SIZE
     this.cur_window = this.max_window
     this.reply_micro = 0
@@ -117,6 +118,7 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendFinPacket(packet: Packet) {
+    this.finNr = packet.header.seqNr
     await this.sendPacket(packet, PacketType.ST_FIN)
   }
 
@@ -127,23 +129,18 @@ export class UtpSocket extends EventEmitter {
   }
 
   async handleStatePacket(packet: Packet): Promise<void | boolean> {
-    const nextSeq = this.nextSeq === undefined ? 'RANDOM' : this.nextSeq
-    const nextAck = this.nextSeq === undefined ? 'RANDOM' : this.nextSeq
-    this.logger(
-      `expecting ${nextSeq}-${nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
-    )
-    this.nextAck = this.nextAck && packet.header.ackNr + 1
-    this.nextSeq = this.nextSeq && packet.header.seqNr + 1
+    if (packet.header.ackNr === this.finNr) {
+      this.logger(`FIN packet acked`)
+      this.logger(`Closing Socket.  Goodnight.`)
+      return
+    }
     if (this.type === 'read') {
       await sendAckPacket(this)
     } else {
       this.ackNrs.push(packet.header.ackNr)
-      const finished = this.dataNrs.every((val, index) => val === this.ackNrs[index])
-      if (finished) {
-        this.logger(
-          `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
-        )
-      }
+      this.logger(
+        `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
+      )
       if (this.compare()) {
         this.logger(`all data packets acked`)
         return true
@@ -194,6 +191,11 @@ export class UtpSocket extends EventEmitter {
     }
     this.logger(`Packet payloads compiled`)
     this.logger(this.readerContent)
+    if (packet.header.ackNr !== this.finNr) {
+      this.logger(`AckNr does not match FinNr`)
+    }
+    this.seqNr = packet.header.ackNr + 1
+    this.ackNr = packet.header.seqNr
     await this.utp.sendStatePacket(this)
     return this.readerContent
   }
