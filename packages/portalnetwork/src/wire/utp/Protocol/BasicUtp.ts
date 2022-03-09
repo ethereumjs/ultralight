@@ -1,17 +1,18 @@
 import { Debugger } from 'debug'
-import { Packet, UtpSocket } from '..'
-import { SubNetworkIds } from '../..'
-import ContentReader from './read/ContentReader'
-import ContentWriter from './write/ContentWriter'
+import { SubNetworkIds } from '../../types'
+import { Packet } from '../Packets'
 import {
-  sendDataPacket,
-  sendSynAckPacket,
   sendSynPacket,
+  sendSynAckPacket,
+  sendAckPacket,
   sendSelectiveAckPacket,
+  sendDataPacket,
   sendResetPacket,
   sendFinPacket,
-  sendAckPacket,
 } from '../Packets/PacketSenders'
+import { UtpSocket } from '../Socket'
+import ContentReader from './read/ContentReader'
+import ContentWriter from './write/ContentWriter'
 
 export class BasicUtp {
   send: (peerId: string, msg: Buffer, networkId: SubNetworkIds) => Promise<void>
@@ -87,7 +88,7 @@ export class BasicUtp {
   }
 
   async handleSynPacket(socket: UtpSocket, packet: Packet) {
-    await socket.handleSynPacket(packet)
+    await socket.handleSynPacket()
   }
   async handleSynAckPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleStatePacket(packet)

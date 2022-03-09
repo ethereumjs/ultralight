@@ -3,10 +3,12 @@ import { Debugger } from 'debug'
 import { bufferToPacket, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork } from '../../..'
+import { sendFinPacket, sendSynAckPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
 
 type UtpSocketKey = string
+
 export enum RequestCode {
   FOUNDNDCONTENT_WRITE = 0,
   FINDCONTENT_READ = 1,
@@ -280,6 +282,8 @@ export class PortalNetworkUTP {
         )
         requestKey && (await this.handleFinPacket(request, packet))
         break
+      default:
+        this.logger(`Unknown Packet Type ${packet.header.pType}`)
     }
   }
 
@@ -308,11 +312,16 @@ export class PortalNetworkUTP {
 
   async handleSynPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
+    let writer
     try {
       switch (requestCode) {
         case 0:
           this.logger(`SYN received to initiate stream for FINDCONTENT request`)
-          await this.protocol.handleSynPacket(request.socket, packet)
+          request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = randUint16()
+          writer = await this.protocol.createNewWriter(request.socket, request.socket.seqNr + 1)
+          request.writer = writer
+          await this.protocol.sendSynAckPacket(request.socket)
           break
         case 1:
           this.logger(`Why did I get a SYN?`)
@@ -335,11 +344,12 @@ export class PortalNetworkUTP {
       case 0:
         if (packet.header.seqNr === 2) {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
-          const startingSeqNr = packet.header.ackNr + 1
-          const writer = await this.protocol.createNewWriter(request.socket, startingSeqNr)
-          request.writer = writer
-          // await request.socket.startDataTransfer(request.content!, request.writer!)
-          await writer.start()
+          request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = packet.header.ackNr + 1
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
+          await request.writer?.start()
+          await sendFinPacket(request.socket)
         } else {
           request.socket.handleStatePacket(packet)
         }
@@ -359,13 +369,16 @@ export class PortalNetworkUTP {
             )
           }
           const startingSeqNr = request.socket.seqNr + 1
+          request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = packet.header.ackNr + 1
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
           const reader = await this.protocol.createNewReader(
             request.socket,
             startingSeqNr,
             streamer
           )
           request.reader = reader
-          // await this.protocol.handleStatePacket(request.socket, packet)
           await this.protocol.sendStatePacket(request.socket)
         } else {
           this.protocol.handleStatePacket(request.socket, packet)
@@ -392,7 +405,7 @@ export class PortalNetworkUTP {
         case 0:
           throw new Error('Why did I get a DATA packet?')
         case 1:
-          request.socket.handleDataPacket(packet)
+          await this.protocol.handleDataPacket(request.socket, packet)
           break
         case 2:
           throw new Error('Why did I get a DATA packet?')

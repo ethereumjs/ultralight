@@ -5,7 +5,7 @@ import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
 import { generateRandomNodeIdAtDistance, serializedContentKeyToContentId, shortId } from '../util'
-import { bufferToPacket, randUint16, UtpProtocol } from '../wire/utp'
+import { bufferToPacket, randUint16 } from '../wire/utp'
 import {
   PingPongCustomDataType,
   MessageCodes,
@@ -177,7 +177,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param namespaces comma separated list of logging namespaces
    * defaults to "portalnetwork*, discv5:service, <uTP>*"
    */
-  public enableLog = (namespaces: string = '*portalnetwork*,*discv5:service*,*<uTP>*') => {
+  public enableLog = (namespaces: string = '*portalnetwork*,*discv5:service*,*uTP*') => {
     debug.enable(namespaces)
   }
 

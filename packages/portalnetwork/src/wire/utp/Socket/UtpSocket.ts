@@ -7,7 +7,7 @@ import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'
 import { BasicUtp } from '../Protocol/BasicUtp'
-import { sendAckPacket } from '../Packets/PacketSenders'
+import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders'
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'
   utp: BasicUtp
@@ -77,7 +77,7 @@ export class UtpSocket extends EventEmitter {
     this.expected = []
     this.nextSeq = nextSeq
     this.nextAck = nextAck
-    this.logger = logger.extend(this.remoteAddress.slice(0, 3))
+    this.logger = logger.extend(this.remoteAddress.slice(0, 3)).extend(type)
   }
 
   // async updateSocketFromPacketHeader(packet: Packet) {
@@ -119,18 +119,20 @@ export class UtpSocket extends EventEmitter {
     await this.sendPacket(packet, PacketType.ST_FIN)
   }
 
-  async handleSynPacket(packet: Packet): Promise<void> {
+  async handleSynPacket(): Promise<void> {
     this.logger(`Connection State: SynRecv`)
     this.state = ConnectionState.SynRecv
-    await this.sendStatePacket(packet)
+    await sendSynAckPacket(this)
   }
 
   async handleStatePacket(packet: Packet): Promise<void | boolean> {
+    const nextSeq = this.nextSeq === undefined ? 'RANDOM' : this.nextSeq
+    const nextAck = this.nextSeq === undefined ? 'RANDOM' : this.nextSeq
     this.logger(
-      `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
+      `expecting ${nextSeq}-${nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
     )
-    this.nextAck = this.nextAck && this.nextAck + 1
-    this.nextSeq = this.nextSeq && this.nextSeq + 1
+    this.nextAck = this.nextAck && packet.header.ackNr + 1
+    this.nextSeq = this.nextSeq && packet.header.seqNr + 1
     if (this.type === 'read') {
       await sendAckPacket(this)
     } else {
@@ -164,7 +166,7 @@ export class UtpSocket extends EventEmitter {
       const expected = await this.reader!.addPacket(packet)
       if (expected === true) {
         this.ackNrs.push(this.seqNr)
-        await sendAckPacket(this)
+        await this.utp.sendStatePacket(this)
       } else if (expected === false) {
         this.ackNrs.push(this.seqNr)
         this.logger(`Packet Arrived Out of Order.  seqNr: ${this.seqNr} ackNr: ${this.ackNr}`)
@@ -175,6 +177,7 @@ export class UtpSocket extends EventEmitter {
       }
     } catch {
       this.logger(`Socket Reader is unavailable.`)
+      return
     }
   }
 

@@ -160,7 +160,7 @@ const run = async () => {
     undefined,
     metrics
   )
-  portal.enableLog('*uTP*')
+  portal.enableLog('*portalnetwork*, *uTP*')
   const metricsServer = http.createServer(reportMetrics)
 
   if (args.metrics) {

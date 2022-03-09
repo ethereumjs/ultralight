@@ -1,5 +1,6 @@
 import { Debugger } from 'debug'
 import { TWO_MINUTES, UtpSocket } from '../..'
+import { sendDataPacket } from '../../Packets/PacketSenders'
 import { BasicUtp } from '../BasicUtp'
 
 const _MIN_RTO = TWO_MINUTES
@@ -26,7 +27,6 @@ export default class ContentWriter {
   async start(): Promise<void> {
     const chunks = Object.keys(this.dataChunks).length
     this.socket.logger(`starting to send ${chunks} DATA Packets`)
-    // this.logger(Uint8Array.from(this.content))
     this.writing = true
     let bytes: Uint8Array
     while (this.writing) {
@@ -40,8 +40,8 @@ export default class ContentWriter {
       this.socket.logger(
         `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${this.socket.seqNr}`
       )
-      const sent = await this.protocol.sendDataPacket(this.socket, bytes)
-      this.logger(sent)
+      const sent = await sendDataPacket(this.socket, bytes)
+      this.socket.logger(sent)
       this.socket.ackNr += 1
       this.socket.seqNr += 1
       this.writing = chunks !== this.sentChunks.length
@@ -76,8 +76,8 @@ export default class ContentWriter {
       const end = start + size < total ? start + size : undefined
       dataChunks[i + this.startingSeqNr] = content.subarray(start, end)
       this.socket.dataNrs.push(i + this.startingSeqNr)
-      this.logger(`Ready to send ${total} Packets`)
     }
+    this.logger(`Ready to send ${total} Packets`)
     return dataChunks
   }
 }

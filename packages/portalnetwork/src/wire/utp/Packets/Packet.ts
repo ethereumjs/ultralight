@@ -36,13 +36,13 @@ export class Packet {
   header: PacketHeader | SelectiveAckHeader
   payload: Uint8Array
   sent: number
-  size: number
+  // size: number
   extensions: any[]
   constructor(options: IPacketOptions) {
     this.header = options.header
     this.payload = options.payload
     this.sent = 0
-    this.size = this.header.length + this.payload.length
+    // this.size = this.header.length + this.payload.length
     this.extensions = []
   }
 
