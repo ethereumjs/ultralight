@@ -315,6 +315,7 @@ export class PortalNetworkUTP {
           break
         case 3:
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
+          request.socket.ackNr = 1
           await this.protocol.handleSynPacket(request.socket, packet)
           break
       }
