@@ -30,8 +30,8 @@ export class HistoryNetworkContentRequest {
     this.socketKey = socketKey
     this.socket = socket
   }
-
   async init(): Promise<void> {
+    let writer
     switch (this.requestCode) {
       case 0:
         break
@@ -39,6 +39,8 @@ export class HistoryNetworkContentRequest {
         await sendSynPacket(this.socket)
         break
       case 2:
+        writer = await this.socket.utp.createNewWriter(this.socket, 2)
+        this.writer = writer
         await sendSynPacket(this.socket)
         break
       case 3:

@@ -10,12 +10,7 @@ export default class ContentReader {
   nextDataNr: number | undefined
   lastDataNr: number | undefined
   logger: Debugger
-  streamer: (content: Uint8Array) => Promise<void>
-  constructor(
-    socket: UtpSocket,
-    startingDataNr: number,
-    streamer: (content: Uint8Array) => Promise<void>
-  ) {
+  constructor(socket: UtpSocket, startingDataNr: number) {
     this.socket = socket
     this.packets = new Array<Packet>()
     this.inOrder = new Array<Packet>()
@@ -25,7 +20,6 @@ export default class ContentReader {
     this.nextDataNr = startingDataNr
     this.lastDataNr = undefined
     this.logger = this.socket.logger.extend('READING')
-    this.streamer = streamer
     this.socket.reader = this
   }
 
@@ -63,7 +57,7 @@ export default class ContentReader {
     })
     try {
       const compiled = await this.compile(sortedPackets)
-      this.streamer(compiled)
+      // this.streamer(compiled)
       return compiled
     } catch {
       this.logger(`Cannot run reader...`)

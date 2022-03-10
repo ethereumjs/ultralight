@@ -127,6 +127,7 @@ export class PortalNetworkUTP {
           socketKey,
           [contents[0]]
         )
+
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
         } else {
@@ -295,6 +296,7 @@ export class PortalNetworkUTP {
   async handleSynPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     let writer
+    let reader
     try {
       switch (requestCode) {
         case 0:
@@ -316,6 +318,8 @@ export class PortalNetworkUTP {
         case 3:
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
           request.socket.ackNr = 1
+          reader = await this.protocol.createNewReader(request.socket, 2)
+          request.socket.reader = reader
           await this.protocol.handleSynPacket(request.socket, packet)
           break
       }
@@ -366,11 +370,7 @@ export class PortalNetworkUTP {
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
-          const reader = await this.protocol.createNewReader(
-            request.socket,
-            startingSeqNr,
-            streamer
-          )
+          const reader = await this.protocol.createNewReader(request.socket, startingSeqNr)
           request.reader = reader
           await this.protocol.sendStatePacket(request.socket)
         } else {
@@ -381,10 +381,22 @@ export class PortalNetworkUTP {
         break
       case 2:
         if (packet.header.ackNr === 1) {
+          request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = packet.header.ackNr + 1
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
           this.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
-          await this.protocol.startDataTransfer(request.socket)
+          await request.writer?.start()
+          await this.protocol.sendFinPacket(request.socket)
         } else {
-          this.protocol.handleStatePacket(request.socket, packet)
+          request.socket.logger('Ack Packet Received.')
+          request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
+          request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
+          request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = packet.header.ackNr + 1
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
+          await this.protocol.handleStatePacket(request.socket, packet)
         }
         break
       case 3:
@@ -405,7 +417,7 @@ export class PortalNetworkUTP {
         case 2:
           throw new Error('Why did I get a DATA packet?')
         case 3:
-          request.socket.handleDataPacket(packet)
+          await this.protocol.handleDataPacket(request.socket, packet)
           break
       }
     } catch {
@@ -454,7 +466,9 @@ export class PortalNetworkUTP {
         case 2:
           throw new Error('Why did I get a FIN packet?')
         case 3:
-          await request.socket.handleFinPacket(packet)
+          content = await request.socket.handleFinPacket(packet)
+          streamer(content!)
+          request.socket.logger(`Closing uTP Socket`)
           break
       }
     } catch {
