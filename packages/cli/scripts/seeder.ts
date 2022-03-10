@@ -68,7 +68,8 @@ const main = async () => {
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })
     const enr = await _client.request('portal_nodeEnr', [])
-    await bootNode.request('portal_utp_offer_test', [enr.result, blocks[args.numBlocks - 1][0]])
+    const content = [blocks[0][0], blocks[1][0]]
+    await bootNode.request('portal_utp_offer_test', [enr.result, content, [0,1]])
   }
   // for (let x = 1; x < args.numNodes; x++) {
   //   const _client = Client.http({ port: args.rpcPort + x })
