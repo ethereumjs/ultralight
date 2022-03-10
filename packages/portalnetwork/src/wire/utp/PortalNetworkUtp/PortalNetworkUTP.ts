@@ -26,6 +26,7 @@ export class PortalNetworkUTP {
   protocol: BasicUtp
   openHistoryNetworkRequests: Record<UtpSocketKey, HistoryNetworkContentRequest> // TODO enable other networks
   logger: Debugger
+  working: boolean
 
   constructor(portal: PortalNetwork) {
     this.portal = portal
@@ -35,6 +36,7 @@ export class PortalNetworkUTP {
     )
     this.logger = portal.logger.extend(`uTP`)
     this.openHistoryNetworkRequests = {}
+    this.working = false
   }
 
   async sendPortalNetworkMessage(peerId: string, msg: Buffer, networkId: SubNetworkIds) {
@@ -58,11 +60,12 @@ export class PortalNetworkUTP {
     requestCode: RequestCode,
     contents?: Uint8Array[]
   ) {
-    let sndId
-    let rcvId
-    let socket
-    let socketKey
+    let sndId: number
+    let rcvId: number
+    let socket: UtpSocket
+    let socketKey: string
     let newRequest: HistoryNetworkContentRequest
+    let sockets: UtpSocket[]
     switch (requestCode) {
       case 0:
         if (contents === undefined) {
@@ -70,7 +73,7 @@ export class PortalNetworkUTP {
         }
         sndId = connectionId + 1
         rcvId = connectionId
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
         }
@@ -78,7 +81,7 @@ export class PortalNetworkUTP {
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
           [contentKeys[0]],
-          socket,
+          [socket],
           socketKey,
           [undefined]
         )
@@ -93,14 +96,18 @@ export class PortalNetworkUTP {
       case 1:
         sndId = connectionId
         rcvId = connectionId + 1
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
         }
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new HistoryNetworkContentRequest(requestCode, contentKeys, socket, socketKey, [
-          undefined,
-        ])
+        newRequest = new HistoryNetworkContentRequest(
+          requestCode,
+          contentKeys,
+          [socket],
+          socketKey,
+          [undefined]
+        )
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
         } else {
@@ -115,17 +122,17 @@ export class PortalNetworkUTP {
         }
         sndId = connectionId
         rcvId = connectionId + 1
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])
-        if (socket === undefined) {
-          throw new Error('Error in Socket Creation')
-        }
         socketKey = createSocketKey(peerId, sndId, rcvId)
+        sockets = contents.map((content) => {
+          return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)!
+        })
+
         newRequest = new HistoryNetworkContentRequest(
           requestCode,
-          [contentKeys[0]],
-          socket,
+          contentKeys,
+          sockets,
           socketKey,
-          [contents[0]]
+          contents
         )
 
         if (this.openHistoryNetworkRequests[socketKey]) {
@@ -135,27 +142,27 @@ export class PortalNetworkUTP {
           this.logger(`Opening request with key: ${socketKey}`)
           await newRequest.init()
         }
+
         break
       case 3:
         sndId = connectionId + 1
         rcvId = connectionId
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)
-        if (socket === undefined) {
-          throw new Error('Error in Socket Creation')
-        }
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new HistoryNetworkContentRequest(
-          requestCode,
-          contentKeys,
-          socket,
-          socketKey,
-          []
-        )
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
         } else {
-          this.openHistoryNetworkRequests[socketKey] = newRequest
           this.logger(`Opening request with key: ${socketKey}`)
+          sockets = contentKeys.map((k) => {
+            return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
+          })
+          newRequest = new HistoryNetworkContentRequest(
+            requestCode,
+            contentKeys,
+            sockets,
+            socketKey,
+            []
+          )
+          this.openHistoryNetworkRequests[socketKey] = newRequest
           await newRequest.init()
         }
         break
@@ -388,6 +395,11 @@ export class PortalNetworkUTP {
           this.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
           await request.writer?.start()
           await this.protocol.sendFinPacket(request.socket)
+          if (request.sockets.length > 0) {
+            request.socket = request.sockets.pop()!
+            request.contentKey = request.contentKeys.pop()!
+            await request.init()
+          }
         } else {
           request.socket.logger('Ack Packet Received.')
           request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
@@ -437,7 +449,7 @@ export class PortalNetworkUTP {
     const newRequest = new HistoryNetworkContentRequest(
       requestCode,
       [HistoryNetworkContentKeyUnionType.serialize(request.contentKey)],
-      newSocket!,
+      [newSocket!],
       request.socketKey,
       request.content ? [request.content] : [undefined]
     )
@@ -469,6 +481,11 @@ export class PortalNetworkUTP {
           content = await request.socket.handleFinPacket(packet)
           streamer(content!)
           request.socket.logger(`Closing uTP Socket`)
+          if (request.sockets.length > 0) {
+            request.socket = request.sockets.pop()!
+            request.contentKey = request.contentKeys.pop()!
+            await request.init()
+          }
           break
       }
     } catch {

@@ -11,7 +11,9 @@ export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., 
 export class HistoryNetworkContentRequest {
   requestCode: RequestCode
   contentKey: Union<HistoryNetworkContentKey>
+  contentKeys: Union<HistoryNetworkContentKey>[]
   socket: UtpSocket
+  sockets: UtpSocket[]
   socketKey: string
   content?: Uint8Array
   reader?: ContentReader
@@ -20,16 +22,21 @@ export class HistoryNetworkContentRequest {
   constructor(
     requestCode: RequestCode,
     contentKey: Uint8Array[],
-    socket: UtpSocket,
+    socket: UtpSocket[],
     socketKey: string,
     content: Uint8Array[] | undefined[]
   ) {
+    this.sockets = socket
+    this.contentKeys = contentKey.map((k) => {
+      return HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(k))
+    })
     this.requestCode = requestCode
-    this.contentKey = HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(contentKey[0]))
-    this.content = content[0] ?? undefined
+    this.contentKey = this.contentKeys.pop()!
+    this.content = content[0]
     this.socketKey = socketKey
-    this.socket = socket
+    this.socket = this.sockets.pop()!
   }
+
   async init(): Promise<void> {
     let writer
     switch (this.requestCode) {
@@ -39,9 +46,11 @@ export class HistoryNetworkContentRequest {
         await sendSynPacket(this.socket)
         break
       case 2:
-        writer = await this.socket.utp.createNewWriter(this.socket, 2)
-        this.writer = writer
-        await sendSynPacket(this.socket)
+        if (this.sockets!.length > 0) {
+          writer = await this.socket!.utp.createNewWriter(this.socket, 2)
+          this.writer = writer
+          await sendSynPacket(this.socket)
+        }
         break
       case 3:
         break
