@@ -325,6 +325,8 @@ export class PortalNetworkUTP {
         case 3:
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
           request.socket.ackNr = 1
+          request.socket.nextSeq = 2
+          request.socket.nextAck = request.socket.seqNr
           reader = await this.protocol.createNewReader(request.socket, 2)
           request.socket.reader = reader
           await this.protocol.handleSynPacket(request.socket, packet)
@@ -392,12 +394,15 @@ export class PortalNetworkUTP {
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
-          this.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
+          request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
           await request.writer?.start()
           await this.protocol.sendFinPacket(request.socket)
+        } else if (packet.header.ackNr === request.socket.finNr) {
+          request.socket.logger(
+            `FIN Packet ACK received.  Closing Socket.  There are ${request.sockets.length} more pieces of content to send.`
+          )
           if (request.sockets.length > 0) {
-            request.socket = request.sockets.pop()!
-            request.contentKey = request.contentKeys.pop()!
+            this.logger(`Starting next Stream`)
             await request.init()
           }
         } else {

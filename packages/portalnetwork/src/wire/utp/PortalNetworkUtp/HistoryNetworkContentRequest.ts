@@ -31,10 +31,10 @@ export class HistoryNetworkContentRequest {
       return HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(k))
     })
     this.requestCode = requestCode
-    this.contentKey = this.contentKeys.pop()!
+    this.contentKey = this.contentKeys[0]
     this.content = content[0]
     this.socketKey = socketKey
-    this.socket = this.sockets.pop()!
+    this.socket = this.sockets[0]
   }
 
   async init(): Promise<void> {
@@ -46,11 +46,11 @@ export class HistoryNetworkContentRequest {
         await sendSynPacket(this.socket)
         break
       case 2:
-        if (this.sockets!.length > 0) {
-          writer = await this.socket!.utp.createNewWriter(this.socket, 2)
-          this.writer = writer
-          await sendSynPacket(this.socket)
-        }
+        this.socket = this.sockets.pop()!
+        this.contentKey = this.contentKeys.pop()!
+        writer = await this.socket!.utp.createNewWriter(this.socket, 2)
+        this.writer = writer
+        await sendSynPacket(this.socket)
         break
       case 3:
         break
