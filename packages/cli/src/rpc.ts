@@ -174,7 +174,7 @@ export class RPCManager {
           selector: contentTypes[idx],
           value: {
             chainId: 1,
-            blockHash: fromHex(blockhash.slice(2)),
+            blockHash: Uint8Array.from(fromHex(blockhash.slice(2))),
           },
         })
       })
