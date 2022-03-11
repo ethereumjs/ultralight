@@ -13,18 +13,7 @@ services:
       - "1-65535/udp"
 
     environment:
-      - nat=localhost
+      - nat=extip
       - rpcport=8545
       - proxy=false
       
-  ultralight2:
-    image: ultralight/cli
-    network_mode: "host"
-    ports:
-      - "8546:8546/tcp"
-      - "1-65535/udp"
-
-    environment:
-      - nat=localhost
-      - rpcport=8546
-      - proxy=false

@@ -366,14 +366,6 @@ export class PortalNetworkUTP {
           )
           this.logger(`Expecting: RANDOM-1`)
           this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          const streamer = async (content: Uint8Array) => {
-            await this.portal.addContentToHistory(
-              1,
-              request.contentKey.selector,
-              toHexString(request.contentKey.value.blockHash),
-              content
-            )
-          }
           const startingSeqNr = request.socket.seqNr + 1
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = packet.header.ackNr + 1

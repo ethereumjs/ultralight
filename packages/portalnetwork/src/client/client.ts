@@ -551,6 +551,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
+    this.metrics?.totalBytesReceived.inc(message.request.length)
     const srcId = src.nodeId
     switch (toHexString(message.protocol)) {
       // TODO: Add handling for other subnetworks as functionality is added
@@ -603,7 +604,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private onTalkResp = (src: INodeAddress, _sourceId: ENR | null, _message: ITalkRespMessage) => {
+
+  private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
+    this.metrics?.totalBytesReceived.inc(message.response.length)
     const srcId = src.nodeId
     this.logger(`TALKRESPONSE message received from ${srcId}`)
   }
@@ -678,7 +681,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
               await this.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
+              this.logger(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
+              this.logger(err)
               offerAccepted = true
               contentIds[x] = true
               this.logger(`Found some interesting content from ${shortId(srcId)}`)
@@ -697,8 +702,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           // Send empty response if something goes wrong parsing content keys
           this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
         }
-      } else {
-        this.logger(`Something was wrong with OFFER message`)
+        this.logger('We already have all this content')
+        this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+      } catch {
+        this.logger(`Something went wrong handling offer message`)
         // Send empty response if something goes wrong parsing content keys
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }
@@ -919,6 +926,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
+      this.metrics?.totalBytesSent.inc(payload.length)
       const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
