@@ -167,46 +167,46 @@ export function bufferToPacket(buffer: Buffer): Packet {
   const ptandver = buffer[0].toString(16)
   const ver = ptandver[1]
   const version = parseInt(ver, 16)
-  //const extension = buffer.readUInt8(1)
-  //let packet: Packet
-  // if (extension === 1) {
-  //   let size = buffer.readUInt8(21);
-  //   packet = new Packet({
-  //     header: new SelectiveAckHeader(
-  //       {
-  //         pType: buffer[0] >> 4,
-  //         version: version,
-  //         extension: buffer.readUInt8(1),
-  //         connectionId: buffer.readUInt16BE(2),
-  //         timestamp: buffer.readUInt32BE(4),
-  //         timestampDiff: buffer.readUInt32BE(8),
-  //         wndSize: buffer.readUInt32BE(12),
-  //         seqNr: buffer.readUInt16BE(16),
-  //         ackNr: buffer.readUInt16BE(18),
-  //       },
-  //       buffer.subarray(22, 22 + size)
-  //     ),
-  //     payload: buffer.subarray(22 + size),
-  //   });
-  // }
+  const extension = buffer.readUInt8(1)
+  let packet: Packet
+  if (extension === 1) {
+    const size = buffer.readUInt8(21)
+    packet = new Packet({
+      header: new SelectiveAckHeader(
+        {
+          pType: buffer[0] >> 4,
+          version: 1,
+          extension: buffer.readUInt8(1),
+          connectionId: buffer.readUInt16BE(2),
+          timestamp: buffer.readUInt32BE(4),
+          timestampDiff: buffer.readUInt32BE(8),
+          wndSize: buffer.readUInt32BE(12),
+          seqNr: buffer.readUInt16BE(16),
+          ackNr: buffer.readUInt16BE(18),
+        },
+        buffer.subarray(22, 22 + size)
+      ),
+      payload: buffer.subarray(22 + size),
+    })
+    return packet
+  } else {
+    const packet = new Packet({
+      header: new PacketHeader({
+        pType: buffer[0] >> 4,
+        version: 1,
+        extension: 0,
+        connectionId: buffer.readUInt16BE(2),
+        timestamp: buffer.readUInt32BE(4),
+        timestampDiff: buffer.readUInt32BE(8),
+        wndSize: buffer.readUInt32BE(12),
+        seqNr: buffer.readUInt16BE(16),
+        ackNr: buffer.readUInt16BE(18),
+      }),
+      payload: buffer.subarray(20),
+    })
 
-  // else {
-  const packet = new Packet({
-    header: new PacketHeader({
-      pType: buffer[0] >> 4,
-      version: version,
-      extension: buffer.readUInt8(1),
-      connectionId: buffer.readUInt16BE(2),
-      timestamp: buffer.readUInt32BE(4),
-      timestampDiff: buffer.readUInt32BE(8),
-      wndSize: buffer.readUInt32BE(12),
-      seqNr: buffer.readUInt16BE(16),
-      ackNr: buffer.readUInt16BE(18),
-    }),
-    payload: buffer.subarray(20),
-  })
-
-  return packet
+    return packet
+  }
 }
 
 export * from './PacketTyping'
