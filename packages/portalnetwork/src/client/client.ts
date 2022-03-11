@@ -498,7 +498,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           try {
             reassembleBlock(serializedHeader as Uint8Array, value)
             validBlock = true
-          } catch { }
+          } catch {}
         }
         if (validBlock) {
           this.db.put(contentId, toHexString(value), (err: any) => {
@@ -902,7 +902,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     try {
       if (!routingTable!.getValue(nodeId)) {
         this.logger(
-          `adding ${nodeId} to ${Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
+          `adding ${nodeId} to ${
+            Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
           } routing table`
         )
         routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)

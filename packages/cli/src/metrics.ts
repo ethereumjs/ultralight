@@ -5,12 +5,12 @@ export const setupMetrics = () => {
     knownDiscv5Nodes: new PromClient.Gauge({
       name: 'ultralight_known_discv5_peers',
       help: 'how many peers are in discv5 routing table',
-      async collect() { },
+      async collect() {},
     }),
     knownHistoryNodes: new PromClient.Gauge({
       name: 'ultralight_known_history_peers',
       help: 'how many peers are in discv5 routing table',
-      async collect() { },
+      async collect() {},
     }),
     totalContentLookups: new PromClient.Gauge<string>({
       name: 'ultralight_total_content_lookups',
