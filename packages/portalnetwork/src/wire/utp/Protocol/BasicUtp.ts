@@ -83,7 +83,7 @@ export class BasicUtp {
     await sendFinPacket(socket)
   }
 
-  async handleSynPacket(socket: UtpSocket, packet: Packet) {
+  async handleSynPacket(socket: UtpSocket, _packet: Packet) {
     await socket.handleSynPacket()
   }
   async handleSynAckPacket(socket: UtpSocket, packet: Packet) {
