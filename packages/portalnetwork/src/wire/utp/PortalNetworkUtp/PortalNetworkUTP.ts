@@ -1,10 +1,10 @@
-import { Discv5, toHex } from '@chainsafe/discv5'
+import { Discv5 } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { bufferToPacket, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork } from '../../..'
-import { sendFinPacket, sendSynAckPacket } from '../Packets/PacketSenders'
+import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
 
@@ -14,7 +14,7 @@ export enum RequestCode {
   FOUNDNDCONTENT_WRITE = 0,
   FINDCONTENT_READ = 1,
   OFFER_WRITE = 2,
-  ACCECPT_READ = 3,
+  ACCEPT_READ = 3,
 }
 
 function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
@@ -152,7 +152,7 @@ export class PortalNetworkUTP {
           this.logger(`Request already Open`)
         } else {
           this.logger(`Opening request with key: ${socketKey}`)
-          sockets = contentKeys.map((k) => {
+          sockets = contentKeys.map(() => {
             return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
           })
           newRequest = new HistoryNetworkContentRequest(
@@ -295,7 +295,7 @@ export class PortalNetworkUTP {
     } else if (this.openHistoryNetworkRequests[keyD] !== undefined) {
       return keyD
     } else {
-      this.logger(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} of ${keyD}`)
+      this.logger(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`)
       return ''
     }
   }

@@ -483,28 +483,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
       case HistoryNetworkContentTypes.BlockBody: {
         try {
-          try {
-            const headerContentId = getHistoryNetworkContentId(
-              1,
-              blockHash,
-              HistoryNetworkContentTypes.BlockHeader
-            )
-            const serializedHeader = await this.db.get(headerContentId)
-            // Verify we can construct a valid block from the header and body provided
-            reassembleBlock(fromHexString(serializedHeader), value)
-            this.db.put(contentId, toHexString(value), (err: any) => {
-              if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
-            })
-          } catch {
-            this.logger(`Will not store block body where we don't have the header.`)
-            // Don't store block body where we don't have the header since we can't validate the data
-            // TODO: Retrieve header from network if not available locally
-            return
-          }
-        } catch (err: any) {
-          this.logger(`Invalid value provided for block body: ${err.toString()}`)
+          const headerContentId = getHistoryNetworkContentId(
+            1,
+            blockHash,
+            HistoryNetworkContentTypes.BlockHeader
+          )
+          const serializedHeader = await this.db.get(headerContentId)
+          // Verify we can construct a valid block from the header and body provided
+          reassembleBlock(fromHexString(serializedHeader), value)
+          this.db.put(contentId, toHexString(value), (err: any) => {
+            if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+          })
+        } catch {
+          this.logger(`Will not store block body where we don't have the header.`)
+          // Don't store block body where we don't have the header since we can't validate the data
+          // TODO: Retrieve header from network if not available locally
           return
         }
+
         break
       }
       case HistoryNetworkContentTypes.Receipt:
@@ -610,30 +606,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private onTalkResp = (src: INodeAddress, _sourceId: ENR | null, _message: ITalkRespMessage) => {
     const srcId = src.nodeId
     this.logger(`TALKRESPONSE message received from ${srcId}`)
-  }
-
-  private handleStreamedContent(
-    rcvId: number,
-    content: Uint8Array,
-    contentType: HistoryNetworkContentTypes,
-    blockHash: Uint8Array
-  ) {
-    this.logger(`received all content for ${rcvId}`)
-    if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-      this.addContentToHistory(
-        0,
-        HistoryNetworkContentTypes.BlockHeader,
-        toHexString(blockHash),
-        content
-      )
-    } else if (contentType === HistoryNetworkContentTypes.BlockBody) {
-      this.addContentToHistory(
-        1,
-        HistoryNetworkContentTypes.BlockBody,
-        toHexString(blockHash),
-        content
-      )
-    }
   }
 
   private handlePing = (srcId: string, message: ITalkReqMessage) => {
@@ -751,7 +723,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       desiredContentKeys,
       srcId,
       id,
-      RequestCode.ACCECPT_READ,
+      RequestCode.ACCEPT_READ,
       []
     )
     const idBuffer = Buffer.alloc(2)
