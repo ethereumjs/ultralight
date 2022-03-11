@@ -482,25 +482,36 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         break
       }
       case HistoryNetworkContentTypes.BlockBody: {
+        let validBlock = false
         try {
           const headerContentId = getHistoryNetworkContentId(
             1,
             blockHash,
             HistoryNetworkContentTypes.BlockHeader
           )
-          const serializedHeader = await this.db.get(headerContentId)
+          const hexHeader = await this.db.get(headerContentId)
           // Verify we can construct a valid block from the header and body provided
-          reassembleBlock(fromHexString(serializedHeader), value)
+          reassembleBlock(fromHexString(hexHeader), value)
+          validBlock = true
+        }
+        catch {
+          this.logger(`Block Header for ${shortId(blockHash)} not found locally.  Querying network...`)
+          const serializedHeader = await this.historyNetworkContentLookup(0, blockHash)
+          try {
+            reassembleBlock(serializedHeader as Uint8Array, value)
+            validBlock = true
+          }
+          catch { }
+        }
+        if (validBlock) {
           this.db.put(contentId, toHexString(value), (err: any) => {
             if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
           })
-        } catch {
-          this.logger(`Will not store block body where we don't have the header.`)
-          // Don't store block body where we don't have the header since we can't validate the data
-          // TODO: Retrieve header from network if not available locally
+        } else {
+          this.logger(`Could not verify block content`)
+          // Don't store block body where we can't assemble a valid block
           return
         }
-
         break
       }
       case HistoryNetworkContentTypes.Receipt:
