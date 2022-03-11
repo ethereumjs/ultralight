@@ -5,9 +5,9 @@ import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from '../../src'
 import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '../../src/historySubnetwork'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { Block } from '@ethereumjs/block'
 
 const end = async (
   child: ChildProcessWithoutNullStreams,

@@ -5,7 +5,7 @@ import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
 import { generateRandomNodeIdAtDistance, serializedContentKeyToContentId, shortId } from '../util'
-import { bufferToPacket, randUint16 } from '../wire/utp'
+import { randUint16 } from '../wire/utp'
 import {
   PingPongCustomDataType,
   MessageCodes,
@@ -32,7 +32,7 @@ import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
 } from '../historySubnetwork/types'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { BlockHeader } from '@ethereumjs/block'
 import {
   addRLPSerializedBlock,
   getHistoryNetworkContentId,
@@ -93,9 +93,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     super()
     this.client = Discv5.create(config)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
-    this.on('Stream', (id, content, contentType, blockHash) => {
-      this.handleStreamedContent(id, content, contentType, blockHash)
-    })
     this.nodeRadius = radius
     this.routingTables = new Map()
     Object.values(SubNetworkIds).forEach((networkId) => {
@@ -610,7 +607,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
+  private onTalkResp = (src: INodeAddress, _sourceId: ENR | null, _message: ITalkRespMessage) => {
     const srcId = src.nodeId
     this.logger(`TALKRESPONSE message received from ${srcId}`)
   }

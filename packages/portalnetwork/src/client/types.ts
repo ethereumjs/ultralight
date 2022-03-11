@@ -3,15 +3,8 @@ import EventEmitter from 'events'
 import { NodeId } from '@chainsafe/discv5'
 import { StateNetworkRoutingTable, SubNetworkIds } from '..'
 import { PortalNetworkRoutingTable } from '.'
-import { HistoryNetworkContentTypes } from '../historySubnetwork/types'
 
 export interface IPortalNetworkEvents {
-  Stream: (
-    connectionId: number,
-    content: Uint8Array,
-    contentType: HistoryNetworkContentTypes,
-    blockHash: Uint8Array
-  ) => void
   NodeAdded: (nodeId: NodeId, networkId: SubNetworkIds) => void
   NodeRemoved: (nodeId: NodeId, networkId: SubNetworkIds) => void
   ContentAdded: (key: string, contentType: number, content: string) => void
