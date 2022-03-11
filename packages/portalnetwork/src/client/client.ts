@@ -674,9 +674,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     )
     try {
       if (msg.contentKeys.length > 0) {
+        let offerAccepted = false
         try {
           const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
-          let offerAccepted = false
+
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
               await this.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
@@ -701,8 +702,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           // Send empty response if something goes wrong parsing content keys
           this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
         }
-        this.logger('We already have all this content')
-        this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        if (!offerAccepted) {
+          this.logger('We already have all this content')
+          this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
