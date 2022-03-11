@@ -166,7 +166,7 @@ export function createFinPacket(
 export function bufferToPacket(buffer: Buffer): Packet {
   const ptandver = buffer[0].toString(16)
   const ver = ptandver[1]
-  const version = parseInt(ver, 16)
+  const _version = parseInt(ver, 16)
   const extension = buffer.readUInt8(1)
   let packet: Packet
   if (extension === 1) {
