@@ -191,9 +191,6 @@ export class UtpSocket extends EventEmitter {
     }
     this.logger(`Packet payloads compiled`)
     this.logger(this.readerContent)
-    if (packet.header.ackNr !== this.finNr) {
-      this.logger(`AckNr does not match FinNr`)
-    }
     this.seqNr = packet.header.ackNr + 1
     this.ackNr = packet.header.seqNr
     await this.utp.sendStatePacket(this)
