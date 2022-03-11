@@ -112,7 +112,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       // (i.e. failed a liveness check)
       this.routingTables.forEach((table, networkId) => {
         if (table.size > 0 && table.getValue(srcId)) {
-          this.updateSubnetworkRoutingTable(srcId, networkId)
+          this.updateSubnetworkRoutingTable(srcId, networkId, false)
         }
       })
     })
@@ -209,8 +209,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       throw new Error('invalid subnetwork ID provided')
     }
     // TODO: Move this insertion to `updateNetworkRoutingTable`
-    routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-    this.emit('NodeAdded', enr.nodeId, networkId)
+    this.updateSubnetworkRoutingTable(enr, networkId, true)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256
@@ -233,8 +232,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     let dstId
     if (nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
-      // TODO: Move this to `updateNetworkRoutingTable`
-      this.routingTables.get(networkId)!.insertOrUpdate(enr, EntryStatus.Connected)
+      this.updateSubnetworkRoutingTable(enr, networkId, true)
       dstId = enr.nodeId
     } else {
       dstId = nodeId
@@ -256,12 +254,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(`Received PONG from ${shortId(dstId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
-        this.updateSubnetworkRoutingTable(dstId, networkId, pongMessage.customPayload)
+        this.updateSubnetworkRoutingTable(dstId, networkId, true, pongMessage.customPayload)
         return decoded.value as PongMessage
       }
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
-      this.updateSubnetworkRoutingTable(dstId, networkId)
+      this.updateSubnetworkRoutingTable(dstId, networkId, false)
       return undefined
     }
   }
@@ -299,8 +297,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
             if (!routingTable!.getValue(decodedEnr.nodeId)) {
-              // TODO: Move this to `updateNetworkRoutingTable`
-              routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              this.updateSubnetworkRoutingTable(decodedEnr, networkId, true)
               this.sendPing(decodedEnr.nodeId, networkId)
             }
           })
@@ -493,15 +490,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           // Verify we can construct a valid block from the header and body provided
           reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
-        }
-        catch {
-          this.logger(`Block Header for ${shortId(blockHash)} not found locally.  Querying network...`)
+        } catch {
+          this.logger(
+            `Block Header for ${shortId(blockHash)} not found locally.  Querying network...`
+          )
           const serializedHeader = await this.historyNetworkContentLookup(0, blockHash)
           try {
             reassembleBlock(serializedHeader as Uint8Array, value)
             validBlock = true
-          }
-          catch { }
+          } catch {}
         }
         if (validBlock) {
           this.db.put(contentId, toHexString(value), (err: any) => {
@@ -627,6 +624,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.updateSubnetworkRoutingTable(
       srcId,
       toHexString(message.protocol) as SubNetworkIds,
+      true,
       pingMessage.customPayload
     )
     // Check to see if node is already in corresponding network routing table and add if not
@@ -879,43 +877,45 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param customPayload payload of the PING/PONG message being decoded
    */
   private updateSubnetworkRoutingTable = (
-    srcId: NodeId,
+    srcId: NodeId | ENR,
     networkId: SubNetworkIds,
+    add = false,
     customPayload?: any
   ) => {
-    // TODO: Adjust this method to accept a NodeId or an ENR so we're not tied to the discv5 routing table
-    const enr = this.client.getKadValue(srcId)
-    if (!enr && customPayload) {
-      this.logger(
-        `no ENR found in routing table for ${srcId} - can't be added to ${
-          Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
-        } routing table`
-      )
-      return
-    }
     const routingTable = this.routingTables.get(networkId)
-    if (!customPayload) {
-      routingTable!.removeById(srcId)
-      routingTable!.removeFromRadiusMap(srcId)
+    if (!routingTable) {
+      throw new Error(`No routing table found corresponding to ${networkId}`)
+    }
+    const nodeId = typeof srcId === 'string' ? srcId : srcId.nodeId
+    const enr = typeof srcId === 'string' ? routingTable.getValue(srcId) : srcId
+    if (!add) {
+      routingTable!.removeById(nodeId)
+      routingTable!.removeFromRadiusMap(nodeId)
       this.logger(
-        `removed ${srcId} from ${
+        `removed ${nodeId} from ${
           Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
         } Routing Table`
       )
-      this.emit('NodeRemoved', srcId, networkId)
+      this.emit('NodeRemoved', nodeId, networkId)
       return
     }
-    if (!routingTable!.getValue(srcId)) {
-      this.logger(
-        `adding ${srcId} to ${
-          Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
-        } routing table`
-      )
-      routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
+    try {
+      if (!routingTable!.getValue(nodeId)) {
+        this.logger(
+          `adding ${nodeId} to ${
+            Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
+          } routing table`
+        )
+        routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
+        this.emit('NodeAdded', nodeId, networkId)
+      }
+      if (customPayload) {
+        const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+        routingTable!.updateRadius(nodeId, decodedPayload.radius)
+      }
+    } catch (err) {
+      this.logger(`Something went wrong ${err}`)
     }
-    const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
-    routingTable!.updateRadius(srcId, decodedPayload.radius)
-    this.emit('NodeAdded', srcId, networkId)
     return
   }
 
@@ -932,10 +932,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     networkId: SubNetworkIds,
     utpMessage?: boolean
   ): Promise<Buffer> => {
-    const enr = this.routingTables.get(networkId)!.getValue(dstId)
+    let enr = this.routingTables.get(networkId)!.getValue(dstId)
     if (!enr) {
-      this.logger(`${shortId(dstId)} not found in routing table`)
-      return Buffer.from([0])
+      enr = this.client.getKadValue(dstId)
+      if (enr) {
+        await this.updateSubnetworkRoutingTable(enr, networkId, true)
+      } else {
+        this.logger(`${shortId(dstId)} not found in routing table`)
+        return Buffer.from([0])
+      }
     }
     const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
@@ -945,7 +950,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err.message}`)
       if (networkId !== SubNetworkIds.UTPNetwork) {
-        this.updateSubnetworkRoutingTable(dstId, networkId)
+        this.updateSubnetworkRoutingTable(dstId, networkId, false)
       }
       return Buffer.from([0])
     }

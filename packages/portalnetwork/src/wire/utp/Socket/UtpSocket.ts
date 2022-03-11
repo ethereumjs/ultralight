@@ -8,7 +8,7 @@ import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders'
-import { PacketHeader } from '../Packets'
+
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'
   utp: BasicUtp
