@@ -482,25 +482,36 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         break
       }
       case HistoryNetworkContentTypes.BlockBody: {
+        let validBlock = false
         try {
           const headerContentId = getHistoryNetworkContentId(
             1,
             blockHash,
             HistoryNetworkContentTypes.BlockHeader
           )
-          const serializedHeader = await this.db.get(headerContentId)
+          const hexHeader = await this.db.get(headerContentId)
           // Verify we can construct a valid block from the header and body provided
-          reassembleBlock(fromHexString(serializedHeader), value)
+          reassembleBlock(fromHexString(hexHeader), value)
+          validBlock = true
+        }
+        catch {
+          this.logger(`Block Header for ${shortId(blockHash)} not found locally.  Querying network...`)
+          const serializedHeader = await this.historyNetworkContentLookup(0, blockHash)
+          try {
+            reassembleBlock(serializedHeader as Uint8Array, value)
+            validBlock = true
+          }
+          catch { }
+        }
+        if (validBlock) {
           this.db.put(contentId, toHexString(value), (err: any) => {
             if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
           })
-        } catch {
-          this.logger(`Will not store block body where we don't have the header.`)
-          // Don't store block body where we don't have the header since we can't validate the data
-          // TODO: Retrieve header from network if not available locally
+        } else {
+          this.logger(`Could not verify block content`)
+          // Don't store block body where we can't assemble a valid block
           return
         }
-
         break
       }
       case HistoryNetworkContentTypes.Receipt:
@@ -674,9 +685,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     )
     try {
       if (msg.contentKeys.length > 0) {
+        let offerAccepted = false
         try {
           const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
-          let offerAccepted = false
+
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
               await this.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
@@ -701,8 +713,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           // Send empty response if something goes wrong parsing content keys
           this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
         }
-        this.logger('We already have all this content')
-        this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        if (!offerAccepted) {
+          this.logger('We already have all this content')
+          this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
+        }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
