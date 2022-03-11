@@ -624,7 +624,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(`received all content for ${rcvId}`)
     if (contentType === HistoryNetworkContentTypes.BlockHeader) {
       this.addContentToHistory(
-        1,
+        0,
         HistoryNetworkContentTypes.BlockHeader,
         toHexString(blockHash),
         content
