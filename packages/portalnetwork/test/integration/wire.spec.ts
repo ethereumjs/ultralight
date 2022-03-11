@@ -5,9 +5,9 @@ import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from '../../src'
 import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '../../src/historySubnetwork'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { Block } from '@ethereumjs/block'
 
 const end = async (
   child: ChildProcessWithoutNullStreams,
@@ -88,23 +88,19 @@ tape('Portal Wire Spec Testing', async (t) => {
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
     let portal2: PortalNetwork
-    tape.onFailure(() => end(child, [portal1, portal2], st))
+    //   tape.onFailure(() => end(child, [portal1, portal2], st))
 
     child.stderr.on('data', async (data) => {
       if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-        portal1.once('Stream', (_, content) => {
-          const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
-          st.equals(
-            toHexString(header.hash()),
-            '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220',
-            'OFFER/ACCEPT/uTP Stream succeeded'
-          )
-          end(child, [portal1, portal2], st)
+        portal1.on('ContentAdded', (blockHash) => {
+          if (blockHash === '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220') {
+            st.pass('OFFER/ACCEPT/uTP Stream succeeded')
+            end(child, [portal1, portal2], st)
+          }
         })
-
         portal1.client.once('multiaddrUpdated', () => portal2.start())
 
         portal2.client.once('multiaddrUpdated', async () => {

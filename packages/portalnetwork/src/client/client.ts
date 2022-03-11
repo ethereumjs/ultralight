@@ -5,7 +5,7 @@ import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
 import { generateRandomNodeIdAtDistance, serializedContentKeyToContentId, shortId } from '../util'
-import { bufferToPacket, randUint16, UtpProtocol } from '../wire/utp'
+import { randUint16 } from '../wire/utp'
 import {
   PingPongCustomDataType,
   MessageCodes,
@@ -39,6 +39,7 @@ import {
   reassembleBlock,
 } from '../historySubnetwork'
 import { ContentLookup } from '../wire'
+import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -46,7 +47,7 @@ const MAX_PACKET_SIZE = 1280
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   client: Discv5
   routingTables: Map<SubNetworkIds, RoutingTable>
-  uTP: UtpProtocol
+  uTP: PortalNetworkUTP
   nodeRadius: bigint
   db: LevelUp
   private refreshListener?: ReturnType<typeof setInterval>
@@ -92,9 +93,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     super()
     this.client = Discv5.create(config)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
-    this.on('Stream', (id, content) => {
-      this.handleStreamedContent(id, content)
-    })
     this.nodeRadius = radius
     this.routingTables = new Map()
     Object.values(SubNetworkIds).forEach((networkId) => {
@@ -118,7 +116,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         }
       })
     })
-    this.uTP = new UtpProtocol(this)
+    this.uTP = new PortalNetworkUTP(this)
     this.db = db ?? level()
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
       this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
@@ -176,7 +174,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param namespaces comma separated list of logging namespaces
    * defaults to "portalnetwork*, discv5:service, <uTP>*"
    */
-  public enableLog = (namespaces: string = '*portalnetwork*,*discv5:service*,*<uTP>*') => {
+  public enableLog = (namespaces: string = '*portalnetwork*,*discv5:service*,*uTP*') => {
     debug.enable(namespaces)
   }
 
@@ -264,6 +262,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
       this.updateSubnetworkRoutingTable(dstId, networkId)
+      return undefined
     }
   }
 
@@ -352,19 +351,31 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           case 0: {
             const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
             this.logger(`received uTP Connection ID ${id}`)
-            this.sendUtpStreamRequest(dstId, id)
+            await this.uTP.handleNewHistoryNetworkRequest(
+              [key],
+              dstId,
+              id,
+              RequestCode.FINDCONTENT_READ,
+              []
+            )
             break
           }
           case 1: {
-            this.logger(`received content ${Buffer.from(decoded.value as Uint8Array).toString()}`)
+            this.logger(`received content`)
+            this.logger(decoded.value)
             const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
             // Store content in local DB
-            await this.addContentToHistory(
-              decodedKey.value.chainId,
-              decodedKey.selector,
-              toHexString(decodedKey.value.blockHash),
-              decoded.value as Uint8Array
-            )
+            try {
+              this.logger(`Adding content to DB`)
+              this.addContentToHistory(
+                decodedKey.value.chainId,
+                decodedKey.selector,
+                toHexString(Buffer.from(decodedKey.value.blockHash)),
+                decoded.value as Uint8Array
+              )
+            } catch {
+              this.logger('Error adding content to DB')
+            }
             break
           }
           case 2: {
@@ -405,26 +416,40 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.logger(decoded.value)
           const msg = decoded.value as AcceptMessage
           const id = Buffer.from(msg.connectionId).readUInt16BE(0)
+
           // Initiate uTP streams with serving of requested content
-          const requested: Uint8Array[] = contentKeys.filter(
+          const requestedKeys: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
-          await this.uTP.initiateUtpFromAccept(dstId, id, requested, networkId)
+          const requestedData: Uint8Array[] = []
+          await Promise.all(
+            requestedKeys.map(async (key) => {
+              let value = Uint8Array.from([])
+              const lookupKey = serializedContentKeyToContentId(key)
+              try {
+                value = fromHexString(await this.db.get(lookupKey))
+                requestedData.push(value)
+              } catch (err: any) {
+                this.logger(`Error retrieving content -- ${err.toString()}`)
+                requestedData.push(value)
+              }
+            })
+          )
+
+          await this.uTP.handleNewHistoryNetworkRequest(
+            requestedKeys,
+            dstId,
+            id,
+            RequestCode.OFFER_WRITE,
+            requestedData
+          )
+
           return msg.contentKeys
         }
       } catch (err: any) {
         this.logger(`Error sending to ${shortId(dstId)} - ${err.message}`)
       }
     }
-  }
-
-  public sendUtpStreamRequest = async (dstId: string, id: number) => {
-    // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateConnectionRequest(dstId, id, SubNetworkIds.HistoryNetwork)
-  }
-  public UtpStreamTest = async (dstId: string, id: number) => {
-    // Initiate a uTP stream request with a SYN packet
-    await this.uTP.initiateUtpTest(dstId, id, SubNetworkIds.HistoryNetwork)
   }
 
   /**
@@ -441,10 +466,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     blockHash: string,
     value: Uint8Array
   ) => {
+    const contentId = getHistoryNetworkContentId(chainId, blockHash, contentType)
+
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(toHexString(value))))
+          BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          this.db.put(contentId, toHexString(value), (err: any) => {
+            if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+          })
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return
@@ -458,20 +488,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             blockHash,
             HistoryNetworkContentTypes.BlockHeader
           )
-          let serializedHeader
-          try {
-            serializedHeader = await this.db.get(headerContentId)
-          } catch {
-            // Don't store block body where we don't have the header since we can't validate the data
-            // TODO: Retrieve header from network if not available locally
-            return
-          }
+          const serializedHeader = await this.db.get(headerContentId)
           // Verify we can construct a valid block from the header and body provided
           reassembleBlock(fromHexString(serializedHeader), value)
-        } catch (err: any) {
-          this.logger(`Invalid value provided for block body: ${err.toString()}`)
+          this.db.put(contentId, toHexString(value), (err: any) => {
+            if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+          })
+        } catch {
+          this.logger(`Will not store block body where we don't have the header.`)
+          // Don't store block body where we don't have the header since we can't validate the data
+          // TODO: Retrieve header from network if not available locally
           return
         }
+
         break
       }
       case HistoryNetworkContentTypes.Receipt:
@@ -479,10 +508,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       default:
         throw new Error('unknown data type provided')
     }
-    const key = getHistoryNetworkContentId(chainId, blockHash, contentType)
-    await this.db.put(key, toHexString(value), (err: any) => {
-      if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
-    })
+    // await this.db.put(key, toHexString(value), (err: any) => {
+    //   if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+    // })
     this.emit('ContentAdded', blockHash, contentType, toHexString(value))
     this.logger(
       `added ${
@@ -495,14 +523,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= distance from the content)
     // TODO: Make # nodes content is offered to configurable based on further discussion
     const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
-    const offerENRs = routingTable!.nearest(key, 1)
+    const offerENRs = routingTable!.nearest(contentId, 1)
     if (offerENRs.length > 0) {
       const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
         value: { chainId: chainId, blockHash: fromHexString(blockHash) },
       })
       offerENRs.forEach((enr) => {
-        if (distance(enr.nodeId, key) < routingTable!.getRadius(enr.nodeId)!) {
+        if (distance(enr.nodeId, contentId) < routingTable!.getRadius(enr.nodeId)!) {
           this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
         }
       })
@@ -579,18 +607,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     this.metrics?.totalBytesReceived.inc(message.response.length)
     const srcId = src.nodeId
-    this.logger(`TALKRESPONSE message received from ${srcId}, ${message.response.toString()}`)
-  }
-
-  private handleStreamedContent(rcvId: number, content: Uint8Array) {
-    this.logger(`received all content for ${rcvId}`)
-    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(content))
-    this.addContentToHistory(
-      1,
-      HistoryNetworkContentTypes.BlockHeader,
-      toHexString(header.hash()),
-      content
-    )
+    this.logger(`TALKRESPONSE message received from ${srcId}`)
   }
 
   private handlePing = (srcId: string, message: ITalkReqMessage) => {
@@ -648,13 +665,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private handleOffer = async (srcId: string, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
-    this.logger(`Received OFFER request from ${shortId(srcId)}`)
     this.logger(decoded)
     const msg = decoded.value as OfferMessage
-    if (msg.contentKeys.length > 0) {
-      try {
-        if (msg.contentKeys.length > 0) {
-          const contentIds = Array(msg.contentKeys.length).fill(false)
+    this.logger(
+      `Received OFFER request from ${shortId(srcId)} with ${
+        msg.contentKeys.length
+      } pieces of content.`
+    )
+    try {
+      if (msg.contentKeys.length > 0) {
+        try {
+          const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
           let offerAccepted = false
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
@@ -668,40 +689,60 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             }
           }
           if (offerAccepted) {
-            this.sendAccept(srcId, message, contentIds)
+            this.logger(`Accepting an OFFER`)
+            const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
+            this.sendAccept(srcId, message, contentIds, desiredKeys)
+          } else {
+            this.logger(`Declining an OFFER since no interesting content`)
+            this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
           }
+        } catch {
+          this.logger(`Something went wrong handling offer message`)
+          // Send empty response if something goes wrong parsing content keys
+          this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
         }
         this.logger('We already have all this content')
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
-      } catch {
-        this.logger(`Something went wrong handling offer message`)
+      } else {
+        this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }
+    } catch {
+      this.logger(`Error Processing OFFER msg`)
     }
   }
 
   private sendAccept = async (
     srcId: string,
     message: ITalkReqMessage,
-    desiredContentKeys: boolean[]
+    desiredContentAccepts: boolean[],
+    desiredContentKeys: Uint8Array[]
   ) => {
+    this.logger(
+      `sending ACCEPT to ${shortId(srcId)} for ${desiredContentKeys.length} pieces of content.`
+    )
+
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
-    const connectionId = await this.uTP.awaitConnectionRequest(
+    await this.uTP.handleNewHistoryNetworkRequest(
+      desiredContentKeys,
       srcId,
       id,
-      toHexString(message.protocol) as SubNetworkIds
+      RequestCode.ACCEPT_READ,
+      []
     )
+    const idBuffer = Buffer.alloc(2)
+    idBuffer.writeUInt16BE(id, 0)
+
     const payload: AcceptMessage = {
-      connectionId: new Uint8Array(2).fill(connectionId),
-      contentKeys: desiredContentKeys,
+      connectionId: idBuffer,
+      contentKeys: desiredContentAccepts,
     }
     const encodedPayload = PortalWireMessageType.serialize({
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    this.logger(`sending ACCEPT to ${shortId(srcId)} with connection`)
     await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
   }
 
@@ -764,6 +805,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           `...`
       )
       const payload = ContentMessageType.serialize({ selector: 1, value: value })
+      this.logger(`Sending requested content to ${srcId}`)
+      this.logger(Uint8Array.from(value))
       this.client.sendTalkResp(
         srcId,
         message.id,
@@ -776,13 +819,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           value.slice(0, 10) +
           `...`
       )
-      this.uTP.contents[srcId] = value
       this.logger(`Generating Random Connection Id...`)
       const _id = randUint16()
+      await this.uTP.handleNewHistoryNetworkRequest(
+        [decodedContentMessage.contentKey],
+        srcId,
+        _id,
+        RequestCode.FOUNDNDCONTENT_WRITE,
+        [value]
+      )
       const idBuffer = Buffer.alloc(2)
       idBuffer.writeUInt16BE(_id, 0)
       const id = Uint8Array.from(idBuffer)
-      this.logger(`Sending FOUND_CONTENT message with CONNECTION ID: ${_id}`)
+      this.logger(
+        `Sending FOUND_CONTENT message with CONNECTION ID: ${_id}, waiting for uTP SYN Packet`
+      )
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendTalkResp(
         srcId,
@@ -800,8 +851,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
     await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
-    const packet = bufferToPacket(packetBuffer)
-    await this.uTP.handleUtpPacket(packet, srcId, msgId)
+    await this.uTP.handleUtpPacket(packetBuffer, srcId)
   }
 
   /**

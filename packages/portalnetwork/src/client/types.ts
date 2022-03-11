@@ -5,7 +5,6 @@ import { StateNetworkRoutingTable, SubNetworkIds } from '..'
 import { PortalNetworkRoutingTable } from '.'
 
 export interface IPortalNetworkEvents {
-  Stream: (connectionId: number, content: Uint8Array) => void
   NodeAdded: (nodeId: NodeId, networkId: SubNetworkIds) => void
   NodeRemoved: (nodeId: NodeId, networkId: SubNetworkIds) => void
   ContentAdded: (key: string, contentType: number, content: string) => void
