@@ -7,7 +7,7 @@ import * as PromClient from 'prom-client'
 import debug from 'debug'
 import https from 'https'
 const log = debug('proxy')
-// debug.enable('proxy')
+debug.enable('proxy')
 
 const MAX_PACKET_SIZE = 1280
 
