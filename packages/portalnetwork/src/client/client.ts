@@ -604,7 +604,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     this.metrics?.totalBytesReceived.inc(message.response.length)
     const srcId = src.nodeId
@@ -704,8 +703,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         }
         this.logger('We already have all this content')
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
-      } catch {
-        this.logger(`Something went wrong handling offer message`)
+      } else {
+        this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
         this.client.sendTalkResp(srcId, message.id, Buffer.from([]))
       }
