@@ -91,7 +91,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) {
     // eslint-disable-next-line constructor-super
     super()
-    this.client = Discv5.create(config)
+    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000 } })
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
@@ -229,13 +229,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public sendPing = async (nodeId: string | ENR, networkId: SubNetworkIds) => {
     let dstId
-    if (typeof nodeId === 'string' && nodeId.startsWith('enr')) {
+    if (nodeId instanceof ENR) {
+      this.updateSubnetworkRoutingTable(nodeId, networkId, true)
+      dstId = nodeId.nodeId
+    } else if (typeof nodeId === 'string' && nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
       this.updateSubnetworkRoutingTable(enr, networkId, true)
       dstId = enr.nodeId
-    } else if (nodeId instanceof ENR) {
-      this.updateSubnetworkRoutingTable(nodeId, networkId, true)
-      dstId = nodeId.nodeId
     } else {
       dstId = nodeId
     }
@@ -299,7 +299,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
             if (!routingTable!.getValue(decodedEnr.nodeId)) {
-              this.updateSubnetworkRoutingTable(decodedEnr, networkId, true)
               this.sendPing(decodedEnr.nodeId, networkId)
             }
           })
