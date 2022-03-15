@@ -119,7 +119,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.uTP = new PortalNetworkUTP(this)
     this.db = db ?? level()
     ;(this.client as any).sessionService.on('established', (enr: ENR) => {
-      this.sendPing(enr.nodeId, SubNetworkIds.HistoryNetwork)
+      this.sendPing(enr, SubNetworkIds.HistoryNetwork)
     })
     if (metrics) {
       this.metrics = metrics
@@ -208,7 +208,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (!routingTable) {
       throw new Error('invalid subnetwork ID provided')
     }
-    // TODO: Move this insertion to `updateNetworkRoutingTable`
     this.updateSubnetworkRoutingTable(enr, networkId, true)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
@@ -228,12 +227,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param networkId subnetwork ID
    * @returns the PING payload specified by the subnetwork or undefined
    */
-  public sendPing = async (nodeId: string, networkId: SubNetworkIds) => {
+  public sendPing = async (nodeId: string | ENR, networkId: SubNetworkIds) => {
     let dstId
-    if (nodeId.startsWith('enr')) {
+    if (typeof nodeId === 'string' && nodeId.startsWith('enr')) {
       const enr = ENR.decodeTxt(nodeId)
       this.updateSubnetworkRoutingTable(enr, networkId, true)
       dstId = enr.nodeId
+    } else if (nodeId instanceof ENR) {
+      this.updateSubnetworkRoutingTable(nodeId, networkId, true)
+      dstId = nodeId.nodeId
     } else {
       dstId = nodeId
     }
@@ -914,7 +916,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         routingTable!.updateRadius(nodeId, decodedPayload.radius)
       }
     } catch (err) {
-      this.logger(`Something went wrong ${err}`)
+      this.logger(`Something went wrong`)
+      this.logger(err)
     }
     return
   }
