@@ -60,13 +60,14 @@ export async function sendFinPacket(socket: UtpSocket): Promise<void> {
   socket.finNr = packet.header.seqNr
   await socket.sendFinPacket(packet)
 }
-export async function sendSelectiveAckPacket(socket: UtpSocket) {
+export async function sendSelectiveAckPacket(socket: UtpSocket, ackNrs: number[]) {
   const _packet = createSelectiveAckPacket(
     socket.seqNr,
     socket.sndConnectionId,
     socket.ackNr,
     socket.rtt_var,
-    socket.cur_window
+    socket.cur_window,
+    ackNrs
   )
   await socket.sendStatePacket(_packet)
 }
