@@ -164,11 +164,14 @@ export class UtpSocket extends EventEmitter {
     try {
       await this.reader!.addPacket(packet)
       if (expected === true) {
-        this.ackNrs.push(this.seqNr)
+        this.ackNrs.push(this.ackNr)
         await this.utp.sendStatePacket(this)
       } else if (expected === false) {
-        this.ackNrs.push(this.seqNr)
-        await this.utp.sendStatePacket(this)
+        this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
+        this.ackNrs.push(this.ackNr)
+        await this.utp.sendSelectiveAckPacket(this, this.ackNrs)
+        return
+        // await this.utp.sendStatePacket(this)
       } else {
         throw new Error('Packet Read Error')
       }
