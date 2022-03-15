@@ -59,6 +59,7 @@ const main = async () => {
     const _client = Client.http({ port: args.rpcPort + x })
     const enr = await _client.request('portal_nodeEnr', [])
     const content = [blocks[0][0], blocks[0][0], blocks[1][0], blocks[1][0]]
+    await _client.request('portal_utp_find_content_test', [bootNodeEnr.result])
     await bootNode.request('portal_utp_offer_test', [enr.result, content, [0, 1, 0, 1]])
   }
 }
