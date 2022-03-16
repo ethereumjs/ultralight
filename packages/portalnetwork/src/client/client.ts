@@ -299,7 +299,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
             if (!routingTable!.getValue(decodedEnr.nodeId)) {
-              this.sendPing(decodedEnr.nodeId, networkId)
+              // Ping node if not currently in subnetwork routing table
+              this.sendPing(decodedEnr, networkId)
             }
           })
           return decoded
