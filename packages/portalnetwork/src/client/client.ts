@@ -916,8 +916,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         if (!enr) {
           // If ENR wasn't passed in original call, look in discv5 routing table to see if known there
           enr = this.client.getKadValue(nodeId)
-        } else {
-          throw new Error(`Unknown node id - ${shortId(nodeId)}`)
         }
         routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
         this.emit('NodeAdded', nodeId, networkId)

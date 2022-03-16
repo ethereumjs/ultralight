@@ -63,6 +63,8 @@ tape('Portal Wire Spec Testing', async (t) => {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
+        portal1.enableLog()
+        portal2.enableLog()
         portal1.client.once('multiaddrUpdated', () => portal2.start())
         portal2.client.once('multiaddrUpdated', async () => {
           let done = false
