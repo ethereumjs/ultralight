@@ -69,8 +69,8 @@ export class BasicUtp {
   async sendStatePacket(socket: UtpSocket) {
     await sendAckPacket(socket)
   }
-  async sendSelectiveAckPacket(socket: UtpSocket) {
-    await sendSelectiveAckPacket(socket)
+  async sendSelectiveAckPacket(socket: UtpSocket, ackNrs: number[]) {
+    await sendSelectiveAckPacket(socket, ackNrs)
   }
   async sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<number> {
     const seqNr = await sendDataPacket(socket, payload)

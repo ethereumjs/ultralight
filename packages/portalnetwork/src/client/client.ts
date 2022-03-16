@@ -118,9 +118,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.uTP = new PortalNetworkUTP(this)
     this.db = db ?? level()
-    ;(this.client as any).sessionService.on('established', (enr: ENR) => {
-      this.sendPing(enr, SubNetworkIds.HistoryNetwork)
-    })
     if (metrics) {
       this.metrics = metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
@@ -299,7 +296,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
             if (!routingTable!.getValue(decodedEnr.nodeId)) {
-              this.sendPing(decodedEnr.nodeId, networkId)
+              // Ping node if not currently in subnetwork routing table
+              this.sendPing(decodedEnr, networkId)
             }
           })
           return decoded
@@ -622,13 +620,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private handlePing = (srcId: string, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
     const pingMessage = decoded.value as PingMessage
-    this.updateSubnetworkRoutingTable(
-      srcId,
-      toHexString(message.protocol) as SubNetworkIds,
-      true,
-      pingMessage.customPayload
-    )
-    // Check to see if node is already in corresponding network routing table and add if not
+    const routingTable = this.routingTables.get(toHexString(message.protocol) as SubNetworkIds)
+    if (!routingTable?.getValue(srcId)) {
+      // Check to see if node is already in corresponding network routing table and add if not
+      this.updateSubnetworkRoutingTable(
+        srcId,
+        toHexString(message.protocol) as SubNetworkIds,
+        true,
+        pingMessage.customPayload
+      )
+    } else {
+      const decodedPayload = PingPongCustomDataType.deserialize(
+        Uint8Array.from(pingMessage.customPayload)
+      )
+      routingTable.updateRadius(srcId, decodedPayload.radius)
+    }
     this.sendPong(srcId, message.id)
   }
 
@@ -888,7 +894,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       throw new Error(`No routing table found corresponding to ${networkId}`)
     }
     const nodeId = typeof srcId === 'string' ? srcId : srcId.nodeId
-    const enr = typeof srcId === 'string' ? routingTable.getValue(srcId) : srcId
+    let enr = typeof srcId === 'string' ? routingTable.getValue(srcId) : srcId
     if (!add) {
       routingTable!.removeById(nodeId)
       routingTable!.removeFromRadiusMap(nodeId)
@@ -907,6 +913,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
           } routing table`
         )
+        if (!enr) {
+          // If ENR wasn't passed in original call, look in discv5 routing table to see if known there
+          enr = this.client.getKadValue(nodeId)
+        }
         routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
         this.emit('NodeAdded', nodeId, networkId)
       }

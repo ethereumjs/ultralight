@@ -91,7 +91,8 @@ export function createSelectiveAckPacket(
   sndConnectionId: Uint16,
   ackNr: Uint16,
   rtt_var: number,
-  wndSize: number
+  wndSize: number,
+  ackNrs: number[]
 ): Packet {
   const h: SelectiveAckHeader = new SelectiveAckHeader(
     {
@@ -102,7 +103,7 @@ export function createSelectiveAckPacket(
       wndSize: wndSize,
       timestampDiff: rtt_var,
     },
-    new Uint8Array(1)
+    Uint8Array.from(ackNrs)
   )
 
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array(0) })

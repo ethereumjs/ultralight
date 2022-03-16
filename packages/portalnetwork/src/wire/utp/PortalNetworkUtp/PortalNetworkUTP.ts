@@ -4,6 +4,7 @@ import { Debugger } from 'debug'
 import { bufferToPacket, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork } from '../../..'
+import { SelectiveAckHeader } from '../Packets'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
@@ -338,6 +339,7 @@ export class PortalNetworkUTP {
   }
   async handleStatePacket(request: HistoryNetworkContentRequest, packet: Packet): Promise<void> {
     const requestCode = request.requestCode
+    let bitmask
     switch (requestCode) {
       case 0:
         if (packet.header.seqNr === 2) {
@@ -349,9 +351,17 @@ export class PortalNetworkUTP {
           await request.writer?.start()
           await sendFinPacket(request.socket)
         } else {
-          request.socket.logger('Ack Packet Received.')
-          request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
-          request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
+          if (packet.header.extension === 1) {
+            this.logger('SELECTIVE ACK RECEIVED')
+            bitmask = (packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask
+            this.logger(`${Array.from(bitmask.values())}`)
+          } else {
+            request.socket.logger('Ack Packet Received.')
+            request.socket.logger(
+              `Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`
+            )
+            request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
+          }
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
