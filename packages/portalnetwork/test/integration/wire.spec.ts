@@ -93,6 +93,8 @@ tape('Portal Wire Spec Testing', async (t) => {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
+        portal1.enableLog()
+        portal2.enableLog()
         portal1.on('ContentAdded', (blockHash) => {
           if (blockHash === '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220') {
             st.pass('OFFER/ACCEPT/uTP Stream succeeded')
@@ -102,9 +104,7 @@ tape('Portal Wire Spec Testing', async (t) => {
         portal1.client.once('multiaddrUpdated', () => portal2.start())
 
         portal2.client.once('multiaddrUpdated', async () => {
-          portal2.routingTables
-            .get(SubNetworkIds.HistoryNetwork)!
-            .insertOrUpdate(portal1.client.enr, EntryStatus.Connected)
+          await portal2.sendPing(portal1.client.enr, SubNetworkIds.HistoryNetwork)
           const testBlock = Block.fromRLPSerializedBlock(
             Buffer.from(fromHexString(require('./testBlock.json').rlp))
           )
