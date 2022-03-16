@@ -1,7 +1,7 @@
 import { Discv5 } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { bufferToPacket, Packet, PacketType, randUint16, UtpSocket } from '..'
+import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork } from '../../..'
 import { SelectiveAckHeader } from '../Packets'
@@ -121,8 +121,8 @@ export class PortalNetworkUTP {
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
-        sndId = connectionId
-        rcvId = connectionId + 1
+        sndId = connectionId + 1
+        rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
         sockets = contents.map((content) => {
           return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)!
@@ -344,7 +344,7 @@ export class PortalNetworkUTP {
       case 0:
         if (packet.header.seqNr === 2) {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
-          request.socket.ackNr = packet.header.seqNr
+          request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = 3
           request.socket.nextAck = packet.header.ackNr + 1
@@ -391,12 +391,13 @@ export class PortalNetworkUTP {
         }
         break
       case 2:
-        if (packet.header.ackNr === 1) {
-          request.socket.ackNr = packet.header.seqNr
+        if (request.socket.state === ConnectionState.SynSent) {
+          request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = packet.header.ackNr + 1
-          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextSeq = packet.header.seqNr
           request.socket.nextAck = packet.header.ackNr + 1
           request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
+          request.socket.state = ConnectionState.Connected
           await request.writer?.start()
           await this.protocol.sendFinPacket(request.socket)
         } else if (packet.header.ackNr === request.socket.finNr) {
@@ -411,7 +412,6 @@ export class PortalNetworkUTP {
           request.socket.logger('Ack Packet Received.')
           request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
           request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1

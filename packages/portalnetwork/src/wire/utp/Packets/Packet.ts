@@ -67,6 +67,7 @@ export function createSynPacket(rcvConnectionId: Uint16, seqNr: Uint16, ackNr?: 
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array() })
   return packet
 }
+
 export function createAckPacket(
   seqNr: Uint16,
   sndConnectionId: Uint16,

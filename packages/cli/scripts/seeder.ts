@@ -28,15 +28,18 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'create prometheus scrape_target file',
         boolean: true,
         default: true
+    })
+  .option('utpTest', {
+    describe: 'run uTP tests',
+    boolean: true,
+    default: false
     }).argv
 
 const main = async () => {
   let bootNode = Client.http({ port: args.rpcPort })
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
-  for (let x = 0; x < args.numBlocks; x++) {
-    await bootNode.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
-  }
+
   const bootNodeEnr = await bootNode.request('portal_nodeEnr', [])
   const targets = [`localhost:1${args.rpcPort}`]
   for (let x = 1; x < args.numNodes; x++) {
@@ -53,14 +56,23 @@ const main = async () => {
 
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })
-    await _client.request('portal_ping', [bootNodeEnr.result])
+    const res = await _client.request('portal_ping', [bootNodeEnr.result])
+    console.log(res)
   }
-  for (let x = 1; x < args.numNodes; x++) {
-    const _client = Client.http({ port: args.rpcPort + x })
-    const enr = await _client.request('portal_nodeEnr', [])
-    const content = [blocks[0][0], blocks[0][0], blocks[1][0], blocks[1][0]]
-    await _client.request('portal_utp_find_content_test', [bootNodeEnr.result])
-    await bootNode.request('portal_utp_offer_test', [enr.result, content, [0, 1, 0, 1]])
+
+  if (args.numBlocks) {
+    for (let x = 0; x < args.numBlocks; x++) {
+      await bootNode.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
+    }
+  }
+  if (args.utpTest) {
+    for (let x = 1; x < args.numNodes; x++) {
+      const _client = Client.http({ port: args.rpcPort + x })
+      const enr = await _client.request('portal_nodeEnr', [])
+      const content = [blocks[0][0], blocks[0][0], blocks[1][0], blocks[1][0]]
+      await _client.request('portal_utp_find_content_test', [bootNodeEnr.result])
+      await bootNode.request('portal_utp_offer_test', [enr.result, content, [0, 1, 0, 1]])
+    }
   }
 }
 

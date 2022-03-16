@@ -412,11 +412,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.logger(decoded.value)
           const msg = decoded.value as AcceptMessage
           const id = Buffer.from(msg.connectionId).readUInt16BE(0)
-
           // Initiate uTP streams with serving of requested content
           const requestedKeys: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys[idx] === true
           )
+
+          if (requestedKeys.length === 0) {
+            // Don't start uTP stream if no content ACCEPTed
+            this.logger(`Received ACCEPT with no desired content from ${shortId(dstId)}`)
+            return []
+          }
+
           const requestedData: Uint8Array[] = []
           await Promise.all(
             requestedKeys.map(async (key) => {
