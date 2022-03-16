@@ -44,7 +44,6 @@ export default class ContentWriter {
       )
       const sent = await sendDataPacket(this.socket, bytes)
       this.socket.logger(sent)
-      this.socket.ackNr += 1
       this.socket.seqNr += 1
       this.writing = chunks !== this.sentChunks.length
     }
