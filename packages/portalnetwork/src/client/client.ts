@@ -118,9 +118,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.uTP = new PortalNetworkUTP(this)
     this.db = db ?? level()
-    ;(this.client as any).sessionService.on('established', (enr: ENR) => {
-      this.sendPing(enr, SubNetworkIds.HistoryNetwork)
-    })
     if (metrics) {
       this.metrics = metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
