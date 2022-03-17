@@ -377,7 +377,7 @@ export class PortalNetworkUTP {
           this.logger(`Expecting: RANDOM-1`)
           this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
           const startingSeqNr = request.socket.seqNr + 1
-          request.socket.ackNr = packet.header.seqNr
+          request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
