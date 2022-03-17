@@ -12,7 +12,7 @@ import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
 type UtpSocketKey = string
 
 export enum RequestCode {
-  FOUNDNDCONTENT_WRITE = 0,
+  FOUNDCONTENT_WRITE = 0,
   FINDCONTENT_READ = 1,
   OFFER_WRITE = 2,
   ACCEPT_READ = 3,
@@ -68,7 +68,7 @@ export class PortalNetworkUTP {
     let newRequest: HistoryNetworkContentRequest
     let sockets: UtpSocket[]
     switch (requestCode) {
-      case 0:
+      case RequestCode.FOUNDCONTENT_WRITE:
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
@@ -94,7 +94,7 @@ export class PortalNetworkUTP {
           await newRequest.init()
         }
         break
-      case 1:
+      case RequestCode.FINDCONTENT_READ:
         sndId = connectionId
         rcvId = connectionId + 1
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
@@ -117,7 +117,7 @@ export class PortalNetworkUTP {
           await newRequest.init()
         }
         break
-      case 2:
+      case RequestCode.OFFER_WRITE:
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
@@ -145,9 +145,9 @@ export class PortalNetworkUTP {
         }
 
         break
-      case 3:
-        sndId = connectionId + 1
-        rcvId = connectionId
+      case RequestCode.ACCEPT_READ:
+        sndId = connectionId
+        rcvId = connectionId + 1
         socketKey = createSocketKey(peerId, sndId, rcvId)
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
@@ -181,7 +181,7 @@ export class PortalNetworkUTP {
   ): UtpSocket | undefined {
     let socket: UtpSocket
     switch (requestCode) {
-      case 0:
+      case RequestCode.FOUNDCONTENT_WRITE:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -195,7 +195,7 @@ export class PortalNetworkUTP {
           content
         )
         return socket
-      case 1:
+      case RequestCode.FINDCONTENT_READ:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -208,7 +208,7 @@ export class PortalNetworkUTP {
           this.logger
         )
         return socket
-      case 2:
+      case RequestCode.OFFER_WRITE:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -222,7 +222,7 @@ export class PortalNetworkUTP {
           content
         )
         return socket
-      case 3:
+      case RequestCode.ACCEPT_READ:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -307,7 +307,7 @@ export class PortalNetworkUTP {
     let reader
     try {
       switch (requestCode) {
-        case 0:
+        case RequestCode.FOUNDCONTENT_WRITE:
           this.logger(`SYN received to initiate stream for FINDCONTENT request`)
           this.logger(`Should be RANDOM-1`)
           this.logger(`${packet.header.seqNr} - ${packet.header.ackNr}`)
@@ -317,15 +317,15 @@ export class PortalNetworkUTP {
           request.writer = writer
           await this.protocol.sendSynAckPacket(request.socket)
           break
-        case 1:
+        case RequestCode.FINDCONTENT_READ:
           this.logger(`Why did I get a SYN?`)
           break
-        case 2:
+        case RequestCode.OFFER_WRITE:
           this.logger(`Why did I get a SYN?`)
           break
-        case 3:
+        case RequestCode.ACCEPT_READ:
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
-          request.socket.ackNr = 1
+          request.socket.ackNr = packet.header.seqNr
           request.socket.nextSeq = 2
           request.socket.nextAck = request.socket.seqNr
           reader = await this.protocol.createNewReader(request.socket, 2)
@@ -341,7 +341,7 @@ export class PortalNetworkUTP {
     const requestCode = request.requestCode
     let bitmask
     switch (requestCode) {
-      case 0:
+      case RequestCode.FOUNDCONTENT_WRITE:
         if (packet.header.seqNr === 2) {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
           request.socket.ackNr = packet.header.seqNr - 1
@@ -369,7 +369,7 @@ export class PortalNetworkUTP {
           await this.protocol.handleStatePacket(request.socket, packet)
         }
         break
-      case 1:
+      case RequestCode.FINDCONTENT_READ:
         if (packet.header.ackNr === 1) {
           this.logger(
             `SYN-ACK received for FINDCONTENT request.  Sending SYN-ACK-ACK.  Waiting for DATA.`
@@ -390,7 +390,7 @@ export class PortalNetworkUTP {
           this.protocol.handleStatePacket(request.socket, packet)
         }
         break
-      case 2:
+      case RequestCode.OFFER_WRITE:
         if (request.socket.state === ConnectionState.SynSent) {
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = packet.header.ackNr + 1
@@ -418,7 +418,7 @@ export class PortalNetworkUTP {
           await this.protocol.handleStatePacket(request.socket, packet)
         }
         break
-      case 3:
+      case RequestCode.ACCEPT_READ:
         this.logger('Why did I get a STATE packet?')
         break
     }
@@ -428,14 +428,14 @@ export class PortalNetworkUTP {
     const requestCode = request.requestCode
     try {
       switch (requestCode) {
-        case 0:
+        case RequestCode.FOUNDCONTENT_WRITE:
           throw new Error('Why did I get a DATA packet?')
-        case 1:
+        case RequestCode.FINDCONTENT_READ:
           await this.protocol.handleDataPacket(request.socket, packet)
           break
-        case 2:
+        case RequestCode.OFFER_WRITE:
           throw new Error('Why did I get a DATA packet?')
-        case 3:
+        case RequestCode.ACCEPT_READ:
           await this.protocol.handleDataPacket(request.socket, packet)
           break
       }
@@ -475,16 +475,16 @@ export class PortalNetworkUTP {
     let content
     try {
       switch (requestCode) {
-        case 0:
+        case RequestCode.FOUNDCONTENT_WRITE:
           throw new Error('Why did I get a FIN packet?')
-        case 1:
+        case RequestCode.FINDCONTENT_READ:
           content = await request.socket.handleFinPacket(packet)
           streamer(content!)
           request.socket.logger(`Closing uTP Socket`)
           break
-        case 2:
+        case RequestCode.OFFER_WRITE:
           throw new Error('Why did I get a FIN packet?')
-        case 3:
+        case RequestCode.ACCEPT_READ:
           content = await request.socket.handleFinPacket(packet)
           streamer(content!)
           request.socket.logger(`Closing uTP Socket`)
