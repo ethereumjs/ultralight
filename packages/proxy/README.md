@@ -2,12 +2,32 @@
 
 A simple NodeJS websocket-to-UDP proxy to allow browser clients to connect to a UDP based network.  Intended to be used in conjunction with [Ultralight Browser Client](https://github.com/acolytec3/ultralight-browser-client).
 
-All messages sent over websockets for routing on to a UDP based network should begin with the below prefix:
+## Protocol
+
+### Websocket Handshake/Connection
+
+When a client application first opens a web socket connection to the proxy, the proxy sends its public IPv4 address and an assigned port number to the client in a 6 byte message where the first 4 bytes represent the IPv4 address (XXX.XXX.XXX.XXX) where each byte corresponds to one byte of the IPv4 address and the last 2 bytes represent a port number between 1 and 65535 as a Uint16 (2 byte unsigned integer).
+
+In the context of the Discv5 protocol, the websocket client uses the proxy's public IP address and specified port number in its ENR in order to hook into the Discv5 network.
+### Proxy Service
+
+Once the initial websocket connection is established, the proxy acts as a message forwarding service between web socket clients and a UDP based network.
+
+It does so by maintaining a map of websocket connections to UDP port numbers.
+
+#### Websocket -> UDP forwarding
+All messages sent by the websocket client begin with the below prefix:
 - 4 bytes containing the numeric parts of an IPv4 address (e.g. [192, 168, 0, 1])
-- 2 bytes containing the byte encoded port number which can be parsed using `Buffer.readUIntBE()`
+- 2 bytes containing a Uint16 (2 byte unsigned integer) representing the port number
 
 So, when a message received containing `[127,0,0,1,122,73,28,96...` is received by the proxy:
  The first 4 bytes are parsed to an ip address of: 127.0.0.1 and the port (represented by `[122, 73]`) is parsed to 31305.  The proxy then sends the remainder of the message (i.e. all bytes starting with the 7th element of the message) to the address 127.0.0.1:31305.
+
+The proxy strips this prefix from the message payload and forwards the remaining bytes to the address and port specified in the prefix via a UDP socket.
+
+#### UDP -> Websocket forwarding
+
+Any message received at a UDP port are forwarded to the corresponding websocket client unmodified.
 ## Usage
 
 To run a proxy on a local network, run `npm run start`.  
