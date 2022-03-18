@@ -49,9 +49,10 @@ export class RPCManager {
           return 'Block not found'
         }
         body = includeTransactions
-          ? await this._client.historyNetworkContentLookup(1, blockHash)
+          ? (await this._client.historyNetworkContentLookup(1, blockHash)) ?? rlp.encode([[], []])
           : rlp.encode([[], []])
         // TODO: Figure out why block body isn't coming back as Uint8Array
+        //@ts-ignore
         block = reassembleBlock(header as Uint8Array, body)
         return block
       } catch {
