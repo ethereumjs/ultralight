@@ -332,7 +332,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public sendFindContent = async (dstId: string, key: Uint8Array, networkId: SubNetworkIds) => {
     this.metrics?.findContentMessagesSent.inc()
-    console.log('this is a key', toHexString(key))
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDCONTENT,
