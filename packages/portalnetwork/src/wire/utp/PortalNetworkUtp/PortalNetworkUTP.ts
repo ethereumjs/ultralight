@@ -379,8 +379,8 @@ export class PortalNetworkUTP {
           const startingSeqNr = request.socket.seqNr + 1
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = packet.header.ackNr + 1
-          request.socket.nextSeq = packet.header.seqNr + 1
-          request.socket.nextAck = packet.header.ackNr + 1
+          request.socket.nextSeq = packet.header.seqNr
+          request.socket.nextAck = packet.header.ackNr - 2
           const reader = await this.protocol.createNewReader(request.socket, startingSeqNr)
           request.reader = reader
           await this.protocol.sendStatePacket(request.socket)
@@ -395,7 +395,7 @@ export class PortalNetworkUTP {
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = packet.header.ackNr + 1
           request.socket.nextSeq = packet.header.seqNr
-          request.socket.nextAck = packet.header.ackNr + 1
+          request.socket.nextAck = packet.header.ackNr - 1
           request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
           request.socket.state = ConnectionState.Connected
           await request.writer?.start()
@@ -446,7 +446,7 @@ export class PortalNetworkUTP {
   async handleResetPacket(request: HistoryNetworkContentRequest) {
     const requestCode = request.requestCode
     delete this.openHistoryNetworkRequests[requestCode]
-    const newSocket = this.createPortalNetworkUTPSocket(
+    /*const newSocket = this.createPortalNetworkUTPSocket(
       requestCode,
       request.socket.remoteAddress,
       request.socket.sndConnectionId,
@@ -460,7 +460,7 @@ export class PortalNetworkUTP {
       request.socketKey,
       request.content ? [request.content] : [undefined]
     )
-    await newRequest.init()
+    await newRequest.init()*/
   }
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
@@ -495,8 +495,9 @@ export class PortalNetworkUTP {
           }
           break
       }
-    } catch {
-      this.logger('Request Type Not Implemented')
+    } catch (err) {
+      this.logger('Error processing FIN packet')
+      this.logger(err)
     }
   }
 }

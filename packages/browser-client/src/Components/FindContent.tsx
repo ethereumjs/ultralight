@@ -30,15 +30,8 @@ export default function FindContent(props: FindContentProps) {
       })
       return
     }
-    const res = await props.portal.historyNetworkContentLookup(0, contentKey)
-    if (typeof res === 'string') {
-      toast({
-        title: 'Found what we were looking for',
-        description: res,
-        status: 'success',
-        duration: 3000,
-      })
-    }
+    await props.portal.historyNetworkContentLookup(0, contentKey)
+    await props.portal.historyNetworkContentLookup(1, contentKey)
   }
 
   useEffect(() => {

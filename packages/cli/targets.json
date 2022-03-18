@@ -2,7 +2,10 @@
   {
     "targets": [
       "localhost:18546",
-      "localhost:18547"
+      "localhost:18547",
+      "localhost:18548",
+      "localhost:18549",
+      "localhost:18550"
     ],
     "labels": {
       "env": "devnet"
