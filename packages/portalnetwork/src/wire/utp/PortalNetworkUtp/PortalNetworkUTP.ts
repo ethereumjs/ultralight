@@ -327,7 +327,7 @@ export class PortalNetworkUTP {
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
           request.socket.ackNr = packet.header.seqNr
           request.socket.nextSeq = 2
-          request.socket.nextAck = request.socket.seqNr
+          request.socket.nextAck = packet.header.ackNr
           reader = await this.protocol.createNewReader(request.socket, 2)
           request.socket.reader = reader
           await this.protocol.handleSynPacket(request.socket, packet)
@@ -392,10 +392,10 @@ export class PortalNetworkUTP {
         break
       case RequestCode.OFFER_WRITE:
         if (request.socket.state === ConnectionState.SynSent) {
-          request.socket.ackNr = packet.header.seqNr - 1
-          request.socket.seqNr = packet.header.ackNr + 1
-          request.socket.nextSeq = packet.header.seqNr
-          request.socket.nextAck = packet.header.ackNr - 1
+          // request.socket.ackNr = packet.header.seqNr - 1
+          request.socket.seqNr = 2
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = 2
           request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
           request.socket.state = ConnectionState.Connected
           await request.writer?.start()
@@ -412,7 +412,7 @@ export class PortalNetworkUTP {
           request.socket.logger('Ack Packet Received.')
           request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
           request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          request.socket.seqNr = packet.header.ackNr + 1
+          // request.socket.seqNr = request.socket.seqNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
           await this.protocol.handleStatePacket(request.socket, packet)
