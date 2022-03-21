@@ -95,8 +95,8 @@ export class PortalNetworkUTP {
         }
         break
       case RequestCode.FINDCONTENT_READ:
-        sndId = connectionId
-        rcvId = connectionId + 1
+        sndId = connectionId + 1
+        rcvId = connectionId
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
@@ -168,8 +168,6 @@ export class PortalNetworkUTP {
         }
         break
     }
-    // const rcvId = requestCode % 2 === 0 ? sndId - 1 : sndId + 1
-    // const socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)
   }
 
   createPortalNetworkUTPSocket(
