@@ -1,6 +1,7 @@
+import { fromHex, toHex } from '@chainsafe/discv5'
 import { Button, Grid, GridItem, Heading, Input, useToast } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import BlocksToExplore from './BlocksToExplore'
 import { ContentManager } from './ContentManager'
@@ -36,6 +37,37 @@ export default function FindContent(props: FindContentProps) {
 
   useEffect(() => {
     props.finding && setContentKey(props.finding)
+    console.log('content keys for', contentKey)
+    console.log(
+      'header',
+      '0x' +
+        toHex(
+          Buffer.from(
+            HistoryNetworkContentKeyUnionType.serialize({
+              selector: 0,
+              value: {
+                chainId: 1,
+                blockHash: fromHex(contentKey.slice(2)),
+              },
+            })
+          )
+        )
+    )
+    console.log(
+      'body',
+      '0x' +
+        toHex(
+          Buffer.from(
+            HistoryNetworkContentKeyUnionType.serialize({
+              selector: 1,
+              value: {
+                chainId: 1,
+                blockHash: fromHex(contentKey.slice(2)),
+              },
+            })
+          )
+        )
+    )
   }, [props.finding])
 
   return (
