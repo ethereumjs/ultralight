@@ -72,8 +72,8 @@ export class PortalNetworkUTP {
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
-        sndId = connectionId + 1
-        rcvId = connectionId
+        sndId = connectionId
+        rcvId = connectionId + 1
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
@@ -313,9 +313,13 @@ export class PortalNetworkUTP {
           this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = randUint16()
-          writer = await this.protocol.createNewWriter(request.socket, request.socket.seqNr + 1)
+          writer = await this.protocol.createNewWriter(request.socket, request.socket.seqNr)
           request.writer = writer
           await this.protocol.sendSynAckPacket(request.socket)
+          request.socket.nextSeq = request.socket.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
+          await request.writer?.start()
+          await sendFinPacket(request.socket)
           break
         case RequestCode.FINDCONTENT_READ:
           this.logger(`Why did I get a SYN?`)
@@ -342,7 +346,7 @@ export class PortalNetworkUTP {
     let bitmask
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
-        if (packet.header.seqNr === 2) {
+        /*    if (packet.header.seqNr === 2) {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
           // request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = request.socket.seqNr + 1
@@ -367,7 +371,7 @@ export class PortalNetworkUTP {
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
           await this.protocol.handleStatePacket(request.socket, packet)
-        }
+        }*/
         break
       case RequestCode.FINDCONTENT_READ:
         if (packet.header.ackNr === 1) {
