@@ -5,6 +5,7 @@ import ContentReader from '../Protocol/read/ContentReader'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import { sendSynPacket } from '../Packets/PacketSenders'
 import { RequestCode } from './PortalNetworkUTP'
+import { ConnectionState } from '../Socket'
 
 export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., etc...
 
@@ -40,19 +41,20 @@ export class HistoryNetworkContentRequest {
   async init(): Promise<void> {
     let writer
     switch (this.requestCode) {
-      case 0:
+      case RequestCode.FOUNDCONTENT_WRITE:
         break
-      case 1:
+      case RequestCode.FINDCONTENT_READ:
         await sendSynPacket(this.socket)
         break
-      case 2:
+      case RequestCode.OFFER_WRITE:
         this.socket = this.sockets.pop()!
         this.contentKey = this.contentKeys.pop()!
         writer = await this.socket!.utp.createNewWriter(this.socket, 2)
         this.writer = writer
         await sendSynPacket(this.socket)
+        this.socket.state = ConnectionState.SynSent
         break
-      case 3:
+      case RequestCode.ACCEPT_READ:
         break
     }
   }

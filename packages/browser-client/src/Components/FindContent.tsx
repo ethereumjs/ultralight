@@ -37,37 +37,6 @@ export default function FindContent(props: FindContentProps) {
 
   useEffect(() => {
     props.finding && setContentKey(props.finding)
-    console.log('content keys for', contentKey)
-    console.log(
-      'header',
-      '0x' +
-        toHex(
-          Buffer.from(
-            HistoryNetworkContentKeyUnionType.serialize({
-              selector: 0,
-              value: {
-                chainId: 1,
-                blockHash: fromHex(contentKey.slice(2)),
-              },
-            })
-          )
-        )
-    )
-    console.log(
-      'body',
-      '0x' +
-        toHex(
-          Buffer.from(
-            HistoryNetworkContentKeyUnionType.serialize({
-              selector: 1,
-              value: {
-                chainId: 1,
-                blockHash: fromHex(contentKey.slice(2)),
-              },
-            })
-          )
-        )
-    )
   }, [props.finding])
 
   return (
