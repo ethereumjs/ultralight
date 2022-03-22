@@ -48,6 +48,7 @@ export class ContentLookup {
     })
 
     let finished = false
+    const nodesAlreadyAsked = new Set()
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
@@ -57,6 +58,11 @@ export class ContentLookup {
       const nearestPeer = this.lookupPeers.shift()
       if (!nearestPeer) {
         return
+      }
+      if (nodesAlreadyAsked.has(nearestPeer.nodeId)) {
+        continue
+      } else {
+        nodesAlreadyAsked.add(nearestPeer.nodeId)
       }
 
       this.log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
@@ -91,6 +97,9 @@ export class ContentLookup {
           res.value.forEach((enr) => {
             if (!finished) {
               const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
+              if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
+                return
+              }
               const dist = distance(decodedEnr.nodeId, this.contentId)
               if (this.lookupPeers.length === 0) {
                 // if no peers currently in lookup table, add to beginning of list

@@ -32,6 +32,8 @@ export class NodeLookup {
     const routingTable = this.client.routingTables.get(this.networkId)
     const closestPeers = routingTable!.nearest(this.nodeSought, a)
     const newPeers: ENR[] = []
+    const nodesAlreadyAsked = new Set()
+
     let finished = false
     while (!finished && newPeers.length <= k) {
       if (closestPeers.length === 0) {
@@ -39,6 +41,12 @@ export class NodeLookup {
         continue
       }
       const nearestPeer = closestPeers.shift()
+      if (nodesAlreadyAsked.has(nearestPeer?.nodeId)) {
+        continue
+      } else {
+        nodesAlreadyAsked.add(nearestPeer?.nodeId)
+      }
+
       // Calculates log2distance between queried peer and `nodeSought`
       const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, this.nodeSought)
       // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
@@ -53,6 +61,9 @@ export class NodeLookup {
         res.enrs.forEach((enr) => {
           if (!finished) {
             const decodedEnr = ENR.decode(Buffer.from(enr))
+            if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
+              return
+            }
             if (decodedEnr.nodeId === this.nodeSought) {
               // `nodeSought` was found -- add to table and terminate lookup
               finished = true
