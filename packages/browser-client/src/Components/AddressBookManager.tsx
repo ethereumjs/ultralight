@@ -88,17 +88,6 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
     portal.sendFindNodes(nodeId, Uint16Array.from([parseInt(distance)]), network)
   }
 
-  // const handleUtp = (nodeId: string) => {
-  //   if (utpConId) {
-  //     portal.uTP.initiateUtpTest(nodeId, utpConId, SubNetworkIds.HistoryNetwork)
-  //   } else {
-  //     toast({
-  //       title: 'No connection ID found',
-  //       status: 'error',
-  //     })
-  //   }
-  // }
-
   useEffect(() => {
     setPeer(peers[peers.length - 1])
   }, [peers])
@@ -169,15 +158,11 @@ const AddressBookManager: React.FC<NodeManagerProps> = ({ portal, network, findi
             </Button>
           </GridItem>
           <GridItem colStart={4} rowStart={5}>
+            <Input value={contentKey} onChange={(evt) => setContentKey(evt.target.value)} />
             <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
               Send Offer
             </Button>
           </GridItem>
-          {/* <GridItem colStart={4} rowStart={6}>
-            <Button width={'100%'} size="sm" onClick={() => handleUtp(peer)}>
-              Start UTP Connection
-            </Button>
-          </GridItem> */}
         </Grid>
       )}
     </VStack>

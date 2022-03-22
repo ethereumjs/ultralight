@@ -295,9 +295,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           decoded.enrs.forEach((enr) => {
             const decodedEnr = ENR.decode(Buffer.from(enr))
             this.logger(decodedEnr.nodeId)
-            if (!routingTable!.getValue(decodedEnr.nodeId)) {
+            if (routingTable && !routingTable.getValue(decodedEnr.nodeId)) {
               // Ping node if not currently in subnetwork routing table
               this.sendPing(decodedEnr, networkId)
+            } else {
+              this.logger(`We already know ${shortId(decodedEnr.nodeId)}`)
             }
           })
           return decoded
@@ -583,7 +585,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
 
     const messageType = message.request[0]
-    this.logger(`TALKREQUEST message received from ${srcId}`)
+    this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${srcId}`)
     switch (messageType) {
       case MessageCodes.PING:
         this.handlePing(srcId, message)
@@ -850,7 +852,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         [decodedContentMessage.contentKey],
         srcId,
         _id,
-        RequestCode.FOUNDNDCONTENT_WRITE,
+        RequestCode.FOUNDCONTENT_WRITE,
         [value]
       )
       const idBuffer = Buffer.alloc(2)

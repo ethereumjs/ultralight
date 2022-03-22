@@ -40,14 +40,13 @@ export default class ContentWriter {
       this.socket.logger(
         `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${
           this.socket.seqNr
-        }.  size: ${this.dataChunks[this.socket.seqNr].length}`
+        }.  size: ${bytes && bytes.length}`
       )
       const sent = await sendDataPacket(this.socket, bytes)
       this.socket.logger(sent)
-      this.socket.seqNr += 1
       this.writing = chunks !== this.sentChunks.length
+      this.socket.seqNr += 1
     }
-    // this.logger('All Data Written')
     return
   }
 

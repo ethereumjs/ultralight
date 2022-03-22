@@ -3,7 +3,7 @@ import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
-import { HistoryNetworkContentKeyUnionType, PortalNetwork } from '../../..'
+import { PortalNetwork } from '../../..'
 import { SelectiveAckHeader } from '../Packets'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
@@ -12,7 +12,7 @@ import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
 type UtpSocketKey = string
 
 export enum RequestCode {
-  FOUNDNDCONTENT_WRITE = 0,
+  FOUNDCONTENT_WRITE = 0,
   FINDCONTENT_READ = 1,
   OFFER_WRITE = 2,
   ACCEPT_READ = 3,
@@ -68,12 +68,12 @@ export class PortalNetworkUTP {
     let newRequest: HistoryNetworkContentRequest
     let sockets: UtpSocket[]
     switch (requestCode) {
-      case 0:
+      case RequestCode.FOUNDCONTENT_WRITE:
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
-        sndId = connectionId + 1
-        rcvId = connectionId
+        sndId = connectionId
+        rcvId = connectionId + 1
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
@@ -94,9 +94,9 @@ export class PortalNetworkUTP {
           await newRequest.init()
         }
         break
-      case 1:
-        sndId = connectionId
-        rcvId = connectionId + 1
+      case RequestCode.FINDCONTENT_READ:
+        sndId = connectionId + 1
+        rcvId = connectionId
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
         if (socket === undefined) {
           throw new Error('Error in Socket Creation')
@@ -117,7 +117,7 @@ export class PortalNetworkUTP {
           await newRequest.init()
         }
         break
-      case 2:
+      case RequestCode.OFFER_WRITE:
         if (contents === undefined) {
           throw new Error('No contents to write')
         }
@@ -145,9 +145,9 @@ export class PortalNetworkUTP {
         }
 
         break
-      case 3:
-        sndId = connectionId + 1
-        rcvId = connectionId
+      case RequestCode.ACCEPT_READ:
+        sndId = connectionId
+        rcvId = connectionId + 1
         socketKey = createSocketKey(peerId, sndId, rcvId)
         if (this.openHistoryNetworkRequests[socketKey]) {
           this.logger(`Request already Open`)
@@ -168,8 +168,6 @@ export class PortalNetworkUTP {
         }
         break
     }
-    // const rcvId = requestCode % 2 === 0 ? sndId - 1 : sndId + 1
-    // const socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)
   }
 
   createPortalNetworkUTPSocket(
@@ -181,7 +179,7 @@ export class PortalNetworkUTP {
   ): UtpSocket | undefined {
     let socket: UtpSocket
     switch (requestCode) {
-      case 0:
+      case RequestCode.FOUNDCONTENT_WRITE:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -195,7 +193,7 @@ export class PortalNetworkUTP {
           content
         )
         return socket
-      case 1:
+      case RequestCode.FINDCONTENT_READ:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -208,12 +206,12 @@ export class PortalNetworkUTP {
           this.logger
         )
         return socket
-      case 2:
+      case RequestCode.OFFER_WRITE:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
           rcvId,
-          0,
+          1,
           randUint16(),
           undefined,
           1,
@@ -222,7 +220,7 @@ export class PortalNetworkUTP {
           content
         )
         return socket
-      case 3:
+      case RequestCode.ACCEPT_READ:
         socket = this.protocol.createNewSocket(
           peerId,
           sndId,
@@ -307,27 +305,31 @@ export class PortalNetworkUTP {
     let reader
     try {
       switch (requestCode) {
-        case 0:
+        case RequestCode.FOUNDCONTENT_WRITE:
           this.logger(`SYN received to initiate stream for FINDCONTENT request`)
-          this.logger(`Should be RANDOM-1`)
-          this.logger(`${packet.header.seqNr} - ${packet.header.ackNr}`)
+          this.logger(`Expected: 1-RANDOM`)
+          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = randUint16()
-          writer = await this.protocol.createNewWriter(request.socket, request.socket.seqNr + 1)
+          writer = await this.protocol.createNewWriter(request.socket, request.socket.seqNr)
           request.writer = writer
           await this.protocol.sendSynAckPacket(request.socket)
+          request.socket.nextSeq = request.socket.seqNr + 1
+          request.socket.nextAck = packet.header.ackNr + 1
+          await request.writer?.start()
+          await sendFinPacket(request.socket)
           break
-        case 1:
+        case RequestCode.FINDCONTENT_READ:
           this.logger(`Why did I get a SYN?`)
           break
-        case 2:
+        case RequestCode.OFFER_WRITE:
           this.logger(`Why did I get a SYN?`)
           break
-        case 3:
+        case RequestCode.ACCEPT_READ:
           this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
-          request.socket.ackNr = 1
+          request.socket.ackNr = packet.header.seqNr
           request.socket.nextSeq = 2
-          request.socket.nextAck = request.socket.seqNr
+          request.socket.nextAck = packet.header.ackNr
           reader = await this.protocol.createNewReader(request.socket, 2)
           request.socket.reader = reader
           await this.protocol.handleSynPacket(request.socket, packet)
@@ -341,11 +343,11 @@ export class PortalNetworkUTP {
     const requestCode = request.requestCode
     let bitmask
     switch (requestCode) {
-      case 0:
-        if (packet.header.seqNr === 2) {
+      case RequestCode.FOUNDCONTENT_WRITE:
+        /*    if (packet.header.seqNr === 2) {
           this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
-          request.socket.ackNr = packet.header.seqNr - 1
-          request.socket.seqNr = packet.header.ackNr + 1
+          // request.socket.ackNr = packet.header.seqNr
+          request.socket.seqNr = request.socket.seqNr + 1
           request.socket.nextSeq = 3
           request.socket.nextAck = packet.header.ackNr + 1
           await request.writer?.start()
@@ -362,14 +364,14 @@ export class PortalNetworkUTP {
             )
             request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
           }
-          request.socket.ackNr = packet.header.seqNr
-          request.socket.seqNr = packet.header.ackNr + 1
+          // request.socket.ackNr = packet.header.seqNr
+          // request.socket.seqNr = request.socket.seqNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
           await this.protocol.handleStatePacket(request.socket, packet)
-        }
+        }*/
         break
-      case 1:
+      case RequestCode.FINDCONTENT_READ:
         if (packet.header.ackNr === 1) {
           this.logger(
             `SYN-ACK received for FINDCONTENT request.  Sending SYN-ACK-ACK.  Waiting for DATA.`
@@ -378,7 +380,7 @@ export class PortalNetworkUTP {
           this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
           const startingSeqNr = request.socket.seqNr + 1
           request.socket.ackNr = packet.header.seqNr
-          request.socket.seqNr = packet.header.ackNr + 1
+          request.socket.seqNr = 2
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
           const reader = await this.protocol.createNewReader(request.socket, startingSeqNr)
@@ -390,14 +392,14 @@ export class PortalNetworkUTP {
           this.protocol.handleStatePacket(request.socket, packet)
         }
         break
-      case 2:
-        if (request.socket.state === ConnectionState.SynSent) {
-          request.socket.ackNr = packet.header.seqNr - 1
-          request.socket.seqNr = packet.header.ackNr + 1
-          request.socket.nextSeq = packet.header.seqNr
-          request.socket.nextAck = packet.header.ackNr + 1
-          request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
+      case RequestCode.OFFER_WRITE:
+        if (request.socket.seqNr === 1) {
           request.socket.state = ConnectionState.Connected
+          request.socket.ackNr = packet.header.seqNr - 1
+          request.socket.seqNr = 2
+          request.socket.nextSeq = packet.header.seqNr + 1
+          request.socket.nextAck = 2
+          request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
           await request.writer?.start()
           await this.protocol.sendFinPacket(request.socket)
         } else if (packet.header.ackNr === request.socket.finNr) {
@@ -412,13 +414,13 @@ export class PortalNetworkUTP {
           request.socket.logger('Ack Packet Received.')
           request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
           request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          request.socket.seqNr = packet.header.ackNr + 1
+          //  request.socket.seqNr = request.socket.seqNr + 1
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
           await this.protocol.handleStatePacket(request.socket, packet)
         }
         break
-      case 3:
+      case RequestCode.ACCEPT_READ:
         this.logger('Why did I get a STATE packet?')
         break
     }
@@ -428,14 +430,14 @@ export class PortalNetworkUTP {
     const requestCode = request.requestCode
     try {
       switch (requestCode) {
-        case 0:
+        case RequestCode.FOUNDCONTENT_WRITE:
           throw new Error('Why did I get a DATA packet?')
-        case 1:
+        case RequestCode.FINDCONTENT_READ:
           await this.protocol.handleDataPacket(request.socket, packet)
           break
-        case 2:
+        case RequestCode.OFFER_WRITE:
           throw new Error('Why did I get a DATA packet?')
-        case 3:
+        case RequestCode.ACCEPT_READ:
           await this.protocol.handleDataPacket(request.socket, packet)
           break
       }
@@ -446,7 +448,7 @@ export class PortalNetworkUTP {
   async handleResetPacket(request: HistoryNetworkContentRequest) {
     const requestCode = request.requestCode
     delete this.openHistoryNetworkRequests[requestCode]
-    const newSocket = this.createPortalNetworkUTPSocket(
+    /*const newSocket = this.createPortalNetworkUTPSocket(
       requestCode,
       request.socket.remoteAddress,
       request.socket.sndConnectionId,
@@ -460,7 +462,7 @@ export class PortalNetworkUTP {
       request.socketKey,
       request.content ? [request.content] : [undefined]
     )
-    await newRequest.init()
+    await newRequest.init()*/
   }
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
@@ -475,16 +477,16 @@ export class PortalNetworkUTP {
     let content
     try {
       switch (requestCode) {
-        case 0:
+        case RequestCode.FOUNDCONTENT_WRITE:
           throw new Error('Why did I get a FIN packet?')
-        case 1:
+        case RequestCode.FINDCONTENT_READ:
           content = await request.socket.handleFinPacket(packet)
           streamer(content!)
           request.socket.logger(`Closing uTP Socket`)
           break
-        case 2:
+        case RequestCode.OFFER_WRITE:
           throw new Error('Why did I get a FIN packet?')
-        case 3:
+        case RequestCode.ACCEPT_READ:
           content = await request.socket.handleFinPacket(packet)
           streamer(content!)
           request.socket.logger(`Closing uTP Socket`)
@@ -495,8 +497,9 @@ export class PortalNetworkUTP {
           }
           break
       }
-    } catch {
-      this.logger('Request Type Not Implemented')
+    } catch (err) {
+      this.logger('Error processing FIN packet')
+      this.logger(err)
     }
   }
 }

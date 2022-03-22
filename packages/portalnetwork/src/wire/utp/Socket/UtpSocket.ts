@@ -157,10 +157,8 @@ export class UtpSocket extends EventEmitter {
     )
     const expected = this.nextSeq === packet.header.seqNr
     this.nextSeq = packet.header.seqNr + 1
-    this.nextAck = packet.header.ackNr + 1
-    this.seqNr = packet.header.ackNr + 1
+    this.seqNr = this.seqNr + 1
     this.ackNr = packet.header.seqNr
-    // this.updateSocketFromPacketHeader(packet)
     try {
       await this.reader!.addPacket(packet)
       if (expected === true) {
@@ -194,7 +192,7 @@ export class UtpSocket extends EventEmitter {
     }
     this.logger(`Packet payloads compiled`)
     this.logger(this.readerContent)
-    this.seqNr = packet.header.ackNr + 1
+    this.seqNr = this.seqNr + 1
     this.ackNr = packet.header.seqNr
     await this.utp.sendStatePacket(this)
     return this.readerContent

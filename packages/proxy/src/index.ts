@@ -27,21 +27,11 @@ const args: any = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
-  .option('packetLoss', {
-    describe: 'simulated network issues',
-    number: true,
-    optional: true,
-  })
   .option('singleNodeMode', {
     describe: 'set proxy to single node mode to give a persistent ENR',
     number: true,
     optional: true,
   }).argv
-
-if ((args.packetLoss && args.packetLoss < 0) || args.packetLoss >= 100) {
-  log('packet loss parameter must be between 0 and 100. Exiting...')
-  process.exit(0)
-}
 
 const register = new PromClient.Registry()
 
@@ -55,10 +45,6 @@ const setupMetrics = () => {
     totalPacketsSent: new PromClient.Counter({
       name: 'proxy_total_packets_sent',
       help: 'how many packets have been sent',
-    }),
-    totalPacketsDropped: new PromClient.Counter({
-      name: 'proxy_total_packets_dropped',
-      help: 'how many packets have been dropped',
     }),
   }
 }
@@ -125,21 +111,17 @@ const startServer = async (ws: WS.Server, extip = false) => {
     websocket.send(Buffer.concat([bAddress, bPort]))
     log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
     websocket.on('message', (data) => {
-      if (args.packetLoss) {
-        metrics.totalPacketsSent.inc()
-        if (Math.random() * 100 <= args.packetLoss) {
-          metrics.totalPacketsDropped.inc()
-          log('simulating packet loss')
-          return
-        }
-      }
       try {
         const bAddress = Buffer.from(data.slice(0, 4) as ArrayBuffer)
         const address = `${bAddress[0]}.${bAddress[1]}.${bAddress[2]}.${bAddress[3]}`
         const port = Buffer.from(data as ArrayBuffer).readUIntBE(4, 2)
         const payload = Buffer.from(data.slice(6) as ArrayBuffer)
         log('outbound message to', address, port)
+        //    if (address === remoteAddr) {
+        //      udpsocket.send(payload, port, '127.0.0.1')
+        //    } else {
         udpsocket.send(payload, port, address)
+        //   }
       } catch (err) {
         log(err)
       }

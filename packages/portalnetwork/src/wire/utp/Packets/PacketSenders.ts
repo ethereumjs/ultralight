@@ -9,7 +9,7 @@ import {
 } from './Packet'
 
 export async function sendSynPacket(socket: UtpSocket): Promise<void> {
-  const packet = createSynPacket(socket.rcvConnectionId, 1, socket.ackNr)
+  const packet = createSynPacket(socket.sndConnectionId - 1, 1, socket.ackNr)
   socket.state = ConnectionState.SynSent
   await socket.sendSynPacket(packet)
 }
