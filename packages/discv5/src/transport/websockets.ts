@@ -55,7 +55,6 @@ export class WebSocketTransportService
         const port = data.readUIntBE(4, 2);
         this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`);
         this.emit("multiaddrUpdate", this.multiaddr);
-        // eslint-disable-next-line no-empty
       } else {
         this.handleIncoming(data);
       }
