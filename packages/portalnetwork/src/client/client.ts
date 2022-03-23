@@ -667,16 +667,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.routingTables
             .get(toHexString(message.protocol) as SubNetworkIds)!
             .valuesOfDistance(distance + 1)
-            .forEach((enr) => {
+            .every((enr) => {
               // Exclude ENR from resopnse if it matches the requesting node
-              if (enr.nodeId === srcId) return
+              if (enr.nodeId === srcId) return true
+              // Break from loop if total size of NODES payload would exceed 1200 bytes
+              // TODO: Add capability to send multiple NODES messages if size of ENRs exceeds packet size
+              if (Buffer.from(nodesPayload).length + enr.size > 1200) return false
               nodesPayload.total++
               nodesPayload.enrs.push(enr.encode())
+              return true
             })
         }
       })
       // Send the client's ENR if a node at distance 0 is requested
-      if (typeof payload.distances.find((res) => res === 0) === 'number') {
+      if (
+        payload.distances.findIndex((res) => res === 0) !== -1 &&
+        // Verify that total nodes payload is less than 1200 bytes before adding local ENR
+        Buffer.from(nodesPayload).length < 1200
+      ) {
         nodesPayload.total++
         nodesPayload.enrs.push(this.client.enr.encode())
       }
@@ -797,11 +805,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         case SubNetworkIds.HistoryNetwork:
           {
             const contentId = serializedContentKeyToContentId(decodedContentMessage.contentKey)
-            // TODO: Decide if we should send more than 3 nodes back in a response since we likely exceed
-            // UDP talkresp packet size with more than 3 ENRs at 300 bytes per ENR
+            // Discv5 calls for maximum of 16 nodes per NODES message
             const ENRs = this.routingTables
               .get(toHexString(message.protocol) as SubNetworkIds)!
-              .nearest(contentId, 3)
+              .nearest(contentId, 16)
             const encodedEnrs = ENRs.map((enr) => {
               // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
               // contentId than this node
@@ -812,8 +819,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             }).filter((enr) => enr !== undefined)
             if (encodedEnrs.length > 0) {
               this.logger(`Found ${encodedEnrs.length} closer to content than us`)
-              // @ts-ignore
-              const payload = ContentMessageType.serialize({ selector: 2, value: encodedEnrs })
+              // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
+              while (Buffer.from(encodedEnrs).length > 1200) {
+                // Remove ENRs until total ENRs less than 1200 bytes
+                encodedEnrs.pop()
+              }
+              const payload = ContentMessageType.serialize({
+                selector: 2,
+                value: encodedEnrs as Buffer[],
+              })
               this.client.sendTalkResp(
                 srcId,
                 message.id,
@@ -969,12 +983,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      this.logger(payload)
       const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)
-      this.logger(payload)
       if (networkId !== SubNetworkIds.UTPNetwork && payload[0] === 0) {
         // Evict node from routing table
         this.updateSubnetworkRoutingTable(dstId, networkId, false)
