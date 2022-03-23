@@ -969,12 +969,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      this.logger(payload)
       const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)
-      this.logger(payload)
       if (networkId !== SubNetworkIds.UTPNetwork && payload[0] === 0) {
         // Evict node from routing table
         this.updateSubnetworkRoutingTable(dstId, networkId, false)
