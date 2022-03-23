@@ -97,22 +97,6 @@ export class RPCManager {
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },
-    portal_offer: async (params: [string, string, number]) => {
-      const [dstId, blockHash, contentType] = params
-      if (!isValidId(dstId) || contentType < 0 || contentType > 2) {
-        return 'invalid parameters'
-      }
-      const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: {
-          chainId: 1,
-          blockHash: fromHex(blockHash.slice(2)),
-        },
-      })
-      const res = await this._client.sendOffer(dstId, [contentKey], SubNetworkIds.HistoryNetwork)
-      this.log(`response received to offer ${res?.toString()}`)
-      return `${shortId(dstId)} ${res ? 'accepted' : 'rejected'} offer`
-    },
     portal_ping: async (params: [string]) => {
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
@@ -120,6 +104,32 @@ export class RPCManager {
       await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
       this.log(`TEST PONG received from ${encodedENR.nodeId}`)
       return `PING/PONG successful with ${encodedENR.nodeId}`
+    },
+    portal_history_findContent: async (params: [string, Uint8Array]) => {
+      const [enr, contentKey] = params
+      await this._client.sendFindContent(enr, contentKey, SubNetworkIds.HistoryNetwork)
+    },
+    portal_history_offer: async (params: [string, string[], number[]]) => {
+      const [dstId, blockHashes, contentTypes] = params
+      contentTypes.forEach((contentType) => {
+        try {
+          isValidId(dstId)
+          contentType > 0
+          contentType < 2
+        } catch {
+          throw new Error('invalid parameters')
+        }
+      })
+      const contentKeys = blockHashes.map((blockHash, idx) => {
+        return HistoryNetworkContentKeyUnionType.serialize({
+          selector: contentTypes[idx],
+          value: {
+            chainId: 1,
+            blockHash: fromHex(blockHash.slice(2)),
+          },
+        })
+      })
+      await this._client.sendOffer(dstId, contentKeys, SubNetworkIds.HistoryNetwork)
     },
     portal_utp_find_content_test: async (params: [string]) => {
       this.log(`portal_utp_get_test request received`)
@@ -184,17 +194,6 @@ export class RPCManager {
       return `Some uTP happened`
     },
   }
-  // portal_utp_send_syn: async (params: [string]) => {
-  //   const [enr] = params
-  //   const id = ENR.decodeTxt(enr).nodeId
-  //   this.log(`portal_utp_send_syn_test starting`)
-  //   try {
-  //     this._client.sendUtpStreamRequest(id, 1234)
-  //     this.log('syn sent')
-  //   } catch {
-  //     this.log('syn not sent')
-  //   }
-  // },
 
   constructor(client: PortalNetwork) {
     this._client = client
