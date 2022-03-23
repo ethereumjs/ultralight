@@ -107,7 +107,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.client.on('talkReqReceived', this.onTalkReq)
     this.client.on('talkRespReceived', this.onTalkResp)
-    this.client.on('sessionEnded', (srcId) => {
+    /*  TODO: decide whether to add this code back in since some nodes are naughty and send UDP packets that
+        are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
+        routing table
+
+      this.client.on('sessionEnded', (srcId) => {
       // Remove node from subnetwork routing tables when a session is ended by discv5
       // (i.e. failed a liveness check)
       this.routingTables.forEach((table, networkId) => {
@@ -115,7 +119,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.updateSubnetworkRoutingTable(srcId, networkId, false)
         }
       })
-    })
+    })*/
     this.uTP = new PortalNetworkUTP(this)
     this.db = db ?? level()
     if (metrics) {
@@ -965,11 +969,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? SubNetworkIds.UTPNetwork : networkId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
+      this.logger(payload)
       const res = await this.client.sendTalkReq(dstId, payload, fromHexString(messageProtocol), enr)
       return res
     } catch (err: any) {
-      this.logger(`Error sending TALKREQ message: ${err.message}`)
-      if (networkId !== SubNetworkIds.UTPNetwork) {
+      this.logger(`Error sending TALKREQ message: ${err}`)
+      this.logger(payload)
+      if (networkId !== SubNetworkIds.UTPNetwork && payload[0] === 0) {
+        // Evict node from routing table
         this.updateSubnetworkRoutingTable(dstId, networkId, false)
       }
       return Buffer.from([0])
