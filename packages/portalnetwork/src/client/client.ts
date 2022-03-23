@@ -672,7 +672,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               if (enr.nodeId === srcId) return true
               // Break from loop if total size of NODES payload would exceed 1200 bytes
               // TODO: Add capability to send multiple NODES messages if size of ENRs exceeds packet size
-              if (Buffer.from(nodesPayload).length + enr.size > 1200) return false
+              if (Buffer.from(nodesPayload.enrs).length + enr.size > 1200) return false
               nodesPayload.total++
               nodesPayload.enrs.push(enr.encode())
               return true
@@ -683,7 +683,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (
         payload.distances.findIndex((res) => res === 0) !== -1 &&
         // Verify that total nodes payload is less than 1200 bytes before adding local ENR
-        Buffer.from(nodesPayload).length < 1200
+        Buffer.from(nodesPayload.enrs).length < 1200
       ) {
         nodesPayload.total++
         nodesPayload.enrs.push(this.client.enr.encode())
