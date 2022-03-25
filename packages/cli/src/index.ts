@@ -27,10 +27,10 @@ const args: any = yargs(hideBin(process.argv))
     boolean: true,
     default: true,
   })
-  .option('singleNodeMode', {
-    describe: 'set proxy in single node mode',
-    boolean: true,
-    default: false,
+  .option('persistentPort', {
+    describe: 'run a proxy on a persistent UDP port',
+    number: true,
+    optional: true,
   })
   .option('nat', {
     describe: 'NAT Traversal options for proxy',
@@ -95,7 +95,7 @@ const run = async () => {
       peerId: id,
       multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
       transport: 'wss',
-      proxyAddress: 'ws://127.0.0.1:5050',
+      proxyAddress: `ws://127.0.0.1:${args.persistentPort ?? '5050'}`,
     },
     2n ** 256n,
     db,
@@ -141,12 +141,13 @@ const main = async () => {
     // Spawn a child process that runs the proxy
     const file = require.resolve('../../proxy/dist/index.js')
     const argList = ['--nat', args.nat]
-    if (args.singleNodeMode) {
-      argList.push('--singleNodeMode')
-      argList.push(5052)
+    if (args.persistentPort) {
+      argList.push('--persistentPort')
+      argList.push(args.persistentPort)
     }
     child = spawn(process.execPath, [file, ...argList])
     child.stderr.on('data', (data) => {
+      console.log(data.toString())
       if (!proxyStarted && data.toString().includes('websocket server listening')) {
         run()
         proxyStarted = true

@@ -12,25 +12,29 @@ debug.enable('proxy')
 const MAX_PACKET_SIZE = 1280
 
 const servers: WS.Server[] = []
-let externalIp: string | undefined
 
 const args: any = yargs(hideBin(process.argv))
   .option('nat', {
     describe: 'NAT Traversal options for proxy',
-    choices: ['extip', 'localhost', 'lan'],
+    choices: ['extip', 'localhost', 'ip'],
     default: 'localhost',
-    array: true,
     string: true,
   })
   .option('ip', {
-    describe: 'IP address on local network',
+    describe: 'specify IP address for UDP proxy to listen on',
     string: true,
     optional: true,
   })
-  .option('singleNodeMode', {
-    describe: 'set proxy to single node mode to give a persistent ENR',
-    number: true,
+  .option('persistentPort', {
+    describe:
+      'set proxy to provide persistent port per endpoint to ensure each connection has a consistent port and IP address',
+    array: true,
     optional: true,
+  })
+  .option('metrics', {
+    describe: 'enable metrics endpoint',
+    boolean: true,
+    default: false,
   }).argv
 
 const register = new PromClient.Registry()
@@ -52,7 +56,7 @@ const setupMetrics = () => {
 const metricsServer = http.createServer(reportMetrics)
 let metrics: any
 
-if (args.packetLoss) {
+if (args.metrics) {
   metrics = setupMetrics()
   Object.entries(metrics).forEach((entry: any) => {
     register.registerMetric(entry[1])
@@ -60,19 +64,11 @@ if (args.packetLoss) {
   metricsServer.listen(5051)
 }
 
-const startServer = async (ws: WS.Server, extip = false) => {
-  let remoteAddr: string | undefined
-
-  if (extip) {
-    remoteAddr = externalIp
-  } else {
-    remoteAddr = ws.options.host
-  }
-
-  log(`websocket server listening on ${remoteAddr}:5050`)
+const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050, udpPort = 0) => {
+  log(`websocket server listening on ${externalIp}:${wssPort}`)
   ws.on('connection', async (websocket, req) => {
-    if (args.singleNodeMode && ws.clients.size > 1) {
-      log(`Proxy is running in single node mode so closing additional socket request`)
+    if (args.persistentPort && ws.clients.size > 1) {
+      log(`Rejecting additional client connection`)
       websocket.close()
       return
     }
@@ -92,14 +88,14 @@ const startServer = async (ws: WS.Server, extip = false) => {
     let foundPort = false
     while (!foundPort) {
       try {
-        args.singleNodeMode ? await udpsocket.bind(args.singleNodeMode) : await udpsocket.bind()
+        udpPort > 0 ? await udpsocket.bind(udpPort) : await udpsocket.bind()
         foundPort = true
       } catch (err) {
         log(err)
       }
     }
     // Send external IP address/port to websocket client to update ENR
-    const remoteAddrArray = remoteAddr!.split('.')
+    const remoteAddrArray = externalIp.split('.')
     const bAddress = Uint8Array.from([
       parseInt(remoteAddrArray[0]),
       parseInt(remoteAddrArray[1]),
@@ -109,7 +105,7 @@ const startServer = async (ws: WS.Server, extip = false) => {
     const bPort = Buffer.alloc(2)
     bPort.writeUIntBE(udpsocket.address().port, 0, 2)
     websocket.send(Buffer.concat([bAddress, bPort]))
-    log('UDP proxy listening on ', remoteAddr, udpsocket.address().port)
+    log('UDP proxy listening on ', externalIp, udpsocket.address().port)
     websocket.on('message', (data) => {
       try {
         const bAddress = Buffer.from(data.slice(0, 4) as ArrayBuffer)
@@ -117,11 +113,7 @@ const startServer = async (ws: WS.Server, extip = false) => {
         const port = Buffer.from(data as ArrayBuffer).readUIntBE(4, 2)
         const payload = Buffer.from(data.slice(6) as ArrayBuffer)
         log('outbound message to', address, port)
-        //    if (address === remoteAddr) {
-        //      udpsocket.send(payload, port, '127.0.0.1')
-        //    } else {
         udpsocket.send(payload, port, address)
-        //   }
       } catch (err) {
         log(err)
       }
@@ -148,48 +140,36 @@ function stop(): void {
 process.on('SIGTERM', () => stop())
 process.on('SIGINT', () => stop())
 
-const main = () => {
-  args.nat.forEach((arg: string) => {
-    switch (arg) {
-      case 'extip':
-        {
-          const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
-          startServer(ws, true)
-          servers.push(ws)
-        }
-        break
-      case 'localhost':
-        {
-          const ws = new WS.Server({ host: '127.0.0.1', port: 5050, clientTracking: true })
-          startServer(ws, false)
-          servers.push(ws)
-        }
-        break
-      case 'lan':
-        {
-          if (!args.ip) {
-            log('Must provide IP address for LAN option')
-            log('Exiting...')
-            process.exit(1)
-          }
-          const ws = new WS.Server({ host: args.ip, port: 5050, clientTracking: true })
-          startServer(ws, args.nat.includes('extip'))
-          servers.push(ws)
-        }
-        break
-    }
-  })
+const main = (externalIp: string) => {
+  if (args.persistentPort) {
+    args.persistentPort.forEach((wssPort: number) => {
+      const ws = new WS.Server({ host: externalIp, port: wssPort, clientTracking: true })
+      startServer(ws, externalIp, wssPort, wssPort + 1000)
+      servers.push(ws)
+    })
+  } else {
+    const ws = new WS.Server({ host: externalIp, port: 5050, clientTracking: true })
+    startServer(ws, externalIp, 5050)
+    servers.push(ws)
+  }
 }
 
-if (args.nat.find((entry: string) => entry === 'extip')) {
-  https.get('https://api.ipify.org', (res) => {
-    let data = ''
-    res.on('data', (chunk) => (data += chunk))
-    res.on('end', () => {
-      externalIp = data
-      main()
-    })
-  })
-} else {
-  main()
+switch (args.nat) {
+  case 'extip':
+    {
+      https.get('https://api.ipify.org', (res) => {
+        let data = ''
+        res.on('data', (chunk) => (data += chunk))
+        res.on('end', () => {
+          main(data)
+        })
+      })
+    }
+    break
+  case 'localhost':
+    main('127.0.0.1')
+    break
+  case 'ip':
+    main(args.ip)
+    break
 }
