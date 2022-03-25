@@ -61,7 +61,7 @@ export const App = () => {
     '0x7aaadeb8cf3e1dfda9f60fd41ea6204efa4cabcba89e61881ad475d50e63dfd0'
   )
   const [parentHash, setParentHash] = React.useState('')
-  const [proxy, setProxy] = React.useState('127.0.0.1')
+  const [proxy, setProxy] = React.useState('127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -80,12 +80,12 @@ export const App = () => {
         peerId: id,
         multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
         transport: 'wss',
-        proxyAddress: `ws://${proxy}:5050`,
+        proxyAddress: `ws://${proxy}`,
       },
       2n ** 256n
     )
     // eslint-disable-next-line no-undef
-    ;(window as any).portal = portal
+    ;(window as any).portal = node
     // eslint-disable-next-line no-undef
     ;(window as any).Multiaddr = Multiaddr
     // eslint-disable-next-line no-undef
@@ -96,7 +96,7 @@ export const App = () => {
     )
     await node.start()
 
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
   }
 
   const copy = async () => {

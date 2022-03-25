@@ -32,11 +32,19 @@ Any message received at a UDP port are forwarded to the corresponding websocket 
 
 To run a proxy on a local network, run `npm run start`.  
 
-By default, it only listens on `localhost`/`127.0.0.1`.  To have your proxy listen on a LAN IP address, pass the `--nat lan` parameter and the `--ip [your ip here]`
+### Websocket configuration
+By default, the proxy only listens for websocket connections on `localhost`/`127.0.0.1`.  To have your proxy listen for websocket connections on a specified IP address, pass the `--nat=ip` parameter and the `--ip=[your IP address here]`
 
-To make your proxy public facing, run `npm run start --nat extip` and the proxy will get its public IP address from a STUN server and route all traffic via the external IP address.
+### UDP socket configuration
+To make your proxy listen for UDP packets on a public facing IP address, run `npm run start --nat=extip` and the proxy will get its public IP address from [Ipify](https://www.ipify.org/) and route all UDP traffic via the external IP address.
 
-### Simulated packet loss
+### Persistent Ports
 
-To test the portal network client under adverse network conditions, the `--packetLoss` parameter can be passed to the proxy to simulate a packet drop rate.  Any value between 0 and 100 can be passed so `--packetLoss=20` would indicate that approximately 20% of packets will be dropped.
+To enable a websocket client to maintain a consistent IP and port address, you can pass the `--persistentPort=1234` parameter.  This will start the proxy in "persistent port" mode that accepts only a single websocket connection per specified port.  Each websocket connection will be paired with a persistent UDP socket bonded to the port corresponding the websocket port + 1000.  So, if the proxy is run with `npm run start -- --persistentPort=5050`, it will accept a single incoming websocket connection on `localhost:5050` and will listen for UDP traffic on `localhost:6050`.
+
+The proxy accepts multiple persistent port parameters so the below command will start two websocket listeners with corresponding UDP sockets.
+`npm run start -- --persistentPort=5050 --persistentPort=5052`
+
+
+
 
