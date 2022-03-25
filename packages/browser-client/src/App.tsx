@@ -31,7 +31,7 @@ export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [enr, setENR] = React.useState<string>('')
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
-  const [proxy, setProxy] = React.useState('127.0.0.1')
+  const [proxy, setProxy] = React.useState('127.0.0.1:5050')
   const [finding, _setFinding] = React.useState<string>()
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
@@ -49,12 +49,12 @@ export const App = () => {
         peerId: id,
         multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
         transport: 'wss',
-        proxyAddress: `ws://${proxy}:5050`,
+        proxyAddress: `ws://${proxy}`,
       },
       2n ** 256n
     )
     // eslint-disable-next-line no-undef
-    ;(window as any).portal = portal
+    ;(window as any).portal = node
     // eslint-disable-next-line no-undef
     ;(window as any).Multiaddr = Multiaddr
     // eslint-disable-next-line no-undef
@@ -65,7 +65,7 @@ export const App = () => {
     )
     await node.start()
 
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
   }
 
   const stopNode = async () => {
@@ -111,7 +111,7 @@ export const App = () => {
                 onChange={(evt) => {
                   setProxy(evt.target.value)
                 }}
-                defaultValue={'127.0.0.1'}
+                defaultValue={'127.0.0.1:5050'}
                 placeholder="Proxy IP Address"
               />
               {portal ? (

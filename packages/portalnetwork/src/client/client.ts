@@ -60,7 +60,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param proxyAddress IP address of proxy
    * @returns a new PortalNetwork instance
    */
-  public static createPortalNetwork = async (ip: string, proxyAddress = '127.0.0.1') => {
+  public static createPortalNetwork = async (ip: string, proxyAddress = '127.0.0.1:5050') => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/0`))
