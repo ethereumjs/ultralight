@@ -6,10 +6,6 @@ import {
   Tab,
   TabList,
   Tabs,
-  Table,
-  Thead,
-  Tr,
-  Th,
   Text,
   Heading,
   Button,
@@ -103,26 +99,6 @@ export default function DisplayBlock(props: DisplayBlockProps) {
                   )
                 })}
             </Grid>
-            <Table size={'sm'} variant="simple">
-              <Thead>
-                {header &&
-                  header.map((key, idx) => {
-                    return (
-                      <Tr key={key[0] + key[1]}>
-                        <Th>{key[0]}</Th>
-                        <Th wordBreak={'break-all'}>{key[1]}</Th>
-                        {idx === 0 && (
-                          <Th>
-                            <Button onClick={() => props.setParentHash(key[1])}>
-                              <SearchIcon />
-                            </Button>
-                          </Th>
-                        )}
-                      </Tr>
-                    )
-                  })}
-              </Thead>
-            </Table>
           </TabPanel>
           <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
           <TabPanel>Uncles</TabPanel>

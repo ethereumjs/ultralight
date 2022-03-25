@@ -31,8 +31,7 @@ import {
   TableCaption,
   Center,
 } from '@chakra-ui/react'
-import { ColorModeSwitcher } from './ColorModeSwitcher'
-import { distance, ENR, fromHex } from '@chainsafe/discv5'
+import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
   getHistoryNetworkContentId,
   PortalNetwork,
@@ -44,7 +43,7 @@ import { Multiaddr } from 'multiaddr'
 import { Block } from '@ethereumjs/block'
 import DisplayBlock from './Components/DisplayBlock'
 import CircleNetwork from './Components/CircleNetwork'
-import { ArrowLeftIcon, CopyIcon } from '@chakra-ui/icons'
+import { CopyIcon } from '@chakra-ui/icons'
 import DevTools from './Components/DevTools'
 
 // export const lightblue = '#bee3f8'
@@ -107,20 +106,14 @@ export const App = () => {
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubNetworkIds.HistoryNetwork)
     const known = routingTable?.values()
-    const map: Record<number, string[]> = {}
-    known!.forEach((_enr: ENR) => {
-      const distToSelf = distance(id, _enr.nodeId)
-      map[Math.ceil(Number(((distToSelf * 1000n) / 2n ** 256n) * 256n) / 1000)] = [
-        `${_enr.ip}`,
-        `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`,
-      ]
+    const formattedKnown = known!.map((_enr: ENR) => {
+      const distToSelf = log2Distance(id, _enr.nodeId)
+      return [distToSelf, `${_enr.ip}`, `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`]
     })
-    const selected = Object.keys(map).map((n) => {
-      return parseInt(n)
-    })
-    const sorted = selected.sort((a, b) => a - b)
+    //@ts-ignore
+    const sorted = formattedKnown.sort((a, b) => a[0] - b[0]) //@ts-ignore
     const table: [number, string[]][] = sorted.map((d) => {
-      return [d, map[d]]
+      return [d[0], [d[1], d[2], d[3]]]
     })
     setSortedDistList(table)
     const peers = portal!.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
@@ -186,7 +179,6 @@ export const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <Box bg={lightblue}>
-        <ColorModeSwitcher justifySelf="flex-end" />
         <Heading size="2xl" textAlign="start">
           Ultralight Portal Network Explorer
         </Heading>
@@ -228,7 +220,7 @@ export const App = () => {
             }}
             textAlign="center"
             bg="whiteAlpha.800"
-            defaultValue={'127.0.0.1'}
+            defaultValue={'127.0.0.1:5050'}
             placeholder="Proxy IP Address"
           />
           <Center>

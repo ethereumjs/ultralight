@@ -17,7 +17,7 @@ do
     esac
 done
 
-node ../proxy/dist/index.js --nat=localhost --packetLoss=$LOSS &
+node ../proxy/dist/index.js --nat=localhost &
 sleep 3
 counter=1
 while [ $counter -le $NODES ]

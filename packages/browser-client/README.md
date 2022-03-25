@@ -1,6 +1,6 @@
 # Ultralight Block Explorer
 
-This is a proof of concept that will start an Ultralight portal network client in the browser that leverages a UDP proxy service to connect to other nodes in the network,
+This is a proof of concept block explorer that will start an Ultralight portal network client in the browser that leverages a UDP proxy service to connect to other nodes in the network and retrieve blocks from the History Network.
 
 ## Usage
 
