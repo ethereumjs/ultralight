@@ -65,7 +65,7 @@ if (args.metrics) {
 }
 
 const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050, udpPort = 0) => {
-  log(`websocket server listening on ${externalIp}:${wssPort}`)
+  log(`websocket server listening on ${args.ip ?? '127.0.0.1'}:${wssPort}`)
   ws.on('connection', async (websocket, req) => {
     if (args.persistentPort && ws.clients.size > 1) {
       log(`Rejecting additional client connection`)
@@ -143,12 +143,16 @@ process.on('SIGINT', () => stop())
 const main = (externalIp: string) => {
   if (args.persistentPort) {
     args.persistentPort.forEach((wssPort: number) => {
-      const ws = new WS.Server({ host: externalIp, port: wssPort, clientTracking: true })
+      const ws = new WS.Server({
+        host: args.ip ?? '127.0.0.1',
+        port: wssPort,
+        clientTracking: true,
+      })
       startServer(ws, externalIp, wssPort, wssPort + 1000)
       servers.push(ws)
     })
   } else {
-    const ws = new WS.Server({ host: externalIp, port: 5050, clientTracking: true })
+    const ws = new WS.Server({ host: args.ip ?? '127.0.0.1', port: 5050, clientTracking: true })
     startServer(ws, externalIp, 5050)
     servers.push(ws)
   }

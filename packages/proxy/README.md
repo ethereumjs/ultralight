@@ -32,9 +32,11 @@ Any message received at a UDP port are forwarded to the corresponding websocket 
 
 To run a proxy on a local network, run `npm run start`.  
 
-By default, the proxy only listens for UDP packets on `localhost`/`127.0.0.1`.  To have your proxy listen for UDP packets on a specified IP address, pass the `--nat=ip` parameter and the `--ip=[your IP address here]`
+### Websocket configuration
+By default, the proxy only listens for websocket connections on `localhost`/`127.0.0.1`.  To have your proxy listen for websocket connections on a specified IP address, pass the `--nat=ip` parameter and the `--ip=[your IP address here]`
 
-To make your proxy public facing, run `npm run start --nat=extip` and the proxy will get its public IP address from [Ipify](https://www.ipify.org/) and route all traffic via the external IP address.
+### UDP socket configuration
+To make your proxy listen for UDP packets on a public facing IP address, run `npm run start --nat=extip` and the proxy will get its public IP address from [Ipify](https://www.ipify.org/) and route all UDP traffic via the external IP address.
 
 ### Persistent Ports
 
