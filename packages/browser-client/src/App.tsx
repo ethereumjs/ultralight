@@ -267,10 +267,12 @@ export const App = () => {
                       return (
                         <Tr>
                           <Td>
-                            <CopyIcon
-                              cursor={'pointer'}
-                              onClick={() => navigator.clipboard.writeText(peer[1][3])}
-                            />
+                            <Tooltip label={peer[1][3]}>
+                              <CopyIcon
+                                cursor={'pointer'}
+                                onClick={() => navigator.clipboard.writeText(peer[1][3])}
+                              />
+                            </Tooltip>
                           </Td>
                           <Th>{peer[0]}</Th>
                           <Td>{peer[1][0]}</Td>
