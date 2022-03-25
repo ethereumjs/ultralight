@@ -147,7 +147,6 @@ const main = async () => {
     }
     child = spawn(process.execPath, [file, ...argList])
     child.stderr.on('data', (data) => {
-      console.log(data.toString())
       if (!proxyStarted && data.toString().includes('websocket server listening')) {
         run()
         proxyStarted = true
