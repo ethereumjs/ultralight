@@ -3,6 +3,7 @@ import {
   ChakraProvider,
   Box,
   Flex,
+  FormControl,
   theme,
   Heading,
   Text,
@@ -95,7 +96,7 @@ export const App = () => {
     )
     await node.start()
 
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
   }
 
   const copy = async () => {
@@ -113,7 +114,7 @@ export const App = () => {
     //@ts-ignore
     const sorted = formattedKnown.sort((a, b) => a[0] - b[0]) //@ts-ignore
     const table: [number, string[]][] = sorted.map((d) => {
-      return [d[0], [d[1], d[2], d[3]]]
+      return [d[0], [d[1], d[2]]]
     })
     setSortedDistList(table)
     const peers = portal!.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
@@ -130,22 +131,22 @@ export const App = () => {
     updateAddressBook()
   }
 
-  async function handleFindContent(): Promise<Block | void> {
+  async function handleFindContent(blockHash: string): Promise<Block | void> {
     if (portal) {
-      if (contentKey.slice(0, 2) !== '0x') {
+      if (blockHash.slice(0, 2) !== '0x') {
         setContentKey('')
       } else {
-        const headerlookupKey = getHistoryNetworkContentId(1, contentKey, 0)
-        const bodylookupKey = getHistoryNetworkContentId(1, contentKey, 1)
+        const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
+        const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
         let header
         let body
-        await portal.historyNetworkContentLookup(0, contentKey)
+        await portal.historyNetworkContentLookup(0, blockHash)
         try {
           header = await portal.db.get(headerlookupKey)
         } catch (err: any) {
           portal.logger(err.message)
         }
-        await portal.historyNetworkContentLookup(1, contentKey)
+        await portal.historyNetworkContentLookup(1, blockHash)
         try {
           body = await portal.db.get(bodylookupKey)
         } catch (err: any) {
@@ -166,15 +167,12 @@ export const App = () => {
   }
 
   async function findParent(hash: string) {
-    setContentKey(hash)
-    await handleFindContent()
+    await setContentKey(hash)
+    await handleFindContent(hash)
     portal?.logger('Showing Block')
   }
 
-  React.useEffect(() => {
-    setContentKey(parentHash)
-    handleFindContent()
-  }, [parentHash])
+  const invalidHash = /([^0-z])+/.test(contentKey)
 
   return (
     <ChakraProvider theme={theme}>
@@ -292,17 +290,24 @@ export const App = () => {
                   {peers && peers.length > 0 && (
                     <>
                       <GridItem colSpan={1}>
-                        <Button onClick={() => handleFindContent()}>Get Block by Blockhash</Button>
+                        <Button
+                          disabled={invalidHash}
+                          onClick={() => handleFindContent(contentKey)}
+                        >
+                          Get Block by Blockhash
+                        </Button>
                       </GridItem>
                       <GridItem colSpan={3} colStart={2}>
-                        <Input
-                          bg="whiteAlpha.800"
-                          placeholder={'Block Hash'}
-                          value={contentKey}
-                          onChange={(evt) => {
-                            setContentKey(evt.target.value)
-                          }}
-                        />
+                        <FormControl isInvalid={invalidHash}>
+                          <Input
+                            bg="whiteAlpha.800"
+                            placeholder={'Block Hash'}
+                            value={contentKey}
+                            onChange={(evt) => {
+                              setContentKey(evt.target.value)
+                            }}
+                          />
+                        </FormControl>
                       </GridItem>
                     </>
                   )}

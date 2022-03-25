@@ -90,7 +90,7 @@ export default function DisplayBlock(props: DisplayBlockProps) {
                       <GridItem colSpan={1}>
                         {' '}
                         {idx === 0 && (
-                          <Button onClick={() => props.setParentHash(key[1])}>
+                          <Button onClick={() => props.findParent(key[1])}>
                             <SearchIcon />
                           </Button>
                         )}
