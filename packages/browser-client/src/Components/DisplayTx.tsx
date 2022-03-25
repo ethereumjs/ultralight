@@ -1,9 +1,20 @@
 import { Box, Table, Tbody, Td, Tr } from '@chakra-ui/react'
 import { TypedTransaction } from '@ethereumjs/tx'
-import { toHexString } from './ShowInfo'
 
 interface DisplayTxProps {
   tx: TypedTransaction
+}
+
+export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
+  const hexByByte: string[] = []
+  let hex = '0x'
+  for (const byte of bytes) {
+    if (!hexByByte[byte]) {
+      hexByByte[byte] = byte < 16 ? '0' + byte.toString(16) : byte.toString(16)
+    }
+    hex += hexByByte[byte]
+  }
+  return hex
 }
 
 export default function DisplayTx(props: DisplayTxProps) {

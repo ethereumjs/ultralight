@@ -1,7 +1,6 @@
-import { fromHex, toHex } from '@chainsafe/discv5'
 import { Button, Grid, GridItem, Heading, Input, useToast } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import BlocksToExplore from './BlocksToExplore'
 import { ContentManager } from './ContentManager'
