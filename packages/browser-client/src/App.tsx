@@ -31,7 +31,7 @@ export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [enr, setENR] = React.useState<string>('')
   const [network, setNetwork] = React.useState<SubNetworkIds>(SubNetworkIds.HistoryNetwork)
-  const [proxy, setProxy] = React.useState('127.0.0.1')
+  const [proxy, setProxy] = React.useState('127.0.0.1:5050')
   const [finding, _setFinding] = React.useState<string>()
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
