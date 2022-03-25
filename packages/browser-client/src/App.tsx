@@ -60,7 +60,6 @@ export const App = () => {
   const [contentKey, setContentKey] = React.useState<string>(
     '0x7aaadeb8cf3e1dfda9f60fd41ea6204efa4cabcba89e61881ad475d50e63dfd0'
   )
-  const [parentHash, setParentHash] = React.useState('')
   const [proxy, setProxy] = React.useState('127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
@@ -109,12 +108,18 @@ export const App = () => {
     const known = routingTable?.values()
     const formattedKnown = known!.map((_enr: ENR) => {
       const distToSelf = log2Distance(id, _enr.nodeId)
-      return [distToSelf, `${_enr.ip}`, `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`]
+      return [
+        distToSelf,
+        `${_enr.ip}`,
+        `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`,
+        _enr.nodeId,
+        _enr.encodeTxt(),
+      ]
     })
     //@ts-ignore
     const sorted = formattedKnown.sort((a, b) => a[0] - b[0]) //@ts-ignore
     const table: [number, string[]][] = sorted.map((d) => {
-      return [d[0], [d[1], d[2]]]
+      return [d[0], [d[1], d[2], d[3], d[4]]]
     })
     setSortedDistList(table)
     const peers = portal!.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
@@ -255,19 +260,23 @@ export const App = () => {
                     <Th>DIST</Th>
                     <Th>IP</Th>
                     <Th>PORT</Th>
+                    <Th>NodeId</Th>
                   </Thead>
                   <Tbody>
                     {sortedDistList.map((peer) => {
                       return (
                         <Tr>
                           <Td>
-                            <CopyIcon />
+                            <CopyIcon
+                              cursor={'pointer'}
+                              onClick={() => navigator.clipboard.writeText(peer[1][3])}
+                            />
                           </Td>
                           <Th>{peer[0]}</Th>
                           <Td>{peer[1][0]}</Td>
                           <Td>{peer[1][1]}</Td>
+                          <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
                         </Tr>
-                        //{' '}
                       )
                     })}
                   </Tbody>
@@ -315,11 +324,7 @@ export const App = () => {
               </VStack>
               {portal && block && (
                 <Box border={'solid black'} paddingTop="5">
-                  <DisplayBlock
-                    setParentHash={setParentHash}
-                    findParent={findParent}
-                    block={block!}
-                  />
+                  <DisplayBlock findParent={findParent} block={block!} />
                 </Box>
               )}
             </VStack>

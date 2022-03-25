@@ -14,13 +14,11 @@ import {
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { getHistoryNetworkContentId } from 'portalnetwork'
-import { Dispatch, SetStateAction } from 'react'
 import SelectTx from './SelectTx'
 
 interface DisplayBlockProps {
   block: Block
   findParent: (hash: string) => Promise<void>
-  setParentHash: Dispatch<SetStateAction<string>>
 }
 
 export default function DisplayBlock(props: DisplayBlockProps) {
