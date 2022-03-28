@@ -1,3 +1,4 @@
+import fs from 'fs'
 import { ENR } from '@chainsafe/discv5'
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import PeerId from 'peer-id'
@@ -22,20 +23,25 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'ENR of Bootnode',
     string: true,
   })
+  .option('bootnodeList', {
+    describe: 'path to a file containing a list of bootnode ENRs',
+    optional: true,
+    string: true,
+  })
   .option('proxy', {
     describe: 'Start proxy service',
     boolean: true,
     default: true,
   })
-  .option('persistentPort', {
-    describe: 'run a proxy on a persistent UDP port',
-    number: true,
-    optional: true,
-  })
   .option('nat', {
     describe: 'NAT Traversal options for proxy',
     choices: ['localhost', 'lan', 'extip'],
     default: 'localhost',
+  })
+  .option('persistentPort', {
+    describe: 'run the proxy on a persistent UDP port',
+    number: true,
+    optional: true,
   })
   .option('rpc', {
     describe: 'Enable the JSON-RPC server with HTTP endpoint',
@@ -114,7 +120,12 @@ const run = async () => {
   }
   await portal.start()
   if (args.bootnode) {
-    portal.sendPing(args.bootnode, SubNetworkIds.HistoryNetwork)
+    portal.addBootNode(args.bootnode, SubNetworkIds.HistoryNetwork)
+  }
+  if (args.bootnodeList) {
+    const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
+    const bootnodes = bootnodeData.split('\n')
+    bootnodes.forEach((enr) => portal.addBootNode(enr, SubNetworkIds.HistoryNetwork))
   }
   if (args.rpc) {
     const manager = new RPCManager(portal)
