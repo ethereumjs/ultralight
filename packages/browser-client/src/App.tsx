@@ -32,7 +32,7 @@ import {
   TableCaption,
   Center,
 } from '@chakra-ui/react'
-import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
+import { log2Distance, ENR, fromHex, distance } from '@chainsafe/discv5'
 import {
   getHistoryNetworkContentId,
   PortalNetwork,
@@ -46,14 +46,17 @@ import DisplayBlock from './Components/DisplayBlock'
 import CircleNetwork from './Components/CircleNetwork'
 import { CopyIcon } from '@chakra-ui/icons'
 import DevTools from './Components/DevTools'
+import { PortalNetworkRoutingTable } from 'portalnetwork/dist/client'
 
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
+  const [nearest, setNearest] = React.useState<number>(0)
   const [peers, setPeers] = React.useState<ENR[] | undefined>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
+  const [_sortedDistList, set_SortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
   const [id, setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
@@ -106,7 +109,7 @@ export const App = () => {
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubNetworkIds.HistoryNetwork)
     const known = routingTable?.values()
-    const formattedKnown = known!.map((_enr: ENR) => {
+    const formattedKnown: [number, string, string, string, string][] = known!.map((_enr: ENR) => {
       const distToSelf = log2Distance(id, _enr.nodeId)
       return [
         distToSelf,
@@ -116,12 +119,16 @@ export const App = () => {
         _enr.encodeTxt(),
       ]
     })
-    //@ts-ignore
-    const sorted = formattedKnown.sort((a, b) => a[0] - b[0]) //@ts-ignore
+    const sorted = formattedKnown.sort((a, b) => a[0] - b[0])
     const table: [number, string[]][] = sorted.map((d) => {
       return [d[0], [d[1], d[2], d[3], d[4]]]
     })
     setSortedDistList(table)
+    const nearest = routingTable?.nearest(contentKey, 1)
+    const nearestDist = Math.ceil(
+      Number(((distance(id, nearest![0]!.nodeId) * 1000n) / 2n ** 256n) * 256n) / 1000
+    )
+    nearest && setNearest(nearestDist)
     const peers = portal!.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
     setPeers(peers)
   }
@@ -257,15 +264,23 @@ export const App = () => {
                   <TableCaption>Peers: {peers?.length}</TableCaption>
                   <Thead>
                     <Th>ENR</Th>
-                    <Th>DIST</Th>
+                    <Th>K-BUCKET</Th>
                     <Th>IP</Th>
                     <Th>PORT</Th>
                     <Th>NodeId</Th>
                   </Thead>
                   <Tbody>
                     {sortedDistList.map((peer) => {
+                      const nearest =
+                        contentKey &&
+                        peer[1][2] ===
+                          portal?.routingTables
+                            .get(SubNetworkIds.HistoryNetwork)!
+                            .nearest(contentKey, 1)[0].nodeId
+                          ? true
+                          : false
                       return (
-                        <Tr>
+                        <Tr bg={nearest ? 'yellow' : lightblue}>
                           <Td>
                             <Tooltip label={peer[1][3]}>
                               <CopyIcon
@@ -284,7 +299,15 @@ export const App = () => {
                   </Tbody>
                 </Table>
               </Box>
-              {portal && <CircleNetwork peers={peers} distances={sortedDistList} />}
+              {portal && (
+                <CircleNetwork
+                  routingTable={portal.routingTables.get(SubNetworkIds.HistoryNetwork)!}
+                  nodeId={id}
+                  block={block}
+                  peers={peers}
+                  nearest={nearest}
+                />
+              )}
             </GridItem>
           )}
           <GridItem colStart={7} colSpan={6}>

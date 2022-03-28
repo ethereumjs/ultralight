@@ -1,9 +1,15 @@
-import { ENR } from '@chainsafe/discv5'
+import { distance, ENR, log2Distance } from '@chainsafe/discv5'
 import { lightblue } from '../App'
+import { Block } from '@ethereumjs/block'
+import { PortalNetworkRoutingTable } from 'portalnetwork/dist/client'
+import { Text } from '@chakra-ui/react'
 
 interface NetworkProps {
+  nodeId: string
   peers: ENR[] | undefined
-  distances: [number, string[]][]
+  block: Block | undefined
+  routingTable: PortalNetworkRoutingTable
+  nearest: number
 }
 
 export function bitLength(n: number): number {
@@ -31,7 +37,13 @@ function active(nums: number[]) {
   return string
 }
 
-function makeTree(peers: number, selected: number[]) {
+function makeTree(
+  peers: number,
+  _selected: number[],
+  blockDist: number | undefined,
+  nearestDist: number | undefined
+) {
+  const selected = Array.from(new Set(_selected))
   const leaves = 256
   const depth = Math.log2(leaves)
   const treeSize = new Array(depth + 1).fill('X')
@@ -82,18 +94,6 @@ function makeTree(peers: number, selected: number[]) {
                 <circle cx="256" cy="256" r={256 - idx * 16} fill="#bee3f8" />
                 {idx === treeSize.length - 1 && (
                   <>
-                    {' '}
-                    {/* <circle
-                    cx="256"
-                    cy="256"
-                    r={128}
-                    fill="bisque"
-                    transform={`rotate(270 256 256)`}
-                    stroke={lightblue}
-                    opacity={`0.9`}
-                    strokeWidth={256 - (idx - 1) * 32}
-                    strokeDasharray={`0 ${full * 803} ${empty * 803}`}
-                  /> */}
                     <>
                       <circle
                         cx="256"
@@ -113,6 +113,50 @@ function makeTree(peers: number, selected: number[]) {
             )
           )
         })}
+        <circle
+          cx="256"
+          cy="256"
+          r={72}
+          fill={lightblue}
+          fillOpacity={0}
+          transform={`rotate(270 256 256)`}
+          stroke={'blue'}
+          strokeWidth={144}
+          strokeDasharray={`0 ${((1 - 1) / 256) * 452} ${(1 / 256) * 452} ${
+            ((255 - 1) / 256) * 452
+          }`}
+        />
+        {blockDist !== undefined && (
+          <circle
+            cx="256"
+            cy="256"
+            r={72}
+            fill={lightblue}
+            fillOpacity={0}
+            transform={`rotate(270 256 256)`}
+            stroke={'black'}
+            strokeWidth={144}
+            strokeDasharray={`0 ${((blockDist - 1) / 256) * 452} ${(1 / 256) * 452} ${
+              ((255 - blockDist) / 256) * 452
+            }`}
+          />
+        )}
+        {nearestDist !== undefined && (
+          <circle
+            cx="256"
+            cy="256"
+            r={72}
+            fill={lightblue}
+            fillOpacity={0}
+            transform={`rotate(270 256 256)`}
+            stroke={'yellow'}
+            strokeOpacity={0.5}
+            strokeWidth={144}
+            strokeDasharray={`0 ${(1 / 256) * 452} 0 ${((nearestDist - 1) / 256) * 452} ${
+              (1 / 256) * 452
+            } ${((255 - nearestDist) / 256) * 452}`}
+          />
+        )}
         {/* <circle
         cx="256"
         cy="256"
@@ -188,8 +232,29 @@ function makeTree(peers: number, selected: number[]) {
 }
 
 export default function CircleNetwork(props: NetworkProps) {
-  const selected = props.distances.map((e) => {
+  const routingTable = props.routingTable
+  const peers = routingTable.values()
+  const _map: Record<number, string[]> = {}
+  peers!.forEach((_enr: ENR) => {
+    const _distToSelf = distance(props.nodeId, _enr.nodeId)
+    _map[Math.ceil(Number(((_distToSelf * 1000n) / 2n ** 256n) * 256n) / 1000)] = [
+      `${_enr.ip}`,
+      `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`,
+    ]
+  })
+  const _selected = Object.keys(_map).map((n) => {
+    return parseInt(n)
+  })
+  const _sorted = _selected.sort((a, b) => a - b)
+  const _table: [number, string[]][] = _sorted.map((d) => {
+    return [d, _map[d]]
+  })
+  const hash = props.block?.toJSON().header!.mixHash
+  const blockDist: bigint | undefined = props.block && distance(props.nodeId, hash!)
+  const relativeDist =
+    props.block && Math.ceil(Number(((blockDist! * 1000n) / 2n ** 256n) * 256n) / 1000)
+  const selected = _table.map((e) => {
     return e[0]
   })
-  return <>{props.peers && makeTree(props.peers.length, selected)}</>
+  return <>{props.peers && makeTree(props.peers.length, selected, relativeDist, props.nearest)}</>
 }
