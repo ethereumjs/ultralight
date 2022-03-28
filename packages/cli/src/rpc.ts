@@ -184,17 +184,6 @@ export class RPCManager {
       return `Some uTP happened`
     },
   }
-  // portal_utp_send_syn: async (params: [string]) => {
-  //   const [enr] = params
-  //   const id = ENR.decodeTxt(enr).nodeId
-  //   this.log(`portal_utp_send_syn_test starting`)
-  //   try {
-  //     this._client.sendUtpStreamRequest(id, 1234)
-  //     this.log('syn sent')
-  //   } catch {
-  //     this.log('syn not sent')
-  //   }
-  // },
 
   constructor(client: PortalNetwork) {
     this._client = client
