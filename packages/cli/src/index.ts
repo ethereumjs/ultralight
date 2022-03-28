@@ -125,7 +125,13 @@ const run = async () => {
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
     const bootnodes = bootnodeData.split('\n')
-    bootnodes.forEach((enr) => portal.addBootNode(enr, SubNetworkIds.HistoryNetwork))
+    bootnodes.forEach((enr) => {
+      if (enr.startsWith('enr:-')) {
+        try {
+          portal.addBootNode(enr, SubNetworkIds.HistoryNetwork)
+        } catch { }
+      }
+    })
   }
   if (args.rpc) {
     const manager = new RPCManager(portal)
