@@ -368,13 +368,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
             // Store content in local DB
             try {
-              this.logger(`Adding content to DB`)
-              this.addContentToHistory(
-                decodedKey.value.chainId,
-                decodedKey.selector,
-                toHexString(Buffer.from(decodedKey.value.blockHash)),
-                decoded.value as Uint8Array
-              )
+              switch (networkId) {
+                // TODO: Decide how to deal with managing content for additional Subnetworks
+                case SubNetworkIds.HistoryNetwork:
+                  this.addContentToHistory(
+                    decodedKey.value.chainId,
+                    decodedKey.selector,
+                    toHexString(Buffer.from(decodedKey.value.blockHash)),
+                    decoded.value as Uint8Array
+                  )
+                  break
+                default:
+                  this.logger(`${networkId} network is not supported for FOUNDCONTENT`)
+              }
             } catch {
               this.logger('Error adding content to DB')
             }

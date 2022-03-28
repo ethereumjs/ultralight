@@ -32,16 +32,15 @@ export class ContentLookup {
   /**
    * Queries the 5 nearest nodes in the history network routing table and recursively
    * requests peers closer to the content until either the content is found or there are no more peers to query
-   * @param contentType contentType sought
-   * @param block1Hash hex prefixed string corresponding to blockhash
    */
   public startLookup = async () => {
     const routingTable = this.client.routingTables.get(SubNetworkIds.HistoryNetwork)
     this.client.metrics?.totalContentLookups.inc()
-    /*   try {
+    try {
       const res = await this.client.db.get(this.contentId)
       return res
-    } catch {}*/
+      //eslint-disable-next-line
+    } catch { }
     routingTable!.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
@@ -53,6 +52,7 @@ export class ContentLookup {
       if (this.lookupPeers.length === 0) {
         finished = true
         this.client.metrics?.failedContentLookups.inc()
+        this.client.logger(`failed to retrieve ${this.contentKey} from network`)
         return
       }
       const nearestPeer = this.lookupPeers.shift()
@@ -89,6 +89,12 @@ export class ContentLookup {
           finished = true
           nearestPeer.hasContent = true
           this.client.metrics?.successfulContentLookups.inc()
+          // Offer content to neighbors who should have had content but don't if we receive content directly
+          this.contacted.forEach((peer) => {
+            if (!peer.hasContent) {
+              this.client.sendOffer(peer.nodeId, [this.contentKey], this.networkId)
+            }
+          })
           return res.value
         }
         case 2: {
@@ -126,10 +132,5 @@ export class ContentLookup {
       }
       this.contacted.push(nearestPeer!)
     }
-    this.contacted.forEach((peer) => {
-      if (!peer.hasContent) {
-        this.client.sendOffer(peer.nodeId, [this.contentKey], this.networkId)
-      }
-    })
   }
 }
