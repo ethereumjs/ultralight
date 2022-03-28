@@ -37,7 +37,7 @@ The [`bootnodes.txt`](./bootnodes.txt) contains the 3 Ultralight public bootnode
 
 ### JSON-RPC
 
-The Ultralight client exposes a minimal JSON-RPC interface that allows for some interaction with the node.  Alist of methods exposed can be found below but is not guaranteed to be up to date.  Please refer to [the source](./src/rpc.ts) for all currently available methods.
+The Ultralight client exposes a minimal JSON-RPC interface that allows for some interaction with the node.  A list of methods exposed can be found below but is not guaranteed to be up to date.  Please refer to [the source](./src/rpc.ts) for all currently available methods.
 
 - `discv5_nodeInfo` - Returns the current client version
 - `eth_getBlockByHash` - Mimics the current Ethereum Full Node `eth_getBlockByHash` interface.  All data is retrieved from the local node database or else other Portal Network clients (if connected)
