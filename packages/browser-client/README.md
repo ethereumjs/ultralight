@@ -4,32 +4,32 @@ This is a proof of concept block explorer that will start an Ultralight portal n
 
 ## Usage
 
-Run `npm run start` from the monorepo root to run the UDP proxy.
+### Local Development/Testing
 
-`npm run start` to start the browser client.
+- Run `node packages/proxy/dist/index.js --nat=localhost` from the monorepo root to run the UDP proxy.
+- Run `npm run start-browser-client`
+- Open a browser window and navigate to localhost:3000 and start the node.
 
 The `portal` object is exposed in the browser console and can be used to experiment with portal network functionality. See [the portal network docs](../portalnetwork/docs/modules.md) for API specs
 
-## To test with DEVNET
+### To run with local devnet
 
-From packages/cli run `bash scripts/devnet.sh -n 1`
+More details on the local devnet can be found [here](../../DEVNET.md)
 
-You will see a log like this
+From the repo root:
+- Run `npm run start-browser-client`
+- Run `bash packages/cli/scripts/devnet.sh -n [number of nodes you want to start]`
+- Run `npx ts-node packages/cli/scripts/seeder.ts --rpcPort=8546 --numBlocks=2 --sourceFile="/path/to/blocksData.json" --numNodes=[number of nodes you started`
+
+Grab an ENR from the logs (or else query the devnet bootnode via JSON RPC at localhost:8546)
 
 ```
 xxxx:discv5:service Updated ENR based on public multiaddr to enr:-IS4QDYYxq9-JKPr07yvC2KiMZ0pUuplYthRhr42CmMP5LEkBn8pZJap0YnTQ8Es0DmxPh4ph7zVFNaBG-8ZzCjcQ4cFgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPV0HLibJut96kp54laQSGvfkvRp8pl4wXuP4crtg2pQoN1ZHCChsQ
 ```
-
 Copy the ENR (starts with `enr:-IS`) from Terminal
 
-From root run `npm run start-browser-client`
+Paste the ENR into the `Node ID` input and press `Connect to Node`
 
-Start the Browser Node
-
-Paste the ENR into the search field and press `CONNECT TO NODE`
-
-From packages/cli run `npx ts-node scripts/seeder.ts --rpcPort=8546 --numBlocks=10 --sourceFile="./blocks200000-210000.json" --numNodes=1` to load 10 Blocks into this node's db.
-
-Copy one of the blockhashes and paste into the search field in the Block Explorer. Hit `FIND BLOCK BY HASH`
+Copy any blockhash from those loaded via the seeder script and paste into the search field in the Block Explorer. Hit `Find Block By Hash`
 
 Block info will be requested from the network, and displayed upon retrieval. Clicking the search button next to a Parent Hash will perform a search for that block. 
