@@ -32,4 +32,4 @@ From packages/cli run `npx ts-node scripts/seeder.ts --rpcPort=8546 --numBlocks=
 
 Copy one of the blockhashes and paste into the search field in the Block Explorer. Hit `FIND BLOCK BY HASH`
 
-Block info will be requested from the network, and displayed upon retrieval. Clicking the search button next to a Parent Hash will perform a search for that block. (_currently you must press `FIND BLOCK BY HASH` again for the search to work_)
+Block info will be requested from the network, and displayed upon retrieval. Clicking the search button next to a Parent Hash will perform a search for that block. 
