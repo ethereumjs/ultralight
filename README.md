@@ -26,9 +26,23 @@ de2f8:portalnetwork Received History Subnetwork request +25s
 de2f8:portalnetwork TALKREQUEST with PING message received from b81736575498a5850b0dd52f2695268cf60fe6c89ab74289692c5225c9e4e09e +0ms
 de2f8:portalnetwork adding b81736575498a5850b0dd52f2695268cf60fe6c89ab74289692c5225c9e4e09e 
 ```
-- Try retrieving a block from teh network.  (Hint: Enter `0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6` - the hash for Block 1 from the Ethereum Mainnet in the input box on the right input and press the "Get Block by Blockhash")
+- Try retrieving a block from the network.  (Hint: Enter `0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6` - the hash for Block 1 from the Ethereum Mainnet in the input box on the right input and press the "Get Block by Blockhash")
 
-## Detailed Node Usage/Interop Instructions
+## Connecting to the testnet
+
+1.  Follow the above quickstart guide as far as installing all dependencies.
+2.  From the repository root, run `node packages/proxy/dist/index.js --nat=extip`
+3.  Run `npm run start-browser-client`
+4.  Connect to one of the [Ultralight bootnodes](./packages//cli/bootnodes.txt)
+5.  You should start to see the network table populate with additional nodes as the client fills in its routing table
+6.  Try and get any block by blockhash from the Ethereum Mainnet between blocks 1-2500. 
+7.  **Crossing fingers** You should see the block header details before too long
+### Development Notes
+
+Use `npm run dev` in the `portalnetwork` library to have Typescript automatically recompile code as changes are made.  
+
+The browser client supports live reload as well as so any changes made in the `portalnetwork` or `browser-client` libraries will result in the browser client reloading.
+### Detailed Node Usage/Interop Instructions
 
 See the [`browser client`](./packages/browser-client) and [`cli`](./packages/cli) READMEs for more specific usage with each client.
 
@@ -54,9 +68,4 @@ This is a technical demonstration of a web application that uses the `portalnetw
 
 This is a technical demonstration of a NodeJS application that uses the `portalnetwork` module to connect to the Portal Network
 
-## Development
-
-Use `npm run dev` in the `portalnetwork` library to have Typescript automatically recompile code as changes are made.  
-
-The browser client supports live reload as well as so any changes made in the `portalnetwork` or `browser-client` libraries will result in the browser client reloading.
 
