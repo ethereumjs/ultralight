@@ -29,11 +29,11 @@ To start a node that has the same node ID each time, you can pass the `--pk` par
 
 You can use the `generateKeys` script to generate any number of private keys using the command `ts-node scripts/generateKeys --numKeys=X` where X is the number of keys to generate.
 
-### Connecting to the Portal network
+### Connecting to the Portal Network
 
 There are two ways to specify bootnodes at start-up.  Either pass in a bootnode's base64 string encoded ENR in the `--bootnode` CLI parameter or else pass the `--bootnodeList` parameter with a path to a plaintext file containing a list of base64 string encoded ENRs, one ENR per line.  
 
-The [`bootnodes.txt`](./bootnodes.txt) contains the 3 Ultralight public bootnodes that are intended to provide an initial connection point into the Portal Network (though they are not guaranteed to be running at any given time).  Use at your own risk!
+The [`bootnodes.txt`](./bootnodes.txt) contains the public bootnodes designated for the Portal Network testnet that are intended to provide an initial connection point into the Portal Network (though they are not guaranteed to be running at any given time).  Use at your own risk!
 
 ### JSON-RPC
 

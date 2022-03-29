@@ -11,6 +11,8 @@
 
 ### Classes
 
+- [ContentLookup](classes/ContentLookup.md)
+- [NodeLookup](classes/NodeLookup.md)
 - [PortalNetwork](classes/PortalNetwork.md)
 - [StateNetworkRoutingTable](classes/StateNetworkRoutingTable.md)
 
@@ -49,10 +51,13 @@
 
 ### Functions
 
+- [addRLPSerializedBlock](modules.md#addrlpserializedblock)
 - [distance](modules.md#distance)
-- [getContentId](modules.md#getcontentid)
-- [getContentIdFromSerializedKey](modules.md#getcontentidfromserializedkey)
+- [generateRandomNodeIdAtDistance](modules.md#generaterandomnodeidatdistance)
+- [getHistoryNetworkContentId](modules.md#gethistorynetworkcontentid)
 - [reassembleBlock](modules.md#reassembleblock)
+- [serializedContentKeyToContentId](modules.md#serializedcontentkeytocontentid)
+- [shortId](modules.md#shortid)
 
 ## Type aliases
 
@@ -69,7 +74,7 @@
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:127](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L127)
+[packages/portalnetwork/src/wire/types.ts:127](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L127)
 
 ___
 
@@ -85,7 +90,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:104](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L104)
+[packages/portalnetwork/src/wire/types.ts:104](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L104)
 
 ___
 
@@ -101,7 +106,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:94](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L94)
+[packages/portalnetwork/src/wire/types.ts:94](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L94)
 
 ___
 
@@ -117,7 +122,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:72](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L72)
+[packages/portalnetwork/src/wire/types.ts:72](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L72)
 
 ___
 
@@ -138,7 +143,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/historySubnetwork/types.ts:8](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/historySubnetwork/types.ts#L8)
+[packages/portalnetwork/src/historySubnetwork/types.ts:8](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/historySubnetwork/types.ts#L8)
 
 ___
 
@@ -148,7 +153,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:139](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L139)
+[packages/portalnetwork/src/wire/types.ts:139](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L139)
 
 ___
 
@@ -165,7 +170,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:82](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L82)
+[packages/portalnetwork/src/wire/types.ts:82](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L82)
 
 ___
 
@@ -181,7 +186,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:117](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L117)
+[packages/portalnetwork/src/wire/types.ts:117](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L117)
 
 ___
 
@@ -198,7 +203,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:48](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L48)
+[packages/portalnetwork/src/wire/types.ts:48](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L48)
 
 ___
 
@@ -215,7 +220,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:53](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L53)
+[packages/portalnetwork/src/wire/types.ts:53](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L53)
 
 ___
 
@@ -225,7 +230,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:108](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L108)
+[packages/portalnetwork/src/wire/types.ts:108](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L108)
 
 ___
 
@@ -235,7 +240,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:110](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L110)
+[packages/portalnetwork/src/wire/types.ts:110](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L110)
 
 ___
 
@@ -245,7 +250,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:112](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L112)
+[packages/portalnetwork/src/wire/types.ts:112](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L112)
 
 ## Variables
 
@@ -255,7 +260,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:132](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L132)
+[packages/portalnetwork/src/wire/types.ts:132](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L132)
 
 ___
 
@@ -265,7 +270,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:45](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L45)
+[packages/portalnetwork/src/wire/types.ts:45](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L45)
 
 ___
 
@@ -275,7 +280,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:46](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L46)
+[packages/portalnetwork/src/wire/types.ts:46](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L46)
 
 ___
 
@@ -285,7 +290,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:114](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L114)
+[packages/portalnetwork/src/wire/types.ts:114](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L114)
 
 ___
 
@@ -295,7 +300,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:47](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L47)
+[packages/portalnetwork/src/wire/types.ts:47](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L47)
 
 ___
 
@@ -305,7 +310,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:98](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L98)
+[packages/portalnetwork/src/wire/types.ts:98](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L98)
 
 ___
 
@@ -315,7 +320,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:76](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L76)
+[packages/portalnetwork/src/wire/types.ts:76](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L76)
 
 ___
 
@@ -325,7 +330,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/historySubnetwork/types.ts:24](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/historySubnetwork/types.ts#L24)
+[packages/portalnetwork/src/historySubnetwork/types.ts:24](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/historySubnetwork/types.ts#L24)
 
 ___
 
@@ -335,7 +340,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:87](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L87)
+[packages/portalnetwork/src/wire/types.ts:87](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L87)
 
 ___
 
@@ -345,7 +350,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:121](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L121)
+[packages/portalnetwork/src/wire/types.ts:121](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L121)
 
 ___
 
@@ -355,7 +360,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:58](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L58)
+[packages/portalnetwork/src/wire/types.ts:58](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L58)
 
 ___
 
@@ -365,7 +370,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:26](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L26)
+[packages/portalnetwork/src/wire/types.ts:26](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L26)
 
 ___
 
@@ -375,7 +380,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:65](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L65)
+[packages/portalnetwork/src/wire/types.ts:65](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L65)
 
 ___
 
@@ -385,9 +390,33 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:148](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L148)
+[packages/portalnetwork/src/wire/types.ts:148](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L148)
 
 ## Functions
+
+### addRLPSerializedBlock
+
+▸ `Const` **addRLPSerializedBlock**(`rlpHex`, `blockHash`, `portal`): `Promise`<`void`\>
+
+Takes an RLP encoded block as a hex string and adds the block header and block body to the `portal` content DB
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `rlpHex` | `string` | RLP encoded block as hex string |
+| `blockHash` | `string` | block hash as 0x prefixed hext string |
+| `portal` | [`PortalNetwork`](classes/PortalNetwork.md) | a running `PortalNetwork` client |
+
+#### Returns
+
+`Promise`<`void`\>
+
+#### Defined in
+
+[packages/portalnetwork/src/historySubnetwork/util.ts:54](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/historySubnetwork/util.ts#L54)
+
+___
 
 ### distance
 
@@ -409,13 +438,39 @@ https://github.com/ethereum/portal-network-specs/blob/master/state-network.md#di
 
 #### Defined in
 
-[packages/portalnetwork/src/stateSubnetwork/util.ts:8](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/stateSubnetwork/util.ts#L8)
+[packages/portalnetwork/src/stateSubnetwork/util.ts:8](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/stateSubnetwork/util.ts#L8)
 
 ___
 
-### getContentId
+### generateRandomNodeIdAtDistance
 
-▸ `Const` **getContentId**(`chainId`, `blockHash`, `contentType`): `string`
+▸ `Const` **generateRandomNodeIdAtDistance**(`nodeId`, `targetDistance`): `string`
+
+Generates a random node ID at the specified target log2 distance (i.e. generates a random node ID in a given k-bucket)
+Follows this algorithm - https://github.com/ethereum/trin/pull/213
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `nodeId` | `string` | id of the node to calculate distance from |
+| `targetDistance` | `number` | the target log2 distance to generate a nodeId at |
+
+#### Returns
+
+`string`
+
+a random node ID at a log2 distance of `targetDistance`
+
+#### Defined in
+
+[packages/portalnetwork/src/util/util.ts:20](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/util/util.ts#L20)
+
+___
+
+### getHistoryNetworkContentId
+
+▸ `Const` **getHistoryNetworkContentId**(`chainId`, `blockHash`, `contentType`): `string`
 
 Generates the Content ID used to calculate the distance between a node ID and the content Key
 
@@ -435,31 +490,7 @@ the hex encoded string representation of the SHA256 hash of the serialized conte
 
 #### Defined in
 
-[packages/portalnetwork/src/historySubnetwork/util.ts:12](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/historySubnetwork/util.ts#L12)
-
-___
-
-### getContentIdFromSerializedKey
-
-▸ `Const` **getContentIdFromSerializedKey**(`contentKey`): `string`
-
-Generates the Content ID used to calculate the distance between a node ID and the content key
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `contentKey` | `Uint8Array` | a serialized content key |
-
-#### Returns
-
-`string`
-
-the hex encoded string representation of the SHA256 hash of the serialized contentKey
-
-#### Defined in
-
-[packages/portalnetwork/src/historySubnetwork/util.ts:32](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/historySubnetwork/util.ts#L32)
+[packages/portalnetwork/src/historySubnetwork/util.ts:14](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/historySubnetwork/util.ts#L14)
 
 ___
 
@@ -484,4 +515,50 @@ a `Block` object assembled from the header and body provided
 
 #### Defined in
 
-[packages/portalnetwork/src/util/util.ts:39](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/util/util.ts#L39)
+[packages/portalnetwork/src/historySubnetwork/util.ts:35](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/historySubnetwork/util.ts#L35)
+
+___
+
+### serializedContentKeyToContentId
+
+▸ `Const` **serializedContentKeyToContentId**(`contentKey`): `string`
+
+Generates the Content ID used to calculate the distance between a node ID and the content key
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `contentKey` | `Uint8Array` | a serialized content key |
+
+#### Returns
+
+`string`
+
+the hex encoded string representation of the SHA256 hash of the serialized contentKey
+
+#### Defined in
+
+[packages/portalnetwork/src/util/util.ts:35](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/util/util.ts#L35)
+
+___
+
+### shortId
+
+▸ `Const` **shortId**(`nodeId`): `string`
+
+ Shortens a Node ID to a readable length
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `nodeId` | `string` |
+
+#### Returns
+
+`string`
+
+#### Defined in
+
+[packages/portalnetwork/src/util/util.ts:9](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/util/util.ts#L9)

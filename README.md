@@ -4,31 +4,45 @@ This monorepo comprises a suite of tools **currently in development** to allow d
 
 ## Prequisites
 
-Node v15+, NPM v7+
+Node v16+, NPM v7+
 
 ## Quick Start
 
 Clone this repo and run `npm i` from the root directory.  This project leverages [`npm workspaces`](https://docs.npmjs.com/cli/v7/using-npm/workspaces) so requires NPM v7 or above.
 
-- Start the cli - `npm run start-cli` - and press `e` to print the current ENR to the screen.
-- Copy this ENR which should start with `enr:-IS...`
-- Start the browser client dev server - `npm run start-browser-client` and open a browser window at `localhost:3000`
-- Paste the ENR into the `Node ENR` text box and press `Add Node`
-- Click `Send Ping` to initiate a connection and you should see something like below in the browser console:
-```js
-portalnetwork Sending PING to d3507...c38d0 for 0x500a subnetwork +0ms
-discv5:service Sent TALKREQ message to node d35070e5b5d54e3b6d8349107b2f39f0dca3f2b01251e400785c0de5ef4c38d0 +14s
-discv5:service Sending PING to d35070e5b5d54e3b6d8349107b2f39f0dca3f2b01251e400785c0de5ef4c38d0 +119ms 
+- Start the cli - `npm run start-cli` and you should see some logs like below indicating the node is starting up
+```sh
+de2f8:ultralight Started JSON RPC Server address=http://localhost:8545
+de2f8:discv5:service Updated ENR based on public multiaddr to enr:-IS4QH2xRY1ov...
 ```
+- Copy the node's ENR which should start with `enr:-IS...`
+  - Alternatively, retrieve the node's ENR using the JSON-RPC.  Details [here](./packages/cli/README.md)
+- Start the browser client dev server - `npm run start-browser-client` and open a browser window at `localhost:3000`
+- Click `Start Node`, paste the ENR into the input that says `Node ENR` and press `Connect To Node`
+- You should see a node appear in the table on the left side of the page
 - In the terminal where the Ultralight-CLI client is running, you should see something like below:
 ```js
-discv5:service Node unknown, requesting ENR. Node: 6a75259ee66cd763534eb8c800f3d336c7e06d3899e3435c64f99bdd7f2be0c0; Token: 47fb31de26bcc9dc13fffbaa +38s
-discv5:service Sending PING to 6a75259ee66cd763534eb8c800f3d336c7e06d3899e3435c64f99bdd7f2be0c0 +92ms
-discv5:service Received TALKREQ message from Node: 6a75259ee66cd763534eb8c800f3d336c7e06d3899e3435c64f99bdd7f2be0c0 +5ms
+de2f8:portalnetwork Received History Subnetwork request +25s
+de2f8:portalnetwork TALKREQUEST with PING message received from b81736575498a5850b0dd52f2695268cf60fe6c89ab74289692c5225c9e4e09e +0ms
+de2f8:portalnetwork adding b81736575498a5850b0dd52f2695268cf60fe6c89ab74289692c5225c9e4e09e 
 ```
-- Try the other buttons in the browser and see what happens.  (Hint: Enter `0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6` - the hash for Block 1 from the Ethereum Mainnet in the "Content-Key" input and press the "Send Find Content Request")
+- Try retrieving a block from the network.  (Hint: Enter `0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6` - the hash for Block 1 from the Ethereum Mainnet in the input box on the right input and press the "Get Block by Blockhash")
 
-## Detailed Node Usage/Interop Instructions
+## Connecting to the testnet
+
+1.  Follow the above quickstart guide as far as installing all dependencies.
+2.  From the repository root, run `node packages/proxy/dist/index.js --nat=extip`
+3.  Run `npm run start-browser-client`
+4.  Connect to one of the [Ultralight bootnodes](./packages//cli/bootnodes.txt)
+5.  You should start to see the network table populate with additional nodes as the client fills in its routing table
+6.  Try and get any block by blockhash from the Ethereum Mainnet between blocks 1-2500. 
+7.  **Crossing fingers** You should see the block header details before too long
+### Development Notes
+
+Use `npm run dev` in the `portalnetwork` library to have Typescript automatically recompile code as changes are made.  
+
+The browser client supports live reload as well as so any changes made in the `portalnetwork` or `browser-client` libraries will result in the browser client reloading.
+### Detailed Node Usage/Interop Instructions
 
 See the [`browser client`](./packages/browser-client) and [`cli`](./packages/cli) READMEs for more specific usage with each client.
 
@@ -54,9 +68,4 @@ This is a technical demonstration of a web application that uses the `portalnetw
 
 This is a technical demonstration of a NodeJS application that uses the `portalnetwork` module to connect to the Portal Network
 
-## Development
-
-Use `npm run dev` in both the `discv5` and `portalnetwork` libraries to have Typescript automatically recompile code as changes are made.  
-
-The browser client supports live reload as well as so any changes made in any of the `discv5`, `portalnetwork`, or `browser-client` libraries will result in the browser client reloading.
 

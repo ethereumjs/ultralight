@@ -34,11 +34,10 @@
 
 ### Methods
 
-- [UtpStreamTest](PortalNetwork.md#utpstreamtest)
+- [addBootNode](PortalNetwork.md#addbootnode)
 - [addContentToHistory](PortalNetwork.md#addcontenttohistory)
 - [addListener](PortalNetwork.md#addlistener)
 - [bucketRefresh](PortalNetwork.md#bucketrefresh)
-- [contentLookup](PortalNetwork.md#contentlookup)
 - [emit](PortalNetwork.md#emit)
 - [enableLog](PortalNetwork.md#enablelog)
 - [eventNames](PortalNetwork.md#eventnames)
@@ -47,11 +46,10 @@
 - [handleFindNodes](PortalNetwork.md#handlefindnodes)
 - [handleOffer](PortalNetwork.md#handleoffer)
 - [handlePing](PortalNetwork.md#handleping)
-- [handleStreamedContent](PortalNetwork.md#handlestreamedcontent)
 - [handleUTP](PortalNetwork.md#handleutp)
+- [historyNetworkContentLookup](PortalNetwork.md#historynetworkcontentlookup)
 - [listenerCount](PortalNetwork.md#listenercount)
 - [listeners](PortalNetwork.md#listeners)
-- [nodeLookup](PortalNetwork.md#nodelookup)
 - [off](PortalNetwork.md#off)
 - [on](PortalNetwork.md#on)
 - [onTalkReq](PortalNetwork.md#ontalkreq)
@@ -69,7 +67,6 @@
 - [sendPing](PortalNetwork.md#sendping)
 - [sendPong](PortalNetwork.md#sendpong)
 - [sendPortalNetworkMessage](PortalNetwork.md#sendportalnetworkmessage)
-- [sendUtpStreamRequest](PortalNetwork.md#sendutpstreamrequest)
 - [setMaxListeners](PortalNetwork.md#setmaxlisteners)
 - [start](PortalNetwork.md#start)
 - [stop](PortalNetwork.md#stop)
@@ -99,7 +96,7 @@ Portal Network constructor
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:93](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L93)
+[packages/portalnetwork/src/client/client.ts:86](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L86)
 
 ## Properties
 
@@ -151,7 +148,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:55](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L55)
+[packages/portalnetwork/src/client/client.ts:48](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L48)
 
 ___
 
@@ -161,7 +158,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:59](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L59)
+[packages/portalnetwork/src/client/client.ts:52](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L52)
 
 ___
 
@@ -171,7 +168,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:62](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L62)
+[packages/portalnetwork/src/client/client.ts:55](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L55)
 
 ___
 
@@ -181,7 +178,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:61](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L61)
+[packages/portalnetwork/src/client/client.ts:54](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L54)
 
 ___
 
@@ -191,7 +188,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:58](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L58)
+[packages/portalnetwork/src/client/client.ts:51](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L51)
 
 ___
 
@@ -201,7 +198,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:60](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L60)
+[packages/portalnetwork/src/client/client.ts:53](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L53)
 
 ___
 
@@ -211,17 +208,17 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:56](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L56)
+[packages/portalnetwork/src/client/client.ts:49](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L49)
 
 ___
 
 ### uTP
 
-• **uTP**: `UtpProtocol`
+• **uTP**: `PortalNetworkUTP`
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:57](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L57)
+[packages/portalnetwork/src/client/client.ts:50](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L50)
 
 ## Accessors
 
@@ -237,7 +234,7 @@ the node's current radius
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:191](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L191)
+[packages/portalnetwork/src/client/client.ts:185](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L185)
 
 • `set` **radius**(`value`): `void`
 
@@ -259,20 +256,22 @@ the node's current radius
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:200](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L200)
+[packages/portalnetwork/src/client/client.ts:194](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L194)
 
 ## Methods
 
-### UtpStreamTest
+### addBootNode
 
-▸ **UtpStreamTest**(`dstId`, `id`): `Promise`<`void`\>
+▸ **addBootNode**(`bootnode`, `networkId`): `Promise`<`void`\>
+
+Adds a bootnode which triggers a `findNodes` request to the Bootnode tp popute the routing table
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `dstId` | `string` |
-| `id` | `number` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `bootnode` | `string` | `string` encoded ENR of a bootnode |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | network ID of the subnetwork routing table to add the bootnode to |
 
 #### Returns
 
@@ -280,7 +279,7 @@ the node's current radius
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:391](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L391)
+[packages/portalnetwork/src/client/client.ts:206](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L206)
 
 ___
 
@@ -307,7 +306,7 @@ Convenience method to add content for the History Network to the DB
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:404](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L404)
+[packages/portalnetwork/src/client/client.ts:477](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L477)
 
 ___
 
@@ -382,28 +381,7 @@ Do the random lookup on this node-id.
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:835](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L835)
-
-___
-
-### contentLookup
-
-▸ **contentLookup**(`contentType`, `blockHash`): `Promise`<`any`\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `contentType` | `HistoryNetworkContentTypes` |
-| `blockHash` | `string` |
-
-#### Returns
-
-`Promise`<`any`\>
-
-#### Defined in
-
-[packages/portalnetwork/src/client/client.ts:293](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L293)
+[packages/portalnetwork/src/client/client.ts:1013](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L1013)
 
 ___
 
@@ -468,7 +446,7 @@ ___
 
 | Name | Type | Default value | Description |
 | :------ | :------ | :------ | :------ |
-| `namespaces` | `string` | `'*portalnetwork*,*discv5:service*,*<uTP>*,*<uTP>:Reader*'` | comma separated list of logging namespaces defaults to "portalnetwork*, discv5:service, <uTP>*,<uTP>:Reader*" |
+| `namespaces` | `string` | `'*portalnetwork*,*discv5:service*,*uTP*'` | comma separated list of logging namespaces defaults to "portalnetwork*, discv5:service, <uTP>*" |
 
 #### Returns
 
@@ -476,7 +454,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:182](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L182)
+[packages/portalnetwork/src/client/client.ts:178](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L178)
 
 ___
 
@@ -533,7 +511,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:657](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L657)
+[packages/portalnetwork/src/client/client.ts:794](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L794)
 
 ___
 
@@ -554,7 +532,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:567](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L567)
+[packages/portalnetwork/src/client/client.ts:659](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L659)
 
 ___
 
@@ -575,7 +553,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:607](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L607)
+[packages/portalnetwork/src/client/client.ts:708](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L708)
 
 ___
 
@@ -596,28 +574,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:555](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L555)
-
-___
-
-### handleStreamedContent
-
-▸ `Private` **handleStreamedContent**(`rcvId`, `content`): `void`
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `rcvId` | `number` |
-| `content` | `Uint8Array` |
-
-#### Returns
-
-`void`
-
-#### Defined in
-
-[packages/portalnetwork/src/client/client.ts:544](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L544)
+[packages/portalnetwork/src/client/client.ts:638](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L638)
 
 ___
 
@@ -639,7 +596,28 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:749](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L749)
+[packages/portalnetwork/src/client/client.ts:903](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L903)
+
+___
+
+### historyNetworkContentLookup
+
+▸ **historyNetworkContentLookup**(`contentType`, `blockHash`): `Promise`<`any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `contentType` | `HistoryNetworkContentTypes` |
+| `blockHash` | `string` |
+
+#### Returns
+
+`Promise`<`any`\>
+
+#### Defined in
+
+[packages/portalnetwork/src/client/client.ts:317](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L317)
 
 ___
 
@@ -688,30 +666,6 @@ ___
 #### Defined in
 
 node_modules/@types/node/globals.d.ts:648
-
-___
-
-### nodeLookup
-
-▸ **nodeLookup**(`nodeSought`, `networkId`): `Promise`<`void`\>
-
-Queries the 5 nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
-requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `nodeSought` | `string` | nodeId of node sought in lookup |
-| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | `SubNetworkId` of the routing table to be queried |
-
-#### Returns
-
-`Promise`<`void`\>
-
-#### Defined in
-
-[packages/portalnetwork/src/client/client.ts:857](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L857)
 
 ___
 
@@ -811,7 +765,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:487](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L487)
+[packages/portalnetwork/src/client/client.ts:578](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L578)
 
 ___
 
@@ -833,7 +787,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:539](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L539)
+[packages/portalnetwork/src/client/client.ts:632](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L632)
 
 ___
 
@@ -1043,7 +997,7 @@ ___
 
 ### sendAccept
 
-▸ `Private` **sendAccept**(`srcId`, `message`, `desiredContentKeys`): `Promise`<`void`\>
+▸ `Private` **sendAccept**(`srcId`, `message`, `desiredContentAccepts`, `desiredContentKeys`): `Promise`<`void`\>
 
 #### Parameters
 
@@ -1051,7 +1005,8 @@ ___
 | :------ | :------ |
 | `srcId` | `string` |
 | `message` | `ITalkReqMessage` |
-| `desiredContentKeys` | `boolean`[] |
+| `desiredContentAccepts` | `boolean`[] |
+| `desiredContentKeys` | `Uint8Array`[] |
 
 #### Returns
 
@@ -1059,7 +1014,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:638](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L638)
+[packages/portalnetwork/src/client/client.ts:761](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L761)
 
 ___
 
@@ -1085,7 +1040,7 @@ the value of the FOUNDCONTENT response or undefined
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:306](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L306)
+[packages/portalnetwork/src/client/client.ts:337](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L337)
 
 ___
 
@@ -1111,7 +1066,7 @@ a {@link `NodesMessage`} or undefined
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:258](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L258)
+[packages/portalnetwork/src/client/client.ts:278](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L278)
 
 ___
 
@@ -1135,7 +1090,7 @@ Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:356](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L356)
+[packages/portalnetwork/src/client/client.ts:407](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L407)
 
 ___
 
@@ -1149,7 +1104,7 @@ Sends a Portal Network Wire Protocol PING message to a specified node
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `nodeId` | `string` | - |
+| `nodeId` | `string` \| `ENR` | - |
 | `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | subnetwork ID |
 
 #### Returns
@@ -1160,7 +1115,7 @@ the PING payload specified by the subnetwork or undefined
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:215](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L215)
+[packages/portalnetwork/src/client/client.ts:231](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L231)
 
 ___
 
@@ -1181,13 +1136,13 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:474](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L474)
+[packages/portalnetwork/src/client/client.ts:565](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L565)
 
 ___
 
 ### sendPortalNetworkMessage
 
-▸ **sendPortalNetworkMessage**(`dstId`, `payload`, `networkId`): `Promise`<`Buffer`\>
+▸ **sendPortalNetworkMessage**(`dstId`, `payload`, `networkId`, `utpMessage?`): `Promise`<`Buffer`\>
 
 #### Parameters
 
@@ -1196,6 +1151,7 @@ ___
 | `dstId` | `string` | `NodeId` of message recipient |
 | `payload` | `Buffer` | `Buffer` serialized payload of message |
 | `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | Subnetwork ID of Subnetwork message is being sent on |
+| `utpMessage?` | `boolean` | - |
 
 #### Returns
 
@@ -1205,28 +1161,7 @@ response from `dstId` as `Buffer` or null `Buffer`
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:804](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L804)
-
-___
-
-### sendUtpStreamRequest
-
-▸ **sendUtpStreamRequest**(`dstId`, `id`): `Promise`<`void`\>
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `dstId` | `string` |
-| `id` | `number` |
-
-#### Returns
-
-`Promise`<`void`\>
-
-#### Defined in
-
-[packages/portalnetwork/src/client/client.ts:387](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L387)
+[packages/portalnetwork/src/client/client.ts:973](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L973)
 
 ___
 
@@ -1266,7 +1201,7 @@ Starts the portal network client
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:145](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L145)
+[packages/portalnetwork/src/client/client.ts:139](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L139)
 
 ___
 
@@ -1282,13 +1217,13 @@ Stops the portal network client and cleans up listeners
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:170](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L170)
+[packages/portalnetwork/src/client/client.ts:164](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L164)
 
 ___
 
 ### updateSubnetworkRoutingTable
 
-▸ `Private` **updateSubnetworkRoutingTable**(`srcId`, `networkId`, `customPayload?`): `void`
+▸ `Private` **updateSubnetworkRoutingTable**(`srcId`, `networkId`, `add?`, `customPayload?`): `void`
 
 This method maintains the liveness of peers in the Subnetwork routing tables.  If a PONG message is received from
 an unknown peer for a given subnetwork, that peer is added to the corresponding subnetwork routing table.  If this
@@ -1297,11 +1232,12 @@ the specified subnetwork routing table.
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `srcId` | `string` | nodeId of peer being updated in subnetwork routing table |
-| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | subnetwork Id of routing table being updated |
-| `customPayload?` | `any` | payload of the PING/PONG message being decoded |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `srcId` | `string` \| `ENR` | `undefined` | nodeId of peer being updated in subnetwork routing table |
+| `networkId` | [`SubNetworkIds`](../enums/SubNetworkIds.md) | `undefined` | subnetwork Id of routing table being updated |
+| `add` | `boolean` | `false` | - |
+| `customPayload?` | `any` | `undefined` | payload of the PING/PONG message being decoded |
 
 #### Returns
 
@@ -1309,7 +1245,7 @@ the specified subnetwork routing table.
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:765](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L765)
+[packages/portalnetwork/src/client/client.ts:918](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L918)
 
 ___
 
@@ -1322,7 +1258,7 @@ ___
 | Name | Type | Default value | Description |
 | :------ | :------ | :------ | :------ |
 | `ip` | `string` | `undefined` | initial local IP address of node |
-| `proxyAddress` | `string` | `'127.0.0.1'` | IP address of proxy |
+| `proxyAddress` | `string` | `'127.0.0.1:5050'` | IP address of proxy |
 
 #### Returns
 
@@ -1332,4 +1268,4 @@ a new PortalNetwork instance
 
 #### Defined in
 
-[packages/portalnetwork/src/client/client.ts:70](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/client.ts#L70)
+[packages/portalnetwork/src/client/client.ts:63](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/client.ts#L63)

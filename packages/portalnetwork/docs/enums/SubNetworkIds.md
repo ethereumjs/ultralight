@@ -6,7 +6,7 @@
 
 ### Enumeration members
 
-- [CanonIndicesNetwork](SubNetworkIds.md#canonindicesnetwork)
+- [CanonicalIndicesNetwork](SubNetworkIds.md#canonicalindicesnetwork)
 - [HeaderGossipNetwork](SubNetworkIds.md#headergossipnetwork)
 - [HistoryNetwork](SubNetworkIds.md#historynetwork)
 - [StateNetwork](SubNetworkIds.md#statenetwork)
@@ -15,13 +15,13 @@
 
 ## Enumeration members
 
-### CanonIndicesNetwork
+### CanonicalIndicesNetwork
 
-• **CanonIndicesNetwork** = `"0x500e"`
+• **CanonicalIndicesNetwork** = `"0x500e"`
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:21](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L21)
+[packages/portalnetwork/src/wire/types.ts:21](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L21)
 
 ___
 
@@ -31,7 +31,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:20](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L20)
+[packages/portalnetwork/src/wire/types.ts:20](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L20)
 
 ___
 
@@ -41,7 +41,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:18](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L18)
+[packages/portalnetwork/src/wire/types.ts:18](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L18)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:17](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L17)
+[packages/portalnetwork/src/wire/types.ts:17](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L17)
 
 ___
 
@@ -61,7 +61,7 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:19](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L19)
+[packages/portalnetwork/src/wire/types.ts:19](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L19)
 
 ___
 
@@ -71,4 +71,4 @@ ___
 
 #### Defined in
 
-[packages/portalnetwork/src/wire/types.ts:22](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/wire/types.ts#L22)
+[packages/portalnetwork/src/wire/types.ts:22](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/wire/types.ts#L22)
