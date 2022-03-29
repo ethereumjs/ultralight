@@ -188,7 +188,7 @@ export const App = () => {
       </Box>
       {portal ? (
         <Box bg={mediumblue}>
-          <Button onClick={onOpen}>DEVTOOLS</Button>
+          <Button onClick={onOpen}>Dev Tools</Button>
           <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
             <DrawerOverlay />
             <DrawerContent>

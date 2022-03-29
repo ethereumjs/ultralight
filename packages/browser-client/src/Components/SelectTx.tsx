@@ -33,7 +33,7 @@ export default function SelectTx(props: SelectTxProps) {
         </Button>
         <Menu>
           <MenuButton as={Button} rightIcon={<FaChevronDown />}>
-            Transaction {txIdx + 1}/{length + 1}
+            Transaction {txIdx + 1}/{length}
           </MenuButton>
           <MenuList>
             <MenuOptionGroup onChange={(v) => setTxIdx(parseInt(v as string))}>

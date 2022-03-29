@@ -51,7 +51,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
 
   return (
     <Button width={'100%'} onClick={handleClick}>
-      Load Content File
+      Load Blocks from File
     </Button>
   )
 }
