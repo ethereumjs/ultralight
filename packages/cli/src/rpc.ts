@@ -107,7 +107,8 @@ export class RPCManager {
     },
     portal_history_findContent: async (params: [string, Uint8Array]) => {
       const [enr, contentKey] = params
-      await this._client.sendFindContent(enr, contentKey, SubNetworkIds.HistoryNetwork)
+      const res = await this._client.sendFindContent(enr, contentKey, SubNetworkIds.HistoryNetwork)
+      return res
     },
     portal_history_offer: async (params: [string, string[], number[]]) => {
       const [dstId, blockHashes, contentTypes] = params
@@ -129,7 +130,8 @@ export class RPCManager {
           },
         })
       })
-      await this._client.sendOffer(dstId, contentKeys, SubNetworkIds.HistoryNetwork)
+      const res = await this._client.sendOffer(dstId, contentKeys, SubNetworkIds.HistoryNetwork)
+      return res
     },
     portal_utp_find_content_test: async (params: [string]) => {
       this.log(`portal_utp_get_test request received`)
