@@ -56,7 +56,7 @@ This is a technical demonstration of a NodeJS application that uses the `portaln
 
 ## Development
 
-Use `npm run dev` in both the `discv5` and `portalnetwork` libraries to have Typescript automatically recompile code as changes are made.  
+Use `npm run dev` in the `portalnetwork` library to have Typescript automatically recompile code as changes are made.  
 
-The browser client supports live reload as well as so any changes made in any of the `discv5`, `portalnetwork`, or `browser-client` libraries will result in the browser client reloading.
+The browser client supports live reload as well as so any changes made in the `portalnetwork` or `browser-client` libraries will result in the browser client reloading.
 
