@@ -97,22 +97,6 @@ export class RPCManager {
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },
-    portal_offer: async (params: [string, string, number]) => {
-      const [dstId, blockHash, contentType] = params
-      if (!isValidId(dstId) || contentType < 0 || contentType > 2) {
-        return 'invalid parameters'
-      }
-      const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: {
-          chainId: 1,
-          blockHash: fromHex(blockHash.slice(2)),
-        },
-      })
-      const res = await this._client.sendOffer(dstId, [contentKey], SubNetworkIds.HistoryNetwork)
-      this.log(`response received to offer ${res?.toString()}`)
-      return `${shortId(dstId)} ${res ? 'accepted' : 'rejected'} offer`
-    },
     portal_ping: async (params: [string]) => {
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
@@ -120,6 +104,34 @@ export class RPCManager {
       await this._client.sendPing(enr, SubNetworkIds.HistoryNetwork)
       this.log(`TEST PONG received from ${encodedENR.nodeId}`)
       return `PING/PONG successful with ${encodedENR.nodeId}`
+    },
+    portal_history_findContent: async (params: [string, Uint8Array]) => {
+      const [enr, contentKey] = params
+      const res = await this._client.sendFindContent(enr, contentKey, SubNetworkIds.HistoryNetwork)
+      return res
+    },
+    portal_history_offer: async (params: [string, string[], number[]]) => {
+      const [dstId, blockHashes, contentTypes] = params
+      contentTypes.forEach((contentType) => {
+        try {
+          isValidId(dstId)
+          contentType > 0
+          contentType < 2
+        } catch {
+          throw new Error('invalid parameters')
+        }
+      })
+      const contentKeys = blockHashes.map((blockHash, idx) => {
+        return HistoryNetworkContentKeyUnionType.serialize({
+          selector: contentTypes[idx],
+          value: {
+            chainId: 1,
+            blockHash: fromHex(blockHash.slice(2)),
+          },
+        })
+      })
+      const res = await this._client.sendOffer(dstId, contentKeys, SubNetworkIds.HistoryNetwork)
+      return res
     },
     portal_utp_find_content_test: async (params: [string]) => {
       this.log(`portal_utp_get_test request received`)
