@@ -79,7 +79,7 @@ PortalNetworkRoutingTable.constructor
 
 #### Defined in
 
-[packages/portalnetwork/src/client/routingTable.ts:5](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/routingTable.ts#L5)
+[packages/portalnetwork/src/client/routingTable.ts:5](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/routingTable.ts#L5)
 
 ## Properties
 
@@ -355,7 +355,7 @@ PortalNetworkRoutingTable.getRadius
 
 #### Defined in
 
-[packages/portalnetwork/src/client/routingTable.ts:34](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/routingTable.ts#L34)
+[packages/portalnetwork/src/client/routingTable.ts:34](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/routingTable.ts#L34)
 
 ___
 
@@ -527,7 +527,7 @@ PortalNetworkRoutingTable.nearest
 
 #### Defined in
 
-[packages/portalnetwork/src/stateSubnetwork/routingTable.ts:12](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/stateSubnetwork/routingTable.ts#L12)
+[packages/portalnetwork/src/stateSubnetwork/routingTable.ts:12](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/stateSubnetwork/routingTable.ts#L12)
 
 ___
 
@@ -874,7 +874,7 @@ PortalNetworkRoutingTable.removeFromRadiusMap
 
 #### Defined in
 
-[packages/portalnetwork/src/client/routingTable.ts:25](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/routingTable.ts#L25)
+[packages/portalnetwork/src/client/routingTable.ts:25](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/routingTable.ts#L25)
 
 ___
 
@@ -1007,7 +1007,7 @@ PortalNetworkRoutingTable.updateRadius
 
 #### Defined in
 
-[packages/portalnetwork/src/client/routingTable.ts:16](https://github.com/ethereumjs/ultralight/blob/3d9e050/packages/portalnetwork/src/client/routingTable.ts#L16)
+[packages/portalnetwork/src/client/routingTable.ts:16](https://github.com/ethereumjs/ultralight/blob/51c7177/packages/portalnetwork/src/client/routingTable.ts#L16)
 
 ___
 
