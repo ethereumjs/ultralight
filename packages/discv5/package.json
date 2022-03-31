@@ -62,6 +62,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@frontall/capacitor-udp": "^0.3.4",
     "@chainsafe/abort-controller": "^3.0.1",
     "@leichtgewicht/ip-codec": "^2.0.3",
     "base64url": "^3.0.1",
