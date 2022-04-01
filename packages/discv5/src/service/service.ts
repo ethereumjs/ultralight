@@ -36,6 +36,7 @@ import { toBuffer } from "../util";
 import { IDiscv5Config, defaultConfig } from "../config";
 import { createNodeContact, getNodeAddress, getNodeId, INodeAddress, NodeContact } from "../session/nodeInfo";
 import { BufferCallback, ConnectionStatus, ConnectionStatusType } from ".";
+import { CapacitorUDPTransportService } from "../transport/capacitorUdp";
 
 
 /**
@@ -184,10 +185,12 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }: IDiscv5CreateOptions): Discv5 {
     const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
-    const transportLayer =
-      transport === "udp"
-        ? new UDPTransportService(multiaddr, decodedEnr.nodeId)
-        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId, proxyAddress);
+    let transportLayer
+    switch (transport) {
+      case "wss": transportLayer = new WebSocketTransportService(multiaddr, decodedEnr.nodeId, proxyAddress);
+      case "cap": transportLayer = new CapacitorUDPTransportService(multiaddr, decodedEnr.nodeId)
+      default: transportLayer = new UDPTransportService(multiaddr, decodedEnr.nodeId); break;
+    }
     const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
     return new Discv5(fullConfig, sessionService, metrics);
   }

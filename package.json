@@ -6,7 +6,8 @@
     "./packages/portalnetwork",
     "./packages/cli",
     "./packages/browser-client",
-    "./packages/proxy"
+    "./packages/proxy",
+    "./packages/mobile-client"
   ],
   "engines": {
     "npm": ">=7"
