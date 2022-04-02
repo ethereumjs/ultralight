@@ -188,12 +188,12 @@ export const App = () => {
       </Box>
       {portal ? (
         <Box bg={mediumblue}>
-          <Button onClick={onOpen}>DEVTOOLS</Button>
+          <Button onClick={onOpen}>Dev Tools</Button>
           <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
             <DrawerOverlay />
             <DrawerContent>
               <DrawerCloseButton />
-              <DrawerHeader>Manually Interact with Network</DrawerHeader>
+              <DrawerHeader>Dev Tools</DrawerHeader>
               <DrawerBody>
                 <DevTools portal={portal} peers={peers!} />
               </DrawerBody>

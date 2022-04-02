@@ -9,9 +9,12 @@ import {
   MenuItemOption,
   Button,
   Box,
+  VStack,
+  Divider,
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import { useState } from 'react'
+import { ContentManager } from './ContentManager'
 
 interface DevToolsProps {
   portal: PortalNetwork
@@ -23,7 +26,7 @@ export default function DevTools(props: DevToolsProps) {
   const peers = props.peers.map((p) => {
     return p.nodeId
   })
-  const [peer, setPeer] = useState('')
+  const [peer, setPeer] = useState(peers[0])
   const [distance, setDistance] = useState('')
   const [contentKey, setContentKey] = useState('')
   const handlePing = (nodeId: string) => {
@@ -50,55 +53,55 @@ export default function DevTools(props: DevToolsProps) {
     portal.sendOffer(nodeId, [encodedContentKey], SubNetworkIds.HistoryNetwork)
   }
   return (
-    <Grid columnGap={1} templateColumns={'repeat(7, 1fr)'}>
-      <GridItem rowStart={5} rowSpan={1} colSpan={7}>
-        <Box paddingTop={1} border="solid black" height={'200'}>
-          <Heading size="sm">Select Peer</Heading>
-          <Menu autoSelect>
-            <MenuOptionGroup
-              overflowY={'scroll'}
-              fontSize={'xs'}
-              onChange={(p) => setPeer(p as string)}
-            >
-              {peers.map((_peer, idx) => (
-                <MenuItemOption
-                  fontSize={'xs'}
-                  paddingStart={0}
-                  bgColor={peer === _peer ? 'lightblue' : 'white'}
-                  key={idx}
-                  value={_peer}
-                >
-                  {_peer.slice(0, 25)}...
-                </MenuItemOption>
-              ))}
-            </MenuOptionGroup>
-          </Menu>
-        </Box>
-      </GridItem>
-      <GridItem colStart={1} rowStart={0}>
-        <Button size="sm" width={'100%'} onClick={() => handlePing(peer)}>
-          Send Ping
-        </Button>
-      </GridItem>
-      <GridItem rowStart={2} colStart={0}>
-        <Input
-          placeholder={'Distance'}
-          onChange={(evt) => {
-            setDistance(evt.target.value)
-          }}
-        />
-      </GridItem>
-      <GridItem colStart={0} rowStart={3}>
-        <Button size="sm" onClick={() => handleFindNodes(peer)}>
-          Request Nodes from Peer
-        </Button>
-      </GridItem>
-      <GridItem colStart={0} rowStart={4}>
-        <Input value={contentKey} onChange={(evt) => setContentKey(evt.target.value)} />
-        <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
-          Send Offer
-        </Button>
-      </GridItem>
-    </Grid>
+    <VStack>
+      <Heading size="sm">Manually Interact with Network</Heading>
+      <Divider />
+      <ContentManager portal={portal} />
+      <Divider />
+      <Button size="sm" width="100%" onClick={() => handlePing(peer)}>
+        Send Ping
+      </Button>
+      <Divider />
+      <Input
+        placeholder={'Distance'}
+        onChange={(evt) => {
+          setDistance(evt.target.value)
+        }}
+      />
+      <Button size="sm" width="100%" onClick={() => handleFindNodes(peer)}>
+        Request Nodes from Peer
+      </Button>
+      <Divider />
+      <Input
+        value={contentKey}
+        placeholder="Content Key"
+        onChange={(evt) => setContentKey(evt.target.value)}
+      />
+      <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
+        Send Offer
+      </Button>
+      <Divider />
+      <Heading size="sm">
+        Select Peer ({peers.indexOf(peer) + 1}/{peers.length})
+      </Heading>
+      <Box overflow={'scroll'} paddingTop={1} border="solid black" h="150px" w="100%">
+        <Menu autoSelect>
+          <MenuOptionGroup fontSize={'xs'} onChange={(p) => setPeer(p as string)}>
+            {peers.map((_peer, idx) => (
+              <MenuItemOption
+                fontSize={'xs'}
+                paddingStart={0}
+                bgColor={peer === _peer ? 'lightblue' : 'white'}
+                key={idx}
+                value={_peer}
+              >
+                {_peer.slice(0, 25)}...
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </Menu>
+      </Box>
+      <Divider />
+    </VStack>
   )
 }
