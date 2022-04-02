@@ -54,6 +54,8 @@ export default function DevTools(props: DevToolsProps) {
   }
   return (
     <VStack>
+      <Heading size="sm">Manually Interact with Network</Heading>
+      <Divider />
       <ContentManager portal={portal} />
       <Divider />
       <Button size="sm" width="100%" onClick={() => handlePing(peer)}>
@@ -78,14 +80,13 @@ export default function DevTools(props: DevToolsProps) {
       <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
         Send Offer
       </Button>
-      <Box paddingTop={1} border="solid black" maxHeight={400} w="100%">
-        <Heading size="sm">Select Peer</Heading>
+      <Divider />
+      <Heading size="sm">
+        Select Peer ({peers.indexOf(peer) + 1}/{peers.length})
+      </Heading>
+      <Box overflow={'scroll'} paddingTop={1} border="solid black" h="150px" w="100%">
         <Menu autoSelect>
-          <MenuOptionGroup
-            overflowY={'scroll'}
-            fontSize={'xs'}
-            onChange={(p) => setPeer(p as string)}
-          >
+          <MenuOptionGroup fontSize={'xs'} onChange={(p) => setPeer(p as string)}>
             {peers.map((_peer, idx) => (
               <MenuItemOption
                 fontSize={'xs'}
@@ -100,6 +101,7 @@ export default function DevTools(props: DevToolsProps) {
           </MenuOptionGroup>
         </Menu>
       </Box>
+      <Divider />
     </VStack>
   )
 }

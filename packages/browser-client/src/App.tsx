@@ -193,7 +193,7 @@ export const App = () => {
             <DrawerOverlay />
             <DrawerContent>
               <DrawerCloseButton />
-              <DrawerHeader>Manually Interact with Network</DrawerHeader>
+              <DrawerHeader>Dev Tools</DrawerHeader>
               <DrawerBody>
                 <DevTools portal={portal} peers={peers!} />
               </DrawerBody>
