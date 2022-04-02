@@ -1001,6 +1001,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
+  private livenessCheck = async () => {
+    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
+    const peers: ENR[] = routingTable!.values()
+    this.logger.extend('LivenessCheck')(`Checking ${peers!.length} peers for Liveness`)
+    peers.forEach(async (peer: ENR) => {
+      await this.sendPing(peer.nodeId, SubNetworkIds.HistoryNetwork)
+    })
+    return peers.length
+  }
+
   /**
    * Follows below algorithm to refresh a bucket in the History Network routing table
    * 1: Look at your routing table and select the first N buckets which are not full.
@@ -1011,9 +1021,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Do the random lookup on this node-id.
    */
   private bucketRefresh = async () => {
-    const notFullBuckets = this.routingTables
-      .get(SubNetworkIds.HistoryNetwork)!
-      .buckets.map((bucket, idx) => {
+    const oldPeers = await this.livenessCheck()
+    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
+    const newPeers = routingTable?.values()
+    this.logger.extend('LivenessCheck')(
+      `Removed ${oldPeers - newPeers!.length} Peers from Routing Table`
+    )
+    const notFullBuckets = routingTable!.buckets
+      .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
