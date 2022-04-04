@@ -1,6 +1,0 @@
-{
-	"appId": "com.ultralight.app",
-	"appName": "mobile-client",
-	"webDir": "build",
-	"bundledWebRuntime": false
-}

@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">mobile-client</string>
-    <string name="title_activity_main">mobile-client</string>
-    <string name="package_name">com.ultralight.app</string>
-    <string name="custom_url_scheme">com.ultralight.app</string>
-</resources>

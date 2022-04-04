@@ -1,7 +1,6 @@
-import { UDP } from "@frontall/capacitor-udp";
 import { EventEmitter } from "events";
 import { Multiaddr } from "multiaddr";
-
+import { UDP } from '@frontall/capacitor-udp'
 import { decodePacket, encodePacket, IPacket, MAX_PACKET_SIZE } from "../packet";
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from "./types";
 
@@ -32,13 +31,12 @@ export class CapacitorUDPTransportService
   public async start(): Promise<void> {
     const opts = this.multiaddr.toOptions();
     this.socket = await UDP.create();
-    UDP.addListener("receive", ({ socketId, buffer }) => {
-      this.handleIncoming(Buffer.from(atob(buffer)), { family: "IPv4", address: "127.0.0.1", port: 9000, size: 12 });
+    await UDP.bind({ socketId: this.socket.socketId, address: this.socket.ipv4, port: 9000 })
+    const socketInfo = (await UDP.getInfo({ socketId: this.socket.socketId }))
+    this.emit("multiaddrUpdate", new Multiaddr(`/ip4/${this.socket.ipv4}/udp/${socketInfo.localPort?.toString()}`));
+    UDP.addListener("receive", (ret: any) => {
+      this.handleIncoming(Buffer.from(ret.buffer, 'base64'), { family: "IPv4", address: ret.remoteAddress, port: ret.remotePort, size: ret.buffer.length });
     })
-    return new Promise((resolve) => {
-      UDP.bind({ socketId: this.socket.socketId, address: this.socket.ipv4, port: 0 })
-      resolve()
-    });
   }
 
   public async stop(): Promise<void> {
@@ -47,7 +45,7 @@ export class CapacitorUDPTransportService
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
     const nodeAddr = to.toOptions();
-    await UDP.send({ socketId: this.socket.socketId, address: nodeAddr.host, port: nodeAddr.port, buffer: encodePacket(toId, packet).toString() })
+    await UDP.send({ socketId: this.socket.socketId, address: nodeAddr.host, port: nodeAddr.port, buffer: encodePacket(toId, packet).toString('base64') })
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
