@@ -1001,14 +1001,27 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private livenessCheck = async () => {
-    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
+  /**
+   * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
+   * evict nodes that do not respond
+   */
+  private livenessCheck = async (networkId: SubNetworkIds) => {
+    const routingTable = this.routingTables.get(networkId)
     const peers: ENR[] = routingTable!.values()
-    this.logger.extend('LivenessCheck')(`Checking ${peers!.length} peers for Liveness`)
-    peers.forEach(async (peer: ENR) => {
-      await this.sendPing(peer.nodeId, SubNetworkIds.HistoryNetwork)
-    })
-    return peers.length
+    this.logger.extend('livenessCheck')(`Checking ${peers!.length} peers for liveness`)
+    const deadPeers = (
+      await Promise.all(
+        peers.map((peer: ENR) => {
+          return new Promise((resolve) => {
+            const result = this.sendPing(peer.nodeId, networkId)
+            resolve(result)
+          })
+        })
+      )
+    ).filter((res) => !res)
+    this.logger.extend('livenessCheck')(
+      `Removed ${deadPeers.length} peers from ${networkId} routing table`
+    )
   }
 
   /**
@@ -1021,12 +1034,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Do the random lookup on this node-id.
    */
   private bucketRefresh = async () => {
-    const oldPeers = await this.livenessCheck()
+    await this.livenessCheck(SubNetworkIds.HistoryNetwork)
     const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
-    const newPeers = routingTable?.values()
-    this.logger.extend('LivenessCheck')(
-      `Removed ${oldPeers - newPeers!.length} Peers from Routing Table`
-    )
     const notFullBuckets = routingTable!.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
