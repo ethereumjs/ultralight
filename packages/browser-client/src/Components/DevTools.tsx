@@ -1,8 +1,6 @@
 import { ENR } from '@chainsafe/discv5'
 import {
-  Grid,
   Input,
-  GridItem,
   Heading,
   Menu,
   MenuOptionGroup,

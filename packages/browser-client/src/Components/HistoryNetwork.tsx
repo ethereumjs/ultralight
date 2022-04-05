@@ -34,7 +34,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
   }
 
   async function handleClick() {
-    const block = await props.handleFindContent(props.contentKey)
+    await props.handleFindContent(props.contentKey)
     setTabIndex(1)
   }
 

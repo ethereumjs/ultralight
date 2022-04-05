@@ -1,4 +1,4 @@
-import { CopyIcon, SearchIcon } from '@chakra-ui/icons'
+import { CopyIcon } from '@chakra-ui/icons'
 import {
   Box,
   TabPanels,
@@ -8,11 +8,9 @@ import {
   Tabs,
   Text,
   Heading,
-  Button,
   Grid,
   GridItem,
   Link,
-  Divider,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { getHistoryNetworkContentId } from 'portalnetwork'
