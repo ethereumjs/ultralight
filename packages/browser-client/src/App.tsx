@@ -1,26 +1,9 @@
 import * as React from 'react'
 import {
   ChakraProvider,
-  Box,
-  Flex,
-  FormControl,
   theme,
-  Heading,
-  Text,
-  Tooltip,
   useClipboard,
-  VStack,
-  Stack,
-  Input,
   Button,
-  Grid,
-  GridItem,
-  Thead,
-  Tbody,
-  Table,
-  Th,
-  Tr,
-  Td,
   useDisclosure,
   Drawer,
   DrawerOverlay,
@@ -29,8 +12,10 @@ import {
   DrawerHeader,
   DrawerBody,
   DrawerFooter,
-  TableCaption,
-  Center,
+  Box,
+  Heading,
+  HStack,
+  Divider,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -42,10 +27,10 @@ import {
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import { Block } from '@ethereumjs/block'
-import DisplayBlock from './Components/DisplayBlock'
-import CircleNetwork from './Components/CircleNetwork'
-import { CopyIcon } from '@chakra-ui/icons'
 import DevTools from './Components/DevTools'
+import StartNode from './Components/StartNode'
+import Layout from './Components/Layout'
+import { FaTools } from 'react-icons/fa'
 
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
@@ -133,6 +118,7 @@ export const App = () => {
 
   async function handleClick() {
     await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    setPeerEnr('')
     updateAddressBook()
   }
 
@@ -181,159 +167,52 @@ export const App = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      <Box bg={lightblue}>
-        <Heading size="2xl" textAlign="start">
-          Ultralight Portal Network Explorer
-        </Heading>
-      </Box>
-      {portal ? (
-        <Box bg={mediumblue}>
-          <Button onClick={onOpen}>Dev Tools</Button>
-          <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-            <DrawerOverlay />
-            <DrawerContent>
-              <DrawerCloseButton />
-              <DrawerHeader>Dev Tools</DrawerHeader>
-              <DrawerBody>
-                <DevTools portal={portal} peers={peers!} />
-              </DrawerBody>
-              <DrawerFooter>
-                <Button onClick={onClose}>CLOSE</Button>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
-          <Grid templateColumns="repeat(15, 1fr)" templateRows="repeat(2, 1fr)">
-            <GridItem colSpan={9} rowSpan={2}>
-              <Tooltip label="click to copy">
-                <Text fontSize={'sm'} onClick={copy} wordBreak="break-all" cursor="pointer">
-                  {portal?.client.enr.encodeTxt(portal.client.keypair.privateKey)}
-                </Text>
-              </Tooltip>
-            </GridItem>
-            <GridItem rowSpan={2} colSpan={6} colStart={10}>
-              <CopyIcon />
-            </GridItem>
-          </Grid>
-        </Box>
-      ) : (
-        <Box bg={lightblue}>
-          <Input
-            onChange={(evt) => {
-              setProxy(evt.target.value)
-            }}
-            textAlign="center"
-            bg="whiteAlpha.800"
-            defaultValue={'127.0.0.1:5050'}
-            placeholder="Proxy IP Address"
-          />
-          <Center>
-            <Button onClick={init}>Start Node</Button>
-          </Center>
-        </Box>
+      <Box bg={'gray.200'}>
+        <HStack>
+          <Heading width={'80%'} size="xl" textAlign="start">
+            Ultralight Portal Network Explorer
+          </Heading>
+          <Button colorScheme={'facebook'} leftIcon={<FaTools />} width={'20%'} onClick={onOpen}>
+            Dev Tools
+          </Button>
+        </HStack>
+        <Divider />
+      </Box>{' '}
+      {portal && (
+        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+          <DrawerOverlay />
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader>Dev Tools</DrawerHeader>
+            <DrawerBody>
+              <DevTools portal={portal} peers={peers!} />
+            </DrawerBody>
+            <DrawerFooter>
+              <Button onClick={onClose}>CLOSE</Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       )}
-      <Flex bg={lightblue} justify="center" paddingBottom={'100%'}>
-        <Grid templateColumns={'repeat(12, 1fr)'}>
-          {portal && (
-            <>
-              <GridItem padding={2} colSpan={3}>
-                <Button width={'100%'} onClick={handleClick}>
-                  Connect To Node
-                </Button>
-              </GridItem>
-              <GridItem paddingY={2} colSpan={9} colStart={4}>
-                <Input
-                  bg="whiteAlpha.800"
-                  value={peerEnr}
-                  placeholder={'Node ENR'}
-                  onChange={(evt) => setPeerEnr(evt.target.value)}
-                />
-              </GridItem>
-            </>
-          )}
-          {peers && peers.length > 0 && (
-            <GridItem colSpan={6} rowStart={2}>
-              <Box>
-                <Table size="xs">
-                  <TableCaption>Peers: {peers?.length}</TableCaption>
-                  <Thead>
-                    <Th>ENR</Th>
-                    <Th>DIST</Th>
-                    <Th>IP</Th>
-                    <Th>PORT</Th>
-                    <Th>NodeId</Th>
-                  </Thead>
-                  <Tbody>
-                    {sortedDistList.map((peer) => {
-                      return (
-                        <Tr>
-                          <Td>
-                            <Tooltip label={peer[1][3]}>
-                              <CopyIcon
-                                cursor={'pointer'}
-                                onClick={() => navigator.clipboard.writeText(peer[1][3])}
-                              />
-                            </Tooltip>
-                          </Td>
-                          <Th>{peer[0]}</Th>
-                          <Td>{peer[1][0]}</Td>
-                          <Td>{peer[1][1]}</Td>
-                          <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
-                        </Tr>
-                      )
-                    })}
-                  </Tbody>
-                </Table>
-              </Box>
-              {portal && <CircleNetwork peers={peers} distances={sortedDistList} />}
-            </GridItem>
-          )}
-          <GridItem colStart={7} colSpan={6}>
-            <VStack>
-              <VStack justify="center">
-                <Stack direction="row"></Stack>
-                <Grid
-                  columnGap={4}
-                  rowGap={4}
-                  templateColumns={'repeat(4, 1fr)'}
-                  templateRows={'repeat(2, 1fr)'}
-                >
-                  {portal && <> </>}
-                  {peers && peers.length > 0 && (
-                    <>
-                      <GridItem colSpan={1}>
-                        <Button
-                          disabled={invalidHash}
-                          onClick={() => handleFindContent(contentKey)}
-                        >
-                          Get Block by Blockhash
-                        </Button>
-                      </GridItem>
-                      <GridItem colSpan={3} colStart={2}>
-                        <FormControl isInvalid={invalidHash}>
-                          <Input
-                            bg="whiteAlpha.800"
-                            placeholder={'Block Hash'}
-                            value={contentKey}
-                            onChange={(evt) => {
-                              setContentKey(evt.target.value)
-                            }}
-                          />
-                        </FormControl>
-                      </GridItem>
-                    </>
-                  )}
-                </Grid>
-              </VStack>
-              {portal && block && (
-                <Box border={'solid black'} paddingTop="5">
-                  <DisplayBlock findParent={findParent} block={block!} />
-                </Box>
-              )}
-            </VStack>
-          </GridItem>
-        </Grid>
-      </Flex>
-      <Grid templateColumns={'repeat(12, 1fr)'}></Grid>
+      {portal ? (
+        <Layout
+          copy={copy}
+          onOpen={onOpen}
+          enr={enr}
+          peerEnr={peerEnr}
+          setPeerEnr={setPeerEnr}
+          handleClick={handleClick}
+          invalidHash={invalidHash}
+          handleFindContent={handleFindContent}
+          contentKey={contentKey}
+          setContentKey={setContentKey}
+          findParent={findParent}
+          block={block}
+          peers={peers}
+          sortedDistList={sortedDistList}
+        />
+      ) : (
+        <StartNode setProxy={setProxy} init={init} />
+      )}
     </ChakraProvider>
   )
 }
