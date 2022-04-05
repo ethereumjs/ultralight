@@ -11,6 +11,8 @@ import {
   Button,
   Grid,
   GridItem,
+  Link,
+  Divider,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { getHistoryNetworkContentId } from 'portalnetwork'
@@ -83,16 +85,15 @@ export default function DisplayBlock(props: DisplayBlockProps) {
                         wordBreak={'break-all'}
                         colSpan={6}
                       >
-                        {key[1]}
-                      </GridItem>
-                      <GridItem colSpan={1}>
-                        {' '}
-                        {idx === 0 && (
-                          <Button onClick={() => props.findParent(key[1])}>
-                            <SearchIcon />
-                          </Button>
+                        {idx === 0 ? (
+                          <Link color={'blue'} onClick={() => props.findParent(key[1])}>
+                            {key[1]}
+                          </Link>
+                        ) : (
+                          <>{key[1]}</>
                         )}
                       </GridItem>
+                      <GridItem colSpan={1}> </GridItem>
                     </>
                   )
                 })}
