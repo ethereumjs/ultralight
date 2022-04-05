@@ -36,6 +36,7 @@ import { toBuffer } from "../util";
 import { IDiscv5Config, defaultConfig } from "../config";
 import { createNodeContact, getNodeAddress, getNodeId, INodeAddress, NodeContact } from "../session/nodeInfo";
 import { BufferCallback, ConnectionStatus, ConnectionStatusType } from ".";
+import { CapacitorUDPTransportService } from "../transport/capacitorUdp";
 
 
 /**
@@ -61,6 +62,7 @@ export interface IDiscv5CreateOptions {
   metrics?: IDiscv5Metrics;
   transport?: string;
   proxyAddress?: string;
+  udpInterface?: any
 }
 
 /**
@@ -184,10 +186,12 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
   }: IDiscv5CreateOptions): Discv5 {
     const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
-    const transportLayer =
-      transport === "udp"
-        ? new UDPTransportService(multiaddr, decodedEnr.nodeId)
-        : new WebSocketTransportService(multiaddr, decodedEnr.nodeId, proxyAddress);
+    let transportLayer
+    switch (transport) {
+      case "wss": transportLayer = new WebSocketTransportService(multiaddr, decodedEnr.nodeId, proxyAddress); break;
+      case "cap": transportLayer = new CapacitorUDPTransportService(multiaddr, decodedEnr.nodeId); break;
+      default: transportLayer = new UDPTransportService(multiaddr, decodedEnr.nodeId); break;
+    }
     const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
     return new Discv5(fullConfig, sessionService, metrics);
   }
@@ -201,6 +205,7 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
       return;
     }
     this.log(`Starting discv5 service with node id ${this.enr.nodeId}`);
+    this.log(this.enr.encodeTxt(this.keypair.privateKey))
     this.kbuckets.on("pendingEviction", this.onPendingEviction);
     this.kbuckets.on("appliedEviction", this.onAppliedEviction);
     this.sessionService.on("established", this.onEstablished);

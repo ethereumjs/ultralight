@@ -76,6 +76,23 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     )
   }
 
+  public static createMobilePortalNetwork = async (ip: string) => {
+    const id = await PeerId.create({ keyType: 'secp256k1' })
+    const enr = ENR.createFromPeerId(id)
+    const address = ip.split(':')[0]
+    const port = ip.split(':')[1]
+    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${address}/udp/${port}`))
+    return new PortalNetwork(
+      {
+        enr,
+        peerId: id,
+        multiaddr: enr.getLocationMultiaddr('udp')!,
+        transport: 'cap',
+      },
+      2n ** 256n
+    )
+  }
+
   /**
    *
    * Portal Network constructor

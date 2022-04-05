@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "check-types": "tsc --noEmit",
+    "dev": "tsc --watch --declaration --outDir lib",
     "build": "tsc --declaration --outDir lib",
     "prepublishOnly": "yarn build",
     "prepare": "npm run build",
@@ -63,6 +64,7 @@
   },
   "dependencies": {
     "@chainsafe/abort-controller": "^3.0.1",
+    "@frontall/capacitor-udp": "^0.3.4",
     "@leichtgewicht/ip-codec": "^2.0.3",
     "base64url": "^3.0.1",
     "bcrypto": "^5.4.0",
