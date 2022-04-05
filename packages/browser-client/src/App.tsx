@@ -118,6 +118,7 @@ export const App = () => {
 
   async function handleClick() {
     await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    setPeerEnr('')
     updateAddressBook()
   }
 

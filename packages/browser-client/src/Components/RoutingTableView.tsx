@@ -13,17 +13,19 @@ export default function RoutingTableView(props: RoutingTableViewProps) {
       <Table size="xs">
         <TableCaption>Peers: {props.peers?.length}</TableCaption>
         <Thead>
-          <Th>ENR</Th>
-          <Th>DIST</Th>
-          <Th>IP</Th>
-          <Th>PORT</Th>
-          <Th>NodeId</Th>
+          <Tr>
+            <Th>ENR</Th>
+            <Th>DIST</Th>
+            <Th>IP</Th>
+            <Th>PORT</Th>
+            <Th>NodeId</Th>
+          </Tr>
         </Thead>
         <Tbody>
           {props.sortedDistList.map((peer) => {
             return (
-              <Tr>
-                <Td>
+              <Tr key={peer[1][2]}>
+                <Td key={peer[1][2] + 'abc'}>
                   <Tooltip label={peer[1][3]}>
                     <CopyIcon
                       cursor={'pointer'}
