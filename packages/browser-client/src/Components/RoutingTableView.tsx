@@ -1,3 +1,4 @@
+import React from 'react'
 import { ENR } from '@chainsafe/discv5'
 import { CopyIcon } from '@chakra-ui/icons'
 import { Table, Box, TableCaption, Thead, Th, Tbody, Tr, Td, Tooltip } from '@chakra-ui/react'

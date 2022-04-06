@@ -11,7 +11,7 @@ import {
   Divider,
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { ContentManager } from './ContentManager'
 
 interface DevToolsProps {

@@ -1,12 +1,14 @@
-import { ColorModeScript } from '@chakra-ui/react'
-import * as React from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom'
 import { App } from './App'
-import './App.css'
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then((registration) => {
+    registration.unregister()
+  })
+}
 ReactDOM.render(
   <React.StrictMode>
-    <ColorModeScript />
     <App />
   </React.StrictMode>,
   document.getElementById('root')

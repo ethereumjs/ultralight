@@ -114,6 +114,9 @@ export const App = () => {
   React.useEffect(() => {
     portal?.on('NodeAdded', () => updateAddressBook())
     portal?.on('NodeRemoved', () => updateAddressBook())
+    return () => {
+      portal?.removeAllListeners()
+    }
   }, [portal])
 
   async function handleClick() {
@@ -134,14 +137,14 @@ export const App = () => {
         await portal.historyNetworkContentLookup(0, blockHash)
         try {
           header = await portal.db.get(headerlookupKey)
-        } catch (err: any) {
-          portal.logger(err.message)
+        } catch (err) {
+          portal.logger((err as any).message)
         }
         await portal.historyNetworkContentLookup(1, blockHash)
         try {
           body = await portal.db.get(bodylookupKey)
-        } catch (err: any) {
-          portal.logger(err.message)
+        } catch (err) {
+          portal.logger((err as any).message)
         }
         try {
           const block = reassembleBlock(
@@ -150,8 +153,8 @@ export const App = () => {
           )
           setBlock(block)
           return block
-        } catch (err: any) {
-          portal.logger(err.message)
+        } catch (err) {
+          portal.logger((err as any).message)
         }
       }
     }

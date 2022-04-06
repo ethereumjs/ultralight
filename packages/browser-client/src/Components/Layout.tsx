@@ -15,7 +15,7 @@ import {
   StackDivider,
 } from '@chakra-ui/react'
 import Footer from './Footer'
-import { Dispatch, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { Block } from '@ethereumjs/block'
 import { ENR } from '@chainsafe/discv5'
 import HistoryNetwork from './HistoryNetwork'

@@ -1,5 +1,5 @@
 import { Box, Center, Button, Input } from '@chakra-ui/react'
-import { Dispatch, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 
 interface StartNodeProps {
   setProxy: Dispatch<SetStateAction<string>>

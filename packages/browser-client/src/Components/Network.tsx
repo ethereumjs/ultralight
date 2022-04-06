@@ -1,7 +1,7 @@
 import { ENR } from '@chainsafe/discv5'
 import { Box, Container } from '@chakra-ui/react'
 import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 interface NetworkProps {
   peers: ENR[] | undefined
