@@ -15,6 +15,7 @@ import { TypedTransaction } from '@ethereumjs/tx'
 import { useState } from 'react'
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import DisplayTx from './DisplayTx'
+import React from 'react'
 
 interface SelectTxProps {
   txList: string[]

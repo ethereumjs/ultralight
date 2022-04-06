@@ -20,7 +20,7 @@
     "jsx": "react",
     "rootDir": "./src",
     "composite": true,
-    "outdir": "dist"
+    "outDir": "dist"
   },
   "include": [
     "src"

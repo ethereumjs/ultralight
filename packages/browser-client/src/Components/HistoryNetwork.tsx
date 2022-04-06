@@ -11,7 +11,7 @@ import {
   Tabs,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import { Dispatch, SetStateAction, useState } from 'react'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 import DisplayBlock from './DisplayBlock'
 import RoutingTableView from './RoutingTableView'
 

@@ -3,7 +3,7 @@ import { Box, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
 import { getHistoryNetworkContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
-import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
+import React, { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
 
 interface BlocksToExploreProps {
   portal: PortalNetwork

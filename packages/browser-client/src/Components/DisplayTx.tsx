@@ -1,6 +1,6 @@
 import { Box, Table, Tbody, Td, Tr } from '@chakra-ui/react'
 import { TypedTransaction } from '@ethereumjs/tx'
-
+import React from 'react'
 interface DisplayTxProps {
   tx: TypedTransaction
 }

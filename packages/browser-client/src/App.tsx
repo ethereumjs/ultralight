@@ -114,6 +114,9 @@ export const App = () => {
   React.useEffect(() => {
     portal?.on('NodeAdded', () => updateAddressBook())
     portal?.on('NodeRemoved', () => updateAddressBook())
+    return () => {
+      portal?.removeAllListeners()
+    }
   }, [portal])
 
   async function handleClick() {
