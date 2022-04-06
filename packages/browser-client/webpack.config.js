@@ -37,8 +37,14 @@ module.exports = {
                 test: /\.(jpg|jpeg|png|gif|mp3|svg)$/,
                 use: ["file-loader"],
             },
+            {
+                test: /\.js$/,
+                enforce: 'pre',
+                use: ['source-map-loader']
+            }
         ],
     },
+    ignoreWarnings: [/Failed to parse source map/],
     plugins: [
         new HtmlWebpackPlugin({
             template: path.join(__dirname, "public", "index.html"),
