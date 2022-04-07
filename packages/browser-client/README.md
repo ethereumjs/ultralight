@@ -1,6 +1,6 @@
 # Ultralight Block Explorer
 
-This is a proof of concept block explorer that will start an Ultralight portal network client in the browser that leverages a UDP proxy service to connect to other nodes in the network and retrieve blocks from the History Network.
+This is a proof of concept block explorer that can start an Ultralight portal network client in the browser that leverages a UDP proxy service (or an Android mobile app) to connect to other nodes in the network and retrieve blocks from the History Network.
 
 ## Usage
 
@@ -8,7 +8,7 @@ This is a proof of concept block explorer that will start an Ultralight portal n
 
 - Run `node packages/proxy/dist/index.js --nat=localhost` from the monorepo root to run the UDP proxy.
 - Run `npm run start-browser-client`
-- Open a browser window and navigate to localhost:3000 and start the node.
+- Open a browser window and navigate to localhost:8080 and start the node.
 
 The `portal` object is exposed in the browser console and can be used to experiment with portal network functionality. See [the portal network docs](../portalnetwork/docs/modules.md) for API specs
 
@@ -33,3 +33,7 @@ Paste the ENR into the `Node ID` input and press `Connect to Node`
 Copy any blockhash from those loaded via the seeder script and paste into the search field in the Block Explorer. Hit `Find Block By Hash`
 
 Block info will be requested from the network, and displayed upon retrieval. Clicking the search button next to a Parent Hash will perform a search for that block. 
+
+### Mobile Development [**experimental**]
+
+See [Mobile Development setup steps](./docs/mobile.md) for more details.
