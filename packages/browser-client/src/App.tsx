@@ -31,6 +31,7 @@ import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
 import { FaTools } from 'react-icons/fa'
+import { Capacitor } from '@capacitor/core'
 
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
@@ -62,8 +63,8 @@ export const App = () => {
       {
         enr: enr,
         peerId: id,
-        multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
-        transport: 'wss',
+        multiaddr: new Multiaddr('/ip4/104.248.102.101/udp/0'),
+        transport: Capacitor.isNativePlatform() ? 'cap' : 'wss',
         proxyAddress: `ws://${proxy}`,
       },
       2n ** 256n

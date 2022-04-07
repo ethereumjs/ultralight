@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@capacitor/cli": "^3.4.3",
     "@babel/core": "^7.17.8",
     "@babel/node": "^7.16.8",
     "@babel/plugin-transform-runtime": "^7.17.0",
@@ -39,6 +40,9 @@
     "webpack-dev-server": "^4.8.0"
   },
   "dependencies": {
+    "@capacitor/android": "^3.4.3",
+    "@frontall/capacitor-udp": "^0.3.4",
+    "@capacitor/core": "^3.4.3",
     "@chainsafe/discv5": "^0.6.6",
     "@chakra-ui/icons": "^1.1.5",
     "@chakra-ui/react": "^1.0.0",

@@ -1,8 +1,0 @@
-{
-  "presets": [["@babel/env", {
-    "exclude": ["transform-exponentiation-operator"]
-  }], "@babel/react", "@babel/preset-typescript"],
-  "targets": {
-    "browsers": ["last 2 versions"]
-  }
-}

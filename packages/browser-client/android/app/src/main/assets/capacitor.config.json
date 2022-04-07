@@ -1,0 +1,6 @@
+{
+	"appId": "com.ultralight.app",
+	"appName": "Ultralight",
+	"webDir": "build",
+	"bundledWebRuntime": false
+}
