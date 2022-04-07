@@ -32,10 +32,11 @@ import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
 import { FaTools } from 'react-icons/fa'
 import { Capacitor } from '@capacitor/core'
-
+import { UDP } from '@frontall/capacitor-udp'
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
+
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [peers, setPeers] = React.useState<ENR[] | undefined>([])

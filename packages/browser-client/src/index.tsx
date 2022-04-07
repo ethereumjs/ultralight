@@ -7,6 +7,7 @@ if ('serviceWorker' in navigator) {
     registration.unregister()
   })
 }
+
 ReactDOM.render(
   <React.StrictMode>
     <App />
