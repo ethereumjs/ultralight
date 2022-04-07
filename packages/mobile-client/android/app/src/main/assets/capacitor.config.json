@@ -1,0 +1,10 @@
+{
+	"appId": "com.ultralight.app",
+	"appName": "Ultralight Mobile",
+	"webDir": "public",
+	"bundledWebRuntime": false,
+	"server": {
+		"url": "192.168.0.194:8080",
+		"cleartext": true
+	}
+}
