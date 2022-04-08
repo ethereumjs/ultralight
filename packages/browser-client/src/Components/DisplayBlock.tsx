@@ -11,6 +11,7 @@ import {
   Grid,
   GridItem,
   Link,
+  Center,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { getHistoryNetworkContentId } from 'portalnetwork'
@@ -62,12 +63,14 @@ export default function DisplayBlock(props: DisplayBlockProps) {
         </GridItem>
       </Grid>
       <Tabs>
-        <TabList>
-          <Tab>Header</Tab>
-          <Tab>Transactions</Tab>
-          <Tab>Uncles</Tab>
-          <Tab>JSON</Tab>
-        </TabList>
+        <Center>
+          <TabList>
+            <Tab>Header</Tab>
+            <Tab>Transactions</Tab>
+            <Tab>Uncles</Tab>
+            <Tab>JSON</Tab>
+          </TabList>
+        </Center>
         <TabPanels>
           <TabPanel>
             <Grid templateColumns={'repeat(10, 1fr)'}>

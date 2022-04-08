@@ -17,7 +17,7 @@ de2f8:discv5:service Updated ENR based on public multiaddr to enr:-IS4QH2xRY1ov.
 ```
 - Copy the node's ENR which should start with `enr:-IS...`
   - Alternatively, retrieve the node's ENR using the JSON-RPC.  Details [here](./packages/cli/README.md)
-- Start the browser client dev server - `npm run start-browser-client` and open a browser window at `localhost:3000`
+- Start the browser client dev server - `npm run start-browser-client` and open a browser window at `localhost:8080`
 - Click `Start Node`, paste the ENR into the input that says `Node ENR` and press `Connect To Node`
 - You should see a node appear in the table on the left side of the page
 - In the terminal where the Ultralight-CLI client is running, you should see something like below:

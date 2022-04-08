@@ -1,0 +1,6 @@
+[
+	{
+		"pkg": "@frontall/capacitor-udp",
+		"classpath": "com.capacitorjs.plugins.udp.UDPPlugin"
+	}
+]

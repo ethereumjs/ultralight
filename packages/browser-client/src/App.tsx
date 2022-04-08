@@ -16,6 +16,9 @@ import {
   Heading,
   HStack,
   Divider,
+  Center,
+  VStack,
+  useToast,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -31,10 +34,13 @@ import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
 import { FaTools } from 'react-icons/fa'
-
+import { Capacitor } from '@capacitor/core'
+import { HamburgerIcon } from '@chakra-ui/icons'
+import Footer from './Components/Footer'
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
+
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [peers, setPeers] = React.useState<ENR[] | undefined>([])
@@ -49,7 +55,7 @@ export const App = () => {
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
   const { isOpen, onOpen, onClose } = useDisclosure()
-
+  const toast = useToast()
   const init = async () => {
     if (portal?.client.isStarted()) {
       await portal.stop()
@@ -62,8 +68,8 @@ export const App = () => {
       {
         enr: enr,
         peerId: id,
-        multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
-        transport: 'wss',
+        multiaddr: new Multiaddr('/ip4/104.248.102.101/udp/0'),
+        transport: Capacitor.isNativePlatform() ? 'cap' : 'wss',
         proxyAddress: `ws://${proxy}`,
       },
       2n ** 256n
@@ -112,17 +118,44 @@ export const App = () => {
   }
 
   React.useEffect(() => {
-    portal?.on('NodeAdded', () => updateAddressBook())
     portal?.on('NodeRemoved', () => updateAddressBook())
     return () => {
       portal?.removeAllListeners()
     }
   }, [portal])
 
+  React.useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      // Automatically start the portal network node if on mobile since we have access to UDP
+      init()
+    }
+  }, [])
+
   async function handleClick() {
-    await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    let res
+    let errMessage
+    try {
+      res = await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    } catch (err) {
+      console.log(err)
+      if ((err as any).message.includes('verify enr signature')) {
+        errMessage = 'Invalid ENR'
+      }
+    }
     setPeerEnr('')
-    updateAddressBook()
+    if (res) updateAddressBook()
+    // Only rerender the address book if we actually got a response from the node
+    else {
+      if (!errMessage) {
+        errMessage = 'Node did not respond'
+      }
+      toast({
+        title: errMessage,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      })
+    }
   }
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {
@@ -169,18 +202,51 @@ export const App = () => {
   const invalidHash = /([^0-z])+/.test(contentKey)
 
   return (
-    <ChakraProvider theme={theme}>
-      <Box bg={'gray.200'}>
-        <HStack>
-          <Heading width={'80%'} size="xl" textAlign="start">
-            Ultralight Portal Network Explorer
-          </Heading>
-          <Button colorScheme={'facebook'} leftIcon={<FaTools />} width={'20%'} onClick={onOpen}>
-            Dev Tools
-          </Button>
-        </HStack>
-        <Divider />
-      </Box>{' '}
+    <>
+      <Center bg={'gray.200'}>
+        <Box w={['90%', '100%']} justifyContent={'center'}>
+          <HStack>
+            {Capacitor.isNativePlatform() ? (
+              <>
+                <Button
+                  // colorScheme={'facebook'}
+                  leftIcon={<HamburgerIcon />}
+                  // width={'20%'}
+                  // onClick={onOpen}
+                ></Button>
+                <VStack width={'80%'}>
+                  <Heading size={'2xl'} textAlign="start">
+                    Ultralight
+                  </Heading>
+                  <Heading size={'l'} textAlign="start">
+                    Portal Network Explorer
+                  </Heading>
+                </VStack>
+
+                <Button colorScheme={'facebook'} leftIcon={<FaTools />} onClick={onOpen}>
+                  {/* Dev Tools */}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button leftIcon={<HamburgerIcon />} />
+                <Heading width={'80%'} size="xl" textAlign="start">
+                  Ultralight Portal Network Explorer
+                </Heading>
+                <Button
+                  colorScheme={'facebook'}
+                  leftIcon={<FaTools />}
+                  width={'20%'}
+                  onClick={onOpen}
+                >
+                  Dev Tools
+                </Button>
+              </>
+            )}
+          </HStack>
+          <Divider />
+        </Box>{' '}
+      </Center>
       {portal && (
         <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
           <DrawerOverlay />
@@ -197,25 +263,31 @@ export const App = () => {
         </Drawer>
       )}
       {portal ? (
-        <Layout
-          copy={copy}
-          onOpen={onOpen}
-          enr={enr}
-          peerEnr={peerEnr}
-          setPeerEnr={setPeerEnr}
-          handleClick={handleClick}
-          invalidHash={invalidHash}
-          handleFindContent={handleFindContent}
-          contentKey={contentKey}
-          setContentKey={setContentKey}
-          findParent={findParent}
-          block={block}
-          peers={peers}
-          sortedDistList={sortedDistList}
-        />
+        <Box>
+          <Layout
+            copy={copy}
+            onOpen={onOpen}
+            enr={enr}
+            peerEnr={peerEnr}
+            setPeerEnr={setPeerEnr}
+            handleClick={handleClick}
+            invalidHash={invalidHash}
+            handleFindContent={handleFindContent}
+            contentKey={contentKey}
+            setContentKey={setContentKey}
+            findParent={findParent}
+            block={block}
+            peers={peers}
+            sortedDistList={sortedDistList}
+            capacitor={Capacitor}
+          />
+        </Box>
       ) : (
         <StartNode setProxy={setProxy} init={init} />
       )}
-    </ChakraProvider>
+      <Box pos={'fixed'} bottom={'0'}>
+        <Footer />
+      </Box>
+    </>
   )
 }
