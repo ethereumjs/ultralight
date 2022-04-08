@@ -17,7 +17,6 @@ import {
   HStack,
   Divider,
   Center,
-  MenuIcon,
   VStack,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
@@ -33,9 +32,8 @@ import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
-import { FaMobile, FaTools } from 'react-icons/fa'
+import { FaTools } from 'react-icons/fa'
 import { Capacitor } from '@capacitor/core'
-import { UDP } from '@frontall/capacitor-udp'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
 // export const lightblue = '#bee3f8'
@@ -126,6 +124,13 @@ export const App = () => {
     }
   }, [portal])
 
+  React.useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      // Automatically start the portal network node if on mobile since we have access to UDP
+      init()
+    }
+  }, [])
+
   async function handleClick() {
     await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
     setPeerEnr('')
@@ -189,10 +194,10 @@ export const App = () => {
                   // onClick={onOpen}
                 ></Button>
                 <VStack width={'80%'}>
-                  <Heading size={['2xl']} textAlign="start">
+                  <Heading size={'2xl'} textAlign="start">
                     Ultralight
                   </Heading>
-                  <Heading size={['l']} textAlign="start">
+                  <Heading size={'l'} textAlign="start">
                     Portal Network Explorer
                   </Heading>
                 </VStack>
