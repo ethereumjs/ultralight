@@ -20,7 +20,13 @@ The nice part of this for our purposes is that the React web app is the same cod
 - Run `npx cap sync android`
 - Run `npx cap run android` and select your device.  With any luck, the app should open on your device.
 
-## Local development/debugging
+## Debugging the mobile app
 
 There are a couple of ways to debug Android apps but far and away the easiest is:
  - Run `npx cap open android` from `[directory root]/packages/browser-client` and then select the "Run" tab on the very bottom left of the Android Studio UI and it wll show you all of the debug logs from the app.
+
+ ## Local development notes
+
+ Additional steps are needed to run a local testnet with the mobile client:
+ - Start the proxy with `node packages/proxy/dist/index.js --nat=ip --ip=[the local IP address for the PC the proxy is running on]`
+ - Run a browser client with `npm run start-browser-client` and enter the above IP address when the browser client starts
