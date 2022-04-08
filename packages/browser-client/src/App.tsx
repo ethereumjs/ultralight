@@ -1,6 +1,5 @@
 import * as React from 'react'
 import {
-  ChakraProvider,
   theme,
   useClipboard,
   Button,
@@ -137,7 +136,6 @@ export const App = () => {
     try {
       res = await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
     } catch (err) {
-      console.log(err)
       if ((err as any).message.includes('verify enr signature')) {
         errMessage = 'Invalid ENR'
       }

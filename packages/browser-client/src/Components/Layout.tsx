@@ -15,7 +15,6 @@ import {
   StackDivider,
   Center,
 } from '@chakra-ui/react'
-import Footer from './Footer'
 import React, { Dispatch, SetStateAction } from 'react'
 import { Block } from '@ethereumjs/block'
 import { ENR } from '@chainsafe/discv5'
@@ -84,7 +83,11 @@ export default function Layout(props: LayoutProps) {
           {native ? (
             <Center>
               <VStack>
-                <Button width={'100%'} onClick={props.handleClick}>
+                <Button
+                  isDisabled={!props.peerEnr.startsWith('enr:')}
+                  width={'100%'}
+                  onClick={props.handleClick}
+                >
                   Connect To Node
                 </Button>
                 <Input
