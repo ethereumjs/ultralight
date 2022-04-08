@@ -5,7 +5,7 @@ let config: CapacitorConfig;
 const baseConfig: CapacitorConfig = {
   appId: 'com.ultralight.app',
   appName: 'Ultralight',
-  webDir: 'build',
+  webDir: 'dist',
   bundledWebRuntime: false,
 };
 
