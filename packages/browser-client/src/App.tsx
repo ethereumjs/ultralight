@@ -18,6 +18,7 @@ import {
   Divider,
   Center,
   VStack,
+  useToast,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -54,7 +55,7 @@ export const App = () => {
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
   const { isOpen, onOpen, onClose } = useDisclosure()
-
+  const toast = useToast()
   const init = async () => {
     if (portal?.client.isStarted()) {
       await portal.stop()
@@ -131,10 +132,30 @@ export const App = () => {
   }, [])
 
   async function handleClick() {
-    const res = await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    let res
+    let errMessage
+    try {
+      res = await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    } catch (err) {
+      console.log(err)
+      if ((err as any).message.includes('verify enr signature')) {
+        errMessage = 'Invalid ENR'
+      }
+    }
     setPeerEnr('')
     if (res) updateAddressBook()
     // Only rerender the address book if we actually got a response from the node
+    else {
+      if (!errMessage) {
+        errMessage = 'Node did not respond'
+      }
+      toast({
+        title: errMessage,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      })
+    }
   }
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {
@@ -181,7 +202,7 @@ export const App = () => {
   const invalidHash = /([^0-z])+/.test(contentKey)
 
   return (
-    <ChakraProvider theme={theme}>
+    <>
       <Center bg={'gray.200'}>
         <Box w={['90%', '100%']} justifyContent={'center'}>
           <HStack>
@@ -266,7 +287,7 @@ export const App = () => {
       )}
       <Box pos={'fixed'} bottom={'0'}>
         <Footer />
-      </Box>{' '}
-    </ChakraProvider>
+      </Box>
+    </>
   )
 }
