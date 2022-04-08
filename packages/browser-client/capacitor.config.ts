@@ -1,14 +1,28 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
-const config: CapacitorConfig = {
+let config: CapacitorConfig;
+
+const baseConfig: CapacitorConfig = {
   appId: 'com.ultralight.app',
   appName: 'Ultralight',
-  webDir: 'public',
+  webDir: 'build',
   bundledWebRuntime: false,
-  server: {
-    url: 'http://[webpack dev server address]',
-    cleartext: true
-  }
 };
+
+switch (process.env.CAP_ENV) {
+  case 'liveReload':
+    config = {
+      ...baseConfig,
+      webDir: 'public',
+      server: {
+        url: 'http://[your webpack dev server address here]',
+        cleartext: true
+      }
+    };
+    break;
+  default:
+    config = baseConfig
+    break;
+}
 
 export default config;

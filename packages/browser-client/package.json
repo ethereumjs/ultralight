@@ -6,7 +6,8 @@
   "scripts": {
     "webpack": "webpack",
     "start": "HOST=0.0.0.0 webpack serve",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "mobile-dev": "CAP_ENV=liveReload npx cap run android",
+    "mobile-build": "npx cap run android"
   },
   "author": "",
   "license": "MIT",
