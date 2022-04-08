@@ -16,6 +16,9 @@ import {
   Heading,
   HStack,
   Divider,
+  Center,
+  MenuIcon,
+  VStack,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -30,9 +33,11 @@ import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
-import { FaTools } from 'react-icons/fa'
+import { FaMobile, FaTools } from 'react-icons/fa'
 import { Capacitor } from '@capacitor/core'
 import { UDP } from '@frontall/capacitor-udp'
+import { HamburgerIcon } from '@chakra-ui/icons'
+import Footer from './Components/Footer'
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
@@ -172,17 +177,50 @@ export const App = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      <Box bg={'gray.200'}>
-        <HStack>
-          <Heading width={'80%'} size="xl" textAlign="start">
-            Ultralight Portal Network Explorer
-          </Heading>
-          <Button colorScheme={'facebook'} leftIcon={<FaTools />} width={'20%'} onClick={onOpen}>
-            Dev Tools
-          </Button>
-        </HStack>
-        <Divider />
-      </Box>{' '}
+      <Center bg={'gray.200'}>
+        <Box w={['90%', '100%']} justifyContent={'center'}>
+          <HStack>
+            {Capacitor.isNativePlatform() ? (
+              <>
+                <Button
+                  // colorScheme={'facebook'}
+                  leftIcon={<HamburgerIcon />}
+                  // width={'20%'}
+                  // onClick={onOpen}
+                ></Button>
+                <VStack width={'80%'}>
+                  <Heading size={['2xl']} textAlign="start">
+                    Ultralight
+                  </Heading>
+                  <Heading size={['l']} textAlign="start">
+                    Portal Network Explorer
+                  </Heading>
+                </VStack>
+
+                <Button colorScheme={'facebook'} leftIcon={<FaTools />} onClick={onOpen}>
+                  {/* Dev Tools */}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button leftIcon={<HamburgerIcon />} />
+                <Heading width={'80%'} size="xl" textAlign="start">
+                  Ultralight Portal Network Explorer
+                </Heading>
+                <Button
+                  colorScheme={'facebook'}
+                  leftIcon={<FaTools />}
+                  width={'20%'}
+                  onClick={onOpen}
+                >
+                  Dev Tools
+                </Button>
+              </>
+            )}
+          </HStack>
+          <Divider />
+        </Box>{' '}
+      </Center>
       {portal && (
         <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
           <DrawerOverlay />
@@ -199,25 +237,31 @@ export const App = () => {
         </Drawer>
       )}
       {portal ? (
-        <Layout
-          copy={copy}
-          onOpen={onOpen}
-          enr={enr}
-          peerEnr={peerEnr}
-          setPeerEnr={setPeerEnr}
-          handleClick={handleClick}
-          invalidHash={invalidHash}
-          handleFindContent={handleFindContent}
-          contentKey={contentKey}
-          setContentKey={setContentKey}
-          findParent={findParent}
-          block={block}
-          peers={peers}
-          sortedDistList={sortedDistList}
-        />
+        <Box>
+          <Layout
+            copy={copy}
+            onOpen={onOpen}
+            enr={enr}
+            peerEnr={peerEnr}
+            setPeerEnr={setPeerEnr}
+            handleClick={handleClick}
+            invalidHash={invalidHash}
+            handleFindContent={handleFindContent}
+            contentKey={contentKey}
+            setContentKey={setContentKey}
+            findParent={findParent}
+            block={block}
+            peers={peers}
+            sortedDistList={sortedDistList}
+            capacitor={Capacitor}
+          />
+        </Box>
       ) : (
         <StartNode setProxy={setProxy} init={init} />
       )}
+      <Box pos={'fixed'} bottom={'0'}>
+        <Footer />
+      </Box>{' '}
     </ChakraProvider>
   )
 }
