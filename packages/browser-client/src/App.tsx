@@ -117,7 +117,6 @@ export const App = () => {
   }
 
   React.useEffect(() => {
-    portal?.on('NodeAdded', () => updateAddressBook())
     portal?.on('NodeRemoved', () => updateAddressBook())
     return () => {
       portal?.removeAllListeners()
@@ -132,9 +131,10 @@ export const App = () => {
   }, [])
 
   async function handleClick() {
-    await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+    const res = await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
     setPeerEnr('')
-    updateAddressBook()
+    if (res) updateAddressBook()
+    // Only rerender the address book if we actually got a response from the node
   }
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {

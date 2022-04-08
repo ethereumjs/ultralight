@@ -45,7 +45,7 @@ export default function Layout(props: LayoutProps) {
   const native = props.capacitor.isNativePlatform()
   return (
     <VStack spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
-      <Tabs width={'100%'} size={['sm']}>
+      <Tabs width={'100%'} size={'sm'}>
         <TabList style={{ scrollbarWidth: 'none' }} overflowX="auto">
           <Tab>History Network</Tab>
           <Tab isDisabled>
