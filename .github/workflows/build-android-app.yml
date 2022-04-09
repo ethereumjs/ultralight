@@ -1,5 +1,7 @@
 name: Build & Publish Release APK
 
+on: workflow_dispatch
+
 env:
   cwd: ${{github.workspace}}/packages/browser-client
 
