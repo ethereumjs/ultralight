@@ -1,0 +1,50 @@
+name: Build & Publish Release APK
+
+on: workflow_dispatch
+
+env:
+  cwd: ${{github.workspace}}/packages/browser-client
+
+defaults:
+  run:
+    working-directory: packages/browser-client
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  BuildAndroidAPK:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v2
+
+    - name: Use Node.js 16
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+        cache: 'npm'
+
+    - run: npm i
+      working-directory: ${{ github.workspace }}
+
+    - name: Sync android code
+      run: npx cap sync android
+
+    - name: setup jdk
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+
+    - name: Make Gradle executable
+      run: chmod +x ./android/gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+      working-directory: packages/browser-client/android
+    - name: Preserve apk
+      uses: actions/upload-artifact@v3
+      with:
+        name: ultralight
+        path: packages/browser-client/android/app/build/outputs/apk/debug/app-debug.apk
