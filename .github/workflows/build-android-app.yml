@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Gradle:
+  Build Android APK:
     runs-on: ubuntu-latest
     steps:
     - name: checkout code
@@ -39,7 +39,8 @@ jobs:
         cache: 'java'
 
     - name: Make Gradle executable
-      run: chmod +x ./packages/browser-client/android/gradlew
+      run: chmod +x ./android/gradlew
+
     - name: Build Release APK
       run: ./gradlew assembleRelease
       working-directory: packages/browser-client/android
