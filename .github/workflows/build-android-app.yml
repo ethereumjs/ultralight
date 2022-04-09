@@ -1,7 +1,5 @@
 name: Build & Publish Release APK
 
-on: push
-
 env:
   cwd: ${{github.workspace}}/packages/browser-client
 
