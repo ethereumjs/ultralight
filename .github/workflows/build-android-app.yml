@@ -15,7 +15,8 @@ jobs:
     - name: Make Gradle executable
       run: chmod +x ./packages/browser-client/android/gradlew
     - name: Build Release APK
-      run: ./packages/browser-client/android/gradlew assembleRelease
+      run: ./gradlew assembleRelease
+      working-directory: packages/browser-client/android
     - name: Preserve apk
       uses: actions/upload-artifact@v3
       with:
