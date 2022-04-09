@@ -40,8 +40,8 @@ jobs:
     - name: Make Gradle executable
       run: chmod +x ./android/gradlew
 
-    - name: Build Release APK
-      run: ./gradlew assembleRelease
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
       working-directory: packages/browser-client/android
     - name: Preserve apk
       uses: actions/upload-artifact@v3
