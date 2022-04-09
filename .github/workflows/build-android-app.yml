@@ -36,7 +36,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-        cache: 'java'
 
     - name: Make Gradle executable
       run: chmod +x ./android/gradlew
@@ -47,5 +46,5 @@ jobs:
     - name: Preserve apk
       uses: actions/upload-artifact@v3
       with:
-        name: ultralight.apk
-        path: packages/browser-client/android/app/build/outputs/apk/release/app-release-unsigned.apk
+        name: ultralight
+        path: packages/browser-client/android/app/build/outputs/apk/debug/app-debug.apk
