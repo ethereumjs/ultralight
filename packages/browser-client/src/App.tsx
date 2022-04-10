@@ -283,8 +283,10 @@ export const App = () => {
       ) : (
         <StartNode setProxy={setProxy} init={init} />
       )}
-      <Box pos={'fixed'} bottom={'0'}>
+      <Box width={'100%'} pos={'fixed'} bottom={'0'}>
+        <Center>
           <Footer />
+        </Center>
       </Box>
     </>
   )
