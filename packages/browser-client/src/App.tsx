@@ -252,7 +252,7 @@ export const App = () => {
             <DrawerCloseButton />
             <DrawerHeader>Dev Tools</DrawerHeader>
             <DrawerBody>
-              <DevTools portal={portal} peers={peers!} />
+              <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
             </DrawerBody>
             <DrawerFooter>
               <Button onClick={onClose}>CLOSE</Button>

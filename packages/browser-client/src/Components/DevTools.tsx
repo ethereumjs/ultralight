@@ -9,6 +9,8 @@ import {
   Box,
   VStack,
   Divider,
+  Center,
+  useToast,
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import React, { useState } from 'react'
@@ -17,6 +19,8 @@ import { ContentManager } from './ContentManager'
 interface DevToolsProps {
   portal: PortalNetwork
   peers: ENR[]
+  copy: () => Promise<void>
+  enr: string
 }
 
 export default function DevTools(props: DevToolsProps) {
@@ -27,6 +31,7 @@ export default function DevTools(props: DevToolsProps) {
   const [peer, setPeer] = useState(peers[0])
   const [distance, setDistance] = useState('')
   const [contentKey, setContentKey] = useState('')
+  const toast = useToast()
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, SubNetworkIds.HistoryNetwork)
   }
@@ -50,11 +55,50 @@ export default function DevTools(props: DevToolsProps) {
     })
     portal.sendOffer(nodeId, [encodedContentKey], SubNetworkIds.HistoryNetwork)
   }
+
+  async function handleCopy() {
+    await props.copy()
+    toast({
+      title: `ENR copied`,
+      status: 'success',
+      duration: 1500,
+      isClosable: true,
+      position: 'bottom-right',
+      variant: 'solid',
+    })
+  }
+
   return (
     <VStack>
-      <Heading size="sm">Manually Interact with Network</Heading>
-      <Divider />
+      <Button onClick={async () => handleCopy()} width={'100%'}>
+        COPY ENR
+      </Button>
       <ContentManager portal={portal} />
+      <Divider />
+      <Heading size="sm">Manually Interact with Network</Heading>
+      <Box overflow={'scroll'} paddingTop={1} border="solid black" h="200px" w="100%">
+        <Center>
+          <Heading size="xs">
+            Select Peer ({peers.indexOf(peer) + 1}/{peers.length})
+          </Heading>
+        </Center>
+        <Divider />
+        <Menu autoSelect>
+          <MenuOptionGroup fontSize={'xs'} onChange={(p) => setPeer(p as string)}>
+            {peers.map((_peer, idx) => (
+              <MenuItemOption
+                fontSize={'xs'}
+                paddingStart={0}
+                bgColor={peer === _peer ? 'lightblue' : 'white'}
+                key={idx}
+                value={_peer}
+              >
+                {_peer.slice(0, 25)}...
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </Menu>
+      </Box>
       <Divider />
       <Button size="sm" width="100%" onClick={() => handlePing(peer)}>
         Send Ping
@@ -78,27 +122,6 @@ export default function DevTools(props: DevToolsProps) {
       <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
         Send Offer
       </Button>
-      <Divider />
-      <Heading size="sm">
-        Select Peer ({peers.indexOf(peer) + 1}/{peers.length})
-      </Heading>
-      <Box overflow={'scroll'} paddingTop={1} border="solid black" h="150px" w="100%">
-        <Menu autoSelect>
-          <MenuOptionGroup fontSize={'xs'} onChange={(p) => setPeer(p as string)}>
-            {peers.map((_peer, idx) => (
-              <MenuItemOption
-                fontSize={'xs'}
-                paddingStart={0}
-                bgColor={peer === _peer ? 'lightblue' : 'white'}
-                key={idx}
-                value={_peer}
-              >
-                {_peer.slice(0, 25)}...
-              </MenuItemOption>
-            ))}
-          </MenuOptionGroup>
-        </Menu>
-      </Box>
       <Divider />
     </VStack>
   )

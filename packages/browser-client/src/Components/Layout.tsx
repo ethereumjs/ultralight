@@ -65,22 +65,9 @@ export default function Layout(props: LayoutProps) {
             <NotAllowedIcon />{' '}
           </Tab>
         </TabList>
-        {native && (
-          <Box shadow="md" width={`100%`} border={'1px'} borderColor="gray.200">
-            <Tooltip label="click to copy">
-              <Text
-                padding={2}
-                fontSize={'xs'}
-                onClick={props.copy}
-                wordBreak="break-all"
-                cursor="pointer"
-              >
-                {props.enr}
-              </Text>
-            </Tooltip>
-          </Box>
-        )}
         <VStack paddingTop={2} spacing={1} align="stretch">
+          <Divider />
+
           {native ? (
             <Center>
               <VStack>
