@@ -48,9 +48,9 @@ export const App = () => {
   const [id, setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
   const [contentKey, setContentKey] = React.useState<string>(
-    '0x7aaadeb8cf3e1dfda9f60fd41ea6204efa4cabcba89e61881ad475d50e63dfd0'
+    '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
-  const [proxy, setProxy] = React.useState('127.0.0.1:5050')
+  const [proxy, setProxy] = React.useState('164.92.251.230:5050')
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -252,7 +252,7 @@ export const App = () => {
             <DrawerCloseButton />
             <DrawerHeader>Dev Tools</DrawerHeader>
             <DrawerBody>
-              <DevTools portal={portal} peers={peers!} />
+              <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
             </DrawerBody>
             <DrawerFooter>
               <Button onClick={onClose}>CLOSE</Button>
@@ -283,8 +283,10 @@ export const App = () => {
       ) : (
         <StartNode setProxy={setProxy} init={init} />
       )}
-      <Box pos={'fixed'} bottom={'0'}>
-        <Footer />
+      <Box width={'100%'} pos={'fixed'} bottom={'0'}>
+        <Center>
+          <Footer />
+        </Center>
       </Box>
     </>
   )

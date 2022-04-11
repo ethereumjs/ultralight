@@ -16,7 +16,7 @@ export default function StartNode(props: StartNodeProps) {
           }}
           textAlign="center"
           bg="whiteAlpha.800"
-          defaultValue={'127.0.0.1:5050'}
+          defaultValue={'ultralight.ethdevops.io'}
           placeholder="Proxy IP Address"
         />
         <Center>

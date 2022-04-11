@@ -21,6 +21,7 @@ import { ENR } from '@chainsafe/discv5'
 import HistoryNetwork from './HistoryNetwork'
 import { ArrowLeftIcon, ArrowRightIcon, NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
+import Bootnode from './Bootnode'
 
 interface LayoutProps {
   copy: () => Promise<void>
@@ -64,22 +65,9 @@ export default function Layout(props: LayoutProps) {
             <NotAllowedIcon />{' '}
           </Tab>
         </TabList>
-        {native && (
-          <Box shadow="md" width={`100%`} border={'1px'} borderColor="gray.200">
-            <Tooltip label="click to copy">
-              <Text
-                padding={2}
-                fontSize={'xs'}
-                onClick={props.copy}
-                wordBreak="break-all"
-                cursor="pointer"
-              >
-                {props.enr}
-              </Text>
-            </Tooltip>
-          </Box>
-        )}
         <VStack paddingTop={2} spacing={1} align="stretch">
+          <Divider />
+
           {native ? (
             <Center>
               <VStack>
@@ -97,6 +85,7 @@ export default function Layout(props: LayoutProps) {
                   placeholder={'Node ENR'}
                   onChange={(evt) => props.setPeerEnr(evt.target.value)}
                 />
+                <Bootnode handleClick={props.handleClick} setPeerEnr={props.setPeerEnr} />
               </VStack>
             </Center>
           ) : (
@@ -114,37 +103,7 @@ export default function Layout(props: LayoutProps) {
             </HStack>
           )}
           <Divider />
-          {native || (
-            <HStack>
-              <Center>
-                <Box
-                  shadow="md"
-                  width={native ? '25%' : '45%'}
-                  border={'1px'}
-                  borderColor="gray.200"
-                >
-                  <Tooltip label="click to copy">
-                    <Text
-                      padding={2}
-                      fontSize={'xs'}
-                      onClick={props.copy}
-                      wordBreak="break-all"
-                      cursor="pointer"
-                    >
-                      {props.enr}
-                    </Text>
-                  </Tooltip>
-                </Box>
-                <ArrowLeftIcon width={'10%'} />
-                <Box width={native ? '25%' : '45%'}>
-                  <Text fontSize={'xs'}>
-                    This is the ENR (Ethereum Node Record) for this Portal Network node. To connect
-                    to a network, enter a Bootnode ENR above.
-                  </Text>
-                </Box>
-              </Center>
-            </HStack>
-          )}
+          {native || <Bootnode handleClick={props.handleClick} setPeerEnr={props.setPeerEnr} />}
         </VStack>
         {props.peers && props.peers.length > 0 && (
           <TabPanels>
