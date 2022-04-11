@@ -50,7 +50,7 @@ export const App = () => {
   const [contentKey, setContentKey] = React.useState<string>(
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
-  const [proxy, setProxy] = React.useState('164.92.251.230:5050')
+  const [proxy, setProxy] = React.useState('ultralight.ethdevops.io')
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -84,7 +84,6 @@ export const App = () => {
       setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
     )
     await node.start()
-
     node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
   }
 
