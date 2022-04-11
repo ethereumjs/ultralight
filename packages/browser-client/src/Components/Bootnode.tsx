@@ -21,7 +21,7 @@ export default function Bootnode(props: BootnodeProps) {
 
   return (
     <ButtonGroup justifyContent={'space-around'}>
-      {Object.entries(bootnodes).map(([name, enr], idx) => {
+      {Object.entries(bootnodes).map(([name, enr]) => {
         return (
           <Button
             key={name}
