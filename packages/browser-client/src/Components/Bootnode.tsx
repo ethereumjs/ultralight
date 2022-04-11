@@ -19,11 +19,6 @@ export default function Bootnode(props: BootnodeProps) {
       'enr:-IS4QHA1PJCdmESyKkQsBmMUhSkRDgwKjwTtPZYMcbMiqCb8I1Xt-Xyh9Nj0yWeIN4S3sOpP9nxI6qCCR1Nf4LjY0IABgmlkgnY0gmlwhEFsKq6Jc2VjcDI1NmsxoQLMWRNAgXVdGc0Ij9RZCPsIyrrL67eYfE9PPwqwRvmZooN1ZHCCI44',
   }
 
-  function handleClick(enr: string) {
-    props.setPeerEnr(enr)
-    props.handleClick()
-  }
-
   return (
     <ButtonGroup justifyContent={'space-around'}>
       {Object.entries(bootnodes).map(([name, enr], idx) => {
