@@ -123,10 +123,7 @@ export const App = () => {
   }, [portal])
 
   React.useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      // Automatically start the portal network node if on mobile since we have access to UDP
-      init()
-    }
+    init()
   }, [])
 
   async function handleClick() {
