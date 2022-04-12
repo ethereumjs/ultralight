@@ -19,6 +19,7 @@ import {
   Modal,
   ModalOverlay,
   ModalContent,
+  Divider,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -231,6 +232,9 @@ export const App = () => {
             <Button w="100%" mb="5px" onClick={openInfoMenu}>
               More Info
             </Button>
+            <Divider my="10px" />
+            <StartNode setProxy={setProxy} init={init} />
+            <Divider my="10px" />
             <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
           </DrawerBody>
           <DrawerFooter>
@@ -238,29 +242,25 @@ export const App = () => {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-      {portal ? (
-        <Box>
-          <Layout
-            copy={copy}
-            onOpen={onOpen}
-            enr={enr}
-            peerEnr={peerEnr}
-            setPeerEnr={setPeerEnr}
-            handleClick={handleClick}
-            invalidHash={invalidHash}
-            handleFindContent={handleFindContent}
-            contentKey={contentKey}
-            setContentKey={setContentKey}
-            findParent={findParent}
-            block={block}
-            peers={peers}
-            sortedDistList={sortedDistList}
-            capacitor={Capacitor}
-          />
-        </Box>
-      ) : (
-        <StartNode setProxy={setProxy} init={init} />
-      )}
+      <Box>
+        <Layout
+          copy={copy}
+          onOpen={onOpen}
+          enr={enr}
+          peerEnr={peerEnr}
+          setPeerEnr={setPeerEnr}
+          handleClick={handleClick}
+          invalidHash={invalidHash}
+          handleFindContent={handleFindContent}
+          contentKey={contentKey}
+          setContentKey={setContentKey}
+          findParent={findParent}
+          block={block}
+          peers={peers}
+          sortedDistList={sortedDistList}
+          capacitor={Capacitor}
+        />
+      </Box>
       <Box width={'100%'} pos={'fixed'} bottom={'0'}>
         <Center>
           <Footer />

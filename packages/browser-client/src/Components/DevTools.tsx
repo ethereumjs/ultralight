@@ -69,13 +69,14 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   return (
-    <VStack>
+    <VStack mt="10px">
+      <Heading size="sm">Network Tools</Heading>
       <Button isDisabled={!portal} onClick={async () => handleCopy()} width={'100%'}>
         COPY ENR
       </Button>
       <ContentManager portal={portal} />
       <Divider />
-      <Heading size="sm">Manually Interact with Network</Heading>
+      <Heading size="sm">Peer Tools</Heading>
       <Box overflow={'scroll'} paddingTop={1} border="solid black" h="200px" w="100%">
         <Center>
           <Heading size="xs">
