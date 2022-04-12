@@ -13,12 +13,12 @@ import {
   DrawerFooter,
   Box,
   Heading,
-  HStack,
-  Divider,
   Center,
   VStack,
   useToast,
-  Text,
+  Modal,
+  ModalOverlay,
+  ModalContent,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -33,7 +33,6 @@ import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
-import { FaTools } from 'react-icons/fa'
 import { Capacitor } from '@capacitor/core'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
@@ -54,11 +53,11 @@ export const App = () => {
   )
   const [proxy, setProxy] = React.useState('164.92.251.230:5050')
   const [block, setBlock] = React.useState<Block>()
-  const [topic, setTopic] = React.useState<string>('?')
   const { onCopy } = useClipboard(enr)
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
   const toast = useToast()
+  const [modalStatus, setModal] = React.useState(false)
   const init = async () => {
     if (portal?.client.isStarted()) {
       await portal.stop()
@@ -206,77 +205,39 @@ export const App = () => {
   return (
     <>
       <Center bg={'gray.200'}>
-        <Box w={['90%', '100%']} justifyContent={'center'}>
-          {Capacitor.isNativePlatform() ? (
-            <HStack>
-              <Button
-                // colorScheme={'facebook'}
-                leftIcon={<HamburgerIcon />}
-                // width={'20%'}
-                onClick={disclosure.onOpen}
-              ></Button>
-              <VStack width={'80%'}>
-                <Heading size={'2xl'} textAlign="start">
-                  Ultralight
-                </Heading>
-                <Heading size={'l'} textAlign="start">
-                  Portal Network Explorer
-                </Heading>
-              </VStack>
-
-              <Button colorScheme={'facebook'} leftIcon={<FaTools />} onClick={onOpen}>
-                {/* Dev Tools */}
-              </Button>
-            </HStack>
-          ) : (
-            <HStack>
-              <Button
-                border={'1px'}
-                width={'20%'}
-                leftIcon={<HamburgerIcon />}
-                onClick={disclosure.onOpen}
-              />
-              <VStack width={'80%'}>
-                <Heading size={'2xl'} textAlign="start">
-                  Ultralight
-                </Heading>
-                <Heading size={'l'} textAlign="start">
-                  Portal Network Explorer
-                </Heading>
-              </VStack>
-              <Button border={'1px'} width={'20%'} onClick={onOpen}>
-                <VStack>
-                  <FaTools />
-                  <Text fontSize="0.5rem">Dev Tools</Text>
-                </VStack>
-              </Button>
-            </HStack>
-          )}
-          <Divider />
-        </Box>{' '}
+        <VStack width={'80%'}>
+          <Heading size={'2xl'} textAlign="start">
+            Ultralight
+          </Heading>
+          <Heading size={'l'} textAlign="start">
+            Portal Network Explorer
+          </Heading>
+        </VStack>
       </Center>
-      {portal && (
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-          <DrawerOverlay />
-          <DrawerContent>
-            <DrawerCloseButton />
-            <DrawerHeader>Dev Tools</DrawerHeader>
-            <DrawerBody>
-              <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
-            </DrawerBody>
-            <DrawerFooter>
-              <Button onClick={onClose}>CLOSE</Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      )}
-      <Drawer isOpen={disclosure.isOpen} placement="left" onClose={disclosure.onClose}>
+      <Button
+        position="fixed"
+        top="5"
+        right="5"
+        leftIcon={<HamburgerIcon />}
+        onClick={disclosure.onOpen}
+      ></Button>
+      <Drawer isOpen={disclosure.isOpen} placement="right" onClose={disclosure.onClose}>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>Ultralight</DrawerHeader>
           <DrawerBody>
-            <InfoMenu />{' '}
+            <Button
+              w="100%"
+              onClick={() => {
+                setModal(true)
+                disclosure.onClose()
+              }}
+              mb="5px"
+            >
+              More Info
+            </Button>
+            <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
           </DrawerBody>
           <DrawerFooter>
             <Button onClick={disclosure.onClose}>CLOSE</Button>
@@ -311,6 +272,12 @@ export const App = () => {
           <Footer />
         </Center>
       </Box>
+      <Modal isOpen={modalStatus} onClose={() => setModal(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <InfoMenu />
+        </ModalContent>
+      </Modal>
     </>
   )
 }

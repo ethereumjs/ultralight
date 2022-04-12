@@ -4,7 +4,7 @@ import React from 'react'
 import { distance } from '@chainsafe/discv5'
 
 interface ContentManagerProps {
-  portal: PortalNetwork
+  portal: PortalNetwork | undefined
 }
 export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
   const handleUpload = async (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +50,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
   }
 
   return (
-    <Button width={'100%'} onClick={handleClick}>
+    <Button isDisabled={!portal} width={'100%'} onClick={handleClick}>
       Load Blocks from File
     </Button>
   )

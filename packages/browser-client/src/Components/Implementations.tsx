@@ -1,16 +1,4 @@
-import {
-  Heading,
-  Link,
-  Table,
-  TableCaption,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  VStack,
-} from '@chakra-ui/react'
+import { Link, Table, Tbody, Td, Text, Th, Tr, VStack } from '@chakra-ui/react'
 import React from 'react'
 import { FaGithub } from 'react-icons/fa'
 
