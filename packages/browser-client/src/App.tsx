@@ -127,10 +127,7 @@ export const App = () => {
   }, [portal])
 
   React.useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      // Automatically start the portal network node if on mobile since we have access to UDP
-      init()
-    }
+    init()
   }, [])
 
   async function handleClick() {
@@ -195,11 +192,15 @@ export const App = () => {
   }
 
   async function findParent(hash: string) {
-    await setContentKey(hash)
-    await handleFindContent(hash)
+    setContentKey(hash)
+    handleFindContent(hash)
     portal?.logger('Showing Block')
   }
 
+  const openInfoMenu = () => {
+    setModal(true)
+    disclosure.onClose()
+  }
   const invalidHash = /([^0-z])+/.test(contentKey)
 
   return (
@@ -227,14 +228,7 @@ export const App = () => {
           <DrawerCloseButton />
           <DrawerHeader>Ultralight</DrawerHeader>
           <DrawerBody>
-            <Button
-              w="100%"
-              onClick={() => {
-                setModal(true)
-                disclosure.onClose()
-              }}
-              mb="5px"
-            >
+            <Button w="100%" mb="5px" onClick={openInfoMenu}>
               More Info
             </Button>
             <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
