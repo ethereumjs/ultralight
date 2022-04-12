@@ -19,7 +19,9 @@ export default function StartNode(props: StartNodeProps) {
         defaultValue={'ultralight.ethdevops.io'}
         placeholder="Proxy IP Address"
       />
-      <Button onClick={props.init}>Connect to Proxy</Button>
+      <Button width={'100%'} onClick={props.init}>
+        Connect to Proxy
+      </Button>
     </VStack>
   )
 }
