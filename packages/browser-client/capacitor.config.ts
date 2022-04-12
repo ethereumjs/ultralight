@@ -15,7 +15,7 @@ switch (process.env.CAP_ENV) {
       ...baseConfig,
       webDir: 'public',
       server: {
-        url: 'http://[your webpack dev server address here]',
+        url: 'http://192.168.0.194:8080',
         cleartext: true
       }
     };

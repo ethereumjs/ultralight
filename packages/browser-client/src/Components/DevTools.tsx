@@ -17,7 +17,7 @@ import React, { useState } from 'react'
 import { ContentManager } from './ContentManager'
 
 interface DevToolsProps {
-  portal: PortalNetwork
+  portal: PortalNetwork | undefined
   peers: ENR[]
   copy: () => Promise<void>
   enr: string
@@ -33,11 +33,11 @@ export default function DevTools(props: DevToolsProps) {
   const [contentKey, setContentKey] = useState('')
   const toast = useToast()
   const handlePing = (nodeId: string) => {
-    portal.sendPing(nodeId, SubNetworkIds.HistoryNetwork)
+    portal?.sendPing(nodeId, SubNetworkIds.HistoryNetwork)
   }
 
   const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(
+    portal?.sendFindNodes(
       nodeId,
       Uint16Array.from([parseInt(distance)]),
       SubNetworkIds.HistoryNetwork
@@ -53,7 +53,7 @@ export default function DevTools(props: DevToolsProps) {
       selector: 0,
       value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), 'hex') },
     })
-    portal.sendOffer(nodeId, [encodedContentKey], SubNetworkIds.HistoryNetwork)
+    portal?.sendOffer(nodeId, [encodedContentKey], SubNetworkIds.HistoryNetwork)
   }
 
   async function handleCopy() {
@@ -69,13 +69,14 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   return (
-    <VStack>
-      <Button onClick={async () => handleCopy()} width={'100%'}>
+    <VStack mt="10px">
+      <Heading size="sm">Network Tools</Heading>
+      <Button isDisabled={!portal} onClick={async () => handleCopy()} width={'100%'}>
         COPY ENR
       </Button>
       <ContentManager portal={portal} />
       <Divider />
-      <Heading size="sm">Manually Interact with Network</Heading>
+      <Heading size="sm">Peer Tools</Heading>
       <Box overflow={'scroll'} paddingTop={1} border="solid black" h="200px" w="100%">
         <Center>
           <Heading size="xs">
@@ -100,7 +101,7 @@ export default function DevTools(props: DevToolsProps) {
         </Menu>
       </Box>
       <Divider />
-      <Button size="sm" width="100%" onClick={() => handlePing(peer)}>
+      <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handlePing(peer)}>
         Send Ping
       </Button>
       <Divider />
@@ -110,7 +111,7 @@ export default function DevTools(props: DevToolsProps) {
           setDistance(evt.target.value)
         }}
       />
-      <Button size="sm" width="100%" onClick={() => handleFindNodes(peer)}>
+      <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handleFindNodes(peer)}>
         Request Nodes from Peer
       </Button>
       <Divider />
@@ -119,7 +120,7 @@ export default function DevTools(props: DevToolsProps) {
         placeholder="Content Key"
         onChange={(evt) => setContentKey(evt.target.value)}
       />
-      <Button width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
+      <Button isDisabled={!portal} width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
         Send Offer
       </Button>
       <Divider />
