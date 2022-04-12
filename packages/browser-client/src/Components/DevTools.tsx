@@ -13,6 +13,7 @@ import {
 import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useState } from 'react'
 import { ContentManager } from './ContentManager'
+import { Share } from '@capacitor/share'
 
 interface DevToolsProps {
   portal: PortalNetwork | undefined
@@ -27,15 +28,23 @@ interface DevToolsProps {
 
 export default function DevTools(props: DevToolsProps) {
   const portal = props.portal
+  const [canShare, setCanShare] = useState(false)
   const peers = props.peers.map((p) => {
     return p.nodeId
   })
-  const [peer, setPeer] = useState(peers[0])
+  const [peer, _setPeer] = useState(peers[0])
   const [distance, setDistance] = useState('')
   const [contentKey, setContentKey] = useState('')
   const toast = useToast()
   const handlePing = (nodeId: string) => {
     portal?.sendPing(nodeId, SubNetworkIds.HistoryNetwork)
+  }
+  async function share() {
+    await Share.share({
+      title: `Ultralight ENR`,
+      text: props.enr,
+      dialogTitle: `Share ENR`,
+    })
   }
 
   const handleFindNodes = (nodeId: string) => {
@@ -70,12 +79,26 @@ export default function DevTools(props: DevToolsProps) {
     })
   }
 
+  async function sharing() {
+    const s = await Share.canShare()
+    setCanShare(s.value)
+  }
+
+  React.useEffect(() => {
+    sharing()
+  }, [])
+
   return (
-    <VStack mt="10px">
-      <Heading size="sm">Network Tools</Heading>
-      <Button isDisabled={!portal} onClick={async () => handleCopy()} width={'100%'}>
-        COPY ENR
-      </Button>
+    <VStack>
+      {canShare ? (
+        <Button width={`100%`} onClick={share}>
+          SHARE ENR
+        </Button>
+      ) : (
+        <Button onClick={async () => handleCopy()} width={'100%'}>
+          COPY ENR
+        </Button>
+      )}
       <ContentManager portal={portal} />
 
       {props.native ? (
@@ -121,7 +144,7 @@ export default function DevTools(props: DevToolsProps) {
         </Center>
         <Divider />
         <Select>
-          {peers.map((_peer, idx) => (
+          {peers.map((_peer) => (
             <option value={_peer}>{_peer.slice(0, 25)}...</option>
           ))}
         </Select>
