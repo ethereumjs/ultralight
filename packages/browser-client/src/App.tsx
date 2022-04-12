@@ -18,6 +18,7 @@ import {
   Center,
   VStack,
   useToast,
+  Text,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -36,6 +37,7 @@ import { FaTools } from 'react-icons/fa'
 import { Capacitor } from '@capacitor/core'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
+import InfoMenu from './Components/InfoMenu'
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
@@ -52,8 +54,10 @@ export const App = () => {
   )
   const [proxy, setProxy] = React.useState('164.92.251.230:5050')
   const [block, setBlock] = React.useState<Block>()
+  const [topic, setTopic] = React.useState<string>('?')
   const { onCopy } = useClipboard(enr)
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const disclosure = useDisclosure()
   const toast = useToast()
   const init = async () => {
     if (portal?.client.isStarted()) {
@@ -203,45 +207,51 @@ export const App = () => {
     <>
       <Center bg={'gray.200'}>
         <Box w={['90%', '100%']} justifyContent={'center'}>
-          <HStack>
-            {Capacitor.isNativePlatform() ? (
-              <>
-                <Button
-                  // colorScheme={'facebook'}
-                  leftIcon={<HamburgerIcon />}
-                  // width={'20%'}
-                  // onClick={onOpen}
-                ></Button>
-                <VStack width={'80%'}>
-                  <Heading size={'2xl'} textAlign="start">
-                    Ultralight
-                  </Heading>
-                  <Heading size={'l'} textAlign="start">
-                    Portal Network Explorer
-                  </Heading>
-                </VStack>
-
-                <Button colorScheme={'facebook'} leftIcon={<FaTools />} onClick={onOpen}>
-                  {/* Dev Tools */}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button leftIcon={<HamburgerIcon />} />
-                <Heading width={'80%'} size="xl" textAlign="start">
-                  Ultralight Portal Network Explorer
+          {Capacitor.isNativePlatform() ? (
+            <HStack>
+              <Button
+                // colorScheme={'facebook'}
+                leftIcon={<HamburgerIcon />}
+                // width={'20%'}
+                onClick={disclosure.onOpen}
+              ></Button>
+              <VStack width={'80%'}>
+                <Heading size={'2xl'} textAlign="start">
+                  Ultralight
                 </Heading>
-                <Button
-                  colorScheme={'facebook'}
-                  leftIcon={<FaTools />}
-                  width={'20%'}
-                  onClick={onOpen}
-                >
-                  Dev Tools
-                </Button>
-              </>
-            )}
-          </HStack>
+                <Heading size={'l'} textAlign="start">
+                  Portal Network Explorer
+                </Heading>
+              </VStack>
+
+              <Button colorScheme={'facebook'} leftIcon={<FaTools />} onClick={onOpen}>
+                {/* Dev Tools */}
+              </Button>
+            </HStack>
+          ) : (
+            <HStack>
+              <Button
+                border={'1px'}
+                width={'20%'}
+                leftIcon={<HamburgerIcon />}
+                onClick={disclosure.onOpen}
+              />
+              <VStack width={'80%'}>
+                <Heading size={'2xl'} textAlign="start">
+                  Ultralight
+                </Heading>
+                <Heading size={'l'} textAlign="start">
+                  Portal Network Explorer
+                </Heading>
+              </VStack>
+              <Button border={'1px'} width={'20%'} onClick={onOpen}>
+                <VStack>
+                  <FaTools />
+                  <Text fontSize="0.5rem">Dev Tools</Text>
+                </VStack>
+              </Button>
+            </HStack>
+          )}
           <Divider />
         </Box>{' '}
       </Center>
@@ -260,6 +270,19 @@ export const App = () => {
           </DrawerContent>
         </Drawer>
       )}
+      <Drawer isOpen={disclosure.isOpen} placement="left" onClose={disclosure.onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>Ultralight</DrawerHeader>
+          <DrawerBody>
+            <InfoMenu />{' '}
+          </DrawerBody>
+          <DrawerFooter>
+            <Button onClick={disclosure.onClose}>CLOSE</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
       {portal ? (
         <Box>
           <Layout
