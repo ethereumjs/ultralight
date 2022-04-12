@@ -13,8 +13,9 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ContentManager } from './ContentManager'
+import { Share } from '@capacitor/share'
 
 interface DevToolsProps {
   portal: PortalNetwork
@@ -25,6 +26,7 @@ interface DevToolsProps {
 
 export default function DevTools(props: DevToolsProps) {
   const portal = props.portal
+  const [canShare, setCanShare] = useState(false)
   const peers = props.peers.map((p) => {
     return p.nodeId
   })
@@ -34,6 +36,13 @@ export default function DevTools(props: DevToolsProps) {
   const toast = useToast()
   const handlePing = (nodeId: string) => {
     portal.sendPing(nodeId, SubNetworkIds.HistoryNetwork)
+  }
+  async function share() {
+    await Share.share({
+      title: `Ultralight ENR`,
+      text: props.enr,
+      dialogTitle: `Share ENR`,
+    })
   }
 
   const handleFindNodes = (nodeId: string) => {
@@ -68,11 +77,26 @@ export default function DevTools(props: DevToolsProps) {
     })
   }
 
+  async function sharing() {
+    const s = await Share.canShare()
+    setCanShare(s.value)
+  }
+
+  useEffect(() => {
+    sharing()
+  }, [])
+
   return (
     <VStack>
-      <Button onClick={async () => handleCopy()} width={'100%'}>
-        COPY ENR
-      </Button>
+      {canShare ? (
+        <Button width={`100%`} onClick={share}>
+          SHARE ENR
+        </Button>
+      ) : (
+        <Button onClick={async () => handleCopy()} width={'100%'}>
+          COPY ENR
+        </Button>
+      )}
       <ContentManager portal={portal} />
       <Divider />
       <Heading size="sm">Manually Interact with Network</Heading>
