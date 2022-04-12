@@ -11,7 +11,7 @@ import {
   Tabs,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import DisplayBlock from './DisplayBlock'
 import RoutingTableView from './RoutingTableView'
 
@@ -28,20 +28,37 @@ interface HistoryNetworkProps {
 
 export default function HistoryNetwork(props: HistoryNetworkProps) {
   const [tabIndex, setTabIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   function handleTabsChange(index: number) {
     setTabIndex(index)
   }
 
   async function handleClick() {
+    setIsLoading(true)
     await props.handleFindContent(props.contentKey)
     setTabIndex(1)
+    setIsLoading(false)
   }
+
+  async function findParent(hash: string) {
+    setIsLoading(true)
+    await props.findParent(hash)
+  }
+
+  useEffect(() => {
+    setIsLoading(false)
+  }, [props.block])
 
   return (
     <>
       <HStack>
-        <Button width={'100%'} disabled={props.invalidHash} onClick={async () => handleClick()}>
+        <Button
+          isLoading={isLoading}
+          width={'100%'}
+          disabled={props.invalidHash}
+          onClick={async () => handleClick()}
+        >
           Get Block by Blockhash
         </Button>
         <FormControl isInvalid={props.invalidHash}>
@@ -65,7 +82,9 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
             <RoutingTableView peers={props.peers} sortedDistList={props.sortedDistList} />
           </TabPanel>
           <TabPanel>
-            {props.block && <DisplayBlock findParent={props.findParent} block={props.block!} />}
+            {props.block && (
+              <DisplayBlock isLoading={isLoading} findParent={findParent} block={props.block!} />
+            )}
           </TabPanel>
         </TabPanels>
       </Tabs>

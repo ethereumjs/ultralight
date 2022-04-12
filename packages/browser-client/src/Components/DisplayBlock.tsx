@@ -12,15 +12,18 @@ import {
   GridItem,
   Link,
   Center,
+  Skeleton,
+  HStack,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { getHistoryNetworkContentId } from 'portalnetwork'
 import SelectTx from './SelectTx'
-import React from 'react'
+import React, { useState } from 'react'
 
 interface DisplayBlockProps {
   block: Block
   findParent: (hash: string) => Promise<void>
+  isLoading: boolean
 }
 
 export default function DisplayBlock(props: DisplayBlockProps) {
@@ -32,7 +35,10 @@ export default function DisplayBlock(props: DisplayBlockProps) {
   return (
     <Box>
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
-        Block #{props.block.header.number.toNumber()}
+        <HStack justifyContent={'center'}>
+          <span>Block #</span>
+          <Skeleton isLoaded={!props.isLoading}>{props.block.header.number.toNumber()}</Skeleton>
+        </HStack>
       </Heading>
       <Grid templateColumns={'repeat(16, 1fr'} columnGap={1}>
         <GridItem colSpan={4}>
@@ -44,9 +50,11 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           <CopyIcon marginEnd={2} />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
-            {headerlookupKey}
-          </Text>
+          <Skeleton isLoaded={!props.isLoading}>
+            <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
+              {headerlookupKey}
+            </Text>
+          </Skeleton>
         </GridItem>
         <GridItem colSpan={4}>
           <Text fontSize="xs" textAlign={'start'}>
@@ -57,9 +65,11 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           <CopyIcon marginEnd={2} />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
-            {bodylookupKey}
-          </Text>
+          <Skeleton isLoaded={!props.isLoading}>
+            <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
+              {bodylookupKey}
+            </Text>
+          </Skeleton>
         </GridItem>
       </Grid>
       <Tabs>
@@ -87,13 +97,15 @@ export default function DisplayBlock(props: DisplayBlockProps) {
                         wordBreak={'break-all'}
                         colSpan={6}
                       >
-                        {idx === 0 ? (
-                          <Link color={'blue'} onClick={() => props.findParent(key[1])}>
-                            {key[1]}
-                          </Link>
-                        ) : (
-                          <>{key[1]}</>
-                        )}
+                        <Skeleton isLoaded={!props.isLoading}>
+                          {idx === 0 ? (
+                            <Link color={'blue'} onClick={() => props.findParent(key[1])}>
+                              {key[1]}
+                            </Link>
+                          ) : (
+                            <>{key[1]}</>
+                          )}
+                        </Skeleton>
                       </GridItem>
                       <GridItem colSpan={1}> </GridItem>
                     </>
@@ -104,7 +116,9 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
           <TabPanel>Uncles</TabPanel>
           <TabPanel>
-            <Text wordBreak={'break-all'}>{JSON.stringify(props.block.header.toJSON())}</Text>
+            <Skeleton isLoaded={!props.isLoading}>
+              <Text wordBreak={'break-all'}>{JSON.stringify(props.block.header.toJSON())}</Text>
+            </Skeleton>
           </TabPanel>
         </TabPanels>
       </Tabs>
