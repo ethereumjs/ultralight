@@ -40,7 +40,7 @@ export default function Implementations() {
           </Tr>
           {imps.map((imp) => {
             return (
-              <Tr fontSize={'x-small'}>
+              <Tr key={imp[0]} fontSize={'x-small'}>
                 <Td padding={0} fontSize={'x-small'}>
                   {imp[0]}
                 </Td>

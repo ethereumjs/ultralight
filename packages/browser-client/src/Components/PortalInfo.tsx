@@ -74,7 +74,7 @@ export default function PortalInfo() {
       </Center>
       {Object.entries(blurbs).map(([topic, blurb]) => {
         return (
-          <AccordionItem padding={0}>
+          <AccordionItem key={topic} padding={0}>
             <AccordionButton padding={0}>
               <Box fontSize={'x-small'}>{topic}</Box>
               <AccordionIcon />
@@ -82,7 +82,11 @@ export default function PortalInfo() {
             <AccordionPanel>
               <VStack>
                 {blurb.map((t) => {
-                  return <Text fontSize={'x-small'}>{t}</Text>
+                  return (
+                    <Text key={t} fontSize={'x-small'}>
+                      {t}
+                    </Text>
+                  )
                 })}
               </VStack>
             </AccordionPanel>

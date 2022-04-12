@@ -19,16 +19,16 @@ export default function InfoMenu() {
     <Accordion allowToggle allowMultiple size={'sm'}>
       {topics.map((topic, idx) => {
         return (
-          <>
+          <React.Fragment key={topic + idx}>
             <AccordionItem>
               <AccordionButton>
                 {topic}
                 <AccordionIcon />
               </AccordionButton>
-              <AccordionPanel>{contents[idx] ?? <></>}</AccordionPanel>
+              <AccordionPanel>{contents[idx]}</AccordionPanel>
             </AccordionItem>
             <Divider />
-          </>
+          </React.Fragment>
         )
       })}
     </Accordion>
