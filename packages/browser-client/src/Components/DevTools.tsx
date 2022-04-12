@@ -2,18 +2,16 @@ import { ENR } from '@chainsafe/discv5'
 import {
   Input,
   Heading,
-  Menu,
-  MenuOptionGroup,
-  MenuItemOption,
   Button,
   Box,
   VStack,
   Divider,
   Center,
   useToast,
+  Select,
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
-import React, { useState } from 'react'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 import { ContentManager } from './ContentManager'
 
 interface DevToolsProps {
@@ -21,6 +19,10 @@ interface DevToolsProps {
   peers: ENR[]
   copy: () => Promise<void>
   enr: string
+  peerEnr: string
+  setPeerEnr: Dispatch<SetStateAction<string>>
+  handleClick: () => Promise<void>
+  native: boolean
 }
 
 export default function DevTools(props: DevToolsProps) {
@@ -75,30 +77,56 @@ export default function DevTools(props: DevToolsProps) {
         COPY ENR
       </Button>
       <ContentManager portal={portal} />
+
+      {props.native ? (
+        <Center>
+          <VStack>
+            <Button
+              isDisabled={!props.peerEnr.startsWith('enr:')}
+              width={'100%'}
+              onClick={props.handleClick}
+            >
+              Connect To Node
+            </Button>
+            <Input
+              width={'100%'}
+              bg="whiteAlpha.800"
+              value={props.peerEnr}
+              placeholder={'Node ENR'}
+              onChange={(evt) => props.setPeerEnr(evt.target.value)}
+            />
+            {/* <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} /> */}
+            {/* <Bootnode handleClick={props.handleClick} setPeerEnr={props.setPeerEnr} /> */}
+          </VStack>
+        </Center>
+      ) : (
+        <VStack width={'100%'} spacing={0} border="1px" borderRadius={'0.375rem'}>
+          <Input
+            size="xs"
+            bg="whiteAlpha.800"
+            value={props.peerEnr}
+            placeholder={'Node ENR'}
+            onChange={(evt) => props.setPeerEnr(evt.target.value)}
+          />
+          <Button width={'100%'} onClick={props.handleClick}>
+            Connect To Node
+          </Button>
+        </VStack>
+      )}
       <Divider />
       <Heading size="sm">Peer Tools</Heading>
-      <Box overflow={'scroll'} paddingTop={1} border="solid black" h="200px" w="100%">
+      <Box w="100%">
         <Center>
           <Heading size="xs">
             Select Peer ({peers.indexOf(peer) + 1}/{peers.length})
           </Heading>
         </Center>
         <Divider />
-        <Menu autoSelect>
-          <MenuOptionGroup fontSize={'xs'} onChange={(p) => setPeer(p as string)}>
-            {peers.map((_peer, idx) => (
-              <MenuItemOption
-                fontSize={'xs'}
-                paddingStart={0}
-                bgColor={peer === _peer ? 'lightblue' : 'white'}
-                key={idx}
-                value={_peer}
-              >
-                {_peer.slice(0, 25)}...
-              </MenuItemOption>
-            ))}
-          </MenuOptionGroup>
-        </Menu>
+        <Select>
+          {peers.map((_peer, idx) => (
+            <option value={_peer}>{_peer.slice(0, 25)}...</option>
+          ))}
+        </Select>
       </Box>
       <Divider />
       <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handlePing(peer)}>
