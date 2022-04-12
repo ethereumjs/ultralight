@@ -95,8 +95,6 @@ export default function DevTools(props: DevToolsProps) {
               placeholder={'Node ENR'}
               onChange={(evt) => props.setPeerEnr(evt.target.value)}
             />
-            {/* <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} /> */}
-            {/* <Bootnode handleClick={props.handleClick} setPeerEnr={props.setPeerEnr} /> */}
           </VStack>
         </Center>
       ) : (
