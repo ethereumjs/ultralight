@@ -8,12 +8,13 @@ interface StartNodeProps {
 
 export default function StartNode(props: StartNodeProps) {
   return (
-    <VStack>
+    <VStack spacing={0}>
       <Heading size="sm">Proxy Address</Heading>
       <Input
         onChange={(evt) => {
           props.setProxy(evt.target.value)
         }}
+        size="xs"
         textAlign="center"
         bg="whiteAlpha.800"
         defaultValue={'ultralight.ethdevops.io'}
