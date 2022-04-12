@@ -13,11 +13,13 @@ import {
   DrawerFooter,
   Box,
   Heading,
-  HStack,
-  Divider,
   Center,
   VStack,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  Divider,
 } from '@chakra-ui/react'
 import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
@@ -32,10 +34,10 @@ import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
-import { FaTools } from 'react-icons/fa'
 import { Capacitor } from '@capacitor/core'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
+import InfoMenu from './Components/InfoMenu'
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
@@ -53,8 +55,10 @@ export const App = () => {
   const [proxy, setProxy] = React.useState('ultralight.ethdevops.io')
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const { onOpen } = useDisclosure()
+  const disclosure = useDisclosure()
   const toast = useToast()
+  const [modalStatus, setModal] = React.useState(false)
   const init = async () => {
     if (portal?.client.isStarted()) {
       await portal.stop()
@@ -123,10 +127,7 @@ export const App = () => {
   }, [portal])
 
   React.useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      // Automatically start the portal network node if on mobile since we have access to UDP
-      init()
-    }
+    init()
   }, [])
 
   async function handleClick() {
@@ -191,102 +192,85 @@ export const App = () => {
   }
 
   async function findParent(hash: string) {
-    await setContentKey(hash)
-    await handleFindContent(hash)
+    setContentKey(hash)
+    handleFindContent(hash)
     portal?.logger('Showing Block')
   }
 
+  const openInfoMenu = () => {
+    setModal(true)
+    disclosure.onClose()
+  }
   const invalidHash = /([^0-z])+/.test(contentKey)
 
   return (
     <>
       <Center bg={'gray.200'}>
-        <Box w={['90%', '100%']} justifyContent={'center'}>
-          <HStack>
-            {Capacitor.isNativePlatform() ? (
-              <>
-                <Button
-                  // colorScheme={'facebook'}
-                  leftIcon={<HamburgerIcon />}
-                  // width={'20%'}
-                  // onClick={onOpen}
-                ></Button>
-                <VStack width={'80%'}>
-                  <Heading size={'2xl'} textAlign="start">
-                    Ultralight
-                  </Heading>
-                  <Heading size={'l'} textAlign="start">
-                    Portal Network Explorer
-                  </Heading>
-                </VStack>
-
-                <Button colorScheme={'facebook'} leftIcon={<FaTools />} onClick={onOpen}>
-                  {/* Dev Tools */}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button leftIcon={<HamburgerIcon />} />
-                <Heading width={'80%'} size="xl" textAlign="start">
-                  Ultralight Portal Network Explorer
-                </Heading>
-                <Button
-                  colorScheme={'facebook'}
-                  leftIcon={<FaTools />}
-                  width={'20%'}
-                  onClick={onOpen}
-                >
-                  Dev Tools
-                </Button>
-              </>
-            )}
-          </HStack>
-          <Divider />
-        </Box>{' '}
+        <VStack width={'80%'}>
+          <Heading size={'2xl'} textAlign="start">
+            Ultralight
+          </Heading>
+          <Heading size={'l'} textAlign="start">
+            Portal Network Explorer
+          </Heading>
+        </VStack>
       </Center>
-      {portal && (
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-          <DrawerOverlay />
-          <DrawerContent>
-            <DrawerCloseButton />
-            <DrawerHeader>Dev Tools</DrawerHeader>
-            <DrawerBody>
-              <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
-            </DrawerBody>
-            <DrawerFooter>
-              <Button onClick={onClose}>CLOSE</Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      )}
-      {portal ? (
-        <Box>
-          <Layout
-            copy={copy}
-            onOpen={onOpen}
-            enr={enr}
-            peerEnr={peerEnr}
-            setPeerEnr={setPeerEnr}
-            handleClick={handleClick}
-            invalidHash={invalidHash}
-            handleFindContent={handleFindContent}
-            contentKey={contentKey}
-            setContentKey={setContentKey}
-            findParent={findParent}
-            block={block}
-            peers={peers}
-            sortedDistList={sortedDistList}
-            capacitor={Capacitor}
-          />
-        </Box>
-      ) : (
-        <StartNode setProxy={setProxy} init={init} />
-      )}
+      <Button
+        position="fixed"
+        top="5"
+        right="5"
+        leftIcon={<HamburgerIcon />}
+        onClick={disclosure.onOpen}
+      ></Button>
+      <Drawer isOpen={disclosure.isOpen} placement="right" onClose={disclosure.onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>Ultralight</DrawerHeader>
+          <DrawerBody>
+            <Button w="100%" mb="5px" onClick={openInfoMenu}>
+              More Info
+            </Button>
+            <Divider my="10px" />
+            <StartNode setProxy={setProxy} init={init} />
+            <Divider my="10px" />
+            <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
+          </DrawerBody>
+          <DrawerFooter>
+            <Button onClick={disclosure.onClose}>CLOSE</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+      <Box>
+        <Layout
+          copy={copy}
+          onOpen={onOpen}
+          enr={enr}
+          peerEnr={peerEnr}
+          setPeerEnr={setPeerEnr}
+          handleClick={handleClick}
+          invalidHash={invalidHash}
+          handleFindContent={handleFindContent}
+          contentKey={contentKey}
+          setContentKey={setContentKey}
+          findParent={findParent}
+          block={block}
+          peers={peers}
+          sortedDistList={sortedDistList}
+          capacitor={Capacitor}
+        />
+      </Box>
       <Box width={'100%'} pos={'fixed'} bottom={'0'}>
         <Center>
           <Footer />
         </Center>
       </Box>
+      <Modal isOpen={modalStatus} onClose={() => setModal(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <InfoMenu />
+        </ModalContent>
+      </Modal>
     </>
   )
 }

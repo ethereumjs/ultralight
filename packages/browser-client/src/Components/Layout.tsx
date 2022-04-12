@@ -8,10 +8,7 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
-  Tooltip,
-  Text,
   VStack,
-  Box,
   StackDivider,
   Center,
 } from '@chakra-ui/react'
@@ -19,7 +16,7 @@ import React, { Dispatch, SetStateAction } from 'react'
 import { Block } from '@ethereumjs/block'
 import { ENR } from '@chainsafe/discv5'
 import HistoryNetwork from './HistoryNetwork'
-import { ArrowLeftIcon, ArrowRightIcon, NotAllowedIcon } from '@chakra-ui/icons'
+import { ArrowRightIcon, NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
 import Bootnode from './Bootnode'
 
