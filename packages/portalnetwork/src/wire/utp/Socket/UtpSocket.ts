@@ -198,6 +198,15 @@ export class UtpSocket extends EventEmitter {
     return this.readerContent
   }
 
+  async handleResetPacket() {
+    this.sndConnectionId = 0
+    this.rcvConnectionId = 0
+    this.remoteAddress = ''
+    this.content = Uint8Array.from([])
+    this.reader = undefined
+    this.writer = undefined
+  }
+
   async startDataTransfer(): Promise<void> {
     this.logger(`Beginning transfer of ${this.content.length} bytes...`)
     this.logger(this.content)

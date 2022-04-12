@@ -447,22 +447,8 @@ export class PortalNetworkUTP {
   }
   async handleResetPacket(request: HistoryNetworkContentRequest) {
     const requestCode = request.requestCode
+    await this.protocol.handleResetPacket(request.socket)
     delete this.openHistoryNetworkRequests[requestCode]
-    /*const newSocket = this.createPortalNetworkUTPSocket(
-      requestCode,
-      request.socket.remoteAddress,
-      request.socket.sndConnectionId,
-      request.socket.rcvConnectionId,
-      request.content && request.content
-    )
-    const newRequest = new HistoryNetworkContentRequest(
-      requestCode,
-      [HistoryNetworkContentKeyUnionType.serialize(request.contentKey)],
-      [newSocket!],
-      request.socketKey,
-      request.content ? [request.content] : [undefined]
-    )
-    await newRequest.init()*/
   }
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode

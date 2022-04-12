@@ -104,4 +104,7 @@ export class BasicUtp {
     const content = await socket.handleFinPacket(packet)
     return content
   }
+  async handleResetPacket(socket: UtpSocket) {
+    await socket.handleResetPacket()
+  }
 }
