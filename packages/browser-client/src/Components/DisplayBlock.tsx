@@ -32,6 +32,27 @@ export default function DisplayBlock(props: DisplayBlockProps) {
   const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   const headerlookupKey = getHistoryNetworkContentId(1, props.block.toJSON().header?.mixHash!, 0)
   const bodylookupKey = getHistoryNetworkContentId(1, props.block.toJSON().header?.mixHash!, 1)
+
+  function GridRow(props: any) {
+    return (
+      <>
+        <GridItem fontSize={'xs'} fontWeight="bold" colSpan={3}>
+          {props.k[0]}
+        </GridItem>
+        <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
+          {props.idx === 0 ? (
+            <Link color={'blue'} onClick={() => props.findParent(props.k[1])}>
+              {props.k[1]}
+            </Link>
+          ) : (
+            <>{props.k[1]}</>
+          )}
+        </GridItem>
+        <GridItem colSpan={1}> </GridItem>
+      </>
+    )
+  }
+
   return (
     <Box>
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
@@ -86,30 +107,7 @@ export default function DisplayBlock(props: DisplayBlockProps) {
             <Grid templateColumns={'repeat(10, 1fr)'}>
               {header &&
                 header.map((key, idx) => {
-                  return (
-                    <>
-                      <GridItem fontSize={'xs'} fontWeight="bold" colSpan={3}>
-                        {key[0]}
-                      </GridItem>
-                      <GridItem
-                        paddingBottom={3}
-                        fontSize={'xs'}
-                        wordBreak={'break-all'}
-                        colSpan={6}
-                      >
-                        <Skeleton isLoaded={!props.isLoading}>
-                          {idx === 0 ? (
-                            <Link color={'blue'} onClick={() => props.findParent(key[1])}>
-                              {key[1]}
-                            </Link>
-                          ) : (
-                            <>{key[1]}</>
-                          )}
-                        </Skeleton>
-                      </GridItem>
-                      <GridItem colSpan={1}> </GridItem>
-                    </>
-                  )
+                  return <GridRow key={idx} k={key} idx={idx} />
                 })}
             </Grid>
           </TabPanel>
