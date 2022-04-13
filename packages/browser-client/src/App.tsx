@@ -234,7 +234,16 @@ export const App = () => {
             <Divider my="10px" />
             <StartNode setProxy={setProxy} init={init} />
             <Divider my="10px" />
-            <DevTools enr={enr} copy={copy} portal={portal} peers={peers!} />
+            <DevTools
+              peerEnr={peerEnr}
+              setPeerEnr={setPeerEnr}
+              native={Capacitor.isNativePlatform()}
+              enr={enr}
+              copy={copy}
+              portal={portal}
+              peers={peers!}
+              handleClick={handleClick}
+            />
           </DrawerBody>
           <DrawerFooter>
             <Button onClick={disclosure.onClose}>CLOSE</Button>

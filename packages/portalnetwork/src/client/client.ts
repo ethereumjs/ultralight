@@ -564,8 +564,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= distance from the content)
     // TODO: Make # nodes content is offered to configurable based on further discussion
+    // TODO: Move this into its own function
+    /*
     const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
-    const offerENRs = routingTable!.nearest(contentId, 1)
+    const offerENRs = routingTable!.nearest(contentId, 0)
     if (offerENRs.length > 0) {
       const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
@@ -576,7 +578,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
         }
       })
-    }
+    }*/
   }
 
   private sendPong = async (srcId: string, reqId: bigint) => {

@@ -10,6 +10,7 @@ android {
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
     implementation project(':frontall-capacitor-udp')
+    implementation project(':capacitor-share')
 
 }
 

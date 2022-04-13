@@ -1,8 +1,5 @@
 import {
-  Button,
   Divider,
-  HStack,
-  Input,
   Tab,
   TabList,
   TabPanel,
@@ -10,15 +7,14 @@ import {
   Tabs,
   VStack,
   StackDivider,
-  Center,
 } from '@chakra-ui/react'
 import React, { Dispatch, SetStateAction } from 'react'
 import { Block } from '@ethereumjs/block'
 import { ENR } from '@chainsafe/discv5'
 import HistoryNetwork from './HistoryNetwork'
-import { ArrowRightIcon, NotAllowedIcon } from '@chakra-ui/icons'
+import { NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
-import Bootnode from './Bootnode'
+import Bootnodes from './Bootnodes'
 
 interface LayoutProps {
   copy: () => Promise<void>
@@ -64,43 +60,8 @@ export default function Layout(props: LayoutProps) {
         </TabList>
         <VStack paddingTop={2} spacing={1} align="stretch">
           <Divider />
-
-          {native ? (
-            <Center>
-              <VStack>
-                <Button
-                  isDisabled={!props.peerEnr.startsWith('enr:')}
-                  width={'100%'}
-                  onClick={props.handleClick}
-                >
-                  Connect To Node
-                </Button>
-                <Input
-                  width={'100%'}
-                  bg="whiteAlpha.800"
-                  value={props.peerEnr}
-                  placeholder={'Node ENR'}
-                  onChange={(evt) => props.setPeerEnr(evt.target.value)}
-                />
-                <Bootnode handleClick={props.handleClick} setPeerEnr={props.setPeerEnr} />
-              </VStack>
-            </Center>
-          ) : (
-            <HStack>
-              <Button width={'100%'} onClick={props.handleClick}>
-                Connect To Node
-              </Button>
-              <ArrowRightIcon />
-              <Input
-                bg="whiteAlpha.800"
-                value={props.peerEnr}
-                placeholder={'Node ENR'}
-                onChange={(evt) => props.setPeerEnr(evt.target.value)}
-              />
-            </HStack>
-          )}
           <Divider />
-          {native || <Bootnode handleClick={props.handleClick} setPeerEnr={props.setPeerEnr} />}
+          {native || <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} />}
         </VStack>
         {props.peers && props.peers.length > 0 && (
           <TabPanels>
