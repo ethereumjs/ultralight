@@ -35,7 +35,6 @@ interface LayoutProps {
 }
 
 export default function Layout(props: LayoutProps) {
-  const native = props.capacitor.isNativePlatform()
   return (
     <VStack spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
       <Tabs width={'100%'} size={'sm'}>
@@ -43,25 +42,25 @@ export default function Layout(props: LayoutProps) {
           <Tab>History Network</Tab>
           <Tab isDisabled>
             State Network
-            <NotAllowedIcon />{' '}
+            <NotAllowedIcon />
           </Tab>
           <Tab isDisabled>
             Transaction Gossip Network
-            <NotAllowedIcon />{' '}
+            <NotAllowedIcon />
           </Tab>
           <Tab isDisabled>
             Header Gossip Network
-            <NotAllowedIcon />{' '}
+            <NotAllowedIcon />
           </Tab>
           <Tab isDisabled>
             Canonical Indices Network
-            <NotAllowedIcon />{' '}
+            <NotAllowedIcon />
           </Tab>
         </TabList>
         <VStack paddingTop={2} spacing={1} align="stretch">
           <Divider />
           <Divider />
-          {native || <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} />}
+          <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} />
         </VStack>
         {props.peers && props.peers.length > 0 && (
           <TabPanels>

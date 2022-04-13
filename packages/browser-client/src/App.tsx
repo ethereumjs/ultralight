@@ -231,8 +231,12 @@ export const App = () => {
             <Button w="100%" mb="5px" onClick={openInfoMenu}>
               More Info
             </Button>
-            <Divider my="10px" />
-            <StartNode setProxy={setProxy} init={init} />
+            {!Capacitor.isNativePlatform() && (
+              <>
+                <Divider my="10px" />
+                <StartNode setProxy={setProxy} init={init} />
+              </>
+            )}
             <Divider my="10px" />
             <DevTools
               peerEnr={peerEnr}
