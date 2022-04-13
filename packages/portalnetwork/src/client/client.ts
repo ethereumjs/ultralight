@@ -124,6 +124,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.client.on('talkReqReceived', this.onTalkReq)
     this.client.on('talkRespReceived', this.onTalkResp)
+    this.on('ContentAdded', this.gossipHistoryNetworkContent)
     /*  TODO: decide whether to add this code back in since some nodes are naughty and send UDP packets that
         are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
         routing table
@@ -561,24 +562,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         ]
       } for ${blockHash} to content db`
     )
-
-    // Offer stored content to nearest 1 nodes that should be interested (i.e. have a radius >= distance from the content)
-    // TODO: Make # nodes content is offered to configurable based on further discussion
-    // TODO: Move this into its own function
-    /*
-    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
-    const offerENRs = routingTable!.nearest(contentId, 0)
-    if (offerENRs.length > 0) {
-      const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: { chainId: chainId, blockHash: fromHexString(blockHash) },
-      })
-      offerENRs.forEach((enr) => {
-        if (distance(enr.nodeId, contentId) < routingTable!.getRadius(enr.nodeId)!) {
-          this.sendOffer(enr.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
-        }
-      })
-    }*/
   }
 
   private sendPong = async (srcId: string, reqId: bigint) => {
@@ -1067,5 +1050,33 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const lookup = new NodeLookup(this, randomNodeAtDistance, SubNetworkIds.HistoryNetwork)
       await lookup.startLookup()
     }
+  }
+
+  /**
+   * Gossips recently added content to the nearest 5 nodes
+   * @param blockHash hex prefixed blockhash of content to be gossipped
+   * @param contentType type of content being gossipped
+   */
+  private gossipHistoryNetworkContent = async (
+    blockHash: string,
+    contentType: HistoryNetworkContentTypes
+  ) => {
+    const routingTable = this.routingTables.get(SubNetworkIds.HistoryNetwork)
+    const contentId = getHistoryNetworkContentId(1, blockHash, contentType)
+    const nearestPeers = routingTable!.nearest(contentId, 5)
+    const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: contentType,
+      value: { chainId: 1, blockHash: fromHexString(blockHash) },
+    })
+
+    nearestPeers.forEach((peer) => {
+      if (
+        !routingTable!.contentKeyKnownToPeer(peer.nodeId, toHexString(encodedKey)) &&
+        distance(peer.nodeId, contentId) < routingTable!.getRadius(peer.nodeId)!
+        // If peer hasn't already been OFFERed this contentKey and the content is within the peer's advertised radius, OFFER
+      ) {
+        this.sendOffer(peer.nodeId, [encodedKey], SubNetworkIds.HistoryNetwork)
+      }
+    })
   }
 }
