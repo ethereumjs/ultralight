@@ -63,8 +63,6 @@ export default function Bootnodes(props: BootnodesProps) {
     ],
   ]
 
-  async function connectToBoot(type: string, idx: string, enr: string) {}
-
   useInterval(async () => {
     if (index < bns.length) {
       index !== 0 && (await props.handleClick())
