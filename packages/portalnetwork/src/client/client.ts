@@ -947,8 +947,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const nodeId = typeof srcId === 'string' ? srcId : srcId.nodeId
     let enr = typeof srcId === 'string' ? routingTable.getValue(srcId) : srcId
     if (!add) {
-      routingTable!.removeById(nodeId)
-      routingTable!.removeFromRadiusMap(nodeId)
+      routingTable!.evictNode(nodeId)
       this.logger(
         `removed ${nodeId} from ${
           Object.keys(SubNetworkIds)[Object.values(SubNetworkIds).indexOf(networkId)]
