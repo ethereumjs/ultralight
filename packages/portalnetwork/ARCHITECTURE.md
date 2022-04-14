@@ -35,8 +35,8 @@ The `portalnetwork` module is broken down into several components that all work 
         subgraph singleLookup
         nearestPeer --> sendFindContent
         sendFindContent --> enrs
-        nearestPeer --> uTP
-        nearestPeer --> content
+        sendFindContent --> uTP
+        sendFindContent --> content
         end
         enrs--add nodes to lookupPeers--> lookupPeers
 ```
