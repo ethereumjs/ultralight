@@ -43,19 +43,16 @@ The `portalnetwork` module is broken down into several components that all work 
 
 ## Portal Network Message Lifecycle
 ```mermaid
-    graph TD
-        subgraph PortalNetwork
-        PING/FINDNODES/FINDCONTENT/OFFER--nodeId/content --> sendPortalNetworkMessage
-        sendPortalNetworkMessage--retrieve ENR --> routingTable
-        routingTable--ENR --> sendPortalNetworkMessage
-        sendPortalNetworkMessage --> PONG/NODES/FOUNDCONTENT/ACCEPT
-        end
-        subgraph Discv5
-                sendPortalNetworkMessage--content and nodeId/enr --> discv5.sendTalkReq
-        discv5.sendTalkReq --> discv5.sendRPCMessage
-        discv5.sendRPCMessage--encoded TalkReq message --> remotePeer
-        remotePeer--encoded TalkResp --> discv5.handleTalkResp
-        discv5.handleTalkResp--TalkResp payload--> sendPortalNetworkMessage
-        end
+    sequenceDiagram
+        PNMessageHandler->>sendPortalNetworkMessage: nodeId/content
+        sendPortalNetworkMessage->>routingTable: nodeId
+        routingTable->>sendPortalNetworkMessage: ENR
+        sendPortalNetworkMessage->>discv5.sendTalkReq: content/(nodeId or ENR)
+        discv5.sendTalkReq->>discv5.RPCHandler: encoded message
+        discv5.RPCHandler->>remotePeer: encoded message
+        remotePeer->>discv5.RPCHandler: encoded response
+        discv5.RPCHandler->>discv5.handleTalkResp: encoded response
+        discv5.handleTalkResp->>sendPortalNetworkMessage: TalkResp payload
+        sendPortalNetworkMessage->>PNMessageHandler: decoded message
         
 ```
