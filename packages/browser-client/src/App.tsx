@@ -71,7 +71,7 @@ export const App = () => {
       {
         enr: enr,
         peerId: id,
-        multiaddr: new Multiaddr('/ip4/104.248.102.101/udp/0'),
+        multiaddr: enr.getLocationMultiaddr('udp')!,
         transport: Capacitor.isNativePlatform() ? 'cap' : 'wss',
         proxyAddress: `ws://${proxy}`,
       },

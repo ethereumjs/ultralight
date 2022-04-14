@@ -92,7 +92,11 @@ export class ContentLookup {
           // Offer content to neighbors who should have had content but don't if we receive content directly
           this.contacted.forEach((peer) => {
             if (!peer.hasContent) {
-              this.client.sendOffer(peer.nodeId, [this.contentKey], this.networkId)
+              const routingTable = this.client.routingTables.get(this.networkId)!
+              if (!routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(this.contentKey))) {
+                // Only offer content if not already offered to this peer
+                this.client.sendOffer(peer.nodeId, [this.contentKey], this.networkId)
+              }
             }
           })
           return res.value
