@@ -6,10 +6,14 @@ The `portalnetwork` module is broken down into several components that all work 
 
 ```mermaid
     graph TD
+        remotePeer --> discv5
+        discv5 --> remotePeer
+        subgraph Ultralight Client
         discv5--TALKREQ/TALKRESP --> client
         client--TALKREQ/TALKRESP --> discv5
         client --> uTP
         uTP --> client
+        end
 ```
 
 ## Portal Network message flows
@@ -32,7 +36,7 @@ The `portalnetwork` module is broken down into several components that all work 
     graph TD
         startLookup--get nearest nodes --> lookupPeers
         lookupPeers--get nearest node--> nearestPeer
-        subgraph singleLookup
+        subgraph single FindContent request
         nearestPeer --> sendFindContent
         sendFindContent --> enrs
         sendFindContent --> uTP
