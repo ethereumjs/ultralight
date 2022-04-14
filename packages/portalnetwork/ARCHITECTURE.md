@@ -47,12 +47,12 @@ The `portalnetwork` module is broken down into several components that all work 
         PNMessageHandler->>sendPortalNetworkMessage: nodeId/content
         sendPortalNetworkMessage->>routingTable: nodeId
         routingTable->>sendPortalNetworkMessage: ENR
-        sendPortalNetworkMessage->>discv5.sendTalkReq: content/(nodeId or ENR)
-        discv5.sendTalkReq->>discv5.RPCHandler: encoded message
+        sendPortalNetworkMessage->>discv5.TalkReqHandler: content/(nodeId or ENR)
+        discv5.TalkReqHandler->>discv5.RPCHandler: encoded message
         discv5.RPCHandler->>remotePeer: encoded message
         remotePeer->>discv5.RPCHandler: encoded response
-        discv5.RPCHandler->>discv5.handleTalkResp: encoded response
-        discv5.handleTalkResp->>sendPortalNetworkMessage: TalkResp payload
+        discv5.RPCHandler->>discv5.TalkReqHandler: encoded response
+        discv5.TalkReqHandler->>sendPortalNetworkMessage: TalkResp payload
         sendPortalNetworkMessage->>PNMessageHandler: decoded message
         
 ```
