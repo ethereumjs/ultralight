@@ -24,7 +24,7 @@ import {
 import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from './types'
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
-import { Multiaddr } from 'multiaddr'
+import { multiaddr, Multiaddr } from 'multiaddr'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
@@ -40,6 +40,9 @@ import {
 } from '../historySubnetwork'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
+import { ITransportService } from '@chainsafe/discv5/src/transport/types'
+import { WebSocketTransportService } from '../transports/websockets'
+import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -69,8 +72,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         enr,
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: 'wss',
-        proxyAddress: proxyAddress,
+        transport: new WebSocketTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId, proxyAddress),
       },
       2n ** 256n
     )
@@ -87,7 +89,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         enr,
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: 'cap',
+        transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId)
       },
       2n ** 256n
     )
@@ -104,11 +106,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
     db?: LevelUp,
-    metrics?: PortalNetworkMetrics
+    metrics?: PortalNetworkMetrics,
   ) {
     // eslint-disable-next-line constructor-super
     super()
-    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000 } })
+
+    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000, transport: transport } })
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
