@@ -4,6 +4,8 @@ A partially complete Typescript library for interacting with the Portal Network
 
 See [API](./docs/modules.md) for more details
 
+See [Architecture](./ARCHITECTURE.md) for architectural concepts
+
 ## Routing Table Management
 
 The Portal Network module currently supports two overlay routing tables for use with tbe below two subnetworks:
