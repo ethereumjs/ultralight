@@ -44,15 +44,18 @@ The `portalnetwork` module is broken down into several components that all work 
 ## Portal Network Message Lifecycle
 ```mermaid
     graph TD
+        subgraph PortalNetwork
         PING/FINDNODES/FINDCONTENT/OFFER--nodeId/content --> sendPortalNetworkMessage
         sendPortalNetworkMessage--retrieve ENR --> routingTable
         routingTable--ENR --> sendPortalNetworkMessage
-        subgraph discv5
-        sendPortalNetworkMessage--content and nodeId/enr --> discv5.sendTalkReq
+        sendPortalNetworkMessage --> PONG/NODES/FOUNDCONTENT/ACCEPT
+        end
+        subgraph Discv5
+                sendPortalNetworkMessage--content and nodeId/enr --> discv5.sendTalkReq
         discv5.sendTalkReq --> discv5.sendRPCMessage
         discv5.sendRPCMessage--encoded TalkReq message --> remotePeer
         remotePeer--encoded TalkResp --> discv5.handleTalkResp
         discv5.handleTalkResp--TalkResp payload--> sendPortalNetworkMessage
         end
-        sendPortalNetworkMessage --> PONG/NODES/FOUNDCONTENT/ACCEPT
+        
 ```
