@@ -73,7 +73,7 @@ export class CapacitorUDPTransportService
       const packet = decodePacket(this.srcId, data)
       this.emit('packet', multiaddr, packet)
     } catch (e) {
-      this.emit('decodeError', e, multiaddr)
+      this.emit('decodeError', e as any, multiaddr)
     }
   }
 }

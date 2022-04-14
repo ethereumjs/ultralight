@@ -1,12 +1,16 @@
 import debug from 'debug'
 import { EventEmitter } from 'events'
 import { Multiaddr } from 'multiaddr'
-import { decodePacket, encodePacket, IPacket } from '../packet'
-import { IRemoteInfo, ITransportService, TransportEventEmitter } from './types'
+import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/lib/packet'
+import {
+  IRemoteInfo,
+  ITransportService,
+  TransportEventEmitter,
+} from '@chainsafe/discv5/lib/transport//types'
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
 import ip from '@leichtgewicht/ip-codec'
-import { numberToBuffer } from '..'
+import { numberToBuffer } from '@chainsafe/discv5/lib'
 const log = debug('discv5:transport')
 
 /**

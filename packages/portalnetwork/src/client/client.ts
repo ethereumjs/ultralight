@@ -72,7 +72,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         enr,
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: new WebSocketTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId, proxyAddress),
+        transport: new WebSocketTransportService(
+          enr.getLocationMultiaddr('udp')!,
+          enr.nodeId,
+          proxyAddress
+        ),
       },
       2n ** 256n
     )
@@ -89,7 +93,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         enr,
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId)
+        transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId),
       },
       2n ** 256n
     )
@@ -106,12 +110,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
     db?: LevelUp,
-    metrics?: PortalNetworkMetrics,
+    metrics?: PortalNetworkMetrics
   ) {
     // eslint-disable-next-line constructor-super
     super()
 
-    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000, transport: transport } })
+    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000 } })
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
