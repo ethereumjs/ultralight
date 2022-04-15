@@ -32,23 +32,30 @@ const setupNetwork = async () => {
   return [portal1, portal2]
 }
 
-tape('Portal Wire Spec Testing', async (t) => {
-  t.test('clients should start and connect', { timeout: 10000 }, (st) => {
+tape('Portal Network Wire Spec Integration Tests', (t) => {
+  t.test('clients start and connect to each other', (st) => {
     const file = require.resolve('../../../proxy/dist/index.js')
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
     let portal2: PortalNetwork
-
     child.stderr.on('data', async (data) => {
       if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
         st.pass('proxy started successfully')
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-        portal1.enableLog()
-        portal2.enableLog()
-        portal1.client.once('multiaddrUpdated', () => portal2.start())
-        portal2.client.once('multiaddrUpdated', async () => {
+        portal1.enableLog('*portalnetwork*')
+        portal2.enableLog('*portalnetwork*')
+        await portal1.start()
+      }
+      if (data.toString().includes('UDP proxy listening on')) {
+        // Update ENRs to match UDP port advertised by proxy
+        const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
+        if (portal1.client.enr.udp === 0) {
+          portal1.client.enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/' + port))
+          await portal2.start()
+        } else if (portal2.client.enr.udp === 0) {
+          portal2.client.enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/' + port))
           let done = false
           while (!done) {
             const res = await portal2.sendPing(portal1.client.enr, SubNetworkIds.HistoryNetwork)
@@ -59,8 +66,7 @@ tape('Portal Wire Spec Testing', async (t) => {
               break
             }
           }
-        })
-        portal1.start()
+        }
       }
     })
   })
@@ -85,9 +91,15 @@ tape('Portal Wire Spec Testing', async (t) => {
             end(child, [portal1, portal2], st)
           }
         })
-        portal1.client.once('multiaddrUpdated', () => portal2.start())
-
-        portal2.client.once('multiaddrUpdated', async () => {
+        portal1.start()
+      } else if (data.toString().includes('UDP proxy listening on')) {
+        // Update ENRs to match UDP port advertised by proxy
+        const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
+        if (portal1.client.enr.udp === 0) {
+          portal1.client.enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/' + port))
+          await portal2.start()
+        } else if (portal2.client.enr.udp === 0) {
+          portal2.client.enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/' + port))
           await portal2.sendPing(portal1.client.enr, SubNetworkIds.HistoryNetwork)
           const testBlock = Block.fromRLPSerializedBlock(
             Buffer.from(fromHexString(require('./testBlock.json').rlp))
@@ -108,8 +120,7 @@ tape('Portal Wire Spec Testing', async (t) => {
             ],
             SubNetworkIds.HistoryNetwork
           )
-        })
-        portal1.start()
+        }
       }
     })
   })
