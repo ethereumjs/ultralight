@@ -4,16 +4,9 @@ A simple NodeJS websocket-to-UDP proxy to allow browser clients to connect to a 
 
 ## Protocol
 
-### Websocket Handshake/Connection
+### Initial connection
 
-When a client application first opens a web socket connection to the proxy, the proxy sends its public IPv4 address and an assigned port number to the client in a 6 byte message where the first 4 bytes represent the IPv4 address (XXX.XXX.XXX.XXX) where each byte corresponds to one byte of the IPv4 address and the last 2 bytes represent a port number between 1 and 65535 as a Uint16 (2 byte unsigned integer).
-
-In the context of the Discv5 protocol, the websocket client uses the proxy's public IP address and specified port number in its ENR in order to hook into the Discv5 network.
-### Proxy Service
-
-Once the initial websocket connection is established, the proxy acts as a message forwarding service between web socket clients and a UDP based network.
-
-It does so by maintaining a map of websocket connections to UDP port numbers.
+When a client application first opens a web socket connection to the proxy, the proxy assigns a UDP port to that connection and relays any packets received on the websocket connection to the mapped UDP port and vice versa.
 
 #### Websocket -> UDP forwarding
 All messages sent by the websocket client begin with the below prefix:

@@ -39,11 +39,6 @@ export class CapacitorUDPTransportService
     const opts = this.multiaddr.toOptions()
     this.socket = await UDP.create()
     await UDP.bind({ socketId: this.socket.socketId, address: this.socket.ipv4, port: opts.port })
-    const socketInfo = await UDP.getInfo({ socketId: this.socket.socketId })
-    this.emit(
-      'multiaddrUpdate',
-      new Multiaddr(`/ip4/${this.socket.ipv4}/udp/${socketInfo.localPort?.toString()}`)
-    )
     UDP.addListener('receive', (ret: any) => {
       this.handleIncoming(Buffer.from(ret.buffer, 'base64'), {
         family: 'IPv4',
