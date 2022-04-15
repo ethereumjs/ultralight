@@ -24,7 +24,7 @@ import {
 import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from './types'
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
-import { multiaddr, Multiaddr } from 'multiaddr'
+import { Multiaddr } from 'multiaddr'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
@@ -40,7 +40,6 @@ import {
 } from '../historySubnetwork'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
-import { ITransportService } from '@chainsafe/discv5/src/transport/types'
 import { WebSocketTransportService } from '../transports/websockets'
 import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
 const level = require('level-mem')

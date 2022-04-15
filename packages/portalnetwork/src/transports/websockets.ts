@@ -17,14 +17,16 @@ const log = debug('discv5:transport')
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over Websockets
  */
 export class WebSocketTransportService
-  extends (EventEmitter as { new(): TransportEventEmitter })
-  implements ITransportService {
+  extends (EventEmitter as { new (): TransportEventEmitter })
+  implements ITransportService
+{
   public multiaddr: Multiaddr
 
   private socket: WebSocketAsPromised
   private srcId: string
 
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
+    //eslint-disable-next-line constructor-super
     super()
 
     const opts = multiaddr.toOptions()
@@ -35,8 +37,8 @@ export class WebSocketTransportService
     this.srcId = srcId
     this.socket = new WebSocketAsPromised(proxyAddress, {
       packMessage: (data: Buffer) => data.buffer,
-      unpackMessage: (data) => data, // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      //@ts-ignore
+      unpackMessage: (data) => data,
+      //@ts-ignore node websocket types don't match browser websocket types - so tell Typescript not to worry about it
       createWebSocket: (url) => new WebSocket(url),
       extractMessageData: (event) => event,
     })

@@ -12,7 +12,9 @@ import {
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
  */
 export class CapacitorUDPTransportService
+  //eslint-disable-next-line prettier/prettier
   extends (EventEmitter as { new(): TransportEventEmitter })
+  //eslint-disable-next-line prettier/prettier
   implements ITransportService {
   public multiaddr: Multiaddr
   private socket!: {
@@ -23,6 +25,7 @@ export class CapacitorUDPTransportService
   private srcId: string
 
   public constructor(multiaddr: Multiaddr, srcId: string) {
+    //eslint-disable-next-line constructor-super
     super()
     const opts = multiaddr.toOptions()
     if (opts.transport !== 'udp') {

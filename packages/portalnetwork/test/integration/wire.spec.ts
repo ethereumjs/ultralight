@@ -1,7 +1,7 @@
 import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import PeerId from 'peer-id'
-import { ENR, EntryStatus } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from '../../src'
 import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'

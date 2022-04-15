@@ -4,7 +4,6 @@ import { Debugger } from 'debug'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { SubNetworkIds } from '../..'
 import { PortalNetwork } from '../../..'
-import { SelectiveAckHeader } from '../Packets'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
@@ -341,7 +340,6 @@ export class PortalNetworkUTP {
   }
   async handleStatePacket(request: HistoryNetworkContentRequest, packet: Packet): Promise<void> {
     const requestCode = request.requestCode
-    let bitmask
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
         /*    if (packet.header.seqNr === 2) {

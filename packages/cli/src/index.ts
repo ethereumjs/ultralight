@@ -132,7 +132,7 @@ const run = async () => {
       if (enr.startsWith('enr:-')) {
         try {
           portal.addBootNode(enr, SubNetworkIds.HistoryNetwork)
-        } catch { }
+        } catch {}
       }
     })
   }
