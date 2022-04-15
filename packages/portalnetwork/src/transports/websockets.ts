@@ -49,15 +49,7 @@ export class WebSocketTransportService
     this.socket.ws.binaryType = 'arraybuffer'
     this.socket.onMessage.addListener((msg: MessageEvent | ArrayBuffer) => {
       const data = msg instanceof MessageEvent ? Buffer.from(msg.data) : Buffer.from(msg)
-
-      if (data.length === 6) {
-        const address = ip.decode(data.slice(0, 4))
-        const port = data.readUIntBE(4, 2)
-        this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`)
-        this.emit('multiaddrUpdate', this.multiaddr)
-      } else {
-        this.handleIncoming(data)
-      }
+      this.handleIncoming(data)
     })
     this.socket.onClose.addListener(() => log('socket to proxy closed'))
   }

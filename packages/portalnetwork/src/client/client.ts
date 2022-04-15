@@ -76,6 +76,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           enr.nodeId,
           proxyAddress
         ),
+        config: {
+          addrVotesToUpdateEnr: 5,
+          enrUpdate: true,
+        },
       },
       2n ** 256n
     )
@@ -93,6 +97,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
         transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId),
+        config: {
+          addrVotesToUpdateEnr: 5,
+          enrUpdate: true,
+        },
       },
       2n ** 256n
     )
@@ -130,6 +138,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.client.on('talkReqReceived', this.onTalkReq)
     this.client.on('talkRespReceived', this.onTalkResp)
+    this.client.on('sessionEstablished', (nodeId) =>
+      (this.client as any).sendPing(this.client.getKadValue(nodeId))
+    )
     this.on('ContentAdded', this.gossipHistoryNetworkContent)
     /*  TODO: decide whether to add this code back in since some nodes are naughty and send UDP packets that
         are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
