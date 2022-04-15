@@ -52,7 +52,7 @@ export const App = () => {
   const [contentKey, setContentKey] = React.useState<string>(
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
-  const [proxy, setProxy] = React.useState('ultralight.ethdevops.io')
+  const [proxy, setProxy] = React.useState('ws://ultralight.ethdevops.io')
   const [block, setBlock] = React.useState<Block>()
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
@@ -69,7 +69,7 @@ export const App = () => {
     enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
     const node = Capacitor.isNativePlatform()
       ? await PortalNetwork.createMobilePortalNetwork('127.0.0.1')
-      : await PortalNetwork.createPortalNetwork('127.0.0.1', '127.0.0.1:5050')
+      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
     // eslint-disable-next-line no-undef
