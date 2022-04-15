@@ -8,7 +8,7 @@ import {
   HistoryNetworkContentKeyUnionType,
 } from 'portalnetwork'
 import * as rlp from 'rlp'
-import { addRLPSerializedBlock, shortId } from 'portalnetwork'
+import { addRLPSerializedBlock } from 'portalnetwork'
 import { isValidId } from './util'
 
 export class RPCManager {

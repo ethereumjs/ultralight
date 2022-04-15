@@ -40,6 +40,8 @@ import {
 } from '../historySubnetwork'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
+import { WebSocketTransportService } from '../transports/websockets'
+import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -60,7 +62,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param proxyAddress IP address of proxy
    * @returns a new PortalNetwork instance
    */
-  public static createPortalNetwork = async (ip: string, proxyAddress = '127.0.0.1:5050') => {
+  public static createPortalNetwork = async (ip: string, proxyAddress = 'ws://127.0.0.1:5050') => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/0`))
@@ -69,8 +71,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         enr,
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: 'wss',
-        proxyAddress: proxyAddress,
+        transport: new WebSocketTransportService(
+          enr.getLocationMultiaddr('udp')!,
+          enr.nodeId,
+          proxyAddress
+        ),
       },
       2n ** 256n
     )
@@ -87,7 +92,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         enr,
         peerId: id,
         multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: 'cap',
+        transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId),
       },
       2n ** 256n
     )
@@ -108,6 +113,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) {
     // eslint-disable-next-line constructor-super
     super()
+
     this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000 } })
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius

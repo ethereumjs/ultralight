@@ -4,8 +4,7 @@ import { randomBytes } from "libp2p-crypto";
 import { Multiaddr } from "multiaddr";
 import PeerId from "peer-id";
 
-import { UDPTransportService } from "../transport";
-import { WebSocketTransportService } from "../transport";
+import { ITransportService, UDPTransportService } from "../transport";
 import { MAX_PACKET_SIZE } from "../packet";
 import { ConnectionDirection, RequestErrorType, SessionService } from "../session";
 import { ENR, NodeId, MAX_RECORD_SIZE, createNodeId } from "../enr";
@@ -36,8 +35,6 @@ import { toBuffer } from "../util";
 import { IDiscv5Config, defaultConfig } from "../config";
 import { createNodeContact, getNodeAddress, getNodeId, INodeAddress, NodeContact } from "../session/nodeInfo";
 import { BufferCallback, ConnectionStatus, ConnectionStatusType } from ".";
-import { CapacitorUDPTransportService } from "../transport/capacitorUdp";
-
 
 /**
  * Discovery v5 is a protocol designed for encrypted peer discovery and topic advertisement. Each peer/node
@@ -60,9 +57,7 @@ export interface IDiscv5CreateOptions {
   multiaddr: Multiaddr;
   config?: Partial<IDiscv5Config>;
   metrics?: IDiscv5Metrics;
-  transport?: string;
-  proxyAddress?: string;
-  udpInterface?: any
+  transport?: ITransportService;
 }
 
 /**
@@ -175,24 +170,15 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
    * @param peerId the PeerId with the keypair that identifies the enr
    * @param multiaddr The multiaddr which contains the the network interface and port to which the UDP server binds
    */
-  public static create({
-    enr,
-    peerId,
-    multiaddr,
-    config = {},
-    transport = "udp",
-    metrics,
-    proxyAddress = "",
-  }: IDiscv5CreateOptions): Discv5 {
+  public static create({ enr, peerId, multiaddr, config = {}, metrics, transport }: IDiscv5CreateOptions): Discv5 {
     const fullConfig = { ...defaultConfig, ...config };
     const decodedEnr = typeof enr === "string" ? ENR.decodeTxt(enr) : enr;
-    let transportLayer
-    switch (transport) {
-      case "wss": transportLayer = new WebSocketTransportService(multiaddr, decodedEnr.nodeId, proxyAddress); break;
-      case "cap": transportLayer = new CapacitorUDPTransportService(multiaddr, decodedEnr.nodeId); break;
-      default: transportLayer = new UDPTransportService(multiaddr, decodedEnr.nodeId); break;
-    }
-    const sessionService = new SessionService(fullConfig, decodedEnr, createKeypairFromPeerId(peerId), transportLayer);
+    const sessionService = new SessionService(
+      fullConfig,
+      decodedEnr,
+      createKeypairFromPeerId(peerId),
+      transport ?? new UDPTransportService(multiaddr, decodedEnr.nodeId)
+    );
     return new Discv5(fullConfig, sessionService, metrics);
   }
 
@@ -895,7 +881,12 @@ export class Discv5 extends (EventEmitter as { new (): Discv5EventEmitter }) {
     if (message.total > 1) {
       const currentResponse = this.activeNodesResponses.get(message.id) || { count: 1, enrs: [] };
       this.activeNodesResponses.delete(message.id);
-      this.log("NODES response: %d of %d received, length: %d", currentResponse.count, message.total, message.enrs.length);
+      this.log(
+        "NODES response: %d of %d received, length: %d",
+        currentResponse.count,
+        message.total,
+        message.enrs.length
+      );
       // If there are more requests coming, store the nodes and wait for another response
       if (currentResponse.count < 5 && currentResponse.count < message.total) {
         currentResponse.count += 1;
