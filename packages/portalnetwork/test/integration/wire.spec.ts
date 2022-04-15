@@ -27,8 +27,8 @@ const setupNetwork = async () => {
   const id2 = await PeerId.create({ keyType: 'secp256k1' })
   const enr2 = ENR.createFromPeerId(id2)
   enr2.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
-  const portal1 = await PortalNetwork.createPortalNetwork('127.0.0.1:8509', 'ws://127.0.0.1:5050')
-  const portal2 = await PortalNetwork.createPortalNetwork('127.0.0.1:8510', 'ws://127.0.0.1:5050')
+  const portal1 = await PortalNetwork.createPortalNetwork('127.0.0.1', 'ws://127.0.0.1:5050')
+  const portal2 = await PortalNetwork.createPortalNetwork('127.0.0.1', 'ws://127.0.0.1:5050')
   return [portal1, portal2]
 }
 

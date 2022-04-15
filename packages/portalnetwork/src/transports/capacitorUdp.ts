@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { Multiaddr } from 'multiaddr'
 import { UDP } from '@frontall/capacitor-udp'
-import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/src/packet'
+import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/lib/packet'
 import {
   IRemoteInfo,
   ITransportService,

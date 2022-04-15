@@ -67,16 +67,9 @@ export const App = () => {
     const enr = ENR.createFromPeerId(id)
     setId(enr.nodeId)
     enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
-    const node = new PortalNetwork(
-      {
-        enr: enr,
-        peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: Capacitor.isNativePlatform() ? 'cap' : 'wss',
-        proxyAddress: `ws://${proxy}`,
-      },
-      2n ** 256n
-    )
+    const node = Capacitor.isNativePlatform()
+      ? await PortalNetwork.createMobilePortalNetwork('127.0.0.1')
+      : await PortalNetwork.createPortalNetwork('127.0.0.1', '127.0.0.1:5050')
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
     // eslint-disable-next-line no-undef
