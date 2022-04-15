@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { ENR } from '@chainsafe/discv5'
-import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { PortalNetwork, SubNetworkIds, WebSocketTransportService } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
@@ -100,8 +100,11 @@ const run = async () => {
       enr: enr,
       peerId: id,
       multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
-      transport: 'wss',
-      proxyAddress: `ws://127.0.0.1:${args.persistentPort ?? '5050'}`,
+      transport: new WebSocketTransportService(
+        await enr.getLocationMultiaddr('udp')!,
+        enr.nodeId,
+        `ws://127.0.0.1:${args.persistentPort ?? '5050'}`
+      ),
     },
     2n ** 256n,
     db,
