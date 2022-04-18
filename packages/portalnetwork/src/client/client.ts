@@ -189,6 +189,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await addRLPSerializedBlock(block304583Rlp, block304583Hash, this)
 
     await this.client.start()
+
     // Start kbucket refresh on 30 second interval
     this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
