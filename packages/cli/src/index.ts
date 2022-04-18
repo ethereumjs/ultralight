@@ -5,7 +5,6 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import { Server as RPCServer } from 'jayson/promise'
 import http from 'http'
 import * as PromClient from 'prom-client'
@@ -23,25 +22,16 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'ENR of Bootnode',
     string: true,
   })
+  .option('bindAddress', {
+    describe: 'initial IP address and UDP port to bind to',
+    optional: true,
+    string: true,
+    default: '127.0.0.1:5500',
+  })
   .option('bootnodeList', {
     describe: 'path to a file containing a list of bootnode ENRs',
     optional: true,
     string: true,
-  })
-  .option('proxy', {
-    describe: 'Start proxy service',
-    boolean: true,
-    default: true,
-  })
-  .option('nat', {
-    describe: 'NAT Traversal options for proxy',
-    choices: ['localhost', 'lan', 'extip'],
-    default: 'localhost',
-  })
-  .option('persistentPort', {
-    describe: 'run the proxy on a persistent UDP port',
-    number: true,
-    optional: true,
   })
   .option('rpc', {
     describe: 'Enable the JSON-RPC server with HTTP endpoint',
@@ -72,7 +62,6 @@ const args: any = yargs(hideBin(process.argv))
     optional: true,
   }).argv
 
-let child: ChildProcessWithoutNullStreams
 const register = new PromClient.Registry()
 
 const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -80,7 +69,7 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
   res.end(await register.metrics())
 }
 
-const run = async () => {
+const main = async () => {
   let id: PeerId
   if (!args.pk) {
     id = await PeerId.create({ keyType: 'secp256k1' })
@@ -88,7 +77,11 @@ const run = async () => {
     id = await PeerId.createFromPrivKey(args.pk)
   }
   const enr = ENR.createFromPeerId(id)
+  const addrOpts = args.bindAddress.split(':')
+  const initMa = new Multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
+
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
+  enr.setLocationMultiaddr(initMa)
   enr.encode(createKeypairFromPeerId(id).privateKey)
   const metrics = setupMetrics()
   let db
@@ -99,7 +92,7 @@ const run = async () => {
     {
       enr: enr,
       peerId: id,
-      multiaddr: new Multiaddr('/ip4/0.0.0.0/udp/5500'),
+      multiaddr: initMa,
     },
     2n ** 256n,
     db,
@@ -143,7 +136,6 @@ const run = async () => {
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
     await portal.stop()
-    child.kill(0)
     if (metricsServer.listening) {
       metricsServer.close()
     }
@@ -151,32 +143,7 @@ const run = async () => {
   })
 }
 
-const main = async () => {
-  let proxyStarted = false
-
-  if (args.proxy === true) {
-    // Spawn a child process that runs the proxy
-    const file = require.resolve('../../proxy/dist/index.js')
-    const argList = ['--nat', args.nat]
-    if (args.persistentPort) {
-      argList.push('--persistentPort')
-      argList.push(args.persistentPort)
-    }
-    child = spawn(process.execPath, [file, ...argList])
-    child.stderr.on('data', (data) => {
-      if (!proxyStarted && data.toString().includes('websocket server listening')) {
-        run()
-        proxyStarted = true
-        child.stderr.removeAllListeners()
-      }
-    })
-  } else {
-    run()
-  }
-}
-
 main().catch((err) => {
   console.log('Encountered an error', err.message)
   console.log('Shutting down...')
-  child?.kill(0)
 })
