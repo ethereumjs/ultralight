@@ -81,11 +81,9 @@ export class RPCManager {
     portal_nodeEnr: async () => {
       this.log(`portal_nodeEnr request received`)
       try {
-        console.log(this._client.client.enr.keypair)
         const enr = this._client.client.enr.encodeTxt()
         return enr
       } catch (err) {
-        console.log((err as any).message)
         return 'Unable to generate ENR'
       }
     },
