@@ -1,6 +1,6 @@
 import fs from 'fs'
-import { ENR } from '@chainsafe/discv5'
-import { PortalNetwork, SubNetworkIds, WebSocketTransportService } from 'portalnetwork'
+import { createKeypairFromPeerId, ENR } from '@chainsafe/discv5'
+import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
@@ -89,7 +89,7 @@ const run = async () => {
   }
   const enr = ENR.createFromPeerId(id)
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
-  enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
+  enr.encode(createKeypairFromPeerId(id).privateKey)
   const metrics = setupMetrics()
   let db
   if (args.datadir) {
@@ -99,19 +99,16 @@ const run = async () => {
     {
       enr: enr,
       peerId: id,
-      multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
-      transport: new WebSocketTransportService(
-        await enr.getLocationMultiaddr('udp')!,
-        enr.nodeId,
-        `ws://127.0.0.1:${args.persistentPort ?? '5050'}`
-      ),
+      multiaddr: new Multiaddr('/ip4/0.0.0.0/udp/5500'),
     },
     2n ** 256n,
     db,
     metrics
   )
+  // cache private key signature to ensure ENR can be encoded on startup
+  portal.client.enr.encode(createKeypairFromPeerId(id).privateKey)
 
-  portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5:service*')
+  portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5*')
   const metricsServer = http.createServer(reportMetrics)
 
   if (args.metrics) {

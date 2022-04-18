@@ -80,8 +80,14 @@ export class RPCManager {
     },
     portal_nodeEnr: async () => {
       this.log(`portal_nodeEnr request received`)
-      const enr = this._client.client.enr.encodeTxt()
-      return enr
+      try {
+        console.log(this._client.client.enr.keypair)
+        const enr = this._client.client.enr.encodeTxt()
+        return enr
+      } catch (err) {
+        console.log((err as any).message)
+        return 'Unable to generate ENR'
+      }
     },
     portal_findNodes: async (params: [string, number[]]) => {
       const [dstId, distances] = params
