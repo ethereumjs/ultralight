@@ -138,9 +138,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.client.on('talkReqReceived', this.onTalkReq)
     this.client.on('talkRespReceived', this.onTalkResp)
-    this.client.on('sessionEstablished', (nodeId) =>
-      (this.client as any).sendPing(this.client.getKadValue(nodeId))
-    )
     this.on('ContentAdded', this.gossipHistoryNetworkContent)
     /*  TODO: decide whether to add this code back in since some nodes are naughty and send UDP packets that
         are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
@@ -698,7 +695,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               if (enr.nodeId === srcId) return true
               // Break from loop if total size of NODES payload would exceed 1200 bytes
               // TODO: Add capability to send multiple NODES messages if size of ENRs exceeds packet size
-              if (Buffer.from(nodesPayload.enrs).length + enr.size > 1200) return false
+              if (Buffer.concat(nodesPayload.enrs).length + enr.size > 1200) return false
               nodesPayload.total++
               nodesPayload.enrs.push(enr.encode())
               return true
@@ -709,7 +706,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (
         payload.distances.findIndex((res) => res === 0) !== -1 &&
         // Verify that total nodes payload is less than 1200 bytes before adding local ENR
-        Buffer.from(nodesPayload.enrs).length < 1200
+        Buffer.concat(nodesPayload.enrs).length < 1200
       ) {
         nodesPayload.total++
         nodesPayload.enrs.push(this.client.enr.encode())
@@ -846,7 +843,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             if (encodedEnrs.length > 0) {
               this.logger(`Found ${encodedEnrs.length} closer to content than us`)
               // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-              while (Buffer.from(encodedEnrs).length > 1200) {
+              while (
+                encodedEnrs.length > 0 &&
+                Buffer.concat(encodedEnrs as Buffer[]).length > 1200
+              ) {
                 // Remove ENRs until total ENRs less than 1200 bytes
                 encodedEnrs.pop()
               }

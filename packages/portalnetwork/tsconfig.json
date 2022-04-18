@@ -1,7 +1,6 @@
 {
   "include": ["./src/**/*.ts"],
   "exclude": ["dist"], 
-  "references": [{"path": "../discv5/tsconfig.json" }],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 

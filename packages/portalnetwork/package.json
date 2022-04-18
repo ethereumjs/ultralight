@@ -21,7 +21,7 @@
     "@chainsafe/as-sha256": "^0.2.4",
     "@frontall/capacitor-udp": "^0.3.4",
     "@leichtgewicht/ip-codec": "^2.0.3",
-    "@chainsafe/discv5": "^0.6.6",
+    "@chainsafe/discv5": "file:../../../discv5",
     "@chainsafe/ssz": "^0.8.19",
     "@ethereumjs/block": "^3.6.0",
     "@types/levelup": "^4.3.3",
