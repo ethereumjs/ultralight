@@ -1,3 +1,4 @@
+** IN ACTIVE DEVELOPMENT -- DON'T USE IN PRODUCTION **
 # Portal Network Module 
 
 A partially complete Typescript library for interacting with the Portal Network
