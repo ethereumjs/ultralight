@@ -1,6 +1,6 @@
 {
   "name": "portalnetwork",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -19,14 +19,15 @@
   "license": "MIT",
   "dependencies": {
     "@chainsafe/as-sha256": "^0.2.4",
-    "@frontall/capacitor-udp": "^0.3.4",
-    "@leichtgewicht/ip-codec": "^2.0.3",
     "@chainsafe/discv5": "^0.6.6",
     "@chainsafe/ssz": "^0.8.19",
     "@ethereumjs/block": "^3.6.0",
+    "@frontall/capacitor-udp": "^0.3.4",
+    "@leichtgewicht/ip-codec": "^2.0.3",
     "@types/levelup": "^4.3.3",
     "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
+    "isomorphic-ws": "^4.0.1",
     "level-mem": "^6.0.1",
     "multiaddr": "^10.0.1",
     "peer-id": "^0.16.0",
@@ -34,13 +35,12 @@
     "rlp": "2.2.4",
     "strict-event-emitter-types": "^2.0.0",
     "websocket-as-promised": "^2.0.1",
-    "ws": "^8.2.1",
-    "isomorphic-ws": "^4.0.1"
+    "ws": "^8.2.1"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
-    "@types/ws": "^7.4.7",
     "@types/tape": "^4.13.2",
+    "@types/ws": "^7.4.7",
     "eslint": "^8.6.0",
     "nyc": "^15.1.0",
     "prettier": "^2.5.1",
