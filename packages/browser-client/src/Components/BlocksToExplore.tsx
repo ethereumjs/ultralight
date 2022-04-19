@@ -1,8 +1,12 @@
-import { fromHex } from '@chainsafe/discv5'
 import { Box, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
-import { getHistoryNetworkContentId, PortalNetwork, reassembleBlock } from 'portalnetwork'
+import {
+  fromHexString,
+  getHistoryNetworkContentId,
+  PortalNetwork,
+  reassembleBlock,
+} from 'portalnetwork'
 import React, { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
 
 interface BlocksToExploreProps {
@@ -39,7 +43,7 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
     } catch {
       body = rlp.encode([[], []])
     }
-    const block = reassembleBlock(fromHex(header.slice(2)), fromHex(body.slice(2)))
+    const block = reassembleBlock(fromHexString(header), fromHexString(body))
     props.setBlock(block)
   }
 

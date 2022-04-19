@@ -1,5 +1,5 @@
 import React from 'react'
-import { ENR } from '@chainsafe/discv5'
+import { ENR } from 'portalnetwork'
 import { CopyIcon } from '@chakra-ui/icons'
 import {
   Table,

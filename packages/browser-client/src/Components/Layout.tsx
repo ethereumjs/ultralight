@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react'
 import React, { Dispatch, SetStateAction } from 'react'
 import { Block } from '@ethereumjs/block'
-import { ENR } from '@chainsafe/discv5'
+import { ENR } from 'portalnetwork'
 import HistoryNetwork from './HistoryNetwork'
 import { NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'

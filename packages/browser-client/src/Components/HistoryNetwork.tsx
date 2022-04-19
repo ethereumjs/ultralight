@@ -1,4 +1,3 @@
-import { ENR } from '@chainsafe/discv5'
 import {
   Button,
   FormControl,
@@ -14,6 +13,7 @@ import { Block } from '@ethereumjs/block'
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import DisplayBlock from './DisplayBlock'
 import RoutingTableView from './RoutingTableView'
+import { ENR } from 'portalnetwork'
 
 interface HistoryNetworkProps {
   findParent: (hash: string) => Promise<void>

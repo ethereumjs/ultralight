@@ -45,7 +45,6 @@
     "@capacitor/android": "^3.4.3",
     "@capacitor/core": "^3.4.3",
     "@capacitor/ios": "^3.4.3",
-    "@chainsafe/discv5": "^0.6.6",
     "@chakra-ui/icons": "^1.1.5",
     "@chakra-ui/react": "^1.8.8",
     "@emotion/react": "^11.0.0",

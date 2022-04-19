@@ -1,4 +1,3 @@
-import { ENR, fromHex } from '@chainsafe/discv5'
 import debug, { Debugger } from 'debug'
 import {
   PortalNetwork,
@@ -6,6 +5,8 @@ import {
   SubNetworkIds,
   reassembleBlock,
   HistoryNetworkContentKeyUnionType,
+  ENR,
+  fromHexString,
 } from 'portalnetwork'
 import * as rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork'
@@ -34,8 +35,8 @@ export class RPCManager {
         header = await this._client.db.get(headerlookupKey)
         body = includeTransactions ? await this._client.db.get(bodylookupKey) : rlp.encode([[], []])
         block = reassembleBlock(
-          fromHex(header.slice(2)),
-          typeof body === 'string' ? fromHex(body.slice(2)) : body
+          fromHexString(header),
+          typeof body === 'string' ? fromHexString(body) : body
         )
         this._client.metrics?.successfulContentLookups.inc()
         return block
@@ -130,7 +131,7 @@ export class RPCManager {
           selector: contentTypes[idx],
           value: {
             chainId: 1,
-            blockHash: fromHex(blockHash.slice(2)),
+            blockHash: fromHexString(blockHash),
           },
         })
       })
@@ -148,7 +149,7 @@ export class RPCManager {
           value: {
             chainId: 1,
             blockHash: Uint8Array.from(
-              fromHex('46b332ceda6777098fe7943929e76a5fcea772a866c0fb1d170ec65c46c7e3ae')
+              fromHexString('0x46b332ceda6777098fe7943929e76a5fcea772a866c0fb1d170ec65c46c7e3ae')
             ),
           },
         }),
@@ -161,7 +162,7 @@ export class RPCManager {
           value: {
             chainId: 1,
             blockHash: Uint8Array.from(
-              fromHex('0c1cf9b3d4aa3e20e12b355416a4e3202da53f54eaaafc882a7644e3e68127ec')
+              fromHexString('0x0c1cf9b3d4aa3e20e12b355416a4e3202da53f54eaaafc882a7644e3e68127ec')
             ),
           },
         }),
@@ -174,7 +175,7 @@ export class RPCManager {
           value: {
             chainId: 1,
             blockHash: Uint8Array.from(
-              fromHex('ca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f')
+              fromHexString('0xca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f')
             ),
           },
         }),
@@ -191,7 +192,7 @@ export class RPCManager {
           selector: contentTypes[idx],
           value: {
             chainId: 1,
-            blockHash: Uint8Array.from(fromHex(blockhash.slice(2))),
+            blockHash: Uint8Array.from(fromHexString(blockhash)),
           },
         })
       })

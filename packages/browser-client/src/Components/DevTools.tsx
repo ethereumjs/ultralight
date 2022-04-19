@@ -1,4 +1,3 @@
-import { ENR } from '@chainsafe/discv5'
 import {
   Input,
   Heading,
@@ -10,7 +9,7 @@ import {
   useToast,
   Select,
 } from '@chakra-ui/react'
-import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds, ENR } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useState } from 'react'
 import { ContentManager } from './ContentManager'
 import { Share } from '@capacitor/share'
