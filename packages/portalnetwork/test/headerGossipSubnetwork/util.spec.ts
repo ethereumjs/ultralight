@@ -2,6 +2,7 @@ import tape from 'tape'
 import {
   EpochAccumulator,
   HeaderAccumulator,
+  HeaderAccumulatorType,
   updateAccumulator,
 } from '../../src/headerGossipSubnetwork'
 import { Block } from '@ethereumjs/block'
@@ -19,14 +20,18 @@ tape('Validate accumulator updates', (t) => {
   const genesisHeader = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(genesisRlp))).header
   const block2Header = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(block2Rlp))).header
   let updatedAccumulator = updateAccumulator(accumulator, genesisHeader)
-  let deserializedAccumulator = HeaderAccumulator.deserialize(updatedAccumulator)
+  let deserializedAccumulator = HeaderAccumulator.deserialize(
+    updatedAccumulator
+  ) as HeaderAccumulatorType
   t.equal(
     toHexString(EpochAccumulator.hashTreeRoot(deserializedAccumulator.currentEpoch)),
     '0x1978df242d723405f28d26184e57ccf1938b253ef08234bfeb4951abdf3bbe4c',
     'roots match after genesis block'
   )
   updatedAccumulator = updateAccumulator(updatedAccumulator, block2Header)
-  deserializedAccumulator = HeaderAccumulator.deserialize(updatedAccumulator)
+  deserializedAccumulator = HeaderAccumulator.deserialize(
+    updatedAccumulator
+  ) as HeaderAccumulatorType
   t.equal(
     toHexString(EpochAccumulator.hashTreeRoot(deserializedAccumulator.currentEpoch)),
     '0x90cc48e39fe7062a3e5b6a3e78ff1f01544c22b87c6453cd718a1e5fe5ed8fa9',

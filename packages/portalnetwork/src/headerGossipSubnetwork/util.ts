@@ -10,7 +10,6 @@ export const updateAccumulator = (
       ? 0n
       : accumulator.currentEpoch[accumulator.currentEpoch.length - 1].totalDifficulty
 
-  console.log(accumulator, lastTd)
   if (accumulator.currentEpoch.length === EPOCH_SIZE) {
     const currentEpochHash = EpochAccumulator.hashTreeRoot(accumulator.currentEpoch)
     accumulator.historicalEpochs.push(currentEpochHash)
