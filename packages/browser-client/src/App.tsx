@@ -21,12 +21,14 @@ import {
   ModalContent,
   Divider,
 } from '@chakra-ui/react'
-import { log2Distance, ENR, fromHex } from '@chainsafe/discv5'
 import {
   getHistoryNetworkContentId,
   PortalNetwork,
   reassembleBlock,
   SubNetworkIds,
+  ENR,
+  fromHexString,
+  log2Distance,
 } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
@@ -172,8 +174,8 @@ export const App = () => {
         }
         try {
           const block = reassembleBlock(
-            fromHex(header.slice(2)),
-            typeof body === 'string' ? fromHex(body.slice(2)) : body
+            fromHexString(header),
+            typeof body === 'string' ? fromHexString(body) : body
           )
           setBlock(block)
           return block

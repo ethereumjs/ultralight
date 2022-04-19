@@ -1,4 +1,4 @@
-import { ENR } from '@chainsafe/discv5'
+import { ENR } from 'portalnetwork'
 import { lightblue } from '../App'
 
 interface NetworkProps {

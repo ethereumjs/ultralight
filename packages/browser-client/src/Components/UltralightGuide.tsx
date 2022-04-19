@@ -1,4 +1,4 @@
-import { ListItem, UnorderedList, VStack } from '@chakra-ui/react'
+import { ListItem, UnorderedList } from '@chakra-ui/react'
 import React from 'react'
 export default function UltralightGuide() {
   return (

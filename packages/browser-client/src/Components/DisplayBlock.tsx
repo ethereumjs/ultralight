@@ -18,7 +18,7 @@ import {
 import { Block } from '@ethereumjs/block'
 import { getHistoryNetworkContentId } from 'portalnetwork'
 import SelectTx from './SelectTx'
-import React, { useState } from 'react'
+import React from 'react'
 
 interface DisplayBlockProps {
   block: Block
