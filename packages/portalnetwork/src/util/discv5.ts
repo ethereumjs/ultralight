@@ -7,3 +7,4 @@ export {
   distance,
 } from '@chainsafe/discv5'
 export { fromHexString } from '@chainsafe/ssz'
+declare module 'multiaddr/src/convert'
