@@ -1,6 +1,5 @@
 import fs from 'fs'
-import { createKeypairFromPeerId, ENR } from '@chainsafe/discv5'
-import { PortalNetwork, SubNetworkIds } from 'portalnetwork'
+import { PortalNetwork, SubNetworkIds, ENR, createKeypairFromPeerId } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
