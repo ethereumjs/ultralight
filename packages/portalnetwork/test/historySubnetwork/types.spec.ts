@@ -3,8 +3,8 @@ import tape from 'tape'
 import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
-} from '../../src/historySubnetwork'
-import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
+} from '../../src/subprotocols/history'
+import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types'
 
 tape('History Subnetwork contentKey serialization/deserialization', async (t) => {
   let chainId = 15

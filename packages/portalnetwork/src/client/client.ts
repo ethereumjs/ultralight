@@ -31,13 +31,13 @@ import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
-} from '../historySubnetwork/types'
+} from '../subprotocols/history/types'
 import { BlockHeader } from '@ethereumjs/block'
 import {
   addRLPSerializedBlock,
   getHistoryNetworkContentId,
   reassembleBlock,
-} from '../historySubnetwork'
+} from '../subprotocols/history'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'

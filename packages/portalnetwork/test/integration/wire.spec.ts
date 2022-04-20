@@ -4,9 +4,9 @@ import PeerId from 'peer-id'
 import { ENR } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, SubNetworkIds } from '../../src'
-import { HistoryNetworkContentTypes } from '../../src/historySubnetwork/types'
+import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types'
 import { fromHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from '../../src/historySubnetwork'
+import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history'
 import { Block } from '@ethereumjs/block'
 
 const end = async (
