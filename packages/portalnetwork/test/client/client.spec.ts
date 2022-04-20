@@ -12,7 +12,7 @@ import { BlockHeader } from '@ethereumjs/block'
 import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
-} from '../../src/historySubnetwork/types'
+} from '../../src/subprotocols/history/types'
 import { serializedContentKeyToContentId } from '../../src/util'
 
 tape('Client unit tests', async (t) => {
