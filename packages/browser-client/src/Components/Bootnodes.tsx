@@ -72,7 +72,7 @@ export default function Bootnodes(props: BootnodesProps) {
       setIndex(index + 1)
       setProgress(progress + 10)
     }
-  }, 1000)
+  }, 500)
   return index < bns.length ? (
     <VStack>
       <Heading size="sm">Connecting to Bootnodes...</Heading>
