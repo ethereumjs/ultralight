@@ -66,7 +66,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public static createPortalNetwork = async (ip: string, proxyAddress = 'ws://127.0.0.1:5050') => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
-    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/0`))
+    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
     return new PortalNetwork(
       {
         enr,
@@ -78,7 +78,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           proxyAddress
         ),
         config: {
-          addrVotesToUpdateEnr: 5,
+          addrVotesToUpdateEnr: 1,
           enrUpdate: true,
         },
       },
@@ -194,7 +194,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.client.start()
 
     // Start kbucket refresh on 30 second interval
-    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
+    //   this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -611,7 +611,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.handleUTP(srcId, message.id, message.request)
         return
       case SubNetworkIds.Rendezvous:
-        this.logger('Received Rendezvous request')
+        this.logger(`Received Rendezvous request`)
         this.handleRendezvous(srcId, message)
         return
       default:
@@ -991,9 +991,30 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     return
   }
 
+  public sendRendezvous = async (
+    dstId: NodeId,
+    rendezvousNode: NodeId,
+    networkId: SubNetworkIds
+  ) => {
+    this.logger(`Sending RENDEZVOUS message to ${shortId(rendezvousNode)} for ${shortId(dstId)}`)
+    const res = await this.sendPortalNetworkMessage(
+      rendezvousNode,
+      Buffer.concat([Buffer.from(networkId, 'hex'), Buffer.from(dstId, 'hex')]),
+      SubNetworkIds.Rendezvous
+    )
+    this.logger(res)
+  }
+
   private handleRendezvous = async (srcId: NodeId, message: ITalkReqMessage) => {
-    //Send an empty response for now since we aren't doing anything with it
-    const payload = this.supportsRendezvous ? Uint8Array.from([1]) : Uint8Array.from([])
+    const networkId = ('0x' + message.request.slice(0, 2).toString('hex')) as SubNetworkIds
+    const nodeId = message.request.slice(3).toString('hex')
+    this.logger(`Received Rendezvous request for ${shortId(nodeId)} on ${networkId} network`)
+    const routingTable = this.routingTables.get(networkId)
+    let enr
+    if (routingTable) {
+      enr = routingTable.getValue(nodeId)
+    }
+    const payload = enr ? Uint8Array.from([1]) : Uint8Array.from([])
     this.client.sendTalkResp(srcId, message.id, payload)
   }
 
