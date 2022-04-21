@@ -66,6 +66,9 @@ export default function DevTools(props: DevToolsProps) {
     portal?.sendOffer(nodeId, [encodedContentKey], SubNetworkIds.HistoryNetwork)
   }
 
+  const sendRendezvous = async (peer: string) => {
+    portal?.sendRendezvous(props.peerEnr, peer, SubNetworkIds.HistoryNetwork)
+  }
   async function handleCopy() {
     await props.copy()
     toast({
@@ -142,9 +145,11 @@ export default function DevTools(props: DevToolsProps) {
           </Heading>
         </Center>
         <Divider />
-        <Select>
+        <Select value={peer} onChange={(evt) => _setPeer(evt.target.value)}>
           {peers.map((_peer) => (
-            <option value={_peer}>{_peer.slice(0, 25)}...</option>
+            <option key={_peer} value={_peer}>
+              {_peer.slice(0, 25)}...
+            </option>
           ))}
         </Select>
       </Box>
