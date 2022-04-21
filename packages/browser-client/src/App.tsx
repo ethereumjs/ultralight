@@ -83,7 +83,7 @@ export const App = () => {
       setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
     )
     await node.start()
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
   }
 
   const copy = async () => {

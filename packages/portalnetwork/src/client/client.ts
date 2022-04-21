@@ -999,7 +999,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(`Sending RENDEZVOUS message to ${shortId(rendezvousNode)} for ${shortId(dstId)}`)
     const res = await this.sendPortalNetworkMessage(
       rendezvousNode,
-      Buffer.concat([Buffer.from(networkId, 'hex'), Buffer.from(dstId, 'hex')]),
+      Buffer.concat([Buffer.from(networkId.slice(2), 'hex'), Buffer.from(dstId, 'hex')]),
       SubNetworkIds.Rendezvous
     )
     this.logger(res)
@@ -1007,7 +1007,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private handleRendezvous = async (srcId: NodeId, message: ITalkReqMessage) => {
     const networkId = ('0x' + message.request.slice(0, 2).toString('hex')) as SubNetworkIds
-    const nodeId = message.request.slice(3).toString('hex')
+    const nodeId = message.request.slice(2).toString('hex')
     this.logger(`Received Rendezvous request for ${shortId(nodeId)} on ${networkId} network`)
     const routingTable = this.routingTables.get(networkId)
     let enr

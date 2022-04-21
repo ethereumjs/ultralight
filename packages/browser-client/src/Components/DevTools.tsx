@@ -177,6 +177,9 @@ export default function DevTools(props: DevToolsProps) {
         Send Offer
       </Button>
       <Divider />
+      <Button isDisabled={!props.peerEnr} onClick={() => sendRendezvous(peer)} w="100%" size="sm">
+        Send Rendezvous
+      </Button>
     </VStack>
   )
 }
