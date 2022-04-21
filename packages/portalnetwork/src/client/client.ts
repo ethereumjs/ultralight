@@ -55,6 +55,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
+  private supportsRendezvous: boolean
 
   /**
    *
@@ -117,7 +118,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
     db?: LevelUp,
-    metrics?: PortalNetworkMetrics
+    metrics?: PortalNetworkMetrics,
+    supportsRendezvous = false
   ) {
     // eslint-disable-next-line constructor-super
     super()
@@ -166,6 +168,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.routingTables.get(SubNetworkIds.HistoryNetwork)!.size
         )
     }
+    this.supportsRendezvous = supportsRendezvous
   }
 
   /**
@@ -607,6 +610,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(`Received uTP packet`)
         this.handleUTP(srcId, message.id, message.request)
         return
+      case SubNetworkIds.Rendezvous:
+        this.logger('Received Rendezvous request')
+        this.handleRendezvous(srcId, message)
+        return
       default:
         this.logger(
           `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`
@@ -667,6 +674,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         true,
         pingMessage.customPayload
       )
+      // If we receive a ping from a node we don't know, that means we're publicly reachable so can support rendezvous
+      this.supportsRendezvous = true
     } else {
       const decodedPayload = PingPongCustomDataType.deserialize(
         Uint8Array.from(pingMessage.customPayload)
@@ -811,7 +820,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
   }
 
-  private handleFindContent = async (srcId: string, message: ITalkReqMessage) => {
+  private handleFindContent = async (srcId: NodeId, message: ITalkReqMessage) => {
     this.metrics?.contentMessagesSent.inc()
     const decoded = PortalWireMessageType.deserialize(message.request)
     this.logger(`Received FINDCONTENT request from ${shortId(srcId)}`)
@@ -920,7 +929,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param msgId uTP message ID
    * @param packetBuffer uTP packet encoded to Buffer
    */
-  private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
+  private handleUTP = async (srcId: NodeId, msgId: bigint, packetBuffer: Buffer) => {
     await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
     await this.uTP.handleUtpPacket(packetBuffer, srcId)
   }
@@ -980,6 +989,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger(err)
     }
     return
+  }
+
+  private handleRendezvous = async (srcId: NodeId, message: ITalkReqMessage) => {
+    //Send an empty response for now since we aren't doing anything with it
+    const payload = this.supportsRendezvous ? Uint8Array.from([1]) : Uint8Array.from([])
+    this.client.sendTalkResp(srcId, message.id, payload)
   }
 
   /**

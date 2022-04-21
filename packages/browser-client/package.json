@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "HOST=0.0.0.0 webpack serve",
+    "start": "webpack serve",
     "build": "webpack",
     "mobile-dev": "CAP_ENV=liveReload npx cap run android",
     "build-debug-apk": "npx cap run android"
