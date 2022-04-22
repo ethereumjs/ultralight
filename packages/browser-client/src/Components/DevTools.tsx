@@ -32,6 +32,7 @@ export default function DevTools(props: DevToolsProps) {
     return p.nodeId
   })
   const [peer, _setPeer] = useState(peers[0])
+  const [targetNodeId, setTarget] = useState('')
   const [distance, setDistance] = useState('')
   const [contentKey, setContentKey] = useState('')
   const toast = useToast()
@@ -68,6 +69,7 @@ export default function DevTools(props: DevToolsProps) {
 
   const sendRendezvous = async (peer: string) => {
     portal?.sendRendezvous(props.peerEnr, peer, SubNetworkIds.HistoryNetwork)
+    setTarget('')
   }
   async function handleCopy() {
     await props.copy()
@@ -87,7 +89,7 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   React.useEffect(() => {
-    //  sharing()
+    sharing()
   }, [])
 
   return (
@@ -125,11 +127,12 @@ export default function DevTools(props: DevToolsProps) {
       ) : (
         <VStack width={'100%'} spacing={0} border="1px" borderRadius={'0.375rem'}>
           <Input
-            size="xs"
+            size="sm"
             bg="whiteAlpha.800"
             value={props.peerEnr}
-            placeholder={'Node ENR'}
+            placeholder="Node ENR"
             onChange={(evt) => props.setPeerEnr(evt.target.value)}
+            mb={2}
           />
           <Button width={'100%'} onClick={props.handleClick}>
             Connect To Node
@@ -177,8 +180,13 @@ export default function DevTools(props: DevToolsProps) {
         Send Offer
       </Button>
       <Divider />
-      <Button isDisabled={!props.peerEnr} onClick={() => sendRendezvous(peer)} w="100%" size="sm">
-        Send Rendezvous
+      <Input
+        placeholder="Target Node ID"
+        value={targetNodeId}
+        onChange={(evt) => setTarget(evt.target.value)}
+      />
+      <Button isDisabled={!targetNodeId} onClick={() => sendRendezvous(peer)} w="100%" size="sm">
+        Send Rendezvous Request
       </Button>
     </VStack>
   )
