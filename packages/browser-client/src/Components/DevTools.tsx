@@ -87,7 +87,7 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   React.useEffect(() => {
-    sharing()
+    //  sharing()
   }, [])
 
   return (
