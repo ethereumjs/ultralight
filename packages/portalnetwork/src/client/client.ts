@@ -99,7 +99,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         multiaddr: enr.getLocationMultiaddr('udp')!,
         transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId),
         config: {
-          addrVotesToUpdateEnr: 5,
+          addrVotesToUpdateEnr: 1,
           enrUpdate: true,
         },
       },
@@ -1067,11 +1067,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const payload = Buffer.concat([
           Uint8Array.from([2]),
           Buffer.from(networkId.slice(2), 'hex'),
-          srcEnr!.encode(this.client.keypair.privateKey),
+          srcEnr!.encode(),
         ])
         // Send SYNC request to target node
         this.logger(
-          `Forwarding Rendezvous SYNC  from requestor ${shortId(srcId)} to target ${shortId(dstId)}`
+          `Forwarding Rendezvous SYNC from requestor ${shortId(srcId)} to target ${shortId(dstId)}`
         )
         this.sendPortalNetworkMessage(dstId, payload, SubNetworkIds.Rendezvous)
         break
