@@ -97,24 +97,18 @@ export const App = () => {
     if (portal?.client.isStarted()) {
       await portal.stop()
     }
-    const id = await PeerId.create({ keyType: 'secp256k1' })
-    const enr = ENR.createFromPeerId(id)
-    setId(enr.nodeId)
-    enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
     const node = Capacitor.isNativePlatform()
       ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
       : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
-    // eslint-disable-next-line no-undef
-    ;(window as any).Multiaddr = Multiaddr
-    // eslint-disable-next-line no-undef
-    ;(window as any).ENR = ENR
     setPortal(node)
     node.client.on('multiaddrUpdated', () =>
       setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
     )
     await node.start()
+    // eslint-disable-next-line no-undef
+    ;(window as any).ENR = ENR
     node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
   }
 
