@@ -37,5 +37,16 @@ tape('Validate accumulator updates', (t) => {
     '0x90cc48e39fe7062a3e5b6a3e78ff1f01544c22b87c6453cd718a1e5fe5ed8fa9',
     'roots match after Block 2'
   )
+
+  const currentEpoch = deserializedAccumulator.currentEpoch
+  const tree = EpochAccumulator.struct_convertToTree(currentEpoch)
+  const gIdx = EpochAccumulator.getGindexAtChunkIndex(1)
+  const proof = tree.getProof({ type: 'single' as any, gindex: gIdx })
+  const reconstructedTree = EpochAccumulator.createTreeBackedFromProofUnsafe(proof)
+  t.equal(
+    toHexString(EpochAccumulator.hashTreeRoot(currentEpoch)),
+    toHexString(reconstructedTree.hashTreeRoot()),
+    'successfully validated single proof for block 2 header'
+  )
   t.end()
 })
