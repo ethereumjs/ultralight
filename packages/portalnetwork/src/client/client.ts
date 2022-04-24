@@ -1045,13 +1045,20 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         if (!enr) {
           enr = this.client.getKadValue(dstId)
           if (!enr) {
-            // destination node is unknown, seund null response
+            // destination node is unknown, send null response
             this.client.sendTalkResp(srcId, message.id, Uint8Array.from([]))
             return
           }
         }
         // Destination node is known, send ENR to requestor
         this.logger(`found ENR for ${shortId(dstId)} - ${enr.encodeTxt()}`)
+        const pingRes = await this.sendPing(enr.nodeId, networkId)
+        // Ping target node to verify it is reachable from rendezvous node
+        if (!pingRes) {
+          // If the target node isn't reachable, send null response
+          this.client.sendTalkResp(srcId, message.id, Uint8Array.from([]))
+          return
+        }
         const payload = enr.encode()
         this.client.sendTalkResp(srcId, message.id, payload)
         break
