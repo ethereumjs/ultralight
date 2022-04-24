@@ -3,6 +3,7 @@ import {
   EpochAccumulator,
   HeaderAccumulator,
   HeaderAccumulatorType,
+  HeaderRecord,
   updateAccumulator,
 } from '../../../src/subprotocols/headerGossip'
 import { Block } from '@ethereumjs/block'
@@ -41,11 +42,12 @@ tape('Validate accumulator updates', (t) => {
   const currentEpoch = deserializedAccumulator.currentEpoch
   const tree = EpochAccumulator.struct_convertToTree(currentEpoch)
   const gIdx = EpochAccumulator.getGindexAtChunkIndex(1)
+
   const proof = tree.getProof({ type: 'single' as any, gindex: gIdx })
-  const reconstructedTree = EpochAccumulator.createTreeBackedFromProofUnsafe(proof)
+  const reconstructedTree = EpochAccumulator.tree_createFromProofUnsafe(proof)
   t.equal(
     toHexString(EpochAccumulator.hashTreeRoot(currentEpoch)),
-    toHexString(reconstructedTree.hashTreeRoot()),
+    toHexString(reconstructedTree.root),
     'successfully validated single proof for block 2 header'
   )
   t.end()
