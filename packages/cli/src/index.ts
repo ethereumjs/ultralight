@@ -92,6 +92,10 @@ const main = async () => {
       enr: enr,
       peerId: id,
       multiaddr: initMa,
+      config: {
+        enrUpdate: true,
+        addrVotesToUpdateEnr: 1,
+      },
     },
     2n ** 256n,
     db,

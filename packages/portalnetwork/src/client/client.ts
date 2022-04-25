@@ -55,6 +55,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
+  private supportsRendezvous: boolean
 
   /**
    *
@@ -65,7 +66,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public static createPortalNetwork = async (ip: string, proxyAddress = 'ws://127.0.0.1:5050') => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
-    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/0`))
+    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
     return new PortalNetwork(
       {
         enr,
@@ -77,7 +78,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           proxyAddress
         ),
         config: {
-          addrVotesToUpdateEnr: 5,
+          addrVotesToUpdateEnr: 1,
           enrUpdate: true,
         },
       },
@@ -98,7 +99,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         multiaddr: enr.getLocationMultiaddr('udp')!,
         transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId),
         config: {
-          addrVotesToUpdateEnr: 5,
+          addrVotesToUpdateEnr: 1,
           enrUpdate: true,
         },
       },
@@ -117,7 +118,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
     db?: LevelUp,
-    metrics?: PortalNetworkMetrics
+    metrics?: PortalNetworkMetrics,
+    supportsRendezvous = false
   ) {
     // eslint-disable-next-line constructor-super
     super()
@@ -166,6 +168,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.routingTables.get(SubNetworkIds.HistoryNetwork)!.size
         )
     }
+    this.supportsRendezvous = supportsRendezvous
   }
 
   /**
@@ -191,7 +194,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.client.start()
 
     // Start kbucket refresh on 30 second interval
-    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
+    //   this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -607,6 +610,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(`Received uTP packet`)
         this.handleUTP(srcId, message.id, message.request)
         return
+      case SubNetworkIds.Rendezvous:
+        this.handleRendezvous(srcId, message)
+        return
       default:
         this.logger(
           `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`
@@ -667,6 +673,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         true,
         pingMessage.customPayload
       )
+      // If we receive a ping from a node we don't know, that means we're publicly reachable so can support rendezvous
+      this.supportsRendezvous = true
     } else {
       const decodedPayload = PingPongCustomDataType.deserialize(
         Uint8Array.from(pingMessage.customPayload)
@@ -811,7 +819,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.client.sendTalkResp(srcId, message.id, Buffer.from(encodedPayload))
   }
 
-  private handleFindContent = async (srcId: string, message: ITalkReqMessage) => {
+  private handleFindContent = async (srcId: NodeId, message: ITalkReqMessage) => {
     this.metrics?.contentMessagesSent.inc()
     const decoded = PortalWireMessageType.deserialize(message.request)
     this.logger(`Received FINDCONTENT request from ${shortId(srcId)}`)
@@ -920,7 +928,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param msgId uTP message ID
    * @param packetBuffer uTP packet encoded to Buffer
    */
-  private handleUTP = async (srcId: string, msgId: bigint, packetBuffer: Buffer) => {
+  private handleUTP = async (srcId: NodeId, msgId: bigint, packetBuffer: Buffer) => {
     await this.client.sendTalkResp(srcId, msgId, new Uint8Array())
     await this.uTP.handleUtpPacket(packetBuffer, srcId)
   }
@@ -980,6 +988,117 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger(err)
     }
     return
+  }
+
+  public sendRendezvous = async (
+    dstId: NodeId,
+    rendezvousNode: NodeId,
+    networkId: SubNetworkIds
+  ) => {
+    this.logger(`Sending RENDEZVOUS message to ${shortId(rendezvousNode)} for ${shortId(dstId)}`)
+    const time = Date.now()
+    let res = await this.sendPortalNetworkMessage(
+      rendezvousNode,
+      Buffer.concat([
+        Uint8Array.from([0]),
+        Buffer.from(networkId.slice(2), 'hex'),
+        Buffer.from(dstId, 'hex'),
+      ]),
+      SubNetworkIds.Rendezvous
+    )
+    if (res.length > 0) {
+      // Measure roundtrip to `dstId`
+      const roundtrip = Date.now() - time
+      const peer = ENR.decode(res)
+      this.updateSubnetworkRoutingTable(peer, networkId, true)
+      setTimeout(() => this.sendPing(peer.nodeId, SubNetworkIds.HistoryNetwork), roundtrip / 2)
+      this.logger(`Sending rendezvous DIRECT request to ${peer.nodeId}`)
+      res = await this.sendPortalNetworkMessage(
+        rendezvousNode,
+        Buffer.concat([
+          Uint8Array.from([1]),
+          Buffer.from(networkId.slice(2), 'hex'),
+          Buffer.from(dstId, 'hex'),
+        ]),
+        SubNetworkIds.Rendezvous
+      )
+    }
+    this.logger(res)
+  }
+
+  private handleRendezvous = async (srcId: NodeId, message: ITalkReqMessage) => {
+    const networkId = ('0x' + message.request.slice(1, 3).toString('hex')) as SubNetworkIds
+    const routingTable = this.routingTables.get(networkId)
+
+    if (!routingTable) {
+      this.client.sendTalkResp(srcId, message.id, Uint8Array.from([]))
+      return
+    }
+    switch (message.request[0]) {
+      case 0: {
+        // Rendezvous FIND request - check to see if destination node is known to us
+        const dstId = message.request.slice(3).toString('hex')
+        this.logger(
+          `Received Rendezvous FIND request for ${shortId(dstId)} on ${networkId} network`
+        )
+        let enr = routingTable.getValue(dstId)
+        if (!enr) {
+          enr = this.client.getKadValue(dstId)
+          if (!enr) {
+            // destination node is unknown, send null response
+            this.client.sendTalkResp(srcId, message.id, Uint8Array.from([]))
+            return
+          }
+        }
+        // Destination node is known, send ENR to requestor
+        this.logger(`found ENR for ${shortId(dstId)} - ${enr.encodeTxt()}`)
+        const pingRes = await this.sendPing(enr.nodeId, networkId)
+        // Ping target node to verify it is reachable from rendezvous node
+        if (!pingRes) {
+          // If the target node isn't reachable, send null response
+          this.client.sendTalkResp(srcId, message.id, Uint8Array.from([]))
+          return
+        }
+        const payload = enr.encode()
+        this.client.sendTalkResp(srcId, message.id, payload)
+        break
+      }
+      case 1: {
+        // SYNC request from requestor
+        this.client.sendTalkResp(srcId, message.id, Uint8Array.from([]))
+        const dstId = message.request.slice(3).toString('hex')
+        this.logger(
+          `Received Rendezvous SYNC from requestor ${shortId(srcId)} for target ${shortId(dstId)}`
+        )
+        const srcEnr = routingTable.getValue(srcId)
+        const payload = Buffer.concat([
+          Uint8Array.from([2]),
+          Buffer.from(networkId.slice(2), 'hex'),
+          srcEnr!.encode(),
+        ])
+        // Send SYNC request to target node
+        this.logger(
+          `Forwarding Rendezvous SYNC from requestor ${shortId(srcId)} to target ${shortId(dstId)}`
+        )
+        this.sendPortalNetworkMessage(dstId, payload, SubNetworkIds.Rendezvous)
+        break
+      }
+      case 2: {
+        // SYNC request from rendezvous node
+        const enr = ENR.decode(message.request.slice(3))
+        const networkId = ('0x' + message.request.slice(1, 3).toString('hex')) as SubNetworkIds
+        this.logger(
+          `Received Rendezvous SYNC request from ${shortId(srcId)} for requester ${shortId(
+            enr.nodeId
+          )}`
+        )
+        // Add requestor to routing table
+        this.updateSubnetworkRoutingTable(enr, networkId, true)
+        // Ping requestor
+        this.logger(`Sending Rendezvous Ping to requestor ${shortId(enr.nodeId)}`)
+        this.sendPing(enr.nodeId, networkId)
+      }
+    }
   }
 
   /**

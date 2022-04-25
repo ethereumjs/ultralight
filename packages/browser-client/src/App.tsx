@@ -61,35 +61,6 @@ export const App = () => {
   const disclosure = useDisclosure()
   const toast = useToast()
   const [modalStatus, setModal] = React.useState(false)
-  const init = async () => {
-    if (portal?.client.isStarted()) {
-      await portal.stop()
-    }
-    const id = await PeerId.create({ keyType: 'secp256k1' })
-    const enr = ENR.createFromPeerId(id)
-    setId(enr.nodeId)
-    enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
-    const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork('127.0.0.1')
-      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
-    // eslint-disable-next-line no-undef
-    ;(window as any).portal = node
-    // eslint-disable-next-line no-undef
-    ;(window as any).Multiaddr = Multiaddr
-    // eslint-disable-next-line no-undef
-    ;(window as any).ENR = ENR
-    setPortal(node)
-    node.client.on('multiaddrUpdated', () =>
-      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
-    )
-    await node.start()
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
-  }
-
-  const copy = async () => {
-    await setENR(portal?.client.enr.encodeTxt(portal.client.keypair.privateKey) ?? '')
-    onCopy()
-  }
 
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubNetworkIds.HistoryNetwork)
@@ -118,8 +89,33 @@ export const App = () => {
     portal?.on('NodeRemoved', () => updateAddressBook())
     return () => {
       portal?.removeAllListeners()
+      portal?.client.removeAllListeners()
     }
   }, [portal])
+
+  const init = async () => {
+    if (portal?.client.isStarted()) {
+      await portal.stop()
+    }
+    const node = Capacitor.isNativePlatform()
+      ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
+      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
+    // eslint-disable-next-line no-undef
+    ;(window as any).portal = node
+    setPortal(node)
+    node.client.on('multiaddrUpdated', () =>
+      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
+    )
+    await node.start()
+    // eslint-disable-next-line no-undef
+    ;(window as any).ENR = ENR
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
+  }
+
+  const copy = async () => {
+    await setENR(portal?.client.enr.encodeTxt(portal.client.keypair.privateKey) ?? '')
+    onCopy()
+  }
 
   React.useEffect(() => {
     init()
@@ -136,19 +132,18 @@ export const App = () => {
       }
     }
     setPeerEnr('')
-    if (res) updateAddressBook()
+    updateAddressBook()
     // Only rerender the address book if we actually got a response from the node
-    else {
-      if (!errMessage) {
-        errMessage = 'Node did not respond'
-      }
-      toast({
-        title: errMessage,
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      })
+
+    if (!errMessage) {
+      errMessage = 'Node did not respond'
     }
+    toast({
+      title: errMessage,
+      status: 'error',
+      duration: 3000,
+      isClosable: true,
+    })
   }
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {
@@ -267,6 +262,7 @@ export const App = () => {
           sortedDistList={sortedDistList}
           capacitor={Capacitor}
         />
+        <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
       </Box>
       <Box width={'100%'} pos={'fixed'} bottom={'0'}>
         <Center>
