@@ -25,7 +25,7 @@ tape('message encoding should match test vectors', (t) => {
   t.isEqual(Buffer.from(payload).toString('hex'), testVector, 'ping message encoded correctly')
 
   // Validate FINDNODES message encoding
-  const distances = [Uint8Array.from([256, 255])]
+  const distances = Array.from([256, 255])
   payload = PortalWireMessageType.serialize({
     selector: MessageCodes.FINDNODES,
     value: { distances },

@@ -68,7 +68,7 @@ export type FindNodesMessage = {
 }
 
 export const FindNodesMessageType = new ContainerType({
-  distances: new ListCompositeType(new ByteListType(2), 256),
+  distances: new ListBasicType(new UintNumberType(2), 256),
 })
 
 export type NodesMessage = {
