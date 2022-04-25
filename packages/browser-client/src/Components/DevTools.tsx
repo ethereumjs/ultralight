@@ -68,7 +68,7 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   const sendRendezvous = async (peer: string) => {
-    portal?.sendRendezvous(props.peerEnr, peer, SubNetworkIds.HistoryNetwork)
+    portal?.sendRendezvous(targetNodeId, peer, SubNetworkIds.HistoryNetwork)
     setTarget('')
   }
   async function handleCopy() {
