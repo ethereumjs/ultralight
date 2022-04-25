@@ -1,15 +1,14 @@
 import {
   ContainerType,
-  ByteVector,
-  BigIntUintType,
-  UnionType,
-  ListType,
-  byteType,
-  NumberUintType,
-  BitListType,
   ByteVectorType,
-  Union,
-  List,
+  UintBigintType,
+  ByteListType,
+  UintNumberType,
+  BitListType,
+  UnionType,
+  ListBasicType,
+  ListCompositeType,
+  BitArray,
 } from '@chainsafe/ssz'
 
 // Subnetwork IDs
@@ -25,9 +24,7 @@ export enum SubNetworkIds {
 
 // Ping/Pong Custom Data type -- currently identical for State and History networks
 export const PingPongCustomDataType = new ContainerType({
-  fields: {
-    radius: new BigIntUintType({ byteLength: 32 }),
-  },
+  radius: new UintBigintType(32),
 })
 
 // Wire Protocol Message Codes
@@ -43,31 +40,27 @@ export enum MessageCodes {
 }
 
 // Type Aliases
-export const ByteList = new ListType({ limit: 2048, elementType: byteType })
-export const Bytes2 = new ByteVectorType({ length: 2 })
-export const ENRs = new ListType({ elementType: ByteList, limit: 32 })
+export const ByteList = new ByteListType(2048)
+export const Bytes2 = new ByteVectorType(2)
+export const ENRs = new ListCompositeType(ByteList, 32)
 export type PingMessage = {
   enrSeq: bigint
-  customPayload: ByteVector
+  customPayload: ByteVectorType
 }
 
 export type PongMessage = {
   enrSeq: bigint
-  customPayload: ByteVector
+  customPayload: ByteVectorType
 }
 
 export const PingMessageType = new ContainerType({
-  fields: {
-    enrSeq: new BigIntUintType({ byteLength: 8 }),
-    customPayload: ByteList,
-  },
+  enrSeq: new UintBigintType(8),
+  customPayload: ByteList,
 })
 
 export const PongMessageType = new ContainerType({
-  fields: {
-    enrSeq: new BigIntUintType({ byteLength: 8 }),
-    customPayload: ByteList,
-  },
+  enrSeq: new UintBigintType(8),
+  customPayload: ByteList,
 })
 
 export type FindNodesMessage = {
@@ -75,21 +68,17 @@ export type FindNodesMessage = {
 }
 
 export const FindNodesMessageType = new ContainerType({
-  fields: {
-    distances: new ListType({ elementType: new NumberUintType({ byteLength: 2 }), limit: 256 }),
-  },
+  distances: new ListCompositeType(new ByteListType(2), 256),
 })
 
 export type NodesMessage = {
-  total: number
+  total: Uint16Array
   enrs: Uint8Array[]
 }
 
 export const NodesMessageType = new ContainerType({
-  fields: {
-    total: byteType,
-    enrs: ENRs,
-  },
+  total: new UintNumberType(1),
+  enrs: ENRs,
 })
 
 export type FindContentMessage = {
@@ -97,9 +86,7 @@ export type FindContentMessage = {
 }
 
 export const FindContentMessageType = new ContainerType({
-  fields: {
-    contentKey: ByteList,
-  },
+  contentKey: ByteList,
 })
 
 export type ContentMessage = {
@@ -112,32 +99,26 @@ export type content = Uint8Array
 
 export type enrs = Uint8Array[]
 
-export const ContentMessageType = new UnionType<Union<connectionId | content | enrs>>({
-  types: [Bytes2, ByteList, ENRs],
-})
+export const ContentMessageType = new UnionType([Bytes2, ByteList, ENRs])
 export type OfferMessage = {
   contentKeys: Uint8Array[]
 }
 
 export const OfferMessageType = new ContainerType({
-  fields: {
-    contentKeys: new ListType({ elementType: ByteList, limit: 64 }),
-  },
+  contentKeys: new ListCompositeType(ByteList, 64),
 })
 
 export type AcceptMessage = {
   connectionId: Uint8Array
-  contentKeys: List<Boolean>
+  contentKeys: BitArray
 }
 
 export const AcceptMessageType = new ContainerType({
-  fields: {
-    connectionId: Bytes2,
-    contentKeys: new BitListType({ limit: 64 }),
-  },
+  connectionId: Bytes2,
+  contentKeys: new BitListType(64),
 })
 
-export type MessageTypeUnion =
+export type MessageTypeUnion = [
   | PingMessage
   | PongMessage
   | FindNodesMessage
@@ -146,15 +127,14 @@ export type MessageTypeUnion =
   | ContentMessage
   | OfferMessage
   | AcceptMessage
-export const PortalWireMessageType = new UnionType<Union<MessageTypeUnion>>({
-  types: [
-    PingMessageType,
-    PongMessageType,
-    FindNodesMessageType,
-    NodesMessageType,
-    FindContentMessageType,
-    ContentMessageType,
-    OfferMessageType,
-    AcceptMessageType,
-  ],
-})
+]
+export const PortalWireMessageType = new UnionType([
+  PingMessageType,
+  PongMessageType,
+  FindNodesMessageType,
+  NodesMessageType,
+  FindContentMessageType,
+  ContentMessageType,
+  OfferMessageType,
+  AcceptMessageType,
+])

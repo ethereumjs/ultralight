@@ -295,9 +295,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
         this.logger(`Received PONG from ${shortId(dstId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
-        const pongMessage = decoded.value as PongMessage
+        const pongMessage = decoded.value as any
         this.updateSubnetworkRoutingTable(dstId, networkId, true, pongMessage.customPayload)
-        return decoded.value as PongMessage
+        return decoded.value as any
       }
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
@@ -331,7 +331,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         this.metrics?.nodesMessagesReceived.inc()
         this.logger(`Received NODES from ${shortId(dstId)}`)
-        const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
+        const decoded = PortalWireMessageType.deserialize(res).value as any
         if (decoded) {
           this.logger(`Received ${decoded.total} ENRs from ${shortId(dstId)}`)
           const routingTable = this.routingTables.get(networkId)

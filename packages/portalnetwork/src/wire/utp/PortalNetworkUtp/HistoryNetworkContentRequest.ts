@@ -1,4 +1,3 @@
-import { Union } from '@chainsafe/ssz'
 import { UtpSocket } from '..'
 import { HistoryNetworkContentKey, HistoryNetworkContentKeyUnionType } from '../../..'
 import ContentReader from '../Protocol/read/ContentReader'
@@ -11,8 +10,8 @@ export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., 
 
 export class HistoryNetworkContentRequest {
   requestCode: RequestCode
-  contentKey: Union<HistoryNetworkContentKey>
-  contentKeys: Union<HistoryNetworkContentKey>[]
+  contentKey: HistoryNetworkContentKey
+  contentKeys: HistoryNetworkContentKey[]
   socket: UtpSocket
   sockets: UtpSocket[]
   socketKey: string
@@ -28,6 +27,7 @@ export class HistoryNetworkContentRequest {
     content: Uint8Array[] | undefined[]
   ) {
     this.sockets = socket
+    //@ts-ignore
     this.contentKeys = contentKey.map((k) => {
       return HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(k))
     })
