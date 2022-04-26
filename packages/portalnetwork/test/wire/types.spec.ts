@@ -12,14 +12,14 @@ tape('message encoding should match test vectors', (t) => {
   // Validate PING/PONG message encoding
   const enrSeq = BigInt(1)
   const dataRadius = 2n ** 256n - 2n
-  const customPayload = PingPongCustomDataType.serialize({ radius: dataRadius })
   let payload = PortalWireMessageType.serialize({
     selector: MessageCodes.PING,
     value: {
       enrSeq: enrSeq,
-      customPayload: customPayload,
+      customPayload: PingPongCustomDataType.serialize({ radius: dataRadius }),
     },
   })
+
   let testVector =
     '0001000000000000000c000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
   t.isEqual(Buffer.from(payload).toString('hex'), testVector, 'ping message encoded correctly')

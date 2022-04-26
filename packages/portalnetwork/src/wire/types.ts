@@ -27,6 +27,8 @@ export const PingPongCustomDataType = new ContainerType({
   radius: new UintBigintType(32),
 })
 
+export type PingPongCustomData = Uint8Array
+
 // Wire Protocol Message Codes
 export enum MessageCodes {
   PING = 0x00,
@@ -45,12 +47,12 @@ export const Bytes2 = new ByteVectorType(2)
 export const ENRs = new ListCompositeType(ByteList, 32)
 export type PingMessage = {
   enrSeq: bigint
-  customPayload: ByteVectorType
+  customPayload: PingPongCustomData
 }
 
 export type PongMessage = {
   enrSeq: bigint
-  customPayload: ByteVectorType
+  customPayload: PingPongCustomData
 }
 
 export const PingMessageType = new ContainerType({
@@ -64,7 +66,7 @@ export const PongMessageType = new ContainerType({
 })
 
 export type FindNodesMessage = {
-  distances: Uint16Array
+  distances: number[]
 }
 
 export const FindNodesMessageType = new ContainerType({
@@ -72,7 +74,7 @@ export const FindNodesMessageType = new ContainerType({
 })
 
 export type NodesMessage = {
-  total: Uint16Array
+  total: number
   enrs: Uint8Array[]
 }
 

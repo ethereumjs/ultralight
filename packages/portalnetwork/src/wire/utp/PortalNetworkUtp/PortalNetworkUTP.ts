@@ -466,9 +466,9 @@ export class PortalNetworkUTP {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
       await this.portal.addContentToHistory(
-        1,
-        request.contentKey.selector,
-        toHexString(request.contentKey.value.blockHash),
+        request.contentKey.chainId,
+        0,
+        toHexString(request.contentKey.blockHash),
         content
       )
     }

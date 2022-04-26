@@ -48,6 +48,7 @@ tape('Client unit tests', async (t) => {
       )
     ).thenResolve(pongResponse, null)
     let res = await node.sendPing('abc', SubNetworkIds.HistoryNetwork)
+    console.log(PortalWireMessageType.deserialize(pongResponse))
     st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
     res = await node.sendPing('abc', SubNetworkIds.HistoryNetwork)
     st.ok(res === undefined, 'received undefined when no valid PONG message received')
@@ -141,7 +142,7 @@ tape('Client unit tests', async (t) => {
       )
     ).thenResolve(findContentResponse)
     const res = await node.sendFindContent('abc', key, SubNetworkIds.HistoryNetwork)
-    st.deepEqual(res.value, [97, 98, 99], 'got correct content')
+    st.deepEqual(res.value, Uint8Array.from([97, 98, 99]), 'got correct content')
     const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
     const findContentMessageWithShortContent = Uint8Array.from([
       4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179,
