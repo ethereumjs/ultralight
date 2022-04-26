@@ -30,6 +30,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
   const [tabIndex, setTabIndex] = useState(0)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
+  console.log(props.findParent)
   function handleTabsChange(index: number) {
     setTabIndex(index)
   }

@@ -109,7 +109,7 @@ export const App = () => {
     await node.start()
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
   }
 
   const copy = async () => {
@@ -183,6 +183,7 @@ export const App = () => {
 
   async function findParent(hash: string) {
     setContentKey(hash)
+    console.log('calling findParent')
     handleFindContent(hash)
     portal?.logger('Showing Block')
   }

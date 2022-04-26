@@ -47,12 +47,16 @@ export class HistoryNetworkContentRequest {
         await sendSynPacket(this.socket)
         break
       case RequestCode.OFFER_WRITE:
-        this.socket = this.sockets.pop()!
-        this.contentKey = this.contentKeys.pop()!
-        writer = await this.socket!.utp.createNewWriter(this.socket, 2)
-        this.writer = writer
-        await sendSynPacket(this.socket)
-        this.socket.state = ConnectionState.SynSent
+        if (this.sockets.length > 0 && this.contentKeys.length > 0) {
+          this.socket = this.sockets.pop()!
+          this.contentKey = this.contentKeys.pop()!
+          writer = await this.socket!.utp.createNewWriter(this.socket, 2)
+          this.writer = writer
+          await sendSynPacket(this.socket)
+          this.socket.state = ConnectionState.SynSent
+        } else {
+          console.log('no socket and content to send!')
+        }
         break
       case RequestCode.ACCEPT_READ:
         break

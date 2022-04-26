@@ -9,7 +9,13 @@ import {
   useToast,
   Select,
 } from '@chakra-ui/react'
-import { HistoryNetworkContentKeyUnionType, PortalNetwork, SubNetworkIds, ENR } from 'portalnetwork'
+import {
+  HistoryNetworkContentKeyUnionType,
+  PortalNetwork,
+  SubNetworkIds,
+  ENR,
+  fromHexString,
+} from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useState } from 'react'
 import { ContentManager } from './ContentManager'
 import { Share } from '@capacitor/share'
@@ -48,23 +54,21 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   const handleFindNodes = (nodeId: string) => {
-    portal?.sendFindNodes(
-      nodeId,
-      Uint16Array.from([parseInt(distance)]),
-      SubNetworkIds.HistoryNetwork
-    )
+    portal?.sendFindNodes(nodeId, [parseInt(distance)], SubNetworkIds.HistoryNetwork)
   }
 
   const handleOffer = (nodeId: string) => {
     if (contentKey.slice(0, 2) !== '0x') {
       setContentKey('')
+      toast({
+        title: 'Invalid content key',
+        description: 'Key must be hex prefixed',
+        status: 'warning',
+      })
       return
     }
-    const encodedContentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 0,
-      value: { chainId: 1, blockHash: Buffer.from(contentKey.slice(2), 'hex') },
-    })
-    portal?.sendOffer(nodeId, [encodedContentKey], SubNetworkIds.HistoryNetwork)
+
+    portal?.sendOffer(nodeId, [fromHexString(contentKey)], SubNetworkIds.HistoryNetwork)
   }
 
   const sendRendezvous = async (peer: string) => {
