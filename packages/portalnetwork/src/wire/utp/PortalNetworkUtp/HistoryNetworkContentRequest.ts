@@ -29,7 +29,7 @@ export class HistoryNetworkContentRequest {
     this.sockets = socket
     //@ts-ignore
     this.contentKeys = contentKey.map((k) => {
-      return HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(k))
+      return HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(k)).value
     })
     this.requestCode = requestCode
     this.contentKey = this.contentKeys[0]
