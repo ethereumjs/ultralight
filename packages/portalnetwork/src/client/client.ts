@@ -520,15 +520,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
           BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
-          this.logger(`contentID for blockheader going in db - ${contentId}`)
-          this.logger(
-            `contentKey is - ${toHexString(
-              HistoryNetworkContentKeyUnionType.serialize({
-                selector: 0,
-                value: { chainId: 1, blockHash: fromHexString(blockHash) },
-              })
-            )}`
-          )
           this.db.put(contentId, toHexString(value), (err: any) => {
             if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
           })
