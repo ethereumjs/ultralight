@@ -16,7 +16,7 @@ import {
   HStack,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import { getHistoryNetworkContentId, HistoryNetworkContentKeyUnionType } from 'portalnetwork'
+import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import SelectTx from './SelectTx'
 import React from 'react'
 
@@ -26,9 +26,9 @@ interface DisplayBlockProps {
   isLoading: boolean
 }
 
- const DisplayBlock:React.FC<DisplayBlockProps> = (props: DisplayBlockProps) =>{
+const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
   const findParent = props.findParent
-  const header = Object.entries(props.block!.header!.toJSON()) 
+  const header = Object.entries(props.block!.header!.toJSON())
   const txList = props.block.transactions
   const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   const headerlookupKey =
@@ -90,7 +90,11 @@ interface DisplayBlockProps {
           </Text>
         </GridItem>
         <GridItem colStart={5} colSpan={1}>
-          <CopyIcon marginEnd={2} />
+          <CopyIcon
+            marginEnd={2}
+            cursor="pointer"
+            onClick={() => navigator.clipboard.writeText(headerlookupKey)}
+          />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
           <Skeleton isLoaded={!props.isLoading}>
@@ -105,7 +109,11 @@ interface DisplayBlockProps {
           </Text>
         </GridItem>
         <GridItem colStart={5} colSpan={1}>
-          <CopyIcon marginEnd={2} />
+          <CopyIcon
+            marginEnd={2}
+            cursor="pointer"
+            onClick={() => navigator.clipboard.writeText(bodylookupKey)}
+          />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
           <Skeleton isLoaded={!props.isLoading}>

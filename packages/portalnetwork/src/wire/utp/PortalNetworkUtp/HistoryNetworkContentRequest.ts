@@ -47,7 +47,7 @@ export class HistoryNetworkContentRequest {
         await sendSynPacket(this.socket)
         break
       case RequestCode.OFFER_WRITE:
-        if (this.sockets.length > 0 && this.contentKeys.length > 0) {
+        if (this.sockets.length > 0 && this.contentKeys.length > 0 && this.content) {
           this.socket = this.sockets.pop()!
           this.contentKey = this.contentKeys.pop()!
           writer = await this.socket!.utp.createNewWriter(this.socket, 2)

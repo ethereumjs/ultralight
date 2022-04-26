@@ -473,10 +473,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           await Promise.all(
             requestedKeys.map(async (key) => {
               let value = Uint8Array.from([])
-              console.log(toHexString(key))
-              console.log(HistoryNetworkContentKeyUnionType.deserialize(key))
               const lookupKey = serializedContentKeyToContentId(key)
-              console.log(lookupKey)
               try {
                 value = fromHexString(await this.db.get(lookupKey))
                 requestedData.push(value)

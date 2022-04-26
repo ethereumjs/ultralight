@@ -183,7 +183,6 @@ export const App = () => {
 
   async function findParent(hash: string) {
     setContentKey(hash)
-    console.log('calling findParent')
     handleFindContent(hash)
     portal?.logger('Showing Block')
   }

@@ -23,12 +23,12 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
             .sort((a, b) => {
               const diff =
                 distance(
-                  BigInt(portal!.client.enr.nodeId),
-                  BigInt(getHistoryNetworkContentId(1, a[0], 1))
+                  BigInt('0x' + portal!.client.enr.nodeId),
+                  BigInt(getHistoryNetworkContentId(1, a[0], 0))
                 ) -
                 distance(
-                  BigInt(portal!.client.enr.nodeId),
-                  BigInt(getHistoryNetworkContentId(1, b[0], 1).slice(2))
+                  BigInt('0x' + portal!.client.enr.nodeId),
+                  BigInt(getHistoryNetworkContentId(1, b[0], 0))
                 )
               const res = diff < 0n ? -1 : 1
               return res
