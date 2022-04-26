@@ -16,7 +16,7 @@ import {
   HStack,
 } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import { getHistoryNetworkContentId } from 'portalnetwork'
+import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import SelectTx from './SelectTx'
 import React from 'react'
 
@@ -26,12 +26,34 @@ interface DisplayBlockProps {
   isLoading: boolean
 }
 
-export default function DisplayBlock(props: DisplayBlockProps) {
+const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
+  const findParent = props.findParent
   const header = Object.entries(props.block!.header!.toJSON())
   const txList = props.block.transactions
   const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
-  const headerlookupKey = getHistoryNetworkContentId(1, props.block.toJSON().header?.mixHash!, 0)
-  const bodylookupKey = getHistoryNetworkContentId(1, props.block.toJSON().header?.mixHash!, 1)
+  const headerlookupKey =
+    '0x' +
+    Buffer.from(
+      HistoryNetworkContentKeyUnionType.serialize({
+        selector: 0,
+        value: {
+          chainId: 1,
+          blockHash: props.block.header.hash(),
+        },
+      })
+    ).toString('hex')
+
+  const bodylookupKey =
+    '0x' +
+    Buffer.from(
+      HistoryNetworkContentKeyUnionType.serialize({
+        selector: 1,
+        value: {
+          chainId: 1,
+          blockHash: props.block.header.hash(),
+        },
+      })
+    ).toString('hex')
 
   function GridRow(props: any) {
     return (
@@ -41,7 +63,7 @@ export default function DisplayBlock(props: DisplayBlockProps) {
         </GridItem>
         <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
           {props.idx === 0 ? (
-            <Link color={'blue'} onClick={() => props.findParent(props.k[1])}>
+            <Link color={'blue'} onClick={() => findParent(props.k[1])}>
               {props.k[1]}
             </Link>
           ) : (
@@ -68,7 +90,11 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           </Text>
         </GridItem>
         <GridItem colStart={5} colSpan={1}>
-          <CopyIcon marginEnd={2} />
+          <CopyIcon
+            marginEnd={2}
+            cursor="pointer"
+            onClick={() => navigator.clipboard.writeText(headerlookupKey)}
+          />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
           <Skeleton isLoaded={!props.isLoading}>
@@ -83,7 +109,11 @@ export default function DisplayBlock(props: DisplayBlockProps) {
           </Text>
         </GridItem>
         <GridItem colStart={5} colSpan={1}>
-          <CopyIcon marginEnd={2} />
+          <CopyIcon
+            marginEnd={2}
+            cursor="pointer"
+            onClick={() => navigator.clipboard.writeText(bodylookupKey)}
+          />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
           <Skeleton isLoaded={!props.isLoading}>
@@ -123,3 +153,5 @@ export default function DisplayBlock(props: DisplayBlockProps) {
     </Box>
   )
 }
+
+export default DisplayBlock

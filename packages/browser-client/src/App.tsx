@@ -30,8 +30,6 @@ import {
   fromHexString,
   log2Distance,
 } from 'portalnetwork'
-import PeerId from 'peer-id'
-import { Multiaddr } from 'multiaddr'
 import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
@@ -49,7 +47,7 @@ export const App = () => {
   const [peers, setPeers] = React.useState<ENR[] | undefined>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
-  const [id, setId] = React.useState<string>('')
+  const [id, _setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
   const [contentKey, setContentKey] = React.useState<string>(
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
@@ -109,7 +107,7 @@ export const App = () => {
     await node.start()
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv5*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
   }
 
   const copy = async () => {
@@ -122,10 +120,9 @@ export const App = () => {
   }, [])
 
   async function handleClick() {
-    let res
     let errMessage
     try {
-      res = await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+      await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
     } catch (err) {
       if ((err as any).message.includes('verify enr signature')) {
         errMessage = 'Invalid ENR'

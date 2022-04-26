@@ -2,7 +2,7 @@ import { Discv5, distance, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/lib/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
 import { StateNetworkRoutingTable } from '..'
 import { generateRandomNodeIdAtDistance, serializedContentKeyToContentId, shortId } from '../util'
 import { randUint16 } from '../wire/utp'
@@ -257,7 +257,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
     // Requests nodes in all empty k-buckets
-    this.sendFindNodes(enr.nodeId, Uint16Array.from(distancesSought), networkId)
+    this.sendFindNodes(enr.nodeId, distancesSought, networkId)
   }
 
   /**
@@ -279,12 +279,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } else {
       dstId = nodeId
     }
-    const payload = PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) })
     const pingMsg = PortalWireMessageType.serialize({
       selector: MessageCodes.PING,
       value: {
         enrSeq: this.client.enr.seq,
-        customPayload: payload,
+        customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
       },
     })
     try {
@@ -297,7 +296,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         this.updateSubnetworkRoutingTable(dstId, networkId, true, pongMessage.customPayload)
-        return decoded.value as PongMessage
+        return pongMessage
       }
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(dstId)}: ${err.toString()}`)
@@ -314,11 +313,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param networkId subnetwork id for message being
    * @returns a {@link `NodesMessage`} or undefined
    */
-  public sendFindNodes = async (
-    dstId: string,
-    distances: Uint16Array,
-    networkId: SubNetworkIds
-  ) => {
+  public sendFindNodes = async (dstId: string, distances: number[], networkId: SubNetworkIds) => {
     this.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances: distances }
     const payload = PortalWireMessageType.serialize({
@@ -465,7 +460,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           const id = Buffer.from(msg.connectionId).readUInt16BE(0)
           // Initiate uTP streams with serving of requested content
           const requestedKeys: Uint8Array[] = contentKeys.filter(
-            (n, idx) => msg.contentKeys[idx] === true
+            (n, idx) => msg.contentKeys.get(idx) === true
           )
 
           if (requestedKeys.length === 0) {
@@ -586,10 +581,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private sendPong = async (srcId: string, reqId: bigint) => {
-    const customPayload = PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) })
     const payload = {
       enrSeq: this.client.enr.seq,
-      customPayload: customPayload,
+      customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
     }
     const pongMsg = PortalWireMessageType.serialize({
       selector: MessageCodes.PONG,
@@ -676,10 +670,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       // If we receive a ping from a node we don't know, that means we're publicly reachable so can support rendezvous
       this.supportsRendezvous = true
     } else {
-      const decodedPayload = PingPongCustomDataType.deserialize(
-        Uint8Array.from(pingMessage.customPayload)
-      )
-      routingTable.updateRadius(srcId, decodedPayload.radius)
+      const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
+
+      routingTable.updateRadius(srcId, radius)
     }
     this.sendPong(srcId, message.id)
   }
@@ -810,7 +803,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     const payload: AcceptMessage = {
       connectionId: idBuffer,
-      contentKeys: desiredContentAccepts,
+      contentKeys: BitArray.fromBoolArray(desiredContentAccepts),
     }
     const encodedPayload = PortalWireMessageType.serialize({
       selector: MessageCodes.ACCEPT,

@@ -6,26 +6,26 @@ import {
   PingPongCustomDataType,
 } from '../../src/wire/types'
 import { ENR } from '@chainsafe/discv5'
-import { fromHexString, List } from '@chainsafe/ssz'
+import { BitArray, fromHexString } from '@chainsafe/ssz'
 
 tape('message encoding should match test vectors', (t) => {
   // Validate PING/PONG message encoding
   const enrSeq = BigInt(1)
   const dataRadius = 2n ** 256n - 2n
-  const customPayload = PingPongCustomDataType.serialize({ radius: dataRadius })
   let payload = PortalWireMessageType.serialize({
     selector: MessageCodes.PING,
     value: {
       enrSeq: enrSeq,
-      customPayload: customPayload,
+      customPayload: PingPongCustomDataType.serialize({ radius: dataRadius }),
     },
   })
+
   let testVector =
     '0001000000000000000c000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
   t.isEqual(Buffer.from(payload).toString('hex'), testVector, 'ping message encoded correctly')
 
   // Validate FINDNODES message encoding
-  const distances = Uint16Array.from([256, 255])
+  const distances = Array.from([256, 255])
   payload = PortalWireMessageType.serialize({
     selector: MessageCodes.FINDNODES,
     value: { distances },
@@ -102,16 +102,7 @@ tape('message encoding should match test vectors', (t) => {
 
   // Validate ACCEPT message encoding
   connectionId = Uint8Array.from([0x01, 0x02])
-  const acceptMessageContentKeys: List<Boolean> = [
-    true,
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-  ]
+  const acceptMessageContentKeys: BitArray = BitArray.fromSingleBit(8, 0)
   payload = PortalWireMessageType.serialize({
     selector: MessageCodes.ACCEPT,
     value: {

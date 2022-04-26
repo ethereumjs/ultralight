@@ -94,11 +94,7 @@ export class RPCManager {
         return 'invalid node id'
       }
       this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
-      const res = await this._client.sendFindNodes(
-        dstId,
-        Uint16Array.from(distances),
-        SubNetworkIds.HistoryNetwork
-      )
+      const res = await this._client.sendFindNodes(dstId, distances, SubNetworkIds.HistoryNetwork)
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },

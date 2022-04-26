@@ -7,7 +7,7 @@ interface BootnodesProps {
 }
 export default function Bootnodes(props: BootnodesProps) {
   const [type, setType] = useState<string>()
-  const [index, setIndex] = useState<number>(0)
+  const [index, setIndex] = useState<number>(7)
   const [idx, setIdx] = useState<string>()
   const [progress, setProgress] = useState(0)
   const bns: string[][] = [

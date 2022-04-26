@@ -52,7 +52,7 @@ export class NodeLookup {
       // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
       const res = await this.client.sendFindNodes(
         nearestPeer!.nodeId,
-        Uint16Array.from([distanceToSoughtPeer]),
+        [distanceToSoughtPeer],
         this.networkId
       )
 

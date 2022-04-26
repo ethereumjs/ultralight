@@ -9,7 +9,6 @@ import {
 } from '@chainsafe/discv5/lib/transport//types'
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
-import ip from '@leichtgewicht/ip-codec'
 import { numberToBuffer } from '@chainsafe/discv5/lib'
 const log = debug('discv5:transport')
 
@@ -62,7 +61,7 @@ export class WebSocketTransportService
     // Send via websocket (i.e. in browser)
     const opts = to.toOptions()
     const encodedPacket = encodePacket(toId, packet)
-    const encodedAddress = ip.encode(opts.host)
+    const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
     const encodedPort = numberToBuffer(opts.port, 2)
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
