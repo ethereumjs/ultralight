@@ -1,6 +1,6 @@
-import { Box, Container } from '@chakra-ui/react'
-import { PortalNetwork, SubNetworkIds, ENR } from 'portalnetwork'
-import React, { useEffect, useState } from 'react'
+import { Container } from '@chakra-ui/react'
+import { ENR } from 'portalnetwork'
+import React from 'react'
 
 interface NetworkProps {
   peers: ENR[] | undefined
