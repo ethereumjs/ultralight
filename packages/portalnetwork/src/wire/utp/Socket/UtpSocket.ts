@@ -2,7 +2,7 @@ import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE } from '..'
 import { ConnectionState } from '.'
 
 import EventEmitter from 'events'
-import { SubNetworkIds } from '../..'
+import { SubprotocolIds } from '../..'
 import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'
@@ -92,7 +92,7 @@ export class UtpSocket extends EventEmitter {
     this.logger(
       `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
     )
-    await this.utp.send(this.remoteAddress, msg, SubNetworkIds.HistoryNetwork)
+    await this.utp.send(this.remoteAddress, msg, SubprotocolIds.HistoryNetwork)
     return msg
   }
 

@@ -6,7 +6,7 @@ import {
 } from '../../../src/subprotocols/history'
 import { HistoryNetworkContentTypes } from '../../../src/subprotocols/history/types'
 
-tape('History Subnetwork contentKey serialization/deserialization', async (t) => {
+tape('History Subprotocol contentKey serialization/deserialization', async (t) => {
   let chainId = 15
   let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
   let encodedKey = HistoryNetworkContentKeyUnionType.serialize({

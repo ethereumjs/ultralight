@@ -2,7 +2,7 @@ import { Discv5 } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
-import { SubNetworkIds } from '../..'
+import { SubprotocolIds } from '../..'
 import { PortalNetwork } from '../../..'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
@@ -31,16 +31,16 @@ export class PortalNetworkUTP {
   constructor(portal: PortalNetwork) {
     this.portal = portal
     this.client = portal.client
-    this.protocol = new BasicUtp((peerId: string, msg: Buffer, networkId: SubNetworkIds) =>
-      this.sendPortalNetworkMessage(peerId, msg, networkId)
+    this.protocol = new BasicUtp((peerId: string, msg: Buffer, protocolId: SubprotocolIds) =>
+      this.sendPortalNetworkMessage(peerId, msg, protocolId)
     )
     this.logger = portal.logger.extend(`uTP`)
     this.openHistoryNetworkRequests = {}
     this.working = false
   }
 
-  async sendPortalNetworkMessage(peerId: string, msg: Buffer, networkId: SubNetworkIds) {
-    await this.portal.sendPortalNetworkMessage(peerId, msg, networkId, true)
+  async sendPortalNetworkMessage(peerId: string, msg: Buffer, protocolId: SubprotocolIds) {
+    await this.portal.sendPortalNetworkMessage(peerId, msg, protocolId, true)
   }
 
   /**

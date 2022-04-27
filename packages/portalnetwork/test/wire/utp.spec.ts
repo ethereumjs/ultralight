@@ -221,7 +221,7 @@ tape('uTP encoding tests', (t) => {
 //   // const syn = await portal.uTP.initiateConnectionRequest(cli_nodeId, 5555)
 //   t.test('Portal Client Test', async (st) => {
 //     st.ok(portal.client.isStarted(), 'Portal Client Started')
-//     const pong = await portal.sendPing(cli_nodeId, SubNetworkIds.HistoryNetwork)
+//     const pong = await portal.sendPing(cli_nodeId, SubprotocolIds.HistoryNetwork)
 //     st.ok(pong, 'Ping/Pong 1 successful')
 //     const res = await portal.historyNetworkContentLookup(0, contentKey)
 //     st.ok(
