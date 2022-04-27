@@ -41,13 +41,16 @@ export const verifyInclusionProof = (
   const epochTree = EpochAccumulator.toView(accumulator)
   const reconstructedTree = EpochAccumulator.createFromProof(proof)
   const leaves = EpochAccumulator.tree_getLeafGindices(0n, reconstructedTree.node)
-  for (const x in leaves) {
-    try {
-      const value = reconstructedTree.get(Number(x))
-      if (toHexString(value.blockHash) === toHexString(header.hash())) {
-        return true
-      }
-    } catch { }
-  }
+  const gindex = leaves.indexOf((proof as any).gindex)
+  try {
+    const value = reconstructedTree.get(gindex - 1)
+    if (
+      toHexString(value.blockHash) === toHexString(header.hash()) &&
+      toHexString(epochTree.hashTreeRoot()) === toHexString(reconstructedTree.hashTreeRoot())
+    ) {
+      return true
+    }
+  } catch { }
+
   return false
 }

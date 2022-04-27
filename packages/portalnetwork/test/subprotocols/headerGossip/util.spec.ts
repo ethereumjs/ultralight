@@ -43,12 +43,12 @@ tape('Validate accumulator updates', (t) => {
   const currentEpoch = deserializedAccumulator.currentEpoch
   const tree = EpochAccumulator.toView(currentEpoch)
   const proof = createProof(tree.node, {
-    gindex: EpochAccumulator.tree_getLeafGindices(0n, tree.node)[0],
+    gindex: EpochAccumulator.tree_getLeafGindices(0n, tree.node)[2],
     type: ProofType.single,
   })
 
   t.ok(
-    verifyInclusionProof(proof, currentEpoch, genesisHeader),
+    verifyInclusionProof(proof, currentEpoch, block2Header),
     'validated single proof evidences inclusion of genesis header in epoch accumulator'
   )
   t.end()
