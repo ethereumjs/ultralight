@@ -4,7 +4,7 @@ import {
   HeaderAccumulator,
   HeaderAccumulatorType,
   updateAccumulator,
-} from '../../src/subprotocols/headerGossip'
+} from '../../../src/subprotocols/headerGossip'
 import { Block } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 
