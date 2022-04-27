@@ -6,7 +6,7 @@ import {
   IRemoteInfo,
   ITransportService,
   TransportEventEmitter,
-} from '@chainsafe/discv5/src/transport/types'
+} from '@chainsafe/discv5/lib/transport/types'
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
