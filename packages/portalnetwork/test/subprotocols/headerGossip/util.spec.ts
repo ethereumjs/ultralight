@@ -8,6 +8,7 @@ import {
 } from '../../../src/subprotocols/headerGossip'
 import { Block } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { createProof, ProofType } from '@chainsafe/persistent-merkle-tree'
 
 tape('Validate accumulator updates', (t) => {
   const accumulator = HeaderAccumulator.serialize({
@@ -40,14 +41,15 @@ tape('Validate accumulator updates', (t) => {
   )
 
   const currentEpoch = deserializedAccumulator.currentEpoch
-  const tree = EpochAccumulator.struct_convertToTree(currentEpoch)
-  const gIdx = EpochAccumulator.getGindexAtChunkIndex(1)
+  const tree = EpochAccumulator.toViewDU(currentEpoch)
+  const proof = createProof(tree.node, {
+    gindex: EpochAccumulator.getPropertyGindex(1),
+    type: ProofType.single,
+  })
 
-  const proof = tree.getProof({ type: 'single' as any, gindex: gIdx })
-  const reconstructedTree = EpochAccumulator.tree_createFromProofUnsafe(proof)
   t.equal(
     toHexString(EpochAccumulator.hashTreeRoot(currentEpoch)),
-    toHexString(reconstructedTree.root),
+    toHexString(EpochAccumulator.createFromProof(proof).hashTreeRoot()),
     'successfully validated single proof for block 2 header'
   )
   t.end()
