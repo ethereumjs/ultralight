@@ -107,7 +107,7 @@ export const App = () => {
     await node.start()
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*')
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
   }
 
   const copy = async () => {
