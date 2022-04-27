@@ -2,7 +2,6 @@
   "name": "ultralight",
   "private": true,
   "workspaces": [
-    "./packages/discv5",
     "./packages/portalnetwork",
     "./packages/cli",
     "./packages/browser-client",
