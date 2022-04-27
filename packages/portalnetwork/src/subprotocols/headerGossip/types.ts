@@ -23,3 +23,10 @@ export type HeaderAccumulatorType = {
   historicalEpochs: Uint8Array[]
   currentEpoch: HeaderRecordType[]
 }
+
+export type ProofView = {
+  type: string
+  gIndex: bigint
+  leaf: Uint8Array
+  witness: Uint8Array[]
+}

@@ -7,6 +7,7 @@ import {
   HeaderAccumulator,
   HeaderAccumulatorType,
   HeaderRecordType,
+  ProofView,
 } from './types'
 
 export const updateAccumulator = (
@@ -32,6 +33,14 @@ export const updateAccumulator = (
   accumulator.currentEpoch.push(headerRecord)
   return HeaderAccumulator.serialize(accumulator)
 }
+export function ViewProof(proof: Proof): ProofView {
+  return {
+    type: (proof as any).type,
+    gIndex: (proof as any).gindex,
+    leaf: (proof as any).leaf,
+    witness: (proof as any).witness ?? [],
+  }
+}
 
 export const verifyInclusionProof = (
   proof: Proof,
@@ -41,7 +50,8 @@ export const verifyInclusionProof = (
   const epochTree = EpochAccumulator.toView(accumulator)
   const reconstructedTree = EpochAccumulator.createFromProof(proof)
   const leaves = EpochAccumulator.tree_getLeafGindices(0n, reconstructedTree.node)
-  const gindex = leaves.indexOf((proof as any).gindex)
+  const _proof: ProofView = ViewProof(proof)
+  const gindex = leaves.indexOf(_proof.gIndex)
   try {
     const value = reconstructedTree.get(gindex - 1)
     if (
