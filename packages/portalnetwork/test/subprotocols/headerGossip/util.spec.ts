@@ -3,12 +3,10 @@ import {
   EpochAccumulator,
   HeaderAccumulator,
   HeaderAccumulatorType,
-  HeaderRecord,
   updateAccumulator,
 } from '../../../src/subprotocols/headerGossip'
 import { Block } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { createProof, ProofType } from '@chainsafe/persistent-merkle-tree'
 
 tape('Validate accumulator updates', (t) => {
   const accumulator = HeaderAccumulator.serialize({
@@ -41,16 +39,23 @@ tape('Validate accumulator updates', (t) => {
   )
 
   const currentEpoch = deserializedAccumulator.currentEpoch
-  const tree = EpochAccumulator.toViewDU(currentEpoch)
-  const proof = createProof(tree.node, {
-    gindex: EpochAccumulator.getPropertyGindex(1),
-    type: ProofType.single,
-  })
-
+  const tree = EpochAccumulator.toView(currentEpoch)
+  const proof = tree.createProof([
+    [0, 'blockHash'],
+    [0, 'totalDifficulty'],
+    [1, 'blockHash'],
+    [1, 'totalDifficulty'],
+  ])
+  const reconstructedTree = EpochAccumulator.createFromProof(proof)
   t.equal(
-    toHexString(EpochAccumulator.hashTreeRoot(currentEpoch)),
-    toHexString(EpochAccumulator.createFromProof(proof).hashTreeRoot()),
-    'successfully validated single proof for block 2 header'
+    currentEpoch[0].totalDifficulty,
+    reconstructedTree.getAllReadonlyValues()[0].totalDifficulty,
+    'successfully validated multiproof includes header 1'
+  )
+  t.equal(
+    currentEpoch[1].totalDifficulty,
+    reconstructedTree.getAllReadonlyValues()[1].totalDifficulty,
+    'successfully validated multiproof includes header 2'
   )
   t.end()
 })
