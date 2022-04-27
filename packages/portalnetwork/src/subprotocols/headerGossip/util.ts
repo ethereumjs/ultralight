@@ -50,7 +50,7 @@ export const verifyInclusionProof = (
     ) {
       return true
     }
-  } catch { }
+  } catch {}
 
   return false
 }
