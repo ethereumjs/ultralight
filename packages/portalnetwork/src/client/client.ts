@@ -9,7 +9,6 @@ import { randUint16 } from '../wire/utp'
 import {
   PingPongCustomDataType,
   MessageCodes,
-  SubprotocolIds,
   FindNodesMessage,
   NodesMessage,
   PortalWireMessageType,
@@ -21,6 +20,7 @@ import {
   PingMessage,
   NodeLookup,
 } from '../wire'
+import { SubprotocolIds } from '../subprotocols'
 import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from './types'
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
