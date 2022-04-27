@@ -1,5 +1,5 @@
-import { deserializeProof, Proof } from '@chainsafe/persistent-merkle-tree'
-import { ListCompositeType, toHexString } from '@chainsafe/ssz'
+import { Proof } from '@chainsafe/persistent-merkle-tree'
+import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import {
   EpochAccumulator,
