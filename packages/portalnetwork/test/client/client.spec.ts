@@ -91,19 +91,19 @@ tape('Client unit tests', async (t) => {
     res = await node.sendFindNodes('abc', [], SubprotocolIds.HistoryNetwork)
     st.ok(res === undefined, 'received undefined when no valid NODES response received')
 
-    node.client.sendTalkResp = td.func<any>()
+    node.sendPortalNetworkResponse = td.func<any>()
     const findNodesMessageWithDistance = Uint8Array.from([2, 4, 0, 0, 0, 0, 0])
     const findNodesMessageWithoutDistance = Uint8Array.from([2, 4, 0, 0, 0])
     node.client.enr.encode = td.func<any>()
     td.when(
-      node.client.sendTalkResp(
+      node.sendPortalNetworkResponse(
         'abc',
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length > 3)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with ENRs'))
     td.when(
-      node.client.sendTalkResp(
+      node.sendPortalNetworkResponse(
         'abc',
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
@@ -141,24 +141,26 @@ tape('Client unit tests', async (t) => {
       )
     ).thenResolve(findContentResponse)
     const res = await node.sendFindContent('abc', key, SubprotocolIds.HistoryNetwork)
-    st.deepEqual(res.value, Uint8Array.from([97, 98, 99]), 'got correct content')
+    st.deepEqual(res.value, Uint8Array.from([97, 98, 99]), 'got correct response for content abc')
     const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
     const findContentMessageWithShortContent = Uint8Array.from([
       4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179,
       37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182,
     ])
     td.when(
-      node.client.sendTalkResp(
+      node.sendPortalNetworkResponse(
         'ghi',
         td.matchers.anything(),
-        td.matchers.argThat((arg: Buffer) => arg.length === 0)
+        td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
-    ).thenDo(() => st.pass('correctly handle findContent where no matching content'))
+    ).thenDo(() => st.pass('got correct outcome for unsupported network'))
+    //st.pass('correctly handle findContent where no matching content'))
     td.when(
-      node.client.sendTalkResp('def', td.matchers.contains('12345'), td.matchers.anything())
-    ).thenDo(() => st.pass('got correct content'))
+      node.sendPortalNetworkResponse('def', td.matchers.anything(), td.matchers.anything())
+    ).thenDo(() => st.pass('got correct content for def'))
+
     await node.handleFindContent('ghi', {
-      protocol: fromHexString(SubprotocolIds.StateNetwork),
+      protocol: fromHexString('0x123456'),
       request: findContentMessageWithNoContent,
     })
     await node.handleFindContent('def', {
