@@ -25,7 +25,7 @@ import {
   getHistoryNetworkContentId,
   PortalNetwork,
   reassembleBlock,
-  SubNetworkIds,
+  SubprotocolIds,
   ENR,
   fromHexString,
   log2Distance,
@@ -61,7 +61,7 @@ export const App = () => {
   const [modalStatus, setModal] = React.useState(false)
 
   function updateAddressBook() {
-    const routingTable = portal?.routingTables.get(SubNetworkIds.HistoryNetwork)
+    const routingTable = portal?.routingTables.get(SubprotocolIds.HistoryNetwork)
     const known = routingTable?.values()
     const formattedKnown = known!.map((_enr: ENR) => {
       const distToSelf = log2Distance(id, _enr.nodeId)
@@ -79,7 +79,7 @@ export const App = () => {
       return [d[0], [d[1], d[2], d[3], d[4]]]
     })
     setSortedDistList(table)
-    const peers = portal!.routingTables.get(SubNetworkIds.HistoryNetwork)!.values()
+    const peers = portal!.routingTables.get(SubprotocolIds.HistoryNetwork)!.values()
     setPeers(peers)
   }
 
@@ -122,7 +122,7 @@ export const App = () => {
   async function handleClick() {
     let errMessage
     try {
-      await portal?.sendPing(peerEnr, SubNetworkIds.HistoryNetwork)
+      await portal?.sendPing(peerEnr, SubprotocolIds.HistoryNetwork)
     } catch (err) {
       if ((err as any).message.includes('verify enr signature')) {
         errMessage = 'Invalid ENR'

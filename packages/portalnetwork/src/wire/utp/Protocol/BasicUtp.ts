@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { SubprotocolIds } from '../../types'
+import { SubprotocolIds } from '../../../'
 import { Packet } from '../Packets'
 import {
   sendSynPacket,

@@ -2,7 +2,7 @@ import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE } from '..'
 import { ConnectionState } from '.'
 
 import EventEmitter from 'events'
-import { SubprotocolIds } from '../..'
+import { SubprotocolIds } from '../../..'
 import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'
