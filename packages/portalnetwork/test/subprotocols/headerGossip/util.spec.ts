@@ -37,5 +37,25 @@ tape('Validate accumulator updates', (t) => {
     '0x90cc48e39fe7062a3e5b6a3e78ff1f01544c22b87c6453cd718a1e5fe5ed8fa9',
     'roots match after Block 2'
   )
+
+  const currentEpoch = deserializedAccumulator.currentEpoch
+  const tree = EpochAccumulator.toView(currentEpoch)
+  const proof = tree.createProof([
+    [0, 'blockHash'],
+    [0, 'totalDifficulty'],
+    [1, 'blockHash'],
+    [1, 'totalDifficulty'],
+  ])
+  const reconstructedTree = EpochAccumulator.createFromProof(proof)
+  t.equal(
+    currentEpoch[0].totalDifficulty,
+    reconstructedTree.getAllReadonlyValues()[0].totalDifficulty,
+    'successfully validated multiproof includes header 1'
+  )
+  t.equal(
+    currentEpoch[1].totalDifficulty,
+    reconstructedTree.getAllReadonlyValues()[1].totalDifficulty,
+    'successfully validated multiproof includes header 2'
+  )
   t.end()
 })
