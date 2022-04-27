@@ -1136,8 +1136,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     payload: Uint8Array
   ) => {
     const protocolId = toHexString(message.protocol)
-    let enr = this.routingTables.get(protocolId as SubprotocolIds)!.getValue(srcId)
+    let enr = this.routingTables.get(protocolId as SubprotocolIds)?.getValue(srcId)
     if (!enr) {
+      // If ENR cannot be found in portal network routing table, check in discv5 known ENRs
       enr = this.client.findEnr(srcId)
       if (!enr) {
         this.logger(
