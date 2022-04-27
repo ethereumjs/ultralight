@@ -1,7 +1,7 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { PortalNetwork, SubNetworkIds } from '..'
+import { PortalNetwork, SubprotocolIds } from '..'
 import { serializedContentKeyToContentId, shortId } from '../util'
 
 type lookupPeer = {
@@ -16,15 +16,15 @@ export class ContentLookup {
   private contacted: lookupPeer[]
   private contentId: string
   private contentKey: Uint8Array
-  private networkId: SubNetworkIds
+  private protocolId: SubprotocolIds
   private log: Debugger
 
-  constructor(portal: PortalNetwork, contentKey: Uint8Array, networkId: SubNetworkIds) {
+  constructor(portal: PortalNetwork, contentKey: Uint8Array, protocolId: SubprotocolIds) {
     this.client = portal
     this.lookupPeers = []
     this.contacted = []
     this.contentKey = contentKey
-    this.networkId = networkId
+    this.protocolId = protocolId
     this.contentId = serializedContentKeyToContentId(contentKey)
     this.log = this.client.logger.extend('lookup', ':')
   }
@@ -34,7 +34,7 @@ export class ContentLookup {
    * requests peers closer to the content until either the content is found or there are no more peers to query
    */
   public startLookup = async () => {
-    const routingTable = this.client.routingTables.get(SubNetworkIds.HistoryNetwork)
+    const routingTable = this.client.routingTables.get(SubprotocolIds.HistoryNetwork)
     this.client.metrics?.totalContentLookups.inc()
     try {
       const res = await this.client.db.get(this.contentId)
@@ -69,7 +69,7 @@ export class ContentLookup {
       const res = await this.client.sendFindContent(
         nearestPeer.nodeId,
         this.contentKey,
-        this.networkId
+        this.protocolId
       )
       if (!res) {
         // Node didn't respond
@@ -92,10 +92,10 @@ export class ContentLookup {
           // Offer content to neighbors who should have had content but don't if we receive content directly
           this.contacted.forEach((peer) => {
             if (!peer.hasContent) {
-              const routingTable = this.client.routingTables.get(this.networkId)!
+              const routingTable = this.client.routingTables.get(this.protocolId)!
               if (!routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(this.contentKey))) {
                 // Only offer content if not already offered to this peer
-                this.client.sendOffer(peer.nodeId, [this.contentKey], this.networkId)
+                this.client.sendOffer(peer.nodeId, [this.contentKey], this.protocolId)
               }
             }
           })

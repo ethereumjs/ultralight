@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { PortalNetwork, SubNetworkIds, ENR, createKeypairFromPeerId } from 'portalnetwork'
+import { PortalNetwork, SubprotocolIds, ENR, createKeypairFromPeerId } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
@@ -116,7 +116,7 @@ const main = async () => {
   }
   await portal.start()
   if (args.bootnode) {
-    portal.addBootNode(args.bootnode, SubNetworkIds.HistoryNetwork)
+    portal.addBootNode(args.bootnode, SubprotocolIds.HistoryNetwork)
   }
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
@@ -124,7 +124,7 @@ const main = async () => {
     bootnodes.forEach((enr) => {
       if (enr.startsWith('enr:-')) {
         try {
-          portal.addBootNode(enr, SubNetworkIds.HistoryNetwork)
+          portal.addBootNode(enr, SubprotocolIds.HistoryNetwork)
         } catch {}
       }
     })

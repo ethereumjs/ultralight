@@ -54,8 +54,6 @@ export class HistoryNetworkContentRequest {
           this.writer = writer
           await sendSynPacket(this.socket)
           this.socket.state = ConnectionState.SynSent
-        } else {
-          console.log('no socket and content to send!')
         }
         break
       case RequestCode.ACCEPT_READ:

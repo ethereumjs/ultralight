@@ -11,8 +11,8 @@ import {
   BitArray,
 } from '@chainsafe/ssz'
 
-// Subnetwork IDs
-export enum SubNetworkIds {
+// subprotocol IDs
+export enum SubprotocolIds {
   StateNetwork = '0x500a',
   HistoryNetwork = '0x500b',
   TxGossipNetwork = '0x500c',

@@ -1,12 +1,12 @@
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import EventEmitter from 'events'
 import { NodeId } from '@chainsafe/discv5'
-import { StateNetworkRoutingTable, SubNetworkIds } from '..'
+import { StateNetworkRoutingTable, SubprotocolIds } from '..'
 import { PortalNetworkRoutingTable } from '.'
 
 export interface IPortalNetworkEvents {
-  NodeAdded: (nodeId: NodeId, networkId: SubNetworkIds) => void
-  NodeRemoved: (nodeId: NodeId, networkId: SubNetworkIds) => void
+  NodeAdded: (nodeId: NodeId, protocolId: SubprotocolIds) => void
+  NodeRemoved: (nodeId: NodeId, protocolId: SubprotocolIds) => void
   ContentAdded: (key: string, contentType: number, content: string) => void
 }
 
