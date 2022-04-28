@@ -53,7 +53,7 @@ export const App = () => {
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
   const [proxy, setProxy] = React.useState('ws://ultralight.ethdevops.io')
-  const [block, setBlock] = React.useState<Block>()
+  const [block, setBlock] = React.useState<Block | undefined>()
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
