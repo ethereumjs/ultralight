@@ -14,12 +14,14 @@ export type HeaderRecordType = {
 }
 export const EpochAccumulator = new ListCompositeType(HeaderRecord, EPOCH_SIZE)
 
-export const HeaderAccumulator = new ContainerType({
+export const HeaderAccumulatorType = new ContainerType({
   historicalEpochs: new ListCompositeType(new ByteVectorType(32), MAX_HISTORICAL_EPOCHS),
   currentEpoch: EpochAccumulator,
 })
 
-export type HeaderAccumulatorType = {
-  historicalEpochs: Uint8Array[]
-  currentEpoch: HeaderRecordType[]
+export type ProofView = {
+  type: string
+  gIndex: bigint
+  leaf: Uint8Array
+  witness: Uint8Array[]
 }
