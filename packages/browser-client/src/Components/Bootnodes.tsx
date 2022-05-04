@@ -83,7 +83,18 @@ export default function Bootnodes(props: BootnodesProps) {
       props.setPeerEnr(oldPeers[index - bns.length])
     }
     setIndex(index + 1)
-  }, 500)
+    // LOCAL_STORAGE SOLUTION (ALSO WORKS)
+    // if (index < Object.keys(localStorage).length) {
+    //   index !== 0 && (await props.handleClick())
+    //   if (localStorage.getItem(`peer${index}`)) {
+    //     if (localStorage.getItem(`peer${index}`)?.substring(0, 3) === 'ENR') {
+    //     }
+    //     try {
+    //       props.setPeerEnr(localStorage.getItem(`peer${index}`) as string)
+    //     } catch {}
+    //   }
+    //   setIndex(index + 1)
+    // }
   }, 150)
 
   return index < bns.length ? (
