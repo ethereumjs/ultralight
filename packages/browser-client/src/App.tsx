@@ -208,6 +208,16 @@ export const App = () => {
   }
   const invalidHash = /([^0-z])+/.test(contentKey)
 
+  React.useEffect(() => {
+    if (peers && peers.length > 0) {
+      try {
+        peers?.forEach(async (peer) => {
+          addToIndexedDB('peers', peer.encodeTxt(), peer, IDB!)
+        })
+      } catch {}
+    }
+  }, [peers])
+
   return (
     <>
       <Center bg={'gray.200'}>
