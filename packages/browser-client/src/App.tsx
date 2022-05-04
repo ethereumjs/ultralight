@@ -38,6 +38,7 @@ import { Capacitor } from '@capacitor/core'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
 import InfoMenu from './Components/InfoMenu'
+import { addToIndexedDB, saveToLocalStorage } from './Components/localStorage'
 // export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
@@ -58,7 +59,7 @@ export const App = () => {
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
-  const toast = useToast()
+  // const toast = useToast()
   const [modalStatus, setModal] = React.useState(false)
 
   function updateAddressBook() {
@@ -153,12 +154,12 @@ export const App = () => {
     if (!errMessage) {
       errMessage = 'Node did not respond'
     }
-    toast({
-      title: errMessage,
-      status: 'error',
-      duration: 3000,
-      isClosable: true,
-    })
+    // toast({
+    //   title: errMessage,
+    //   status: 'error',
+    //   duration: 3000,
+    //   isClosable: true,
+    // })
   }
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {
@@ -271,24 +272,24 @@ export const App = () => {
       </Drawer>
       <Box>
         {IDB && (
-        <Layout
-          copy={copy}
-          onOpen={onOpen}
-          enr={enr}
-          peerEnr={peerEnr}
-          setPeerEnr={setPeerEnr}
-          handleClick={handleClick}
-          invalidHash={invalidHash}
-          handleFindContent={handleFindContent}
-          contentKey={contentKey}
-          setContentKey={setContentKey}
-          findParent={findParent}
-          block={block}
-          peers={peers}
+          <Layout
+            copy={copy}
+            onOpen={onOpen}
+            enr={enr}
+            peerEnr={peerEnr}
+            setPeerEnr={setPeerEnr}
+            handleClick={handleClick}
+            invalidHash={invalidHash}
+            handleFindContent={handleFindContent}
+            contentKey={contentKey}
+            setContentKey={setContentKey}
+            findParent={findParent}
+            block={block}
+            peers={peers}
             IDB={IDB}
-          sortedDistList={sortedDistList}
-          capacitor={Capacitor}
-        />
+            sortedDistList={sortedDistList}
+            capacitor={Capacitor}
+          />
         )}
         <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
       </Box>
