@@ -44,6 +44,7 @@ export const mediumblue = theme.colors.blue[200]
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
+  const [IDB, setIDB] = React.useState<IDBDatabase>()
   const [peers, setPeers] = React.useState<ENR[] | undefined>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
@@ -92,6 +93,23 @@ export const App = () => {
   }, [portal])
 
   const init = async () => {
+    const _IDB = window.indexedDB.open('UltralightIndexedDB', 1)
+    _IDB.onupgradeneeded = () => {
+      const db = _IDB.result
+      if (!db.objectStoreNames.contains('peers')) {
+        db.createObjectStore('peers')
+      }
+      if (!db.objectStoreNames.contains('headers')) {
+        db.createObjectStore('headers')
+      }
+      if (!db.objectStoreNames.contains('blocks')) {
+        db.createObjectStore('blocks')
+      }
+    }
+    _IDB.onsuccess = () => {
+      setIDB(_IDB.result)
+      ;(window as any).IDB = _IDB.result
+    }
     if (portal?.client.isStarted()) {
       await portal.stop()
     }
