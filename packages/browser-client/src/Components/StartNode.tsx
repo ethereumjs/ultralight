@@ -17,7 +17,7 @@ export default function StartNode(props: StartNodeProps) {
         size="xs"
         textAlign="center"
         bg="whiteAlpha.800"
-        defaultValue={'ultralight.ethdevops.io'}
+        defaultValue={'ws://127.0.0.1:5050'}
         placeholder="Proxy IP Address"
       />
       <Button width={'100%'} onClick={props.init}>
