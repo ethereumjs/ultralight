@@ -62,6 +62,7 @@ export const App = () => {
 
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubprotocolIds.HistoryNetwork)
+    if (!routingTable) return
     const known = routingTable?.values()
     const formattedKnown = known!.map((_enr: ENR) => {
       const distToSelf = log2Distance(id, _enr.nodeId)
