@@ -8,9 +8,16 @@ interface BootnodesProps {
 }
 export default function Bootnodes(props: BootnodesProps) {
   const [type, setType] = useState<string>()
+  const [oldPeers, setOldPeers] = useState<string[]>([])
   const [index, setIndex] = useState<number>(0)
   const [idx, setIdx] = useState<string>()
   const [progress, setProgress] = useState(0)
+  useEffect(() => {
+    const request = props.IDB!.transaction('peers', 'readonly').objectStore('peers').getAllKeys()
+    request.onsuccess = () => {
+      setOldPeers(request.result as string[])
+    }
+  }, [])
   const bns: string[][] = [
     [
       'Ultralight',
