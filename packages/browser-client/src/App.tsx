@@ -270,6 +270,7 @@ export const App = () => {
         </DrawerContent>
       </Drawer>
       <Box>
+        {IDB && (
         <Layout
           copy={copy}
           onOpen={onOpen}
@@ -284,9 +285,11 @@ export const App = () => {
           findParent={findParent}
           block={block}
           peers={peers}
+            IDB={IDB}
           sortedDistList={sortedDistList}
           capacitor={Capacitor}
         />
+        )}
         <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
       </Box>
       <Box width={'100%'} pos={'fixed'} bottom={'0'}>

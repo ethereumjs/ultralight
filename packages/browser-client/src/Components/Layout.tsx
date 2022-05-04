@@ -19,6 +19,7 @@ import Bootnodes from './Bootnodes'
 interface LayoutProps {
   copy: () => Promise<void>
   onOpen: () => void
+  IDB: IDBDatabase | undefined
   enr: string
   peerEnr: string
   setPeerEnr: Dispatch<SetStateAction<string>>
@@ -60,7 +61,11 @@ export default function Layout(props: LayoutProps) {
         <VStack paddingTop={2} spacing={1} align="stretch">
           <Divider />
           <Divider />
-          <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} />
+          <Bootnodes
+            IDB={props.IDB}
+            setPeerEnr={props.setPeerEnr}
+            handleClick={props.handleClick}
+          />
         </VStack>
         {props.peers && props.peers.length > 0 && (
           <TabPanels>

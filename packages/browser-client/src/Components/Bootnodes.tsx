@@ -2,6 +2,7 @@ import { Box, Heading, Progress, Text, useInterval, VStack } from '@chakra-ui/re
 import React, { Dispatch, SetStateAction, useState } from 'react'
 
 interface BootnodesProps {
+  IDB: IDBDatabase | undefined
   setPeerEnr: Dispatch<SetStateAction<string>>
   handleClick: () => Promise<void>
 }
