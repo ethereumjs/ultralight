@@ -1,5 +1,5 @@
 import { Box, Heading, Progress, Text, useInterval, VStack } from '@chakra-ui/react'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 
 interface BootnodesProps {
   IDB: IDBDatabase | undefined
@@ -77,10 +77,15 @@ export default function Bootnodes(props: BootnodesProps) {
       setType(bns[index][0])
       setIdx(bns[index][1])
       props.setPeerEnr(bns[index][2])
-      setIndex(index + 1)
       setProgress(progress + 10)
+    } else if (index - bns.length < oldPeers.length) {
+      await props.handleClick()
+      props.setPeerEnr(oldPeers[index - bns.length])
     }
+    setIndex(index + 1)
   }, 500)
+  }, 150)
+
   return index < bns.length ? (
     <VStack>
       <Heading size="sm">Connecting to Bootnodes...</Heading>
