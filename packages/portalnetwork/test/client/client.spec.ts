@@ -14,6 +14,7 @@ import {
   HistoryNetworkContentTypes,
 } from '../../src/subprotocols/history/types'
 import { serializedContentKeyToContentId } from '../../src/util'
+import { Multiaddr } from 'multiaddr'
 
 tape('Client unit tests', async (t) => {
   const node = (await PortalNetwork.createPortalNetwork(
@@ -29,9 +30,8 @@ tape('Client unit tests', async (t) => {
     )
 
     node.client.start = td.func<any>()
-    td.when(node.client.start()).thenResolve(undefined)
+    td.when(node.client.start()).thenResolve(st.pass('discv5 client started'))
     await node.start()
-    st.pass('client should start')
   })
 
   t.test('PING/PONG message handlers', async (st) => {
@@ -97,27 +97,33 @@ tape('Client unit tests', async (t) => {
     node.client.enr.encode = td.func<any>()
     td.when(
       node.sendPortalNetworkResponse(
-        'abc',
+        { socketAddr: new Multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length > 3)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with ENRs'))
     td.when(
       node.sendPortalNetworkResponse(
-        'abc',
+        { socketAddr: new Multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with no ENRs'))
     td.when(node.client.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
-    node.handleFindNodes('abc', {
-      request: findNodesMessageWithDistance,
-      protocol: SubprotocolIds.HistoryNetwork,
-    })
-    node.handleFindNodes('abc', {
-      request: findNodesMessageWithoutDistance,
-      protocol: SubprotocolIds.HistoryNetwork,
-    })
+    node.handleFindNodes(
+      { socketAddr: new Multiaddr(), nodeId: 'abc' },
+      {
+        request: findNodesMessageWithDistance,
+        protocol: SubprotocolIds.HistoryNetwork,
+      }
+    )
+    node.handleFindNodes(
+      { socketAddr: new Multiaddr(), nodeId: 'abc' },
+      {
+        request: findNodesMessageWithoutDistance,
+        protocol: SubprotocolIds.HistoryNetwork,
+      }
+    )
   })
 
   t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
@@ -149,25 +155,35 @@ tape('Client unit tests', async (t) => {
     ])
     td.when(
       node.sendPortalNetworkResponse(
-        'ghi',
+        { socketAddr: new Multiaddr(), nodeId: 'ghi' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
     ).thenDo(() => st.pass('got correct outcome for unsupported network'))
     //st.pass('correctly handle findContent where no matching content'))
     td.when(
-      node.sendPortalNetworkResponse('def', td.matchers.anything(), td.matchers.anything())
+      node.sendPortalNetworkResponse(
+        { socketAddr: new Multiaddr(), nodeId: 'def' },
+        td.matchers.anything(),
+        td.matchers.anything()
+      )
     ).thenDo(() => st.pass('got correct content for def'))
 
-    await node.handleFindContent('ghi', {
-      protocol: fromHexString('0x123456'),
-      request: findContentMessageWithNoContent,
-    })
-    await node.handleFindContent('def', {
-      id: '12345',
-      protocol: fromHexString(SubprotocolIds.HistoryNetwork),
-      request: findContentMessageWithShortContent,
-    })
+    await node.handleFindContent(
+      { socketAddr: new Multiaddr(), nodeId: 'ghi' },
+      {
+        protocol: fromHexString('0x123456'),
+        request: findContentMessageWithNoContent,
+      }
+    )
+    await node.handleFindContent(
+      { socketAddr: new Multiaddr(), nodeId: 'def' },
+      {
+        id: '12345',
+        protocol: fromHexString(SubprotocolIds.HistoryNetwork),
+        request: findContentMessageWithShortContent,
+      }
+    )
   })
 
   td.reset()
