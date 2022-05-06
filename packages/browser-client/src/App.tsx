@@ -101,6 +101,21 @@ export const App = () => {
     }
   }, [portal, IDB])
 
+  async function create() {
+    const node = Capacitor.isNativePlatform()
+      ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
+      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
+    // eslint-disable-next-line no-undef
+    ;(window as any).portal = node
+    setPortal(node)
+    node.client.on('multiaddrUpdated', () =>
+      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
+    )
+    await node.start()
+    // eslint-disable-next-line no-undef
+    ;(window as any).ENR = ENR
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
+  }
 
   const init = async () => {
     const _IDB = window.indexedDB.open('UltralightIndexedDB', 1)
