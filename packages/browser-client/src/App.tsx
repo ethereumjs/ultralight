@@ -448,8 +448,9 @@ export const App = () => {
         </DrawerContent>
       </Drawer>
       <Box>
-        {IDB && (
+        {IDB && portal && (
           <Layout
+            portal={portal}
             copy={copy}
             onOpen={onOpen}
             enr={enr}
