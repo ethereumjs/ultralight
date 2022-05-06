@@ -245,9 +245,78 @@ export const App = () => {
       if (blockHash.slice(0, 2) !== '0x') {
         setContentKey('')
       } else {
+        try {
+          const headReq = IDB?.transaction('headers', 'readonly')
+            .objectStore('headers')
+            .get(blockHash)
+          headReq!.onsuccess = () => {
+            const savedHeader = headReq!.result
+            const bodyReq = IDB?.transaction('blocks', 'readonly')
+              .objectStore('blocks')
+              .get(blockHash)
+            bodyReq!.onsuccess = async () => {
+              const savedBody = bodyReq?.result
+              try {
+                const b = reassembleBlock(fromHexString(savedHeader), fromHexString(savedBody))
+                console.log('Found block in indexeddb')
+                setBlock(b)
+                return b
+              } catch {
+                console.log('Block not in indexeddb')
+
         const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
         const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
-        let header
+                let header: string = ''
+                let body
+                await portal.historyNetworkContentLookup(0, blockHash)
+                try {
+                  header = await portal.db.get(headerlookupKey)
+                } catch (err) {
+                  portal.logger((err as any).message)
+                }
+                await portal.historyNetworkContentLookup(1, blockHash)
+                try {
+                  body = await portal.db.get(bodylookupKey)
+                } catch (err) {
+                  portal.logger((err as any).message)
+                }
+                try {
+                  const block = reassembleBlock(
+                    fromHexString(header),
+                    typeof body === 'string' ? fromHexString(body) : body
+                  )
+                  const request = IDB!
+                    .transaction('blocks', 'readwrite')
+                    .objectStore('blocks')
+                    .put(body, blockHash)
+                  request!.onsuccess = () => {
+                    const req = IDB!
+                      .transaction('headers', 'readwrite')
+                      .objectStore('headers')
+                      .put(header, blockHash)
+                    req.onsuccess = () => {}
+                    req.onerror = () => {
+                      console.log(`FAILED ${blockHash} not added to indexeddb`)
+                    }
+                  }
+                  request!.onerror = () => {
+                    console.log(`error adding block to indexeddb`)
+                  }
+                  setBlock(block)
+                  return block
+                } catch (err) {
+                  portal.logger((err as any).message)
+                }
+              }
+            }
+          }
+          headReq!.onerror = () => {
+            throw new Error()
+          }
+        } catch {
+          const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
+          const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
+          let header: string = ''
         let body
         await portal.historyNetworkContentLookup(0, blockHash)
         try {
