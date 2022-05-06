@@ -27,10 +27,6 @@ export class CapacitorUDPTransportService
   public constructor(multiaddr: Multiaddr, srcId: string) {
     //eslint-disable-next-line constructor-super
     super()
-    const opts = multiaddr.toOptions()
-    if (opts.transport !== 'udp') {
-      throw new Error('Local multiaddr must use UDP')
-    }
     this.multiaddr = multiaddr
     this.srcId = srcId
   }
@@ -38,7 +34,11 @@ export class CapacitorUDPTransportService
   public async start(): Promise<void> {
     const opts = this.multiaddr.toOptions()
     this.socket = await UDP.create()
-    await UDP.bind({ socketId: this.socket.socketId, address: this.socket.ipv4, port: opts.port })
+    await UDP.bind({
+      socketId: this.socket.socketId,
+      address: this.socket.ipv4,
+      port: opts.port ?? 5050,
+    })
     UDP.addListener('receive', (ret: any) => {
       this.handleIncoming(Buffer.from(ret.buffer, 'base64'), {
         family: 'IPv4',

@@ -97,7 +97,7 @@ export const App = () => {
       await portal.stop()
     }
     const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
+      ? await PortalNetwork.createMobilePortalNetwork()
       : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node

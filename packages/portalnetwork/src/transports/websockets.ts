@@ -27,7 +27,6 @@ export class WebSocketTransportService
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
-
     this.multiaddr = multiaddr
     this.srcId = srcId
     this.socket = new WebSocketAsPromised(proxyAddress, {
