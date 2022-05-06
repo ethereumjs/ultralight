@@ -41,10 +41,7 @@ import {
   HistoryNetworkContentTypes,
 } from '../subprotocols/history/types'
 import { BlockHeader } from '@ethereumjs/block'
-import {,
-  getHistoryNetworkContentId,
-  reassembleBlock,
-} from '../subprotocols/history'
+import { getHistoryNetworkContentId, reassembleBlock } from '../subprotocols/history'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'
@@ -245,7 +242,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
     // Requests nodes in all empty k-buckets
-    (this.client as any).sendPing(enr)
+    ;(this.client as any).sendPing(enr)
     this.sendFindNodes(enr.nodeId, distancesSought, protocolId)
   }
 
