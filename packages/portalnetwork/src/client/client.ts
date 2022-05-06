@@ -85,6 +85,41 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       2n ** 256n
     )
   }
+  /**
+   *
+   * @param ip initial local IP address of node
+   * @param proxyAddress IP address of proxy
+   * @param peerId stored peerId
+   * @param storedENR stored enr
+   * @returns a new PortalNetwork instance
+   */
+  public static recreatePortalNetwork = async (
+    ip: string,
+    proxyAddress = 'ws://127.0.0.1:5050',
+    peerId: PeerId,
+    storedENR: string
+  ) => {
+    const id = peerId
+    const enr = ENR.decodeTxt(storedENR)
+    // enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
+    return new PortalNetwork(
+      {
+        enr,
+        peerId: id,
+        multiaddr: enr.getLocationMultiaddr('udp')!,
+        transport: new WebSocketTransportService(
+          enr.getLocationMultiaddr('udp')!,
+          enr.nodeId,
+          proxyAddress
+        ),
+        config: {
+          addrVotesToUpdateEnr: 1,
+          enrUpdate: true,
+        },
+      },
+      2n ** 256n
+    )
+  }
 
   public static createMobilePortalNetwork = async (ip: string) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
