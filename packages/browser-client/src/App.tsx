@@ -136,6 +136,9 @@ export const App = () => {
       if (!db.objectStoreNames.contains('blocks')) {
         db.createObjectStore('blocks')
       }
+      if (!db.objectStoreNames.contains('peerid')) {
+        db.createObjectStore('peerid')
+      }
     }
     _IDB.onsuccess = () => {
       setIDB(_IDB.result)
