@@ -86,12 +86,21 @@ export const App = () => {
   }
 
   React.useEffect(() => {
-    portal?.on('NodeRemoved', () => updateAddressBook())
+    if (portal && IDB) {
+      portal.on('NodeRemoved', (nodeId) => {
+        const req = IDB.transaction('peers', 'readwrite').objectStore('peers').delete(nodeId)
+        req.onsuccess = () => {}
+        req.onerror = () => {}
+      })
+      updateAddressBook()
+
     return () => {
       portal?.removeAllListeners()
       portal?.client.removeAllListeners()
     }
-  }, [portal])
+    }
+  }, [portal, IDB])
+
 
   const init = async () => {
     const _IDB = window.indexedDB.open('UltralightIndexedDB', 1)
