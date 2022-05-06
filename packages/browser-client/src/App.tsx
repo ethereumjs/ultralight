@@ -118,7 +118,13 @@ export const App = () => {
   }
 
   const init = async () => {
-    const _IDB = window.indexedDB.open('UltralightIndexedDB', 1)
+    if (navigator.storage && navigator.storage.persist)
+      navigator.storage.persist().then(function (persistent) {
+        if (persistent) console.log('Storage will not be cleared except by explicit user action')
+        else console.log('Storage may be cleared by the UA under storage pressure.')
+      })
+
+    const _IDB = window.indexedDB.open('UltralightIndexedDB', 4)
     _IDB.onupgradeneeded = () => {
       const db = _IDB.result
       if (!db.objectStoreNames.contains('peers')) {
