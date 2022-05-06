@@ -22,7 +22,7 @@
     "jayson": "^3.6.6",
     "level": "^7.0.1",
     "multiaddr": "^10.0.0",
-    "peer-id": "^0.15.2",
+    "peer-id": "^0.16.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
     "rlp": "2.2.4",
