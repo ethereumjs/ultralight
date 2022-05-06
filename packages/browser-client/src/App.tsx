@@ -143,10 +143,55 @@ export const App = () => {
     _IDB.onsuccess = () => {
       setIDB(_IDB.result)
       ;(window as any).IDB = _IDB.result
+      const request = _IDB.result
+        .transaction('peerid', 'readonly')
+        .objectStore('peerid')
+        .get('stored_peerid')
+      request.onsuccess = async () => {
+        const pid: PeerId = await PeerId.createFromJSON(request.result)
+        console.log(`found PeerId ${pid}`)
+        if (PeerId.isPeerId(pid)) {
+          const enrRequest = _IDB.result
+            .transaction('peerid', 'readonly')
+            .objectStore('peerid')
+            .get('stored_enr')
+          enrRequest.onsuccess = async () => {
+            const e = enrRequest.result
+            console.log(`Found stored ${e}`)
+            const n = await PortalNetwork.recreatePortalNetwork('127.0.0.1', proxy, pid, e)
+            const id = await n.client.peerId()
+            const _enr = n.client.enr.encodeTxt(n.client.keypair.privateKey)
+            console.log(`recreated portal client with peerid: ${id} and ${_enr}`)
+            ;(window as any).portal = n
+            setPortal(n)
+            n.client.on('multiaddrUpdated', () =>
+              setENR(n.client.enr.encodeTxt(n.client.keypair.privateKey))
+            )
+            const sessionReq = _IDB.result
+              .transaction('session', 'readonly')
+              .objectStore('session')
+              .get('saved_session')
+            sessionReq!.onsuccess = () => {
+              console.log('Found saved session')
+              const sesh = sessionReq.result
+              console.log(sesh)
     }
-    if (portal?.client.isStarted()) {
-      await portal.stop()
+            await n.start()
+            // eslint-disable-next-line no-undef
+            ;(window as any).ENR = ENR
+            n.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
     }
+          enrRequest.onerror = async () => {
+            console.log(`found invalid PeerId`)
+            await create()
+          }
+        } else {
+          console.log(`found invalid PeerId`)
+          await create()
+        }
+      }
+      request.onerror = async () => {
+        console.log(`peerId not found`)
     const node = Capacitor.isNativePlatform()
       ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
       : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
