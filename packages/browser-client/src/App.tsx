@@ -376,8 +376,20 @@ export const App = () => {
     if (peers && peers.length > 0) {
       try {
         peers?.forEach(async (peer) => {
-          addToIndexedDB('peers', peer.encodeTxt(), peer, IDB!)
+          addToIndexedDB('peers', peer.nodeId, peer.encodeTxt(), IDB!)
         })
+        const req = IDB?.transaction('peers', 'readwrite').objectStore('peers').getAllKeys()
+        req!.onsuccess = () => {
+          const indexed = req!.result
+          const nodeIds = peers?.map((p) => {
+            return p.nodeId
+          })
+          indexed.forEach((p) => {
+            if (!nodeIds?.includes(p as string)) {
+              IDB && removeFromIndexedDB('peers', p as string, IDB)
+            }
+          })
+        }
       } catch {}
     }
   }, [peers])
