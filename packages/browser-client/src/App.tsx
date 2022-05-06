@@ -205,6 +205,8 @@ export const App = () => {
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR
     node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
+      }
+    }
   }
 
   const copy = async () => {
