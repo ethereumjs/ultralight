@@ -355,19 +355,6 @@ export const App = () => {
             fromHexString(header),
             typeof body === 'string' ? fromHexString(body) : body
           )
-            const request = IDB!
-              .transaction('blocks', 'readwrite')
-              .objectStore('blocks')
-              .put(body, blockHash)
-            request!.onsuccess = () => {
-              const req = IDB!
-                .transaction('headers', 'readwrite')
-                .objectStore('headers')
-                .put(header, blockHash)
-              req.onsuccess = () => {}
-              req.onerror = () => {}
-            }
-            request!.onerror = () => {}
           setBlock(block)
           return block
         } catch (err) {
