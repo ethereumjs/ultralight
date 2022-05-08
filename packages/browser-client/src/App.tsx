@@ -57,8 +57,8 @@ const bns: string[] = [
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
-  const [IDB, setIDB] = React.useState<IDBDatabase>()
-  const [peers, setPeers] = React.useState<ENR[] | undefined>([])
+  const [peers, setPeers] = React.useState<ENR[]>([])
+  const [peerEnrStrings, setPeerEnrStrings] = React.useState<string[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
   const [id, _setId] = React.useState<string>('')
