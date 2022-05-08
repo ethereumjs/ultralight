@@ -233,32 +233,19 @@ export const App = () => {
   }
 
   React.useEffect(() => {
-    init()
-  }, [])
-
-  async function handleClick() {
-    let errMessage
-    try {
-      await portal?.sendPing(peerEnr, SubprotocolIds.HistoryNetwork)
-    } catch (err) {
-      if ((err as any).message.includes('verify enr signature')) {
-        errMessage = 'Invalid ENR'
+    init().then((res) => {
+      document.onvisibilitychange = async () => {
+        await handleVisibilityChange(res)
       }
-    }
-    setPeerEnr('')
-    updateAddressBook()
-    // Only rerender the address book if we actually got a response from the node
-
-    if (!errMessage) {
-      errMessage = 'Node did not respond'
-    }
-    // toast({
-    //   title: errMessage,
-    //   status: 'error',
-    //   duration: 3000,
-    //   isClosable: true,
-    // })
-  }
+      window.onbeforeunload = async () => {
+        // Put list of ENR's in DB
+        peerEnrStrings.length > 1 &&
+          LDB.put('peers', JSON.stringify(peerEnrStrings)).then(async () => {
+            await handleVisibilityChange(res)
+          })
+      }
+    })
+  }, [])
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {
     if (portal) {
