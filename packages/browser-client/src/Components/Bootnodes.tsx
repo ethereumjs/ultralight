@@ -1,50 +1,20 @@
 import { Box, Heading, Progress, Text, useInterval, VStack } from '@chakra-ui/react'
+import { BrowserLevel } from 'browser-level'
 import { PortalNetwork } from 'portalnetwork'
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 
 interface BootnodesProps {
   portal: PortalNetwork
-  IDB: IDBDatabase | undefined
+  LDB: BrowserLevel
   setPeerEnr: Dispatch<SetStateAction<string>>
   handleClick: () => Promise<void>
-  oldPeers: string[]
 }
 export default function Bootnodes(props: BootnodesProps) {
   const [type, setType] = useState<string>()
-  const [oldPeers, setOldPeers] = useState<string[]>([])
   const [index, setIndex] = useState<number>(0)
   const [idx, setIdx] = useState<string>()
   const [progress, setProgress] = useState(0)
 
-  async function storePeerId() {
-    if (props.IDB) {
-      const peerId = await props.portal.client.peerId()
-      const request = props.IDB.transaction('peerid', 'readwrite')
-        .objectStore('peerid')
-        .put(peerId.toJSON(), 'stored_peerid')
-      request.onsuccess = () => {
-        console.log(`stored PeerId ${peerId}`)
-      }
-      request.onerror = () => {
-        console.log(`peerId not stored`)
-      }
-    }
-  }
-  async function storeENR() {
-    if (props.IDB) {
-      const enr = props.portal.client.enr.encodeTxt(props.portal.client.keypair.privateKey)
-      const request = props.IDB.transaction('peerid', 'readwrite')
-        .objectStore('peerid')
-        .put(enr, 'stored_enr')
-      request.onsuccess = () => {}
-      request.onerror = () => {}
-    }
-  }
-
-  useEffect(() => {
-    storePeerId()
-    storeENR()
-  }, [])
   const bns: string[][] = [
     [
       'Ultralight',
@@ -105,9 +75,6 @@ export default function Bootnodes(props: BootnodesProps) {
       setIdx(bns[index][1])
       props.setPeerEnr(bns[index][2])
       setProgress(progress + 10)
-    } else if (index - bns.length < props.oldPeers.length) {
-      await props.handleClick()
-      props.setPeerEnr(props.oldPeers[index - bns.length])
     }
     setIndex(index + 1)
     // LOCAL_STORAGE SOLUTION (ALSO WORKS)

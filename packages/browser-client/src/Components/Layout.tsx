@@ -7,6 +7,7 @@ import {
   Tabs,
   VStack,
   StackDivider,
+  Heading,
 } from '@chakra-ui/react'
 import React, { Dispatch, SetStateAction, useEffect } from 'react'
 import { Block } from '@ethereumjs/block'
@@ -16,12 +17,13 @@ import { NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
 import Bootnodes from './Bootnodes'
 import { useState } from 'react'
+import { BrowserLevel } from 'browser-level'
 
 interface LayoutProps {
   portal: PortalNetwork
   copy: () => Promise<void>
   onOpen: () => void
-  IDB: IDBDatabase | undefined
+  LDB: BrowserLevel
   enr: string
   peerEnr: string
   setPeerEnr: Dispatch<SetStateAction<string>>
@@ -38,15 +40,10 @@ interface LayoutProps {
 }
 
 export default function Layout(props: LayoutProps) {
-  const [oldPeers, setOldPeers] = useState<string[]>([])
-
   useEffect(() => {
-    const request = props.IDB!.transaction('peers', 'readonly').objectStore('peers').getAll()
-    request.onsuccess = () => {
-      const op = request.result
-      console.log(`Found ${op.length} old peers`)
-      setOldPeers(op as string[])
-    }
+    setTimeout(async () => {
+      await props.handleClick()
+    }, 2000)
   }, [])
 
   return (
@@ -71,17 +68,16 @@ export default function Layout(props: LayoutProps) {
             <NotAllowedIcon />
           </Tab>
         </TabList>
-        <VStack paddingTop={2} spacing={1} align="stretch">
+        {/* <VStack paddingTop={2} spacing={1} align="stretch">
           <Divider />
           <Divider />
           <Bootnodes
             portal={props.portal}
-            IDB={props.IDB}
+            LDB={props.LDB}
             setPeerEnr={props.setPeerEnr}
             handleClick={props.handleClick}
-            oldPeers={oldPeers}
           />
-        </VStack>
+        </VStack> */}
         {props.peers && props.peers.length > 0 && (
           <TabPanels>
             <TabPanel>
@@ -93,7 +89,6 @@ export default function Layout(props: LayoutProps) {
                 findParent={props.findParent}
                 block={props.block}
                 peers={props.peers}
-                oldPeers={oldPeers}
                 sortedDistList={props.sortedDistList}
               />
             </TabPanel>
