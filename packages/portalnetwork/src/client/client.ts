@@ -25,7 +25,6 @@ import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from '.
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
-// eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import {
@@ -52,6 +51,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   uTP: PortalNetworkUTP
   nodeRadius: bigint
   db: LevelUp
+  prev_content?: string[][]
   private refreshListener?: ReturnType<typeof setInterval>
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
@@ -67,7 +67,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
-    return new PortalNetwork(
+    const portal = new PortalNetwork(
       {
         enr,
         peerId: id,
@@ -84,41 +84,50 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       },
       2n ** 256n
     )
+    return portal
   }
   /**
    *
-   * @param ip initial local IP address of node
    * @param proxyAddress IP address of proxy
    * @param peerId stored peerId
    * @param storedENR stored enr
    * @returns a new PortalNetwork instance
    */
   public static recreatePortalNetwork = async (
-    ip: string,
     proxyAddress = 'ws://127.0.0.1:5050',
     peerId: PeerId,
-    storedENR: string
+    storedENR: ENR,
+    prev_content?: string[][]
   ) => {
-    const id = peerId
-    const enr = ENR.decodeTxt(storedENR)
-    // enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
-    return new PortalNetwork(
-      {
-        enr,
-        peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: new WebSocketTransportService(
-          enr.getLocationMultiaddr('udp')!,
-          enr.nodeId,
-          proxyAddress
-        ),
-        config: {
-          addrVotesToUpdateEnr: 1,
-          enrUpdate: true,
+    // Hack solution to recreate valid PeerId
+    // otherwise privKey return undefined,
+    // and node will not connect to network
+    const pid = await PeerId.createFromPrivKey(peerId.privKey as unknown as string)
+    if (PeerId.isPeerId(pid) && storedENR.keypair.privateKeyVerify()) {
+      console.log(`Recreating Portal Network client`)
+      const portal = new PortalNetwork(
+        {
+          enr: storedENR,
+          peerId: pid,
+          multiaddr: storedENR.getLocationMultiaddr('udp')!,
+          transport: new WebSocketTransportService(
+            storedENR.getLocationMultiaddr('udp')!,
+            storedENR.nodeId,
+            proxyAddress
+          ),
+          config: {
+            addrVotesToUpdateEnr: 1,
+            enrUpdate: true,
+          },
         },
-      },
-      2n ** 256n
-    )
+        2n ** 256n,
+        undefined,
+        prev_content
+      )
+      return portal
+    } else {
+      throw new Error('Cannot recreate Portal Network from stored data')
+    }
   }
 
   public static createMobilePortalNetwork = async (ip: string) => {
@@ -153,6 +162,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
     db?: LevelUp,
+    prev_content?: string[][],
     metrics?: PortalNetworkMetrics,
     supportsRendezvous = false
   ) {
@@ -163,6 +173,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
+    this.prev_content = prev_content
     Object.values(SubprotocolIds).forEach((protocolId) => {
       if (protocolId !== SubprotocolIds.UTPNetwork) {
         this.routingTables.set(
@@ -222,8 +233,18 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       '0xf90a4ff90218a0be8361d665ca0c7921df4419522c1319c3012d4adbea5c6229c84ec86fbf52f2a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479452bc44d5378309ee2abf1539bf71de1b7d7be3b5a01aef82504fc10469532521faa4426ee8c5331ac9c0ef1af7bcab967f5aa6e1a1a092ed465e40f9ee2e3a9e9f4f8ecb1f11923bb0376d976312d6c40576439be150a0a5cf019118b22b15a360e97c35c75a7dbc871318c4f3ba462837b186653c2a4db90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008605ddae9bb8d28304a5c7832ff7688306050e845609aaad98d783010103844765746887676f312e342e32856c696e7578a031538fbc9699fc6b359fc26ea2d94bb2556d7d999b101650c78c88f71d61133888b78f1aed8ad0d52af90830f904ad8201d5850ce1a0813e832f4d60945be6129ce8f523753131eb11c6f719f5b72e0e1180b90444d810612b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000741ba0fda17baa8772b9257525c04787d781376fdbc025ae0d0393b1bd8e7b5540b332a01f4d64f42b3aa203b9178d2deb19aa6d0dad24e48c8edf848d226952ed2aef48f86e82a7fe850ba43b74008261a89429fb2ca00f91f16b065ef332ac7948d4cc16a0658802a85985c3fa0c80801ca064fe9b4332507cb713828e738fb3a4a4fc373727185ea81dc6e95957c06f9214a0011966a5748baa542b32cbf3fb3fc46512d0f0704e53ed63a4f86e47a0a8db51f86e82a7ff850ba43b74008261a894715831b632c51081b507af551f534a50fcbb3690888c387839b61ea000801ca0d4f91a0dda2327f1fd4c5741c291979fc5cdb31f6ed8777465150eb5e0f19c62a079d14b7cae5864f2d6ee2e733e4c5c8a48522c7dbd79e79d2a7d41d159c046e8f86e82a800850ba43b74008261a8943a4cc071e426cffba54c267391e401e820a5e472887f554460d4725000801ba0cb0c573e605053d01b800b30388023357d953c9af2cbebe36a6b2b033936fe7fa010d7e92941b4e4760e8b3b2d4f40e495766ad7ffffa5bc62593bd3f6765ca759f86e82a801850ba43b74008261a894d5fda805ff27942da5b6b27884255bf7bfdc6f4f881a2d10c27aa21600801ba0a4a02d9fc9178bc7a42b504649b88624a40085621275f1351b68e939b238e316a0376c96e16bfe6a4c35ecfbccf0b0deaa456db7a81e29d3c4f9390248c49485f6f86e82a802850ba43b74008261a894b48dbbdc7118253be140f43098e2a0bec43fcbf988d7a97439797f8000801ba05328ac567dea32b748c82311e9d002fa13e17a39072db38797762b9ea633139aa0531c49ae4f6a508b2c900a44f386d85d75682af45201b977abd6e3630535ed21f86e82a803850ba43b74008261a894bc0f4f3338f099e578819a8d87976df731b6ee7e881d4f6e1cba82d700801ba08bdd1820eea89f2c3176de03b7be89df5d5b636e082bfc399dfbac7a8d1d8f71a05a05466e3ad65ca9cf87cbbb517d3869623f82c6e02419f081da5101e145225ff86e82a804850ba43b74008261a8941cc77ed71531833bac1ea0e757cd150dcd297920881755213637cf0c00801ba042e7a7352afbd48b13039b40eafa8e0783a1f671f6c969bd509924c12de89e3aa07a88806b8729125c6bb2ba2e552dff0af9c2d178df9201c80923cf13997b163df86e82a805850ba43b74008261a89451033f1a1a59cb6a1bf6ca2087a53bd202ac1c838838221051d9b89c00801ca0328e9a7e2cf52b9a85d34cfb9545b307cb136da2c2e6f3ec4b6a385020b3b055a05427804ddf8c34fdca86dde482b45495d84b63ad9190a98b01332d0528667243c0'
     const block304583Hash = '0xca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f'
     await addRLPSerializedBlock(block304583Rlp, block304583Hash, this)
-
     await this.client.start()
+    if (this.prev_content) {
+      this.prev_content.forEach(([k, v]) => {
+        try {
+          this.db.put(k, v).then((res) => {
+            console.log('added to db:', k)
+          })
+        } catch (err) {
+          console.log('trying to add stuff but:', (err as any).messages)
+        }
+      })
+    }
 
     // Start kbucket refresh on 30 second interval
     //   this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
