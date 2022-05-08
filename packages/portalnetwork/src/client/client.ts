@@ -66,7 +66,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
-    return new PortalNetwork(
+    const portal = new PortalNetwork(
       {
         enr,
         peerId: id,
@@ -83,6 +83,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       },
       2n ** 256n
     )
+    return portal
   }
   /**
    *
