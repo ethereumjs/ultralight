@@ -56,6 +56,7 @@ const bns: string[] = [
 ]
 
 export const App = () => {
+  const [visible, setVisible] = React.useState('visible')
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [peers, setPeers] = React.useState<ENR[]>([])
   const [peerEnrStrings, setPeerEnrStrings] = React.useState<string[]>([])
@@ -94,21 +95,26 @@ export const App = () => {
     })
     setSortedDistList(table)
     const peers = portal!.routingTables.get(SubprotocolIds.HistoryNetwork)!.values()
+    const peerEnrStrings = peers.map((peer) => {
+      return peer.encodeTxt()
+    })
+    setPeerEnrStrings(peerEnrStrings)
     setPeers(peers)
   }
 
   React.useEffect(() => {
-    if (portal && IDB) {
-      portal.on('NodeRemoved', (nodeId) => {
-        const req = IDB.transaction('peers', 'readwrite').objectStore('peers').delete(nodeId)
-        req.onsuccess = () => {}
-        req.onerror = () => {}
+    // Test for Database sync
+    const now = performance.now()
+    console.log('from method call', now)
+    LDB.put('closed', now.toString()).then(async (res) => {
+      console.log('from db', await LDB.get('closed'))
+    })
+    // Put list of ENR's in DB
+    peerEnrStrings.length > 1 &&
+      LDB.put('peers', JSON.stringify(peerEnrStrings)).then(async (res) => {
+        console.log(JSON.parse(await LDB.get('peers')).length)
       })
-      updateAddressBook()
-
-    return () => {
-      portal?.removeAllListeners()
-      portal?.client.removeAllListeners()
+  }, [visible])
     }
     }
   }, [portal, IDB])
