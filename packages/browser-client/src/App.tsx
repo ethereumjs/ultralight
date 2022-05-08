@@ -115,115 +115,154 @@ export const App = () => {
         console.log(JSON.parse(await LDB.get('peers')).length)
       })
   }, [visible])
+  async function handleVisibilityChange(p: PortalNetwork) {
+    setVisible(document.visibilityState)
+    let keys: string[] = []
+    try {
+      keys = JSON.parse(await LDB.get('keys'))
+    } catch (err) {
+      console.log((err as any).message)
+      console.log('no old keys')
     }
-    }
-  }, [portal, IDB])
-
-  async function create() {
-    const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
-      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
-    // eslint-disable-next-line no-undef
-    ;(window as any).portal = node
-    setPortal(node)
-    node.client.on('multiaddrUpdated', () =>
-      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
-    )
-    await node.start()
-    // eslint-disable-next-line no-undef
-    ;(window as any).ENR = ENR
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
+    const stream = p.db.createReadStream()
+    stream.on('data', async (data) => {
+      await LDB.put(data.key, data.value)
+      keys.push(data.key)
+      console.log('stream friends')
+    })
+    stream.on('end', async () => {
+      const k = Array.from(new Set(keys))
+      await LDB.put('keys', JSON.stringify(k))
+      console.log('closing stream. keys in db: ', k.length)
+    })
   }
 
+  async function handleClick() {
+    let errMessage
+    try {
+      await portal?.sendPing(peerEnr, SubprotocolIds.HistoryNetwork)
+    } catch (err) {
+      if ((err as any).message.includes('verify enr signature')) {
+        errMessage = 'Invalid ENR'
+      }
+    }
+    setPeerEnr('')
+    updateAddressBook()
+    // Only rerender the address book if we actually got a response from the node
+
+    if (!errMessage) {
+      errMessage = 'Node did not respond'
+    }
+    // toast({
+    //   title: errMessage,
+    //   status: 'error',
+    //   duration: 3000,
+    //   isClosable: true,
+    // })
+  }
   const init = async () => {
+    try {
+      console.log(await LDB.get('closed'))
+    } catch {
+      console.log('closing not found')
+    }
     if (navigator.storage && navigator.storage.persist)
       navigator.storage.persist().then(function (persistent) {
         if (persistent) console.log('Storage will not be cleared except by explicit user action')
         else console.log('Storage may be cleared by the UA under storage pressure.')
       })
-
-    const _IDB = window.indexedDB.open('UltralightIndexedDB', 4)
-    _IDB.onupgradeneeded = () => {
-      const db = _IDB.result
-      if (!db.objectStoreNames.contains('peers')) {
-        db.createObjectStore('peers')
-      }
-      if (!db.objectStoreNames.contains('headers')) {
-        db.createObjectStore('headers')
-      }
-      if (!db.objectStoreNames.contains('blocks')) {
-        db.createObjectStore('blocks')
-      }
-      if (!db.objectStoreNames.contains('peerid')) {
-        db.createObjectStore('peerid')
-      }
-    }
-    _IDB.onsuccess = () => {
-      setIDB(_IDB.result)
-      ;(window as any).IDB = _IDB.result
-      const request = _IDB.result
-        .transaction('peerid', 'readonly')
-        .objectStore('peerid')
-        .get('stored_peerid')
-      request.onsuccess = async () => {
-        const pid: PeerId = await PeerId.createFromJSON(request.result)
-        console.log(`found PeerId ${pid}`)
-        if (PeerId.isPeerId(pid)) {
-          const enrRequest = _IDB.result
-            .transaction('peerid', 'readonly')
-            .objectStore('peerid')
-            .get('stored_enr')
-          enrRequest.onsuccess = async () => {
-            const e = enrRequest.result
-            console.log(`Found stored ${e}`)
-            const n = await PortalNetwork.recreatePortalNetwork('127.0.0.1', proxy, pid, e)
-            const id = await n.client.peerId()
-            const _enr = n.client.enr.encodeTxt(n.client.keypair.privateKey)
-            console.log(`recreated portal client with peerid: ${id} and ${_enr}`)
-            ;(window as any).portal = n
-            setPortal(n)
-            n.client.on('multiaddrUpdated', () =>
-              setENR(n.client.enr.encodeTxt(n.client.keypair.privateKey))
-            )
-            const sessionReq = _IDB.result
-              .transaction('session', 'readonly')
-              .objectStore('session')
-              .get('saved_session')
-            sessionReq!.onsuccess = () => {
-              console.log('Found saved session')
-              const sesh = sessionReq.result
-              console.log(sesh)
-    }
-            await n.start()
-            // eslint-disable-next-line no-undef
-            ;(window as any).ENR = ENR
-            n.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
-    }
-          enrRequest.onerror = async () => {
-            console.log(`found invalid PeerId`)
-            await create()
-          }
-        } else {
-          console.log(`found invalid PeerId`)
-          await create()
-        }
-      }
-      request.onerror = async () => {
-        console.log(`peerId not found`)
-    const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
-      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
-    // eslint-disable-next-line no-undef
-    ;(window as any).portal = node
-    setPortal(node)
-    node.client.on('multiaddrUpdated', () =>
-      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
-    )
-    await node.start()
-    // eslint-disable-next-line no-undef
-    ;(window as any).ENR = ENR
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
-      }
+    try {
+      const prev_enr_string = await LDB.get('enr')
+      const prev_peerid = await LDB.get('peerid')
+      const prev_keys = JSON.parse(await LDB.get('keys'))
+      const prev_content: string[][] = prev_keys.map(async (k: string) => {
+        try {
+          const value = await LDB.get(k)
+          return [k, value]
+        } catch {}
+      })
+      const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
+      const recreatedPeerId = JSON.parse(prev_peerid)
+      const prev_node = await PortalNetwork.recreatePortalNetwork(
+        proxy,
+        recreatedPeerId,
+        recreatedENR,
+        prev_content
+      )
+      ;(window as any).portal = prev_node
+      ;(window as any).LDB = LDB
+      setPortal(prev_node)
+      await prev_node.start()
+      // eslint-disable-next-line no-undef
+      ;(window as any).ENR = ENR
+      prev_node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
+      const stream = prev_node.db.createReadStream()
+      stream.on('data', async (data) => {
+        await LDB.put(data.key, data.value)
+        console.log('stream friends')
+      })
+      stream.on('close', () => {
+        console.log('closing stream')
+      })
+      try {
+        const storedPeers = await LDB.get('peers')
+        let peerList: string[] = JSON.parse(storedPeers)
+        peerList.push(...bns)
+        console.log('found some old friends', peerList.length)
+        console.log('and found bootnodes', bns.length)
+        peerList = Array.from(new Set(peerList))
+        console.log('rebuilding routingtable', peerList.length)
+        peerList.forEach(async (peer: string) => {
+          await prev_node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+        })
+        setENR(peerList[0])
+      } catch {}
+      return prev_node
+    } catch (err: unknown) {
+      const node = Capacitor.isNativePlatform()
+        ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
+        : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
+      // eslint-disable-next-line no-undef
+      ;(window as any).LDB = LDB
+      node.client.on('multiaddrUpdated', () =>
+        setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
+      )
+      await LDB.batch([
+        {
+          type: 'put',
+          key: 'enr',
+          value: node.client.enr.encodeTxt(node.client.keypair.privateKey),
+        },
+        {
+          type: 'put',
+          key: 'peerid',
+          value: JSON.stringify(await node.client.peerId()),
+        },
+      ])
+      await node.start()
+      const stream = node.db.createReadStream()
+      stream
+        .on('data', async (data) => {
+          await LDB.put(data.key, data.value)
+        })
+        .on('error', (err) => {
+          console.log('Oh my!', err)
+        })
+        .on('close', () => {
+          console.log('Stream closed')
+        })
+        .on('end', () => {
+          console.log('Stream ended')
+          bns.forEach(async (peer: string) => {
+            await node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+          })
+        })
+      // eslint-disable-next-line no-undef
+      ;(window as any).portal = node
+      ;(window as any).ENR = ENR
+      setPortal(node)
+      node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
+      return node
     }
   }
 
@@ -252,90 +291,29 @@ export const App = () => {
       if (blockHash.slice(0, 2) !== '0x') {
         setContentKey('')
       } else {
-        try {
-          const headReq = IDB?.transaction('headers', 'readonly')
-            .objectStore('headers')
-            .get(blockHash)
-          headReq!.onsuccess = () => {
-            const savedHeader = headReq!.result
-            const bodyReq = IDB?.transaction('blocks', 'readonly')
-              .objectStore('blocks')
-              .get(blockHash)
-            bodyReq!.onsuccess = async () => {
-              const savedBody = bodyReq?.result
-              try {
-                const b = reassembleBlock(fromHexString(savedHeader), fromHexString(savedBody))
-                console.log('Found block in indexeddb')
-                setBlock(b)
-                return b
-              } catch {
-                console.log('Block not in indexeddb')
-
         const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
         const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
-                let header: string = ''
-                let body
-                await portal.historyNetworkContentLookup(0, blockHash)
-                try {
-                  header = await portal.db.get(headerlookupKey)
-                } catch (err) {
-                  portal.logger((err as any).message)
-                }
-                await portal.historyNetworkContentLookup(1, blockHash)
-                try {
-                  body = await portal.db.get(bodylookupKey)
-                } catch (err) {
-                  portal.logger((err as any).message)
-                }
-                try {
-                  const block = reassembleBlock(
-                    fromHexString(header),
-                    typeof body === 'string' ? fromHexString(body) : body
-                  )
-                  const request = IDB!
-                    .transaction('blocks', 'readwrite')
-                    .objectStore('blocks')
-                    .put(body, blockHash)
-                  request!.onsuccess = () => {
-                    const req = IDB!
-                      .transaction('headers', 'readwrite')
-                      .objectStore('headers')
-                      .put(header, blockHash)
-                    req.onsuccess = () => {}
-                    req.onerror = () => {
-                      console.log(`FAILED ${blockHash} not added to indexeddb`)
-                    }
-                  }
-                  request!.onerror = () => {
-                    console.log(`error adding block to indexeddb`)
-                  }
-                  setBlock(block)
-                  return block
-                } catch (err) {
-                  portal.logger((err as any).message)
-                }
-              }
-            }
-          }
-          headReq!.onerror = () => {
-            throw new Error()
-          }
-        } catch {
-          const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
-          const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
-          let header: string = ''
+        let header: string = ''
         let body
-        await portal.historyNetworkContentLookup(0, blockHash)
-        try {
-          header = await portal.db.get(headerlookupKey)
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
-        await portal.historyNetworkContentLookup(1, blockHash)
-        try {
-          body = await portal.db.get(bodylookupKey)
-        } catch (err) {
-          portal.logger((err as any).message)
+        const keys = await LDB.get('keys')
+        if (keys.includes(headerlookupKey) && keys.includes(bodylookupKey)) {
+          try {
+            header = await LDB.get(headerlookupKey)
+            body = await LDB.get(bodylookupKey)
+          } catch {}
+        } else {
+          await portal.historyNetworkContentLookup(0, blockHash)
+          try {
+            header = await portal.db.get(headerlookupKey)
+          } catch (err) {
+            portal.logger((err as any).message)
+          }
+          await portal.historyNetworkContentLookup(1, blockHash)
+          try {
+            body = await portal.db.get(bodylookupKey)
+          } catch (err) {
+            portal.logger((err as any).message)
+          }
         }
         try {
           const block = reassembleBlock(
@@ -349,7 +327,6 @@ export const App = () => {
         }
       }
     }
-  }
   }
 
   async function findParent(hash: string) {
