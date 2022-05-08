@@ -464,7 +464,7 @@ export const App = () => {
         </DrawerContent>
       </Drawer>
       <Box>
-        {IDB && portal && (
+        {portal && (
           <Layout
             portal={portal}
             copy={copy}
@@ -480,7 +480,7 @@ export const App = () => {
             findParent={findParent}
             block={block}
             peers={peers}
-            IDB={IDB}
+            LDB={LDB}
             sortedDistList={sortedDistList}
             capacitor={Capacitor}
           />
