@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { BrowserLevel } from 'browser-level'
 import {
   theme,
   useClipboard,
@@ -72,7 +73,7 @@ export const App = () => {
   const disclosure = useDisclosure()
   // const toast = useToast()
   const [modalStatus, setModal] = React.useState(false)
-
+  const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubprotocolIds.HistoryNetwork)
     const known = routingTable?.values()
