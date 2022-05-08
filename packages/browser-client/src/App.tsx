@@ -38,10 +38,6 @@ import { Capacitor } from '@capacitor/core'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
 import InfoMenu from './Components/InfoMenu'
-import { addToIndexedDB, removeFromIndexedDB } from './Components/localStorage'
-import PeerId from 'peer-id'
-import { useEffect } from 'react'
-// export const lightblue = '#bee3f8'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 
