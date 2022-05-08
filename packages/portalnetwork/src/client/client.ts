@@ -88,29 +88,31 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
   /**
    *
-   * @param ip initial local IP address of node
    * @param proxyAddress IP address of proxy
    * @param peerId stored peerId
    * @param storedENR stored enr
    * @returns a new PortalNetwork instance
    */
   public static recreatePortalNetwork = async (
-    ip: string,
     proxyAddress = 'ws://127.0.0.1:5050',
     peerId: PeerId,
+    storedENR: ENR,
     prev_content?: string[][]
   ) => {
-    const id = peerId
-    const enr = ENR.decodeTxt(storedENR)
-    // enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
-    return new PortalNetwork(
+    // Hack solution to recreate valid PeerId
+    // otherwise privKey return undefined,
+    // and node will not connect to network
+    const pid = await PeerId.createFromPrivKey(peerId.privKey as unknown as string)
+    if (PeerId.isPeerId(pid) && storedENR.keypair.privateKeyVerify()) {
+      console.log(`Recreating Portal Network client`)
+      const portal = new PortalNetwork(
       {
-        enr,
-        peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
+          enr: storedENR,
+          peerId: pid,
+          multiaddr: storedENR.getLocationMultiaddr('udp')!,
         transport: new WebSocketTransportService(
-          enr.getLocationMultiaddr('udp')!,
-          enr.nodeId,
+            storedENR.getLocationMultiaddr('udp')!,
+            storedENR.nodeId,
           proxyAddress
         ),
         config: {
@@ -122,6 +124,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         undefined,
         prev_content
     )
+      return portal
+    } else {
+      throw new Error('Cannot recreate Portal Network from stored data')
+    }
   }
 
   public static createMobilePortalNetwork = async (ip: string) => {
