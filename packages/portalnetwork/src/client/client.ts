@@ -106,24 +106,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (PeerId.isPeerId(pid) && storedENR.keypair.privateKeyVerify()) {
       console.log(`Recreating Portal Network client`)
       const portal = new PortalNetwork(
-      {
+        {
           enr: storedENR,
           peerId: pid,
           multiaddr: storedENR.getLocationMultiaddr('udp')!,
-        transport: new WebSocketTransportService(
+          transport: new WebSocketTransportService(
             storedENR.getLocationMultiaddr('udp')!,
             storedENR.nodeId,
-          proxyAddress
-        ),
-        config: {
-          addrVotesToUpdateEnr: 1,
-          enrUpdate: true,
+            proxyAddress
+          ),
+          config: {
+            addrVotesToUpdateEnr: 1,
+            enrUpdate: true,
+          },
         },
-      },
         2n ** 256n,
         undefined,
         prev_content
-    )
+      )
       return portal
     } else {
       throw new Error('Cannot recreate Portal Network from stored data')
