@@ -1,4 +1,12 @@
-import { Discv5, distance, ENR, EntryStatus, IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
+import {
+  createKeypairFromPeerId,
+  Discv5,
+  distance,
+  ENR,
+  EntryStatus,
+  IDiscv5CreateOptions,
+  NodeId,
+} from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/lib/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
@@ -32,11 +40,7 @@ import {
   HistoryNetworkContentTypes,
 } from '../subprotocols/history/types'
 import { BlockHeader } from '@ethereumjs/block'
-import {
-  addRLPSerializedBlock,
-  getHistoryNetworkContentId,
-  reassembleBlock,
-} from '../subprotocols/history'
+import { getHistoryNetworkContentId, reassembleBlock } from '../subprotocols/history'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'
@@ -63,28 +67,26 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param proxyAddress IP address of proxy
    * @returns a new PortalNetwork instance
    */
-  public static createPortalNetwork = async (ip: string, proxyAddress = 'ws://127.0.0.1:5050') => {
+  public static createPortalNetwork = async (proxyAddress = 'ws://127.0.0.1:5050', ip?: string) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
-    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`))
-    const portal = new PortalNetwork(
+    const ma = ip
+      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
+      : new Multiaddr()
+    if (ip) enr.setLocationMultiaddr(ma)
+    return new PortalNetwork(
       {
         enr,
         peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: new WebSocketTransportService(
-          enr.getLocationMultiaddr('udp')!,
-          enr.nodeId,
-          proxyAddress
-        ),
+        multiaddr: ma,
+        transport: new WebSocketTransportService(ma, enr.nodeId, proxyAddress),
         config: {
-          addrVotesToUpdateEnr: 1,
+          addrVotesToUpdateEnr: 5,
           enrUpdate: true,
         },
       },
       2n ** 256n
     )
-    return portal
   }
   /**
    *
@@ -130,20 +132,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  public static createMobilePortalNetwork = async (ip: string) => {
+  public static createMobilePortalNetwork = async (ip?: string) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
-    const address = ip.split(':')[0]
-    const port = ip.split(':')[1]
-    enr.setLocationMultiaddr(new Multiaddr(`/ip4/${address}/udp/${port}`))
+    const ma = ip
+      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 200)}`)
+      : new Multiaddr()
+    if (ip) enr.setLocationMultiaddr(ma)
     return new PortalNetwork(
       {
         enr,
         peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
-        transport: new CapacitorUDPTransportService(enr.getLocationMultiaddr('udp')!, enr.nodeId),
+        multiaddr: ma,
+        transport: new CapacitorUDPTransportService(ma, enr.nodeId),
         config: {
-          addrVotesToUpdateEnr: 1,
+          addrVotesToUpdateEnr: 5,
           enrUpdate: true,
         },
       },
@@ -168,8 +171,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) {
     // eslint-disable-next-line constructor-super
     super()
-
-    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000 } })
+    this.client = Discv5.create({
+      ...config,
+      ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
+    })
+    this.client.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
@@ -218,21 +224,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Starts the portal network client
    */
   public start = async () => {
-    // Hardcoded data for testing - block 1 from mainnet
-    const block1Rlp =
-      '0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4'
-    const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-    const block1 = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(block1Rlp)))
-    this.addContentToHistory(
-      1,
-      HistoryNetworkContentTypes.BlockHeader,
-      block1Hash,
-      Uint8Array.from(block1.serialize())
-    )
-    const block304583Rlp =
-      '0xf90a4ff90218a0be8361d665ca0c7921df4419522c1319c3012d4adbea5c6229c84ec86fbf52f2a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479452bc44d5378309ee2abf1539bf71de1b7d7be3b5a01aef82504fc10469532521faa4426ee8c5331ac9c0ef1af7bcab967f5aa6e1a1a092ed465e40f9ee2e3a9e9f4f8ecb1f11923bb0376d976312d6c40576439be150a0a5cf019118b22b15a360e97c35c75a7dbc871318c4f3ba462837b186653c2a4db90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008605ddae9bb8d28304a5c7832ff7688306050e845609aaad98d783010103844765746887676f312e342e32856c696e7578a031538fbc9699fc6b359fc26ea2d94bb2556d7d999b101650c78c88f71d61133888b78f1aed8ad0d52af90830f904ad8201d5850ce1a0813e832f4d60945be6129ce8f523753131eb11c6f719f5b72e0e1180b90444d810612b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000740000000000000000000000000000000000000000000000000000000000000074000000000000000000000000000000000000000000000000000000000000007400000000000000000000000000000000000000000000000000000000000000741ba0fda17baa8772b9257525c04787d781376fdbc025ae0d0393b1bd8e7b5540b332a01f4d64f42b3aa203b9178d2deb19aa6d0dad24e48c8edf848d226952ed2aef48f86e82a7fe850ba43b74008261a89429fb2ca00f91f16b065ef332ac7948d4cc16a0658802a85985c3fa0c80801ca064fe9b4332507cb713828e738fb3a4a4fc373727185ea81dc6e95957c06f9214a0011966a5748baa542b32cbf3fb3fc46512d0f0704e53ed63a4f86e47a0a8db51f86e82a7ff850ba43b74008261a894715831b632c51081b507af551f534a50fcbb3690888c387839b61ea000801ca0d4f91a0dda2327f1fd4c5741c291979fc5cdb31f6ed8777465150eb5e0f19c62a079d14b7cae5864f2d6ee2e733e4c5c8a48522c7dbd79e79d2a7d41d159c046e8f86e82a800850ba43b74008261a8943a4cc071e426cffba54c267391e401e820a5e472887f554460d4725000801ba0cb0c573e605053d01b800b30388023357d953c9af2cbebe36a6b2b033936fe7fa010d7e92941b4e4760e8b3b2d4f40e495766ad7ffffa5bc62593bd3f6765ca759f86e82a801850ba43b74008261a894d5fda805ff27942da5b6b27884255bf7bfdc6f4f881a2d10c27aa21600801ba0a4a02d9fc9178bc7a42b504649b88624a40085621275f1351b68e939b238e316a0376c96e16bfe6a4c35ecfbccf0b0deaa456db7a81e29d3c4f9390248c49485f6f86e82a802850ba43b74008261a894b48dbbdc7118253be140f43098e2a0bec43fcbf988d7a97439797f8000801ba05328ac567dea32b748c82311e9d002fa13e17a39072db38797762b9ea633139aa0531c49ae4f6a508b2c900a44f386d85d75682af45201b977abd6e3630535ed21f86e82a803850ba43b74008261a894bc0f4f3338f099e578819a8d87976df731b6ee7e881d4f6e1cba82d700801ba08bdd1820eea89f2c3176de03b7be89df5d5b636e082bfc399dfbac7a8d1d8f71a05a05466e3ad65ca9cf87cbbb517d3869623f82c6e02419f081da5101e145225ff86e82a804850ba43b74008261a8941cc77ed71531833bac1ea0e757cd150dcd297920881755213637cf0c00801ba042e7a7352afbd48b13039b40eafa8e0783a1f671f6c969bd509924c12de89e3aa07a88806b8729125c6bb2ba2e552dff0af9c2d178df9201c80923cf13997b163df86e82a805850ba43b74008261a89451033f1a1a59cb6a1bf6ca2087a53bd202ac1c838838221051d9b89c00801ca0328e9a7e2cf52b9a85d34cfb9545b307cb136da2c2e6f3ec4b6a385020b3b055a05427804ddf8c34fdca86dde482b45495d84b63ad9190a98b01332d0528667243c0'
-    const block304583Hash = '0xca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f'
-    await addRLPSerializedBlock(block304583Rlp, block304583Hash, this)
     await this.client.start()
     if (this.prev_content) {
       this.prev_content.forEach(([k, v]) => {
@@ -247,7 +238,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
 
     // Start kbucket refresh on 30 second interval
-    //   this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
+    this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
   }
 
   /**
@@ -310,6 +301,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
     // Requests nodes in all empty k-buckets
+    ;(this.client as any).sendPing(enr)
     this.sendFindNodes(enr.nodeId, distancesSought, protocolId)
   }
 
@@ -329,6 +321,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const enr = ENR.decodeTxt(nodeId)
       this.updateSubprotocolRoutingTable(enr, protocolId, true)
       dstId = enr.nodeId
+      ;(this.client as any).sendPing(enr)
     } else {
       dstId = nodeId
     }
@@ -637,7 +630,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     )
   }
 
-  private sendPong = async (srcId: string, message: ITalkReqMessage) => {
+  private sendPong = async (src: INodeAddress, message: ITalkReqMessage) => {
     const payload = {
       enrSeq: this.client.enr.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
@@ -646,7 +639,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       selector: MessageCodes.PONG,
       value: payload,
     })
-    this.sendPortalNetworkResponse(srcId, message, Buffer.from(pongMsg))
+    this.sendPortalNetworkResponse(src, message, Buffer.from(pongMsg))
   }
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
@@ -659,10 +652,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         break
       case SubprotocolIds.UTPNetwork:
         this.logger(`Received uTP packet`)
-        this.handleUTP(srcId, message, message.request)
+        this.handleUTP(src, srcId, message, message.request)
         return
       case SubprotocolIds.Rendezvous:
-        this.handleRendezvous(srcId, message)
+        this.handleRendezvous(src, srcId, message)
         return
       default:
         this.logger(
@@ -675,28 +668,28 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${srcId}`)
     switch (messageType) {
       case MessageCodes.PING:
-        this.handlePing(srcId, message)
+        this.handlePing(src, message)
         break
       case MessageCodes.PONG:
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
         this.metrics?.findNodesMessagesReceived.inc()
-        this.handleFindNodes(srcId, message)
+        this.handleFindNodes(src, message)
         break
       case MessageCodes.NODES:
         this.logger(`NODES message not expected in TALKREQ`)
         break
       case MessageCodes.FINDCONTENT:
         this.metrics?.findContentMessagesReceived.inc()
-        this.handleFindContent(srcId, message)
+        this.handleFindContent(src, message)
         break
       case MessageCodes.CONTENT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
         break
       case MessageCodes.OFFER:
         this.metrics?.offerMessagesReceived.inc()
-        this.handleOffer(srcId, message)
+        this.handleOffer(src, message)
         break
       case MessageCodes.ACCEPT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
@@ -712,14 +705,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(`TALKRESPONSE message received from ${srcId}`)
   }
 
-  private handlePing = (srcId: string, message: ITalkReqMessage) => {
+  private handlePing = (src: INodeAddress, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
     const pingMessage = decoded.value as PingMessage
     const routingTable = this.routingTables.get(toHexString(message.protocol) as SubprotocolIds)
-    if (!routingTable?.getValue(srcId)) {
+    if (!routingTable?.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
       this.updateSubprotocolRoutingTable(
-        srcId,
+        src.nodeId,
         toHexString(message.protocol) as SubprotocolIds,
         true,
         pingMessage.customPayload
@@ -729,14 +722,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } else {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
 
-      routingTable.updateRadius(srcId, radius)
+      routingTable.updateRadius(src.nodeId, radius)
     }
-    this.sendPong(srcId, message)
+    this.sendPong(src, message)
   }
 
-  private handleFindNodes = (srcId: string, message: ITalkReqMessage) => {
+  private handleFindNodes = (src: INodeAddress, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
-    this.logger(`Received FINDNODES request from ${shortId(srcId)}`)
+    this.logger(`Received FINDNODES request from ${shortId(src.nodeId)}`)
     this.logger(decoded)
     const payload = decoded.value as FindNodesMessage
     if (payload.distances.length > 0) {
@@ -753,7 +746,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             .valuesOfDistance(distance + 1)
             .every((enr) => {
               // Exclude ENR from resopnse if it matches the requesting node
-              if (enr.nodeId === srcId) return true
+              if (enr.nodeId === src.nodeId) return true
               // Break from loop if total size of NODES payload would exceed 1200 bytes
               // TODO: Add capability to send multiple NODES messages if size of ENRs exceeds packet size
               if (nodesPayload.enrs.flat().length + enr.size > 1200) return false
@@ -776,19 +769,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this.sendPortalNetworkResponse(srcId, message, encodedPayload)
+      this.sendPortalNetworkResponse(src, message, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
-      this.sendPortalNetworkResponse(srcId, message, Buffer.from([]))
+      this.sendPortalNetworkResponse(src, message, Buffer.from([]))
     }
   }
 
-  private handleOffer = async (srcId: string, message: ITalkReqMessage) => {
+  private handleOffer = async (src: INodeAddress, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
     this.logger(decoded)
     const msg = decoded.value as OfferMessage
     this.logger(
-      `Received OFFER request from ${shortId(srcId)} with ${
+      `Received OFFER request from ${shortId(src.nodeId)} with ${
         msg.contentKeys.length
       } pieces of content.`
     )
@@ -806,30 +799,30 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               this.logger(err)
               offerAccepted = true
               contentIds[x] = true
-              this.logger(`Found some interesting content from ${shortId(srcId)}`)
+              this.logger(`Found some interesting content from ${shortId(src.nodeId)}`)
             }
           }
           if (offerAccepted) {
             this.logger(`Accepting an OFFER`)
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
-            this.sendAccept(srcId, message, contentIds, desiredKeys)
+            this.sendAccept(src, message, contentIds, desiredKeys)
           } else {
             this.logger(`Declining an OFFER since no interesting content`)
-            this.sendPortalNetworkResponse(srcId, message, Buffer.from([]))
+            this.sendPortalNetworkResponse(src, message, Buffer.from([]))
           }
         } catch {
           this.logger(`Something went wrong handling offer message`)
           // Send empty response if something goes wrong parsing content keys
-          this.sendPortalNetworkResponse(srcId, message, Buffer.from([]))
+          this.sendPortalNetworkResponse(src, message, Buffer.from([]))
         }
         if (!offerAccepted) {
           this.logger('We already have all this content')
-          this.sendPortalNetworkResponse(srcId, message, Buffer.from([]))
+          this.sendPortalNetworkResponse(src, message, Buffer.from([]))
         }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
-        this.sendPortalNetworkResponse(srcId, message, Buffer.from([]))
+        this.sendPortalNetworkResponse(src, message, Buffer.from([]))
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
@@ -837,20 +830,20 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   private sendAccept = async (
-    srcId: string,
+    src: INodeAddress,
     message: ITalkReqMessage,
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[]
   ) => {
     this.logger(
-      `sending ACCEPT to ${shortId(srcId)} for ${desiredContentKeys.length} pieces of content.`
+      `sending ACCEPT to ${shortId(src.nodeId)} for ${desiredContentKeys.length} pieces of content.`
     )
 
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
     await this.uTP.handleNewHistoryNetworkRequest(
       desiredContentKeys,
-      srcId,
+      src.nodeId,
       id,
       RequestCode.ACCEPT_READ,
       []
@@ -866,13 +859,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    await this.sendPortalNetworkResponse(srcId, message, Buffer.from(encodedPayload))
+    await this.sendPortalNetworkResponse(src, message, Buffer.from(encodedPayload))
   }
 
-  private handleFindContent = async (srcId: NodeId, message: ITalkReqMessage) => {
+  private handleFindContent = async (src: INodeAddress, message: ITalkReqMessage) => {
     this.metrics?.contentMessagesSent.inc()
     const decoded = PortalWireMessageType.deserialize(message.request)
-    this.logger(`Received FINDCONTENT request from ${shortId(srcId)}`)
+    this.logger(`Received FINDCONTENT request from ${shortId(src.nodeId)}`)
     const decodedContentMessage = decoded.value as FindContentMessage
     //Check to see if value in content db
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
@@ -893,7 +886,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             const encodedEnrs = ENRs.map((enr) => {
               // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
               // contentId than this node
-              return enr.nodeId !== srcId &&
+              return enr.nodeId !== src.nodeId &&
                 distance(enr.nodeId, lookupKey) < distance(this.client.enr.nodeId, lookupKey)
                 ? enr.encode()
                 : undefined
@@ -910,18 +903,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 value: encodedEnrs as Buffer[],
               })
               this.sendPortalNetworkResponse(
-                srcId,
+                src,
+
                 message,
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
               )
             } else {
               this.logger(`Found no ENRs closer to content than us`)
-              this.sendPortalNetworkResponse(srcId, message, Uint8Array.from([]))
+              this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
             }
           }
           break
         default:
-          this.sendPortalNetworkResponse(srcId, message, Uint8Array.from([]))
+          this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
@@ -931,10 +925,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           `...`
       )
       const payload = ContentMessageType.serialize({ selector: 1, value: value })
-      this.logger(`Sending requested content to ${srcId}`)
+      this.logger(`Sending requested content to ${src.nodeId}`)
       this.logger(Uint8Array.from(value))
       this.sendPortalNetworkResponse(
-        srcId,
+        src,
+
         message,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )
@@ -949,7 +944,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const _id = randUint16()
       await this.uTP.handleNewHistoryNetworkRequest(
         [decodedContentMessage.contentKey],
-        srcId,
+        src.nodeId,
         _id,
         RequestCode.FOUNDCONTENT_WRITE,
         [value]
@@ -962,7 +957,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       )
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.sendPortalNetworkResponse(
-        srcId,
+        src,
+
         message,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )
@@ -975,8 +971,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param msgId uTP message ID
    * @param packetBuffer uTP packet encoded to Buffer
    */
-  private handleUTP = async (srcId: NodeId, msg: ITalkReqMessage, packetBuffer: Buffer) => {
-    await this.sendPortalNetworkResponse(srcId, msg, new Uint8Array())
+  private handleUTP = async (
+    src: INodeAddress,
+    srcId: NodeId,
+    msg: ITalkReqMessage,
+    packetBuffer: Buffer
+  ) => {
+    await this.sendPortalNetworkResponse(src, msg, new Uint8Array())
     await this.uTP.handleUtpPacket(packetBuffer, srcId)
   }
 
@@ -1023,8 +1024,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           // If ENR wasn't passed in original call, look in discv5 routing table to see if known there
           enr = this.client.getKadValue(nodeId)
         }
-        routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
-        this.emit('NodeAdded', nodeId, protocolId)
+
+        if (enr) {
+          routingTable!.insertOrUpdate(enr!, EntryStatus.Connected)
+          this.emit('NodeAdded', nodeId, protocolId)
+        }
       }
       if (customPayload) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
@@ -1073,12 +1077,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger(res)
   }
 
-  private handleRendezvous = async (srcId: NodeId, message: ITalkReqMessage) => {
+  private handleRendezvous = async (src: INodeAddress, srcId: NodeId, message: ITalkReqMessage) => {
     const protocolId = ('0x' + message.request.slice(1, 3).toString('hex')) as SubprotocolIds
     const routingTable = this.routingTables.get(protocolId)
 
     if (!routingTable) {
-      this.sendPortalNetworkResponse(srcId, message, Uint8Array.from([]))
+      this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
       return
     }
     switch (message.request[0]) {
@@ -1093,7 +1097,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           enr = this.client.getKadValue(dstId)
           if (!enr) {
             // destination node is unknown, send null response
-            this.sendPortalNetworkResponse(srcId, message, Uint8Array.from([]))
+            this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
             return
           }
         }
@@ -1103,16 +1107,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         // Ping target node to verify it is reachable from rendezvous node
         if (!pingRes) {
           // If the target node isn't reachable, send null response
-          this.sendPortalNetworkResponse(srcId, message, Uint8Array.from([]))
+          this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
           return
         }
         const payload = enr.encode()
-        this.sendPortalNetworkResponse(srcId, message, payload)
+        this.sendPortalNetworkResponse(src, message, payload)
         break
       }
       case 1: {
         // SYNC request from requestor
-        this.sendPortalNetworkResponse(srcId, message, Uint8Array.from([]))
+        this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
         const dstId = message.request.slice(3).toString('hex')
         this.logger(
           `Received Rendezvous SYNC from requestor ${shortId(srcId)} for target ${shortId(dstId)}`
@@ -1186,26 +1190,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private sendPortalNetworkResponse = (
-    srcId: string,
+  private sendPortalNetworkResponse = async (
+    src: INodeAddress,
     message: ITalkReqMessage,
     payload: Uint8Array
   ) => {
-    const protocolId = toHexString(message.protocol)
-    let enr = this.routingTables.get(protocolId as SubprotocolIds)?.getValue(srcId)
-    if (!enr) {
-      // If ENR cannot be found in portal network routing table, check in discv5 known ENRs
-      enr = this.client.findEnr(srcId)
-      if (!enr) {
-        this.logger(
-          //eslint-disable-next-line prettier/prettier
-          `No ENR found while attempting to send TALKRESP to ${shortId(srcId)} for message ID ${message.id}`
-        )
-        return
-      }
-    }
-    this.client.sendTalkResp(enr, message.id, payload)
+    this.client.sendTalkResp(src, message.id, payload)
   }
+
   /**
    * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
    * evict nodes that do not respond
@@ -1239,7 +1231,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Do the random lookup on this node-id.
    */
   private bucketRefresh = async () => {
-    await this.livenessCheck(SubprotocolIds.HistoryNetwork)
+    //await this.livenessCheck(SubprotocolIds.HistoryNetwork)
     const routingTable = this.routingTables.get(SubprotocolIds.HistoryNetwork)
     const notFullBuckets = routingTable!.buckets
       .map((bucket, idx) => {

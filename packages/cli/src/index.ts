@@ -103,7 +103,7 @@ const main = async () => {
   )
   // cache private key signature to ensure ENR can be encoded on startup
   portal.client.enr.encode(createKeypairFromPeerId(id).privateKey)
-
+  portal.client.enableLogs()
   portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5*')
   const metricsServer = http.createServer(reportMetrics)
 

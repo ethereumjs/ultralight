@@ -36,8 +36,8 @@ export default function DevTools(props: DevToolsProps) {
   const [distance, setDistance] = useState('')
   const [contentKey, setContentKey] = useState('')
   const toast = useToast()
-  const handlePing = (nodeId: string) => {
-    portal?.sendPing(nodeId, SubprotocolIds.HistoryNetwork)
+  const handlePing = () => {
+    portal?.sendPing(peer, SubprotocolIds.HistoryNetwork)
   }
   async function share() {
     await Share.share({
@@ -155,7 +155,7 @@ export default function DevTools(props: DevToolsProps) {
         </Select>
       </Box>
       <Divider />
-      <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handlePing(peer)}>
+      <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handlePing()}>
         Send Ping
       </Button>
       <Divider />

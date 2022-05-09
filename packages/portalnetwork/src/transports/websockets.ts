@@ -27,11 +27,6 @@ export class WebSocketTransportService
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
-
-    const opts = multiaddr.toOptions()
-    if (opts.transport !== 'udp') {
-      throw new Error('Local multiaddr must use udp')
-    }
     this.multiaddr = multiaddr
     this.srcId = srcId
     this.socket = new WebSocketAsPromised(proxyAddress, {
