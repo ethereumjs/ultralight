@@ -5,7 +5,7 @@ There are a collection of scripts in the `cli` package's `scripts` directory to 
 ## Starting the devnet
 
 1. Build all packages -- `npm i`
-2. Run the devnet script -- `bash packages/cliscripts/devnet.sh -n [Number of nodes to start]`
+2. Run the devnet script from `[repo root]/packages/cli` -- `bash scripts/devnet.sh -n [Number of nodes to start]`
 3. Observe logs to confirm nodes are running
 4. Press `Ctrl+c` to shutdown the devnet at any time
 

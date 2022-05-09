@@ -49,10 +49,6 @@ See the [`browser client`](./packages/browser-client) and [`cli`](./packages/cli
 [Interop instructions](./INTEROP.md) for interacting with the [Fluffy](https://github.com/status-im/nimbus-eth1/tree/master/fluffy) and [Trin](https://github.com/ethereum/trin) portal clients
 ## Monorepo Structure
 
-### [`discv5`](./packages/discv5)
-
-The `discv5` library is a fork of [Chainsafe's implementation](https://github.com/chainsafe/discv5) that introduces a websocket transport layer to allow browser clients to leverage the discv5 protocol via a websocket to UDP proxy service.  
-
 ### [`portalnetwork`](./packages/portalnetwork)
 
 The `portalnetwork` library is the application layer needed to interact with the Portal Network and depends on `discv5` for its networking layer
