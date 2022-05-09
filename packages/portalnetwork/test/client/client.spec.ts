@@ -18,8 +18,8 @@ import { Multiaddr } from 'multiaddr'
 
 tape('Client unit tests', async (t) => {
   const node = (await PortalNetwork.createPortalNetwork(
-    '192.168.0.1',
-    'ws://192.168.0.2:5050'
+    'ws://192.168.0.2:5050',
+    '192.168.0.1'
   )) as any
 
   t.test('node initialization/startup', async (st) => {

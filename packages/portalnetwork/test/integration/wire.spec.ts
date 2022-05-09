@@ -19,8 +19,8 @@ const end = async (
 }
 
 const setupNetwork = async () => {
-  const portal1 = await PortalNetwork.createPortalNetwork('127.0.0.1', 'ws://127.0.0.1:5050')
-  const portal2 = await PortalNetwork.createPortalNetwork('127.0.0.1', 'ws://127.0.0.1:5050')
+  const portal1 = await PortalNetwork.createPortalNetwork('ws://127.0.0.1:5050', '127.0.0.1')
+  const portal2 = await PortalNetwork.createPortalNetwork('ws://127.0.0.1:5050', '127.0.0.1')
   return [portal1, portal2]
 }
 
