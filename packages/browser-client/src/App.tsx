@@ -222,7 +222,7 @@ export const App = () => {
     } catch (err: unknown) {
       const node = Capacitor.isNativePlatform()
         ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
-        : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
+        : await PortalNetwork.createPortalNetwork(proxy)
       // eslint-disable-next-line no-undef
       ;(window as any).LDB = LDB
       node.client.on('multiaddrUpdated', () =>
