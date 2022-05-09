@@ -62,6 +62,7 @@ export const App = () => {
 
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubprotocolIds.HistoryNetwork)
+    if (!routingTable) return
     const known = routingTable?.values()
     const formattedKnown = known!.map((_enr: ENR) => {
       const distToSelf = log2Distance(id, _enr.nodeId)
@@ -96,8 +97,8 @@ export const App = () => {
       await portal.stop()
     }
     const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
-      : await PortalNetwork.createPortalNetwork('127.0.0.1', proxy)
+      ? await PortalNetwork.createMobilePortalNetwork()
+      : await PortalNetwork.createPortalNetwork(proxy)
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
     setPortal(node)

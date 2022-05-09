@@ -14,11 +14,12 @@ import {
   HistoryNetworkContentTypes,
 } from '../../src/subprotocols/history/types'
 import { serializedContentKeyToContentId } from '../../src/util'
+import { Multiaddr } from 'multiaddr'
 
 tape('Client unit tests', async (t) => {
   const node = (await PortalNetwork.createPortalNetwork(
-    '192.168.0.1',
-    'ws://192.168.0.2:5050'
+    'ws://192.168.0.2:5050',
+    '192.168.0.1'
   )) as any
 
   t.test('node initialization/startup', async (st) => {
@@ -29,9 +30,8 @@ tape('Client unit tests', async (t) => {
     )
 
     node.client.start = td.func<any>()
-    td.when(node.client.start()).thenResolve(undefined)
+    td.when(node.client.start()).thenResolve(st.pass('discv5 client started'))
     await node.start()
-    st.pass('client should start')
   })
 
   t.test('PING/PONG message handlers', async (st) => {
@@ -97,27 +97,33 @@ tape('Client unit tests', async (t) => {
     node.client.enr.encode = td.func<any>()
     td.when(
       node.sendPortalNetworkResponse(
-        'abc',
+        { socketAddr: new Multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length > 3)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with ENRs'))
     td.when(
       node.sendPortalNetworkResponse(
-        'abc',
+        { socketAddr: new Multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with no ENRs'))
     td.when(node.client.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
-    node.handleFindNodes('abc', {
-      request: findNodesMessageWithDistance,
-      protocol: SubprotocolIds.HistoryNetwork,
-    })
-    node.handleFindNodes('abc', {
-      request: findNodesMessageWithoutDistance,
-      protocol: SubprotocolIds.HistoryNetwork,
-    })
+    node.handleFindNodes(
+      { socketAddr: new Multiaddr(), nodeId: 'abc' },
+      {
+        request: findNodesMessageWithDistance,
+        protocol: SubprotocolIds.HistoryNetwork,
+      }
+    )
+    node.handleFindNodes(
+      { socketAddr: new Multiaddr(), nodeId: 'abc' },
+      {
+        request: findNodesMessageWithoutDistance,
+        protocol: SubprotocolIds.HistoryNetwork,
+      }
+    )
   })
 
   t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
@@ -149,25 +155,35 @@ tape('Client unit tests', async (t) => {
     ])
     td.when(
       node.sendPortalNetworkResponse(
-        'ghi',
+        { socketAddr: new Multiaddr(), nodeId: 'ghi' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
     ).thenDo(() => st.pass('got correct outcome for unsupported network'))
     //st.pass('correctly handle findContent where no matching content'))
     td.when(
-      node.sendPortalNetworkResponse('def', td.matchers.anything(), td.matchers.anything())
+      node.sendPortalNetworkResponse(
+        { socketAddr: new Multiaddr(), nodeId: 'def' },
+        td.matchers.anything(),
+        td.matchers.anything()
+      )
     ).thenDo(() => st.pass('got correct content for def'))
 
-    await node.handleFindContent('ghi', {
-      protocol: fromHexString('0x123456'),
-      request: findContentMessageWithNoContent,
-    })
-    await node.handleFindContent('def', {
-      id: '12345',
-      protocol: fromHexString(SubprotocolIds.HistoryNetwork),
-      request: findContentMessageWithShortContent,
-    })
+    await node.handleFindContent(
+      { socketAddr: new Multiaddr(), nodeId: 'ghi' },
+      {
+        protocol: fromHexString('0x123456'),
+        request: findContentMessageWithNoContent,
+      }
+    )
+    await node.handleFindContent(
+      { socketAddr: new Multiaddr(), nodeId: 'def' },
+      {
+        id: '12345',
+        protocol: fromHexString(SubprotocolIds.HistoryNetwork),
+        request: findContentMessageWithShortContent,
+      }
+    )
   })
 
   td.reset()
@@ -194,11 +210,17 @@ tape('Client unit tests', async (t) => {
   })
 
   t.test('addContentToHistory handler', async (st) => {
+    const node = await PortalNetwork.createPortalNetwork('ws://127.0.0.1:5050')
     st.plan(1)
     const block1Rlp =
       '0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4'
     const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-    node.addContentToHistory(1, HistoryNetworkContentTypes.BlockHeader, block1Hash, block1Rlp)
+    await node.addContentToHistory(
+      1,
+      HistoryNetworkContentTypes.BlockHeader,
+      block1Hash,
+      fromHexString(block1Rlp)
+    )
     const contentKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: HistoryNetworkContentTypes.BlockHeader,
       value: {
@@ -206,6 +228,7 @@ tape('Client unit tests', async (t) => {
         blockHash: fromHexString(block1Hash),
       },
     })
+
     const val = await node.db.get(serializedContentKeyToContentId(contentKey))
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)))
     st.ok(header.number.eqn(1), 'retrieved block header based on content key')
