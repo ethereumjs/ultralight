@@ -34,10 +34,11 @@ export class CapacitorUDPTransportService
   public async start(): Promise<void> {
     const opts = this.multiaddr.toOptions()
     this.socket = await UDP.create()
+    const port = Number.isInteger(opts.port) ? opts.port : 5050
     await UDP.bind({
       socketId: this.socket.socketId,
       address: this.socket.ipv4,
-      port: opts.port ?? 5050,
+      port: port,
     })
     UDP.addListener('receive', (ret: any) => {
       this.handleIncoming(Buffer.from(ret.buffer, 'base64'), {

@@ -67,18 +67,18 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param proxyAddress IP address of proxy
    * @returns a new PortalNetwork instance
    */
-  public static createPortalNetwork = async (ip: string, proxyAddress = 'ws://127.0.0.1:5050') => {
+  public static createPortalNetwork = async (proxyAddress = 'ws://127.0.0.1:5050', ip?: string) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     const ma = ip
       ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
       : new Multiaddr()
-    enr.setLocationMultiaddr(ma)
+    if (ip) enr.setLocationMultiaddr(ma)
     return new PortalNetwork(
       {
         enr,
         peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
+        multiaddr: ma,
         transport: new WebSocketTransportService(ma, enr.nodeId, proxyAddress),
         config: {
           addrVotesToUpdateEnr: 5,
@@ -95,12 +95,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const ma = ip
       ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 200)}`)
       : new Multiaddr()
-    enr.setLocationMultiaddr(ma)
+    if (ip) enr.setLocationMultiaddr(ma)
     return new PortalNetwork(
       {
         enr,
         peerId: id,
-        multiaddr: enr.getLocationMultiaddr('udp')!,
+        multiaddr: ma,
         transport: new CapacitorUDPTransportService(ma, enr.nodeId),
         config: {
           addrVotesToUpdateEnr: 5,
@@ -127,7 +127,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) {
     // eslint-disable-next-line constructor-super
     super()
-    this.client = Discv5.create({ ...config, ...{ requestTimeout: 3000 } })
+    this.client = Discv5.create({
+      ...config,
+      ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
+    })
     this.client.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
@@ -1136,24 +1139,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     message: ITalkReqMessage,
     payload: Uint8Array
   ) => {
-    const protocolId = toHexString(message.protocol)
-    let enr = this.routingTables.get(protocolId as SubprotocolIds)?.getValue(src.nodeId)
-    if (!enr) {
-      // If ENR cannot be found in portal network routing table, check in discv5 known ENRs
-      enr = this.client.findEnr(src.nodeId)
-      if (!enr) {
-        this.logger(
-          //eslint-disable-next-line prettier/prettier
-          `No ENR found while attempting to send TALKRESP to ${shortId(src.nodeId)} for message ID ${message.id}`
-        )
-
-        enr = new ENR({})
-        ;(enr as any)._nodeId = src.nodeId
-        enr.setLocationMultiaddr(src.socketAddr)
-      }
-    }
-    this.client.sendTalkResp(enr, message.id, payload)
+    this.client.sendTalkResp(src, message.id, payload)
   }
+
   /**
    * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
    * evict nodes that do not respond
