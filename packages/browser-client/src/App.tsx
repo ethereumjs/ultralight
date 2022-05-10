@@ -140,8 +140,6 @@ export const App = () => {
   }
 
   async function createNodeFromStorage(): Promise<PortalNetwork> {
-    const prev_enr_string = await LDB.get('enr')
-    const prev_peerid = await LDB.get('peerid')
     const prev_keys = JSON.parse(await LDB.get('keys'))
     const prev_content: string[][] = prev_keys.map(async (k: string) => {
       try {
@@ -149,25 +147,16 @@ export const App = () => {
         return [k, value]
       } catch {}
     })
-    const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
-    const recreatedPeerId = JSON.parse(prev_peerid)
-    const prev_node = await PortalNetwork.recreatePortalNetwork(
-      proxy,
-      recreatedPeerId,
-      recreatedENR,
-      prev_content
-    )
+    const prev_node = await PortalNetwork.recreatePortalNetwork(proxy, LDB, prev_content)
     ;(window as any).portal = prev_node
+    //@ts-ignore
+    prev_node.db = LDB
     ;(window as any).LDB = LDB
     setPortal(prev_node)
+    prev_node.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv*')
     await prev_node.start()
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR
-    prev_node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
-    const stream = prev_node.db.createReadStream()
-    stream.on('data', async (data) => {
-      await LDB.put(data.key, data.value)
-    })
     const storedPeers = await LDB.get('peers')
     let peerList: string[] = JSON.parse(storedPeers)
     peerList.push(...bns)
@@ -194,6 +183,7 @@ export const App = () => {
         ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
         : await PortalNetwork.createPortalNetwork(proxy)
       // eslint-disable-next-line no-undef
+      node.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv*')
       ;(window as any).LDB = LDB
       node.client.on('multiaddrUpdated', () =>
         setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
@@ -208,10 +198,12 @@ export const App = () => {
           {
             type: 'put',
             key: 'peerid',
-            value: JSON.stringify(await node.client.peerId()),
+            value: JSON.stringify(await (await node.client.peerId()).toJSON()),
           },
         ])
-      } catch (err) {}
+      } catch (err) {
+        console.log('error putting enr in db', err)
+      }
       try {
         const stream = node.db.createReadStream()
         stream

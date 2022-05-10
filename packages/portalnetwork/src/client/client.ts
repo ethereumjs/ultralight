@@ -45,6 +45,7 @@ import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'
 import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
+import { identity } from '@chainsafe/persistent-merkle-tree'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -97,39 +98,31 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public static recreatePortalNetwork = async (
     proxyAddress = 'ws://127.0.0.1:5050',
-    peerId: PeerId,
-    storedENR: ENR,
+    db: LevelUp,
     prev_content?: string[][]
   ) => {
-    // Hack solution to recreate valid PeerId
-    // otherwise privKey return undefined,
-    // and node will not connect to network
-    const pid = await PeerId.createFromPrivKey(peerId.privKey as unknown as string)
-    if (PeerId.isPeerId(pid) && storedENR.keypair.privateKeyVerify()) {
-      console.log(`Recreating Portal Network client`)
-      const portal = new PortalNetwork(
-        {
-          enr: storedENR,
-          peerId: pid,
-          multiaddr: storedENR.getLocationMultiaddr('udp')!,
-          transport: new WebSocketTransportService(
-            storedENR.getLocationMultiaddr('udp')!,
-            storedENR.nodeId,
-            proxyAddress
-          ),
-          config: {
-            addrVotesToUpdateEnr: 1,
-            enrUpdate: true,
-          },
+    const enr = ENR.decodeTxt(await db.get('enr'))
+    const id = await PeerId.createFromJSON(JSON.parse(await db.get('peerid')))
+    const portal = new PortalNetwork(
+      {
+        enr: enr,
+        peerId: id,
+        multiaddr: enr.getLocationMultiaddr('udp')!,
+        transport: new WebSocketTransportService(
+          enr.getLocationMultiaddr('udp')!,
+          enr.nodeId,
+          proxyAddress
+        ),
+        config: {
+          addrVotesToUpdateEnr: 1,
+          enrUpdate: true,
         },
-        2n ** 256n,
-        undefined,
-        prev_content
-      )
-      return portal
-    } else {
-      throw new Error('Cannot recreate Portal Network from stored data')
-    }
+      },
+      2n ** 256n,
+      db,
+      prev_content
+    )
+    return portal
   }
 
   public static createMobilePortalNetwork = async (ip?: string) => {
