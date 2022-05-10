@@ -23,7 +23,8 @@
     "outDir": "dist"
   },
   "include": [
-    "src"
+    "src",
+    "src/bootnodes.json"
   ],
   "exclude": [
     "dist"
