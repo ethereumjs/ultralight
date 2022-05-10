@@ -16,7 +16,6 @@ import {
   Heading,
   Center,
   VStack,
-  useToast,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -60,7 +59,6 @@ export const App = () => {
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
-  // const toast = useToast()
   const [modalStatus, setModal] = React.useState(false)
   const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
 
