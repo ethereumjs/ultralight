@@ -94,10 +94,9 @@ export const App = () => {
 
   React.useEffect(() => {
     // Put list of ENR's in DB
-    peerEnrStrings.length > 1 &&
-      LDB.put('peers', JSON.stringify(peerEnrStrings)).then(async (res) => {
-        console.log(JSON.parse(await LDB.get('peers')).length === peerEnrStrings.length)
-      })
+    try {
+      peerEnrStrings.length > 1 && LDB.put('peers', JSON.stringify(peerEnrStrings))
+    } catch {}
   }, [visible])
 
   async function handleVisibilityChange(p: PortalNetwork) {
@@ -105,21 +104,23 @@ export const App = () => {
     let keys: string[] = []
     try {
       keys = JSON.parse(await LDB.get('keys'))
-    } catch (err) {
-      console.log((err as any).message)
-      console.log('no old keys')
-    }
-    const stream = p.db.createReadStream()
-    stream.on('data', async (data) => {
-      await LDB.put(data.key, data.value)
-      keys.push(data.key)
-      console.log('database sync...')
-    })
-    stream.on('end', async () => {
-      const k = Array.from(new Set(keys))
-      await LDB.put('keys', JSON.stringify(k))
-      console.log('closing stream. keys in db: ', k.length)
-    })
+    } catch (err) {}
+    try {
+      const stream = p.db.createReadStream()
+      stream.on('data', async (data) => {
+        try {
+          await LDB.put(data.key, data.value)
+          keys.push(data.key)
+          console.log('database sync...')
+        } catch (err) {}
+      })
+      stream.on('end', async () => {
+        try {
+          const k = Array.from(new Set(keys))
+          await LDB.put('keys', JSON.stringify(k))
+        } catch (err) {}
+      })
+    } catch (err) {}
   }
 
   async function handleClick() {
@@ -174,17 +175,11 @@ export const App = () => {
       const stream = prev_node.db.createReadStream()
       stream.on('data', async (data) => {
         await LDB.put(data.key, data.value)
-        console.log('stream friends')
-      })
-      stream.on('close', () => {
-        console.log('closing stream')
       })
       try {
         const storedPeers = await LDB.get('peers')
         let peerList: string[] = JSON.parse(storedPeers)
         peerList.push(...bns)
-        console.log('found some old friends', peerList.length)
-        console.log('and found bootnodes', bns.length)
         peerList = Array.from(new Set(peerList))
         console.log('rebuilding routingtable', peerList.length)
         peerList.forEach(async (peer: string) => {
@@ -202,36 +197,33 @@ export const App = () => {
       node.client.on('multiaddrUpdated', () =>
         setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
       )
-      await LDB.batch([
-        {
-          type: 'put',
-          key: 'enr',
-          value: node.client.enr.encodeTxt(node.client.keypair.privateKey),
-        },
-        {
-          type: 'put',
-          key: 'peerid',
-          value: JSON.stringify(await node.client.peerId()),
-        },
-      ])
-      await node.start()
-      const stream = node.db.createReadStream()
-      stream
-        .on('data', async (data) => {
-          await LDB.put(data.key, data.value)
-        })
-        .on('error', (err) => {
-          console.log('Oh my!', err)
-        })
-        .on('close', () => {
-          console.log('Stream closed')
-        })
-        .on('end', () => {
-          console.log('Stream ended')
-          bns.forEach(async (peer: string) => {
-            await node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+      try {
+        await LDB.batch([
+          {
+            type: 'put',
+            key: 'enr',
+            value: node.client.enr.encodeTxt(node.client.keypair.privateKey),
+          },
+          {
+            type: 'put',
+            key: 'peerid',
+            value: JSON.stringify(await node.client.peerId()),
+          },
+        ])
+      } catch (err) {}
+      try {
+        const stream = node.db.createReadStream()
+        stream
+          .on('data', async (data) => {
+            await LDB.put(data.key, data.value)
           })
-        })
+          .on('end', () => {
+            bns.forEach(async (peer: string) => {
+              await node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+            })
+          })
+      } catch {}
+      await node.start()
       // eslint-disable-next-line no-undef
       ;(window as any).portal = node
       ;(window as any).ENR = ENR
@@ -253,10 +245,12 @@ export const App = () => {
       }
       window.onbeforeunload = async () => {
         // Put list of ENR's in DB
-        peerEnrStrings.length > 1 &&
-          LDB.put('peers', JSON.stringify(peerEnrStrings)).then(async () => {
-            await handleVisibilityChange(res)
-          })
+        try {
+          peerEnrStrings.length > 1 &&
+            LDB.put('peers', JSON.stringify(peerEnrStrings)).then(async () => {
+              await handleVisibilityChange(res)
+            })
+        } catch (err) {}
       }
     })
   }, [])
@@ -270,13 +264,13 @@ export const App = () => {
         const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
         let header: string = ''
         let body
-        const keys = await LDB.get('keys')
-        if (keys.includes(headerlookupKey) && keys.includes(bodylookupKey)) {
-          try {
-            header = await LDB.get(headerlookupKey)
-            body = await LDB.get(bodylookupKey)
-          } catch {}
-        } else {
+        try {
+          header = await LDB.get(headerlookupKey)
+          body = await LDB.get(bodylookupKey)
+          const block = reassembleBlock(fromHexString(header), fromHexString(body))
+          setBlock(block)
+          return block
+        } catch {
           await portal.historyNetworkContentLookup(0, blockHash)
           try {
             header = await portal.db.get(headerlookupKey)
