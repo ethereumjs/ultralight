@@ -128,7 +128,7 @@ export const App = () => {
       node = await createNodeFromScratch()
     }
     setPortal(node)
-    node.enableLog('')
+    node.enableLog('*discv5*, *portalnetwork*, *uTP*')
     await node.start()
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
