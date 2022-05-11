@@ -19,7 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "@chainsafe/as-sha256": "^0.2.4",
-    "@chainsafe/discv5": "acolytec3/discv5#0efacd29c",
+    "@chainsafe/discv5": "acolytec3/discv5#4314b99",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
     "@chainsafe/ssz": "^0.9.1",
     "@ethereumjs/block": "^3.6.0",
@@ -28,7 +28,6 @@
     "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "isomorphic-ws": "^4.0.1",
-    "levelup": "5.1.1",
     "level-mem": "^6.0.1",
     "multiaddr": "^10.0.1",
     "peer-id": "^0.16.0",

@@ -45,7 +45,7 @@ import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'
 import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
-import { identity } from '@chainsafe/persistent-merkle-tree'
+
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -106,13 +106,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public static recreatePortalNetwork = async (
     proxyAddress = 'ws://127.0.0.1:5050',
-    LDB: LevelUp
+    db: LevelUp
   ) => {
-    const prev_enr_string = await LDB.get('enr')
-    const prev_peerid = await LDB.get('peerid')
+    const prev_enr_string = await db.get('enr')
+    const prev_peerid = await db.get('peerid')
     const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
     const recreatedPeerId = await PeerId.createFromJSON(prev_peerid)
-    const prev_peers = JSON.parse(await LDB.get('peers'))
+    const prev_peers = JSON.parse(await db.get('peers'))
     console.log('recreating routing table', prev_peers.length)
     if (PeerId.isPeerId(recreatedPeerId) && recreatedENR.keypair.privateKeyVerify()) {
       console.log(`Recreating Portal Network client`)
@@ -133,7 +133,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         },
         2n ** 256n,
         prev_peers,
-        LDB
+        db
       )
       return portal
     } else {
