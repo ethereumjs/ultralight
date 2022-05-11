@@ -1,16 +1,11 @@
 import { Box, Menu, MenuItemOption, MenuOptionGroup } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { rlp } from 'ethereumjs-util'
-import {
-  fromHexString,
-  getHistoryNetworkContentId,
-  PortalNetwork,
-  reassembleBlock,
-} from 'portalnetwork'
+import { fromHexString, getHistoryNetworkContentId, reassembleBlock } from 'portalnetwork'
 import React, { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react'
+import { PortalContext } from '../App'
 
 interface BlocksToExploreProps {
-  portal: PortalNetwork
   findContent: any
   setBlock: Dispatch<SetStateAction<Block | undefined>>
 }
@@ -21,7 +16,7 @@ export default function BlocksToExplore(props: BlocksToExploreProps) {
   const [_display, _setDisplay] = useState<ReactElement>()
   const [menu, setMenu] = useState<ReactElement>(<></>)
 
-  const portal = props.portal
+  const portal = React.useContext(PortalContext)
 
   function addKey(key: string) {
     const k = keys
