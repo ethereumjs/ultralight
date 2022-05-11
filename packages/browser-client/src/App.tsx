@@ -145,13 +145,8 @@ export const App = () => {
   }
 
   React.useEffect(() => {
-    init().then(() => {
-      window.onbeforeunload = async (evt) => {
-        evt.preventDefault()
-        portal?.storeNodeDetails()
-        evt.stopImmediatePropagation()
-      }
-    })
+    init()
+    portal?.storeNodeDetails()
   }, [])
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {

@@ -58,11 +58,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   nodeRadius: bigint
   db: LevelUp
   bootnodes: string[]
-  prev_content?: string[][]
-  private refreshListener?: ReturnType<typeof setInterval>
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
   private supportsRendezvous: boolean
+  private refreshListener?: ReturnType<typeof setInterval>
+  private peerId: PeerId
 
   /**
    *
@@ -188,12 +188,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       ...config,
       ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
     })
-    db?.put('peerid', JSON.stringify(config.peerId.toJSON()))
     this.client.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
     this.bootnodes = bootnodes
+    this.peerId = config.peerId
     Object.values(SubprotocolIds).forEach((protocolId) => {
       if (protocolId !== SubprotocolIds.UTPNetwork) {
         this.routingTables.set(
@@ -320,6 +320,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           type: 'put',
           key: 'enr',
           value: this.client.enr.encodeTxt(this.client.keypair.privateKey),
+        },
+        {
+          type: 'put',
+          key: 'peerid',
+          value: JSON.stringify(this.peerId.toJSON()),
         },
       ])
     } catch (err) {}
@@ -643,9 +648,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       default:
         throw new Error('unknown data type provided')
     }
-    // await this.db.put(key, toHexString(value), (err: any) => {
-    //   if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
-    // })
+
     this.emit('ContentAdded', blockHash, contentType, toHexString(value))
     this.logger(
       `added ${
