@@ -120,24 +120,28 @@ export const App = () => {
     }
   }
 
-  async function createNodeFromStorage(): Promise<PortalNetwork> {
-    const prev_enr_string = await LDB.get('enr')
-    const prev_peerid = await LDB.get('peerid')
-    const prev_keys = JSON.parse(await LDB.get('keys'))
-    const prev_content: string[][] = prev_keys.map(async (k: string) => {
-      try {
-        const value = await LDB.get(k)
-        return [k, value]
-      } catch {}
-    })
-    const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
-    const recreatedPeerId = JSON.parse(prev_peerid)
-    const prev_node = await PortalNetwork.recreatePortalNetwork(
-      proxy,
-      recreatedPeerId,
-      recreatedENR,
-      prev_content
+  async function createNodeFromScratch(): Promise<PortalNetwork> {
+    const node = Capacitor.isNativePlatform()
+      ? await PortalNetwork.createMobilePortalNetwork(bns, '0.0.0.0:0')
+      : // @ts-ignore
+        await PortalNetwork.createPortalNetwork(proxy, bns, LDB)
+    // eslint-disable-next-line no-undef
+    ;(window as any).LDB = LDB
+    node.client.on('multiaddrUpdated', () =>
+      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
     )
+    await node.start()
+    // eslint-disable-next-line no-undef
+    ;(window as any).portal = node
+    ;(window as any).ENR = ENR
+    setPortal(node)
+    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
+    return node
+  }
+
+  async function createNodeFromStorage(): Promise<PortalNetwork> {
+    // @ts-ignore
+    const prev_node = await PortalNetwork.recreatePortalNetwork(proxy, LDB)
     ;(window as any).portal = prev_node
     ;(window as any).LDB = LDB
     setPortal(prev_node)
@@ -145,77 +149,19 @@ export const App = () => {
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR
     prev_node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
-    const stream = prev_node.db.createReadStream()
-    stream.on('data', async (data) => {
-      await LDB.put(data.key, data.value)
-    })
-    const storedPeers = await LDB.get('peers')
-    let peerList: string[] = JSON.parse(storedPeers)
-    peerList.push(...bns)
-    peerList = Array.from(new Set(peerList))
-    console.log('rebuilding routingtable', peerList.length)
-    peerList.forEach(async (peer: string) => {
-      await prev_node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
-    })
-    setENR(peerList[0])
     return prev_node
   }
 
   const init = async () => {
-    if (navigator.storage && navigator.storage.persist)
-      navigator.storage.persist().then(function (persistent) {
-        if (persistent) console.log('Storage will not be cleared except by explicit user action')
-        else console.log('Storage may be cleared by the UA under storage pressure.')
-      })
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist()
+    }
     try {
       const prev_node = await createNodeFromStorage()
       return prev_node
-    } catch (err: unknown) {
-      const node = Capacitor.isNativePlatform()
-        ? await PortalNetwork.createMobilePortalNetwork('0.0.0.0:0')
-        : await PortalNetwork.createPortalNetwork(proxy)
-      // eslint-disable-next-line no-undef
-      ;(window as any).LDB = LDB
-      node.client.on('multiaddrUpdated', () =>
-        setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
-      )
-      try {
-        await LDB.batch([
-          {
-            type: 'put',
-            key: 'enr',
-            value: node.client.enr.encodeTxt(node.client.keypair.privateKey),
-          },
-          {
-            type: 'put',
-            key: 'peerid',
-            value: JSON.stringify(await node.client.peerId()),
-          },
-        ])
-      } catch (err) {}
-      try {
-        const stream = node.db.createReadStream()
-        stream
-          .on('data', async (data) => {
-            await LDB.put(data.key, data.value)
-          })
-          .on('end', () => {
-            bns.forEach(async (peer: string) => {
-              await node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
-            })
-          })
-      } catch {
-        bns.forEach(async (peer: string) => {
-          await node.addBootNode(peer, SubprotocolIds.HistoryNetwork)
-        })
-      }
-      await node.start()
-      // eslint-disable-next-line no-undef
-      ;(window as any).portal = node
-      ;(window as any).ENR = ENR
-      setPortal(node)
-      node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
-      return node
+    } catch {
+      const fresh_node = await createNodeFromScratch()
+      return fresh_node
     }
   }
 
