@@ -225,20 +225,25 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public start = async () => {
     await this.client.start()
-    if (this.prev_content) {
-      this.prev_content.forEach(([k, v]) => {
-        try {
-          this.db.put(k, v).then((res) => {
-            console.log('added to db:', k)
-          })
-        } catch (err) {
-          console.log('trying to add stuff but:', (err as any).messages)
-        }
-      })
-    }
-
     // Start kbucket refresh on 30 second interval
     this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
+    this.bootnodes.forEach(async (peer: string) => {
+      await this.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+    })
+    try {
+      await this.db.batch([
+        {
+          type: 'put',
+          key: 'enr',
+          value: this.client.enr.encodeTxt(this.client.keypair.privateKey),
+        },
+        {
+          type: 'put',
+          key: 'peerid',
+          value: JSON.stringify(await this.client.peerId()),
+        },
+      ])
+    } catch (err) {}
   }
 
   /**
