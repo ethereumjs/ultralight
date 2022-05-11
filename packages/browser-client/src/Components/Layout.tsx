@@ -1,20 +1,10 @@
-import {
-  Divider,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  VStack,
-  StackDivider,
-} from '@chakra-ui/react'
+import { Tab, TabList, TabPanel, TabPanels, Tabs, VStack, StackDivider } from '@chakra-ui/react'
 import React, { Dispatch, SetStateAction, useEffect } from 'react'
 import { Block } from '@ethereumjs/block'
 import { ENR } from 'portalnetwork'
 import HistoryNetwork from './HistoryNetwork'
 import { NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
-import { BrowserLevel } from 'browser-level'
 interface LayoutProps {
   copy: () => Promise<void>
   onOpen: () => void

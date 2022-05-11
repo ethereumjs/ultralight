@@ -1,5 +1,4 @@
 import { Button, Heading, Input, VStack } from '@chakra-ui/react'
-import { PortalNetwork } from 'portalnetwork'
 import React, { Dispatch, SetStateAction } from 'react'
 
 interface StartNodeProps {

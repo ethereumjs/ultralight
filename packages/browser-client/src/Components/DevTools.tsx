@@ -9,7 +9,7 @@ import {
   useToast,
   Select,
 } from '@chakra-ui/react'
-import { PortalNetwork, SubprotocolIds, ENR, fromHexString } from 'portalnetwork'
+import { SubprotocolIds, ENR, fromHexString } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
 import { ContentManager } from './ContentManager'
 import { Share } from '@capacitor/share'
