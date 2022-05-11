@@ -44,10 +44,8 @@ export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
 
 export const App = () => {
-  const [visible, setVisible] = React.useState('visible')
   const [portal, setPortal] = React.useState<PortalNetwork>()
   const [peers, setPeers] = React.useState<ENR[]>([])
-  const [peerEnrStrings, setPeerEnrStrings] = React.useState<string[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
   const [id, _setId] = React.useState<string>('')
@@ -84,22 +82,7 @@ export const App = () => {
     })
     setSortedDistList(table)
     const peers = portal!.routingTables.get(SubprotocolIds.HistoryNetwork)!.values()
-    const peerEnrStrings = peers.map((peer) => {
-      return peer.encodeTxt()
-    })
-    setPeerEnrStrings(peerEnrStrings)
     setPeers(peers)
-  }
-
-  React.useEffect(() => {
-    // Put list of ENR's in DB
-    try {
-      peerEnrStrings.length > 1 && LDB.put('peers', JSON.stringify(peerEnrStrings))
-    } catch {}
-  }, [visible])
-
-  async function handleVisibilityChange() {
-    setVisible(document.visibilityState)
   }
 
   async function handleClick() {
@@ -122,36 +105,15 @@ export const App = () => {
 
   async function createNodeFromScratch(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork(bns, '0.0.0.0:0')
+      ? await PortalNetwork.createMobilePortalNetwork(bns)
       : // @ts-ignore
         await PortalNetwork.createPortalNetwork(proxy, bns, LDB)
-    // eslint-disable-next-line no-undef
-    ;(window as any).LDB = LDB
-    node.client.on('multiaddrUpdated', () =>
-      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
-    )
-    await node.start()
-    // eslint-disable-next-line no-undef
-    ;(window as any).portal = node
-    ;(window as any).ENR = ENR
-    setPortal(node)
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
     return node
   }
 
   async function createNodeFromStorage(): Promise<PortalNetwork> {
     // @ts-ignore
     const prev_node = await PortalNetwork.recreatePortalNetwork(proxy, LDB)
-    ;(window as any).portal = prev_node
-    //@ts-ignore
-    prev_node.db = LDB
-    ;(window as any).LDB = LDB
-    setPortal(prev_node)
-    prev_node.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv*')
-    await prev_node.start()
-    // eslint-disable-next-line no-undef
-    ;(window as any).ENR = ENR
-    prev_node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
     return prev_node
   }
 
@@ -159,13 +121,22 @@ export const App = () => {
     if (navigator.storage && navigator.storage.persist) {
       navigator.storage.persist()
     }
+    let node: PortalNetwork
     try {
-      const prev_node = await createNodeFromStorage()
-      return prev_node
+      node = await createNodeFromStorage()
     } catch {
-      const fresh_node = await createNodeFromScratch()
-      return fresh_node
+      node = await createNodeFromScratch()
     }
+    setPortal(node)
+    node.enableLog('')
+    await node.start()
+    // eslint-disable-next-line no-undef
+    ;(window as any).portal = node
+    ;(window as any).ENR = ENR
+    node.client.on('multiaddrUpdated', () => {
+      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
+      portal?.storeNodeDetails()
+    })
   }
 
   const copy = async () => {
@@ -174,17 +145,11 @@ export const App = () => {
   }
 
   React.useEffect(() => {
-    init().then((res) => {
-      document.onvisibilitychange = async () => {
-        await handleVisibilityChange()
-      }
-      window.onbeforeunload = async () => {
-        const routingTable = res.routingTables.get(SubprotocolIds.HistoryNetwork)
-        const peers = routingTable?.values().map((enr) => {
-          return enr.encodeTxt()
-        })
-        await res.db.put('peers', JSON.stringify(peers))
-        await handleVisibilityChange()
+    init().then(() => {
+      window.onbeforeunload = async (evt) => {
+        evt.preventDefault()
+        portal?.storeNodeDetails()
+        evt.stopImmediatePropagation()
       }
     })
   }, [])

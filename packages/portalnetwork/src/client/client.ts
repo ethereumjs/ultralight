@@ -33,6 +33,7 @@ import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from '.
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
+//eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import {
@@ -79,6 +80,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
+    enr.encode(createKeypairFromPeerId(id).privateKey)
     const ma = ip
       ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
       : new Multiaddr()
@@ -111,13 +113,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     db: LevelUp
   ) => {
     const prev_enr_string = await db.get('enr')
-    const prev_peerid = await db.get('peerid')
+    const prev_peerid = JSON.parse(await db.get('peerid'))
     const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
+
     const recreatedPeerId = await PeerId.createFromJSON(prev_peerid)
     const prev_peers = JSON.parse(await db.get('peers'))
-    console.log('recreating routing table', prev_peers.length)
     if (PeerId.isPeerId(recreatedPeerId) && recreatedENR.keypair.privateKeyVerify()) {
-      console.log(`Recreating Portal Network client`)
       const portal = new PortalNetwork(
         {
           enr: recreatedENR,
@@ -187,6 +188,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       ...config,
       ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
     })
+    db?.put('peerid', JSON.stringify(config.peerId.toJSON()))
     this.client.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
@@ -242,20 +244,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes.forEach(async (peer: string) => {
       await this.addBootNode(peer, SubprotocolIds.HistoryNetwork)
     })
-    try {
-      await this.db.batch([
-        {
-          type: 'put',
-          key: 'enr',
-          value: this.client.enr.encodeTxt(this.client.keypair.privateKey),
-        },
-        {
-          type: 'put',
-          key: 'peerid',
-          value: JSON.stringify(await this.client.peerId()),
-        },
-      ])
-    } catch (err) {}
   }
 
   /**
@@ -318,10 +306,31 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
     // Requests nodes in all empty k-buckets
-    ;(this.client as any).sendPing(enr)
+    this.client.sendPing(enr)
     this.sendFindNodes(enr.nodeId, distancesSought, protocolId)
   }
 
+  /**
+   * Store node details in DB for node restart
+   */
+  public storeNodeDetails = async () => {
+    try {
+      await this.db.batch([
+        {
+          type: 'put',
+          key: 'enr',
+          value: this.client.enr.encodeTxt(this.client.keypair.privateKey),
+        },
+      ])
+    } catch (err) {}
+    const peers: string[] = []
+    for (const table of this.routingTables.values()) {
+      table?.values().forEach((enr) => {
+        peers.push(enr.encodeTxt())
+      })
+      await this.db.put('peers', JSON.stringify(peers))
+    }
+  }
   /**
    * Sends a Portal Network Wire Protocol PING message to a specified node
    * @param dstId the nodeId of the peer to send a ping to
@@ -1250,11 +1259,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private bucketRefresh = async () => {
     //await this.livenessCheck(SubprotocolIds.HistoryNetwork)
     const routingTable = this.routingTables.get(SubprotocolIds.HistoryNetwork)
-    const peers = routingTable?.values().map((enr) => {
-      return enr.encodeTxt()
-    })
-    await this.db.put('peers', JSON.stringify(peers))
-    console.log('peers in db', peers?.length, JSON.parse(await this.db.get('peers')).length)
     const notFullBuckets = routingTable!.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }

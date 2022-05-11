@@ -4,7 +4,7 @@ import React, { Dispatch, SetStateAction } from 'react'
 
 interface StartNodeProps {
   setProxy: Dispatch<SetStateAction<string>>
-  init: () => Promise<PortalNetwork>
+  init: () => void
 }
 
 export default function StartNode(props: StartNodeProps) {
