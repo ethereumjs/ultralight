@@ -7,23 +7,17 @@ import {
   Tabs,
   VStack,
   StackDivider,
-  Heading,
 } from '@chakra-ui/react'
 import React, { Dispatch, SetStateAction, useEffect } from 'react'
 import { Block } from '@ethereumjs/block'
-import { ENR, PortalNetwork } from 'portalnetwork'
+import { ENR } from 'portalnetwork'
 import HistoryNetwork from './HistoryNetwork'
 import { NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
-import Bootnodes from './Bootnodes'
-import { useState } from 'react'
 import { BrowserLevel } from 'browser-level'
-
 interface LayoutProps {
-  portal: PortalNetwork
   copy: () => Promise<void>
   onOpen: () => void
-  LDB: BrowserLevel
   enr: string
   peerEnr: string
   setPeerEnr: Dispatch<SetStateAction<string>>
@@ -68,16 +62,6 @@ export default function Layout(props: LayoutProps) {
             <NotAllowedIcon />
           </Tab>
         </TabList>
-        {/* <VStack paddingTop={2} spacing={1} align="stretch">
-          <Divider />
-          <Divider />
-          <Bootnodes
-            portal={props.portal}
-            LDB={props.LDB}
-            setPeerEnr={props.setPeerEnr}
-            handleClick={props.handleClick}
-          />
-        </VStack> */}
         {props.peers && props.peers.length > 0 && (
           <TabPanels>
             <TabPanel>
