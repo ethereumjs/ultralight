@@ -195,25 +195,17 @@ export const App = () => {
         const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
         let header: string = ''
         let body
+        await portal.historyNetworkContentLookup(0, blockHash)
         try {
-          header = await LDB.get(headerlookupKey)
-          body = await LDB.get(bodylookupKey)
-          const block = reassembleBlock(fromHexString(header), fromHexString(body))
-          setBlock(block)
-          return block
-        } catch {
-          await portal.historyNetworkContentLookup(0, blockHash)
-          try {
-            header = await portal.db.get(headerlookupKey)
-          } catch (err) {
-            portal.logger((err as any).message)
-          }
-          await portal.historyNetworkContentLookup(1, blockHash)
-          try {
-            body = await portal.db.get(bodylookupKey)
-          } catch (err) {
-            portal.logger((err as any).message)
-          }
+          header = await portal.db.get(headerlookupKey)
+        } catch (err) {
+          portal.logger((err as any).message)
+        }
+        await portal.historyNetworkContentLookup(1, blockHash)
+        try {
+          body = await portal.db.get(bodylookupKey)
+        } catch (err) {
+          portal.logger((err as any).message)
         }
         try {
           const block = reassembleBlock(
