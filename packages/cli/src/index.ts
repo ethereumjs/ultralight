@@ -99,6 +99,7 @@ const main = async () => {
     },
     2n ** 256n,
     db,
+    undefined,
     metrics
   )
   // cache private key signature to ensure ENR can be encoded on startup

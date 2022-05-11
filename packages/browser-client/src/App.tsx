@@ -143,8 +143,11 @@ export const App = () => {
     // @ts-ignore
     const prev_node = await PortalNetwork.recreatePortalNetwork(proxy, LDB)
     ;(window as any).portal = prev_node
+    //@ts-ignore
+    prev_node.db = LDB
     ;(window as any).LDB = LDB
     setPortal(prev_node)
+    prev_node.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv*')
     await prev_node.start()
     // eslint-disable-next-line no-undef
     ;(window as any).ENR = ENR

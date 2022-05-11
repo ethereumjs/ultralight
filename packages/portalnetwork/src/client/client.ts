@@ -45,6 +45,7 @@ import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'
 import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
+import { identity } from '@chainsafe/persistent-merkle-tree'
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
