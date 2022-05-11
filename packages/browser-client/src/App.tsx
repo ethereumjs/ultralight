@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { BrowserLevel } from 'browser-level'
 import {
   theme,
   useClipboard,
@@ -15,7 +16,6 @@ import {
   Heading,
   Center,
   VStack,
-  useToast,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -38,13 +38,14 @@ import { Capacitor } from '@capacitor/core'
 import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
 import InfoMenu from './Components/InfoMenu'
-// export const lightblue = '#bee3f8'
+import bns from './bootnodes.json'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
+export const PortalContext = React.createContext(PortalNetwork.prototype)
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
-  const [peers, setPeers] = React.useState<ENR[] | undefined>([])
+  const [peers, setPeers] = React.useState<ENR[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
   const [id, _setId] = React.useState<string>('')
@@ -57,8 +58,8 @@ export const App = () => {
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
-  const toast = useToast()
   const [modalStatus, setModal] = React.useState(false)
+  const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
 
   function updateAddressBook() {
     const routingTable = portal?.routingTables.get(SubprotocolIds.HistoryNetwork)
@@ -84,42 +85,6 @@ export const App = () => {
     setPeers(peers)
   }
 
-  React.useEffect(() => {
-    portal?.on('NodeRemoved', () => updateAddressBook())
-    return () => {
-      portal?.removeAllListeners()
-      portal?.client.removeAllListeners()
-    }
-  }, [portal])
-
-  const init = async () => {
-    if (portal?.client.isStarted()) {
-      await portal.stop()
-    }
-    const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork()
-      : await PortalNetwork.createPortalNetwork(proxy)
-    // eslint-disable-next-line no-undef
-    ;(window as any).portal = node
-    setPortal(node)
-    node.client.on('multiaddrUpdated', () =>
-      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
-    )
-    await node.start()
-    // eslint-disable-next-line no-undef
-    ;(window as any).ENR = ENR
-    node.enableLog('*ultralight*, *portalnetwork*, *<uTP>*, *discv*')
-  }
-
-  const copy = async () => {
-    await setENR(portal?.client.enr.encodeTxt(portal.client.keypair.privateKey) ?? '')
-    onCopy()
-  }
-
-  React.useEffect(() => {
-    init()
-  }, [])
-
   async function handleClick() {
     let errMessage
     try {
@@ -136,13 +101,58 @@ export const App = () => {
     if (!errMessage) {
       errMessage = 'Node did not respond'
     }
-    toast({
-      title: errMessage,
-      status: 'error',
-      duration: 3000,
-      isClosable: true,
+  }
+
+  async function createNodeFromScratch(): Promise<PortalNetwork> {
+    const node = Capacitor.isNativePlatform()
+      ? await PortalNetwork.createMobilePortalNetwork(bns)
+      : // @ts-ignore
+        await PortalNetwork.createPortalNetwork(proxy, bns, LDB)
+    return node
+  }
+
+  async function createNodeFromStorage(): Promise<PortalNetwork> {
+    // @ts-ignore
+    const prev_node = await PortalNetwork.recreatePortalNetwork(proxy, LDB)
+    return prev_node
+  }
+
+  const init = async () => {
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist()
+    }
+    let node: PortalNetwork
+    try {
+      node = await createNodeFromStorage()
+    } catch {
+      node = await createNodeFromScratch()
+    }
+    setPortal(node)
+    node.enableLog('*discv5*, *portalnetwork*, *uTP*')
+    await node.start()
+    // eslint-disable-next-line no-undef
+    ;(window as any).portal = node
+    ;(window as any).ENR = ENR
+    node.client.on('multiaddrUpdated', () => {
+      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
+      portal?.storeNodeDetails()
     })
   }
+
+  const copy = async () => {
+    await setENR(portal?.client.enr.encodeTxt(portal.client.keypair.privateKey) ?? '')
+    onCopy()
+  }
+
+  React.useEffect(() => {
+    init().then(() => {
+      window.onbeforeunload = async (evt) => {
+        evt.preventDefault()
+        portal?.storeNodeDetails()
+        evt.stopImmediatePropagation()
+      }
+    })
+  }, [])
 
   async function handleFindContent(blockHash: string): Promise<Block | void> {
     if (portal) {
@@ -151,7 +161,7 @@ export const App = () => {
       } else {
         const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
         const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
-        let header
+        let header: string = ''
         let body
         await portal.historyNetworkContentLookup(0, blockHash)
         try {
@@ -193,86 +203,91 @@ export const App = () => {
 
   return (
     <>
-      <Center bg={'gray.200'}>
-        <VStack width={'80%'}>
-          <Heading size={'2xl'} textAlign="start">
-            Ultralight
-          </Heading>
-          <Heading size={'l'} textAlign="start">
-            Portal Network Explorer
-          </Heading>
-        </VStack>
-      </Center>
-      <Button
-        position="fixed"
-        top="5"
-        right="5"
-        leftIcon={<HamburgerIcon />}
-        onClick={disclosure.onOpen}
-      ></Button>
-      <Drawer isOpen={disclosure.isOpen} placement="right" onClose={disclosure.onClose}>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader>Ultralight</DrawerHeader>
-          <DrawerBody>
-            <Button w="100%" mb="5px" onClick={openInfoMenu}>
-              More Info
-            </Button>
-            {!Capacitor.isNativePlatform() && (
-              <>
+      {portal && (
+        <PortalContext.Provider value={portal}>
+          <Center bg={'gray.200'}>
+            <VStack width={'80%'}>
+              <Heading size={'2xl'} textAlign="start">
+                Ultralight
+              </Heading>
+              <Heading size={'l'} textAlign="start">
+                Portal Network Explorer
+              </Heading>
+            </VStack>
+          </Center>
+          <Button
+            position="fixed"
+            top="5"
+            right="5"
+            leftIcon={<HamburgerIcon />}
+            onClick={disclosure.onOpen}
+          ></Button>
+          <Drawer isOpen={disclosure.isOpen} placement="right" onClose={disclosure.onClose}>
+            <DrawerOverlay />
+            <DrawerContent>
+              <DrawerCloseButton />
+              <DrawerHeader>Ultralight</DrawerHeader>
+              <DrawerBody>
+                <Button w="100%" mb="5px" onClick={openInfoMenu}>
+                  More Info
+                </Button>
+                {!Capacitor.isNativePlatform() && (
+                  <>
+                    <Divider my="10px" />
+                    <StartNode setProxy={setProxy} init={init} />
+                  </>
+                )}
                 <Divider my="10px" />
-                <StartNode setProxy={setProxy} init={init} />
-              </>
+                <DevTools
+                  peerEnr={peerEnr}
+                  setPeerEnr={setPeerEnr}
+                  native={Capacitor.isNativePlatform()}
+                  enr={enr}
+                  copy={copy}
+                  peers={peers!}
+                  handleClick={handleClick}
+                />
+              </DrawerBody>
+              <DrawerFooter>
+                <Button onClick={disclosure.onClose}>CLOSE</Button>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+          <Box>
+            {portal && (
+              <Layout
+                copy={copy}
+                onOpen={onOpen}
+                enr={enr}
+                peerEnr={peerEnr}
+                setPeerEnr={setPeerEnr}
+                handleClick={handleClick}
+                invalidHash={invalidHash}
+                handleFindContent={handleFindContent}
+                contentKey={contentKey}
+                setContentKey={setContentKey}
+                findParent={findParent}
+                block={block}
+                peers={peers}
+                sortedDistList={sortedDistList}
+                capacitor={Capacitor}
+              />
             )}
-            <Divider my="10px" />
-            <DevTools
-              peerEnr={peerEnr}
-              setPeerEnr={setPeerEnr}
-              native={Capacitor.isNativePlatform()}
-              enr={enr}
-              copy={copy}
-              portal={portal}
-              peers={peers!}
-              handleClick={handleClick}
-            />
-          </DrawerBody>
-          <DrawerFooter>
-            <Button onClick={disclosure.onClose}>CLOSE</Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-      <Box>
-        <Layout
-          copy={copy}
-          onOpen={onOpen}
-          enr={enr}
-          peerEnr={peerEnr}
-          setPeerEnr={setPeerEnr}
-          handleClick={handleClick}
-          invalidHash={invalidHash}
-          handleFindContent={handleFindContent}
-          contentKey={contentKey}
-          setContentKey={setContentKey}
-          findParent={findParent}
-          block={block}
-          peers={peers}
-          sortedDistList={sortedDistList}
-          capacitor={Capacitor}
-        />
-        <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
-      </Box>
-      <Box width={'100%'} pos={'fixed'} bottom={'0'}>
-        <Center>
-          <Footer />
-        </Center>
-      </Box>
-      <Modal isOpen={modalStatus} onClose={() => setModal(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <InfoMenu />
-        </ModalContent>
-      </Modal>
+            <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
+          </Box>
+          <Box width={'100%'} pos={'fixed'} bottom={'0'}>
+            <Center>
+              <Footer />
+            </Center>
+          </Box>
+          <Modal isOpen={modalStatus} onClose={() => setModal(false)}>
+            <ModalOverlay />
+            <ModalContent>
+              <InfoMenu />
+            </ModalContent>
+          </Modal>
+        </PortalContext.Provider>
+      )}
     </>
   )
 }

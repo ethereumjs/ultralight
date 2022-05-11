@@ -33,7 +33,7 @@ import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from '.
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
-// eslint-disable-next-line implicit-dependencies/no-implicit
+//eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import {
@@ -46,6 +46,7 @@ import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { WebSocketTransportService } from '../transports/websockets'
 import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
+
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
@@ -56,6 +57,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   uTP: PortalNetworkUTP
   nodeRadius: bigint
   db: LevelUp
+  bootnodes: string[]
+  prev_content?: string[][]
   private refreshListener?: ReturnType<typeof setInterval>
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
@@ -63,13 +66,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   /**
    *
-   * @param ip initial local IP address of node
    * @param proxyAddress IP address of proxy
+   * @param bootnodes an array of bootnode ENRs
+   * @param db a Level compliant DB object
+   * @param ip initial local IP address of node
    * @returns a new PortalNetwork instance
    */
-  public static createPortalNetwork = async (proxyAddress = 'ws://127.0.0.1:5050', ip?: string) => {
+  public static createPortalNetwork = async (
+    proxyAddress = 'ws://127.0.0.1:5050',
+    bootnodes?: string[],
+    db?: LevelUp,
+    ip?: string
+  ) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
+    enr.encode(createKeypairFromPeerId(id).privateKey)
     const ma = ip
       ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
       : new Multiaddr()
@@ -85,11 +96,55 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           enrUpdate: true,
         },
       },
-      2n ** 256n
+      2n ** 256n,
+      bootnodes,
+      db
     )
   }
+  /**
+   *
+   * @param proxyAddress IP address of proxy
+   * @param peerId stored peerId
+   * @param storedENR stored enr
+   * @returns a new PortalNetwork instance
+   */
+  public static recreatePortalNetwork = async (
+    proxyAddress = 'ws://127.0.0.1:5050',
+    db: LevelUp
+  ) => {
+    const prev_enr_string = await db.get('enr')
+    const prev_peerid = JSON.parse(await db.get('peerid'))
+    const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
 
-  public static createMobilePortalNetwork = async (ip?: string) => {
+    const recreatedPeerId = await PeerId.createFromJSON(prev_peerid)
+    const prev_peers = JSON.parse(await db.get('peers'))
+    if (PeerId.isPeerId(recreatedPeerId) && recreatedENR.keypair.privateKeyVerify()) {
+      const portal = new PortalNetwork(
+        {
+          enr: recreatedENR,
+          peerId: recreatedPeerId,
+          multiaddr: recreatedENR.getLocationMultiaddr('udp')!,
+          transport: new WebSocketTransportService(
+            recreatedENR.getLocationMultiaddr('udp')!,
+            recreatedENR.nodeId,
+            proxyAddress
+          ),
+          config: {
+            addrVotesToUpdateEnr: 1,
+            enrUpdate: true,
+          },
+        },
+        2n ** 256n,
+        prev_peers,
+        db
+      )
+      return portal
+    } else {
+      throw new Error('Cannot recreate Portal Network from stored data')
+    }
+  }
+
+  public static createMobilePortalNetwork = async (bootnodes: string[], ip?: string) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     const ma = ip
@@ -107,7 +162,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           enrUpdate: true,
         },
       },
-      2n ** 256n
+      2n ** 256n,
+      bootnodes
     )
   }
 
@@ -121,6 +177,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   constructor(
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
+    bootnodes: string[] = [],
     db?: LevelUp,
     metrics?: PortalNetworkMetrics,
     supportsRendezvous = false
@@ -131,10 +188,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       ...config,
       ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
     })
+    db?.put('peerid', JSON.stringify(config.peerId.toJSON()))
     this.client.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
     this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.nodeRadius = radius
     this.routingTables = new Map()
+    this.bootnodes = bootnodes
     Object.values(SubprotocolIds).forEach((protocolId) => {
       if (protocolId !== SubprotocolIds.UTPNetwork) {
         this.routingTables.set(
@@ -149,13 +208,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.client.on('talkRespReceived', this.onTalkResp)
     this.on('ContentAdded', this.gossipHistoryNetworkContent)
     /*  TODO: decide whether to add this code back in since some nodes are naughty and send UDP packets that
-        are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
-        routing table
-
+    are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
+    routing table
+    
       this.client.on('sessionEnded', (srcId) => {
-      // Remove node from subprotocol routing tables when a session is ended by discv5
-      // (i.e. failed a liveness check)
-      this.routingTables.forEach((table, protocolId) => {
+        // Remove node from subprotocol routing tables when a session is ended by discv5
+        // (i.e. failed a liveness check)
+        this.routingTables.forEach((table, protocolId) => {
         if (table.size > 0 && table.getValue(srcId)) {
           this.updateSubprotocolRoutingTable(srcId, protocolId, false)
         }
@@ -180,9 +239,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public start = async () => {
     await this.client.start()
-
     // Start kbucket refresh on 30 second interval
     this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
+    this.bootnodes.forEach(async (peer: string) => {
+      await this.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+    })
   }
 
   /**
@@ -245,10 +306,31 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
     // Requests nodes in all empty k-buckets
-    ;(this.client as any).sendPing(enr)
+    this.client.sendPing(enr)
     this.sendFindNodes(enr.nodeId, distancesSought, protocolId)
   }
 
+  /**
+   * Store node details in DB for node restart
+   */
+  public storeNodeDetails = async () => {
+    try {
+      await this.db.batch([
+        {
+          type: 'put',
+          key: 'enr',
+          value: this.client.enr.encodeTxt(this.client.keypair.privateKey),
+        },
+      ])
+    } catch (err) {}
+    const peers: string[] = []
+    for (const table of this.routingTables.values()) {
+      table?.values().forEach((enr) => {
+        peers.push(enr.encodeTxt())
+      })
+      await this.db.put('peers', JSON.stringify(peers))
+    }
+  }
   /**
    * Sends a Portal Network Wire Protocol PING message to a specified node
    * @param dstId the nodeId of the peer to send a ping to

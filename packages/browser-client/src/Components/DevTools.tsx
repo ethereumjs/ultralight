@@ -9,13 +9,13 @@ import {
   useToast,
   Select,
 } from '@chakra-ui/react'
-import { PortalNetwork, SubprotocolIds, ENR, fromHexString } from 'portalnetwork'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import { SubprotocolIds, ENR, fromHexString } from 'portalnetwork'
+import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
 import { ContentManager } from './ContentManager'
 import { Share } from '@capacitor/share'
+import { PortalContext } from '../App'
 
 interface DevToolsProps {
-  portal: PortalNetwork | undefined
   peers: ENR[]
   copy: () => Promise<void>
   enr: string
@@ -26,7 +26,7 @@ interface DevToolsProps {
 }
 
 export default function DevTools(props: DevToolsProps) {
-  const portal = props.portal
+  const portal = useContext(PortalContext)
   const [canShare, setCanShare] = useState(false)
   const peers = props.peers.map((p) => {
     return p.nodeId
@@ -37,7 +37,7 @@ export default function DevTools(props: DevToolsProps) {
   const [contentKey, setContentKey] = useState('')
   const toast = useToast()
   const handlePing = () => {
-    portal?.sendPing(peer, SubprotocolIds.HistoryNetwork)
+    portal.sendPing(peer, SubprotocolIds.HistoryNetwork)
   }
   async function share() {
     await Share.share({
@@ -48,7 +48,7 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   const handleFindNodes = (nodeId: string) => {
-    portal?.sendFindNodes(nodeId, [parseInt(distance)], SubprotocolIds.HistoryNetwork)
+    portal.sendFindNodes(nodeId, [parseInt(distance)], SubprotocolIds.HistoryNetwork)
   }
 
   const handleOffer = (nodeId: string) => {
@@ -62,11 +62,11 @@ export default function DevTools(props: DevToolsProps) {
       return
     }
 
-    portal?.sendOffer(nodeId, [fromHexString(contentKey)], SubprotocolIds.HistoryNetwork)
+    portal.sendOffer(nodeId, [fromHexString(contentKey)], SubprotocolIds.HistoryNetwork)
   }
 
   const sendRendezvous = async (peer: string) => {
-    portal?.sendRendezvous(targetNodeId, peer, SubprotocolIds.HistoryNetwork)
+    portal.sendRendezvous(targetNodeId, peer, SubprotocolIds.HistoryNetwork)
     setTarget('')
   }
   async function handleCopy() {

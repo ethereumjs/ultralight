@@ -1,21 +1,10 @@
-import {
-  Divider,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  VStack,
-  StackDivider,
-} from '@chakra-ui/react'
-import React, { Dispatch, SetStateAction } from 'react'
+import { Tab, TabList, TabPanel, TabPanels, Tabs, VStack, StackDivider } from '@chakra-ui/react'
+import React, { Dispatch, SetStateAction, useEffect } from 'react'
 import { Block } from '@ethereumjs/block'
 import { ENR } from 'portalnetwork'
 import HistoryNetwork from './HistoryNetwork'
 import { NotAllowedIcon } from '@chakra-ui/icons'
 import { CapacitorGlobal } from '@capacitor/core'
-import Bootnodes from './Bootnodes'
-
 interface LayoutProps {
   copy: () => Promise<void>
   onOpen: () => void
@@ -35,6 +24,12 @@ interface LayoutProps {
 }
 
 export default function Layout(props: LayoutProps) {
+  useEffect(() => {
+    setTimeout(async () => {
+      await props.handleClick()
+    }, 2000)
+  }, [])
+
   return (
     <VStack spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
       <Tabs width={'100%'} size={'sm'}>
@@ -57,11 +52,6 @@ export default function Layout(props: LayoutProps) {
             <NotAllowedIcon />
           </Tab>
         </TabList>
-        <VStack paddingTop={2} spacing={1} align="stretch">
-          <Divider />
-          <Divider />
-          <Bootnodes setPeerEnr={props.setPeerEnr} handleClick={props.handleClick} />
-        </VStack>
         {props.peers && props.peers.length > 0 && (
           <TabPanels>
             <TabPanel>
