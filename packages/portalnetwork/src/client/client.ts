@@ -65,13 +65,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   /**
    *
-   * @param ip initial local IP address of node
    * @param proxyAddress IP address of proxy
+   * @param bootnodes an array of bootnode ENRs
+   * @param db a Level compliant DB object
+   * @param ip initial local IP address of node
    * @returns a new PortalNetwork instance
    */
   public static createPortalNetwork = async (
     proxyAddress = 'ws://127.0.0.1:5050',
-    bootnodes: string[],
+    bootnodes?: string[],
     db?: LevelUp,
     ip?: string
   ) => {
@@ -174,7 +176,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   constructor(
     config: IDiscv5CreateOptions,
     radius = 2n ** 256n,
-    bootnodes: string[],
+    bootnodes: string[] = [],
     db?: LevelUp,
     metrics?: PortalNetworkMetrics,
     supportsRendezvous = false
