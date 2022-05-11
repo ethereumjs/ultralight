@@ -173,16 +173,15 @@ export const App = () => {
   React.useEffect(() => {
     init().then((res) => {
       document.onvisibilitychange = async () => {
-        await handleVisibilityChange(res)
+        await handleVisibilityChange()
       }
       window.onbeforeunload = async () => {
-        // Put list of ENR's in DB
-        try {
-          peerEnrStrings.length > 1 &&
-            LDB.put('peers', JSON.stringify(peerEnrStrings)).then(async () => {
-              await handleVisibilityChange(res)
-            })
-        } catch (err) {}
+        const routingTable = res.routingTables.get(SubprotocolIds.HistoryNetwork)
+        const peers = routingTable?.values().map((enr) => {
+          return enr.encodeTxt()
+        })
+        await res.db.put('peers', JSON.stringify(peers))
+        await handleVisibilityChange()
       }
     })
   }, [])
