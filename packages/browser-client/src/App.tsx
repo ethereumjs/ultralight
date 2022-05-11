@@ -98,28 +98,8 @@ export const App = () => {
     } catch {}
   }, [visible])
 
-  async function handleVisibilityChange(p: PortalNetwork) {
+  async function handleVisibilityChange() {
     setVisible(document.visibilityState)
-    let keys: string[] = []
-    try {
-      keys = JSON.parse(await LDB.get('keys'))
-    } catch (err) {}
-    try {
-      const stream = p.db.createReadStream()
-      stream.on('data', async (data) => {
-        try {
-          await LDB.put(data.key, data.value)
-          keys.push(data.key)
-          console.log('database sync...')
-        } catch (err) {}
-      })
-      stream.on('end', async () => {
-        try {
-          const k = Array.from(new Set(keys))
-          await LDB.put('keys', JSON.stringify(k))
-        } catch (err) {}
-      })
-    } catch (err) {}
   }
 
   async function handleClick() {
