@@ -1,8 +1,7 @@
 import { Proof } from '@chainsafe/persistent-merkle-tree'
 import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
-import { EpochAccumulator, EPOCH_SIZE, HeaderRecordType, ProofView } from './types'
-import { viewProof } from './util'
+import { EpochAccumulator, EPOCH_SIZE, HeaderRecordType } from './types'
 
 export class HeaderAccumulator {
   private _currentEpoch: HeaderRecordType[]
@@ -40,14 +39,12 @@ export class HeaderAccumulator {
     this._currentEpoch.push(headerRecord)
   }
 
-  public verifyInclusionProof = (proof: Proof, header: BlockHeader) => {
-    const epochTree = EpochAccumulator.toView(this._currentEpoch)
+  public verifyInclusionProof = (proof: Proof, header: BlockHeader, blockPosition: number) => {
     const reconstructedTree = EpochAccumulator.createFromProof(proof)
-    const leaves = EpochAccumulator.tree_getLeafGindices(0n, reconstructedTree.node)
-    const _proof: ProofView = viewProof(proof)
-    const gindex = leaves.indexOf(_proof.gIndex)
+
+    const epochTree = EpochAccumulator.toView(this._currentEpoch)
     try {
-      const value = reconstructedTree.get(gindex - 1)
+      const value = reconstructedTree.get(blockPosition)
       if (
         toHexString(value.blockHash) === toHexString(header.hash()) &&
         toHexString(epochTree.hashTreeRoot()) === toHexString(reconstructedTree.hashTreeRoot())

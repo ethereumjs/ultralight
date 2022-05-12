@@ -28,14 +28,15 @@ tape('Validate accumulator updates', (t) => {
 
   const currentEpoch = accumulator.currentEpoch
   const tree = EpochAccumulator.toView(currentEpoch)
-  const proof = createProof(tree.node, {
-    gindex: EpochAccumulator.tree_getLeafGindices(0n, tree.node)[2],
-    type: ProofType.single,
-  })
+
+  const proof = tree.createProof([
+    [0, 'blockHash'],
+    [0, 'totalDifficulty'],
+  ])
 
   t.ok(
-    accumulator.verifyInclusionProof(proof, block2Header),
-    'validated single proof evidences inclusion of genesis header in epoch accumulator'
+    accumulator.verifyInclusionProof(proof, genesisHeader, 0),
+    'validated multiproof for genesis header record'
   )
   t.end()
 })
