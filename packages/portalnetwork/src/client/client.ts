@@ -144,7 +144,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  public static createMobilePortalNetwork = async (bootnodes: string[], ip?: string) => {
+  public static createMobilePortalNetwork = async (
+    bootnodes: string[],
+    db?: LevelUp,
+    ip?: string
+  ) => {
     const id = await PeerId.create({ keyType: 'secp256k1' })
     const enr = ENR.createFromPeerId(id)
     const ma = ip
@@ -163,8 +167,43 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         },
       },
       2n ** 256n,
-      bootnodes
+      bootnodes,
+      db
     )
+  }
+
+  public static recreateMobilePortalNetwork = async (
+    bootnodes: string[],
+    db: LevelUp,
+    ip?: string
+  ) => {
+    const prev_enr_string = await db.get('enr')
+    const prev_peerid = JSON.parse(await db.get('peerid'))
+    const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
+    const recreatedPeerId = await PeerId.createFromJSON(prev_peerid)
+    const prev_peers = JSON.parse(await db.get('peers'))
+    const id = await PeerId.create({ keyType: 'secp256k1' })
+    const enr = ENR.createFromPeerId(id)
+    const ma = ip
+      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 200)}`)
+      : new Multiaddr()
+    if (ip) enr.setLocationMultiaddr(ma)
+    const portal = new PortalNetwork(
+      {
+        enr: recreatedENR,
+        peerId: recreatedPeerId,
+        multiaddr: recreatedENR.getLocationMultiaddr('udp')!,
+        transport: new CapacitorUDPTransportService(ma, recreatedENR.nodeId),
+        config: {
+          addrVotesToUpdateEnr: 1,
+          enrUpdate: true,
+        },
+      },
+      2n ** 256n,
+      prev_peers,
+      db
+    )
+    return portal
   }
 
   /**
