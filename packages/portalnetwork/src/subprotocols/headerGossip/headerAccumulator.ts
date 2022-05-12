@@ -20,6 +20,9 @@ export class HeaderAccumulator {
     return this._historicalEpochs
   }
 
+  /**
+   * Adds a new block header to the `currentEpoch` in the header accumulator
+   */
   public updateAccumulator = (newHeader: BlockHeader) => {
     const lastTd =
       this._currentEpoch.length === 0
@@ -38,7 +41,13 @@ export class HeaderAccumulator {
     }
     this._currentEpoch.push(headerRecord)
   }
-
+  /**
+   *
+   * @param proof a `Proof` for a particular header's inclusion in an `epochAccumulator`
+   * @param header the blockheader being proved to be included in the `epochAccumulator`
+   * @param blockPosition the index in the array of `HeaderRecord`s of the header
+   * @returns
+   */
   public verifyInclusionProof = (proof: Proof, header: BlockHeader, blockPosition: number) => {
     const reconstructedTree = EpochAccumulator.createFromProof(proof)
 
