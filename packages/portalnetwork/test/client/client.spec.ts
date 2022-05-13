@@ -21,6 +21,7 @@ tape('Client unit tests', async (t) => {
     'ws://192.168.0.2:5050',
     [],
     undefined,
+    false,
     '192.168.0.1'
   )) as any
 

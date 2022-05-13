@@ -105,16 +105,20 @@ export const App = () => {
 
   async function createNodeFromScratch(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
-      ? await PortalNetwork.createMobilePortalNetwork(bns)
+      ? // @ts-ignore
+        await PortalNetwork.createMobilePortalNetwork(bns, LDB)
       : // @ts-ignore
         await PortalNetwork.createPortalNetwork(proxy, bns, LDB)
     return node
   }
 
   async function createNodeFromStorage(): Promise<PortalNetwork> {
-    // @ts-ignore
-    const prev_node = await PortalNetwork.recreatePortalNetwork(proxy, LDB)
-    return prev_node
+    const node = Capacitor.isNativePlatform()
+      ? // @ts-ignore
+        await PortalNetwork.createMobilePortalNetwork(bns, LDB, true)
+      : // @ts-ignore
+        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, true)
+    return node
   }
 
   const init = async () => {
@@ -124,9 +128,11 @@ export const App = () => {
     let node: PortalNetwork
     try {
       node = await createNodeFromStorage()
-    } catch {
+    } catch (err) {
+      console.log(err)
       node = await createNodeFromScratch()
     }
+
     setPortal(node)
     node.enableLog('*discv5*, *portalnetwork*, *uTP*')
     await node.start()

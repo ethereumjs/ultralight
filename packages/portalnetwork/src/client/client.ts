@@ -76,11 +76,23 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     proxyAddress = 'ws://127.0.0.1:5050',
     bootnodes?: string[],
     db?: LevelUp,
+    rebuildFromMemory?: boolean,
     ip?: string
   ) => {
-    const id = await PeerId.create({ keyType: 'secp256k1' })
-    const enr = ENR.createFromPeerId(id)
-    enr.encode(createKeypairFromPeerId(id).privateKey)
+    let id: PeerId
+    let enr: ENR
+    if (rebuildFromMemory && db) {
+      const prev_enr_string = await db.get('enr')
+      const prev_peerid = JSON.parse(await db.get('peerid'))
+      enr = ENR.decodeTxt(prev_enr_string)
+      id = await PeerId.createFromJSON(prev_peerid)
+      const prev_peers = JSON.parse(await db.get('peers')) as string[]
+      bootnodes = bootnodes && bootnodes.length > 0 ? bootnodes.concat(prev_peers) : prev_peers
+    } else {
+      id = await PeerId.create({ keyType: 'secp256k1' })
+      enr = ENR.createFromPeerId(id)
+      enr.encode(createKeypairFromPeerId(id).privateKey)
+    }
     const ma = ip
       ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
       : new Multiaddr()
@@ -101,52 +113,27 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       db
     )
   }
-  /**
-   *
-   * @param proxyAddress IP address of proxy
-   * @param peerId stored peerId
-   * @param storedENR stored enr
-   * @returns a new PortalNetwork instance
-   */
-  public static recreatePortalNetwork = async (
-    proxyAddress = 'ws://127.0.0.1:5050',
-    db: LevelUp
+
+  public static createMobilePortalNetwork = async (
+    bootnodes: string[],
+    db?: LevelUp,
+    rebuildFromMemory?: boolean,
+    ip?: string
   ) => {
-    const prev_enr_string = await db.get('enr')
-    const prev_peerid = JSON.parse(await db.get('peerid'))
-    const recreatedENR: ENR = ENR.decodeTxt(prev_enr_string)
-
-    const recreatedPeerId = await PeerId.createFromJSON(prev_peerid)
-    const prev_peers = JSON.parse(await db.get('peers'))
-    if (PeerId.isPeerId(recreatedPeerId) && recreatedENR.keypair.privateKeyVerify()) {
-      const portal = new PortalNetwork(
-        {
-          enr: recreatedENR,
-          peerId: recreatedPeerId,
-          multiaddr: recreatedENR.getLocationMultiaddr('udp')!,
-          transport: new WebSocketTransportService(
-            recreatedENR.getLocationMultiaddr('udp')!,
-            recreatedENR.nodeId,
-            proxyAddress
-          ),
-          config: {
-            addrVotesToUpdateEnr: 1,
-            enrUpdate: true,
-          },
-        },
-        2n ** 256n,
-        prev_peers,
-        db
-      )
-      return portal
+    let id: PeerId
+    let enr: ENR
+    if (rebuildFromMemory && db) {
+      const prev_enr_string = await db.get('enr')
+      const prev_peerid = JSON.parse(await db.get('peerid'))
+      enr = ENR.decodeTxt(prev_enr_string)
+      id = await PeerId.createFromJSON(prev_peerid)
+      const prev_peers = JSON.parse(await db.get('peers')) as string[]
+      bootnodes = bootnodes && bootnodes.length > 0 ? bootnodes.concat(prev_peers) : prev_peers
     } else {
-      throw new Error('Cannot recreate Portal Network from stored data')
+      id = await PeerId.create({ keyType: 'secp256k1' })
+      enr = ENR.createFromPeerId(id)
+      enr.encode(createKeypairFromPeerId(id).privateKey)
     }
-  }
-
-  public static createMobilePortalNetwork = async (bootnodes: string[], ip?: string) => {
-    const id = await PeerId.create({ keyType: 'secp256k1' })
-    const enr = ENR.createFromPeerId(id)
     const ma = ip
       ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 200)}`)
       : new Multiaddr()
@@ -163,7 +150,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         },
       },
       2n ** 256n,
-      bootnodes
+      bootnodes,
+      db
     )
   }
 
