@@ -23,12 +23,14 @@ const setupNetwork = async () => {
     'ws://127.0.0.1:5050',
     [],
     undefined,
+    false,
     '127.0.0.1'
   )
   const portal2 = await PortalNetwork.createPortalNetwork(
     'ws://127.0.0.1:5050',
     [],
     undefined,
+    false,
     '127.0.0.1'
   )
   return [portal1, portal2]
@@ -41,6 +43,12 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     let portal1: PortalNetwork
     let portal2: PortalNetwork
     child.stderr.on('data', async (data) => {
+      if (data.toString().includes('Error: listen EADDRINUSE')) {
+        // Terminate test process early if proxy can't start or tape will hang
+        t.fail('proxy did not start successfully')
+        process.exit(0)
+      }
+
       if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
         st.pass('proxy started successfully')
         const nodes = await setupNetwork()

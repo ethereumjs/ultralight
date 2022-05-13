@@ -115,9 +115,9 @@ export const App = () => {
   async function createNodeFromStorage(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
       ? // @ts-ignore
-        await PortalNetwork.recreateMobilePortalNetwork(bns, LDB)
+        await PortalNetwork.createMobilePortalNetwork(bns, LDB, true)
       : // @ts-ignore
-        await PortalNetwork.recreatePortalNetwork(proxy, LDB)
+        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, true)
     return node
   }
 
@@ -128,7 +128,8 @@ export const App = () => {
     let node: PortalNetwork
     try {
       node = await createNodeFromStorage()
-    } catch {
+    } catch (err) {
+      console.log(err)
       node = await createNodeFromScratch()
     }
 
