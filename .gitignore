@@ -5,3 +5,4 @@ lib
 *.tsbuildinfo
 .nyc_output
 targets.json
+capacitor.config.json

@@ -1,10 +1,5 @@
 version: "3.9"
 services:
-
-  proxy:
-    image: ultralight/proxy
-    network_mode: "host"
-
   ultralight1:
     image: ultralight/cli
     network_mode: "host"
@@ -13,7 +8,6 @@ services:
       - "1-65535/udp"
 
     environment:
-      - nat=extip
       - rpcport=8545
-      - proxy=false
+      - bindAddress=127.0.0.1:5500
       
