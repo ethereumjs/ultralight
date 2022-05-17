@@ -6,7 +6,7 @@ RUN apk add --virtual .build-deps alpine-sdk jq
 RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 RUN rm -rf ./packages/browser-client && rm -rf ./packages/proxy
-RUn jq -r '.workspaces |= .[0:2]' package.json > package.json
+RUN jq -r '.workspaces |= .[0:2]' package.json > package.json
 COPY package*.json ./
 RUN npm ci -ignore-scripts 
 RUN npm prune --production
@@ -20,5 +20,6 @@ COPY --from=BUILD_IMAGE /app/packages/portalnetwork ./packages/portalnetwork
 COPY --from=BUILD_IMAGE /app/packages/cli ./packages/cli
 COPY --from=BUILD_IMAGE /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 ENV bindAddress=
-ENV rpcport=
-CMD node /app/packages/cli/dist/index.js --rpcport=${rpcport} --bindAddress=${bindAddress} --dataDir="./data"
+ENV rpcPort=
+ENV pk=
+CMD node /app/packages/cli/dist/index.js --rpcPort=${rpcPort} --bindAddress=${bindAddress} --dataDir="./data" --pk=${pk}

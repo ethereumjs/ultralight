@@ -1,13 +1,121 @@
 version: "3.9"
 services:
   ultralight1:
-    image: ultralight/cli
+    image: acolytec3/ultralight
     network_mode: "host"
     ports:
       - "8545:8545/tcp"
       - "1-65535/udp"
 
     environment:
-      - rpcport=8545
+      - rpcPort=8545
       - bindAddress=127.0.0.1:5500
-      
+      - pk=CAISIHaUMq3DquXXVttJtB2KR3XKwxAw8DLwR19g6bDJj+RM
+
+  ultralight2:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8546:8546/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8546
+      - bindAddress=127.0.0.1:5502
+      - pk=CAISID95BixNybwj9lkMxCDlwwMbiooV8+e+aeZaJy5rvlzE    
+
+  ultralight3:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8547:8547/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8547
+      - bindAddress=127.0.0.1:5504
+      - pk=CAISIOOnyf3sf+guW+biR3RGwpHKz1cZsBwc85BMzz9Xj7EZ
+
+  ultralight4:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8548:8548/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8548
+      - bindAddress=127.0.0.1:5506
+      - pk=CAISIDWOjJ9NDdwKXt6gxBhisEA2/A9y6Ahik6AlHH1IWxuo
+
+  ultralight5:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8549:8549/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8549
+      - bindAddress=127.0.0.1:5508
+      - pk=CAISIDcw2YYjUsxbGOx6LM2um/rBk+25zWzxoVzOWec71p4v
+
+  ultralight6:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8550:8550/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8550
+      - bindAddress=127.0.0.1:5510
+      - pk=CAISIL0qHWdvpP2xFqKlA7K7KYhP2Y1Q8bjT1vTqfqbyK4up
+
+  ultralight7:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8551:8551/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8551
+      - bindAddress=127.0.0.1:5512
+      - pk=CAISIGranqypqV6mDk3DCvWFv0k7uqHf8La9SXkdo1Wt8DoX
+
+  ultralight8:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8552:8552/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8552
+      - bindAddress=127.0.0.1:5514
+      - pk=CAISIIvMbBpRxAZdYsFnVTeo+iKREcQ9KkKhCR025YM8bupE
+
+  ultralight9:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8553:8553/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8553
+      - bindAddress=127.0.0.1:5516
+      - pk=CAISIGtalnQrYP8cv2vjghGfxwb43kAqTXZZRzO8y7P+KhT2
+
+  ultralight10:
+    image: acolytec3/ultralight
+    network_mode: "host"
+    ports:
+      - "8554:8554/tcp"
+      - "1-65535/udp"
+
+    environment:
+      - rpcPort=8554
+      - bindAddress=127.0.0.1:5518
+      - pk=CAISII+8Y53XjrVnK7e4VMDZx7TakFlWui3jZq104fbjCtZt

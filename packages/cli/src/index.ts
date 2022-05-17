@@ -81,7 +81,7 @@ const main = async () => {
     initMa = new Multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
     enr.setLocationMultiaddr(initMa)
   } else {
-    initMa = new Multiaddr(`/ip4/127.0.0.1/udp/0`)
+    initMa = new Multiaddr()
   }
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
 
