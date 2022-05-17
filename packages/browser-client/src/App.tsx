@@ -86,21 +86,12 @@ export const App = () => {
   }
 
   async function handleClick() {
-    let errMessage
     try {
       await portal?.sendPing(peerEnr, SubprotocolIds.HistoryNetwork)
-    } catch (err) {
-      if ((err as any).message.includes('verify enr signature')) {
-        errMessage = 'Invalid ENR'
-      }
-    }
+    } catch (err) {}
     setPeerEnr('')
     updateAddressBook()
     // Only rerender the address book if we actually got a response from the node
-
-    if (!errMessage) {
-      errMessage = 'Node did not respond'
-    }
   }
 
   async function createNodeFromScratch(): Promise<PortalNetwork> {
@@ -128,8 +119,7 @@ export const App = () => {
     let node: PortalNetwork
     try {
       node = await createNodeFromStorage()
-    } catch (err) {
-      console.log(err)
+    } catch {
       node = await createNodeFromScratch()
     }
 

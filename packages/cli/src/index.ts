@@ -25,7 +25,6 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'initial IP address and UDP port to bind to',
     optional: true,
     string: true,
-    default: '127.0.0.1:5500',
   })
   .option('bootnodeList', {
     describe: 'path to a file containing a list of bootnode ENRs',
@@ -76,11 +75,16 @@ const main = async () => {
     id = await PeerId.createFromPrivKey(args.pk)
   }
   const enr = ENR.createFromPeerId(id)
-  const addrOpts = args.bindAddress.split(':')
-  const initMa = new Multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
-
+  let initMa: Multiaddr
+  if (args.bindAddress) {
+    const addrOpts = args.bindAddress.split(':')
+    initMa = new Multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
+    enr.setLocationMultiaddr(initMa)
+  } else {
+    initMa = new Multiaddr()
+  }
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
-  enr.setLocationMultiaddr(initMa)
+
   enr.encode(createKeypairFromPeerId(id).privateKey)
   const metrics = setupMetrics()
   let db
@@ -95,6 +99,7 @@ const main = async () => {
       config: {
         enrUpdate: true,
         addrVotesToUpdateEnr: 1,
+        allowUnverifiedSessions: true,
       },
     },
     2n ** 256n,
