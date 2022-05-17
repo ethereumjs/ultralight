@@ -34,7 +34,9 @@ jobs:
 
       - run: jq -r '.workspaces |= .[0:2]' package.json > package.json
         working-directory: ${{ github.workspace }}
+
       - run: cat package.json
+      
       - run: npm i
         working-directory: ${{ github.workspace }}
 
