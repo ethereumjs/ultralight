@@ -28,7 +28,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - run: jq -r '.workspaces |= .[0:2]' package.json > ackage.json
+      - run: jq -r '.workspaces |= .[0:2]' package.json > package.json
 
       - run: cat package.json
       - run: npm i
@@ -37,7 +37,7 @@ jobs:
         working-directory: ${{github.workspace}}/packages/portalnetwork
       - run: npm run test
         working-directory: ${{github.workspace}}/packages/portalnetwork
-        
+
   test-integration-portalnetwork:
     runs-on: ubuntu-latest
     strategy:
