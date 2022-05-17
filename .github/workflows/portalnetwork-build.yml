@@ -32,6 +32,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - run: jq -r '.workspaces |= .[0:2]' package.json > package.json
+      
       - run: npm i
         working-directory: ${{ github.workspace }}
 
