@@ -28,10 +28,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - run: jq -r '.workspaces |= .[0:2]' package.json > package.json
-
-      - run: cat package.json
-      - run: npm i
+      - run: npm ci --production-only --workspace=portalnetwork --workspace=proxy
 
       - run: npm run lint
         working-directory: ${{github.workspace}}/packages/portalnetwork
