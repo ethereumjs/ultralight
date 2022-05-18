@@ -20,6 +20,7 @@ import {
   ModalOverlay,
   ModalContent,
   Divider,
+  ChakraProvider,
 } from '@chakra-ui/react'
 import {
   getHistoryNetworkContentId,
@@ -193,7 +194,7 @@ export const App = () => {
   const invalidHash = /([^0-z])+/.test(contentKey)
 
   return (
-    <>
+    <ChakraProvider theme={theme}>
       {portal && (
         <PortalContext.Provider value={portal}>
           <Center bg={'gray.200'}>
@@ -279,6 +280,6 @@ export const App = () => {
           </Modal>
         </PortalContext.Provider>
       )}
-    </>
+    </ChakraProvider>
   )
 }
