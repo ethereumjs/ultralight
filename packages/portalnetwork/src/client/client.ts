@@ -106,6 +106,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         config: {
           addrVotesToUpdateEnr: 5,
           enrUpdate: true,
+          allowUnverifiedSessions: true,
         },
       },
       2n ** 256n,
