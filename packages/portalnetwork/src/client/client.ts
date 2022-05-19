@@ -28,7 +28,7 @@ import {
   PingMessage,
   NodeLookup,
 } from '../wire'
-import { SubprotocolIds } from '../subprotocols'
+import { ProtocolId } from '../subprotocols'
 import { PortalNetworkEventEmitter, PortalNetworkMetrics, RoutingTable } from './types'
 import { PortalNetworkRoutingTable } from '.'
 import PeerId from 'peer-id'
@@ -44,117 +44,35 @@ import { BlockHeader } from '@ethereumjs/block'
 import { getHistoryNetworkContentId, reassembleBlock } from '../subprotocols/history'
 import { ContentLookup } from '../wire'
 import { PortalNetworkUTP, RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
-import { WebSocketTransportService } from '../transports/websockets'
-import { CapacitorUDPTransportService } from '../transports/capacitorUdp'
+
+import { Protocol } from '../subprotocols/protocol'
+import { HistoryProtocol } from '../subprotocols/history/history'
 
 const level = require('level-mem')
 
 const MAX_PACKET_SIZE = 1280
 
+export interface PortalNetworkOpts {
+  config: IDiscv5CreateOptions
+  supportedProtocols: ProtocolId[]
+  networkContent: string
+  radius?: bigint
+  bootnodes?: string[]
+  db?: LevelUp
+  metrics?: PortalNetworkMetrics
+}
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
-  client: Discv5
-  routingTables: Map<SubprotocolIds, RoutingTable>
+  discv5: Discv5
+  protocols: Map<ProtocolId, Protocol>
   uTP: PortalNetworkUTP
   nodeRadius: bigint
   db: LevelUp
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
-  private supportsRendezvous: boolean
   private refreshListener?: ReturnType<typeof setInterval>
   private peerId: PeerId
-
-  /**
-   *
-   * @param proxyAddress IP address of proxy
-   * @param bootnodes an array of bootnode ENRs
-   * @param db a Level compliant DB object
-   * @param ip initial local IP address of node
-   * @returns a new PortalNetwork instance
-   */
-  public static createPortalNetwork = async (
-    proxyAddress = 'ws://127.0.0.1:5050',
-    bootnodes?: string[],
-    db?: LevelUp,
-    rebuildFromMemory?: boolean,
-    ip?: string
-  ) => {
-    let id: PeerId
-    let enr: ENR
-    if (rebuildFromMemory && db) {
-      const prev_enr_string = await db.get('enr')
-      const prev_peerid = JSON.parse(await db.get('peerid'))
-      enr = ENR.decodeTxt(prev_enr_string)
-      id = await PeerId.createFromJSON(prev_peerid)
-      const prev_peers = JSON.parse(await db.get('peers')) as string[]
-      bootnodes = bootnodes && bootnodes.length > 0 ? bootnodes.concat(prev_peers) : prev_peers
-    } else {
-      id = await PeerId.create({ keyType: 'secp256k1' })
-      enr = ENR.createFromPeerId(id)
-      enr.encode(createKeypairFromPeerId(id).privateKey)
-    }
-    const ma = ip
-      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
-      : new Multiaddr()
-    if (ip) enr.setLocationMultiaddr(ma)
-    return new PortalNetwork(
-      {
-        enr,
-        peerId: id,
-        multiaddr: ma,
-        transport: new WebSocketTransportService(ma, enr.nodeId, proxyAddress),
-        config: {
-          addrVotesToUpdateEnr: 5,
-          enrUpdate: true,
-          allowUnverifiedSessions: true,
-        },
-      },
-      2n ** 256n,
-      bootnodes,
-      db
-    )
-  }
-
-  public static createMobilePortalNetwork = async (
-    bootnodes: string[],
-    db?: LevelUp,
-    rebuildFromMemory?: boolean,
-    ip?: string
-  ) => {
-    let id: PeerId
-    let enr: ENR
-    if (rebuildFromMemory && db) {
-      const prev_enr_string = await db.get('enr')
-      const prev_peerid = JSON.parse(await db.get('peerid'))
-      enr = ENR.decodeTxt(prev_enr_string)
-      id = await PeerId.createFromJSON(prev_peerid)
-      const prev_peers = JSON.parse(await db.get('peers')) as string[]
-      bootnodes = bootnodes && bootnodes.length > 0 ? bootnodes.concat(prev_peers) : prev_peers
-    } else {
-      id = await PeerId.create({ keyType: 'secp256k1' })
-      enr = ENR.createFromPeerId(id)
-      enr.encode(createKeypairFromPeerId(id).privateKey)
-    }
-    const ma = ip
-      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 200)}`)
-      : new Multiaddr()
-    if (ip) enr.setLocationMultiaddr(ma)
-    return new PortalNetwork(
-      {
-        enr,
-        peerId: id,
-        multiaddr: ma,
-        transport: new CapacitorUDPTransportService(ma, enr.nodeId),
-        config: {
-          addrVotesToUpdateEnr: 5,
-          enrUpdate: true,
-        },
-      },
-      2n ** 256n,
-      bootnodes,
-      db
-    )
-  }
+  private supportsRendezvous: boolean
 
   /**
    *
@@ -163,75 +81,56 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param radius defines the radius of data the node is interesting in storing
    * @param db a `level` compliant database provided by the module consumer - instantiates an in-memory DB if not provided
    */
-  constructor(
-    config: IDiscv5CreateOptions,
-    radius = 2n ** 256n,
-    bootnodes: string[] = [],
-    db?: LevelUp,
-    metrics?: PortalNetworkMetrics,
-    supportsRendezvous = false
-  ) {
+  constructor(opts: PortalNetworkOpts) {
     // eslint-disable-next-line constructor-super
     super()
-    this.client = Discv5.create({
-      ...config,
+
+    this.discv5 = Discv5.create({
+      ...opts.config,
       ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
     })
-    this.client.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
-    this.logger = debug(this.client.enr.nodeId.slice(0, 5)).extend('portalnetwork')
-    this.nodeRadius = radius
-    this.routingTables = new Map()
-    this.bootnodes = bootnodes
-    this.peerId = config.peerId
-    Object.values(SubprotocolIds).forEach((protocolId) => {
-      if (protocolId !== SubprotocolIds.UTPNetwork) {
-        this.routingTables.set(
-          protocolId as SubprotocolIds,
-          protocolId === SubprotocolIds.StateNetwork
-            ? new StateNetworkRoutingTable(this.client.enr.nodeId)
-            : new PortalNetworkRoutingTable(this.client.enr.nodeId)
-        )
+    this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId).privateKey)
+    this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('portalnetwork')
+    this.nodeRadius = opts.radius ?? 256n
+    this.protocols = new Map()
+    this.bootnodes = opts.bootnodes ?? []
+    this.peerId = opts.config.peerId
+    this.supportsRendezvous = false
+    for (const protocol of opts.supportedProtocols) {
+      switch (protocol) {
+        case ProtocolId.HistoryNetwork:
+          this.protocols.set(protocol, new HistoryProtocol(this.discv5.enr.nodeId, opts.metrics))
+          break
+        case ProtocolId.Rendezvous:
+          this.supportsRendezvous = true
+          break
       }
-    })
-    this.client.on('talkReqReceived', this.onTalkReq)
-    this.client.on('talkRespReceived', this.onTalkResp)
-    this.on('ContentAdded', this.gossipHistoryNetworkContent)
-    /*  TODO: decide whether to add this code back in since some nodes are naughty and send UDP packets that
-    are too big for discv5 and our discv5 implementation automatically evicts these nodes from the discv5
-    routing table
-    
-      this.client.on('sessionEnded', (srcId) => {
-        // Remove node from subprotocol routing tables when a session is ended by discv5
-        // (i.e. failed a liveness check)
-        this.routingTables.forEach((table, protocolId) => {
-        if (table.size > 0 && table.getValue(srcId)) {
-          this.updateSubprotocolRoutingTable(srcId, protocolId, false)
-        }
-      })
-    })*/
+    }
+    this.discv5.on('talkReqReceived', this.onTalkReq)
+    this.discv5.on('talkRespReceived', this.onTalkResp)
+
     this.uTP = new PortalNetworkUTP(this)
-    this.db = db ?? level()
-    if (metrics) {
-      this.metrics = metrics
+    this.db = opts.db ?? level()
+    if (opts.metrics) {
+      this.metrics = opts.metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
-        this.metrics?.knownDiscv5Nodes.set(this.client.kadValues().length)
+        this.metrics?.knownDiscv5Nodes.set(this.discv5.kadValues().length)
       this.metrics.knownHistoryNodes.collect = () =>
         this.metrics?.knownHistoryNodes.set(
-          this.routingTables.get(SubprotocolIds.HistoryNetwork)!.size
+          this.protocols.get(ProtocolId.HistoryNetwork)!.routingTable.size
         )
     }
-    this.supportsRendezvous = supportsRendezvous
   }
 
   /**
    * Starts the portal network client
    */
   public start = async () => {
-    await this.client.start()
+    await this.discv5.start()
     // Start kbucket refresh on 30 second interval
     this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
     this.bootnodes.forEach(async (peer: string) => {
-      await this.addBootNode(peer, SubprotocolIds.HistoryNetwork)
+      await this.addBootNode(peer, ProtocolId.HistoryNetwork)
     })
   }
 
@@ -239,8 +138,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Stops the portal network client and cleans up listeners
    */
   public stop = async () => {
-    await this.client.stop()
-    await this.client.removeAllListeners()
+    await this.discv5.stop()
+    await this.discv5.removeAllListeners()
     await this.removeAllListeners()
     await this.db.removeAllListeners()
     await this.db.close()
@@ -280,7 +179,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param bootnode `string` encoded ENR of a bootnode
    * @param protocolId network ID of the subprotocol routing table to add the bootnode to
    */
-  public addBootNode = async (bootnode: string, protocolId: SubprotocolIds) => {
+  public addBootNode = async (bootnode: string, protocolId: ProtocolId) => {
     const enr = ENR.decodeTxt(bootnode)
     const routingTable = this.routingTables.get(protocolId)
     if (!routingTable) {
@@ -295,7 +194,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
     // Requests nodes in all empty k-buckets
-    this.client.sendPing(enr)
+    this.discv5.sendPing(enr)
     this.sendFindNodes(enr.nodeId, distancesSought, protocolId)
   }
 
@@ -308,7 +207,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         {
           type: 'put',
           key: 'enr',
-          value: this.client.enr.encodeTxt(this.client.keypair.privateKey),
+          value: this.discv5.enr.encodeTxt(this.discv5.keypair.privateKey),
         },
         {
           type: 'put',
@@ -332,7 +231,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param protocolId subprotocol ID
    * @returns the PING payload specified by the subprotocol or undefined
    */
-  public sendPing = async (nodeId: string | ENR, protocolId: SubprotocolIds) => {
+  public sendPing = async (nodeId: string | ENR, protocolId: ProtocolId) => {
     let dstId
     if (nodeId instanceof ENR) {
       this.updateSubprotocolRoutingTable(nodeId, protocolId, true)
@@ -341,21 +240,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const enr = ENR.decodeTxt(nodeId)
       this.updateSubprotocolRoutingTable(enr, protocolId, true)
       dstId = enr.nodeId
-      ;(this.client as any).sendPing(enr)
+      ;(this.discv5 as any).sendPing(enr)
     } else {
       dstId = nodeId
     }
     const pingMsg = PortalWireMessageType.serialize({
       selector: MessageCodes.PING,
       value: {
-        enrSeq: this.client.enr.seq,
+        enrSeq: this.discv5.enr.seq,
         customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
       },
     })
     try {
-      this.logger(
-        `Sending PING to ${shortId(dstId)} for ${SubprotocolIds.HistoryNetwork} subprotocol`
-      )
+      this.logger(`Sending PING to ${shortId(dstId)} for ${ProtocolId.HistoryNetwork} subprotocol`)
       const res = await this.sendPortalNetworkMessage(dstId, Buffer.from(pingMsg), protocolId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
         this.logger(`Received PONG from ${shortId(dstId)}`)
@@ -379,7 +276,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param protocolId subprotocol id for message being
    * @returns a {@link `NodesMessage`} or undefined
    */
-  public sendFindNodes = async (dstId: string, distances: number[], protocolId: SubprotocolIds) => {
+  public sendFindNodes = async (dstId: string, distances: number[], protocolId: ProtocolId) => {
     this.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances: distances }
     const payload = PortalWireMessageType.serialize({
@@ -422,7 +319,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       selector: contentType,
       value: { chainId: 1, blockHash: fromHexString(blockHash) },
     })
-    const lookup = new ContentLookup(this, contentKey, SubprotocolIds.HistoryNetwork)
+    const lookup = new ContentLookup(this, contentKey, ProtocolId.HistoryNetwork)
     const res = await lookup.startLookup()
     return res
   }
@@ -434,7 +331,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param protocolId subprotocol ID on which content is being sought
    * @returns the value of the FOUNDCONTENT response or undefined
    */
-  public sendFindContent = async (dstId: string, key: Uint8Array, protocolId: SubprotocolIds) => {
+  public sendFindContent = async (dstId: string, key: Uint8Array, protocolId: ProtocolId) => {
     this.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({
@@ -470,7 +367,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             try {
               switch (protocolId) {
                 // TODO: Decide how to deal with managing content for additional Subprotocols
-                case SubprotocolIds.HistoryNetwork:
+                case ProtocolId.HistoryNetwork:
                   this.addContentToHistory(
                     decodedKey.value.chainId,
                     decodedKey.selector,
@@ -504,11 +401,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param contentKeys content keys being offered as specified by the subprotocol
    * @param protocolId network ID of subprotocol being used
    */
-  public sendOffer = async (
-    dstId: string,
-    contentKeys: Uint8Array[],
-    protocolId: SubprotocolIds
-  ) => {
+  public sendOffer = async (dstId: string, contentKeys: Uint8Array[], protocolId: ProtocolId) => {
     this.metrics?.offerMessagesSent.inc()
     const offerMsg: OfferMessage = {
       contentKeys,
@@ -650,7 +543,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private sendPong = async (src: INodeAddress, message: ITalkReqMessage) => {
     const payload = {
-      enrSeq: this.client.enr.seq,
+      enrSeq: this.discv5.enr.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
     }
     const pongMsg = PortalWireMessageType.serialize({
@@ -665,14 +558,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const srcId = src.nodeId
     switch (toHexString(message.protocol)) {
       // TODO: Add handling for other subnetworks as functionality is added
-      case SubprotocolIds.HistoryNetwork:
+      case ProtocolId.HistoryNetwork:
         this.logger(`Received History subprotocol request`)
         break
-      case SubprotocolIds.UTPNetwork:
+      case ProtocolId.UTPNetwork:
         this.logger(`Received uTP packet`)
         this.handleUTP(src, srcId, message, message.request)
         return
-      case SubprotocolIds.Rendezvous:
+      case ProtocolId.Rendezvous:
         this.handleRendezvous(src, srcId, message)
         return
       default:
@@ -726,12 +619,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private handlePing = (src: INodeAddress, message: ITalkReqMessage) => {
     const decoded = PortalWireMessageType.deserialize(message.request)
     const pingMessage = decoded.value as PingMessage
-    const routingTable = this.routingTables.get(toHexString(message.protocol) as SubprotocolIds)
+    const routingTable = this.routingTables.get(toHexString(message.protocol) as ProtocolId)
     if (!routingTable?.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
       this.updateSubprotocolRoutingTable(
         src.nodeId,
-        toHexString(message.protocol) as SubprotocolIds,
+        toHexString(message.protocol) as ProtocolId,
         true,
         pingMessage.customPayload
       )
@@ -760,7 +653,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
           // would be in bucket 0
           this.routingTables
-            .get(toHexString(message.protocol) as SubprotocolIds)!
+            .get(toHexString(message.protocol) as ProtocolId)!
             .valuesOfDistance(distance + 1)
             .every((enr) => {
               // Exclude ENR from resopnse if it matches the requesting node
@@ -781,7 +674,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         nodesPayload.enrs.flat().length < 1200
       ) {
         nodesPayload.total++
-        nodesPayload.enrs.push(this.client.enr.encode())
+        nodesPayload.enrs.push(this.discv5.enr.encode())
       }
       const encodedPayload = PortalWireMessageType.serialize({
         selector: MessageCodes.NODES,
@@ -895,17 +788,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     if (value.length === 0) {
       switch (toHexString(message.protocol)) {
-        case SubprotocolIds.HistoryNetwork:
+        case ProtocolId.HistoryNetwork:
           {
             // Discv5 calls for maximum of 16 nodes per NODES message
             const ENRs = this.routingTables
-              .get(toHexString(message.protocol) as SubprotocolIds)!
+              .get(toHexString(message.protocol) as ProtocolId)!
               .nearest(lookupKey, 16)
             const encodedEnrs = ENRs.map((enr) => {
               // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
               // contentId than this node
               return enr.nodeId !== src.nodeId &&
-                distance(enr.nodeId, lookupKey) < distance(this.client.enr.nodeId, lookupKey)
+                distance(enr.nodeId, lookupKey) < distance(this.discv5.enr.nodeId, lookupKey)
                 ? enr.encode()
                 : undefined
             }).filter((enr) => enr !== undefined)
@@ -1011,7 +904,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   private updateSubprotocolRoutingTable = (
     srcId: NodeId | ENR,
-    protocolId: SubprotocolIds,
+    protocolId: ProtocolId,
     add = false,
     customPayload?: any
   ) => {
@@ -1025,7 +918,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       routingTable!.evictNode(nodeId)
       this.logger(
         `removed ${nodeId} from ${
-          Object.keys(SubprotocolIds)[Object.values(SubprotocolIds).indexOf(protocolId)]
+          Object.keys(ProtocolId)[Object.values(ProtocolId).indexOf(protocolId)]
         } Routing Table`
       )
       this.emit('NodeRemoved', nodeId, protocolId)
@@ -1035,12 +928,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (!routingTable!.getValue(nodeId)) {
         this.logger(
           `adding ${nodeId} to ${
-            Object.keys(SubprotocolIds)[Object.values(SubprotocolIds).indexOf(protocolId)]
+            Object.keys(ProtocolId)[Object.values(ProtocolId).indexOf(protocolId)]
           } routing table`
         )
         if (!enr) {
           // If ENR wasn't passed in original call, look in discv5 routing table to see if known there
-          enr = this.client.getKadValue(nodeId)
+          enr = this.discv5.getKadValue(nodeId)
         }
 
         if (enr) {
@@ -1059,11 +952,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     return
   }
 
-  public sendRendezvous = async (
-    dstId: NodeId,
-    rendezvousNode: NodeId,
-    protocolId: SubprotocolIds
-  ) => {
+  public sendRendezvous = async (dstId: NodeId, rendezvousNode: NodeId, protocolId: ProtocolId) => {
     this.logger(`Sending RENDEZVOUS message to ${shortId(rendezvousNode)} for ${shortId(dstId)}`)
     const time = Date.now()
     let res = await this.sendPortalNetworkMessage(
@@ -1073,14 +962,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         Buffer.from(protocolId.slice(2), 'hex'),
         Buffer.from(dstId, 'hex'),
       ]),
-      SubprotocolIds.Rendezvous
+      ProtocolId.Rendezvous
     )
     if (res.length > 0) {
       // Measure roundtrip to `dstId`
       const roundtrip = Date.now() - time
       const peer = ENR.decode(res)
       this.updateSubprotocolRoutingTable(peer, protocolId, true)
-      setTimeout(() => this.sendPing(peer.nodeId, SubprotocolIds.HistoryNetwork), roundtrip / 2)
+      setTimeout(() => this.sendPing(peer.nodeId, ProtocolId.HistoryNetwork), roundtrip / 2)
       this.logger(`Sending rendezvous DIRECT request to ${peer.nodeId}`)
       res = await this.sendPortalNetworkMessage(
         rendezvousNode,
@@ -1089,14 +978,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           Buffer.from(protocolId.slice(2), 'hex'),
           Buffer.from(dstId, 'hex'),
         ]),
-        SubprotocolIds.Rendezvous
+        ProtocolId.Rendezvous
       )
     }
     this.logger(res)
   }
 
   private handleRendezvous = async (src: INodeAddress, srcId: NodeId, message: ITalkReqMessage) => {
-    const protocolId = ('0x' + message.request.slice(1, 3).toString('hex')) as SubprotocolIds
+    const protocolId = ('0x' + message.request.slice(1, 3).toString('hex')) as ProtocolId
     const routingTable = this.routingTables.get(protocolId)
 
     if (!routingTable) {
@@ -1112,7 +1001,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         )
         let enr = routingTable.getValue(dstId)
         if (!enr) {
-          enr = this.client.getKadValue(dstId)
+          enr = this.discv5.getKadValue(dstId)
           if (!enr) {
             // destination node is unknown, send null response
             this.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
@@ -1149,13 +1038,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(
           `Forwarding Rendezvous SYNC from requestor ${shortId(srcId)} to target ${shortId(dstId)}`
         )
-        this.sendPortalNetworkMessage(dstId, payload, SubprotocolIds.Rendezvous)
+        this.sendPortalNetworkMessage(dstId, payload, ProtocolId.Rendezvous)
         break
       }
       case 2: {
         // SYNC request from rendezvous node
         const enr = ENR.decode(message.request.slice(3))
-        const protocolId = ('0x' + message.request.slice(1, 3).toString('hex')) as SubprotocolIds
+        const protocolId = ('0x' + message.request.slice(1, 3).toString('hex')) as ProtocolId
         this.logger(
           `Received Rendezvous SYNC request from ${shortId(srcId)} for requester ${shortId(
             enr.nodeId
@@ -1180,12 +1069,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendPortalNetworkMessage = async (
     dstId: NodeId,
     payload: Buffer,
-    protocolId: SubprotocolIds,
+    protocolId: ProtocolId,
     utpMessage?: boolean
   ): Promise<Buffer> => {
     let enr = this.routingTables.get(protocolId)!.getValue(dstId)
     if (!enr) {
-      enr = this.client.getKadValue(dstId)
+      enr = this.discv5.getKadValue(dstId)
       if (enr) {
         await this.updateSubprotocolRoutingTable(enr, protocolId, true)
       } else {
@@ -1193,14 +1082,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         return Buffer.from([0])
       }
     }
-    const messageProtocol = utpMessage ? SubprotocolIds.UTPNetwork : protocolId
+    const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const res = await this.client.sendTalkReq(enr, payload, fromHexString(messageProtocol))
+      const res = await this.discv5.sendTalkReq(enr, payload, fromHexString(messageProtocol))
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)
-      if (protocolId !== SubprotocolIds.UTPNetwork && payload[0] === 0) {
+      if (protocolId !== ProtocolId.UTPNetwork && payload[0] === 0) {
         // Evict node from routing table
         this.updateSubprotocolRoutingTable(dstId, protocolId, false)
       }
@@ -1213,14 +1102,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     message: ITalkReqMessage,
     payload: Uint8Array
   ) => {
-    this.client.sendTalkResp(src, message.id, payload)
+    this.discv5.sendTalkResp(src, message.id, payload)
   }
 
   /**
    * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
    * evict nodes that do not respond
    */
-  private livenessCheck = async (protocolId: SubprotocolIds) => {
+  private livenessCheck = async (protocolId: ProtocolId) => {
     const routingTable = this.routingTables.get(protocolId)
     const peers: ENR[] = routingTable!.values()
     this.logger.extend('livenessCheck')(`Checking ${peers!.length} peers for liveness`)
@@ -1249,8 +1138,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Do the random lookup on this node-id.
    */
   private bucketRefresh = async () => {
-    //await this.livenessCheck(SubprotocolIds.HistoryNetwork)
-    const routingTable = this.routingTables.get(SubprotocolIds.HistoryNetwork)
+    //await this.livenessCheck(ProtocolId.HistoryNetwork)
+    const routingTable = this.routingTables.get(ProtocolId.HistoryNetwork)
     const notFullBuckets = routingTable!.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
@@ -1260,8 +1149,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const randomDistance = Math.trunc(Math.random() * 10)
       const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
       this.logger(`Refreshing bucket at distance ${distance}`)
-      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.client.enr.nodeId, distance)
-      const lookup = new NodeLookup(this, randomNodeAtDistance, SubprotocolIds.HistoryNetwork)
+      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.discv5.enr.nodeId, distance)
+      const lookup = new NodeLookup(this, randomNodeAtDistance, ProtocolId.HistoryNetwork)
       await lookup.startLookup()
     }
   }
@@ -1275,7 +1164,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     blockHash: string,
     contentType: HistoryNetworkContentTypes
   ) => {
-    const routingTable = this.routingTables.get(SubprotocolIds.HistoryNetwork)
+    const routingTable = this.routingTables.get(ProtocolId.HistoryNetwork)
     const contentId = getHistoryNetworkContentId(1, blockHash, contentType)
     const nearestPeers = routingTable!.nearest(contentId, 5)
     const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
@@ -1289,7 +1178,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         distance(peer.nodeId, contentId) < routingTable!.getRadius(peer.nodeId)!
         // If peer hasn't already been OFFERed this contentKey and the content is within the peer's advertised radius, OFFER
       ) {
-        this.sendOffer(peer.nodeId, [encodedKey], SubprotocolIds.HistoryNetwork)
+        this.sendOffer(peer.nodeId, [encodedKey], ProtocolId.HistoryNetwork)
       }
     })
   }
