@@ -56,6 +56,6 @@ module.exports = {
         new webpack.ProvidePlugin({
             process: 'process/browser',
         }),
-        new webpack.EnvironmentPlugin(['IP'])
+        new webpack.EnvironmentPlugin({ BINDADDRESS : '' })
     ],
 };
