@@ -97,9 +97,9 @@ export const App = () => {
   async function createNodeFromScratch(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
       ? // @ts-ignore
-        await PortalNetwork.createMobilePortalNetwork(bns, LDB)
+        await PortalNetwork.createMobilePortalNetwork(bns, LDB, false, process.env.IP)
       : // @ts-ignore
-        await PortalNetwork.createPortalNetwork(proxy, bns, LDB)
+        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, false, process.env.IP)
     return node
   }
 
