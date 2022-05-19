@@ -1,8 +1,8 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { PortalNetwork, SubprotocolIds } from '..'
 import { serializedContentKeyToContentId, shortId } from '../util'
+import { Protocol } from './protocol'
 
 type lookupPeer = {
   nodeId: NodeId
@@ -11,22 +11,20 @@ type lookupPeer = {
 }
 
 export class ContentLookup {
-  private client: PortalNetwork
+  private protocol: Protocol
   private lookupPeers: lookupPeer[]
   private contacted: lookupPeer[]
   private contentId: string
   private contentKey: Uint8Array
-  private protocolId: SubprotocolIds
   private log: Debugger
 
-  constructor(portal: PortalNetwork, contentKey: Uint8Array, protocolId: SubprotocolIds) {
-    this.client = portal
+  constructor(protocol: Protocol, contentKey: Uint8Array) {
+    this.protocol = protocol
     this.lookupPeers = []
     this.contacted = []
     this.contentKey = contentKey
-    this.protocolId = protocolId
     this.contentId = serializedContentKeyToContentId(contentKey)
-    this.log = this.client.logger.extend('lookup', ':')
+    this.log = this.protocol.client.logger.extend('lookup', ':')
   }
 
   /**
@@ -34,14 +32,13 @@ export class ContentLookup {
    * requests peers closer to the content until either the content is found or there are no more peers to query
    */
   public startLookup = async () => {
-    const routingTable = this.client.routingTables.get(SubprotocolIds.HistoryNetwork)
-    this.client.metrics?.totalContentLookups.inc()
+    this.protocol.client.metrics?.totalContentLookups.inc()
     try {
-      const res = await this.client.db.get(this.contentId)
+      const res = await this.protocol.client.db.get(this.contentId)
       return res
       //eslint-disable-next-line
     } catch { }
-    routingTable!.nearest(this.contentId, 5).forEach((peer) => {
+    this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer) => {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
     })
@@ -51,8 +48,8 @@ export class ContentLookup {
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
-        this.client.metrics?.failedContentLookups.inc()
-        this.client.logger(`failed to retrieve ${this.contentKey} from network`)
+        this.protocol.client.metrics?.failedContentLookups.inc()
+        this.protocol.client.logger(`failed to retrieve ${this.contentKey} from network`)
         return
       }
       const nearestPeer = this.lookupPeers.shift()
@@ -66,11 +63,7 @@ export class ContentLookup {
       }
 
       this.log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
-      const res = await this.client.sendFindContent(
-        nearestPeer.nodeId,
-        this.contentKey,
-        this.protocolId
-      )
+      const res = await this.protocol.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
         // Node didn't respond
         continue
@@ -88,14 +81,18 @@ export class ContentLookup {
           this.log(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
           finished = true
           nearestPeer.hasContent = true
-          this.client.metrics?.successfulContentLookups.inc()
+          this.protocol.client.metrics?.successfulContentLookups.inc()
           // Offer content to neighbors who should have had content but don't if we receive content directly
           this.contacted.forEach((peer) => {
             if (!peer.hasContent) {
-              const routingTable = this.client.routingTables.get(this.protocolId)!
-              if (!routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(this.contentKey))) {
+              if (
+                !this.protocol.routingTable.contentKeyKnownToPeer(
+                  peer.nodeId,
+                  toHexString(this.contentKey)
+                )
+              ) {
                 // Only offer content if not already offered to this peer
-                this.client.sendOffer(peer.nodeId, [this.contentKey], this.protocolId)
+                this.protocol.sendOffer(peer.nodeId, [this.contentKey])
               }
             }
           })
@@ -127,8 +124,8 @@ export class ContentLookup {
                   this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
                 }
               }
-              if (!routingTable!.getValue(decodedEnr.nodeId)) {
-                routingTable!.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+              if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
+                this.protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               }
             }
           })
