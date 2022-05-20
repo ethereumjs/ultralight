@@ -143,7 +143,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     //this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
     this.protocols.forEach((protocol) => {
       this.bootnodes.forEach(async (peer: string) => {
-        await protocol.addBootNode(peer, ProtocolId.HistoryNetwork)
+        await protocol.addBootNode(peer)
       })
     })
   }

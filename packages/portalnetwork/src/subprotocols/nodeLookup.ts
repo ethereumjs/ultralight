@@ -48,11 +48,7 @@ export class NodeLookup {
       // Calculates log2distance between queried peer and `nodeSought`
       const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, this.nodeSought)
       // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
-      const res = await this.protocol.sendFindNodes(
-        nearestPeer!.nodeId,
-        [distanceToSoughtPeer],
-        this.protocol.protocolId
-      )
+      const res = await this.protocol.sendFindNodes(nearestPeer!.nodeId, [distanceToSoughtPeer])
 
       if (res?.enrs && res.enrs.length > 0) {
         const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, this.nodeSought)

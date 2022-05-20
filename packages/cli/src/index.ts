@@ -91,8 +91,8 @@ const main = async () => {
   if (args.datadir) {
     db = level(args.datadir)
   }
-  const portal = new PortalNetwork(
-    {
+  const portal = new PortalNetwork({
+    config: {
       enr: enr,
       peerId: id,
       multiaddr: initMa,
@@ -102,14 +102,14 @@ const main = async () => {
         allowUnverifiedSessions: true,
       },
     },
-    2n ** 256n,
+    radius: 2n ** 256n,
     db,
-    undefined,
-    metrics
-  )
+    metrics,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+  })
   // cache private key signature to ensure ENR can be encoded on startup
-  portal.client.enr.encode(createKeypairFromPeerId(id).privateKey)
-  portal.client.enableLogs()
+  portal.discv5.enr.encode(createKeypairFromPeerId(id).privateKey)
+  portal.discv5.enableLogs()
   portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5*')
   const metricsServer = http.createServer(reportMetrics)
 
@@ -121,8 +121,9 @@ const main = async () => {
     log(`Started Metrics Server address=http://${args.rpcAddr}:${args.metricsPort}`)
   }
   await portal.start()
+  const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
   if (args.bootnode) {
-    portal.addBootNode(args.bootnode, ProtocolId.HistoryNetwork)
+    protocol!.addBootNode(args.bootnode)
   }
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
@@ -130,7 +131,7 @@ const main = async () => {
     bootnodes.forEach((enr) => {
       if (enr.startsWith('enr:-')) {
         try {
-          portal.addBootNode(enr, ProtocolId.HistoryNetwork)
+          protocol!.addBootNode(enr)
         } catch {}
       }
     })

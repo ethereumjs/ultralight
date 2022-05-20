@@ -157,7 +157,7 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol id for message being
    * @returns a {@link `NodesMessage`} or undefined
    */
-  public sendFindNodes = async (dstId: string, distances: number[], protocolId: ProtocolId) => {
+  public sendFindNodes = async (dstId: string, distances: number[]) => {
     this.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances: distances }
     const payload = PortalWireMessageType.serialize({
@@ -165,10 +165,14 @@ export abstract class BaseProtocol {
       value: findNodesMsg,
     })
     try {
-      this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${protocolId} subprotocol`)
+      this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${this.protocolId} subprotocol`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) return
-      const res = await this.client.sendPortalNetworkMessage(enr, Buffer.from(payload), protocolId)
+      const res = await this.client.sendPortalNetworkMessage(
+        enr,
+        Buffer.from(payload),
+        this.protocolId
+      )
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         this.metrics?.nodesMessagesReceived.inc()
         this.logger(`Received NODES from ${shortId(dstId)}`)
@@ -596,7 +600,7 @@ export abstract class BaseProtocol {
    * @param bootnode `string` encoded ENR of a bootnode
    * @param protocolId network ID of the subprotocol routing table to add the bootnode to
    */
-  public addBootNode = async (bootnode: string, protocolId: ProtocolId) => {
+  public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
     this.updateRoutingTable(enr, true)
     const distancesSought = []
@@ -608,6 +612,6 @@ export abstract class BaseProtocol {
     }
     // Requests nodes in all empty k-buckets
     this.client.discv5.sendPing(enr)
-    this.sendFindNodes(enr.nodeId, distancesSought, protocolId)
+    this.sendFindNodes(enr.nodeId, distancesSought)
   }
 }
