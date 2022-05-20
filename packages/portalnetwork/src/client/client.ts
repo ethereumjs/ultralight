@@ -10,7 +10,12 @@ import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { ProtocolId } from '../subprotocols'
-import { PortalNetworkEventEmitter, PortalNetworkMetrics } from './types'
+import {
+  PortalNetworkEventEmitter,
+  PortalNetworkMetrics,
+  PortalNetworkOpts,
+  TransportLayer,
+} from './types'
 import PeerId from 'peer-id'
 //eslint-disable-next-line implicit-dependencies/no-implicit
 import { LevelUp } from 'levelup'
@@ -20,20 +25,10 @@ import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
-import { WebSocketTransportService } from '../transports'
+import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
 
 const level = require('level-mem')
 
-const MAX_PACKET_SIZE = 1280
-
-export interface PortalNetworkOpts {
-  config: IDiscv5CreateOptions
-  supportedProtocols: ProtocolId[]
-  radius?: bigint
-  bootnodes?: string[]
-  db?: LevelUp
-  metrics?: PortalNetworkMetrics
-}
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
   protocols: Map<ProtocolId, BaseProtocol>
@@ -46,65 +41,67 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private peerId: PeerId
   private supportsRendezvous: boolean
 
-  public static createPortalNetwork = async (
-    proxyAddress = 'ws://127.0.0.1:5050',
-    bootnodes?: string[],
-    db?: LevelUp,
-    rebuildFromMemory?: boolean,
-    ip?: string
-  ) => {
-    let id: PeerId
-    let enr: ENR
-    if (rebuildFromMemory && db) {
-      const prev_enr_string = await db.get('enr')
-      const prev_peerid = JSON.parse(await db.get('peerid'))
-      enr = ENR.decodeTxt(prev_enr_string)
-      id = await PeerId.createFromJSON(prev_peerid)
-      const prev_peers = JSON.parse(await db.get('peers')) as string[]
-      bootnodes = bootnodes && bootnodes.length > 0 ? bootnodes.concat(prev_peers) : prev_peers
-    } else {
-      id = await PeerId.create({ keyType: 'secp256k1' })
-      enr = ENR.createFromPeerId(id)
-      enr.encode(createKeypairFromPeerId(id).privateKey)
-    }
-    const ma = ip
-      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
-      : new Multiaddr()
-    if (ip) enr.setLocationMultiaddr(ma)
-    return new PortalNetwork({
+  public static create = async (opts: Partial<PortalNetworkOpts>) => {
+    const defaultConfig: IDiscv5CreateOptions = {
+      enr: {} as ENR,
+      peerId: {} as PeerId,
+      multiaddr: new Multiaddr(),
       config: {
-        enr,
-        peerId: id,
-        multiaddr: ma,
-        transport: new WebSocketTransportService(ma, enr.nodeId, proxyAddress),
-        config: {
-          addrVotesToUpdateEnr: 5,
-          enrUpdate: true,
-          allowUnverifiedSessions: true,
-        },
+        addrVotesToUpdateEnr: 5,
+        enrUpdate: true,
+        allowUnverifiedSessions: true,
       },
+    }
+    const config = { ...defaultConfig, ...opts.config }
+    let bootnodes
+    if (opts.rebuildFromMemory && opts.db) {
+      const prev_enr_string = await opts.db.get('enr')
+      const prev_peerid = JSON.parse(await opts.db.get('peerid'))
+      config.enr = ENR.decodeTxt(prev_enr_string)
+      config.peerId = await PeerId.createFromJSON(prev_peerid)
+      const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
+      bootnodes =
+        opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
+    } else {
+      config.peerId = await PeerId.create({ keyType: 'secp256k1' })
+      config.enr = ENR.createFromPeerId(config.peerId)
+      config.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
+    }
+    const ma = opts.bindAddress
+      ? new Multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
+      : new Multiaddr()
+
+    switch (opts.transport) {
+      case TransportLayer.WEB: {
+        opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
+        config.transport = new WebSocketTransportService(ma, config.enr.nodeId, opts.proxyAddress)
+        break
+      }
+      case TransportLayer.MOBILE:
+        config.transport = new CapacitorUDPTransportService(ma, config.enr.nodeId)
+        break
+      case TransportLayer.NODE:
+        break
+    }
+    return new PortalNetwork({
+      config,
       radius: 2n ** 256n,
       bootnodes,
-      db,
-      supportedProtocols: [ProtocolId.HistoryNetwork],
+      db: opts.db,
+      supportedProtocols: opts.supportedProtocols ?? [ProtocolId.HistoryNetwork],
     })
   }
 
   /**
    *
    * Portal Network constructor
-   * @param config a dictionary of `IDiscv5CreateOptions` for configuring the discv5 networking layer
-   * @param radius defines the radius of data the node is interesting in storing
-   * @param db a `level` compliant database provided by the module consumer - instantiates an in-memory DB if not provided
+   * @param opts a dictionary of `PortalNetworkOpts`
    */
   constructor(opts: PortalNetworkOpts) {
     // eslint-disable-next-line constructor-super
     super()
 
-    this.discv5 = Discv5.create({
-      ...opts.config,
-      ...{ requestTimeout: 3000, allowUnverifiedSessions: false },
-    })
+    this.discv5 = Discv5.create(opts.config)
     this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId).privateKey)
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.protocols = new Map()
@@ -198,6 +195,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
+    if (toHexString(message.protocol) === ProtocolId.UTPNetwork) {
+      this.handleUTP(src, src.nodeId, message, message.request)
+      return
+    }
     const protocol = this.protocols.get(toHexString(message.protocol) as ProtocolId)
     if (!protocol) {
       this.logger(

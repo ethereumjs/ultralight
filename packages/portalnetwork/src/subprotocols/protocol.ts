@@ -117,6 +117,7 @@ export abstract class BaseProtocol {
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         this.updateRoutingTable(enr.nodeId, true, pongMessage.customPayload)
+        return pongMessage
       }
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(enr.nodeId)}: ${err.toString()}`)
@@ -516,7 +517,7 @@ export abstract class BaseProtocol {
    */
   private updateRoutingTable = (srcId: NodeId | ENR, add = false, customPayload?: any) => {
     const nodeId = typeof srcId === 'string' ? srcId : srcId.nodeId
-    const enr = typeof srcId === 'string' ? this.routingTable.getValue(srcId) : srcId
+    let enr = typeof srcId === 'string' ? this.routingTable.getValue(srcId) : srcId
     if (!add) {
       this.routingTable.evictNode(nodeId)
       this.logger(`removed ${nodeId} from ${this.protocolName} Routing Table`)
@@ -524,9 +525,10 @@ export abstract class BaseProtocol {
     }
     try {
       if (!this.routingTable.getValue(nodeId)) {
-        this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
+        enr = this.client.discv5.getKadValue(nodeId)
         if (enr) {
           this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
+          this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
         }
       }
       if (customPayload) {

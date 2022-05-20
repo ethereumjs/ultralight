@@ -6,6 +6,8 @@ import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types
 import { fromHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history'
 import { Block } from '@ethereumjs/block'
+import { TransportLayer } from '../../src/client/types'
+import { HistoryProtocol } from '../../src/subprotocols/history/history'
 
 const end = async (
   child: ChildProcessWithoutNullStreams,
@@ -19,20 +21,30 @@ const end = async (
 }
 
 const setupNetwork = async () => {
-  const portal1 = await PortalNetwork.createPortalNetwork(
-    'ws://127.0.0.1:5050',
-    [],
-    undefined,
-    false,
-    '127.0.0.1'
-  )
-  const portal2 = await PortalNetwork.createPortalNetwork(
-    'ws://127.0.0.1:5050',
-    [],
-    undefined,
-    false,
-    '127.0.0.1'
-  )
+  const portal1 = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
+    transport: TransportLayer.WEB,
+    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.UTPNetwork],
+    //@ts-ignore
+    config: {
+      config: {
+        enrUpdate: true,
+        addrVotesToUpdateEnr: 1,
+      },
+    },
+  })
+  const portal2 = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
+    transport: TransportLayer.WEB,
+    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.UTPNetwork],
+    //@ts-ignore
+    config: {
+      config: {
+        enrUpdate: true,
+        addrVotesToUpdateEnr: 1,
+      },
+    },
+  })
   return [portal1, portal2]
 }
 
@@ -54,20 +66,22 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-        portal1.enableLog('*portalnetwork*')
-        portal2.enableLog('*portalnetwork*')
+        portal1.enableLog('*portalnetwork*,*discv5*')
+        portal2.enableLog('*portalnetwork*,*discv5*')
         await portal1.start()
       } else if (data.toString().includes('UDP proxy listening on')) {
         const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
-        if (!portal2.client.isStarted()) {
-          portal1.client.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        if (!portal2.discv5.isStarted()) {
+          portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
           await portal2.start()
-        } else if (portal2.client.isStarted()) {
-          portal2.client.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        } else if (portal2.discv5.isStarted()) {
+          portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
           let done = false
+          const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork)
+          if (!protocol) throw new Error('should have History Protocol')
           while (!done) {
-            const res = await portal2.sendPing(portal1.client.enr, ProtocolId.HistoryNetwork)
-            if (res && res.enrSeq === 5n) {
+            const res = await protocol.sendPing(portal1.discv5.enr)
+            if (res && (res as any).enrSeq >= 1n) {
               st.pass('Nodes connected and played PING/PONG')
               await end(child, [portal1, portal2], st)
               done = true
@@ -84,15 +98,14 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
     let portal2: PortalNetwork
-    //   tape.onFailure(() => end(child, [portal1, portal2], st))
 
     child.stderr.on('data', async (data) => {
       if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-        portal1.enableLog('')
-        portal2.enableLog('')
+        portal1.enableLog('*portalnetwork*,*discv5*')
+        portal2.enableLog('*portalnetwork*,*discv5*')
         portal1.on('ContentAdded', (blockHash) => {
           if (blockHash === '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220') {
             st.pass('OFFER/ACCEPT/uTP Stream succeeded')
@@ -102,32 +115,30 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
         await portal1.start()
       } else if (data.toString().includes('UDP proxy listening on')) {
         const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
-        if (!portal2.client.isStarted()) {
-          portal1.client.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        if (!portal2.discv5.isStarted()) {
+          portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
           await portal2.start()
-        } else if (portal2.client.isStarted()) {
-          portal2.client.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-
-          await portal2.sendPing(portal1.client.enr, ProtocolId.HistoryNetwork)
+        } else if (portal2.discv5.isStarted()) {
+          portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+          const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+          if (!protocol) throw new Error('should have History Protocol')
+          await protocol.sendPing(portal1.discv5.enr)
+          await portal2.discv5.sendPing(portal1.discv5.enr)
           const testBlock = Block.fromRLPSerializedBlock(
             Buffer.from(fromHexString(require('./testBlock.json').rlp))
           )
-          await portal2.addContentToHistory(
+          await protocol.addContentToHistory(
             1,
             HistoryNetworkContentTypes.BlockHeader,
             '0x' + testBlock.header.hash().toString('hex'),
             testBlock.header.serialize()
           )
-          await portal2.sendOffer(
-            portal1.client.enr.nodeId,
-            [
-              HistoryNetworkContentKeyUnionType.serialize({
-                selector: 0,
-                value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
-              }),
-            ],
-            ProtocolId.HistoryNetwork
-          )
+          await protocol.sendOffer(portal1.discv5.enr.nodeId, [
+            HistoryNetworkContentKeyUnionType.serialize({
+              selector: 0,
+              value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+            }),
+          ])
         }
       }
     })
