@@ -121,8 +121,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-
-    this.discv5.enr
     this.uTP = new PortalNetworkUTP(this)
     this.db = opts.db ?? level()
     if (opts.metrics) {

@@ -51,7 +51,7 @@ export default function DevTools(props: DevToolsProps) {
 
   const handleFindNodes = (nodeId: string) => {
     const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
-    protocol!.sendFindNodes(nodeId, [parseInt(distance)], ProtocolId.HistoryNetwork)
+    protocol!.sendFindNodes(nodeId, [parseInt(distance)])
   }
 
   const handleOffer = (nodeId: string) => {
@@ -93,6 +93,8 @@ export default function DevTools(props: DevToolsProps) {
     sharing()
   }, [])
 
+  const addBootNode = () =>
+    portal.protocols.get(ProtocolId.HistoryNetwork)!.addBootNode(props.peerEnr)
   return (
     <VStack>
       {canShare ? (
@@ -112,7 +114,7 @@ export default function DevTools(props: DevToolsProps) {
             <Button
               isDisabled={!props.peerEnr.startsWith('enr:')}
               width={'100%'}
-              onClick={props.handleClick}
+              onClick={addBootNode}
             >
               Connect To Node
             </Button>

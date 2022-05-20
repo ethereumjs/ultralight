@@ -39,7 +39,7 @@ export abstract class BaseProtocol {
     metrics?: PortalNetworkMetrics
   ) {
     this.client = client
-    this.nodeRadius = nodeRadius ?? 256n
+    this.nodeRadius = nodeRadius ?? 2n ** 256n
     this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
     this.metrics = metrics
   }

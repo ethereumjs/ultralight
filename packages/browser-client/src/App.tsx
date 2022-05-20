@@ -91,7 +91,7 @@ export const App = () => {
   async function handleClick() {
     try {
       const protocol = portal?.protocols.get(ProtocolId.HistoryNetwork)
-      await protocol?.sendPing(peerEnr)
+      await protocol?.addBootNode(peerEnr)
     } catch (err) {}
     setPeerEnr('')
     updateAddressBook()
