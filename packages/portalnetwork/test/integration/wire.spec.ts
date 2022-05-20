@@ -1,7 +1,7 @@
 import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { Multiaddr } from 'multiaddr'
-import { PortalNetwork, SubprotocolIds } from '../../src'
+import { PortalNetwork, ProtocolId } from '../../src'
 import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types'
 import { fromHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history'
@@ -66,7 +66,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           portal2.client.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
           let done = false
           while (!done) {
-            const res = await portal2.sendPing(portal1.client.enr, SubprotocolIds.HistoryNetwork)
+            const res = await portal2.sendPing(portal1.client.enr, ProtocolId.HistoryNetwork)
             if (res && res.enrSeq === 5n) {
               st.pass('Nodes connected and played PING/PONG')
               await end(child, [portal1, portal2], st)
@@ -108,7 +108,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
         } else if (portal2.client.isStarted()) {
           portal2.client.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
 
-          await portal2.sendPing(portal1.client.enr, SubprotocolIds.HistoryNetwork)
+          await portal2.sendPing(portal1.client.enr, ProtocolId.HistoryNetwork)
           const testBlock = Block.fromRLPSerializedBlock(
             Buffer.from(fromHexString(require('./testBlock.json').rlp))
           )
@@ -126,7 +126,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
                 value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
               }),
             ],
-            SubprotocolIds.HistoryNetwork
+            ProtocolId.HistoryNetwork
           )
         }
       }

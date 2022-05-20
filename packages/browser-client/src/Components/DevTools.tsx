@@ -9,7 +9,7 @@ import {
   useToast,
   Select,
 } from '@chakra-ui/react'
-import { SubprotocolIds, ENR, fromHexString } from 'portalnetwork'
+import { ProtocolId, ENR, fromHexString } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
 import { ContentManager } from './ContentManager'
 import { Share } from '@capacitor/share'
@@ -37,7 +37,9 @@ export default function DevTools(props: DevToolsProps) {
   const [contentKey, setContentKey] = useState('')
   const toast = useToast()
   const handlePing = () => {
-    portal.sendPing(peer, SubprotocolIds.HistoryNetwork)
+    const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)!
+    const enr = protocol.routingTable.getValue(peer)
+    protocol.sendPing(enr!)
   }
   async function share() {
     await Share.share({
@@ -48,7 +50,8 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   const handleFindNodes = (nodeId: string) => {
-    portal.sendFindNodes(nodeId, [parseInt(distance)], SubprotocolIds.HistoryNetwork)
+    const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
+    protocol!.sendFindNodes(nodeId, [parseInt(distance)], ProtocolId.HistoryNetwork)
   }
 
   const handleOffer = (nodeId: string) => {
@@ -61,12 +64,12 @@ export default function DevTools(props: DevToolsProps) {
       })
       return
     }
-
-    portal.sendOffer(nodeId, [fromHexString(contentKey)], SubprotocolIds.HistoryNetwork)
+    const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
+    protocol!.sendOffer(nodeId, [fromHexString(contentKey)])
   }
 
   const sendRendezvous = async (peer: string) => {
-    portal.sendRendezvous(targetNodeId, peer, SubprotocolIds.HistoryNetwork)
+    portal.sendRendezvous(targetNodeId, peer, ProtocolId.HistoryNetwork)
     setTarget('')
   }
   async function handleCopy() {

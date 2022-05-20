@@ -2,7 +2,7 @@ import debug, { Debugger } from 'debug'
 import {
   PortalNetwork,
   getHistoryNetworkContentId,
-  SubprotocolIds,
+  ProtocolId,
   reassembleBlock,
   HistoryNetworkContentKeyUnionType,
   ENR,
@@ -66,7 +66,7 @@ export class RPCManager {
       this.log(
         `portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`
       )
-      await this._client.addBootNode(enr, SubprotocolIds.HistoryNetwork)
+      await this._client.addBootNode(enr, ProtocolId.HistoryNetwork)
       return `Bootnode added for ${encodedENR.nodeId.slice(0, 15)}...`
     },
     portal_addBlockToHistory: async (params: [string, string]) => {
@@ -94,7 +94,7 @@ export class RPCManager {
         return 'invalid node id'
       }
       this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
-      const res = await this._client.sendFindNodes(dstId, distances, SubprotocolIds.HistoryNetwork)
+      const res = await this._client.sendFindNodes(dstId, distances, ProtocolId.HistoryNetwork)
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },
@@ -102,13 +102,13 @@ export class RPCManager {
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
       this.log(`portal_ping request received`)
-      await this._client.sendPing(enr, SubprotocolIds.HistoryNetwork)
+      await this._client.sendPing(enr, ProtocolId.HistoryNetwork)
       this.log(`TEST PONG received from ${encodedENR.nodeId}`)
       return `PING/PONG successful with ${encodedENR.nodeId}`
     },
     portal_history_findContent: async (params: [string, Uint8Array]) => {
       const [enr, contentKey] = params
-      const res = await this._client.sendFindContent(enr, contentKey, SubprotocolIds.HistoryNetwork)
+      const res = await this._client.sendFindContent(enr, contentKey, ProtocolId.HistoryNetwork)
       return res
     },
     portal_history_offer: async (params: [string, string[], number[]]) => {
@@ -131,7 +131,7 @@ export class RPCManager {
           },
         })
       })
-      const res = await this._client.sendOffer(dstId, contentKeys, SubprotocolIds.HistoryNetwork)
+      const res = await this._client.sendOffer(dstId, contentKeys, ProtocolId.HistoryNetwork)
       return res
     },
     portal_utp_find_content_test: async (params: [string]) => {
@@ -149,7 +149,7 @@ export class RPCManager {
             ),
           },
         }),
-        SubprotocolIds.HistoryNetwork
+        ProtocolId.HistoryNetwork
       )
       await this._client.sendFindContent(
         encodedENR.nodeId,
@@ -162,7 +162,7 @@ export class RPCManager {
             ),
           },
         }),
-        SubprotocolIds.HistoryNetwork
+        ProtocolId.HistoryNetwork
       )
       await this._client.sendFindContent(
         encodedENR.nodeId,
@@ -175,7 +175,7 @@ export class RPCManager {
             ),
           },
         }),
-        SubprotocolIds.HistoryNetwork
+        ProtocolId.HistoryNetwork
       )
       return `Some uTP happened`
     },
@@ -193,7 +193,7 @@ export class RPCManager {
         })
       })
 
-      await this._client.sendOffer(encodedENR.nodeId, contentKeys, SubprotocolIds.HistoryNetwork)
+      await this._client.sendOffer(encodedENR.nodeId, contentKeys, ProtocolId.HistoryNetwork)
       return `Some uTP happened`
     },
   }

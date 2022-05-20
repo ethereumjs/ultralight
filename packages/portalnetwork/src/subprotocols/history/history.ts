@@ -15,11 +15,11 @@ import {
 } from '../../wire'
 import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { ContentLookup } from '../contentLookup'
-import { Protocol } from '../protocol'
+import { BaseProtocol } from '../protocol'
 import { HistoryNetworkContentTypes, HistoryNetworkContentKeyUnionType } from './types'
 import { getHistoryNetworkContentId, reassembleBlock } from './util'
 
-export class HistoryProtocol extends Protocol {
+export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
   logger: Debugger

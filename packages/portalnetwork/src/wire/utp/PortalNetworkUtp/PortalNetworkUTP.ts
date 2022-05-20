@@ -2,8 +2,9 @@ import { Discv5 } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
-import { SubprotocolIds } from '../../..'
+import { ProtocolId } from '../../..'
 import { PortalNetwork } from '../../..'
+import { HistoryProtocol } from '../../../subprotocols/history/history'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
@@ -30,8 +31,8 @@ export class PortalNetworkUTP {
 
   constructor(portal: PortalNetwork) {
     this.portal = portal
-    this.client = portal.client
-    this.protocol = new BasicUtp((peerId: string, msg: Buffer, protocolId: SubprotocolIds) =>
+    this.client = portal.discv5
+    this.protocol = new BasicUtp((peerId: string, msg: Buffer, protocolId: ProtocolId) =>
       this.sendPortalNetworkMessage(peerId, msg, protocolId)
     )
     this.logger = portal.logger.extend(`uTP`)
@@ -39,8 +40,10 @@ export class PortalNetworkUTP {
     this.working = false
   }
 
-  async sendPortalNetworkMessage(peerId: string, msg: Buffer, protocolId: SubprotocolIds) {
-    await this.portal.sendPortalNetworkMessage(peerId, msg, protocolId, true)
+  async sendPortalNetworkMessage(peerId: string, msg: Buffer, protocolId: ProtocolId) {
+    const enr = this.portal.protocols.get(protocolId)?.routingTable.getValue(peerId)
+    if (!enr) return
+    await this.portal.sendPortalNetworkMessage(enr, msg, protocolId, true)
   }
 
   /**
@@ -465,7 +468,9 @@ export class PortalNetworkUTP {
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
-      await this.portal.addContentToHistory(
+      await (
+        this.portal.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol
+      ).addContentToHistory(
         request.contentKey.chainId,
         0,
         toHexString(request.contentKey.blockHash),

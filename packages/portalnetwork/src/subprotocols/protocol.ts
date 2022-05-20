@@ -25,7 +25,7 @@ import { randUint16, MAX_PACKET_SIZE } from '../wire/utp'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { NodeLookup } from './nodeLookup'
 import { StateNetworkRoutingTable } from './state'
-export abstract class Protocol {
+export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint

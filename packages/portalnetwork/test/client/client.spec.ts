@@ -4,7 +4,7 @@ import {
   PingPongCustomDataType,
   PortalNetwork,
   PortalWireMessageType,
-  SubprotocolIds,
+  ProtocolId,
 } from '../../src/'
 import td from 'testdouble'
 import { fromHexString } from '@chainsafe/ssz'
@@ -50,9 +50,9 @@ tape('Client unit tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve(pongResponse, null)
-    let res = await node.sendPing('abc', SubprotocolIds.HistoryNetwork)
+    let res = await node.sendPing('abc', ProtocolId.HistoryNetwork)
     st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
-    res = await node.sendPing('abc', SubprotocolIds.HistoryNetwork)
+    res = await node.sendPing('abc', ProtocolId.HistoryNetwork)
     st.ok(res === undefined, 'received undefined when no valid PONG message received')
 
     node.sendPong = td.func<any>()
@@ -68,7 +68,7 @@ tape('Client unit tests', async (t) => {
         customPayload: payload,
       },
     })
-    node.handlePing('abc', { request: pingMsg, protocol: SubprotocolIds.HistoryNetwork })
+    node.handlePing('abc', { request: pingMsg, protocol: ProtocolId.HistoryNetwork })
   })
 
   t.test('FINDNODES/NODES message handlers', async (st) => {
@@ -89,9 +89,9 @@ tape('Client unit tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve(findNodesResponse, null)
-    let res = await node.sendFindNodes('abc', [0, 1, 2], SubprotocolIds.HistoryNetwork)
+    let res = await node.sendFindNodes('abc', [0, 1, 2], ProtocolId.HistoryNetwork)
     st.ok(res.total === 1, 'received 1 ENR from FINDNODES')
-    res = await node.sendFindNodes('abc', [], SubprotocolIds.HistoryNetwork)
+    res = await node.sendFindNodes('abc', [], ProtocolId.HistoryNetwork)
     st.ok(res === undefined, 'received undefined when no valid NODES response received')
 
     node.sendPortalNetworkResponse = td.func<any>()
@@ -117,14 +117,14 @@ tape('Client unit tests', async (t) => {
       { socketAddr: new Multiaddr(), nodeId: 'abc' },
       {
         request: findNodesMessageWithDistance,
-        protocol: SubprotocolIds.HistoryNetwork,
+        protocol: ProtocolId.HistoryNetwork,
       }
     )
     node.handleFindNodes(
       { socketAddr: new Multiaddr(), nodeId: 'abc' },
       {
         request: findNodesMessageWithoutDistance,
-        protocol: SubprotocolIds.HistoryNetwork,
+        protocol: ProtocolId.HistoryNetwork,
       }
     )
   })
@@ -149,7 +149,7 @@ tape('Client unit tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve(findContentResponse)
-    const res = await node.sendFindContent('abc', key, SubprotocolIds.HistoryNetwork)
+    const res = await node.sendFindContent('abc', key, ProtocolId.HistoryNetwork)
     st.deepEqual(res.value, Uint8Array.from([97, 98, 99]), 'got correct response for content abc')
     const findContentMessageWithNoContent = Uint8Array.from([4, 4, 0, 0, 0, 6])
     const findContentMessageWithShortContent = Uint8Array.from([
@@ -183,7 +183,7 @@ tape('Client unit tests', async (t) => {
       { socketAddr: new Multiaddr(), nodeId: 'def' },
       {
         id: '12345',
-        protocol: fromHexString(SubprotocolIds.HistoryNetwork),
+        protocol: fromHexString(ProtocolId.HistoryNetwork),
         request: findContentMessageWithShortContent,
       }
     )
@@ -200,15 +200,15 @@ tape('Client unit tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve([], acceptResponse, [])
-    let res = await node.sendOffer('abc', '', SubprotocolIds.HistoryNetwork)
+    let res = await node.sendOffer('abc', '', ProtocolId.HistoryNetwork)
     st.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
     node.uTP.initiateUtpFromAccept = td.func<any>()
     td.when(
       node.uTP.initiateUtpFromAccept(td.matchers.contains('abc'), td.matchers.anything())
     ).thenResolve(undefined)
-    // res = await node.sendOffer('abc', [Uint8Array.from([1])], SubprotocolIds.HistoryNetwork)
+    // res = await node.sendOffer('abc', [Uint8Array.from([1])], ProtocolId.HistoryNetwork)
     // st.ok(res[0] === true, 'received valid ACCEPT response to OFFER')
-    res = await node.sendOffer('abc', [Uint8Array.from([0])], SubprotocolIds.HistoryNetwork)
+    res = await node.sendOffer('abc', [Uint8Array.from([0])], ProtocolId.HistoryNetwork)
     st.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
   })
 

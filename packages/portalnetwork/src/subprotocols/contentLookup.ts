@@ -2,7 +2,7 @@ import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util'
-import { Protocol } from './protocol'
+import { BaseProtocol } from './protocol'
 
 type lookupPeer = {
   nodeId: NodeId
@@ -11,14 +11,14 @@ type lookupPeer = {
 }
 
 export class ContentLookup {
-  private protocol: Protocol
+  private protocol: BaseProtocol
   private lookupPeers: lookupPeer[]
   private contacted: lookupPeer[]
   private contentId: string
   private contentKey: Uint8Array
   private log: Debugger
 
-  constructor(protocol: Protocol, contentKey: Uint8Array) {
+  constructor(protocol: BaseProtocol, contentKey: Uint8Array) {
     this.protocol = protocol
     this.lookupPeers = []
     this.contacted = []

@@ -17,8 +17,10 @@ import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 
-import { Protocol } from '../subprotocols/protocol'
+import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
+import { Multiaddr } from 'multiaddr'
+import { WebSocketTransportService } from '../transports'
 
 const level = require('level-mem')
 
@@ -27,7 +29,6 @@ const MAX_PACKET_SIZE = 1280
 export interface PortalNetworkOpts {
   config: IDiscv5CreateOptions
   supportedProtocols: ProtocolId[]
-  networkContent: string
   radius?: bigint
   bootnodes?: string[]
   db?: LevelUp
@@ -35,7 +36,7 @@ export interface PortalNetworkOpts {
 }
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
-  protocols: Map<ProtocolId, Protocol>
+  protocols: Map<ProtocolId, BaseProtocol>
   uTP: PortalNetworkUTP
   db: LevelUp
   bootnodes: string[]
@@ -44,6 +45,50 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   private peerId: PeerId
   private supportsRendezvous: boolean
+
+  public static createPortalNetwork = async (
+    proxyAddress = 'ws://127.0.0.1:5050',
+    bootnodes?: string[],
+    db?: LevelUp,
+    rebuildFromMemory?: boolean,
+    ip?: string
+  ) => {
+    let id: PeerId
+    let enr: ENR
+    if (rebuildFromMemory && db) {
+      const prev_enr_string = await db.get('enr')
+      const prev_peerid = JSON.parse(await db.get('peerid'))
+      enr = ENR.decodeTxt(prev_enr_string)
+      id = await PeerId.createFromJSON(prev_peerid)
+      const prev_peers = JSON.parse(await db.get('peers')) as string[]
+      bootnodes = bootnodes && bootnodes.length > 0 ? bootnodes.concat(prev_peers) : prev_peers
+    } else {
+      id = await PeerId.create({ keyType: 'secp256k1' })
+      enr = ENR.createFromPeerId(id)
+      enr.encode(createKeypairFromPeerId(id).privateKey)
+    }
+    const ma = ip
+      ? new Multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 20)}`)
+      : new Multiaddr()
+    if (ip) enr.setLocationMultiaddr(ma)
+    return new PortalNetwork({
+      config: {
+        enr,
+        peerId: id,
+        multiaddr: ma,
+        transport: new WebSocketTransportService(ma, enr.nodeId, proxyAddress),
+        config: {
+          addrVotesToUpdateEnr: 5,
+          enrUpdate: true,
+          allowUnverifiedSessions: true,
+        },
+      },
+      radius: 2n ** 256n,
+      bootnodes,
+      db,
+      supportedProtocols: [ProtocolId.HistoryNetwork],
+    })
+  }
 
   /**
    *
