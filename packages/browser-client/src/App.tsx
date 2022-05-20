@@ -41,6 +41,7 @@ import Footer from './Components/Footer'
 import InfoMenu from './Components/InfoMenu'
 import bns from './bootnodes.json'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import { TransportLayer } from 'portalnetwork/dist/client'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
@@ -99,19 +100,35 @@ export const App = () => {
 
   async function createNodeFromScratch(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
-      ? // @ts-ignore
-        await PortalNetwork.createMobilePortalNetwork(bns, LDB, false, process.env.BINDADDRESS)
-      : // @ts-ignore
-        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, false, process.env.BINDADDRESS)
+      ? await PortalNetwork.create({
+          bootnodes: bns,
+          db: LDB as any,
+          transport: TransportLayer.MOBILE,
+        })
+      : await PortalNetwork.create({
+          proxyAddress: proxy,
+          bootnodes: bns,
+          db: LDB as any,
+          transport: TransportLayer.WEB,
+        })
     return node
   }
 
   async function createNodeFromStorage(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
-      ? // @ts-ignore
-        await PortalNetwork.createMobilePortalNetwork(bns, LDB, true)
-      : // @ts-ignore
-        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, true)
+      ? await PortalNetwork.create({
+          bootnodes: bns,
+          db: LDB as any,
+          rebuildFromMemory: true,
+          transport: TransportLayer.MOBILE,
+        })
+      : await PortalNetwork.create({
+          proxyAddress: proxy,
+          bootnodes: bns,
+          db: LDB as any,
+          rebuildFromMemory: true,
+          transport: TransportLayer.WEB,
+        })
     return node
   }
 

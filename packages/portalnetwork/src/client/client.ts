@@ -66,6 +66,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       config.peerId = await PeerId.create({ keyType: 'secp256k1' })
       config.enr = ENR.createFromPeerId(config.peerId)
       config.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
+      bootnodes = opts.bootnodes
     }
     const ma = opts.bindAddress
       ? new Multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
