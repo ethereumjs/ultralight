@@ -56,6 +56,7 @@ export class HistoryProtocol extends BaseProtocol {
       Buffer.from(payload),
       this.protocolId
     )
+
     try {
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()

@@ -165,6 +165,7 @@ export abstract class BaseProtocol {
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
     })
+
     try {
       this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${this.protocolId} subprotocol`)
       const enr = this.routingTable.getValue(dstId)
@@ -280,7 +281,6 @@ export abstract class BaseProtocol {
           const requestedKeys: Uint8Array[] = contentKeys.filter(
             (n, idx) => msg.contentKeys.get(idx) === true
           )
-
           if (requestedKeys.length === 0) {
             // Don't start uTP stream if no content ACCEPTed
             this.logger(`Received ACCEPT with no desired content from ${shortId(dstId)}`)
