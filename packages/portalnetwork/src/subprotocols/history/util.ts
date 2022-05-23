@@ -1,10 +1,10 @@
 import SHA256 from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '.'
-import { PortalNetwork } from '../..'
 import { HistoryNetworkContentTypes } from './types'
 import * as rlp from 'rlp'
 import { Block, BlockBuffer } from '@ethereumjs/block'
+import { HistoryProtocol } from './history'
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
  * @param contentKey an object containing the `chainId` and `blockHash` used to generate the content Key
@@ -54,16 +54,16 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
 export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
-  portal: PortalNetwork
+  protocol: HistoryProtocol
 ) => {
   const decodedBlock = rlp.decode(fromHexString(rlpHex))
-  await portal.addContentToHistory(
+  await protocol.addContentToHistory(
     1,
     HistoryNetworkContentTypes.BlockHeader,
     blockHash,
     rlp.encode((decodedBlock as Buffer[])[0])
   )
-  await portal.addContentToHistory(
+  await protocol.addContentToHistory(
     1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,

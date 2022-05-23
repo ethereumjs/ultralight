@@ -2,7 +2,7 @@ import debug, { Debugger } from 'debug'
 import {
   PortalNetwork,
   getHistoryNetworkContentId,
-  SubprotocolIds,
+  ProtocolId,
   reassembleBlock,
   HistoryNetworkContentKeyUnionType,
   ENR,
@@ -11,9 +11,11 @@ import {
 import * as rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork'
 import { isValidId } from './util'
+import { HistoryProtocol } from 'portalnetwork/src/subprotocols/history/history'
 
 export class RPCManager {
   public _client: PortalNetwork
+  public protocol: HistoryProtocol
   private log: Debugger
   private _methods: { [key: string]: Function } = {
     discv5_nodeInfo: async () => {
@@ -45,12 +47,12 @@ export class RPCManager {
       }
       // If block isn't in local DB, request block from network
       try {
-        header = await this._client.historyNetworkContentLookup(0, blockHash)
+        header = await this.protocol.historyNetworkContentLookup(0, blockHash)
         if (!header) {
           return 'Block not found'
         }
         body = includeTransactions
-          ? (await this._client.historyNetworkContentLookup(1, blockHash)) ?? rlp.encode([[], []])
+          ? (await this.protocol.historyNetworkContentLookup(1, blockHash)) ?? rlp.encode([[], []])
           : rlp.encode([[], []])
         // TODO: Figure out why block body isn't coming back as Uint8Array
         //@ts-ignore
@@ -66,13 +68,13 @@ export class RPCManager {
       this.log(
         `portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`
       )
-      await this._client.addBootNode(enr, SubprotocolIds.HistoryNetwork)
+      await this.protocol.addBootNode(enr)
       return `Bootnode added for ${encodedENR.nodeId.slice(0, 15)}...`
     },
     portal_addBlockToHistory: async (params: [string, string]) => {
       const [blockHash, rlpHex] = params
       try {
-        addRLPSerializedBlock(rlpHex, blockHash, this._client)
+        addRLPSerializedBlock(rlpHex, blockHash, this.protocol)
         return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
         this.log(`Error trying to load block to DB. ${err.message.toString()}`)
@@ -82,7 +84,7 @@ export class RPCManager {
     portal_nodeEnr: async () => {
       this.log(`portal_nodeEnr request received`)
       try {
-        const enr = this._client.client.enr.encodeTxt()
+        const enr = this._client.discv5.enr.encodeTxt()
         return enr
       } catch (err) {
         return 'Unable to generate ENR'
@@ -94,7 +96,7 @@ export class RPCManager {
         return 'invalid node id'
       }
       this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
-      const res = await this._client.sendFindNodes(dstId, distances, SubprotocolIds.HistoryNetwork)
+      const res = await this.protocol.sendFindNodes(dstId, distances)
       this.log(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },
@@ -102,13 +104,13 @@ export class RPCManager {
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
       this.log(`portal_ping request received`)
-      await this._client.sendPing(enr, SubprotocolIds.HistoryNetwork)
+      await this.protocol.sendPing(enr)
       this.log(`TEST PONG received from ${encodedENR.nodeId}`)
       return `PING/PONG successful with ${encodedENR.nodeId}`
     },
     portal_history_findContent: async (params: [string, Uint8Array]) => {
       const [enr, contentKey] = params
-      const res = await this._client.sendFindContent(enr, contentKey, SubprotocolIds.HistoryNetwork)
+      const res = await this.protocol.sendFindContent(enr, contentKey)
       return res
     },
     portal_history_offer: async (params: [string, string[], number[]]) => {
@@ -131,14 +133,14 @@ export class RPCManager {
           },
         })
       })
-      const res = await this._client.sendOffer(dstId, contentKeys, SubprotocolIds.HistoryNetwork)
+      const res = await this.protocol.sendOffer(dstId, contentKeys)
       return res
     },
     portal_utp_find_content_test: async (params: [string]) => {
       this.log(`portal_utp_get_test request received`)
       const [enr] = params
       const encodedENR = ENR.decodeTxt(enr)
-      await this._client.sendFindContent(
+      await this.protocol.sendFindContent(
         encodedENR.nodeId,
         HistoryNetworkContentKeyUnionType.serialize({
           selector: 0,
@@ -148,10 +150,9 @@ export class RPCManager {
               fromHexString('0x46b332ceda6777098fe7943929e76a5fcea772a866c0fb1d170ec65c46c7e3ae')
             ),
           },
-        }),
-        SubprotocolIds.HistoryNetwork
+        })
       )
-      await this._client.sendFindContent(
+      await this.protocol.sendFindContent(
         encodedENR.nodeId,
         HistoryNetworkContentKeyUnionType.serialize({
           selector: 1,
@@ -161,10 +162,9 @@ export class RPCManager {
               fromHexString('0x0c1cf9b3d4aa3e20e12b355416a4e3202da53f54eaaafc882a7644e3e68127ec')
             ),
           },
-        }),
-        SubprotocolIds.HistoryNetwork
+        })
       )
-      await this._client.sendFindContent(
+      await this.protocol.sendFindContent(
         encodedENR.nodeId,
         HistoryNetworkContentKeyUnionType.serialize({
           selector: 1,
@@ -174,8 +174,7 @@ export class RPCManager {
               fromHexString('0xca6063e4d9b37c2777233b723d9b08cf248e34a5ebf7f5720d59323a93eec14f')
             ),
           },
-        }),
-        SubprotocolIds.HistoryNetwork
+        })
       )
       return `Some uTP happened`
     },
@@ -193,14 +192,15 @@ export class RPCManager {
         })
       })
 
-      await this._client.sendOffer(encodedENR.nodeId, contentKeys, SubprotocolIds.HistoryNetwork)
+      await this.protocol.sendOffer(encodedENR.nodeId, contentKeys)
       return `Some uTP happened`
     },
   }
 
   constructor(client: PortalNetwork) {
     this._client = client
-    this.log = debug(this._client.client.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
+    this.protocol = client.protocols.get(ProtocolId.HistoryNetwork) as never as HistoryProtocol
+    this.log = debug(this._client.discv5.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
   }
 
   public getMethods() {

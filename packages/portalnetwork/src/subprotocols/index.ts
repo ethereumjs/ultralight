@@ -1,5 +1,5 @@
 // subprotocol IDs
-export enum SubprotocolIds {
+export enum ProtocolId {
   StateNetwork = '0x500a',
   HistoryNetwork = '0x500b',
   TxGossipNetwork = '0x500c',

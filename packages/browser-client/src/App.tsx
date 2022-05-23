@@ -26,7 +26,7 @@ import {
   getHistoryNetworkContentId,
   PortalNetwork,
   reassembleBlock,
-  SubprotocolIds,
+  ProtocolId,
   ENR,
   fromHexString,
   log2Distance,
@@ -40,6 +40,8 @@ import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
 import InfoMenu from './Components/InfoMenu'
 import bns from './bootnodes.json'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import { TransportLayer } from 'portalnetwork/dist/client'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
@@ -63,9 +65,9 @@ export const App = () => {
   const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
 
   function updateAddressBook() {
-    const routingTable = portal?.routingTables.get(SubprotocolIds.HistoryNetwork)
-    if (!routingTable) return
-    const known = routingTable?.values()
+    const protocol = portal?.protocols.get(ProtocolId.HistoryNetwork)
+    if (!protocol) return
+    const known = protocol.routingTable.values()
     const formattedKnown = known!.map((_enr: ENR) => {
       const distToSelf = log2Distance(id, _enr.nodeId)
       return [
@@ -82,13 +84,14 @@ export const App = () => {
       return [d[0], [d[1], d[2], d[3], d[4]]]
     })
     setSortedDistList(table)
-    const peers = portal!.routingTables.get(SubprotocolIds.HistoryNetwork)!.values()
+    const peers = protocol.routingTable.values()
     setPeers(peers)
   }
 
   async function handleClick() {
     try {
-      await portal?.sendPing(peerEnr, SubprotocolIds.HistoryNetwork)
+      const protocol = portal?.protocols.get(ProtocolId.HistoryNetwork)
+      await protocol?.addBootNode(peerEnr)
     } catch (err) {}
     setPeerEnr('')
     updateAddressBook()
@@ -97,19 +100,35 @@ export const App = () => {
 
   async function createNodeFromScratch(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
-      ? // @ts-ignore
-        await PortalNetwork.createMobilePortalNetwork(bns, LDB, false, process.env.BINDADDRESS)
-      : // @ts-ignore
-        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, false, process.env.BINDADDRESS)
+      ? await PortalNetwork.create({
+          bootnodes: bns,
+          db: LDB as any,
+          transport: TransportLayer.MOBILE,
+        })
+      : await PortalNetwork.create({
+          proxyAddress: proxy,
+          bootnodes: bns,
+          db: LDB as any,
+          transport: TransportLayer.WEB,
+        })
     return node
   }
 
   async function createNodeFromStorage(): Promise<PortalNetwork> {
     const node = Capacitor.isNativePlatform()
-      ? // @ts-ignore
-        await PortalNetwork.createMobilePortalNetwork(bns, LDB, true)
-      : // @ts-ignore
-        await PortalNetwork.createPortalNetwork(proxy, bns, LDB, true)
+      ? await PortalNetwork.create({
+          bootnodes: bns,
+          db: LDB as any,
+          rebuildFromMemory: true,
+          transport: TransportLayer.MOBILE,
+        })
+      : await PortalNetwork.create({
+          proxyAddress: proxy,
+          bootnodes: bns,
+          db: LDB as any,
+          rebuildFromMemory: true,
+          transport: TransportLayer.WEB,
+        })
     return node
   }
 
@@ -130,14 +149,14 @@ export const App = () => {
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
     ;(window as any).ENR = ENR
-    node.client.on('multiaddrUpdated', () => {
-      setENR(node.client.enr.encodeTxt(node.client.keypair.privateKey))
+    node.discv5.on('multiaddrUpdated', () => {
+      setENR(node.discv5.enr.encodeTxt(node.discv5.keypair.privateKey))
       portal?.storeNodeDetails()
     })
   }
 
   const copy = async () => {
-    await setENR(portal?.client.enr.encodeTxt(portal.client.keypair.privateKey) ?? '')
+    await setENR(portal?.discv5.enr.encodeTxt(portal.discv5.keypair.privateKey) ?? '')
     onCopy()
   }
 
@@ -151,17 +170,19 @@ export const App = () => {
       if (blockHash.slice(0, 2) !== '0x') {
         setContentKey('')
       } else {
+        const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        if (!protocol) return
         const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
         const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
         let header: string = ''
         let body
-        await portal.historyNetworkContentLookup(0, blockHash)
+        await protocol.historyNetworkContentLookup(0, blockHash)
         try {
           header = await portal.db.get(headerlookupKey)
         } catch (err) {
           portal.logger((err as any).message)
         }
-        await portal.historyNetworkContentLookup(1, blockHash)
+        await protocol.historyNetworkContentLookup(1, blockHash)
         try {
           body = await portal.db.get(bodylookupKey)
         } catch (err) {

@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { SubprotocolIds } from '../../../'
+import { ProtocolId } from '../../../'
 import { Packet } from '../Packets'
 import {
   sendSynPacket,
@@ -15,9 +15,9 @@ import ContentReader from './read/ContentReader'
 import ContentWriter from './write/ContentWriter'
 
 export class BasicUtp {
-  send: (peerId: string, msg: Buffer, protocolId: SubprotocolIds) => Promise<void>
+  send: (peerId: string, msg: Buffer, protocolId: ProtocolId) => Promise<void>
 
-  constructor(send: (peerId: string, msg: Buffer, protocolId: SubprotocolIds) => Promise<void>) {
+  constructor(send: (peerId: string, msg: Buffer, protocolId: ProtocolId) => Promise<void>) {
     this.send = send
   }
 
