@@ -613,7 +613,6 @@ export abstract class BaseProtocol {
    */
   public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
-    console.log(bootnode, enr)
     this.updateRoutingTable(enr, true)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
@@ -624,7 +623,6 @@ export abstract class BaseProtocol {
     }
     // Requests nodes in all empty k-buckets
     this.client.discv5.sendPing(enr)
-    console.log('node in routing table', this.routingTable.getValue(enr.nodeId))
     this.sendFindNodes(enr.nodeId, distancesSought)
   }
 }
