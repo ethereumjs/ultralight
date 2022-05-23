@@ -95,7 +95,10 @@ export abstract class BaseProtocol {
       enr = ENR.decodeTxt(nodeId)
       this.updateRoutingTable(enr, true)
     }
-    if (!enr) return
+    if (!enr) {
+      this.logger(`Invalid node ID provided. PING aborted`)
+      return
+    }
     const pingMsg = PortalWireMessageType.serialize({
       selector: MessageCodes.PING,
       value: {
@@ -169,7 +172,10 @@ export abstract class BaseProtocol {
     try {
       this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${this.protocolId} subprotocol`)
       const enr = this.routingTable.getValue(dstId)
-      if (!enr) return
+      if (!enr) {
+        this.logger(`Invalid node ID provided. FINDNODES aborted`)
+        return
+      }
       const res = await this.client.sendPortalNetworkMessage(
         enr,
         Buffer.from(payload),
@@ -260,9 +266,12 @@ export abstract class BaseProtocol {
       selector: MessageCodes.OFFER,
       value: offerMsg,
     })
-    this.logger(`Sending OFFER message to ${shortId(dstId)}`)
     const enr = this.routingTable.getValue(dstId)
-    if (!enr) return
+    if (!enr) {
+      this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
+      return
+    }
+    this.logger(`Sending OFFER message to ${shortId(dstId)}`)
     const res = await this.client.sendPortalNetworkMessage(
       enr,
       Buffer.from(payload),

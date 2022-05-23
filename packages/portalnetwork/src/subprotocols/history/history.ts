@@ -48,9 +48,12 @@ export class HistoryProtocol extends BaseProtocol {
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
-    this.logger(`Sending FINDCONTENT to ${shortId(dstId)} for ${this.protocolId} subprotocol`)
     const enr = this.routingTable.getValue(dstId)
-    if (!enr) return
+    if (!enr) {
+      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
+      return
+    }
+    this.logger(`Sending FINDCONTENT to ${shortId(dstId)}`)
     const res = await this.client.sendPortalNetworkMessage(
       enr,
       Buffer.from(payload),
