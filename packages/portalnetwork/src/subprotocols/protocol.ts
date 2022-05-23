@@ -107,9 +107,7 @@ export abstract class BaseProtocol {
       },
     })
     try {
-      this.logger(
-        `Sending PING to ${shortId(enr.nodeId)} for ${ProtocolId.HistoryNetwork} subprotocol`
-      )
+      this.logger(`Sending PING to ${shortId(enr.nodeId)} for ${this.protocolName} subprotocol`)
       const res = await this.client.sendPortalNetworkMessage(
         enr,
         Buffer.from(pingMsg),
@@ -170,7 +168,7 @@ export abstract class BaseProtocol {
     })
 
     try {
-      this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${this.protocolId} subprotocol`)
+      this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${this.protocolName} subprotocol`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) {
         this.logger(`Invalid node ID provided. FINDNODES aborted`)

@@ -4,7 +4,9 @@ import {
   addRLPSerializedBlock,
   getHistoryNetworkContentId,
   distance,
+  ProtocolId,
 } from 'portalnetwork'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import React from 'react'
 
 interface ContentManagerProps {
@@ -12,6 +14,7 @@ interface ContentManagerProps {
 }
 export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
   const handleUpload = async (evt: React.ChangeEvent<HTMLInputElement>) => {
+    const protocol = portal?.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     const files = evt.target.files
     const reader = new FileReader()
     if (files && files.length > 0) {
@@ -23,11 +26,11 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
             .sort((a, b) => {
               const diff =
                 distance(
-                  BigInt('0x' + portal!.client.enr.nodeId),
+                  BigInt('0x' + portal!.discv5.enr.nodeId),
                   BigInt(getHistoryNetworkContentId(1, a[0], 0))
                 ) -
                 distance(
-                  BigInt('0x' + portal!.client.enr.nodeId),
+                  BigInt('0x' + portal!.discv5.enr.nodeId),
                   BigInt(getHistoryNetworkContentId(1, b[0], 0))
                 )
               const res = diff < 0n ? -1 : 1
@@ -35,7 +38,7 @@ export const ContentManager: React.FC<ContentManagerProps> = ({ portal }) => {
             })
             .slice(0, 10)
             .forEach(async (block) => {
-              addRLPSerializedBlock((block[1] as any).rlp, block[0], portal!)
+              addRLPSerializedBlock((block[1] as any).rlp, block[0], protocol!)
             })
         }
       }

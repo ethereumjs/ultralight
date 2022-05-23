@@ -16,7 +16,7 @@ export class ContentLookup {
   private contacted: lookupPeer[]
   private contentId: string
   private contentKey: Uint8Array
-  private log: Debugger
+  private logger: Debugger
 
   constructor(protocol: BaseProtocol, contentKey: Uint8Array) {
     this.protocol = protocol
@@ -24,7 +24,7 @@ export class ContentLookup {
     this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
-    this.log = this.protocol.client.logger.extend('lookup', ':')
+    this.logger = this.protocol.client.logger.extend('lookup', ':')
   }
 
   /**
@@ -36,11 +36,12 @@ export class ContentLookup {
     try {
       const res = await this.protocol.client.db.get(this.contentId)
       return res
-      //eslint-disable-next-line
-    } catch { }
+    } catch {}
     this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer) => {
-      const dist = distance(peer.nodeId, this.contentId)
-      this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
+      try {
+        const dist = distance(peer.nodeId, this.contentId)
+        this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
+      } catch {}
     })
 
     let finished = false
@@ -49,7 +50,7 @@ export class ContentLookup {
       if (this.lookupPeers.length === 0) {
         finished = true
         this.protocol.client.metrics?.failedContentLookups.inc()
-        this.protocol.client.logger(`failed to retrieve ${this.contentKey} from network`)
+        this.logger(`failed to retrieve ${toHexString(this.contentKey)} from network`)
         return
       }
       const nearestPeer = this.lookupPeers.shift()
@@ -62,7 +63,7 @@ export class ContentLookup {
         nodesAlreadyAsked.add(nearestPeer.nodeId)
       }
 
-      this.log(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
+      this.logger(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.protocol.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
         // Node didn't respond
@@ -71,18 +72,18 @@ export class ContentLookup {
       switch (res.selector) {
         case 0: {
           // findContent returned uTP connection ID
-          this.log(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
+          this.logger(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
           finished = true
           nearestPeer.hasContent = true
           return res.value
         }
         case 1: {
           // findContent returned data sought
-          this.log(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
+          this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
           finished = true
           nearestPeer.hasContent = true
           this.protocol.client.metrics?.successfulContentLookups.inc()
-          // Offer content to neighbors who should have had content but don't if we receive content directly
+          // POKE -- Offer content to neighbors who should have had content but don't if we receive content directly
           this.contacted.forEach((peer) => {
             if (!peer.hasContent) {
               if (
@@ -100,7 +101,7 @@ export class ContentLookup {
         }
         case 2: {
           // findContent request returned ENRs of nodes closer to content
-          this.log(`received ${res.value.length} ENRs for closer nodes`)
+          this.logger(`received ${res.value.length} ENRs for closer nodes`)
           res.value.forEach((enr) => {
             if (!finished) {
               const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
