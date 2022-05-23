@@ -533,12 +533,12 @@ export abstract class BaseProtocol {
       return
     }
     try {
-      if (!this.routingTable.getValue(nodeId)) {
+      if (!enr) {
         enr = this.client.discv5.getKadValue(nodeId)
-        if (enr) {
-          this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
-          this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
-        }
+      }
+      if (enr) {
+        this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
+        this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
       }
       if (customPayload) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
@@ -613,6 +613,7 @@ export abstract class BaseProtocol {
    */
   public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
+    console.log(bootnode, enr)
     this.updateRoutingTable(enr, true)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
@@ -623,6 +624,7 @@ export abstract class BaseProtocol {
     }
     // Requests nodes in all empty k-buckets
     this.client.discv5.sendPing(enr)
+    console.log('node in routing table', this.routingTable.getValue(enr.nodeId))
     this.sendFindNodes(enr.nodeId, distancesSought)
   }
 }
