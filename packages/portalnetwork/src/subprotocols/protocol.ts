@@ -89,11 +89,9 @@ export abstract class BaseProtocol {
   public sendPing = async (nodeId: string | ENR) => {
     let enr: ENR | undefined = undefined
     if (nodeId instanceof ENR) {
-      this.updateRoutingTable(nodeId, true)
       enr = nodeId
     } else if (typeof nodeId === 'string' && nodeId.startsWith('enr')) {
       enr = ENR.decodeTxt(nodeId)
-      this.updateRoutingTable(enr, true)
     }
     if (!enr) {
       this.logger(`Invalid node ID provided. PING aborted`)
@@ -119,9 +117,14 @@ export abstract class BaseProtocol {
         const pongMessage = decoded.value as PongMessage
         this.updateRoutingTable(enr.nodeId, true, pongMessage.customPayload)
         return pongMessage
+      } else {
+        this.updateRoutingTable(enr.nodeId, false)
       }
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(enr.nodeId)}: ${err.toString()}`)
+      if (this.routingTable.getValue(enr.nodeId)) {
+        this.updateRoutingTable(enr, false)
+      }
       return undefined
     }
   }
@@ -515,9 +518,7 @@ export abstract class BaseProtocol {
   /**
    *
    * This method maintains the liveness of peers in the subprotocol routing tables.  If a PONG message is received from
-   * an unknown peer for a given subprotocol, that peer is added to the corresponding subprotocol routing table.  If this
-   * method is called with no `customPayload`, this indicates the peer corresponding to `srcId` should be removed from
-   * the specified subprotocol routing table.
+   * an unknown peer for a given subprotocol, that peer is added to the corresponding subprotocol routing table.
    * @param srcId nodeId of peer being updated in subprotocol routing table
    * @param protocolId subprotocol Id of routing table being updated
    * @param customPayload payload of the PING/PONG message being decoded
@@ -611,7 +612,6 @@ export abstract class BaseProtocol {
    */
   public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
-    this.updateRoutingTable(enr, true)
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256
@@ -621,6 +621,7 @@ export abstract class BaseProtocol {
     }
     // Requests nodes in all empty k-buckets
     this.client.discv5.sendPing(enr)
+    this.sendPing(enr)
     this.sendFindNodes(enr.nodeId, distancesSought)
   }
 }
