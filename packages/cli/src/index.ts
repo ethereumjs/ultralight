@@ -98,7 +98,7 @@ const main = async () => {
       multiaddr: initMa,
       config: {
         enrUpdate: true,
-        addrVotesToUpdateEnr: 1,
+        addrVotesToUpdateEnr: 5,
         allowUnverifiedSessions: true,
       },
     },

@@ -68,10 +68,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       config.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
       bootnodes = opts.bootnodes
     }
-    const ma = opts.bindAddress
-      ? new Multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
-      : new Multiaddr()
-
+    let ma
+    if (opts.bindAddress) {
+      ma = new Multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
+      config.enr.setLocationMultiaddr(ma)
+    } else {
+      ma = new Multiaddr()
+    }
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'

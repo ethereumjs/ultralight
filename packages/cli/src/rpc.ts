@@ -199,7 +199,7 @@ export class RPCManager {
 
   constructor(client: PortalNetwork) {
     this._client = client
-    this.protocol = client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    this.protocol = client.protocols.get(ProtocolId.HistoryNetwork) as never as HistoryProtocol
     this.log = debug(this._client.discv5.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
   }
 
