@@ -145,6 +145,12 @@ export class HistoryProtocol extends BaseProtocol {
                 resolve(block)
               }
             })
+          } else if (body) {
+            block = reassembleBlock(header, fromHexString(body))
+            resolve(block)
+          } else {
+            block = reassembleBlock(header, rlp.encode([[], []]))
+            resolve(block)
           }
         })
       }
