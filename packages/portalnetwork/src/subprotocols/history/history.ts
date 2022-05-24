@@ -152,6 +152,12 @@ export class HistoryProtocol extends BaseProtocol {
                 resolve(block)
               }
             })
+            setTimeout(() => {
+              // Body lookup didn't return within 2 seconds so timeout and return header
+              this.client.removeAllListeners('ContentAdded')
+              block = reassembleBlock(header, rlp.encode([[], []]))
+              resolve(block)
+            }, 2000)
           } else {
             // Assume we weren't able to find the block body and just return the header
             block = reassembleBlock(header, rlp.encode([[], []]))
