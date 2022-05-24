@@ -26,6 +26,7 @@ import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
+import { HistoryNetworkContentKey } from '../subprotocols/history'
 
 const level = require('level-mem')
 
@@ -124,7 +125,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    this.uTP = new PortalNetworkUTP(this)
+    this.uTP = new PortalNetworkUTP(this.logger)
+    this.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
+      await (this.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol).addContentToHistory(
+        chainId,
+        selector,
+        blockHash,
+        content
+      )
+    })
+    this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
+      const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
+      if (!enr) return
+      await this.sendPortalNetworkMessage(enr, msg, protocolId, true)
+    })
+
     this.db = opts.db ?? level()
     if (opts.metrics) {
       this.metrics = opts.metrics

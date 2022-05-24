@@ -1,6 +1,7 @@
 import { Discv5 } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
+import { EventEmitter } from 'events'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { ProtocolId } from '../../..'
 import { PortalNetwork } from '../../..'
@@ -22,29 +23,24 @@ export enum RequestCode {
 function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
-export class PortalNetworkUTP {
-  portal: PortalNetwork
-  client: Discv5
+export class PortalNetworkUTP extends EventEmitter {
   protocol: BasicUtp
   openHistoryNetworkRequests: Record<UtpSocketKey, HistoryNetworkContentRequest> // TODO enable other networks
   logger: Debugger
   working: boolean
 
-  constructor(portal: PortalNetwork) {
-    this.portal = portal
-    this.client = portal.discv5
+  constructor(logger: Debugger) {
+    super()
     this.protocol = new BasicUtp((peerId: string, msg: Buffer, protocolId: ProtocolId) =>
-      this.sendPortalNetworkMessage(peerId, msg, protocolId)
+      this.send(peerId, msg, protocolId)
     )
-    this.logger = portal.logger.extend(`uTP`)
+    this.logger = logger.extend(`uTP`)
     this.openHistoryNetworkRequests = {}
     this.working = false
   }
 
-  async sendPortalNetworkMessage(peerId: string, msg: Buffer, protocolId: ProtocolId) {
-    const enr = this.portal.protocols.get(protocolId)?.routingTable.getValue(peerId)
-    if (!enr) return
-    await this.portal.sendPortalNetworkMessage(enr, msg, protocolId, true)
+  async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {
+    this.emit('Send', peerId, msg, protocolId, true)
   }
 
   /**
@@ -470,14 +466,21 @@ export class PortalNetworkUTP {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
       const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
-      await (
-        this.portal.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol
-      ).addContentToHistory(
+      this.emit(
+        'Stream',
         contentKey.value.chainId,
         contentKey.selector,
         toHexString(contentKey.value.blockHash),
         content
       )
+      // await (
+      //   this.portal.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol
+      // ).addContentToHistory(
+      //   contentKey.value.chainId,
+      //   contentKey.selector,
+      //   toHexString(contentKey.value.blockHash),
+      //   content
+      // )
     }
     let content
     try {
