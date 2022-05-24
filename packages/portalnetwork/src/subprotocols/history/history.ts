@@ -135,8 +135,15 @@ export class HistoryProtocol extends BaseProtocol {
         lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
         body = await lookup.startLookup()
         return new Promise((resolve) => {
-          ///@ts-ignore
+          if (body) {
+            // Try assembling block
+            try {
+              block = reassembleBlock(header, body)
+              resolve(block)
+            } catch {}
+          } ///@ts-ignore
           if (body && body.length === 2) {
+            // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
             this.client.on('ContentAdded', (key, _type, content) => {
               if (key === blockHash) {
                 //@ts-ignore
@@ -145,10 +152,8 @@ export class HistoryProtocol extends BaseProtocol {
                 resolve(block)
               }
             })
-          } else if (body) {
-            block = reassembleBlock(header, fromHexString(body))
-            resolve(block)
           } else {
+            // Assume we weren't able to find the block body and just return the header
             block = reassembleBlock(header, rlp.encode([[], []]))
             resolve(block)
           }
