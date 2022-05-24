@@ -472,7 +472,8 @@ export class PortalNetworkUTP {
         this.portal.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol
       ).addContentToHistory(
         request.contentKey.chainId,
-        0,
+        // TODO: Fix contentKey so it's not deserialized so we can infer the content type instead of hardcoding it
+        1,
         toHexString(request.contentKey.blockHash),
         content
       )

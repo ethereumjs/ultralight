@@ -120,8 +120,8 @@ export class HistoryProtocol extends BaseProtocol {
           value: { chainId: 1, blockHash: fromHexString(blockHash) },
         })
       : undefined
-    let header
-    let body
+    let header: any
+    let body: any
     let block
     try {
       let lookup = new ContentLookup(this, headerContentKey)
@@ -133,11 +133,21 @@ export class HistoryProtocol extends BaseProtocol {
         body = rlp.encode([[], []])
       } else {
         lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
-        body = (await lookup.startLookup()) ?? rlp.encode([[], []])
+        body = await lookup.startLookup()
+        return new Promise((resolve) => {
+          ///@ts-ignore
+          if (body && body.length === 2) {
+            this.client.on('ContentAdded', (key, _type, content) => {
+              if (key === blockHash) {
+                //@ts-ignore
+                block = reassembleBlock(header, fromHexString(content))
+                this.client.removeAllListeners('ContentAdded')
+                resolve(block)
+              }
+            })
+          }
+        })
       }
-      //@ts-ignore
-      block = reassembleBlock(header, body)
-      return block
     } catch {}
   }
 
