@@ -1,5 +1,4 @@
 import { UtpSocket } from '..'
-import { HistoryNetworkContentKey, HistoryNetworkContentKeyUnionType } from '../../..'
 import ContentReader from '../Protocol/read/ContentReader'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import { sendSynPacket } from '../Packets/PacketSenders'
@@ -10,8 +9,8 @@ export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., 
 
 export class HistoryNetworkContentRequest {
   requestCode: RequestCode
-  contentKey: HistoryNetworkContentKey
-  contentKeys: HistoryNetworkContentKey[]
+  contentKey: Uint8Array
+  contentKeys: Uint8Array[]
   socket: UtpSocket
   sockets: UtpSocket[]
   socketKey: string
@@ -28,9 +27,7 @@ export class HistoryNetworkContentRequest {
   ) {
     this.sockets = socket
     //@ts-ignore
-    this.contentKeys = contentKey.map((k) => {
-      return HistoryNetworkContentKeyUnionType.deserialize(Uint8Array.from(k)).value
-    })
+    this.contentKeys = contentKey
     this.requestCode = requestCode
     this.contentKey = this.contentKeys[0]
     this.content = content[0]
