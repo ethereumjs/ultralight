@@ -134,6 +134,13 @@ export const App = () => {
         proxyAddress: proxy,
         db: LDB as any,
         transport: TransportLayer.WEB,
+        //@ts-ignore
+        config: {
+          config: {
+            enrUpdate: true,
+            addrVotesToUpdateEnr: 1,
+          },
+        },
       })
     } else {
       try {
