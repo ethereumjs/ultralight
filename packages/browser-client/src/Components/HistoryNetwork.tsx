@@ -19,7 +19,7 @@ interface HistoryNetworkProps {
   findParent: (hash: string) => Promise<void>
   block: Block | undefined
   invalidHash: boolean
-  handleFindContent: (blockHash: string) => Promise<void | Block>
+  getBlockByHash: (blockHash: string) => Promise<void | Block>
   contentKey: string
   setContentKey: Dispatch<SetStateAction<string>>
   peers: ENR[] | undefined
@@ -36,7 +36,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
 
   async function handleClick() {
     setIsLoading(true)
-    await props.handleFindContent(props.contentKey)
+    await props.getBlockByHash(props.contentKey)
     setTabIndex(1)
     setIsLoading(false)
   }

@@ -172,7 +172,7 @@ export const App = () => {
     portal?.storeNodeDetails()
   }, [])
 
-  async function handleFindContent(blockHash: string) {
+  async function getBlockByHash(blockHash: string) {
     if (portal) {
       if (blockHash.slice(0, 2) !== '0x') {
         setContentKey('')
@@ -187,7 +187,7 @@ export const App = () => {
 
   async function findParent(hash: string) {
     setContentKey(hash)
-    handleFindContent(hash)
+    getBlockByHash(hash)
     portal?.logger('Showing Block')
   }
 
@@ -259,7 +259,7 @@ export const App = () => {
                 setPeerEnr={setPeerEnr}
                 handleClick={handleClick}
                 invalidHash={invalidHash}
-                handleFindContent={handleFindContent}
+                getBlockByHash={getBlockByHash}
                 contentKey={contentKey}
                 setContentKey={setContentKey}
                 findParent={findParent}

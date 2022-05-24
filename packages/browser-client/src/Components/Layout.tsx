@@ -13,7 +13,7 @@ interface LayoutProps {
   setPeerEnr: Dispatch<SetStateAction<string>>
   handleClick: () => Promise<void>
   invalidHash: boolean
-  handleFindContent: (blockHash: string) => Promise<void | Block>
+  getBlockByHash: (blockHash: string) => Promise<void | Block>
   contentKey: string
   setContentKey: Dispatch<SetStateAction<string>>
   findParent: (hash: string) => Promise<void>
@@ -57,7 +57,7 @@ export default function Layout(props: LayoutProps) {
             <TabPanel>
               <HistoryNetwork
                 invalidHash={props.invalidHash}
-                handleFindContent={props.handleFindContent}
+                getBlockByHash={props.getBlockByHash}
                 contentKey={props.contentKey}
                 setContentKey={props.setContentKey}
                 findParent={props.findParent}
