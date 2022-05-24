@@ -22,15 +22,7 @@ import {
   Divider,
   ChakraProvider,
 } from '@chakra-ui/react'
-import {
-  getHistoryNetworkContentId,
-  PortalNetwork,
-  reassembleBlock,
-  ProtocolId,
-  ENR,
-  fromHexString,
-  log2Distance,
-} from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR, log2Distance } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
@@ -137,10 +129,18 @@ export const App = () => {
       navigator.storage.persist()
     }
     let node: PortalNetwork
-    try {
-      node = await createNodeFromStorage()
-    } catch {
-      node = await createNodeFromScratch()
+    if (process.env.BINDADDRESS) {
+      node = await PortalNetwork.create({
+        proxyAddress: proxy,
+        db: LDB as any,
+        transport: TransportLayer.WEB,
+      })
+    } else {
+      try {
+        node = await createNodeFromStorage()
+      } catch {
+        node = await createNodeFromScratch()
+      }
     }
 
     setPortal(node)
@@ -165,39 +165,15 @@ export const App = () => {
     portal?.storeNodeDetails()
   }, [])
 
-  async function handleFindContent(blockHash: string): Promise<Block | void> {
+  async function handleFindContent(blockHash: string) {
     if (portal) {
       if (blockHash.slice(0, 2) !== '0x') {
         setContentKey('')
       } else {
         const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
         if (!protocol) return
-        const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
-        const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
-        let header: string = ''
-        let body
-        await protocol.historyNetworkContentLookup(0, blockHash)
-        try {
-          header = await portal.db.get(headerlookupKey)
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
-        await protocol.historyNetworkContentLookup(1, blockHash)
-        try {
-          body = await portal.db.get(bodylookupKey)
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
-        try {
-          const block = reassembleBlock(
-            fromHexString(header),
-            typeof body === 'string' ? fromHexString(body) : body
-          )
-          setBlock(block)
-          return block
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
+        const block = await protocol.getBlockByHash(blockHash, true)
+        setBlock(block)
       }
     }
   }

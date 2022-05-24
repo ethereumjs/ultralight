@@ -108,7 +108,10 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  public getBlockByHash = async (blockHash: string, includeTransactions: boolean) => {
+  public getBlockByHash = async (
+    blockHash: string,
+    includeTransactions: boolean
+  ): Promise<Block | undefined> => {
     const headerContentKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 0,
       value: { chainId: 1, blockHash: fromHexString(blockHash) },
@@ -127,7 +130,7 @@ export class HistoryProtocol extends BaseProtocol {
       let lookup = new ContentLookup(this, headerContentKey)
       header = await lookup.startLookup()
       if (!header) {
-        return 'block not found'
+        undefined
       }
       if (!includeTransactions) {
         body = rlp.encode([[], []])

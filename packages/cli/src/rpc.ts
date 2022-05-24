@@ -25,7 +25,8 @@ export class RPCManager {
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
       try {
-        return this.protocol.getBlockByHash(blockHash, includeTransactions)
+        const block = await this.protocol.getBlockByHash(blockHash, includeTransactions)
+        return block ?? 'Block not found'
       } catch {
         return 'Block not found'
       }
