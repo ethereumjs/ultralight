@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import debug from 'debug'
 import { Debugger } from 'debug'
 import { ProtocolId } from '..'
@@ -18,7 +18,7 @@ import { ContentLookup } from '../contentLookup'
 import { BaseProtocol } from '../protocol'
 import { HistoryNetworkContentTypes, HistoryNetworkContentKeyUnionType } from './types'
 import { getHistoryNetworkContentId, reassembleBlock } from './util'
-
+import * as rlp from 'rlp'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
@@ -108,17 +108,37 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  public historyNetworkContentLookup = async (
-    contentType: HistoryNetworkContentTypes,
-    blockHash: string
-  ) => {
-    const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: contentType,
+  public getBlockByHash = async (blockHash: string, includeTransactions: boolean) => {
+    const headerContentKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 0,
       value: { chainId: 1, blockHash: fromHexString(blockHash) },
     })
-    const lookup = new ContentLookup(this, contentKey)
-    const res = await lookup.startLookup()
-    return res
+
+    const bodyContentKey = includeTransactions
+      ? HistoryNetworkContentKeyUnionType.serialize({
+          selector: 1,
+          value: { chainId: 1, blockHash: fromHexString(blockHash) },
+        })
+      : undefined
+    let header
+    let body
+    let block
+    try {
+      let lookup = new ContentLookup(this, headerContentKey)
+      header = await lookup.startLookup()
+      if (!header) {
+        return 'block not found'
+      }
+      if (!includeTransactions) {
+        body = rlp.encode([[], []])
+      } else {
+        lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
+        body = (await lookup.startLookup()) ?? rlp.encode([[], []])
+      }
+      //@ts-ignore
+      block = reassembleBlock(header, body)
+      return block
+    } catch {}
   }
 
   /**
@@ -166,10 +186,9 @@ export class HistoryProtocol extends BaseProtocol {
           this.logger(
             `Block Header for ${shortId(blockHash)} not found locally.  Querying network...`
           )
-          const serializedHeader = await this.historyNetworkContentLookup(0, blockHash)
+          const retrievedHeader = await this.getBlockByHash(blockHash, false)
           try {
-            reassembleBlock(serializedHeader as Uint8Array, value)
-            validBlock = true
+            if (retrievedHeader instanceof Block) validBlock = true
           } catch {}
         }
         if (validBlock) {
