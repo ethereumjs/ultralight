@@ -34,7 +34,7 @@ export default function DevTools(props: DevToolsProps) {
   const [peer, _setPeer] = useState(peers[0])
   const [targetNodeId, setTarget] = useState('')
   const [distance, setDistance] = useState('')
-  const [contentKey, setContentKey] = useState('')
+  const [blockHash, setBlockHash] = useState('')
   const toast = useToast()
   const handlePing = () => {
     const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)!
@@ -55,8 +55,8 @@ export default function DevTools(props: DevToolsProps) {
   }
 
   const handleOffer = (nodeId: string) => {
-    if (contentKey.slice(0, 2) !== '0x') {
-      setContentKey('')
+    if (blockHash.slice(0, 2) !== '0x') {
+      setBlockHash('')
       toast({
         title: 'Invalid content key',
         description: 'Key must be hex prefixed',
@@ -65,7 +65,7 @@ export default function DevTools(props: DevToolsProps) {
       return
     }
     const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
-    protocol!.sendOffer(nodeId, [fromHexString(contentKey)])
+    protocol!.sendOffer(nodeId, [fromHexString(blockHash)])
   }
 
   const sendRendezvous = async (peer: string) => {
@@ -175,9 +175,9 @@ export default function DevTools(props: DevToolsProps) {
       </Button>
       <Divider />
       <Input
-        value={contentKey}
+        value={blockHash}
         placeholder="Content Key"
-        onChange={(evt) => setContentKey(evt.target.value)}
+        onChange={(evt) => setBlockHash(evt.target.value)}
       />
       <Button isDisabled={!portal} width={'100%'} size="sm" onClick={() => handleOffer(peer)}>
         Send Offer

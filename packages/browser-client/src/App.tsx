@@ -45,7 +45,7 @@ export const App = () => {
   const [enr, setENR] = React.useState<string>('')
   const [id, _setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
-  const [contentKey, setContentKey] = React.useState<string>(
+  const [blockHash, setBlockHash] = React.useState<string>(
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
@@ -175,7 +175,7 @@ export const App = () => {
   async function getBlockByHash(blockHash: string) {
     if (portal) {
       if (blockHash.slice(0, 2) !== '0x') {
-        setContentKey('')
+        setBlockHash('')
       } else {
         const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
         if (!protocol) return
@@ -186,7 +186,7 @@ export const App = () => {
   }
 
   async function findParent(hash: string) {
-    setContentKey(hash)
+    setBlockHash(hash)
     getBlockByHash(hash)
     portal?.logger('Showing Block')
   }
@@ -195,7 +195,7 @@ export const App = () => {
     setModal(true)
     disclosure.onClose()
   }
-  const invalidHash = /([^0-z])+/.test(contentKey)
+  const invalidHash = /([^0-z])+/.test(blockHash)
 
   return (
     <ChakraProvider theme={theme}>
@@ -260,8 +260,8 @@ export const App = () => {
                 handleClick={handleClick}
                 invalidHash={invalidHash}
                 getBlockByHash={getBlockByHash}
-                contentKey={contentKey}
-                setContentKey={setContentKey}
+                blockHash={blockHash}
+                setBlockHash={setBlockHash}
                 findParent={findParent}
                 block={block}
                 peers={peers}

@@ -14,8 +14,8 @@ interface LayoutProps {
   handleClick: () => Promise<void>
   invalidHash: boolean
   getBlockByHash: (blockHash: string) => Promise<void | Block>
-  contentKey: string
-  setContentKey: Dispatch<SetStateAction<string>>
+  blockHash: string
+  setBlockHash: Dispatch<SetStateAction<string>>
   findParent: (hash: string) => Promise<void>
   block: Block | undefined
   peers: ENR[] | undefined
@@ -58,8 +58,8 @@ export default function Layout(props: LayoutProps) {
               <HistoryNetwork
                 invalidHash={props.invalidHash}
                 getBlockByHash={props.getBlockByHash}
-                contentKey={props.contentKey}
-                setContentKey={props.setContentKey}
+                blockHash={props.blockHash}
+                setBlockHash={props.setBlockHash}
                 findParent={props.findParent}
                 block={props.block}
                 peers={props.peers}
