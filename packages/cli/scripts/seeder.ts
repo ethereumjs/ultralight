@@ -17,7 +17,6 @@ const args: any = yargs(hideBin(process.argv))
     .option('numBlocks', {
         describe: 'number of blocks to seed on node',
         number: true,
-        demandOption: true
     })
     .option('numNodes', {
         describe: 'number of nodes in devnet',
@@ -28,6 +27,11 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'create prometheus scrape_target file',
         boolean: true,
         default: true
+    })
+    .option('blockHash', {
+      describe: 'specify a block hash to send to other nodes',
+      string: true,
+      optional: true
     })
   .option('utpTest', {
     describe: 'run uTP tests',
@@ -64,6 +68,9 @@ const main = async () => {
     for (let x = 0; x < args.numBlocks; x++) {
       await bootNode.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
     }
+  }
+  if (args.blockHash) {
+    await bootNode.request('portal_addBlockToHistory', [args.blockHash, blockData[args.blockHash].rlp])
   }
   if (args.utpTest) {
     for (let x = 1; x < args.numNodes; x++) {
