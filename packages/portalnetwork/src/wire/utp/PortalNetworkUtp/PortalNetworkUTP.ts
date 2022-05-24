@@ -1,15 +1,11 @@
-import { Discv5 } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { EventEmitter } from 'events'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { ProtocolId } from '../../..'
-import { PortalNetwork } from '../../..'
 import { HistoryNetworkContentKeyUnionType } from '../../../subprotocols/history'
-import { HistoryProtocol } from '../../../subprotocols/history/history'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
-import { HistoryNetworkContentRequest } from './HistoryNetworkContentRequest'
+import { ContentRequest } from './ContentRequest'
 
 type UtpSocketKey = string
 
@@ -24,30 +20,20 @@ function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
 export class PortalNetworkUTP extends BasicUtp {
-  openHistoryNetworkRequests: Record<UtpSocketKey, HistoryNetworkContentRequest> // TODO enable other networks
+  openContentRequest: Record<UtpSocketKey, ContentRequest> // TODO enable other networks
   logger: Debugger
   working: boolean
 
   constructor(logger: Debugger) {
     super()
     this.logger = logger.extend(`uTP`)
-    this.openHistoryNetworkRequests = {}
+    this.openContentRequest = {}
     this.working = false
   }
 
   async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {
     this.emit('Send', peerId, msg, protocolId, true)
   }
-
-  /**
-   * Handles a request from Portal Network Client for uTP
-   * @param type sender or receiver
-   * @param method portal network message type
-   * @param contentKey contentKey of requested content
-   * @param peerId Portal Network peer involved in transfer
-   * @param connectionId Random Uint16 from Portal Network FOUNDCONTENT or ACCEPT talkResp
-   * @param content SENDER: requested content from db
-   */
 
   async handleNewHistoryNetworkRequest(
     contentKeys: Uint8Array[],
@@ -60,7 +46,7 @@ export class PortalNetworkUTP extends BasicUtp {
     let rcvId: number
     let socket: UtpSocket
     let socketKey: string
-    let newRequest: HistoryNetworkContentRequest
+    let newRequest: ContentRequest
     let sockets: UtpSocket[]
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
@@ -74,17 +60,18 @@ export class PortalNetworkUTP extends BasicUtp {
           throw new Error('Error in Socket Creation')
         }
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new HistoryNetworkContentRequest(
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
           requestCode,
           [contentKeys[0]],
           [socket],
           socketKey,
           [undefined]
         )
-        if (this.openHistoryNetworkRequests[socketKey]) {
+        if (this.openContentRequest[socketKey]) {
           this.logger(`Request already Open`)
         } else {
-          this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.openContentRequest[socketKey] = newRequest
           this.logger(`Opening request with key: ${socketKey}`)
           await newRequest.init()
         }
@@ -97,17 +84,18 @@ export class PortalNetworkUTP extends BasicUtp {
           throw new Error('Error in Socket Creation')
         }
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new HistoryNetworkContentRequest(
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
           requestCode,
           contentKeys,
           [socket],
           socketKey,
           [undefined]
         )
-        if (this.openHistoryNetworkRequests[socketKey]) {
+        if (this.openContentRequest[socketKey]) {
           this.logger(`Request already Open`)
         } else {
-          this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.openContentRequest[socketKey] = newRequest
           this.logger(`Opening request with key: ${socketKey}`)
           await newRequest.init()
         }
@@ -123,7 +111,8 @@ export class PortalNetworkUTP extends BasicUtp {
           return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)!
         })
 
-        newRequest = new HistoryNetworkContentRequest(
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
           requestCode,
           contentKeys,
           sockets,
@@ -131,10 +120,10 @@ export class PortalNetworkUTP extends BasicUtp {
           contents
         )
 
-        if (this.openHistoryNetworkRequests[socketKey]) {
+        if (this.openContentRequest[socketKey]) {
           this.logger(`Request already Open`)
         } else {
-          this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.openContentRequest[socketKey] = newRequest
           this.logger(`Opening request with key: ${socketKey}`)
           await newRequest.init()
         }
@@ -144,21 +133,22 @@ export class PortalNetworkUTP extends BasicUtp {
         sndId = connectionId
         rcvId = connectionId + 1
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        if (this.openHistoryNetworkRequests[socketKey]) {
+        if (this.openContentRequest[socketKey]) {
           this.logger(`Request already Open`)
         } else {
           this.logger(`Opening request with key: ${socketKey}`)
           sockets = contentKeys.map(() => {
             return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
           })
-          newRequest = new HistoryNetworkContentRequest(
+          newRequest = new ContentRequest(
+            ProtocolId.HistoryNetwork,
             requestCode,
             contentKeys,
             sockets,
             socketKey,
             []
           )
-          this.openHistoryNetworkRequests[socketKey] = newRequest
+          this.openContentRequest[socketKey] = newRequest
           await newRequest.init()
         }
         break
@@ -233,7 +223,7 @@ export class PortalNetworkUTP extends BasicUtp {
 
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
-    const request = this.openHistoryNetworkRequests[requestKey]
+    const request = this.openContentRequest[requestKey]
     const packet = bufferToPacket(packetBuffer)
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
@@ -280,13 +270,13 @@ export class PortalNetworkUTP extends BasicUtp {
     const keyB = createSocketKey(peerId, idA, connId)
     const keyC = createSocketKey(peerId, connId, idB)
     const keyD = createSocketKey(peerId, idB, connId)
-    if (this.openHistoryNetworkRequests[keyA] !== undefined) {
+    if (this.openContentRequest[keyA] !== undefined) {
       return keyA
-    } else if (this.openHistoryNetworkRequests[keyB] !== undefined) {
+    } else if (this.openContentRequest[keyB] !== undefined) {
       return keyB
-    } else if (this.openHistoryNetworkRequests[keyC] !== undefined) {
+    } else if (this.openContentRequest[keyC] !== undefined) {
       return keyC
-    } else if (this.openHistoryNetworkRequests[keyD] !== undefined) {
+    } else if (this.openContentRequest[keyD] !== undefined) {
       return keyD
     } else {
       this.logger(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`)
@@ -294,7 +284,7 @@ export class PortalNetworkUTP extends BasicUtp {
     }
   }
 
-  async _handleSynPacket(request: HistoryNetworkContentRequest, packet: Packet) {
+  async _handleSynPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     let writer
     let reader
@@ -334,7 +324,7 @@ export class PortalNetworkUTP extends BasicUtp {
       this.logger('Request Type Not Implemented')
     }
   }
-  async _handleStatePacket(request: HistoryNetworkContentRequest, packet: Packet): Promise<void> {
+  async _handleStatePacket(request: ContentRequest, packet: Packet): Promise<void> {
     const requestCode = request.requestCode
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
@@ -420,7 +410,7 @@ export class PortalNetworkUTP extends BasicUtp {
     }
   }
 
-  async _handleDataPacket(request: HistoryNetworkContentRequest, packet: Packet) {
+  async _handleDataPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     try {
       switch (requestCode) {
@@ -439,11 +429,11 @@ export class PortalNetworkUTP extends BasicUtp {
       this.logger('Request Type Not Implemented')
     }
   }
-  async _handleResetPacket(request: HistoryNetworkContentRequest) {
+  async _handleResetPacket(request: ContentRequest) {
     const requestCode = request.requestCode
-    delete this.openHistoryNetworkRequests[requestCode]
+    delete this.openContentRequest[requestCode]
   }
-  async _handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
+  async _handleFinPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
       const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)

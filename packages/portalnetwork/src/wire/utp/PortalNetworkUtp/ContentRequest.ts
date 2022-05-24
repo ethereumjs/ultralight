@@ -4,10 +4,10 @@ import ContentWriter from '../Protocol/write/ContentWriter'
 import { sendSynPacket } from '../Packets/PacketSenders'
 import { RequestCode } from './PortalNetworkUTP'
 import { ConnectionState } from '../Socket'
+import { ProtocolId } from '../../../subprotocols'
 
-export type ContentRequest = HistoryNetworkContentRequest // , StateNetwork..., etc...
-
-export class HistoryNetworkContentRequest {
+export class ContentRequest {
+  protocolId: ProtocolId
   requestCode: RequestCode
   contentKey: Uint8Array
   contentKeys: Uint8Array[]
@@ -19,12 +19,14 @@ export class HistoryNetworkContentRequest {
   writer?: ContentWriter
 
   constructor(
+    protocolId: ProtocolId,
     requestCode: RequestCode,
     contentKey: Uint8Array[],
     socket: UtpSocket[],
     socketKey: string,
     content: Uint8Array[] | undefined[]
   ) {
+    this.protocolId = protocolId
     this.sockets = socket
     //@ts-ignore
     this.contentKeys = contentKey
