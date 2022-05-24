@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import debug from 'debug'
 import { Debugger } from 'debug'
 import { ProtocolId } from '..'
@@ -18,7 +18,7 @@ import { ContentLookup } from '../contentLookup'
 import { BaseProtocol } from '../protocol'
 import { HistoryNetworkContentTypes, HistoryNetworkContentKeyUnionType } from './types'
 import { getHistoryNetworkContentId, reassembleBlock } from './util'
-
+import * as rlp from 'rlp'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
@@ -108,17 +108,67 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  public historyNetworkContentLookup = async (
-    contentType: HistoryNetworkContentTypes,
-    blockHash: string
-  ) => {
-    const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: contentType,
+  public getBlockByHash = async (
+    blockHash: string,
+    includeTransactions: boolean
+  ): Promise<Block | undefined> => {
+    const headerContentKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 0,
       value: { chainId: 1, blockHash: fromHexString(blockHash) },
     })
-    const lookup = new ContentLookup(this, contentKey)
-    const res = await lookup.startLookup()
-    return res
+
+    const bodyContentKey = includeTransactions
+      ? HistoryNetworkContentKeyUnionType.serialize({
+          selector: 1,
+          value: { chainId: 1, blockHash: fromHexString(blockHash) },
+        })
+      : undefined
+    let header: any
+    let body: any
+    let block
+    try {
+      let lookup = new ContentLookup(this, headerContentKey)
+      header = await lookup.startLookup()
+      if (!header) {
+        undefined
+      }
+      if (!includeTransactions) {
+        body = rlp.encode([[], []])
+      } else {
+        lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
+        body = await lookup.startLookup()
+        return new Promise((resolve) => {
+          if (body) {
+            // Try assembling block
+            try {
+              block = reassembleBlock(header, body)
+              resolve(block)
+            } catch {}
+          } ///@ts-ignore
+          if (body && body.length === 2) {
+            // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
+            this.client.on('ContentAdded', (key, _type, content) => {
+              if (key === blockHash) {
+                //@ts-ignore
+                block = reassembleBlock(header, fromHexString(content))
+                this.client.removeAllListeners('ContentAdded')
+                resolve(block)
+              }
+            })
+            setTimeout(() => {
+              // Body lookup didn't return within 2 seconds so timeout and return header
+              this.client.removeAllListeners('ContentAdded')
+              block = reassembleBlock(header, rlp.encode([[], []]))
+              resolve(block)
+            }, 2000)
+          } else {
+            // Assume we weren't able to find the block body and just return the header
+            block = reassembleBlock(header, rlp.encode([[], []]))
+            resolve(block)
+          }
+        })
+      }
+    } catch {}
   }
 
   /**
@@ -166,10 +216,9 @@ export class HistoryProtocol extends BaseProtocol {
           this.logger(
             `Block Header for ${shortId(blockHash)} not found locally.  Querying network...`
           )
-          const serializedHeader = await this.historyNetworkContentLookup(0, blockHash)
+          const retrievedHeader = await this.getBlockByHash(blockHash, false)
           try {
-            reassembleBlock(serializedHeader as Uint8Array, value)
-            validBlock = true
+            if (retrievedHeader instanceof Block) validBlock = true
           } catch {}
         }
         if (validBlock) {

@@ -1,14 +1,11 @@
 import debug, { Debugger } from 'debug'
 import {
   PortalNetwork,
-  getHistoryNetworkContentId,
   ProtocolId,
-  reassembleBlock,
   HistoryNetworkContentKeyUnionType,
   ENR,
   fromHexString,
 } from 'portalnetwork'
-import * as rlp from 'rlp'
 import { addRLPSerializedBlock } from 'portalnetwork'
 import { isValidId } from './util'
 import { HistoryProtocol } from 'portalnetwork/src/subprotocols/history/history'
@@ -27,37 +24,9 @@ export class RPCManager {
       this.log(
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
-      // lookup block header in DB and return if found
-      const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
-      const bodylookupKey = includeTransactions && getHistoryNetworkContentId(1, blockHash, 1)
-      let header
-      let body
-      let block
       try {
-        header = await this._client.db.get(headerlookupKey)
-        body = includeTransactions ? await this._client.db.get(bodylookupKey) : rlp.encode([[], []])
-        block = reassembleBlock(
-          fromHexString(header),
-          typeof body === 'string' ? fromHexString(body) : body
-        )
-        this._client.metrics?.successfulContentLookups.inc()
-        return block
-      } catch (err: any) {
-        this.log(err.message)
-      }
-      // If block isn't in local DB, request block from network
-      try {
-        header = await this.protocol.historyNetworkContentLookup(0, blockHash)
-        if (!header) {
-          return 'Block not found'
-        }
-        body = includeTransactions
-          ? (await this.protocol.historyNetworkContentLookup(1, blockHash)) ?? rlp.encode([[], []])
-          : rlp.encode([[], []])
-        // TODO: Figure out why block body isn't coming back as Uint8Array
-        //@ts-ignore
-        block = reassembleBlock(header as Uint8Array, body)
-        return block
+        const block = await this.protocol.getBlockByHash(blockHash, includeTransactions)
+        return block ?? 'Block not found'
       } catch {
         return 'Block not found'
       }

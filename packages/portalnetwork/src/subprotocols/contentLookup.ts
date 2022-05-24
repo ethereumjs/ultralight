@@ -1,5 +1,5 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util'
 import { BaseProtocol } from './protocol'
@@ -35,8 +35,10 @@ export class ContentLookup {
     this.protocol.client.metrics?.totalContentLookups.inc()
     try {
       const res = await this.protocol.client.db.get(this.contentId)
-      return res
-    } catch {}
+      return fromHexString(res)
+    } catch (err) {
+      this.logger(err)
+    }
     this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer) => {
       try {
         const dist = distance(peer.nodeId, this.contentId)

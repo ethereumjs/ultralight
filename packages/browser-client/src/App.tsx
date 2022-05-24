@@ -22,15 +22,7 @@ import {
   Divider,
   ChakraProvider,
 } from '@chakra-ui/react'
-import {
-  getHistoryNetworkContentId,
-  PortalNetwork,
-  reassembleBlock,
-  ProtocolId,
-  ENR,
-  fromHexString,
-  log2Distance,
-} from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR, log2Distance } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
@@ -53,7 +45,7 @@ export const App = () => {
   const [enr, setENR] = React.useState<string>('')
   const [id, _setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
-  const [contentKey, setContentKey] = React.useState<string>(
+  const [blockHash, setBlockHash] = React.useState<string>(
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
@@ -137,10 +129,25 @@ export const App = () => {
       navigator.storage.persist()
     }
     let node: PortalNetwork
-    try {
-      node = await createNodeFromStorage()
-    } catch {
-      node = await createNodeFromScratch()
+    if (process.env.BINDADDRESS) {
+      node = await PortalNetwork.create({
+        proxyAddress: proxy,
+        db: LDB as any,
+        transport: TransportLayer.WEB,
+        //@ts-ignore
+        config: {
+          config: {
+            enrUpdate: true,
+            addrVotesToUpdateEnr: 1,
+          },
+        },
+      })
+    } else {
+      try {
+        node = await createNodeFromStorage()
+      } catch {
+        node = await createNodeFromScratch()
+      }
     }
 
     setPortal(node)
@@ -165,46 +172,22 @@ export const App = () => {
     portal?.storeNodeDetails()
   }, [])
 
-  async function handleFindContent(blockHash: string): Promise<Block | void> {
+  async function getBlockByHash(blockHash: string) {
     if (portal) {
       if (blockHash.slice(0, 2) !== '0x') {
-        setContentKey('')
+        setBlockHash('')
       } else {
         const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
         if (!protocol) return
-        const headerlookupKey = getHistoryNetworkContentId(1, blockHash, 0)
-        const bodylookupKey = getHistoryNetworkContentId(1, blockHash, 1)
-        let header: string = ''
-        let body
-        await protocol.historyNetworkContentLookup(0, blockHash)
-        try {
-          header = await portal.db.get(headerlookupKey)
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
-        await protocol.historyNetworkContentLookup(1, blockHash)
-        try {
-          body = await portal.db.get(bodylookupKey)
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
-        try {
-          const block = reassembleBlock(
-            fromHexString(header),
-            typeof body === 'string' ? fromHexString(body) : body
-          )
-          setBlock(block)
-          return block
-        } catch (err) {
-          portal.logger((err as any).message)
-        }
+        const block = await protocol.getBlockByHash(blockHash, true)
+        setBlock(block)
       }
     }
   }
 
   async function findParent(hash: string) {
-    setContentKey(hash)
-    handleFindContent(hash)
+    setBlockHash(hash)
+    getBlockByHash(hash)
     portal?.logger('Showing Block')
   }
 
@@ -212,7 +195,7 @@ export const App = () => {
     setModal(true)
     disclosure.onClose()
   }
-  const invalidHash = /([^0-z])+/.test(contentKey)
+  const invalidHash = /([^0-z])+/.test(blockHash)
 
   return (
     <ChakraProvider theme={theme}>
@@ -276,9 +259,9 @@ export const App = () => {
                 setPeerEnr={setPeerEnr}
                 handleClick={handleClick}
                 invalidHash={invalidHash}
-                handleFindContent={handleFindContent}
-                contentKey={contentKey}
-                setContentKey={setContentKey}
+                getBlockByHash={getBlockByHash}
+                blockHash={blockHash}
+                setBlockHash={setBlockHash}
                 findParent={findParent}
                 block={block}
                 peers={peers}

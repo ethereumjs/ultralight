@@ -34,8 +34,7 @@ export const getHistoryNetworkContentId = (
  */
 export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
   const decodedBody = rlp.decode(rawBody)
-  //@ts-ignore
-  return Block.fromValuesArray(
+  const block = Block.fromValuesArray(
     //@ts-ignore
     [
       rlp.decode(Buffer.from(rawHeader)),
@@ -43,6 +42,8 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
       (decodedBody as Buffer[])[1],
     ] as BlockBuffer
   )
+
+  return block
 }
 
 /**

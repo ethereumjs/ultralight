@@ -19,9 +19,9 @@ interface HistoryNetworkProps {
   findParent: (hash: string) => Promise<void>
   block: Block | undefined
   invalidHash: boolean
-  handleFindContent: (blockHash: string) => Promise<void | Block>
-  contentKey: string
-  setContentKey: Dispatch<SetStateAction<string>>
+  getBlockByHash: (blockHash: string) => Promise<void | Block>
+  blockHash: string
+  setBlockHash: Dispatch<SetStateAction<string>>
   peers: ENR[] | undefined
   sortedDistList: [number, string[]][]
 }
@@ -36,7 +36,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
 
   async function handleClick() {
     setIsLoading(true)
-    await props.handleFindContent(props.contentKey)
+    await props.getBlockByHash(props.blockHash)
     setTabIndex(1)
     setIsLoading(false)
   }
@@ -65,9 +65,9 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
           <Input
             bg="whiteAlpha.800"
             placeholder={'Block Hash'}
-            value={props.contentKey}
+            value={props.blockHash}
             onChange={(evt) => {
-              props.setContentKey(evt.target.value)
+              props.setBlockHash(evt.target.value)
             }}
           />
         </FormControl>

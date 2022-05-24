@@ -4,6 +4,7 @@ import { Debugger } from 'debug'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { ProtocolId } from '../../..'
 import { PortalNetwork } from '../../..'
+import { HistoryNetworkContentKeyUnionType } from '../../../subprotocols/history'
 import { HistoryProtocol } from '../../../subprotocols/history/history'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
@@ -468,12 +469,13 @@ export class PortalNetworkUTP {
   async handleFinPacket(request: HistoryNetworkContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
+      const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
       await (
         this.portal.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol
       ).addContentToHistory(
-        request.contentKey.chainId,
-        0,
-        toHexString(request.contentKey.blockHash),
+        contentKey.value.chainId,
+        contentKey.selector,
+        toHexString(contentKey.value.blockHash),
         content
       )
     }
