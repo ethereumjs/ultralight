@@ -92,7 +92,7 @@ export class UtpSocket extends EventEmitter {
     this.logger(
       `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
     )
-    await this.utp.send(this.remoteAddress, msg, ProtocolId.HistoryNetwork)
+    await this.utp.emit('Send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
     return msg
   }
 
