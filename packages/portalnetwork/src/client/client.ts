@@ -42,7 +42,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   private peerId: PeerId
   private supportsRendezvous: boolean
-  private unverifiedSessionCache: LRU<NodeId, Multiaddr>
+  private sessionCache: LRU<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -115,7 +115,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId
     this.supportsRendezvous = false
-    this.unverifiedSessionCache = new LRU({ max: 2500 })
+    this.sessionCache = new LRU({ max: 2500 })
 
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -146,18 +146,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (!enr) return
       await this.sendPortalNetworkMessage(enr, msg, protocolId, true)
     })
-    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
-      if (!verified) {
-        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
-        // corresponding to the node's observed IP/Port so that we can send outbound messages to
-        // those nodes later on if needed.  This is currently used by uTP when responding to
-        // FINDCONTENT requests fron nodes with invalid ENRs.
-        const peerId = await createPeerIdFromKeypair(enr.keypair)
-        this.unverifiedSessionCache.set(
-          enr.nodeId,
-          new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toB58String())
-        )
-      }
+    this.discv5.sessionService.on('established', (nodeAddr) => {
+      this.sessionCache.set(nodeAddr.nodeId, nodeAddr.socketAddr)
     })
 
     this.db = opts.db ?? level()
@@ -392,7 +382,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const nodeAddr = this.unverifiedSessionCache.get(enr.nodeId)
+      const nodeAddr = this.sessionCache.get(enr.nodeId)
       const res = await this.discv5.sendTalkReq(
         nodeAddr ?? enr,
         payload,
