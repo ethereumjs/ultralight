@@ -56,33 +56,29 @@ tape('Client unit tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve(pongResponse)
-    let res = await protocol.sendPing(remoteEnr)
-    st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
-    res = await protocol.sendPing('abc')
+    let res = await protocol.sendPing('abc')
     st.ok(res === undefined, 'received undefined when no valid PONG message received')
-
+    res = await protocol.sendPing(remoteEnr)
+    st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
     const payload = PingPongCustomDataType.serialize({ radius: BigInt(1) })
-    const pingMsg = PortalWireMessageType.serialize({
+    const msg = {
       selector: MessageCodes.PING,
       value: {
         enrSeq: node.discv5.enr.seq,
         customPayload: payload,
       },
-    })
+    }
     const decodedEnr = ENR.decodeTxt(remoteEnr)
     const nodeAddr = {
       socketAddr: decodedEnr.getLocationMultiaddr('udp'),
       nodeId: decodedEnr.nodeId,
     }
     protocol.sendPong = td.func<any>()
-    td.when(protocol.sendPong(nodeAddr, td.matchers.anything())).thenDo(() =>
+    td.when(protocol.sendPong(nodeAddr, fromHexString(ProtocolId.HistoryNetwork))).thenDo(() =>
       st.pass('correctly handled PING message')
     )
     protocol.updateRoutingTable = td.func<any>()
-    protocol.handlePing(nodeAddr, {
-      request: pingMsg,
-      protocol: ProtocolId.HistoryNetwork,
-    })
+    protocol.handlePing(nodeAddr, fromHexString(ProtocolId.HistoryNetwork), msg.value)
   })
 
   t.test('FINDNODES/NODES message handlers', async (st) => {
@@ -118,8 +114,8 @@ tape('Client unit tests', async (t) => {
     st.ok(res === undefined, 'received undefined when no valid NODES response received')
 
     node.sendPortalNetworkResponse = td.func<any>()
-    const findNodesMessageWithDistance = Uint8Array.from([2, 4, 0, 0, 0, 0, 0])
-    const findNodesMessageWithoutDistance = Uint8Array.from([2, 4, 0, 0, 0])
+    const findNodesMessageWithDistance = { distances: [2, 4, 0, 0, 0, 0, 0] }
+    const findNodesMessageWithoutDistance = { distances: [2, 4, 0, 0, 0] }
     node.discv5.enr.encode = td.func<any>()
     td.when(
       node.sendPortalNetworkResponse(
@@ -138,17 +134,15 @@ tape('Client unit tests', async (t) => {
     td.when(node.discv5.enr.encode()).thenReturn(Buffer.from([0, 1, 2]))
     protocol.handleFindNodes(
       { socketAddr: new Multiaddr(), nodeId: 'abc' },
-      {
-        request: findNodesMessageWithDistance,
-        protocol: ProtocolId.HistoryNetwork,
-      }
+
+      fromHexString(ProtocolId.HistoryNetwork),
+      findNodesMessageWithDistance
     )
     protocol.handleFindNodes(
       { socketAddr: new Multiaddr(), nodeId: 'abc' },
-      {
-        request: findNodesMessageWithoutDistance,
-        protocol: ProtocolId.HistoryNetwork,
-      }
+
+      fromHexString(ProtocolId.HistoryNetwork),
+      findNodesMessageWithoutDistance
     )
   })
 
@@ -179,11 +173,13 @@ tape('Client unit tests', async (t) => {
     ).thenResolve(Buffer.from(findContentResponse))
     const res = await protocol.sendFindContent(decodedEnr.nodeId, key)
     st.deepEqual(res.value, Buffer.from([97, 98, 99]), 'got correct response for content abc')
-    const findContentMessageWithNoContent = Buffer.from([4, 4, 0, 0, 0, 6])
-    const findContentMessageWithShortContent = Buffer.from([
-      4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179,
-      37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182,
-    ])
+    const findContentMessageWithNoContent = { contentKey: Uint8Array.from([4, 4, 0, 0, 0, 6]) }
+    const findContentMessageWithShortContent = {
+      contentKey: Uint8Array.from([
+        4, 4, 0, 0, 0, 0, 1, 0, 136, 233, 109, 69, 55, 190, 164, 217, 192, 93, 18, 84, 153, 7, 179,
+        37, 97, 211, 191, 49, 244, 90, 174, 115, 76, 220, 17, 159, 19, 64, 108, 182,
+      ]),
+    }
     td.when(
       node.sendPortalNetworkResponse(
         { socketAddr: new Multiaddr(), nodeId: 'ghi' },
@@ -202,18 +198,15 @@ tape('Client unit tests', async (t) => {
 
     await protocol.handleFindContent(
       { socketAddr: new Multiaddr(), nodeId: 'ghi' },
-      {
-        protocol: fromHexString('0x123456'),
-        request: findContentMessageWithNoContent,
-      }
+      Buffer.from('0x123456'),
+      fromHexString('0x123456'),
+      findContentMessageWithNoContent
     )
     await protocol.handleFindContent(
       { socketAddr: new Multiaddr(), nodeId: 'def' },
-      {
-        id: '12345',
-        protocol: fromHexString(ProtocolId.HistoryNetwork),
-        request: findContentMessageWithShortContent,
-      }
+      fromHexString(ProtocolId.HistoryNetwork),
+      ProtocolId.HistoryNetwork,
+      findContentMessageWithShortContent
     )
   })
 
