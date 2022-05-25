@@ -52,28 +52,28 @@ export abstract class BaseProtocol {
     this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${src.nodeId}`)
     switch (messageType) {
       case MessageCodes.PING:
-        this.handlePing(src, message)
+        this.handlePing(src, id, decoded as PingMessage)
         break
       case MessageCodes.PONG:
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
         this.metrics?.findNodesMessagesReceived.inc()
-        this.handleFindNodes(src, message)
+        this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
       case MessageCodes.NODES:
         this.logger(`NODES message not expected in TALKREQ`)
         break
       case MessageCodes.FINDCONTENT:
         this.metrics?.findContentMessagesReceived.inc()
-        this.handleFindContent(src, message)
+        this.handleFindContent(src, id, protocol, decoded as FindContentMessage)
         break
       case MessageCodes.CONTENT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
         break
       case MessageCodes.OFFER:
         this.metrics?.offerMessagesReceived.inc()
-        this.handleOffer(src, message)
+        this.handleOffer(src, id, decoded as OfferMessage)
         break
       case MessageCodes.ACCEPT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
