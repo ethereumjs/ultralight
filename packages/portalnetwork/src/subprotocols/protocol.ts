@@ -45,7 +45,10 @@ export abstract class BaseProtocol {
   }
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
+    const decoded = PortalWireMessageType.deserialize(message.request).value
+    const id = message.id
     const messageType = message.request[0]
+    const protocol = message.protocol
     this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${src.nodeId}`)
     switch (messageType) {
       case MessageCodes.PING:
