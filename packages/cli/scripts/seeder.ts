@@ -7,7 +7,12 @@ const args: any = yargs(hideBin(process.argv))
     .option('sourceFile', {
         describe: 'JSON file containing block data to feed into network',
         string: true,
-        demandOption: true
+        optional: true
+    })
+    .option('addBlockByHash', {
+      describe: 'specify a specific blockhash to add to the local node DB',
+      string: true,
+      optional: true
     })
     .option('rpcPort', {
         describe: 'RPC port of node',
@@ -33,11 +38,7 @@ const args: any = yargs(hideBin(process.argv))
       string: true,
       optional: true
     })
-  .option('utpTest', {
-    describe: 'run uTP tests',
-    boolean: true,
-    default: false
-    }).argv
+
 
 const main = async () => {
   let bootNode = Client.http({ port: args.rpcPort })
@@ -69,17 +70,12 @@ const main = async () => {
       await bootNode.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
     }
   }
-  if (args.blockHash) {
+  if (args.sourceFile && args.addBlockByHash) {
     await bootNode.request('portal_addBlockToHistory', [args.blockHash, blockData[args.blockHash].rlp])
   }
-  if (args.utpTest) {
-    for (let x = 1; x < args.numNodes; x++) {
-      const _client = Client.http({ port: args.rpcPort + x })
-      const enr = await _client.request('portal_nodeEnr', [])
-      const content = [blocks[0][0], blocks[0][0], blocks[1][0], blocks[1][0]]
-      await _client.request('portal_utp_find_content_test', [bootNodeEnr.result])
-      await bootNode.request('portal_utp_offer_test', [enr.result, content, [0, 1, 0, 1]])
-    }
+  if (args.blockHash) {
+    const _client = Client.http({ port: args.rpcPort + 1 })
+    await _client.request('eth_getBlockByHash', [args.blockHash, true])
   }
 }
 

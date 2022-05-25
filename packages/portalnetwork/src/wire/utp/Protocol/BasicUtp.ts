@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { ProtocolId } from '../../../'
+import { EventEmitter } from 'events'
 import { Packet } from '../Packets'
 import {
   sendSynPacket,
@@ -14,11 +14,9 @@ import { UtpSocket } from '../Socket'
 import ContentReader from './read/ContentReader'
 import ContentWriter from './write/ContentWriter'
 
-export class BasicUtp {
-  send: (peerId: string, msg: Buffer, protocolId: ProtocolId) => Promise<void>
-
-  constructor(send: (peerId: string, msg: Buffer, protocolId: ProtocolId) => Promise<void>) {
-    this.send = send
+export class BasicUtp extends EventEmitter {
+  constructor() {
+    super()
   }
 
   createNewSocket(
