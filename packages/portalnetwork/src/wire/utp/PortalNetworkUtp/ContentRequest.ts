@@ -28,7 +28,6 @@ export class ContentRequest {
   ) {
     this.protocolId = protocolId
     this.sockets = socket
-    //@ts-ignore
     this.contentKeys = contentKey
     this.requestCode = requestCode
     this.contentKey = this.contentKeys[0]

@@ -1,6 +1,5 @@
 import { Debugger } from 'debug'
 import { EventEmitter } from 'events'
-import { ProtocolId } from '../../../'
 import { Packet } from '../Packets'
 import {
   sendSynPacket,

@@ -26,7 +26,6 @@ import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
-import { HistoryNetworkContentKey } from '../subprotocols/history'
 
 const level = require('level-mem')
 
