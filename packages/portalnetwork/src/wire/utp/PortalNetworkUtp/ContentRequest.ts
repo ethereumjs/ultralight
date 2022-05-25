@@ -21,14 +21,14 @@ export class ContentRequest {
   constructor(
     protocolId: ProtocolId,
     requestCode: RequestCode,
-    contentKey: Uint8Array[],
+    contentKeys: Uint8Array[],
     socket: UtpSocket[],
     socketKey: string,
     content: Uint8Array[] | undefined[]
   ) {
     this.protocolId = protocolId
     this.sockets = socket
-    this.contentKeys = contentKey
+    this.contentKeys = contentKeys
     this.requestCode = requestCode
     this.contentKey = this.contentKeys[0]
     this.content = content[0]
