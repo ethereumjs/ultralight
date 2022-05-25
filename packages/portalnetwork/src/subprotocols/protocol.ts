@@ -517,8 +517,7 @@ export abstract class BaseProtocol {
 
   /**
    *
-   * This method maintains the liveness of peers in the subprotocol routing tables.  If a PONG message is received from
-   * an unknown peer for a given subprotocol, that peer is added to the corresponding subprotocol routing table.
+   * This method maintains the liveness of peers in the subprotocol routing tables.
    * @param srcId nodeId of peer being updated in subprotocol routing table
    * @param protocolId subprotocol Id of routing table being updated
    * @param customPayload payload of the PING/PONG message being decoded
