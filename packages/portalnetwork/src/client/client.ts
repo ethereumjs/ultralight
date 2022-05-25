@@ -26,6 +26,7 @@ import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
+import LRU from 'lru-cache'
 
 const level = require('level-mem')
 
@@ -40,6 +41,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   private peerId: PeerId
   private supportsRendezvous: boolean
+  private sessionCache: LRU<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -112,6 +114,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId
     this.supportsRendezvous = false
+    this.sessionCache = new LRU({ max: 2500 })
+
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
@@ -122,6 +126,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
       }
     }
+
+    // Event handling
+    // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP = new PortalNetworkUTP(this.logger)
@@ -137,6 +144,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
       if (!enr) return
       await this.sendPortalNetworkMessage(enr, msg, protocolId, true)
+    })
+    this.discv5.sessionService.on('established', (nodeAddr) => {
+      this.sessionCache.set(nodeAddr.nodeId, nodeAddr.socketAddr)
     })
 
     this.db = opts.db ?? level()
@@ -371,7 +381,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const res = await this.discv5.sendTalkReq(enr, payload, fromHexString(messageProtocol))
+      const nodeAddr = this.sessionCache.get(enr.nodeId)
+      const res = await this.discv5.sendTalkReq(
+        nodeAddr ?? enr,
+        payload,
+        fromHexString(messageProtocol)
+      )
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)
