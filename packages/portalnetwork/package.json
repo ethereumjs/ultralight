@@ -19,7 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "@chainsafe/as-sha256": "^0.2.4",
-    "@chainsafe/discv5": "acolytec3/discv5#31ab1f7",
+    "@chainsafe/discv5": "^0.8.0",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
     "@chainsafe/ssz": "^0.9.1",
     "@ethereumjs/block": "^3.6.0",
