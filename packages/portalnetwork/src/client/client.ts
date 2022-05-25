@@ -244,7 +244,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     msg: ITalkReqMessage,
     packetBuffer: Buffer
   ) => {
-    await this.sendPortalNetworkResponse(src, msg, new Uint8Array())
+    await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     await this.uTP.handleUtpPacket(packetBuffer, srcId)
   }
 
@@ -381,9 +381,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   public sendPortalNetworkResponse = async (
     src: INodeAddress,
-    message: ITalkReqMessage,
+    requestId: bigint,
     payload: Uint8Array
   ) => {
-    this.discv5.sendTalkResp(src, message.id, payload)
+    this.discv5.sendTalkResp(src, requestId, payload)
   }
 }
