@@ -115,7 +115,8 @@ export abstract class BaseProtocol {
         this.logger(`Received PONG from ${shortId(enr.nodeId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
-        this.updateRoutingTable(enr.nodeId, true, pongMessage.customPayload)
+        // Received a PONG message so node is reachable, add to routing table
+        this.updateRoutingTable(enr, true, pongMessage.customPayload)
         return pongMessage
       } else {
         this.updateRoutingTable(enr.nodeId, false)
@@ -517,8 +518,7 @@ export abstract class BaseProtocol {
 
   /**
    *
-   * This method maintains the liveness of peers in the subprotocol routing tables.  If a PONG message is received from
-   * an unknown peer for a given subprotocol, that peer is added to the corresponding subprotocol routing table.
+   * This method maintains the liveness of peers in the subprotocol routing tables.
    * @param srcId nodeId of peer being updated in subprotocol routing table
    * @param protocolId subprotocol Id of routing table being updated
    * @param customPayload payload of the PING/PONG message being decoded
@@ -533,9 +533,11 @@ export abstract class BaseProtocol {
     }
     try {
       if (!enr) {
+        // See if Discv5 has an ENR for this node if not provided
         enr = this.client.discv5.getKadValue(nodeId)
       }
       if (enr) {
+        // Only add node to the routing table if we have an ENR
         this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
         this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
       }

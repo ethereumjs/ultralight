@@ -1,5 +1,6 @@
 import {
   createKeypairFromPeerId,
+  createPeerIdFromKeypair,
   Discv5,
   ENR,
   IDiscv5CreateOptions,
@@ -26,6 +27,7 @@ import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
+import LRU from 'lru-cache'
 
 const level = require('level-mem')
 
@@ -40,6 +42,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   private peerId: PeerId
   private supportsRendezvous: boolean
+  private unverifiedSessionCache: LRU<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -112,6 +115,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId
     this.supportsRendezvous = false
+    this.unverifiedSessionCache = new LRU({ max: 2500 })
+
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
@@ -122,6 +127,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
       }
     }
+
+    // Event handling
+    // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP = new PortalNetworkUTP(this.logger)
@@ -137,6 +145,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
       if (!enr) return
       await this.sendPortalNetworkMessage(enr, msg, protocolId, true)
+    })
+    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
+      if (!verified) {
+        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
+        // corresponding to the node's observed IP/Port so that we can send outbound messages to
+        // those nodes later on if needed.  This is currently used by uTP when responding to
+        // FINDCONTENT requests fron nodes with invalid ENRs.
+        const peerId = await createPeerIdFromKeypair(enr.keypair)
+        this.unverifiedSessionCache.set(
+          enr.nodeId,
+          new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toB58String())
+        )
+      }
     })
 
     this.db = opts.db ?? level()
@@ -371,7 +392,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const res = await this.discv5.sendTalkReq(enr, payload, fromHexString(messageProtocol))
+      const nodeAddr = this.unverifiedSessionCache.get(enr.nodeId)
+      const res = await this.discv5.sendTalkReq(
+        nodeAddr ?? enr,
+        payload,
+        fromHexString(messageProtocol)
+      )
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)

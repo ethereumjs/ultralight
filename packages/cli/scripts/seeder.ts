@@ -33,11 +33,11 @@ const args: any = yargs(hideBin(process.argv))
         boolean: true,
         default: true
     })
-    .option('blockHash', {
-      describe: 'specify a block hash to send to other nodes',
+    .option('requestblockHash', {
+      describe: 'specify a block hash to request from other nodes',
       string: true,
       optional: true
-    })
+    }).argv
 
 
 const main = async () => {
@@ -71,11 +71,11 @@ const main = async () => {
     }
   }
   if (args.sourceFile && args.addBlockByHash) {
-    await bootNode.request('portal_addBlockToHistory', [args.blockHash, blockData[args.blockHash].rlp])
+    await bootNode.request('portal_addBlockToHistory', [args.addBlockByHash, blockData[args.addBlockByHash].rlp])
   }
-  if (args.blockHash) {
+  if (args.requestblockHash) {
     const _client = Client.http({ port: args.rpcPort + 1 })
-    await _client.request('eth_getBlockByHash', [args.blockHash, true])
+    await _client.request('eth_getBlockByHash', [args.requestblockHash, true])
   }
 }
 
