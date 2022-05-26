@@ -20,6 +20,7 @@ import {
   PingPongCustomDataType,
   PongMessage,
   PortalWireMessageType,
+  connectionIdType,
 } from '../wire'
 import { randUint16, MAX_PACKET_SIZE } from '../wire/utp'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
@@ -45,10 +46,12 @@ export abstract class BaseProtocol {
   }
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
-    const decoded = PortalWireMessageType.deserialize(message.request).value
     const id = message.id
-    const messageType = message.request[0]
     const protocol = message.protocol
+    const request = message.request
+    const deserialized = PortalWireMessageType.deserialize(request)
+    const decoded = deserialized.value
+    const messageType = deserialized.selector
     this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${src.nodeId}`)
     switch (messageType) {
       case MessageCodes.PING:
@@ -453,7 +456,6 @@ export abstract class BaseProtocol {
               })
               this.client.sendPortalNetworkResponse(
                 src,
-
                 requestId,
                 Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
               )
@@ -478,7 +480,6 @@ export abstract class BaseProtocol {
       this.logger(Uint8Array.from(value))
       this.client.sendPortalNetworkResponse(
         src,
-
         requestId,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )
@@ -498,16 +499,14 @@ export abstract class BaseProtocol {
         RequestCode.FOUNDCONTENT_WRITE,
         [value]
       )
-      const idBuffer = Buffer.alloc(2)
-      idBuffer.writeUInt16BE(_id, 0)
-      const id = Uint8Array.from(idBuffer)
+
+      const id = connectionIdType.serialize(_id)
       this.logger(
         `Sending FOUND_CONTENT message with CONNECTION ID: ${_id}, waiting for uTP SYN Packet`
       )
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendPortalNetworkResponse(
         src,
-
         requestId,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )

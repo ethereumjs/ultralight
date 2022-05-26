@@ -68,7 +68,7 @@ export class HistoryProtocol extends BaseProtocol {
         const decoded = ContentMessageType.deserialize(res.slice(1))
         switch (decoded.selector) {
           case 0: {
-            const id = Buffer.from(decoded.value as Uint8Array).readUInt16BE(0)
+            const id = connectionIdType.deserialize(decoded.value as Uint8Array)
             this.logger(`received uTP Connection ID ${id}`)
             await this.client.uTP.handleNewHistoryNetworkRequest(
               [key],
