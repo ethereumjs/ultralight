@@ -148,6 +148,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       if (!verified) {
+        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
+        // corresponding to the node's observed IP/Port so that we can send outbound messages to
+        // those nodes later on if needed.  This is currently used by uTP when responding to
+        // FINDCONTENT requests fron nodes with invalid ENRs.
         const peerId = await createPeerIdFromKeypair(enr.keypair)
         this.unverifiedSessionCache.set(
           enr.nodeId,
