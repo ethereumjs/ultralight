@@ -8,6 +8,7 @@ import { PortalNetwork } from '../../client'
 import { PortalNetworkMetrics } from '../../client/types'
 import { shortId } from '../../util'
 import {
+  connectionIdType,
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
@@ -70,7 +71,7 @@ export class HistoryProtocol extends BaseProtocol {
           case 0: {
             const id = connectionIdType.deserialize(decoded.value as Uint8Array)
             this.logger(`received uTP Connection ID ${id}`)
-            await this.client.uTP.handleNewHistoryNetworkRequest(
+            await this.client.uTP.handleNewRequest(
               [key],
               dstId,
               id,

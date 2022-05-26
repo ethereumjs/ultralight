@@ -235,9 +235,9 @@ tape('Client unit tests', async (t) => {
       )
     ).thenResolve(Buffer.from(acceptResponse))
 
-    node.uTP.handleNewHistoryNetworkRequest = td.func<any>()
+    node.uTP.handleNewRequest = td.func<any>()
     td.when(
-      node.uTP.handleNewHistoryNetworkRequest(
+      node.uTP.handleNewRequest(
         td.matchers.anything(),
         td.matchers.contains('abc'),
         td.matchers.anything(),

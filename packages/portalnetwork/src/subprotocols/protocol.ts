@@ -314,7 +314,7 @@ export abstract class BaseProtocol {
             })
           )
 
-          await this.client.uTP.handleNewHistoryNetworkRequest(
+          await this.client.uTP.handleNewRequest(
             requestedKeys,
             dstId,
             id,
@@ -392,7 +392,7 @@ export abstract class BaseProtocol {
 
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
-    await this.client.uTP.handleNewHistoryNetworkRequest(
+    await this.client.uTP.handleNewRequest(
       desiredContentKeys,
       src.nodeId,
       id,
@@ -492,7 +492,7 @@ export abstract class BaseProtocol {
       )
       this.logger(`Generating Random Connection Id...`)
       const _id = randUint16()
-      await this.client.uTP.handleNewHistoryNetworkRequest(
+      await this.client.uTP.handleNewRequest(
         [decodedContentMessage.contentKey],
         src.nodeId,
         _id,
