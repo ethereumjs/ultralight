@@ -606,12 +606,16 @@ export abstract class BaseProtocol {
   }
 
   /**
-   * Adds a bootnode which triggers a `findNodes` request to the Bootnode tp popute the routing table
+   * Adds a bootnode which triggers a `findNodes` request to the Bootnode to populate the routing table
    * @param bootnode `string` encoded ENR of a bootnode
    * @param protocolId network ID of the subprotocol routing table to add the bootnode to
    */
   public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
+    if (enr.nodeId === this.client.discv5.enr.nodeId) {
+      // Disregard attempts to add oneself as a bootnode
+      return
+    }
     const distancesSought = []
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256
