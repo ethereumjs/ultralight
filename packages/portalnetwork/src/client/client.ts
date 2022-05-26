@@ -392,7 +392,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const nodeAddr = this.sessionCache.get(enr.nodeId)
+      const nodeAddr = this.unverifiedSessionCache.get(enr.nodeId)
       const res = await this.discv5.sendTalkReq(
         nodeAddr ?? enr,
         payload,
