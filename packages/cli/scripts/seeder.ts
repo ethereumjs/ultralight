@@ -37,7 +37,7 @@ const args: any = yargs(hideBin(process.argv))
       describe: 'specify a block hash to send to other nodes',
       string: true,
       optional: true
-    })
+    }).argv
 
 
 const main = async () => {
@@ -71,7 +71,7 @@ const main = async () => {
     }
   }
   if (args.sourceFile && args.addBlockByHash) {
-    await bootNode.request('portal_addBlockToHistory', [args.blockHash, blockData[args.blockHash].rlp])
+    await bootNode.request('portal_addBlockToHistory', [args.addBlockByHash, blockData[args.addBlockByHash].rlp])
   }
   if (args.blockHash) {
     const _client = Client.http({ port: args.rpcPort + 1 })

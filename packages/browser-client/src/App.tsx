@@ -138,7 +138,7 @@ export const App = () => {
         config: {
           config: {
             enrUpdate: true,
-            addrVotesToUpdateEnr: 1,
+            addrVotesToUpdateEnr: 3,
           },
         },
       })

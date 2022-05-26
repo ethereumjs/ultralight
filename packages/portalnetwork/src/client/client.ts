@@ -1,5 +1,6 @@
 import {
   createKeypairFromPeerId,
+  createPeerIdFromKeypair,
   Discv5,
   ENR,
   IDiscv5CreateOptions,
@@ -41,7 +42,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListener?: ReturnType<typeof setInterval>
   private peerId: PeerId
   private supportsRendezvous: boolean
-  private sessionCache: LRU<NodeId, Multiaddr>
+  private unverifiedSessionCache: LRU<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -114,7 +115,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId
     this.supportsRendezvous = false
-    this.sessionCache = new LRU({ max: 2500 })
+    this.unverifiedSessionCache = new LRU({ max: 2500 })
 
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -145,8 +146,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (!enr) return
       await this.sendPortalNetworkMessage(enr, msg, protocolId, true)
     })
-    this.discv5.sessionService.on('established', (nodeAddr) => {
-      this.sessionCache.set(nodeAddr.nodeId, nodeAddr.socketAddr)
+    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
+      if (!verified) {
+        const peerId = await createPeerIdFromKeypair(enr.keypair)
+        this.unverifiedSessionCache.set(
+          enr.nodeId,
+          new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toB58String())
+        )
+      }
     })
 
     this.db = opts.db ?? level()
