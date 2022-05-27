@@ -36,14 +36,26 @@ tape('Validate accumulator updates', (t) => {
   const currentEpoch = accumulator.currentEpoch
   const tree = EpochAccumulator.toView(currentEpoch)
 
-  const proof = tree.createProof([
+  let proof = tree.createProof([
     [1, 'blockHash'],
     [1, 'totalDifficulty'],
   ])
 
   t.ok(
     accumulator.verifyInclusionProof(proof, block1Header, 1),
-    'validated multiproof for block 1 header record'
+    'validated multiproof for block 1 header record in current epoch'
+  )
+
+  proof = HeaderAccumulatorType.toView(accumulator).createProof([
+    ['currentEpoch', 1, 'blockHash'],
+    ['currentEpoch', 1, 'totalDifficulty'],
+  ])
+
+  const reconstructedAccumulator = HeaderAccumulatorType.createFromProof(proof)
+  t.equal(
+    reconstructedAccumulator.currentEpoch.get(1).totalDifficulty,
+    BigInt(block1Header.difficulty.toNumber()),
+    'validated multiproof for Block 1 from header accumulator'
   )
 
   t.end()
