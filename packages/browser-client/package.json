@@ -2,13 +2,14 @@
   "name": "browser-client",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "electron/main.ts",
   "scripts": {
     "start-local": "BINDADDRESS=127.0.0.1 webpack serve",
     "start-testnet": "webpack serve",
     "build": "webpack",
     "mobile-dev": "CAP_ENV=liveReload npx cap run android",
-    "build-debug-apk": "npx cap run android"
+    "build-debug-apk": "npx cap run android",
+    "start-electron": "electron ."
   },
   "author": "",
   "license": "MIT",
@@ -30,6 +31,7 @@
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
     "css-loader": "^6.7.1",
+    "electron": "^19.0.1",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.0",
     "path": "^0.12.7",
