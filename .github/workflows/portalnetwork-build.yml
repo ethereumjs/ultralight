@@ -35,6 +35,13 @@ jobs:
       - run: jq -r '.workspaces |= .[0:2]' package.json > package.json
         working-directory: ${{ github.workspace }}
 
+      - name: Get packages
+        id: vars
+        run: echo ::set-output name=package::$(cat package.json)
+        
+      - name: Test output
+        run: echo ${{ steps.vars.outputs.package }}
+
       - run: cat package.json
         working-directory: ${{ github.workspace }}
 
