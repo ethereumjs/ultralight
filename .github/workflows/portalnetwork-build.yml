@@ -7,7 +7,11 @@ on:
     types: [opened, reopened, synchronize]
 
 env:
-  cwd: ${{github.workspace}}
+  cwd: ${{github.workspace}}/packages/portalnetwork
+
+defaults:
+  run:
+    working-directory: packages/portalnetwork
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -27,20 +31,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-
-      - name: Remove unused packages from package.json
-        uses: sergeysova/jq-action@v2
-        with:
-          cmd: "jq -r '.workspaces |= .[0:2]' package.json > package.json"
-      
-      - name: Show package.json
-        run: cat package.json
-        working-directory: ${{ github.workspace }}
-
-
-      - name: Test output
-        run: echo ${{ steps.vars.outputs.package }}
-        working-directory: ${{ github.workspace }}
 
       - run: npm i
         working-directory: ${{ github.workspace }}
