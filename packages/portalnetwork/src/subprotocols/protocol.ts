@@ -20,6 +20,7 @@ import {
   PingPongCustomDataType,
   PongMessage,
   PortalWireMessageType,
+  connectionIdType,
 } from '../wire'
 import { randUint16, MAX_PACKET_SIZE } from '../wire/utp'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
@@ -45,32 +46,37 @@ export abstract class BaseProtocol {
   }
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
-    const messageType = message.request[0]
+    const id = message.id
+    const protocol = message.protocol
+    const request = message.request
+    const deserialized = PortalWireMessageType.deserialize(request)
+    const decoded = deserialized.value
+    const messageType = deserialized.selector
     this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${src.nodeId}`)
     switch (messageType) {
       case MessageCodes.PING:
-        this.handlePing(src, message)
+        this.handlePing(src, id, decoded as PingMessage)
         break
       case MessageCodes.PONG:
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
         this.metrics?.findNodesMessagesReceived.inc()
-        this.handleFindNodes(src, message)
+        this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
       case MessageCodes.NODES:
         this.logger(`NODES message not expected in TALKREQ`)
         break
       case MessageCodes.FINDCONTENT:
         this.metrics?.findContentMessagesReceived.inc()
-        this.handleFindContent(src, message)
+        this.handleFindContent(src, id, protocol, decoded as FindContentMessage)
         break
       case MessageCodes.CONTENT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
         break
       case MessageCodes.OFFER:
         this.metrics?.offerMessagesReceived.inc()
-        this.handleOffer(src, message)
+        this.handleOffer(src, id, decoded as OfferMessage)
         break
       case MessageCodes.ACCEPT:
         this.logger(`ACCEPT message not expected in TALKREQ`)
@@ -126,13 +132,10 @@ export abstract class BaseProtocol {
       if (this.routingTable.getValue(enr.nodeId)) {
         this.updateRoutingTable(enr, false)
       }
-      return undefined
     }
   }
 
-  private handlePing = (src: INodeAddress, message: ITalkReqMessage) => {
-    const decoded = PortalWireMessageType.deserialize(message.request)
-    const pingMessage = decoded.value as PingMessage
+  private handlePing = (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
       this.updateRoutingTable(src.nodeId, true, pingMessage.customPayload)
@@ -140,10 +143,10 @@ export abstract class BaseProtocol {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
       this.routingTable.updateRadius(src.nodeId, radius)
     }
-    this.sendPong(src, message)
+    this.sendPong(src, id)
   }
 
-  private sendPong = async (src: INodeAddress, message: ITalkReqMessage) => {
+  private sendPong = async (src: INodeAddress, requestId: bigint) => {
     const payload = {
       enrSeq: this.client.discv5.enr.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
@@ -152,7 +155,7 @@ export abstract class BaseProtocol {
       selector: MessageCodes.PONG,
       value: payload,
     })
-    this.client.sendPortalNetworkResponse(src, message, Buffer.from(pongMsg))
+    this.client.sendPortalNetworkResponse(src, requestId, Buffer.from(pongMsg))
   }
 
   /**
@@ -207,11 +210,8 @@ export abstract class BaseProtocol {
     }
   }
 
-  private handleFindNodes = (src: INodeAddress, message: ITalkReqMessage) => {
-    const decoded = PortalWireMessageType.deserialize(message.request)
+  private handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
     this.logger(`Received FINDNODES request from ${shortId(src.nodeId)}`)
-    this.logger(decoded)
-    const payload = decoded.value as FindNodesMessage
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
         total: 0,
@@ -246,10 +246,10 @@ export abstract class BaseProtocol {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this.client.sendPortalNetworkResponse(src, message, encodedPayload)
+      this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
-      this.client.sendPortalNetworkResponse(src, message, Buffer.from([]))
+      this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
     }
   }
 
@@ -313,7 +313,7 @@ export abstract class BaseProtocol {
             })
           )
 
-          await this.client.uTP.handleNewHistoryNetworkRequest(
+          await this.client.uTP.handleNewRequest(
             requestedKeys,
             dstId,
             id,
@@ -329,10 +329,7 @@ export abstract class BaseProtocol {
     }
   }
 
-  private handleOffer = async (src: INodeAddress, message: ITalkReqMessage) => {
-    const decoded = PortalWireMessageType.deserialize(message.request)
-    this.logger(decoded)
-    const msg = decoded.value as OfferMessage
+  private handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger(
       `Received OFFER request from ${shortId(src.nodeId)} with ${
         msg.contentKeys.length
@@ -358,24 +355,24 @@ export abstract class BaseProtocol {
           if (offerAccepted) {
             this.logger(`Accepting an OFFER`)
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
-            this.sendAccept(src, message, contentIds, desiredKeys)
+            this.sendAccept(src, requestId, contentIds, desiredKeys)
           } else {
             this.logger(`Declining an OFFER since no interesting content`)
-            this.client.sendPortalNetworkResponse(src, message, Buffer.from([]))
+            this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
           }
         } catch {
           this.logger(`Something went wrong handling offer message`)
           // Send empty response if something goes wrong parsing content keys
-          this.client.sendPortalNetworkResponse(src, message, Buffer.from([]))
+          this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
         }
         if (!offerAccepted) {
           this.logger('We already have all this content')
-          this.client.sendPortalNetworkResponse(src, message, Buffer.from([]))
+          this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
         }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
-        this.client.sendPortalNetworkResponse(src, message, Buffer.from([]))
+        this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
@@ -384,7 +381,7 @@ export abstract class BaseProtocol {
 
   private sendAccept = async (
     src: INodeAddress,
-    message: ITalkReqMessage,
+    requestId: bigint,
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[]
   ) => {
@@ -394,7 +391,7 @@ export abstract class BaseProtocol {
 
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
-    await this.client.uTP.handleNewHistoryNetworkRequest(
+    await this.client.uTP.handleNewRequest(
       desiredContentKeys,
       src.nodeId,
       id,
@@ -412,14 +409,17 @@ export abstract class BaseProtocol {
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    await this.client.sendPortalNetworkResponse(src, message, Buffer.from(encodedPayload))
+    await this.client.sendPortalNetworkResponse(src, requestId, Buffer.from(encodedPayload))
   }
 
-  private handleFindContent = async (src: INodeAddress, message: ITalkReqMessage) => {
+  private handleFindContent = async (
+    src: INodeAddress,
+    requestId: bigint,
+    protocol: Buffer,
+    decodedContentMessage: FindContentMessage
+  ) => {
     this.metrics?.contentMessagesSent.inc()
-    const decoded = PortalWireMessageType.deserialize(message.request)
     this.logger(`Received FINDCONTENT request from ${shortId(src.nodeId)}`)
-    const decodedContentMessage = decoded.value as FindContentMessage
     //Check to see if value in content db
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
@@ -429,44 +429,39 @@ export abstract class BaseProtocol {
       this.logger(`Error retrieving content -- ${err.toString()}`)
     }
     if (value.length === 0) {
-      switch (toHexString(message.protocol)) {
-        case ProtocolId.HistoryNetwork:
-          {
-            // Discv5 calls for maximum of 16 nodes per NODES message
-            const ENRs = this.routingTable.nearest(lookupKey, 16)
-            const encodedEnrs = ENRs.map((enr) => {
-              // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
-              // contentId than this node
-              return enr.nodeId !== src.nodeId &&
-                distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
-                ? enr.encode()
-                : undefined
-            }).filter((enr) => enr !== undefined)
-            if (encodedEnrs.length > 0) {
-              this.logger(`Found ${encodedEnrs.length} closer to content than us`)
-              // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-              while (encodedEnrs.flat().length > 1200) {
-                // Remove ENRs until total ENRs less than 1200 bytes
-                encodedEnrs.pop()
-              }
-              const payload = ContentMessageType.serialize({
-                selector: 2,
-                value: encodedEnrs as Buffer[],
-              })
-              this.client.sendPortalNetworkResponse(
-                src,
-
-                message,
-                Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
-              )
-            } else {
-              this.logger(`Found no ENRs closer to content than us`)
-              this.client.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
-            }
+      if (toHexString(protocol) === this.protocolId) {
+        // Discv5 calls for maximum of 16 nodes per NODES message
+        const ENRs = this.routingTable.nearest(lookupKey, 16)
+        const encodedEnrs = ENRs.map((enr) => {
+          // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
+          // contentId than this node
+          return enr.nodeId !== src.nodeId &&
+            distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
+            ? enr.encode()
+            : undefined
+        }).filter((enr) => enr !== undefined)
+        if (encodedEnrs.length > 0) {
+          this.logger(`Found ${encodedEnrs.length} closer to content than us`)
+          // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
+          while (encodedEnrs.flat().length > 1200) {
+            // Remove ENRs until total ENRs less than 1200 bytes
+            encodedEnrs.pop()
           }
-          break
-        default:
-          this.client.sendPortalNetworkResponse(src, message, Uint8Array.from([]))
+          const payload = ContentMessageType.serialize({
+            selector: 2,
+            value: encodedEnrs as Buffer[],
+          })
+          this.client.sendPortalNetworkResponse(
+            src,
+            requestId,
+            Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
+          )
+        } else {
+          this.logger(`Found no ENRs closer to content than us`)
+          this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
+        }
+      } else {
+        this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
@@ -480,8 +475,7 @@ export abstract class BaseProtocol {
       this.logger(Uint8Array.from(value))
       this.client.sendPortalNetworkResponse(
         src,
-
-        message,
+        requestId,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )
     } else {
@@ -493,24 +487,22 @@ export abstract class BaseProtocol {
       )
       this.logger(`Generating Random Connection Id...`)
       const _id = randUint16()
-      await this.client.uTP.handleNewHistoryNetworkRequest(
+      await this.client.uTP.handleNewRequest(
         [decodedContentMessage.contentKey],
         src.nodeId,
         _id,
         RequestCode.FOUNDCONTENT_WRITE,
         [value]
       )
-      const idBuffer = Buffer.alloc(2)
-      idBuffer.writeUInt16BE(_id, 0)
-      const id = Uint8Array.from(idBuffer)
+
+      const id = connectionIdType.serialize(_id)
       this.logger(
         `Sending FOUND_CONTENT message with CONNECTION ID: ${_id}, waiting for uTP SYN Packet`
       )
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendPortalNetworkResponse(
         src,
-
-        message,
+        requestId,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )
     }
