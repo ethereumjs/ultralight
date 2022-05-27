@@ -34,9 +34,9 @@ jobs:
 
       - name: Remove unused packages from package.json
         uses: sergeysova/jq-action@v2
-        working-directory: ${{ github.workspace }}
         with:
           cmd: "jq -r '.workspaces |= .[0:2]' package.json > package.json"
+        working-directory: ${{ github.workspace }}
       
       - name: Show package.json
         run: cat package.json
