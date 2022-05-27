@@ -57,7 +57,7 @@ tape('Client unit tests', async (t) => {
       )
     ).thenResolve(pongResponse)
     let res = await protocol.sendPing('abc')
-    st.ok(res === undefined, 'received undefined when no valid PONG message received')
+    st.ok(res === undefined, 'received undefined when called with invalid ENR/nodeId')
     res = await protocol.sendPing(remoteEnr)
     st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
     const payload = PingPongCustomDataType.serialize({ radius: BigInt(1) })
@@ -74,11 +74,9 @@ tape('Client unit tests', async (t) => {
       nodeId: decodedEnr.nodeId,
     }
     protocol.sendPong = td.func<any>()
-    td.when(protocol.sendPong(nodeAddr, fromHexString(ProtocolId.HistoryNetwork))).thenDo(() =>
-      st.pass('correctly handled PING message')
-    )
+    td.when(protocol.sendPong(nodeAddr, 1n)).thenDo(() => st.pass('correctly handled PING message'))
     protocol.updateRoutingTable = td.func<any>()
-    protocol.handlePing(nodeAddr, fromHexString(ProtocolId.HistoryNetwork), msg.value)
+    protocol.handlePing(nodeAddr, 1n, msg.value)
   })
 
   t.test('FINDNODES/NODES message handlers', async (st) => {
@@ -104,12 +102,11 @@ tape('Client unit tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve(findNodesResponse)
-    let res = await protocol.sendFindNodes(decodedEnr.nodeId, [0, 1, 2], ProtocolId.HistoryNetwork)
+    let res = await protocol.sendFindNodes(decodedEnr.nodeId, [0, 1, 2])
     st.ok(res.total === 1, 'received 1 ENR from FINDNODES')
     res = await protocol.sendFindNodes(
       'c875efa288b97fce46c93adbeb05b25465acfe00121ec00f6db7f3bd883ac6f2',
-      [],
-      ProtocolId.HistoryNetwork
+      []
     )
     st.ok(res === undefined, 'received undefined when no valid NODES response received')
 
@@ -134,14 +131,12 @@ tape('Client unit tests', async (t) => {
     td.when(node.discv5.enr.encode()).thenReturn(Buffer.from([0, 1, 2]))
     protocol.handleFindNodes(
       { socketAddr: new Multiaddr(), nodeId: 'abc' },
-
-      fromHexString(ProtocolId.HistoryNetwork),
+      1n,
       findNodesMessageWithDistance
     )
     protocol.handleFindNodes(
       { socketAddr: new Multiaddr(), nodeId: 'abc' },
-
-      fromHexString(ProtocolId.HistoryNetwork),
+      1n,
       findNodesMessageWithoutDistance
     )
   })
@@ -198,13 +193,13 @@ tape('Client unit tests', async (t) => {
 
     await protocol.handleFindContent(
       { socketAddr: new Multiaddr(), nodeId: 'ghi' },
-      Buffer.from('0x123456'),
+      1n,
       fromHexString('0x123456'),
       findContentMessageWithNoContent
     )
     await protocol.handleFindContent(
       { socketAddr: new Multiaddr(), nodeId: 'def' },
-      fromHexString(ProtocolId.HistoryNetwork),
+      1n,
       ProtocolId.HistoryNetwork,
       findContentMessageWithShortContent
     )

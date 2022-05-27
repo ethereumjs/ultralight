@@ -132,7 +132,6 @@ export abstract class BaseProtocol {
       if (this.routingTable.getValue(enr.nodeId)) {
         this.updateRoutingTable(enr, false)
       }
-      return undefined
     }
   }
 
@@ -430,43 +429,39 @@ export abstract class BaseProtocol {
       this.logger(`Error retrieving content -- ${err.toString()}`)
     }
     if (value.length === 0) {
-      switch (toHexString(protocol)) {
-        case ProtocolId.HistoryNetwork:
-          {
-            // Discv5 calls for maximum of 16 nodes per NODES message
-            const ENRs = this.routingTable.nearest(lookupKey, 16)
-            const encodedEnrs = ENRs.map((enr) => {
-              // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
-              // contentId than this node
-              return enr.nodeId !== src.nodeId &&
-                distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
-                ? enr.encode()
-                : undefined
-            }).filter((enr) => enr !== undefined)
-            if (encodedEnrs.length > 0) {
-              this.logger(`Found ${encodedEnrs.length} closer to content than us`)
-              // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-              while (encodedEnrs.flat().length > 1200) {
-                // Remove ENRs until total ENRs less than 1200 bytes
-                encodedEnrs.pop()
-              }
-              const payload = ContentMessageType.serialize({
-                selector: 2,
-                value: encodedEnrs as Buffer[],
-              })
-              this.client.sendPortalNetworkResponse(
-                src,
-                requestId,
-                Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
-              )
-            } else {
-              this.logger(`Found no ENRs closer to content than us`)
-              this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
-            }
+      if (toHexString(protocol) === this.protocolId) {
+        // Discv5 calls for maximum of 16 nodes per NODES message
+        const ENRs = this.routingTable.nearest(lookupKey, 16)
+        const encodedEnrs = ENRs.map((enr) => {
+          // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
+          // contentId than this node
+          return enr.nodeId !== src.nodeId &&
+            distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
+            ? enr.encode()
+            : undefined
+        }).filter((enr) => enr !== undefined)
+        if (encodedEnrs.length > 0) {
+          this.logger(`Found ${encodedEnrs.length} closer to content than us`)
+          // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
+          while (encodedEnrs.flat().length > 1200) {
+            // Remove ENRs until total ENRs less than 1200 bytes
+            encodedEnrs.pop()
           }
-          break
-        default:
+          const payload = ContentMessageType.serialize({
+            selector: 2,
+            value: encodedEnrs as Buffer[],
+          })
+          this.client.sendPortalNetworkResponse(
+            src,
+            requestId,
+            Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
+          )
+        } else {
+          this.logger(`Found no ENRs closer to content than us`)
           this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
+        }
+      } else {
+        this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
