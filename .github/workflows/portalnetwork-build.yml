@@ -32,13 +32,16 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - run: jq -r '.workspaces |= .[0:2]' package.json > package.json
+      - name: Remove unused packages from package.json
+        uses: sergeysova/jq-action@v2
+        working-directory: ${{ github.workspace }}
+        with:
+          cmd: "jq -r '.workspaces |= .[0:2]' package.json > package.json"
+      
+      - name: Show package.json
+        run: cat package.json
         working-directory: ${{ github.workspace }}
 
-      - name: Get packages
-        id: vars
-        run: echo ::set-output name=package::$(cat package.json)
-        working-directory: ${{ github.workspace }}
 
       - name: Test output
         run: echo ${{ steps.vars.outputs.package }}
