@@ -35,7 +35,7 @@ export class PortalNetworkUTP extends BasicUtp {
     this.emit('Send', peerId, msg, protocolId, true)
   }
 
-  async handleNewHistoryNetworkRequest(
+  async handleNewRequest(
     contentKeys: Uint8Array[],
     peerId: string,
     connectionId: number,

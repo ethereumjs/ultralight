@@ -81,7 +81,8 @@ export const FindContentMessageType = new ContainerType({
 })
 
 export type ContentMessage = {
-  content: Uint8Array | Uint8Array[]
+  selector: number
+  value: connectionId | content | enrs
 }
 
 export type connectionId = Uint8Array
@@ -90,6 +91,7 @@ export type content = Uint8Array
 
 export type enrs = Uint8Array[]
 
+export const connectionIdType = new UintNumberType(2)
 export const ContentMessageType = new UnionType([Bytes2, ByteList, ENRs])
 export type OfferMessage = {
   contentKeys: Uint8Array[]
