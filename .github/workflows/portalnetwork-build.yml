@@ -36,6 +36,7 @@ jobs:
           field: workspaces
           value: '["./packages/portalnetwork", "./packages/proxy"]'
 
+      - run: cat package.json
       - name: Install dependencies and build
         run: npm i
         working-directory: ${{ github.workspace }}
