@@ -29,12 +29,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Update package.json version
-        uses: jossef/action-set-json-field@v1
+    
+      - name: Update package.json
+        uses: sergeysova/jq-action@v2
+        id: version
         with:
-          file: package.json
-          field: workspaces
-          value: ["./packages/portalnetwork", "./packages/proxy"]
+          cmd: 'jq -r ".workspaces |= .[0:2]" package.json > package.json'
 
       - run: cat package.json
       - name: Install dependencies and build
