@@ -32,7 +32,6 @@ jobs:
     
       - name: Update package.json
         uses: sergeysova/jq-action@v2
-        id: version
         with:
           cmd: 'jq -r ".workspaces |= .[0:2]" package.json > package.json'
 
