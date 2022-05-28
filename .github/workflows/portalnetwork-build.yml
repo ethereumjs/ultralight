@@ -34,7 +34,7 @@ jobs:
         with:
           file: package.json
           field: workspaces
-          value: '\[\"./packages/portalnetwork\", \"./packages/proxy\"\]'
+          value: ["./packages/portalnetwork", "./packages/proxy"]
 
       - run: cat package.json
       - name: Install dependencies and build
