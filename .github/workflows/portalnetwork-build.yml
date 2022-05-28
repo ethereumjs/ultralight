@@ -7,11 +7,8 @@ on:
     types: [opened, reopened, synchronize]
 
 env:
-  cwd: ${{github.workspace}}/packages/portalnetwork
+  cwd: ${{github.workspace}}
 
-defaults:
-  run:
-    working-directory: packages/portalnetwork
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -32,16 +29,23 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Build portalnetwork
-        run: npm i
+      - name: Update package.json version
+        uses: jossef/action-set-json-field@v1
+        with:
+          file: package.json
+          field: workspaces
+          value: ["./packages/portalnetwork", "./packages/proxy"],
 
-      - name: Build proxy
+      - name: Install dependencies and build
         run: npm i
-        working-directory: ${{ github.workspace }}/packages/proxy
-
+        working-directory: ${{ github.workspace }}
+        
       - run: npm run lint
-      - run: npm run test
+        working-directory: ${{ github.workspace }}/packages/portalnetwork
 
+      - run: npm run test
+        working-directory: ${{ github.workspace }}/packages/portalnetwork
+        
   test-integration-portalnetwork:
     runs-on: ubuntu-latest
     strategy:
