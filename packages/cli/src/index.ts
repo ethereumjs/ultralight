@@ -4,12 +4,16 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { Server as RPCServer } from 'jayson/promise'
+import { Server as RPCServer, Client as RpcClient } from 'jayson/promise'
 import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { RPCManager } from './rpc'
 import { setupMetrics } from './metrics'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types'
+import blockHeaderFromRpc from '@ethereumjs/block/dist/header-from-rpc'
+import { toHexString } from '@chainsafe/ssz'
 const level = require('level')
 
 const args: any = yargs(hideBin(process.argv))
@@ -58,6 +62,11 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'data directory where content is stored',
     string: true,
     optional: true,
+  })
+  .option('web3', {
+    describe: 'web3 JSON RPC HTTP endpoint for local Ethereum node for sourcing chain data',
+    string: true,
+    optional: true,
   }).argv
 
 const register = new PromClient.Registry()
@@ -69,6 +78,7 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   let id: PeerId
+  let web3: RpcClient
   if (!args.pk) {
     id = await PeerId.create({ keyType: 'secp256k1' })
   } else {
@@ -91,6 +101,7 @@ const main = async () => {
   if (args.datadir) {
     db = level(args.datadir)
   }
+
   const portal = new PortalNetwork({
     config: {
       enr: enr,
@@ -121,6 +132,7 @@ const main = async () => {
     log(`Started Metrics Server address=http://${args.rpcAddr}:${args.metricsPort}`)
   }
   await portal.start()
+
   const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
   if (args.bootnode) {
     protocol!.addBootNode(args.bootnode)
@@ -143,6 +155,28 @@ const main = async () => {
     server.http().listen(args.rpcPort)
     log(`Started JSON RPC Server address=http://${args.rpcAddr}:${args.rpcPort}`)
   }
+
+  // Proof of concept for a web3 bridge to import block headers from a locally running full node
+  if (args.web3) {
+    const [host, port] = args.web3.split(':')
+    if (host && port) {
+      web3 = RpcClient.http({ host: host, port: port })
+      for (let x = 0; x < 10; x++) {
+        const res = await web3.request('eth_getBlockByNumber', ['0x' + x.toString(16), false])
+        console.log(res.result)
+        const header = blockHeaderFromRpc(res.result)
+        const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        if (!protocol) return
+        protocol.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.BlockHeader,
+          res.result.hash,
+          Uint8Array.from(header.serialize())
+        )
+      }
+    }
+  }
+
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
     await portal.stop()
