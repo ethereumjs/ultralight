@@ -1,7 +1,7 @@
 import { ByteVectorType, ContainerType, ListCompositeType, UintBigintType } from '@chainsafe/ssz'
 
 export const EPOCH_SIZE = 8192
-const MAX_HISTORICAL_EPOCHS = 100000
+const MAX_HISTORICAL_EPOCHS = 131072
 
 export const HeaderRecord = new ContainerType({
   blockHash: new ByteVectorType(32),
