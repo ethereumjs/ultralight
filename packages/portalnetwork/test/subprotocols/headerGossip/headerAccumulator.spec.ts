@@ -25,19 +25,18 @@ tape('Validate accumulator updates', (t) => {
     Buffer.from(fromHexString(blockHeader2Rlp))
   )
   accumulator.updateAccumulator(genesisHeader)
-
   accumulator.updateAccumulator(block1Header)
 
   t.equal(
     toHexString(HeaderAccumulatorType.hashTreeRoot(accumulator)),
-    '0x1c8411ee8215a6dc6adae92f5ef81cfad4df34be7cd8c9aea0cffb8c6d5af885',
+    '0x00cbebed829e1babb93f2300bebe7905a98cb86993c7fc09bb5b04626fd91ae5',
     'roots match after Block 1'
   )
   accumulator.updateAccumulator(block2Header)
 
   t.equal(
     toHexString(HeaderAccumulatorType.hashTreeRoot(accumulator)),
-    '0x81edf75866167e408ca319b5638d97f1e70f56cd8d070964d396ac260b12a644',
+    '0x88cce8439ebc0c1d007177ffb6831c15c07b4361984cc52235b6fd728434f0c7',
     'roots match after Block 2'
   )
 
