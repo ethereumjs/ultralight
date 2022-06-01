@@ -4,12 +4,13 @@ import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { Server as RPCServer } from 'jayson/promise'
+import { Server as RPCServer, Client as RpcClient, Method } from 'jayson/promise'
 import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { RPCManager } from './rpc'
 import { setupMetrics } from './metrics'
+
 const level = require('level')
 
 const args: any = yargs(hideBin(process.argv))
@@ -58,6 +59,11 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'data directory where content is stored',
     string: true,
     optional: true,
+  })
+  .option('web3', {
+    describe: 'web3 JSON RPC HTTP endpoint for local Ethereum node for sourcing chain data',
+    string: true,
+    optional: true,
   }).argv
 
 const register = new PromClient.Registry()
@@ -69,6 +75,7 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   let id: PeerId
+  let web3: RpcClient | undefined
   if (!args.pk) {
     id = await PeerId.create({ keyType: 'secp256k1' })
   } else {
@@ -91,6 +98,7 @@ const main = async () => {
   if (args.datadir) {
     db = level(args.datadir)
   }
+
   const portal = new PortalNetwork({
     config: {
       enr: enr,
@@ -121,6 +129,7 @@ const main = async () => {
     log(`Started Metrics Server address=http://${args.rpcAddr}:${args.metricsPort}`)
   }
   await portal.start()
+
   const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
   if (args.bootnode) {
     protocol!.addBootNode(args.bootnode)
@@ -136,13 +145,35 @@ const main = async () => {
       }
     })
   }
+
+  // Proof of concept for a web3 bridge to import block headers from a locally running full node
+  if (args.web3) {
+    const [host, port] = args.web3.split(':')
+    if (host && port) {
+      web3 = RpcClient.http({ host: host, port: port })
+    }
+  }
+
   if (args.rpc) {
     const manager = new RPCManager(portal)
     const methods = manager.getMethods()
-    const server = new RPCServer(methods)
+    const server = new RPCServer(methods, {
+      router: function (method, params) {
+        console.log(method, params, typeof this._methods[method])
+        if (!this._methods[method] && web3) {
+          return new Method(async function () {
+            const res = await web3!.request(method, params)
+            if (res.result) return res.result
+            else return res.error
+          })
+        } else return this._methods[method]
+      },
+    })
+
     server.http().listen(args.rpcPort)
     log(`Started JSON RPC Server address=http://${args.rpcAddr}:${args.rpcPort}`)
   }
+
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
     await portal.stop()
