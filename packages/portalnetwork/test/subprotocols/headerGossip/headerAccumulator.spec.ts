@@ -1,11 +1,8 @@
 import tape from 'tape'
-import {
-  EpochAccumulator,
-  HeaderAccumulator,
-  HeaderAccumulatorType,
-} from '../../../src/subprotocols/headerGossip'
+import { HeaderAccumulator, HeaderAccumulatorType } from '../../../src/subprotocols/headerGossip'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { deserializeProof, serializeProof } from '@chainsafe/persistent-merkle-tree'
 
 tape('Validate accumulator updates', (t) => {
   const accumulator = new HeaderAccumulator()
@@ -40,12 +37,11 @@ tape('Validate accumulator updates', (t) => {
     'roots match after Block 2'
   )
 
-  const currentEpoch = accumulator.currentEpoch
-  const tree = EpochAccumulator.toView(currentEpoch)
+  const tree = HeaderAccumulatorType.toView(accumulator)
 
-  let proof = tree.createProof([
-    [1, 'blockHash'],
-    [1, 'totalDifficulty'],
+  const proof = tree.createProof([
+    ['currentEpoch', 1, 'blockHash'],
+    ['currentEpoch', 1, 'totalDifficulty'],
   ])
 
   t.ok(
@@ -53,17 +49,8 @@ tape('Validate accumulator updates', (t) => {
     'validated multiproof for block 1 header record in current epoch'
   )
 
-  proof = HeaderAccumulatorType.toView(accumulator).createProof([
-    ['currentEpoch', 1, 'blockHash'],
-    ['currentEpoch', 1, 'totalDifficulty'],
-  ])
-
-  const reconstructedAccumulator = HeaderAccumulatorType.createFromProof(proof)
-  t.equal(
-    reconstructedAccumulator.currentEpoch.get(1).totalDifficulty,
-    BigInt(block1Header.difficulty.toNumber()) + BigInt(genesisHeader.difficulty.toNumber()),
-    'validated multiproof for Block 1 from header accumulator'
-  )
-
+  const serializedProof = serializeProof(proof)
+  const reconstructedProof = deserializeProof(serializedProof)
+  t.deepEqual(proof, reconstructedProof, 'proofs can be serialized and deserialized successfully')
   t.end()
 })

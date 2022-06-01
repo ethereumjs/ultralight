@@ -1,7 +1,7 @@
 import { Proof } from '@chainsafe/persistent-merkle-tree'
 import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
-import { EpochAccumulator, EPOCH_SIZE, HeaderRecordType } from './types'
+import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types'
 
 export class HeaderAccumulator {
   private _currentEpoch: HeaderRecordType[]
@@ -43,17 +43,17 @@ export class HeaderAccumulator {
   }
   /**
    *
-   * @param proof a `Proof` for a particular header's inclusion in an `epochAccumulator`
-   * @param header the blockheader being proved to be included in the `epochAccumulator`
-   * @param blockPosition the index in the array of `HeaderRecord`s of the header
-   * @returns
+   * @param proof a `Proof` for a particular header's inclusion in the accumulator's `currentEpoch`
+   * @param header the blockheader being proved to be included in the `currentEpoch`
+   * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
+   * @returns true if proof is valid, false otherwise
    */
   public verifyInclusionProof = (proof: Proof, header: BlockHeader, blockPosition: number) => {
-    const reconstructedTree = EpochAccumulator.createFromProof(proof)
+    const reconstructedTree = HeaderAccumulatorType.createFromProof(proof)
 
-    const epochTree = EpochAccumulator.toView(this._currentEpoch)
+    const epochTree = HeaderAccumulatorType.toView(this)
     try {
-      const value = reconstructedTree.get(blockPosition)
+      const value = reconstructedTree.currentEpoch.get(blockPosition)
       if (
         toHexString(value.blockHash) === toHexString(header.hash()) &&
         toHexString(epochTree.hashTreeRoot()) === toHexString(reconstructedTree.hashTreeRoot())
