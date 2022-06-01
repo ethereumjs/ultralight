@@ -1,11 +1,8 @@
 import tape from 'tape'
-import {
-  EpochAccumulator,
-  HeaderAccumulator,
-  HeaderAccumulatorType,
-} from '../../../src/subprotocols/headerGossip'
+import { HeaderAccumulator, HeaderAccumulatorType } from '../../../src/subprotocols/headerGossip'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { deserializeProof, serializeProof } from '@chainsafe/persistent-merkle-tree'
 
 tape('Validate accumulator updates', (t) => {
   const accumulator = new HeaderAccumulator()
@@ -51,5 +48,9 @@ tape('Validate accumulator updates', (t) => {
     accumulator.verifyInclusionProof(proof, block1Header, 1),
     'validated multiproof for block 1 header record in current epoch'
   )
+
+  const serializedProof = serializeProof(proof)
+  const reconstructedProof = deserializeProof(serializedProof)
+  t.deepEqual(proof, reconstructedProof, 'proofs can be serialized and deserialized successfully')
   t.end()
 })
