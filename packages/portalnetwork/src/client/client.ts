@@ -198,9 +198,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public start = async () => {
     await this.discv5.start()
-    // Start kbucket refresh on 30 second interval
-    //this.refreshListener = setInterval(() => this.bucketRefresh(), 30000)
     this.protocols.forEach((protocol) => {
+      // Start kbucket refresh on 30 second interval
+      setInterval(() => protocol.bucketRefresh(), 30000)
       this.bootnodes.forEach(async (peer: string) => {
         await protocol.addBootNode(peer)
       })
