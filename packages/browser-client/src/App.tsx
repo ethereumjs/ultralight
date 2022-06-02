@@ -153,6 +153,7 @@ export const App = () => {
     setPortal(node)
     node.enableLog('*discv5*, *portalnetwork*, *uTP*')
     await node.start()
+    node.storeNodeDetails()
     // eslint-disable-next-line no-undef
     ;(window as any).portal = node
     ;(window as any).ENR = ENR
@@ -169,7 +170,6 @@ export const App = () => {
 
   React.useEffect(() => {
     init()
-    portal?.storeNodeDetails()
   }, [])
 
   async function getBlockByHash(blockHash: string) {
