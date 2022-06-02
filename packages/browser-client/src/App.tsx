@@ -154,7 +154,6 @@ export const App = () => {
     node.enableLog('*discv5*, *portalnetwork*, *uTP*')
     await node.start()
     node.storeNodeDetails()
-    // eslint-disable-next-line no-undef
     ;(window as any).portal = node
     ;(window as any).ENR = ENR
     node.discv5.on('multiaddrUpdated', () => {

@@ -77,6 +77,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       ma = new Multiaddr()
     }
 
+    // Configure db size calculation
     let dbSize
     switch (opts.transport) {
       case TransportLayer.WEB:
@@ -93,6 +94,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           return dirSize(opts.dataDir ?? './')
         }
     }
+
+    // Configure transport layer
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
@@ -105,6 +108,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       case TransportLayer.NODE:
         break
     }
+
     return new PortalNetwork({
       config,
       radius: 2n ** 256n,
