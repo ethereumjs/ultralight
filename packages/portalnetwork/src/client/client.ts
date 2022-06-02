@@ -28,6 +28,7 @@ import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
 import LRU from 'lru-cache'
+import { dirSize } from '../util'
 
 const level = require('level-mem')
 
@@ -116,6 +117,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.peerId = opts.config.peerId
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRU({ max: 2500 })
+    this.uTP = new PortalNetworkUTP(this.logger)
 
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -132,7 +134,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    this.uTP = new PortalNetworkUTP(this.logger)
     this.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
       await (this.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol).addContentToHistory(
         chainId,
@@ -161,10 +162,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
 
     this.db = opts.db ?? level()
+
     if (opts.metrics) {
       this.metrics = opts.metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
         this.metrics?.knownDiscv5Nodes.set(this.discv5.kadValues().length)
+      this.metrics.currentDBSize.collect = async () => {
+        const size = await dirSize('/home/jim/development/ultralight/packages/cli/datadir1/')
+        this.metrics?.currentDBSize.set(size)
+      }
     }
   }
 

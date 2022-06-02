@@ -2,6 +2,8 @@ import SHA256 from '@chainsafe/as-sha256'
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
+import { readdir, stat } from 'fs/promises'
+import * as path from 'path'
 
 /**
  *  Shortens a Node ID to a readable length
@@ -34,4 +36,14 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  */
 export const serializedContentKeyToContentId = (contentKey: Uint8Array) => {
   return toHexString(SHA256.digest(contentKey))
+}
+
+export const dirSize = async (directory: string) => {
+  const files = await readdir(directory)
+  const stats = files.map((file) => stat(path.join(directory, file)))
+  const bytesSize = (await Promise.all(stats)).reduce(
+    (accumulator, { size }) => accumulator + size,
+    0
+  )
+  return bytesSize / 1024 ** 2
 }

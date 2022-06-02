@@ -80,5 +80,9 @@ export const setupMetrics = () => {
       name: 'ultralight_total_bytes_sent',
       help: 'how many bytes have been sent in Portal Network message payloads',
     }),
+    currentDBSize: new PromClient.Gauge({
+      name: 'ultralight_db_size',
+      help: 'how many MBs are currently stored in the db',
+    }),
   }
 }

@@ -63,4 +63,5 @@ export interface PortalNetworkMetrics {
   nodesMessagesReceived: ICounter
   totalBytesReceived: ICounter
   totalBytesSent: ICounter
+  currentDBSize: IGauge
 }
