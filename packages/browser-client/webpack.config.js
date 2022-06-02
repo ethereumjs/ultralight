@@ -13,7 +13,8 @@ module.exports = {
             "crypto": require.resolve('crypto-browserify'),
             "buffer": require.resolve('buffer/'),
             "assert": require.resolve('assert/'),
-            "util": require.resolve('util/')
+            "util": require.resolve('util/'),
+            "fs/promises": false
         }
     },
     module: {

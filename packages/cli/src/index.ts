@@ -99,7 +99,7 @@ const main = async () => {
     db = level(args.datadir)
   }
 
-  const portal = new PortalNetwork({
+  const portal = await PortalNetwork.create({
     config: {
       enr: enr,
       peerId: id,
@@ -114,14 +114,16 @@ const main = async () => {
     db,
     metrics,
     supportedProtocols: [ProtocolId.HistoryNetwork],
+    dataDir: args.datadir,
   })
   // cache private key signature to ensure ENR can be encoded on startup
   portal.discv5.enr.encode(createKeypairFromPeerId(id).privateKey)
   portal.discv5.enableLogs()
   portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5*')
-  const metricsServer = http.createServer(reportMetrics)
+  let metricsServer: http.Server | undefined
 
   if (args.metrics) {
+    metricsServer = http.createServer(reportMetrics)
     Object.entries(metrics).forEach((entry) => {
       register.registerMetric(entry[1])
     })
@@ -177,7 +179,7 @@ const main = async () => {
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
     await portal.stop()
-    if (metricsServer.listening) {
+    if (metricsServer?.listening) {
       metricsServer.close()
     }
     process.exit()

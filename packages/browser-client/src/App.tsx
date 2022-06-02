@@ -153,7 +153,7 @@ export const App = () => {
     setPortal(node)
     node.enableLog('*discv5*, *portalnetwork*, *uTP*')
     await node.start()
-    // eslint-disable-next-line no-undef
+    node.storeNodeDetails()
     ;(window as any).portal = node
     ;(window as any).ENR = ENR
     node.discv5.on('multiaddrUpdated', () => {
@@ -169,7 +169,6 @@ export const App = () => {
 
   React.useEffect(() => {
     init()
-    portal?.storeNodeDetails()
   }, [])
 
   async function getBlockByHash(blockHash: string) {

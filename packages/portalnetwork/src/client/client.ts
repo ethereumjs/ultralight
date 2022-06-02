@@ -18,8 +18,6 @@ import {
   TransportLayer,
 } from './types'
 import PeerId from 'peer-id'
-//eslint-disable-next-line implicit-dependencies/no-implicit
-import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 
@@ -28,14 +26,14 @@ import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
 import LRU from 'lru-cache'
-
-const level = require('level-mem')
+import { dirSize, MEGABYTE } from '../util'
+import { DBManager } from './dbManager'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
   protocols: Map<ProtocolId, BaseProtocol>
   uTP: PortalNetworkUTP
-  db: LevelUp
+  db: DBManager
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
@@ -78,6 +76,26 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } else {
       ma = new Multiaddr()
     }
+
+    // Configure db size calculation
+    let dbSize
+    switch (opts.transport) {
+      case TransportLayer.WEB:
+      case TransportLayer.MOBILE:
+        dbSize = async function () {
+          // eslint-disable-next-line no-undef
+          const sizeEstimate = await window.navigator.storage.estimate()
+          return sizeEstimate.usage ? sizeEstimate.usage / MEGABYTE : 0
+        }
+        break
+      case TransportLayer.NODE:
+      default:
+        dbSize = async function () {
+          return dirSize(opts.dataDir ?? './')
+        }
+    }
+
+    // Configure transport layer
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
@@ -90,12 +108,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       case TransportLayer.NODE:
         break
     }
+
     return new PortalNetwork({
       config,
       radius: 2n ** 256n,
       bootnodes,
       db: opts.db,
       supportedProtocols: opts.supportedProtocols ?? [ProtocolId.HistoryNetwork],
+      dbSize: dbSize as () => Promise<number>,
+      metrics: opts.metrics,
     })
   }
 
@@ -116,6 +137,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.peerId = opts.config.peerId
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRU({ max: 2500 })
+    this.uTP = new PortalNetworkUTP(this.logger)
+
+    this.db = new DBManager(this.logger, opts.dbSize, opts.db) as DBManager
 
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -132,7 +156,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    this.uTP = new PortalNetworkUTP(this.logger)
     this.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
       await (this.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol).addContentToHistory(
         chainId,
@@ -160,11 +183,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     })
 
-    this.db = opts.db ?? level()
     if (opts.metrics) {
       this.metrics = opts.metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
         this.metrics?.knownDiscv5Nodes.set(this.discv5.kadValues().length)
+      this.metrics.currentDBSize.collect = async () => {
+        this.metrics?.currentDBSize.set(await this.db.currentSize())
+      }
     }
   }
 
@@ -189,7 +214,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.stop()
     await this.discv5.removeAllListeners()
     await this.removeAllListeners()
-    await this.db.removeAllListeners()
     await this.db.close()
     this.refreshListener && clearInterval(this.refreshListener)
   }
