@@ -8,7 +8,8 @@ const args: any = yargs(hideBin(process.argv))
     .option('pks', {
         describe: 'text file containing private keys for nodes in devnet',
         string: true,
-        optional: true
+        optional: true,
+        default: './scripts/pks.txt'
     }).argv
 
 const main = async () => {
