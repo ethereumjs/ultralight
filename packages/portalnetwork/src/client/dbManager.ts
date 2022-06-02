@@ -6,10 +6,12 @@ const level = require('level-mem')
 export class DBManager {
   db: AbstractLevel<string>
   logger: Debugger
+  currentSize: () => Promise<number>
 
-  constructor(logger: Debugger, db?: AbstractLevel<string>) {
+  constructor(logger: Debugger, currentSize: () => Promise<number>, db?: AbstractLevel<string>) {
     this.db = db ?? level()
     this.logger = logger.extend('DB')
+    this.currentSize = currentSize
   }
 
   get(key: string) {

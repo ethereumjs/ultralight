@@ -28,6 +28,8 @@ export interface PortalNetworkOpts {
   proxyAddress?: string
   rebuildFromMemory?: boolean
   config: IDiscv5CreateOptions
+  dataDir?: string
+  dbSize(): Promise<number>
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>

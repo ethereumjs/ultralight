@@ -99,7 +99,7 @@ const main = async () => {
     db = level(args.datadir)
   }
 
-  const portal = new PortalNetwork({
+  const portal = await PortalNetwork.create({
     config: {
       enr: enr,
       peerId: id,
@@ -114,6 +114,7 @@ const main = async () => {
     db,
     metrics,
     supportedProtocols: [ProtocolId.HistoryNetwork],
+    dataDir: args.datadir,
   })
   // cache private key signature to ensure ENR can be encoded on startup
   portal.discv5.enr.encode(createKeypairFromPeerId(id).privateKey)

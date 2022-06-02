@@ -26,7 +26,7 @@ import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
 import LRU from 'lru-cache'
-import { dirSize } from '../util'
+import { dirSize, MEGABYTE } from '../util'
 import { DBManager } from './dbManager'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
@@ -76,6 +76,23 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     } else {
       ma = new Multiaddr()
     }
+
+    let dbSize
+    switch (opts.transport) {
+      case TransportLayer.WEB:
+      case TransportLayer.MOBILE:
+        dbSize = async function () {
+          // eslint-disable-next-line no-undef
+          const sizeEstimate = await window.navigator.storage.estimate()
+          return sizeEstimate.usage ? sizeEstimate.usage / MEGABYTE : 0
+        }
+        break
+      case TransportLayer.NODE:
+      default:
+        dbSize = async function () {
+          return dirSize(opts.dataDir ?? './')
+        }
+    }
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
@@ -94,6 +111,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       bootnodes,
       db: opts.db,
       supportedProtocols: opts.supportedProtocols ?? [ProtocolId.HistoryNetwork],
+      dbSize: dbSize as () => Promise<number>,
+      metrics: opts.metrics,
     })
   }
 
@@ -115,7 +134,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRU({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
-    this.db = new DBManager(this.logger, opts.db) as DBManager
+
+    this.db = new DBManager(this.logger, opts.dbSize, opts.db) as DBManager
 
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -164,8 +184,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.metrics.knownDiscv5Nodes.collect = () =>
         this.metrics?.knownDiscv5Nodes.set(this.discv5.kadValues().length)
       this.metrics.currentDBSize.collect = async () => {
-        const size = await dirSize('/home/jim/development/ultralight/packages/cli/datadir1/')
-        this.metrics?.currentDBSize.set(size)
+        this.metrics?.currentDBSize.set(await this.db.currentSize())
       }
     }
   }

@@ -5,6 +5,8 @@ import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import { readdir, stat } from 'fs/promises'
 import * as path from 'path'
 
+export const MEGABYTE = 1048576
+
 /**
  *  Shortens a Node ID to a readable length
  */
@@ -45,5 +47,5 @@ export const dirSize = async (directory: string) => {
     (accumulator, { size }) => accumulator + size,
     0
   )
-  return bytesSize / 1024 ** 2
+  return bytesSize / MEGABYTE
 }
