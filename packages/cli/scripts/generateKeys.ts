@@ -13,7 +13,7 @@ const args: any = yargs(hideBin(process.argv))
 const main = async () => {
     for (let x = 0; x < args.numKeys; x++) {
         const id = PeerId.create({ 'keyType': 'secp256k1' })
-        console.log(`Private Key ${(await id).toJSON().privKey}`)
+        console.log((await id).toJSON().privKey)
     }
 }
 
