@@ -18,8 +18,6 @@ import {
   TransportLayer,
 } from './types'
 import PeerId from 'peer-id'
-//eslint-disable-next-line implicit-dependencies/no-implicit
-import { LevelUp } from 'levelup'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 
@@ -29,14 +27,13 @@ import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
 import LRU from 'lru-cache'
 import { dirSize } from '../util'
-
-const level = require('level-mem')
+import { DBManager } from './dbManager'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
   protocols: Map<ProtocolId, BaseProtocol>
   uTP: PortalNetworkUTP
-  db: LevelUp
+  db: DBManager
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
@@ -118,6 +115,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRU({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
+    this.db = new DBManager(this.logger, opts.db) as DBManager
 
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -161,8 +159,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     })
 
-    this.db = opts.db ?? level()
-
     if (opts.metrics) {
       this.metrics = opts.metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
@@ -195,7 +191,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.stop()
     await this.discv5.removeAllListeners()
     await this.removeAllListeners()
-    await this.db.removeAllListeners()
     await this.db.close()
     this.refreshListener && clearInterval(this.refreshListener)
   }

@@ -192,9 +192,7 @@ export class HistoryProtocol extends BaseProtocol {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
           BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
-          this.client.db.put(contentId, toHexString(value), (err: any) => {
-            if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
-          })
+          this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return
@@ -223,9 +221,7 @@ export class HistoryProtocol extends BaseProtocol {
           } catch {}
         }
         if (validBlock) {
-          this.client.db.put(contentId, toHexString(value), (err: any) => {
-            if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
-          })
+          this.client.db.put(contentId, toHexString(value))
         } else {
           this.logger(`Could not verify block content`)
           // Don't store block body where we can't assemble a valid block

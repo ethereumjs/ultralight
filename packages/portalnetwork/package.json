@@ -24,7 +24,7 @@
     "@chainsafe/ssz": "^0.9.1",
     "@ethereumjs/block": "^3.6.0",
     "@frontall/capacitor-udp": "^0.3.4",
-    "@types/levelup": "^4.3.3",
+    "abstract-level": "^1.0.3",
     "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "isomorphic-ws": "^4.0.1",

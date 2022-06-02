@@ -3,8 +3,7 @@ import EventEmitter from 'events'
 import { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
 import { StateNetworkRoutingTable, ProtocolId } from '..'
 import { PortalNetworkRoutingTable } from '.'
-//eslint-disable-next-line implicit-dependencies/no-implicit
-import { LevelUp } from 'levelup'
+import { AbstractLevel } from 'abstract-level'
 
 export interface IPortalNetworkEvents {
   NodeAdded: (nodeId: NodeId, protocolId: ProtocolId) => void
@@ -22,7 +21,7 @@ export interface PortalNetworkOpts {
   supportedProtocols: ProtocolId[]
   radius?: bigint
   bootnodes?: string[]
-  db?: LevelUp
+  db?: AbstractLevel<string>
   metrics?: PortalNetworkMetrics
   bindAddress?: string
   transport?: TransportLayer
