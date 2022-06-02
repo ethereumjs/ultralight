@@ -15,11 +15,8 @@ const main = async () => {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
     const file = require.resolve(process.cwd() + '/dist/index.js')
     let children: ChildProcessWithoutNullStreams[] = []
-    pks.forEach((key, idx) => {
-        console.log('starting child', idx, key)
-        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`])
-        console.log('child', child.spawnargs)
-        child.stderr.on('data', (data) => console.error(data.toString('utf8')))
+    pks.forEach((key, idx) => { //@ts-ignore
+        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`], {stdio: ['pipe', this.stderr, process.stderr]})
         children.push(child)
     })
     const interval = setInterval(() => {}, 1000)
