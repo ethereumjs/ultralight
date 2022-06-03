@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR, createKeypairFromPeerId } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
@@ -92,9 +92,6 @@ const main = async () => {
   }
 
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
-
-  // cache private key signature to ensure ENR can be encoded on startup
-  enr.encode(createKeypairFromPeerId(id).privateKey)
   const metrics = setupMetrics()
   let db
   if (args.datadir) {
@@ -118,10 +115,8 @@ const main = async () => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     dataDir: args.datadir,
   })
-
   portal.discv5.enableLogs()
   portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5*')
-
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
