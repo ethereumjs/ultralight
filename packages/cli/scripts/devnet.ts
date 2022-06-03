@@ -10,6 +10,10 @@ const args: any = yargs(hideBin(process.argv))
         string: true,
         optional: true,
         default: './scripts/pks.txt'
+    }).option('promConfig', {
+        describe: 'create prometheus scrape_target file',
+        boolean: true,
+        default: false
     }).argv
 
 const main = async () => {
@@ -20,6 +24,16 @@ const main = async () => {
         const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', this.stderr, process.stderr]})
         children.push(child)
     })
+
+    if (args.promConfig) {
+        const targets:any[] = []
+        children.forEach((_child, idx) => targets.push(`localhost:${18545 + idx}`))
+        let targetBlob = [Object.assign({
+            "targets": targets,
+            "labels": { "env": "devnet" }
+        })]
+        fs.writeFileSync('./targets.json', JSON.stringify(targetBlob, null, 2))
+    }
     const interval = setInterval(() => {}, 1000)
     console.log(`starting ${children.length} nodes`)
     process.on('SIGINT', async () => {

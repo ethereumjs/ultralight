@@ -28,11 +28,6 @@ const args: any = yargs(hideBin(process.argv))
         number: true,
         demandOption: true
     })
-    .option('promConfig', {
-        describe: 'create prometheus scrape_target file',
-        boolean: true,
-        default: true
-    })
     .option('requestblockHash', {
       describe: 'specify a block hash to request from other nodes',
       string: true,
@@ -46,18 +41,10 @@ const main = async () => {
   const blocks = Object.entries(blockData)
 
   const bootNodeEnr = await bootNode.request('portal_nodeEnr', [])
-  const targets = [`localhost:1${args.rpcPort}`]
   for (let x = 1; x < args.numNodes; x++) {
-      targets.push(`localhost:1${args.rpcPort + x}`)
     const client = Client.http({ port: args.rpcPort + x })
     await client.request('portal_addBootNode', [bootNodeEnr.result])
   }
-  let targetBlob = [Object.assign({
-      "targets": targets,
-      "labels": { "env": "devnet" }
-  })]
-  fs.writeFileSync('./targets.json', JSON.stringify(targetBlob, null, 2))
-
 
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })

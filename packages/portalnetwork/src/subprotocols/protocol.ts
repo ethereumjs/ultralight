@@ -43,6 +43,11 @@ export abstract class BaseProtocol {
     this.nodeRadius = nodeRadius ?? 2n ** 256n
     this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
     this.metrics = metrics
+    if (this.metrics) {
+      this.metrics.knownHistoryNodes.collect = () => {
+        this.metrics?.knownHistoryNodes.set(this.routingTable.size)
+      }
+    }
   }
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
