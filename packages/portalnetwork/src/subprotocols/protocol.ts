@@ -580,7 +580,7 @@ export abstract class BaseProtocol {
    * 3: Randomly generate a NodeID that falls within this bucket.
    * Do the random lookup on this node-id.
    */
-  private bucketRefresh = async () => {
+  public bucketRefresh = async () => {
     const notFullBuckets = this.routingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }

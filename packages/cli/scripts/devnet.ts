@@ -8,7 +8,8 @@ const args: any = yargs(hideBin(process.argv))
     .option('pks', {
         describe: 'text file containing private keys for nodes in devnet',
         string: true,
-        optional: true
+        optional: true,
+        default: './scripts/pks.txt'
     }).argv
 
 const main = async () => {
@@ -16,7 +17,7 @@ const main = async () => {
     const file = require.resolve(process.cwd() + '/dist/index.js')
     let children: ChildProcessWithoutNullStreams[] = []
     pks.forEach((key, idx) => { //@ts-ignore
-        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`], {stdio: ['pipe', this.stderr, process.stderr]})
+        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', this.stderr, process.stderr]})
         children.push(child)
     })
     const interval = setInterval(() => {}, 1000)
