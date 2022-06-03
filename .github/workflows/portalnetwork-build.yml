@@ -3,8 +3,6 @@ on:
   push:
     branches: [master]
     tags: ['*']
-  pull_request:
-    types: [opened, reopened, synchronize]
 
 env:
   cwd: ${{github.workspace}}/packages/portalnetwork
