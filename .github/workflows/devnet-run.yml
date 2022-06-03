@@ -36,7 +36,7 @@ jobs:
         working-directory: ${{ github.workspace }}
 
       - name: Run E2E Tests
-        uses: BerniWittmann/background-server-action@latest
+        uses: BerniWittmann/background-server-action@1.0.4
         with:
           command: npx ts-node scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10
           start: npx ts-node scripts/devnet.ts --pks="./scripts/pks.txt" 
