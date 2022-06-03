@@ -1,8 +1,5 @@
-name: PortalNetwork
+name: CLI Client Integration Test
 on:
-  push:
-    branches: [master]
-    tags: ['*']
   pull_request:
     types: [opened, reopened, synchronize]
 
@@ -18,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-unit-portalnetwork:
+  devnet-cli-run:
     runs-on: ubuntu-latest
     strategy:
       matrix:
