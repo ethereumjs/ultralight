@@ -1,4 +1,4 @@
-name: PortalNetwork
+name: CLI Client Integration Test
 on:
   pull_request:
     types: [opened, reopened, synchronize]
@@ -8,14 +8,14 @@ env:
 
 defaults:
   run:
-    working-directory: packages/portalnetwork
+    working-directory: packages/cli
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  test-unit-portalnetwork:
+  devnet-cli-run:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,26 +32,9 @@ jobs:
       - run: npm i
         working-directory: ${{ github.workspace }}
 
-      - run: npm run lint
-      - run: npm run test
+      - run: npx ts-node scripts/devnet.ts --pks="./scripts/pks.txt" &
 
-  test-integration-portalnetwork:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16]
-    steps:
-      - uses: actions/checkout@v3
+      - run: |
+          sleep 10 &&
+          npx ts-node scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - run: npm i
-        working-directory: ${{ github.workspace }}
-
-      - run: npm run tape -- 'test/integration/wire.spec.ts'    
-
-  

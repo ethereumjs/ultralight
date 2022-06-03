@@ -63,6 +63,9 @@ const main = async () => {
     const _client = Client.http({ port: args.rpcPort + x })
     const res = await _client.request('portal_ping', [bootNodeEnr.result])
     console.log(res)
+    if (res.error) {
+      throw new Error('should not error here')
+    }
   }
 
   if (args.numBlocks) {
