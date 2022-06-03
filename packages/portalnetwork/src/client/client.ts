@@ -64,9 +64,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
     } else {
-      config.peerId = await PeerId.create({ keyType: 'secp256k1' })
-      config.enr = ENR.createFromPeerId(config.peerId)
-      config.enr.encode(createKeypairFromPeerId(config.peerId).privateKey)
+      config.peerId = opts.config?.peerId ?? (await PeerId.create({ keyType: 'secp256k1' }))
+      if (opts.config?.enr) {
+        config.enr =
+          typeof opts.config.enr === 'string' ? ENR.decodeTxt(opts.config.enr) : opts.config.enr
+      } else {
+        config.enr = ENR.createFromPeerId(config.peerId)
+      }
       bootnodes = opts.bootnodes
     }
     let ma
@@ -130,6 +134,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     super()
 
     this.discv5 = Discv5.create(opts.config)
+    // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId).privateKey)
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('portalnetwork')
     this.protocols = new Map()

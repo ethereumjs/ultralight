@@ -10,7 +10,7 @@ import {
 
 import { isValidId } from './util'
 import { HistoryProtocol } from 'portalnetwork/src/subprotocols/history/history'
-import { Client as RpcClient } from 'jayson/promise'
+
 export class RPCManager {
   public _client: PortalNetwork
   public protocol: HistoryProtocol

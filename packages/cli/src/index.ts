@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR, createKeypairFromPeerId } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR } from 'portalnetwork'
 import PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
@@ -90,9 +90,8 @@ const main = async () => {
   } else {
     initMa = new Multiaddr()
   }
-  const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
 
-  enr.encode(createKeypairFromPeerId(id).privateKey)
+  const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
   const metrics = setupMetrics()
   let db
   if (args.datadir) {
@@ -116,8 +115,6 @@ const main = async () => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     dataDir: args.datadir,
   })
-  // cache private key signature to ensure ENR can be encoded on startup
-  portal.discv5.enr.encode(createKeypairFromPeerId(id).privateKey)
   portal.discv5.enableLogs()
   portal.enableLog('*ultralight*, *portalnetwork*, *uTP*, *discv5*')
   let metricsServer: http.Server | undefined
@@ -161,7 +158,6 @@ const main = async () => {
     const methods = manager.getMethods()
     const server = new RPCServer(methods, {
       router: function (method, params) {
-        console.log(method, params, typeof this._methods[method])
         if (!this._methods[method] && web3) {
           return new Method(async function () {
             const res = await web3!.request(method, params)
