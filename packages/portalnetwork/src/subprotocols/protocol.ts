@@ -222,21 +222,24 @@ export abstract class BaseProtocol {
         total: 0,
         enrs: [],
       }
-      payload.distances.forEach((distance) => {
+      payload.distances.every((distance) => {
         if (distance > 0) {
           // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
           // would be in bucket 0
           this.routingTable.valuesOfDistance(distance + 1).every((enr) => {
-            // Exclude ENR from resopnse if it matches the requesting node
+            // Exclude ENR from response if it matches the requesting node
             if (enr.nodeId === src.nodeId) return true
             // Break from loop if total size of NODES payload would exceed 1200 bytes
-            // TODO: Add capability to send multiple NODES messages if size of ENRs exceeds packet size
+            // TODO: Decide what to do about case where we have more ENRs we could send
             if (nodesPayload.enrs.flat().length + enr.size > 1200) return false
             nodesPayload.total++
             nodesPayload.enrs.push(enr.encode())
             return true
           })
         }
+        // Check to see if `nodesPayload` is full yet and return early from the loop if so
+        if (nodesPayload.enrs.flat().length > 1200) return false
+        else return true
       })
       // Send the client's ENR if a node at distance 0 is requested
       if (
