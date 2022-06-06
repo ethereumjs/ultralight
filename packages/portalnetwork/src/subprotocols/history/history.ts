@@ -203,6 +203,9 @@ export class HistoryProtocol extends BaseProtocol {
           ) {
             // Update the header accumulator if the block header is the next in the chain
             this.accumulator.updateAccumulator(header)
+            this.logger(
+              `Updated header accumulator.  Currently at height ${this.accumulator.currentHeight()}`
+            )
           }
           this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
