@@ -1,12 +1,23 @@
-import { EntryStatus } from '@chainsafe/discv5'
+import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import tape from 'tape'
 import td from 'testdouble'
-import { ENR, MessageCodes, PingPongCustomDataType, PortalNetwork, ProtocolId } from '../../src'
+import {
+  ENR,
+  generateRandomNodeIdAtDistance,
+  MessageCodes,
+  PingPongCustomDataType,
+  PortalNetwork,
+  ProtocolId,
+} from '../../src'
 import { TransportLayer } from '../../src/client'
 import { HistoryProtocol } from '../../src/subprotocols/history/history'
 import { BaseProtocol } from '../../src/subprotocols/protocol'
 import { Debugger } from 'debug'
+import PeerId from 'peer-id'
+import { toHexString } from '@chainsafe/ssz'
+
+// Fake Protocol class for testing Protocol class
 class FakeProtocol extends BaseProtocol {
   logger: Debugger
   protocolId: ProtocolId
@@ -20,6 +31,7 @@ class FakeProtocol extends BaseProtocol {
   }
   sendFindContent = td.func<any>()
 }
+
 tape('protocol wire message tests', async (t) => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
@@ -177,5 +189,36 @@ tape('protocol wire message tests', async (t) => {
     ).thenResolve(Buffer.from(noWantResponse))
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([0])])
     st.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
+  })
+})
+
+tape.only('FINDNODES/FOUNDNODES message handler tests', async (t) => {
+  const node = await PortalNetwork.create({
+    bindAddress: '192.168.0.1',
+    transport: TransportLayer.WEB,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+  })
+
+  t.test('FOUNDNODES response', async (st) => {
+    const sortedEnrs: ENR[] = []
+    const protocol = new FakeProtocol(node, 2n ** 255n)
+    for (let x = 239; x < 256; x++) {
+      const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
+      const peerId = await PeerId.create({ keyType: 'secp256k1' })
+      const enr = ENR.createFromPeerId(peerId)
+      enr.encode(createKeypairFromPeerId(peerId).privateKey)
+      sortedEnrs.push(enr)
+      ;(enr as any)._nodeId = id
+      protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+    }
+    const newNode = generateRandomNodeIdAtDistance(sortedEnrs[0].nodeId, 254)
+    const res = await (protocol as any).handleFindNodes(
+      { socketAddr: new Multiaddr(), nodeId: newNode },
+      1n,
+      {
+        distances: [253, 254, 255],
+      }
+    )
+    console.log(res)
   })
 })
