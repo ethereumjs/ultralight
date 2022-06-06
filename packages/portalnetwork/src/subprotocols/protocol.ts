@@ -223,10 +223,14 @@ export abstract class BaseProtocol {
         enrs: [],
       }
       payload.distances.every((distance) => {
-        if (distance > 0) {
-          // Any distance > 0 is technically distance + 1 in the routing table index since a node of distance 1
+        if (distance === 0 && nodesPayload.enrs.flat().length < 1200) {
+          // Send the client's ENR if a node at distance 0 is requested
+          nodesPayload.total++
+          nodesPayload.enrs.push(this.client.discv5.enr.encode())
+        } else {
+          // Any distance > 0 is technically distance - 1 in the routing table index since a node of distance 1
           // would be in bucket 0
-          this.routingTable.valuesOfDistance(distance + 1).every((enr) => {
+          return this.routingTable.valuesOfDistance(distance - 1).every((enr) => {
             // Exclude ENR from response if it matches the requesting node
             if (enr.nodeId === src.nodeId) return true
             // Break from loop if total size of NODES payload would exceed 1200 bytes
@@ -237,19 +241,8 @@ export abstract class BaseProtocol {
             return true
           })
         }
-        // Check to see if `nodesPayload` is full yet and return early from the loop if so
-        if (nodesPayload.enrs.flat().length > 1200) return false
-        else return true
+        return true
       })
-      // Send the client's ENR if a node at distance 0 is requested
-      if (
-        payload.distances.findIndex((res) => res === 0) !== -1 &&
-        // Verify that total nodes payload is less than 1200 bytes before adding local ENR
-        nodesPayload.enrs.flat().length < 1200
-      ) {
-        nodesPayload.total++
-        nodesPayload.enrs.push(this.client.discv5.enr.encode())
-      }
       const encodedPayload = PortalWireMessageType.serialize({
         selector: MessageCodes.NODES,
         value: nodesPayload,

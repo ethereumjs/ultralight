@@ -4,10 +4,13 @@ import tape from 'tape'
 import td from 'testdouble'
 import {
   ENR,
+  FindNodesMessage,
   generateRandomNodeIdAtDistance,
   MessageCodes,
+  NodesMessage,
   PingPongCustomDataType,
   PortalNetwork,
+  PortalWireMessageType,
   ProtocolId,
 } from '../../src'
 import { TransportLayer } from '../../src/client'
@@ -16,6 +19,7 @@ import { BaseProtocol } from '../../src/subprotocols/protocol'
 import { Debugger } from 'debug'
 import PeerId from 'peer-id'
 import { toHexString } from '@chainsafe/ssz'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 
 // Fake Protocol class for testing Protocol class
 class FakeProtocol extends BaseProtocol {
@@ -192,33 +196,84 @@ tape('protocol wire message tests', async (t) => {
   })
 })
 
-tape.only('FINDNODES/FOUNDNODES message handler tests', async (t) => {
+tape('handleFindNodes message handler tests', async (t) => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
 
-  t.test('FOUNDNODES response', async (st) => {
-    const sortedEnrs: ENR[] = []
-    const protocol = new FakeProtocol(node, 2n ** 255n)
-    for (let x = 239; x < 256; x++) {
-      const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
-      const peerId = await PeerId.create({ keyType: 'secp256k1' })
-      const enr = ENR.createFromPeerId(peerId)
-      enr.encode(createKeypairFromPeerId(peerId).privateKey)
-      sortedEnrs.push(enr)
-      ;(enr as any)._nodeId = id
-      protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-    }
-    const newNode = generateRandomNodeIdAtDistance(sortedEnrs[0].nodeId, 254)
-    const res = await (protocol as any).handleFindNodes(
+  type sendResponse = (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
+  node.sendPortalNetworkResponse = td.func<sendResponse>()
+
+  const sortedEnrs: ENR[] = []
+  const protocol = new FakeProtocol(node, 2n ** 255n)
+  for (let x = 239; x < 256; x++) {
+    const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
+    const peerId = await PeerId.create({ keyType: 'secp256k1' })
+    const enr = ENR.createFromPeerId(peerId)
+    enr.encode(createKeypairFromPeerId(peerId).privateKey)
+    sortedEnrs.push(enr)
+    ;(enr as any)._nodeId = id
+    protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+  }
+  const newNode = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 0)
+  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+    distances: [239, 240],
+  })
+
+  td.verify(
+    node.sendPortalNetworkResponse(
       { socketAddr: new Multiaddr(), nodeId: newNode },
       1n,
-      {
-        distances: [253, 254, 255],
-      }
+      td.matchers.argThat((arg: Uint8Array) => {
+        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+        return msg.enrs.length === 1
+      })
     )
-    console.log(res)
+  )
+  t.pass('Nodes response contained 1 ENR since should be nothing in table at distance 239')
+
+  td.reset()
+
+  node.sendPortalNetworkResponse = td.func<sendResponse>()
+  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+    distances: [255, 256],
   })
+
+  td.verify(
+    node.sendPortalNetworkResponse(
+      { socketAddr: new Multiaddr(), nodeId: newNode },
+      1n,
+      td.matchers.argThat((arg: Uint8Array) => {
+        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+        return msg.enrs.length === 2
+      })
+    )
+  )
+  t.pass('Nodes response contained 2 ENRs since should be one node in each bucket')
+  td.reset()
+
+  const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
+  const peerId = await PeerId.create({ keyType: 'secp256k1' })
+  const enr = ENR.createFromPeerId(peerId)
+  enr.encode(createKeypairFromPeerId(peerId).privateKey)
+  ;(enr as any)._nodeId = id
+  protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+
+  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+    distances: [255, 256],
+  })
+
+  td.verify(
+    node.sendPortalNetworkResponse(
+      { socketAddr: new Multiaddr(), nodeId: newNode },
+      1n,
+      td.matchers.argThat((arg: Uint8Array) => {
+        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+        return msg.enrs.length === 3
+      })
+    )
+  )
+  t.pass('Nodes response contained 3 ENRs since one more ENR added to bucket 256')
 })
