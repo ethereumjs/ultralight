@@ -7,6 +7,7 @@ import { ProtocolId } from '..'
 import { PortalNetwork } from '../../client'
 import { PortalNetworkMetrics } from '../../client/types'
 import { shortId } from '../../util'
+import { HeaderAccumulator } from '../headerGossip'
 import {
   connectionIdType,
   ContentMessageType,
@@ -23,6 +24,7 @@ import * as rlp from 'rlp'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
+  accumulator: HeaderAccumulator
   logger: Debugger
   constructor(
     client: PortalNetwork,
@@ -32,6 +34,7 @@ export class HistoryProtocol extends BaseProtocol {
     super(client, nodeRadius, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.protocolName = 'History Network'
+    this.accumulator = new HeaderAccumulator(true)
     this.logger = debug(client.discv5.enr.nodeId.slice(0, 5)).extend('portalnetwork:historyNetwork')
   }
 
@@ -191,7 +194,16 @@ export class HistoryProtocol extends BaseProtocol {
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          if (
+            header.number.toNumber() === this.accumulator.currentHeight() + 1 &&
+            header.parentHash.equals(
+              this.accumulator.currentEpoch[this.accumulator.currentEpoch.length - 1].blockHash
+            )
+          ) {
+            // Update the header accumulator if the block header is the next in the chain
+            this.accumulator.updateAccumulator(header)
+          }
           this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
