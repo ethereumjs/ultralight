@@ -77,7 +77,11 @@ export class HeaderAccumulator {
     return false
   }
 
+  /**
+   * Returns the current height of the chain contained in the accumulator.  Assumes first block is genesis
+   * so subtracts one from chain height since genesis block height is technically 0.
+   */
   public currentHeight = () => {
-    return this.historicalEpochs.length * EPOCH_SIZE + this.currentEpoch.length
+    return this.historicalEpochs.length * EPOCH_SIZE + this.currentEpoch.length - 1
   }
 }

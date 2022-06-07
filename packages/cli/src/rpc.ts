@@ -9,7 +9,8 @@ import {
 } from 'portalnetwork'
 
 import { isValidId } from './util'
-import { HistoryProtocol } from 'portalnetwork/src/subprotocols/history/history'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types'
 
 export class RPCManager {
   public _client: PortalNetwork
@@ -45,6 +46,22 @@ export class RPCManager {
       const [blockHash, rlpHex] = params
       try {
         addRLPSerializedBlock(rlpHex, blockHash, this.protocol)
+        return `blockheader for ${blockHash} added to content DB`
+      } catch (err: any) {
+        this.log(`Error trying to load block to DB. ${err.message.toString()}`)
+        return `internal error`
+      }
+    },
+    portal_addBlockHeaderToHistory: async (params: [string, string]) => {
+      const [blockHash, rlpHex] = params
+      try {
+        const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        protocol.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.BlockHeader,
+          blockHash,
+          fromHexString(rlpHex)
+        )
         return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
         this.log(`Error trying to load block to DB. ${err.message.toString()}`)
