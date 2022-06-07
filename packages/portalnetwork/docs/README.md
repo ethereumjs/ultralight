@@ -1,10 +1,13 @@
 portalnetwork / [Exports](modules.md)
 
+__IN ACTIVE DEVELOPMENT -- DON'T USE IN PRODUCTION__
 # Portal Network Module 
 
 A partially complete Typescript library for interacting with the Portal Network
 
 See [API](./docs/modules.md) for more details
+
+See [Architecture](./ARCHITECTURE.md) for architectural concepts
 
 ## Routing Table Management
 
