@@ -14,6 +14,7 @@ import {
 import { isValidId } from './util'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types'
+import { CanonicalIndicesProtocol } from 'portalnetwork/src/subprotocols/canonicalIndices/canonicalIndices'
 
 export class RPCManager {
   public _client: PortalNetwork
@@ -33,6 +34,27 @@ export class RPCManager {
           ProtocolId.HistoryNetwork
         ) as never as HistoryProtocol
         const block = await protocol.getBlockByHash(blockHash, includeTransactions)
+        return block ?? 'Block not found'
+      } catch {
+        return 'Block not found'
+      }
+    },
+    eth_getBlockByNumber: async (params: [string, boolean]) => {
+      const [blockNumber, includeTransactions] = params
+      this.logger(
+        `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
+      )
+      try {
+        const canonicalIndices = this._client.protocols.get(
+          ProtocolId.CanonicalIndicesNetwork
+        ) as CanonicalIndicesProtocol
+        const blockHash = canonicalIndices.blockHash(parseInt(blockNumber))
+        const history = this._client.protocols.get(
+          ProtocolId.HistoryNetwork
+        ) as never as HistoryProtocol
+        if (!blockHash) return 'Block not found'
+        const block = await history.getBlockByHash(blockHash, includeTransactions)
+        this.logger(block)
         return block ?? 'Block not found'
       } catch {
         return 'Block not found'
@@ -78,7 +100,7 @@ export class RPCManager {
         return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
         this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
-        return `internal error`
+        return `Error trying to load block to DB. ${err.message.toString()}`
       }
     },
     portal_nodeEnr: async () => {
@@ -118,11 +140,11 @@ export class RPCManager {
       this.logger(`PONG received from ${encodedENR.nodeId}`)
       return `PING/PONG successful with ${encodedENR.nodeId}`
     },
-    portal_history_findContent: async (params: [string, Uint8Array, string]) => {
-      const [enr, contentKey, protocolId] = params
-      const protocol = this._client.protocols.get(protocolId as ProtocolId)
+    portal_history_findContent: async (params: [string, Uint8Array]) => {
+      const [enr, contentKey] = params
+      const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       if (!protocol) {
-        return `ProtocolID ${protocolId} not supported`
+        return `History Protocol not supported`
       }
       const res = await protocol.sendFindContent(enr, contentKey)
       return res

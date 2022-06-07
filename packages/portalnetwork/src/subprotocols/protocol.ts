@@ -30,15 +30,11 @@ export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint
-  abstract logger: Debugger
+  protected abstract logger: Debugger
   abstract protocolId: ProtocolId
   abstract protocolName: string
   public client: PortalNetwork
-  constructor(
-    client: PortalNetwork,
-    nodeRadius: bigint | undefined,
-    metrics?: PortalNetworkMetrics
-  ) {
+  constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     this.client = client
     this.nodeRadius = nodeRadius ?? 2n ** 256n
     this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
@@ -545,7 +541,7 @@ export abstract class BaseProtocol {
     return
   }
 
-  abstract sendFindContent: (
+  abstract sendFindContent?: (
     dstId: string,
     key: Uint8Array
   ) => Promise<Union<Uint8Array | Uint8Array[]> | undefined>

@@ -4,7 +4,6 @@ import tape from 'tape'
 import td from 'testdouble'
 import {
   ENR,
-  FindNodesMessage,
   generateRandomNodeIdAtDistance,
   MessageCodes,
   NodesMessage,
@@ -18,7 +17,6 @@ import { HistoryProtocol } from '../../src/subprotocols/history/history'
 import { BaseProtocol } from '../../src/subprotocols/protocol'
 import { Debugger } from 'debug'
 import PeerId from 'peer-id'
-import { toHexString } from '@chainsafe/ssz'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 
 // Fake Protocol class for testing Protocol class

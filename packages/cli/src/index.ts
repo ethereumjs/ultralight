@@ -112,7 +112,7 @@ const main = async () => {
     radius: 2n ** 256n,
     db,
     metrics,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.CanonicalIndicesNetwork],
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()

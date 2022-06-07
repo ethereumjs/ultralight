@@ -21,21 +21,18 @@ import { BaseProtocol } from '../protocol'
 import { HistoryNetworkContentTypes, HistoryNetworkContentKeyUnionType } from './types'
 import { getHistoryNetworkContentId, reassembleBlock } from './util'
 import * as rlp from 'rlp'
+import { CanonicalIndicesProtocol } from '../canonicalIndices/canonicalIndices'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
   accumulator: HeaderAccumulator
   logger: Debugger
-  constructor(
-    client: PortalNetwork,
-    nodeRadius: bigint | undefined,
-    metrics?: PortalNetworkMetrics
-  ) {
-    super(client, nodeRadius, metrics)
+  constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
+    super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.protocolName = 'History Network'
     this.accumulator = new HeaderAccumulator(true)
-    this.logger = debug(client.discv5.enr.nodeId.slice(0, 5)).extend('portalnetwork:historyNetwork')
+    this.logger = client.logger.extend('HistoryNetwork')
   }
 
   /**
@@ -137,7 +134,8 @@ export class HistoryProtocol extends BaseProtocol {
         undefined
       }
       if (!includeTransactions) {
-        body = rlp.encode([[], []])
+        block = reassembleBlock(header, rlp.encode([[], []]))
+        return block
       } else {
         lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
         body = await lookup.startLookup()
@@ -207,6 +205,11 @@ export class HistoryProtocol extends BaseProtocol {
               `Updated header accumulator.  Currently at height ${this.accumulator.currentHeight()}`
             )
           }
+          // Try updating the canonical block index when a new header is received
+          const canonicalIndices = this.client.protocols.get(
+            ProtocolId.CanonicalIndicesNetwork
+          ) as CanonicalIndicesProtocol
+          if (canonicalIndices) canonicalIndices.incrementBlockIndex(header)
           this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
