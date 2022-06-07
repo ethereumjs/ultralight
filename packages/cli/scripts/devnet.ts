@@ -9,7 +9,10 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'text file containing private keys for nodes in devnet',
         string: true,
         optional: true,
-        default: './scripts/pks.txt'
+    }) .option('numNodes', {
+        describe: 'number of random nodes to start',
+        number: true,
+        optional: true,
     }).option('promConfig', {
         describe: 'create prometheus scrape_target file',
         boolean: true,
@@ -17,13 +20,20 @@ const args: any = yargs(hideBin(process.argv))
     }).argv
 
 const main = async () => {
-    const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
-    const file = require.resolve(process.cwd() + '/dist/index.js')
     let children: ChildProcessWithoutNullStreams[] = []
+    const file = require.resolve(process.cwd() + '/dist/index.js')
+    if (args.pks) {
+    const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
     pks.forEach((key, idx) => { //@ts-ignore
         const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', this.stderr, process.stderr]})
         children.push(child)
     })
+    } else if (args.numNodes){
+        for (let x = 0; x < args.numNodes; x++) {//@ts-ignore
+            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', this.stderr, process.stderr]})
+            children.push(child)
+        }
+    }
 
     if (args.promConfig) {
         const targets:any[] = []

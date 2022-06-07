@@ -2,6 +2,7 @@ import { Client } from 'jayson/promise'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import fs from 'fs'
+import { ProtocolId } from 'portalnetwork'
 
 const args: any = yargs(hideBin(process.argv))
     .option('sourceFile', {
@@ -48,7 +49,7 @@ const main = async () => {
 
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })
-    const res = await _client.request('portal_ping', [bootNodeEnr.result])
+    const res = await _client.request('portal_ping', [bootNodeEnr.result, ProtocolId.HistoryNetwork])
     console.log(res)
     if (res.error) {
       throw new Error('should not error here')
