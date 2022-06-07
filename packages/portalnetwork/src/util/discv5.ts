@@ -6,4 +6,4 @@ export {
   log2Distance,
   distance,
 } from '@chainsafe/discv5'
-export { fromHexString } from '@chainsafe/ssz'
+export { toHexString, fromHexString } from '@chainsafe/ssz'

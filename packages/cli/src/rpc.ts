@@ -5,7 +5,10 @@ import {
   HistoryNetworkContentKeyUnionType,
   ENR,
   fromHexString,
+  toHexString,
   addRLPSerializedBlock,
+  HeaderAccumulatorType,
+  shortId,
 } from 'portalnetwork'
 
 import { isValidId } from './util'
@@ -14,15 +17,15 @@ import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/hist
 
 export class RPCManager {
   public _client: PortalNetwork
-  private log: Debugger
+  private logger: Debugger
   private _methods: { [key: string]: Function } = {
     discv5_nodeInfo: async () => {
-      this.log('discv5_nodeInfo request received')
+      this.logger('discv5_nodeInfo request received')
       return 'Ultralight-CLI: v0.0.1'
     },
     eth_getBlockByHash: async (params: [string, boolean]) => {
       const [blockHash, includeTransactions] = params
-      this.log(
+      this.logger(
         `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
       )
       try {
@@ -38,7 +41,7 @@ export class RPCManager {
     portal_addBootNode: async (params: [string, string]) => {
       const [enr, protocolId] = params
       const encodedENR = ENR.decodeTxt(enr)
-      this.log(
+      this.logger(
         `portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`
       )
       const protocol = this._client.protocols.get(protocolId as ProtocolId)
@@ -58,7 +61,7 @@ export class RPCManager {
         addRLPSerializedBlock(rlpHex, blockHash, protocol)
         return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
-        this.log(`Error trying to load block to DB. ${err.message.toString()}`)
+        this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
         return `internal error`
       }
     },
@@ -74,12 +77,12 @@ export class RPCManager {
         )
         return `blockheader for ${blockHash} added to content DB`
       } catch (err: any) {
-        this.log(`Error trying to load block to DB. ${err.message.toString()}`)
+        this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
         return `internal error`
       }
     },
     portal_nodeEnr: async () => {
-      this.log(`portal_nodeEnr request received`)
+      this.logger(`portal_nodeEnr request received`)
       try {
         const enr = this._client.discv5.enr.encodeTxt()
         return enr
@@ -96,9 +99,9 @@ export class RPCManager {
       if (!protocol) {
         return `ProtocolID ${protocolId} not supported`
       }
-      this.log(`portal_findNodes request received with these distances ${distances.toString()}`)
+      this.logger(`portal_findNodes request received with these distances ${distances.toString()}`)
       const res = await protocol.sendFindNodes(dstId, distances)
-      this.log(`response received to findNodes ${res?.toString()}`)
+      this.logger(`response received to findNodes ${res?.toString()}`)
       return `${res?.total ?? 0} nodes returned`
     },
     portal_ping: async (params: [string, string]) => {
@@ -108,9 +111,11 @@ export class RPCManager {
         return `ProtocolID ${protocolId} not supported`
       }
       const encodedENR = ENR.decodeTxt(enr)
-      this.log(`portal_ping request received`)
+      this.logger(
+        `PING request received on ${protocol.protocolName} for ${shortId(encodedENR.nodeId)}`
+      )
       await protocol.sendPing(enr)
-      this.log(`PONG received from ${encodedENR.nodeId}`)
+      this.logger(`PONG received from ${encodedENR.nodeId}`)
       return `PING/PONG successful with ${encodedENR.nodeId}`
     },
     portal_history_findContent: async (params: [string, Uint8Array, string]) => {
@@ -148,14 +153,18 @@ export class RPCManager {
       const res = await protocol.sendOffer(dstId, contentKeys)
       return res
     },
-    portal_headerAccumulator: async () => {
-      return
+    portal_headerAccumulatorRoot: async () => {
+      this.logger(`Received request for current header accumulator root hashF`)
+      const protocol = this._client.protocols.get(
+        ProtocolId.HistoryNetwork
+      ) as never as HistoryProtocol
+      return toHexString(HeaderAccumulatorType.hashTreeRoot(protocol.accumulator))
     },
   }
 
   constructor(client: PortalNetwork) {
     this._client = client
-    this.log = debug(this._client.discv5.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
+    this.logger = debug(this._client.discv5.enr.nodeId.slice(0, 5)).extend('ultralight:RPC')
   }
 
   public getMethods() {
