@@ -32,6 +32,8 @@ export class ContentLookup {
    * requests peers closer to the content until either the content is found or there are no more peers to query
    */
   public startLookup = async () => {
+    // Don't support content lookups for protocols that don't implement it (i.e. Canonical Indices)
+    if (!this.protocol.sendFindContent) return
     this.protocol.client.metrics?.totalContentLookups.inc()
     try {
       const res = await this.protocol.client.db.get(this.contentId)
