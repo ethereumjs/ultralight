@@ -1,6 +1,6 @@
-import { Proof } from '@chainsafe/persistent-merkle-tree'
+import { createProof, Proof, ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types'
 
 export class HeaderAccumulator {
@@ -55,28 +55,60 @@ export class HeaderAccumulator {
   }
   /**
    *
-   * @param proof a `Proof` for a particular header's inclusion in the accumulator's `currentEpoch`
+   * @param proof a `Proof` for a particular header's inclusion as the latest header in the accumulator's `currentEpoch`
    * @param header the blockheader being proved to be included in the `currentEpoch`
    * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
    * @returns true if proof is valid, false otherwise
    */
   public verifyInclusionProof = (proof: Proof, header: BlockHeader, blockPosition: number) => {
-    const reconstructedTree = HeaderAccumulatorType.createFromProof(proof)
+    // Rewind current epoch to point where block header is last header in `currentEpoch`
+    const historicalAccumulator = HeaderAccumulatorType.toView({
+      historicalEpochs: this._historicalEpochs,
+      currentEpoch: this._currentEpoch.slice(0, blockPosition + 1),
+    })
+    const reconstructedTree = HeaderAccumulatorType.createFromProof(
+      proof,
+      HeaderAccumulatorType.hashTreeRoot(this)
+    )
 
-    const epochTree = HeaderAccumulatorType.toView(this)
     try {
       const value = reconstructedTree.currentEpoch.get(blockPosition)
+
       if (
         toHexString(value.blockHash) === toHexString(header.hash()) &&
-        toHexString(epochTree.hashTreeRoot()) === toHexString(reconstructedTree.hashTreeRoot())
+        toHexString(historicalAccumulator.hashTreeRoot()) ===
+          toHexString(reconstructedTree.hashTreeRoot())
       ) {
         return true
       } //eslint-disable-next-line prettier/prettier
-    } catch { }
+    } catch {}
 
     return false
   }
 
+  /**
+   *
+   * @param blockHash blockhash of header used in proof
+   * @returns a merkle multiproof representing the header at the last position in the current epoch
+   */
+  public generateInclusionProof = (blockHash: string) => {
+    const position = this._currentEpoch.findIndex(
+      (record) => toHexString(record.blockHash) === blockHash
+    )
+
+    const historicalAccumulator = HeaderAccumulatorType.toView({
+      historicalEpochs: this._historicalEpochs,
+      currentEpoch: this._currentEpoch.slice(0, position + 1),
+    })
+
+    return createProof(historicalAccumulator.node, {
+      type: ProofType.multi,
+      gindices: HeaderAccumulatorType.tree_createProofGindexes(historicalAccumulator.node, [
+        ['currentEpoch', position, 'blockHash'],
+        ['currentEpoch', position, 'totalDifficulty'],
+      ]),
+    })
+  }
   /**
    * Returns the current height of the chain contained in the accumulator.  Assumes first block is genesis
    * so subtracts one from chain height since genesis block height is technically 0.

@@ -2,7 +2,7 @@ import tape from 'tape'
 import { HeaderAccumulator, HeaderAccumulatorType } from '../../../src/subprotocols/headerGossip'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { deserializeProof, serializeProof } from '@chainsafe/persistent-merkle-tree'
+import { createProof, ProofType } from '@chainsafe/persistent-merkle-tree'
 
 tape('Validate accumulator updates', (t) => {
   const accumulator = new HeaderAccumulator()
@@ -37,20 +37,12 @@ tape('Validate accumulator updates', (t) => {
     'roots match after Block 2'
   )
 
-  const tree = HeaderAccumulatorType.toView(accumulator)
-
-  const proof = tree.createProof([
-    ['currentEpoch', 1, 'blockHash'],
-    ['currentEpoch', 1, 'totalDifficulty'],
-  ])
+  const multiProof = accumulator.generateInclusionProof(toHexString(block2Header.hash()))
 
   t.ok(
-    accumulator.verifyInclusionProof(proof, block1Header, 1),
-    'validated multiproof for block 1 header record in current epoch'
+    accumulator.verifyInclusionProof(multiProof, block2Header, 2),
+    'validated multiproof for block 2 header record in current epoch'
   )
 
-  const serializedProof = serializeProof(proof)
-  const reconstructedProof = deserializeProof(serializedProof)
-  t.deepEqual(proof, reconstructedProof, 'proofs can be serialized and deserialized successfully')
   t.end()
 })
