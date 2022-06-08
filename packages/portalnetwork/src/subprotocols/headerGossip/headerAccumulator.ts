@@ -86,6 +86,11 @@ export class HeaderAccumulator {
     return false
   }
 
+  /**
+   *
+   * @param blockHash blockhash of header used in proof
+   * @returns a merkle multiproof representing the header at the last position in the current epoch
+   */
   public generateInclusionProof = (blockHash: string) => {
     const position = this._currentEpoch.findIndex(
       (record) => toHexString(record.blockHash) === blockHash
