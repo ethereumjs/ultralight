@@ -61,6 +61,7 @@ export class HeaderAccumulator {
    * @returns true if proof is valid, false otherwise
    */
   public verifyInclusionProof = (proof: Proof, header: BlockHeader, blockPosition: number) => {
+    // Rewind current epoch to point where block header is last header in `currentEpoch`
     const historicalAccumulator = HeaderAccumulatorType.toView({
       historicalEpochs: this._historicalEpochs,
       currentEpoch: this._currentEpoch.slice(0, blockPosition + 1),
@@ -85,6 +86,7 @@ export class HeaderAccumulator {
     return false
   }
 
+  public generateHeaderProof = block
   /**
    * Returns the current height of the chain contained in the accumulator.  Assumes first block is genesis
    * so subtracts one from chain height since genesis block height is technically 0.
