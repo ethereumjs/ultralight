@@ -55,24 +55,32 @@ export class HeaderAccumulator {
   }
   /**
    *
-   * @param proof a `Proof` for a particular header's inclusion in the accumulator's `currentEpoch`
+   * @param proof a `Proof` for a particular header's inclusion as the latest header in the accumulator's `currentEpoch`
    * @param header the blockheader being proved to be included in the `currentEpoch`
    * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
    * @returns true if proof is valid, false otherwise
    */
   public verifyInclusionProof = (proof: Proof, header: BlockHeader, blockPosition: number) => {
-    const reconstructedTree = HeaderAccumulatorType.createFromProof(proof)
+    const historicalAccumulator = HeaderAccumulatorType.toView({
+      historicalEpochs: this._historicalEpochs,
+      currentEpoch: this._currentEpoch.slice(0, blockPosition + 1),
+    })
+    const reconstructedTree = HeaderAccumulatorType.createFromProof(
+      proof,
+      HeaderAccumulatorType.hashTreeRoot(this)
+    )
 
-    const epochTree = HeaderAccumulatorType.toView(this)
     try {
       const value = reconstructedTree.currentEpoch.get(blockPosition)
+
       if (
         toHexString(value.blockHash) === toHexString(header.hash()) &&
-        toHexString(epochTree.hashTreeRoot()) === toHexString(reconstructedTree.hashTreeRoot())
+        toHexString(historicalAccumulator.hashTreeRoot()) ===
+          toHexString(reconstructedTree.hashTreeRoot())
       ) {
         return true
       } //eslint-disable-next-line prettier/prettier
-    } catch { }
+    } catch {}
 
     return false
   }
