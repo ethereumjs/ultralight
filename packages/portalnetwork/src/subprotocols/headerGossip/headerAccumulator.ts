@@ -1,6 +1,6 @@
-import { Proof } from '@chainsafe/persistent-merkle-tree'
+import { createProof, Proof, ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types'
 
 export class HeaderAccumulator {
@@ -86,7 +86,24 @@ export class HeaderAccumulator {
     return false
   }
 
-  public generateHeaderProof = block
+  public generateInclusionProof = (blockHash: string) => {
+    const position = this._currentEpoch.findIndex(
+      (record) => toHexString(record.blockHash) === blockHash
+    )
+
+    const historicalAccumulator = HeaderAccumulatorType.toView({
+      historicalEpochs: this._historicalEpochs,
+      currentEpoch: this._currentEpoch.slice(0, position + 1),
+    })
+
+    return createProof(historicalAccumulator.node, {
+      type: ProofType.multi,
+      gindices: HeaderAccumulatorType.tree_createProofGindexes(historicalAccumulator.node, [
+        ['currentEpoch', position, 'blockHash'],
+        ['currentEpoch', position, 'totalDifficulty'],
+      ]),
+    })
+  }
   /**
    * Returns the current height of the chain contained in the accumulator.  Assumes first block is genesis
    * so subtracts one from chain height since genesis block height is technically 0.

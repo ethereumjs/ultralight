@@ -37,15 +37,7 @@ tape('Validate accumulator updates', (t) => {
     'roots match after Block 2'
   )
 
-  const tree = HeaderAccumulatorType.toView(accumulator)
-
-  const multiProof = createProof(tree.node, {
-    type: ProofType.multi,
-    gindices: HeaderAccumulatorType.tree_createProofGindexes(tree.node, [
-      ['currentEpoch', 2, 'blockHash'],
-      ['currentEpoch', 2, 'totalDifficulty'],
-    ]),
-  })
+  const multiProof = accumulator.generateInclusionProof(toHexString(block2Header.hash()))
 
   t.ok(
     accumulator.verifyInclusionProof(multiProof, block2Header, 2),
