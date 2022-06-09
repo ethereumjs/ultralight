@@ -1,8 +1,7 @@
 import tape from 'tape'
-import { HeaderAccumulator, HeaderAccumulatorType } from '../../../src/subprotocols/headerGossip'
+import { HeaderAccumulator, HeaderAccumulatorType } from '../../../src/subprotocols/history'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { createProof, ProofType } from '@chainsafe/persistent-merkle-tree'
 
 tape('Validate accumulator updates', (t) => {
   const accumulator = new HeaderAccumulator()
