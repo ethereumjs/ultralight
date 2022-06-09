@@ -429,9 +429,7 @@ export abstract class BaseProtocol {
     let value = Uint8Array.from([])
     try {
       value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
-    } catch (err: any) {
-      // this.logger(`Error retrieving content -- ${err.toString()}`)
-    }
+    } catch {}
     if (value.length === 0) {
       if (toHexString(protocol) === this.protocolId) {
         // Discv5 calls for maximum of 16 nodes per NODES message

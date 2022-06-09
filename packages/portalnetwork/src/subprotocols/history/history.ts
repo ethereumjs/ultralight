@@ -284,9 +284,7 @@ export class HistoryProtocol extends BaseProtocol {
     })
 
     nearestPeers.forEach((peer) => {
-      if (this.routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(encodedKey))) {
-        this.logger('Content already known to peer')
-      } else {
+      if (!this.routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(encodedKey))) {
         // If peer hasn't already been OFFERed this contentKey and the content is within the peer's advertised radius, OFFER
         this.logger(`Offering content to ${peer.nodeId.slice(0, 5)}...`)
         this.sendOffer(peer.nodeId, [encodedKey])
