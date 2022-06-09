@@ -5,7 +5,7 @@ import { ProtocolId } from '..'
 import { PortalNetwork } from '../../client'
 import { PortalNetworkMetrics } from '../../client/types'
 import { shortId } from '../../util'
-import { HeaderAccumulator } from '../headerGossip'
+import { HeaderAccumulator } from '.'
 import {
   connectionIdType,
   ContentMessageType,

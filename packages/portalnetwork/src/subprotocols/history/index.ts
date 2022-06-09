@@ -1,2 +1,3 @@
-export { HistoryNetworkContentKey, HistoryNetworkContentKeyUnionType } from './types'
+export * from './types'
 export * from './util'
+export * from './headerAccumulator'

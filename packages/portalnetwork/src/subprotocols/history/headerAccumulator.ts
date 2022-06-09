@@ -1,6 +1,6 @@
 import { createProof, Proof, ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { BlockHeader } from '@ethereumjs/block'
 import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types'
 
 export class HeaderAccumulator {

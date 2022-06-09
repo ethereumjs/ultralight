@@ -1,7 +1,6 @@
 export { PortalNetwork } from './client/index'
 export { StateNetworkRoutingTable, distance } from './subprotocols/state/index'
-export * from './subprotocols/headerGossip'
-export * from './subprotocols/history'
+export * from './subprotocols'
 export * from './wire'
 export * from './util'
 export * from './transports'
