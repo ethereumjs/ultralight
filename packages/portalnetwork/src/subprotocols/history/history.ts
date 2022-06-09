@@ -261,6 +261,10 @@ export class HistoryProtocol extends BaseProtocol {
         ]
       } for ${blockHash} to content db`
     )
+    if (this.routingTable.values().length > 0) {
+      this.logger('Gossiping new content to network')
+      await this.gossipHistoryNetworkContent(blockHash, contentType)
+    }
   }
 
   /**
@@ -280,11 +284,11 @@ export class HistoryProtocol extends BaseProtocol {
     })
 
     nearestPeers.forEach((peer) => {
-      if (
-        !this.routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(encodedKey)) &&
-        distance(peer.nodeId, contentId) < this.routingTable.getRadius(peer.nodeId)!
+      if (this.routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(encodedKey))) {
+        this.logger('Content already known to peer')
+      } else {
         // If peer hasn't already been OFFERed this contentKey and the content is within the peer's advertised radius, OFFER
-      ) {
+        this.logger(`Offering content to ${peer.nodeId.slice(0, 5)}...`)
         this.sendOffer(peer.nodeId, [encodedKey])
       }
     })
