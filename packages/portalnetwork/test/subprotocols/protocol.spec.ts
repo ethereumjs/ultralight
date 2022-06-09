@@ -30,6 +30,7 @@ class FakeProtocol extends BaseProtocol {
     this.protocolId = ProtocolId.HistoryNetwork
     this.protocolName = 'History Network'
     this.logger = td.func<any>()
+    this.logger = Object.assign(this.logger, this.logger, { extend: td.func<any>() })
   }
   sendFindContent = td.func<any>()
 }
@@ -44,6 +45,8 @@ tape('protocol wire message tests', async (t) => {
   t.test('PING/PONG message handlers', async (st) => {
     st.plan(3)
     const protocol = new FakeProtocol(node, 2n) as any
+    td.when(protocol.logger.extend(td.matchers.anything())).thenReturn(() => {})
+
     const remoteEnr =
       'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
     const pongResponse = Buffer.from([
@@ -85,6 +88,7 @@ tape('protocol wire message tests', async (t) => {
   t.test('FINDNODES/NODES message handlers', async (st) => {
     st.plan(4)
     const protocol = new FakeProtocol(node, 2n) as any
+    td.when(protocol.logger.extend(td.matchers.anything())).thenReturn(() => {})
     const remoteEnr =
       'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
     const decodedEnr = ENR.decodeTxt(remoteEnr)
@@ -149,6 +153,7 @@ tape('protocol wire message tests', async (t) => {
   t.test('OFFER/ACCEPT message handlers', async (st) => {
     st.plan(3)
     const protocol = new HistoryProtocol(node, 2n) as any
+    td.when(protocol.logger.extend(td.matchers.anything())).thenReturn(() => {})
 
     let res = await protocol.sendOffer(
       'c875efa288b97fce46c93adbeb05b25465acfe00121ec00f6db7f3bd883ac6f2',
@@ -205,7 +210,8 @@ tape('handleFindNodes message handler tests', async (t) => {
   node.sendPortalNetworkResponse = td.func<sendResponse>()
 
   const sortedEnrs: ENR[] = []
-  const protocol = new FakeProtocol(node, 2n ** 255n)
+  const protocol = new FakeProtocol(node, 2n) //@ts-ignore
+  td.when(protocol.logger.extend(td.matchers.anything())).thenReturn(() => {})
   for (let x = 239; x < 256; x++) {
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
     const peerId = await PeerId.create({ keyType: 'secp256k1' })
@@ -234,6 +240,8 @@ tape('handleFindNodes message handler tests', async (t) => {
 
   td.reset()
 
+  //@ts-ignore
+  td.when(protocol.logger.extend(td.matchers.anything())).thenReturn(() => {})
   node.sendPortalNetworkResponse = td.func<sendResponse>()
   await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
     distances: [255, 256],
@@ -252,6 +260,8 @@ tape('handleFindNodes message handler tests', async (t) => {
   t.pass('Nodes response contained 2 ENRs since should be one node in each bucket')
   td.reset()
 
+  //@ts-ignore
+  td.when(protocol.logger.extend(td.matchers.anything())).thenReturn(() => {})
   const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
   const peerId = await PeerId.create({ keyType: 'secp256k1' })
   const enr = ENR.createFromPeerId(peerId)

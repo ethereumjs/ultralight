@@ -53,7 +53,7 @@ export abstract class BaseProtocol {
     const deserialized = PortalWireMessageType.deserialize(request)
     const decoded = deserialized.value
     const messageType = deserialized.selector
-    this.logger(`TALKREQUEST with ${MessageCodes[messageType]} message received from ${src.nodeId}`)
+    this.logger.extend(MessageCodes[messageType])(`Received from ${shortId(src.nodeId)}`)
     switch (messageType) {
       case MessageCodes.PING:
         this.handlePing(src, id, decoded as PingMessage)
@@ -112,14 +112,14 @@ export abstract class BaseProtocol {
       },
     })
     try {
-      this.logger(`Sending PING to ${shortId(enr.nodeId)} for ${this.protocolName} subprotocol`)
+      this.logger.extend(`PING`)(`Sent to ${shortId(enr.nodeId)}`)
       const res = await this.client.sendPortalNetworkMessage(
         enr,
         Buffer.from(pingMsg),
         this.protocolId
       )
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
-        this.logger(`Received PONG from ${shortId(enr.nodeId)}`)
+        this.logger.extend('PONG')(`Received from ${shortId(enr.nodeId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
@@ -156,6 +156,7 @@ export abstract class BaseProtocol {
       selector: MessageCodes.PONG,
       value: payload,
     })
+    this.logger.extend('PONG')(`Sent to ${shortId(src.nodeId)}`)
     this.client.sendPortalNetworkResponse(src, requestId, Buffer.from(pongMsg))
   }
 
@@ -176,7 +177,7 @@ export abstract class BaseProtocol {
     })
 
     try {
-      this.logger(`Sending FINDNODES to ${shortId(dstId)} for ${this.protocolName} subprotocol`)
+      this.logger.extend(`FINDNODES`)(`Sending to ${shortId(dstId)}`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) {
         this.logger(`Invalid node ID provided. FINDNODES aborted`)
@@ -189,20 +190,25 @@ export abstract class BaseProtocol {
       )
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         this.metrics?.nodesMessagesReceived.inc()
-        this.logger(`Received NODES from ${shortId(dstId)}`)
         const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
         if (decoded) {
-          this.logger(`Received ${decoded.total} ENRs from ${shortId(dstId)}`)
+          let counter = 0
           decoded.enrs.forEach((enr) => {
             const decodedEnr = ENR.decode(Buffer.from(enr))
-            this.logger(decodedEnr.nodeId)
             if (!this.routingTable.getValue(decodedEnr.nodeId)) {
               // Ping node if not currently in subprotocol routing table
+              this.logger(`Discovered an unknown node: `, shortId(decodedEnr.nodeId))
               this.sendPing(decodedEnr)
             } else {
-              this.logger(`We already know ${shortId(decodedEnr.nodeId)}`)
+              counter++
             }
           })
+          this.logger.extend(`NODES`)(
+            `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
+              decoded.total - counter
+            } unknown.`
+          )
+
           return decoded
         }
       }
@@ -212,7 +218,6 @@ export abstract class BaseProtocol {
   }
 
   private handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
-    this.logger(`Received FINDNODES request from ${shortId(src.nodeId)}`)
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
         total: 0,
@@ -243,6 +248,12 @@ export abstract class BaseProtocol {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
+      this.logger.extend(`NODES`)(
+        `Sending `,
+        nodesPayload.enrs.length.toString(),
+        ` ENR's to `,
+        shortId(src.nodeId)
+      )
       this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
@@ -270,7 +281,7 @@ export abstract class BaseProtocol {
       this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
       return
     }
-    this.logger(`Sending OFFER message to ${shortId(dstId)}`)
+    this.logger.extend(`OFFER`)(`Sent to ${shortId(dstId)}`)
     const res = await this.client.sendPortalNetworkMessage(
       enr,
       Buffer.from(payload),
@@ -281,8 +292,6 @@ export abstract class BaseProtocol {
         const decoded = PortalWireMessageType.deserialize(res)
         if (decoded.selector === MessageCodes.ACCEPT) {
           this.metrics?.acceptMessagesReceived.inc()
-          this.logger(`Received ACCEPT message from ${shortId(dstId)}`)
-          this.logger(decoded.value)
           const msg = decoded.value as AcceptMessage
           const id = Buffer.from(msg.connectionId).readUInt16BE(0)
           // Initiate uTP streams with serving of requested content
@@ -291,7 +300,7 @@ export abstract class BaseProtocol {
           )
           if (requestedKeys.length === 0) {
             // Don't start uTP stream if no content ACCEPTed
-            this.logger(`Received ACCEPT with no desired content from ${shortId(dstId)}`)
+            this.logger.extend('ACCEPT')(`Received no desired content`)
             return []
           }
 
@@ -327,10 +336,8 @@ export abstract class BaseProtocol {
   }
 
   private handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
-    this.logger(
-      `Received OFFER request from ${shortId(src.nodeId)} with ${
-        msg.contentKeys.length
-      } pieces of content.`
+    this.logger.extend('OFFER')(
+      `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`
     )
     try {
       if (msg.contentKeys.length > 0) {
@@ -341,12 +348,13 @@ export abstract class BaseProtocol {
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
               await this.client.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
-              this.logger(`Already have this content ${msg.contentKeys[x]}`)
+              this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
-              this.logger(err)
               offerAccepted = true
               contentIds[x] = true
-              this.logger(`Found some interesting content from ${shortId(src.nodeId)}`)
+              this.logger.extend('OFFER')(
+                `Found some interesting content from ${shortId(src.nodeId)}`
+              )
             }
           }
           if (offerAccepted) {
@@ -382,8 +390,8 @@ export abstract class BaseProtocol {
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[]
   ) => {
-    this.logger(
-      `sending ACCEPT to ${shortId(src.nodeId)} for ${desiredContentKeys.length} pieces of content.`
+    this.logger.extend('ACCEPT')(
+      `Sent to ${shortId(src.nodeId)} for ${desiredContentKeys.length} pieces of content.`
     )
 
     this.metrics?.acceptMessagesSent.inc()
@@ -416,15 +424,12 @@ export abstract class BaseProtocol {
     decodedContentMessage: FindContentMessage
   ) => {
     this.metrics?.contentMessagesSent.inc()
-    this.logger(`Received FINDCONTENT request from ${shortId(src.nodeId)}`)
     //Check to see if value in content db
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
     try {
       value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
-    } catch (err: any) {
-      this.logger(`Error retrieving content -- ${err.toString()}`)
-    }
+    } catch {}
     if (value.length === 0) {
       if (toHexString(protocol) === this.protocolId) {
         // Discv5 calls for maximum of 16 nodes per NODES message
@@ -468,7 +473,7 @@ export abstract class BaseProtocol {
           `...`
       )
       const payload = ContentMessageType.serialize({ selector: 1, value: value })
-      this.logger(`Sending requested content to ${src.nodeId}`)
+      this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
       this.logger(Uint8Array.from(value))
       this.client.sendPortalNetworkResponse(
         src,
@@ -476,14 +481,14 @@ export abstract class BaseProtocol {
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
       )
     } else {
-      this.logger(
+      this.logger.extend('FOUNDCONTENT')(
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.' +
           Buffer.from(decodedContentMessage.contentKey).toString('hex') +
           value.slice(0, 10) +
           `...`
       )
-      this.logger(`Generating Random Connection Id...`)
       const _id = randUint16()
+      this.client.uTP.logger(`Generating Random Connection Id...`, _id)
       await this.client.uTP.handleNewRequest(
         [decodedContentMessage.contentKey],
         src.nodeId,
@@ -493,9 +498,8 @@ export abstract class BaseProtocol {
       )
 
       const id = connectionIdType.serialize(_id)
-      this.logger(
-        `Sending FOUND_CONTENT message with CONNECTION ID: ${_id}, waiting for uTP SYN Packet`
-      )
+      this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
+      this.client.uTP.logger('Waiting for SYN Packet')
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendPortalNetworkResponse(
         src,
@@ -517,7 +521,7 @@ export abstract class BaseProtocol {
     let enr = typeof srcId === 'string' ? this.routingTable.getValue(srcId) : srcId
     if (!add) {
       this.routingTable.evictNode(nodeId)
-      this.logger(`removed ${nodeId} from ${this.protocolName} Routing Table`)
+      this.logger.extend('Evict')(`removed ${nodeId} from ${this.protocolName} Routing Table`)
       return
     }
     try {

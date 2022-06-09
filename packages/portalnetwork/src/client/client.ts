@@ -137,7 +137,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5 = Discv5.create(opts.config)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId).privateKey)
-    this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('portalnetwork')
+    this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.protocols = new Map()
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId
@@ -285,8 +285,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
     this.metrics?.totalBytesReceived.inc(message.response.length)
-    const srcId = src.nodeId
-    this.logger(`TALKRESPONSE message received from ${srcId}`)
   }
 
   /**
