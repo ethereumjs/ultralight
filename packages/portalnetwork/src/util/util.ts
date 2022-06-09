@@ -22,9 +22,9 @@ export const shortId = (nodeId: string) => {
  * @returns a random node ID at a log2 distance of `targetDistance`
  */
 export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: number): NodeId => {
-  const binaryDistance = new Array(255 - targetDistance).fill(0)
+  const binaryDistance = new Array(256 - targetDistance).fill(0)
   binaryDistance.push(1)
-  while (binaryDistance.length < 255) {
+  while (binaryDistance.length < 256) {
     binaryDistance.push(Math.random() >= 0.5 ? 1 : 0)
   }
   const xorNumericDistance = BigInt(parseInt(binaryDistance.join(''), 2))
