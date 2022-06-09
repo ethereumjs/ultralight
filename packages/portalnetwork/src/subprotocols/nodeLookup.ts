@@ -27,7 +27,6 @@ export class NodeLookup {
    * @param protocolId `SubNetworkId` of the routing table to be queried
    */
   public startLookup = async () => {
-    this.log(`starting lookup for ${shortId(this.nodeSought)}`)
     const closestPeers = this.protocol.routingTable.nearest(this.nodeSought, a)
     const newPeers: ENR[] = []
     const nodesAlreadyAsked = new Set()
@@ -75,9 +74,12 @@ export class NodeLookup {
         })
       }
     }
-    this.log(
-      `finished node lookup for ${shortId(this.nodeSought)} and found ${newPeers.length} new peers`
-    )
+    newPeers.length > 0 &&
+      this.log(
+        `finished node lookup for ${shortId(this.nodeSought)} and found ${
+          newPeers.length
+        } new peers`
+      )
     newPeers.forEach(async (enr) => {
       // Add all newly found peers to the subprotocol routing table
       const res = await this.protocol.sendPing(enr.nodeId)
