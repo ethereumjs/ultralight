@@ -1,7 +1,5 @@
-import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import debug from 'debug'
 import { Debugger } from 'debug'
 import { ProtocolId } from '..'
 import { PortalNetwork } from '../../client'
