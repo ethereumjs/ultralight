@@ -586,9 +586,8 @@ export abstract class BaseProtocol {
         return { bucket: bucket, distance: idx }
       })
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
-    if (notFullBuckets.length > 0) {
-      const randomDistance = Math.trunc(Math.random() * 10)
-      const distance = notFullBuckets[randomDistance].distance ?? notFullBuckets[0].distance
+    notFullBuckets.forEach(async (bucket, idx) => {
+      const distance = bucket.distance
       this.logger(`Refreshing bucket at distance ${distance}`)
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(
         this.client.discv5.enr.nodeId,
@@ -596,7 +595,7 @@ export abstract class BaseProtocol {
       )
       const lookup = new NodeLookup(this, randomNodeAtDistance)
       await lookup.startLookup()
-    }
+    })
   }
 
   /**
@@ -610,16 +609,12 @@ export abstract class BaseProtocol {
       // Disregard attempts to add oneself as a bootnode
       return
     }
-    const distancesSought = []
+    await this.sendPing(enr)
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256
       if (this.routingTable.valuesOfDistance(x).length === 0) {
-        distancesSought.push(x)
+        this.sendFindNodes(enr.nodeId, [x])
       }
     }
-    // Requests nodes in all empty k-buckets
-    this.client.discv5.sendPing(enr)
-    this.sendPing(enr)
-    this.sendFindNodes(enr.nodeId, distancesSought)
   }
 }
