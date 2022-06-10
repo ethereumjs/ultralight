@@ -186,3 +186,5 @@ main().catch((err) => {
   console.log('Encountered an error', err.message)
   console.log('Shutting down...')
 })
+
+export * from './rpc'
