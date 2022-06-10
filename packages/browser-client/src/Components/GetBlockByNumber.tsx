@@ -16,6 +16,8 @@ export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
 
   const portal = useContext(PortalContext)
 
+  // Adapted from rpc method in cli.
+
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
       const canonicalIndices = portal.protocols.get(
