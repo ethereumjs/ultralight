@@ -9,10 +9,12 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'text file containing private keys for nodes in devnet',
         string: true,
         optional: true,
+	default: './scripts/pks.txt'
     }) .option('numNodes', {
         describe: 'number of random nodes to start',
         number: true,
         optional: true,
+	default: 16
     }).option('promConfig', {
         describe: 'create prometheus scrape_target file',
         boolean: true,
