@@ -588,7 +588,6 @@ export abstract class BaseProtocol {
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
     notFullBuckets.forEach(async (bucket, idx) => {
       const distance = bucket.distance
-      this.logger(`Refreshing bucket at distance ${distance}`)
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(
         this.client.discv5.enr.nodeId,
         distance
