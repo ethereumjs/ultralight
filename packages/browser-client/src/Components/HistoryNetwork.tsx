@@ -14,6 +14,7 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import DisplayBlock from './DisplayBlock'
 import RoutingTableView from './RoutingTableView'
 import { ENR } from 'portalnetwork'
+import GetBlockByNumber from './GetBlockByNumber'
 
 interface HistoryNetworkProps {
   findParent: (hash: string) => Promise<void>
@@ -72,6 +73,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
           />
         </FormControl>
       </HStack>
+      <GetBlockByNumber setIsLoading={setIsLoading} setBlockHash={props.setBlockHash} />
       <Tabs index={tabIndex} onChange={handleTabsChange}>
         <TabList>
           <Tab>Network</Tab>
@@ -82,9 +84,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
             <RoutingTableView peers={props.peers} sortedDistList={props.sortedDistList} />
           </TabPanel>
           <TabPanel>
-            {props.block && (
-              <DisplayBlock isLoading={isLoading} findParent={findParent} block={props.block!} />
-            )}
+            {props.block?.header && <DisplayBlock isLoading={isLoading} findParent={findParent} />}
           </TabPanel>
         </TabPanels>
       </Tabs>

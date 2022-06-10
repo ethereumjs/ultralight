@@ -18,19 +18,20 @@ import {
 import { Block } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import SelectTx from './SelectTx'
-import React from 'react'
+import React, { useContext } from 'react'
+import { BlockContext } from '../App'
 
 interface DisplayBlockProps {
-  block: Block
   findParent: (hash: string) => Promise<void>
   isLoading: boolean
 }
 
 const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
+  const { block, setBlock } = useContext(BlockContext)
   const findParent = props.findParent
-  const header = Object.entries(props.block!.header!.toJSON())
-  const txList = props.block.transactions
-  const tx: string[] = props.block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
+  const header = Object.entries(block!.header!.toJSON())
+  const txList = block.transactions
+  const tx: string[] = block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   const headerlookupKey =
     '0x' +
     Buffer.from(
@@ -38,7 +39,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
         selector: 0,
         value: {
           chainId: 1,
-          blockHash: props.block.header.hash(),
+          blockHash: block.header.hash(),
         },
       })
     ).toString('hex')
@@ -50,7 +51,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
         selector: 1,
         value: {
           chainId: 1,
-          blockHash: props.block.header.hash(),
+          blockHash: block.header.hash(),
         },
       })
     ).toString('hex')
@@ -80,7 +81,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
         <HStack justifyContent={'center'}>
           <span>Block #</span>
-          <Skeleton isLoaded={!props.isLoading}>{props.block.header.number.toNumber()}</Skeleton>
+          <Skeleton isLoaded={!props.isLoading}>{block.header.number.toNumber()}</Skeleton>
         </HStack>
       </Heading>
       <Grid templateColumns={'repeat(16, 1fr'} columnGap={1}>
@@ -145,7 +146,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           <TabPanel>Uncles</TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!props.isLoading}>
-              <Text wordBreak={'break-all'}>{JSON.stringify(props.block.header.toJSON())}</Text>
+              <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>
             </Skeleton>
           </TabPanel>
         </TabPanels>
