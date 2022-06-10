@@ -14,7 +14,9 @@ import {
 import { isValidId } from './util'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types'
-import { CanonicalIndicesProtocol } from 'portalnetwork/src/subprotocols/canonicalIndices/canonicalIndices'
+import { CanonicalIndicesProtocol } from 'portalnetwork/dist/subprotocols/canonicalIndices/canonicalIndices'
+import { BaseProtocol } from 'portalnetwork/dist/subprotocols/protocol'
+import { NodeLookup } from 'portalnetwork/dist/subprotocols/nodeLookup'
 
 export class RPCManager {
   public _client: PortalNetwork
@@ -181,6 +183,15 @@ export class RPCManager {
         ProtocolId.HistoryNetwork
       ) as never as HistoryProtocol
       return toHexString(HeaderAccumulatorType.hashTreeRoot(protocol.accumulator))
+    },
+    portal_nodeLookup: async (params: [BaseProtocol, string]) => {
+      const [protocol, nodeSought] = params
+      const enr = ENR.decodeTxt(nodeSought)
+      const id = enr.nodeId
+      const lookup = new NodeLookup(protocol, id)
+      const look = await lookup.startLookup()
+      console.log(look)
+      return `Node Lookup Successful for ${shortId(nodeSought)}`
     },
   }
 
