@@ -82,7 +82,7 @@ export class NodeLookup {
       )
     newPeers.forEach(async (enr) => {
       // Add all newly found peers to the subprotocol routing table
-      const res = await this.protocol.sendPing(enr.nodeId)
+      const res = await this.protocol.sendPing(enr)
       if (res) this.protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
     })
   }
