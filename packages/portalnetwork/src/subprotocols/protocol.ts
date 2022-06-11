@@ -573,11 +573,10 @@ export abstract class BaseProtocol {
 
   /**
    * Follows below algorithm to refresh a bucket in the routing table
-   * 1: Look at your routing table and select the first N buckets which are not full.
-   * Any value of N < 10 is probably fine here.
-   * 2: Randomly pick one of these buckets.  Weighting this random selection to prefer
-   * "larger" buckets can be done here to prioritize finding the easier to find nodes first.
-   * 3: Randomly generate a NodeID that falls within this bucket.
+   * 1: Look at your routing table and select all buckets at distance greater than 239 that are not full.
+   * 2: Select a number of buckets to refresh using this logic (>2/3, refresh 1 bucket, >1/3 full, refresh
+   * half of not full buckets, <1/3 full, refresh all not empty buckets
+   * 3: Randomly generate a NodeID that falls within each bucket to be refreshed.
    * Do the random lookup on this node-id.
    */
   public bucketRefresh = async () => {
@@ -586,7 +585,18 @@ export abstract class BaseProtocol {
         return { bucket: bucket, distance: idx }
       })
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
-    for (const bucket of notFullBuckets) {
+    const size = this.routingTable.size
+    let bucketsToRefresh
+    if (size > 200) {
+      // Only refresh one non-full bucket if routing table is more than 2/3 full
+      const idx = Math.floor(Math.random() * notFullBuckets.length)
+      bucketsToRefresh = [notFullBuckets[idx]]
+    } else if (size > 100) {
+      // Refresh half of notFullBuckets if routing table is more than 1/3 full
+      bucketsToRefresh = notFullBuckets.filter((_, idx) => idx % 2 === 0)
+      // Refresh all not full buckets if routing table is less than 1/3 full
+    } else bucketsToRefresh = notFullBuckets
+    for (const bucket of bucketsToRefresh) {
       const distance = bucket.distance
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(
         this.client.discv5.enr.nodeId,
