@@ -248,9 +248,9 @@ export abstract class BaseProtocol {
         value: nodesPayload,
       })
       this.logger.extend(`NODES`)(
-        `Sending `,
+        `Sending`,
         nodesPayload.enrs.length.toString(),
-        ` ENR's to `,
+        `ENRs to `,
         shortId(src.nodeId)
       )
       this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)

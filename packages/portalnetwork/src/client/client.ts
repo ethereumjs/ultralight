@@ -38,6 +38,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
+  private refreshListeners: Map<ProtocolId, ReturnType<typeof setInterval>>
   private peerId: PeerId
   private supportsRendezvous: boolean
   private unverifiedSessionCache: LRU<NodeId, Multiaddr>
@@ -143,6 +144,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRU({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
+    this.refreshListeners = new Map()
     this.db = new DBManager(this.logger, opts.dbSize, opts.db) as DBManager
 
     for (const protocol of opts.supportedProtocols) {
@@ -206,9 +208,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public start = async () => {
     await this.discv5.start()
     this.protocols.forEach((protocol) => {
-      // Start kbucket refresh process
-      protocol.bucketRefresh()
-
+      // Start kbucket refresh on 30 second interval
+      this.refreshListeners.set(
+        protocol.protocolId,
+        setInterval(() => protocol.bucketRefresh(), 30000)
+      )
       this.bootnodes.forEach(async (peer: string) => {
         await protocol.addBootNode(peer)
       })
@@ -223,6 +227,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.removeAllListeners()
     await this.removeAllListeners()
     await this.db.close()
+    this.refreshListeners.forEach((protocol) => clearInterval(protocol))
   }
 
   /**
