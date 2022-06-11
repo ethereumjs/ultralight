@@ -572,10 +572,10 @@ export abstract class BaseProtocol {
   }
 
   /**
-   * Follows below algorithm to refresh a bucket in the History Network routing table
+   * Follows below algorithm to refresh a bucket in the routing table
    * 1: Look at your routing table and select the first N buckets which are not full.
    * Any value of N < 10 is probably fine here.
-   * 2: Randomly pick one of these buckets.  eighting this random selection to prefer
+   * 2: Randomly pick one of these buckets.  Weighting this random selection to prefer
    * "larger" buckets can be done here to prioritize finding the easier to find nodes first.
    * 3: Randomly generate a NodeID that falls within this bucket.
    * Do the random lookup on this node-id.
@@ -586,7 +586,7 @@ export abstract class BaseProtocol {
         return { bucket: bucket, distance: idx }
       })
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
-    notFullBuckets.forEach(async (bucket, idx) => {
+    for (const bucket of notFullBuckets) {
       const distance = bucket.distance
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(
         this.client.discv5.enr.nodeId,
@@ -594,7 +594,8 @@ export abstract class BaseProtocol {
       )
       const lookup = new NodeLookup(this, randomNodeAtDistance)
       await lookup.startLookup()
-    })
+    }
+    setTimeout(this.bucketRefresh, 30000)
   }
 
   /**
