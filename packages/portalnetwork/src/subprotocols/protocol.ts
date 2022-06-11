@@ -605,7 +605,6 @@ export abstract class BaseProtocol {
       const lookup = new NodeLookup(this, randomNodeAtDistance)
       await lookup.startLookup()
     }
-    setTimeout(this.bucketRefresh, 30000)
   }
 
   /**
