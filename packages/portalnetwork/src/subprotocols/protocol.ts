@@ -574,8 +574,8 @@ export abstract class BaseProtocol {
   /**
    * Follows below algorithm to refresh a bucket in the routing table
    * 1: Look at your routing table and select all buckets at distance greater than 239 that are not full.
-   * 2: Select a number of buckets to refresh using this logic (>2/3, refresh 1 bucket, >1/3 full, refresh
-   * half of not full buckets, <1/3 full, refresh all not empty buckets
+   * 2: Select a number of buckets to refresh using this logic (48+ nodes known, refresh 1 bucket, 24+ nodes known,
+   * refresh half of not full buckets, <25 nodes known, refresh all not empty buckets
    * 3: Randomly generate a NodeID that falls within each bucket to be refreshed.
    * Do the random lookup on this node-id.
    */
@@ -587,14 +587,14 @@ export abstract class BaseProtocol {
       .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
     const size = this.routingTable.size
     let bucketsToRefresh
-    if (size > 200) {
-      // Only refresh one non-full bucket if routing table is more than 2/3 full
+    if (size > 48) {
+      // Only refresh one not full bucket if table contains equivalent of 3+ full buckets
       const idx = Math.floor(Math.random() * notFullBuckets.length)
       bucketsToRefresh = [notFullBuckets[idx]]
-    } else if (size > 100) {
-      // Refresh half of notFullBuckets if routing table is more than 1/3 full
+    } else if (size > 24) {
+      // Refresh half of notFullBuckets if routing table contains equivalent of 1.5+ full buckets
       bucketsToRefresh = notFullBuckets.filter((_, idx) => idx % 2 === 0)
-      // Refresh all not full buckets if routing table is less than 1/3 full
+      // Refresh all not full buckets if routing table contains less than 25 nodes in it
     } else bucketsToRefresh = notFullBuckets
     for (const bucket of bucketsToRefresh) {
       const distance = bucket.distance
