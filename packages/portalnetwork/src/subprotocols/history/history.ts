@@ -171,6 +171,17 @@ export class HistoryProtocol extends BaseProtocol {
     } catch {}
   }
 
+  public getBlockByNumber = async (blockNumber: number, includeTransactions: boolean) => {
+    const canonicalIndices = this.client.protocols.get(
+      ProtocolId.CanonicalIndicesNetwork
+    ) as CanonicalIndicesProtocol
+    const blockHash = canonicalIndices.blockHash(blockNumber)
+    const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as never as HistoryProtocol
+    if (!blockHash) return
+    const block = await history.getBlockByHash(blockHash, includeTransactions)
+    return block
+  }
+
   /**
    * Convenience method to add content for the History Network to the DB
    * @param chainId - decimal number representing chain Id

@@ -37,6 +37,10 @@ import { TransportLayer } from 'portalnetwork/dist/client'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
+export const BlockContext = React.createContext({
+  block: Block.prototype,
+  setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
+})
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
@@ -49,7 +53,8 @@ export const App = () => {
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
-  const [block, setBlock] = React.useState<Block | undefined>()
+  const [block, setBlock] = React.useState<Block>(Block.prototype)
+  const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
@@ -171,15 +176,20 @@ export const App = () => {
     init()
   }, [])
 
-  async function getBlockByHash(blockHash: string) {
+  async function getBlockByHash(_blockHash: string) {
+    const prevBlock = blockHash
     if (portal) {
-      if (blockHash.slice(0, 2) !== '0x') {
+      if (_blockHash.slice(0, 2) !== '0x') {
         setBlockHash('')
       } else {
         const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
         if (!protocol) return
-        const block = await protocol.getBlockByHash(blockHash, true)
-        setBlock(block)
+        const block = await protocol.getBlockByHash(_blockHash, true)
+        try {
+          setBlock(block!)
+        } catch {
+          setBlockHash(prevBlock)
+        }
       }
     }
   }
@@ -250,23 +260,25 @@ export const App = () => {
           </Drawer>
           <Box>
             {portal && (
-              <Layout
-                copy={copy}
-                onOpen={onOpen}
-                enr={enr}
-                peerEnr={peerEnr}
-                setPeerEnr={setPeerEnr}
-                handleClick={handleClick}
-                invalidHash={invalidHash}
-                getBlockByHash={getBlockByHash}
-                blockHash={blockHash}
-                setBlockHash={setBlockHash}
-                findParent={findParent}
-                block={block}
-                peers={peers}
-                sortedDistList={sortedDistList}
-                capacitor={Capacitor}
-              />
+              <BlockContext.Provider value={blockValue}>
+                <Layout
+                  copy={copy}
+                  onOpen={onOpen}
+                  enr={enr}
+                  peerEnr={peerEnr}
+                  setPeerEnr={setPeerEnr}
+                  handleClick={handleClick}
+                  invalidHash={invalidHash}
+                  getBlockByHash={getBlockByHash}
+                  blockHash={blockHash}
+                  setBlockHash={setBlockHash}
+                  findParent={findParent}
+                  block={block}
+                  peers={peers}
+                  sortedDistList={sortedDistList}
+                  capacitor={Capacitor}
+                />
+              </BlockContext.Provider>
             )}
             <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
           </Box>
