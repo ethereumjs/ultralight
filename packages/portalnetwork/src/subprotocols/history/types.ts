@@ -2,6 +2,7 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
+  NoneType,
   UintBigintType,
   UintNumberType,
   UnionType,
@@ -25,12 +26,6 @@ export const BlockHeaderType = new ContainerType({
 export const BlockBodyType = BlockHeaderType
 
 export const ReceiptType = BlockHeaderType
-
-export const HistoryNetworkContentKeyUnionType = new UnionType([
-  BlockHeaderType,
-  BlockBodyType,
-  ReceiptType,
-])
 
 export enum HistoryNetworkContentTypes {
   BlockHeader = 0,
@@ -65,3 +60,11 @@ export type ProofView = {
   leaf: Uint8Array
   witness: Uint8Array[]
 }
+
+export const HistoryNetworkContentKeyUnionType = new UnionType([
+  BlockHeaderType,
+  BlockBodyType,
+  ReceiptType,
+  EpochAccumulator,
+  HeaderAccumulatorType || new NoneType(),
+])

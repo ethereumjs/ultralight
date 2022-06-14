@@ -46,6 +46,8 @@ export abstract class BaseProtocol {
     }
   }
 
+  abstract init(): Promise<void>
+
   public handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
     const protocol = message.protocol

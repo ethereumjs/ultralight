@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '..'
 import { PortalNetwork } from '../../client'
 import { PortalNetworkMetrics } from '../../client/types'
-import { shortId } from '../../util'
+import { serializedContentKeyToContentId, shortId } from '../../util'
 import { HeaderAccumulator } from '.'
 import {
   connectionIdType,
@@ -16,7 +16,12 @@ import {
 import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { ContentLookup } from '../contentLookup'
 import { BaseProtocol } from '../protocol'
-import { HistoryNetworkContentTypes, HistoryNetworkContentKeyUnionType } from './types'
+import {
+  HistoryNetworkContentTypes,
+  HistoryNetworkContentKeyUnionType,
+  HeaderAccumulatorType,
+  HistoryNetworkContentKey,
+} from './types'
 import { getHistoryNetworkContentId, reassembleBlock } from './util'
 import * as rlp from 'rlp'
 import { CanonicalIndicesProtocol } from '../canonicalIndices/canonicalIndices'
@@ -29,8 +34,31 @@ export class HistoryProtocol extends BaseProtocol {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.protocolName = 'History Network'
-    this.accumulator = new HeaderAccumulator(true)
     this.logger = client.logger.extend('HistoryNetwork')
+    this.accumulator = new HeaderAccumulator({})
+  }
+
+  public init = async () => {
+    const storedAccumulator = await this.client.db.get(
+      serializedContentKeyToContentId(
+        HistoryNetworkContentKeyUnionType.serialize({
+          selector: HistoryNetworkContentTypes.HeaderAccumulator,
+          value: [],
+        })
+      )
+    )
+
+    if (storedAccumulator) {
+      const accumulator = HeaderAccumulatorType.deserialize(fromHexString(storedAccumulator))
+      this.accumulator = new HeaderAccumulator({
+        storedAccumulator: {
+          historicalEpochs: accumulator.historicalEpochs,
+          currentEpoch: accumulator.currentEpoch,
+        },
+      })
+    } else {
+      this.accumulator = new HeaderAccumulator({ initFromGenesis: true })
+    }
   }
 
   /**
@@ -78,23 +106,44 @@ export class HistoryProtocol extends BaseProtocol {
             )
             break
           }
-          case 1: {
-            this.logger(`received content`)
-            this.logger(decoded.value)
-            const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
-            // Store content in local DB
-            try {
-              this.addContentToHistory(
-                decodedKey.value.chainId,
-                decodedKey.selector,
-                toHexString(Buffer.from(decodedKey.value.blockHash)),
-                decoded.value as Uint8Array
-              )
-            } catch {
-              this.logger('Error adding content to DB')
+          case 1:
+            {
+              this.logger(`received content`)
+              this.logger(decoded.value)
+              const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+              // Store content in local DB
+              switch (decodedKey.selector) {
+                case HistoryNetworkContentTypes.BlockHeader:
+                case HistoryNetworkContentTypes.BlockBody:
+                case HistoryNetworkContentTypes.Receipt:
+                  {
+                    const content = decodedKey.value as HistoryNetworkContentKey
+                    try {
+                      this.addContentToHistory(
+                        content.chainId,
+                        decodedKey.selector,
+                        toHexString(Buffer.from(content.blockHash)),
+                        decoded.value as Uint8Array
+                      )
+                    } catch {
+                      this.logger('Error adding content to DB')
+                    }
+                  }
+                  break
+                case HistoryNetworkContentTypes.HeaderAccumulator: {
+                  this.client.db.put(
+                    serializedContentKeyToContentId(
+                      HistoryNetworkContentKeyUnionType.serialize({
+                        selector: HistoryNetworkContentTypes.HeaderAccumulator,
+                        value: [],
+                      })
+                    ),
+                    toHexString(HeaderAccumulatorType.serialize(this.accumulator))
+                  )
+                }
+              }
             }
             break
-          }
           case 2: {
             this.logger(`received ${decoded.value.length} ENRs`)
             break
@@ -196,7 +245,7 @@ export class HistoryProtocol extends BaseProtocol {
     blockHash: string,
     value: Uint8Array
   ) => {
-    const contentId = getHistoryNetworkContentId(chainId, blockHash, contentType)
+    const contentId = getHistoryNetworkContentId(chainId, contentType, blockHash)
 
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
@@ -212,6 +261,10 @@ export class HistoryProtocol extends BaseProtocol {
             this.accumulator.updateAccumulator(header)
             this.logger(
               `Updated header accumulator.  Currently at height ${this.accumulator.currentHeight()}`
+            )
+            this.client.db.put(
+              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
+              toHexString(HeaderAccumulatorType.serialize(this.accumulator))
             )
           }
           // Try updating the canonical block index when a new header is received
@@ -231,8 +284,8 @@ export class HistoryProtocol extends BaseProtocol {
         try {
           const headerContentId = getHistoryNetworkContentId(
             1,
-            blockHash,
-            HistoryNetworkContentTypes.BlockHeader
+            HistoryNetworkContentTypes.BlockHeader,
+            blockHash
           )
           const hexHeader = await this.client.db.get(headerContentId)
           // Verify we can construct a valid block from the header and body provided
@@ -285,7 +338,7 @@ export class HistoryProtocol extends BaseProtocol {
     blockHash: string,
     contentType: HistoryNetworkContentTypes
   ) => {
-    const contentId = getHistoryNetworkContentId(1, blockHash, contentType)
+    const contentId = getHistoryNetworkContentId(1, contentType, blockHash)
     const nearestPeers = this.routingTable.nearest(contentId, 5)
     const encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: contentType,

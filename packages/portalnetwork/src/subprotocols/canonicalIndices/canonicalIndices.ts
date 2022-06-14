@@ -31,6 +31,10 @@ export class CanonicalIndicesProtocol extends BaseProtocol {
     return this._blockIndex[blockNumber - 1]
   }
 
+  public init = () => {
+    return new Promise<void>((resolve) => resolve())
+  }
+
   /**
    *
    * @param header header to be added to canonical index
