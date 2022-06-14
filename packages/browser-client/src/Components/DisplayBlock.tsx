@@ -15,7 +15,6 @@ import {
   Skeleton,
   HStack,
 } from '@chakra-ui/react'
-import { Block } from '@ethereumjs/block'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import SelectTx from './SelectTx'
 import React, { useContext } from 'react'
@@ -27,7 +26,7 @@ interface DisplayBlockProps {
 }
 
 const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
-  const { block, setBlock } = useContext(BlockContext)
+  const { block } = useContext(BlockContext)
   const findParent = props.findParent
   const header = Object.entries(block!.header!.toJSON())
   const txList = block.transactions
