@@ -183,7 +183,7 @@ const main = async () => {
 }
 
 main().catch((err) => {
-  console.log('Encountered an error', err.message)
+  console.log('Encountered an error', err)
   console.log('Shutting down...')
 })
 

@@ -2,7 +2,10 @@ import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
 import { ProtocolId } from '../../..'
-import { HistoryNetworkContentKeyUnionType } from '../../../subprotocols/history'
+import {
+  HistoryNetworkContentKey,
+  HistoryNetworkContentKeyUnionType,
+} from '../../../subprotocols/history'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { ContentRequest } from './ContentRequest'
@@ -437,12 +440,13 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
       const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
+      const decodedContent = contentKey.value as HistoryNetworkContentKey
       this.emit(
         'Stream',
-        contentKey.value.chainId,
+        (decodedContent.chainId,
         contentKey.selector,
-        toHexString(contentKey.value.blockHash),
-        content
+        toHexString(decodedContent.blockHash),
+        content)
       )
     }
     let content

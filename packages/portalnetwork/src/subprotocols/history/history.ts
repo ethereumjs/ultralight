@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '..'
 import { PortalNetwork } from '../../client'
 import { PortalNetworkMetrics } from '../../client/types'
-import { serializedContentKeyToContentId, shortId } from '../../util'
+import { shortId } from '../../util'
 import { HeaderAccumulator } from '.'
 import {
   connectionIdType,
@@ -39,14 +39,12 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public init = async () => {
-    const storedAccumulator = await this.client.db.get(
-      serializedContentKeyToContentId(
-        HistoryNetworkContentKeyUnionType.serialize({
-          selector: HistoryNetworkContentTypes.HeaderAccumulator,
-          value: [],
-        })
+    let storedAccumulator
+    try {
+      storedAccumulator = await this.client.db.get(
+        getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator)
       )
-    )
+    } catch {}
 
     if (storedAccumulator) {
       const accumulator = HeaderAccumulatorType.deserialize(fromHexString(storedAccumulator))
@@ -131,15 +129,22 @@ export class HistoryProtocol extends BaseProtocol {
                   }
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  this.client.db.put(
-                    serializedContentKeyToContentId(
-                      HistoryNetworkContentKeyUnionType.serialize({
-                        selector: HistoryNetworkContentTypes.HeaderAccumulator,
-                        value: [],
-                      })
-                    ),
-                    toHexString(HeaderAccumulatorType.serialize(this.accumulator))
+                  const newAccumulator = HeaderAccumulatorType.deserialize(
+                    decoded.value as Uint8Array
                   )
+                  this.logger(
+                    `Received an accumulator snapshot with ${newAccumulator.currentEpoch.length} headers in the current epoch`
+                  )
+                  if (this.accumulator.currentHeight() === 0) {
+                    // If we don't have an accumulator, adopt the snapshot received
+                    ;(this.accumulator as any)._currentEpoch = newAccumulator.currentEpoch
+                    ;(this.accumulator as any)._historicalEpochs = newAccumulator.historicalEpochs
+
+                    this.client.db.put(
+                      getHistoryNetworkContentId(1, decodedKey.selector),
+                      toHexString(HeaderAccumulatorType.serialize(newAccumulator))
+                    )
+                  }
                 }
               }
             }

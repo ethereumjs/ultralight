@@ -2,7 +2,6 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
-  NoneType,
   UintBigintType,
   UintNumberType,
   UnionType,
@@ -65,6 +64,6 @@ export const HistoryNetworkContentKeyUnionType = new UnionType([
   BlockHeaderType,
   BlockBodyType,
   ReceiptType,
-  EpochAccumulator,
-  HeaderAccumulatorType || new NoneType(),
+  new ByteVectorType(32),
+  new ByteVectorType(32),
 ])
