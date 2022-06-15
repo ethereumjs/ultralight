@@ -10,7 +10,7 @@ export class CanonicalIndicesProtocol extends BaseProtocol {
   readonly protocolId: ProtocolId
   readonly protocolName: string
   sendFindContent: undefined
-  private _blockIndex: string[]
+  public _blockIndex: (string | undefined)[]
   constructor(client: PortalNetwork) {
     super(client, 2n ** 256n)
     this.logger = client.logger.extend('canonicalIndices')
@@ -31,6 +31,9 @@ export class CanonicalIndicesProtocol extends BaseProtocol {
     return this._blockIndex[blockNumber - 1]
   }
 
+  /**
+   * Dummy function for now - update if any async initialization required in future
+   */
   public init = () => {
     return new Promise<void>((resolve) => resolve())
   }
@@ -66,4 +69,6 @@ export class CanonicalIndicesProtocol extends BaseProtocol {
     }
     return updated
   }
+
+  public batchUpdate = (blockHashes: string[], newHeight: number) => {}
 }

@@ -129,21 +129,44 @@ export class HistoryProtocol extends BaseProtocol {
                   }
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  const newAccumulator = HeaderAccumulatorType.deserialize(
-                    decoded.value as Uint8Array
-                  )
-                  this.logger(
-                    `Received an accumulator snapshot with ${newAccumulator.currentEpoch.length} headers in the current epoch`
-                  )
-                  if (this.accumulator.currentHeight() === 0) {
-                    // If we don't have an accumulator, adopt the snapshot received
-                    ;(this.accumulator as any)._currentEpoch = newAccumulator.currentEpoch
-                    ;(this.accumulator as any)._historicalEpochs = newAccumulator.historicalEpochs
-
-                    this.client.db.put(
-                      getHistoryNetworkContentId(1, decodedKey.selector),
-                      toHexString(HeaderAccumulatorType.serialize(newAccumulator))
+                  try {
+                    const receivedAccumulator = HeaderAccumulatorType.deserialize(
+                      decoded.value as Uint8Array
                     )
+                    this.logger(
+                      `Received an accumulator snapshot with ${receivedAccumulator.currentEpoch.length} headers in the current epoch`
+                    )
+                    if (this.accumulator.currentHeight() === 0) {
+                      // If we don't have an accumulator, adopt the snapshot received
+                      // TODO: Decide how to verify if this snapshot is trustworthy
+                      this.accumulator.replaceAccumulator(
+                        receivedAccumulator.historicalEpochs,
+                        receivedAccumulator.currentEpoch
+                      )
+
+                      this.client.db.put(
+                        getHistoryNetworkContentId(1, decodedKey.selector),
+                        toHexString(HeaderAccumulatorType.serialize(receivedAccumulator))
+                      )
+
+                      const canonicalIndices = this.client.protocols.get(
+                        ProtocolId.CanonicalIndicesNetwork
+                      ) as CanonicalIndicesProtocol
+                      if (canonicalIndices) {
+                        const accumulatorHeight = this.accumulator.currentHeight()
+                        const blockIndexHeight = canonicalIndices._blockIndex.length
+                        if (accumulatorHeight > blockIndexHeight) {
+                          canonicalIndices.batchUpdate(
+                            this.accumulator.currentEpoch.map((headerRecord) =>
+                              toHexString(headerRecord.blockHash)
+                            ),
+                            accumulatorHeight
+                          )
+                        }
+                      }
+                    }
+                  } catch (err: any) {
+                    this.logger(`Error parsing accumulator snapshot: ${err.message}`)
                   }
                 }
               }
@@ -230,8 +253,13 @@ export class HistoryProtocol extends BaseProtocol {
       ProtocolId.CanonicalIndicesNetwork
     ) as CanonicalIndicesProtocol
     const blockHash = canonicalIndices.blockHash(blockNumber)
+    if (!blockHash) {
+      this.logger(`No block hash found in Block Index for ${blockNumber}`)
+      return
+    }
+    // TODO: Request block number from the Canonical Indices protocol if we don't have it locally
+
     const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as never as HistoryProtocol
-    if (!blockHash) return
     const block = await history.getBlockByHash(blockHash, includeTransactions)
     return block
   }

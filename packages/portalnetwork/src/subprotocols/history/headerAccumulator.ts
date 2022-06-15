@@ -63,6 +63,7 @@ export class HeaderAccumulator {
     }
     this._currentEpoch.push(headerRecord)
   }
+
   /**
    *
    * @param proof a `Proof` for a particular header's inclusion as the latest header in the accumulator's `currentEpoch`
@@ -125,5 +126,13 @@ export class HeaderAccumulator {
    */
   public currentHeight = () => {
     return this.historicalEpochs.length * EPOCH_SIZE + this.currentEpoch.length - 1
+  }
+
+  public replaceAccumulator = (
+    historicalEpochs: Uint8Array[],
+    currentEpoch: HeaderRecordType[]
+  ) => {
+    this._currentEpoch = currentEpoch
+    this._historicalEpochs = historicalEpochs
   }
 }
