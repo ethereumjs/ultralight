@@ -3,6 +3,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '..'
 import { PortalNetwork } from '../../client'
 import { toHexString } from '../../util/discv5'
+import { HistoryProtocol } from '../history/history'
 import { BaseProtocol } from '../protocol'
 
 export class CanonicalIndicesProtocol extends BaseProtocol {
@@ -64,11 +65,40 @@ export class CanonicalIndicesProtocol extends BaseProtocol {
     }
     if (updated) {
       this.logger(
-        `Incremented block index to height: ${this._blockIndex.length} - Block Hash ${blockHash}`
+        `Incremented block index to height: ${
+          this._blockIndex.length
+        } - Block Hash ${blockHash.slice(0, 10)}...`
       )
     }
     return updated
   }
 
-  public batchUpdate = (blockHashes: string[], newHeight: number) => {}
+  public batchUpdate = (blockHashes: string[], newHeight: number) => {
+    const newIndex = new Array(newHeight)
+    this._blockIndex.forEach((value, idx) => {
+      newIndex[idx] = value
+    })
+    blockHashes.forEach((blockHash, idx) => {
+      const i = newIndex.length - blockHashes.length + idx
+      newIndex[i] = blockHash
+    })
+    this._blockIndex = newIndex
+    this.logger('New Block-Index height:', this._blockIndex.length)
+    this.logger('Backfilling Block Index starting from', newHeight - blockHashes.length)
+    this.backFill(blockHashes[0])
+  }
+
+  public backFill = async (blockHash: string) => {
+    const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    const block = await history.getBlockByHash(blockHash, false)
+    if (block) {
+      const number = block.header.number.toNumber()
+      const hash = toHexString(block.hash())
+      this._blockIndex[number] = hash
+      this.logger('Block', number, 'Indexed by Number')
+      if (number > 1) {
+        await this.backFill(toHexString(block.header.parentHash))
+      }
+    }
+  }
 }
