@@ -9,11 +9,12 @@ import {
   useToast,
   Select,
 } from '@chakra-ui/react'
-import { ProtocolId, ENR, fromHexString } from 'portalnetwork'
+import { ProtocolId, ENR, fromHexString, HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
 import { ContentManager } from './ContentManager'
 import { Share } from '@capacitor/share'
 import { PortalContext } from '../App'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 
 interface DevToolsProps {
   peers: ENR[]
@@ -93,8 +94,22 @@ export default function DevTools(props: DevToolsProps) {
     sharing()
   }, [])
 
-  const addBootNode = () =>
+  const addBootNode = () => {
     portal.protocols.get(ProtocolId.HistoryNetwork)!.addBootNode(props.peerEnr)
+  }
+
+  const handleRequestSnapshot = () => {
+    const protocol: HistoryProtocol = portal.protocols.get(
+      ProtocolId.HistoryNetwork
+    ) as HistoryProtocol
+    protocol.logger('Requesting Accumulator Snapshot')
+    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 4,
+      value: Uint8Array.from([]),
+    })
+    protocol.sendFindContent(peer, accumulatorKey)
+  }
+
   return (
     <VStack>
       {canShare ? (
@@ -162,6 +177,9 @@ export default function DevTools(props: DevToolsProps) {
       <Divider />
       <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handlePing()}>
         Send Ping
+      </Button>
+      <Button isDisabled={!portal} size="sm" width="100%" onClick={() => handleRequestSnapshot()}>
+        Request Accumulator Snapshot
       </Button>
       <Divider />
       <Input
