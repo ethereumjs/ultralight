@@ -376,7 +376,11 @@ export class HistoryProtocol extends BaseProtocol {
         ]
       } for ${blockHash} to content db`
     )
-    if (this.routingTable.values().length > 0) {
+    if (
+      contentType !== HistoryNetworkContentTypes.HeaderAccumulator &&
+      this.routingTable.values().length > 0
+    ) {
+      // Gossip new content to network (except header accumulators)
       this.logger('Gossiping new content to network')
       await this.gossipHistoryNetworkContent(blockHash, contentType)
     }
