@@ -22,7 +22,7 @@ import {
   Divider,
   ChakraProvider,
 } from '@chakra-ui/react'
-import { PortalNetwork, ProtocolId, ENR, log2Distance } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR, log2Distance, fromHexString } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
@@ -34,6 +34,7 @@ import InfoMenu from './Components/InfoMenu'
 import bns from './bootnodes.json'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import { TransportLayer } from 'portalnetwork/dist/client'
+import { toHexString } from './Components/DisplayTx'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
@@ -156,11 +157,12 @@ export const App = () => {
     }
 
     setPortal(node)
-    node.enableLog('*discv5*, *portalnetwork*, *uTP*')
+    node.enableLog('*discv5*, *Portal:HistoryNetwork, *uTP*')
     await node.start()
     node.storeNodeDetails()
     ;(window as any).portal = node
     ;(window as any).ENR = ENR
+    ;(window as any).hexer = { toHexString, fromHexString }
     node.discv5.on('multiaddrUpdated', () => {
       setENR(node.discv5.enr.encodeTxt(node.discv5.keypair.privateKey))
       portal?.storeNodeDetails()

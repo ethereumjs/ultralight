@@ -13,7 +13,7 @@ tape('utility functions', (t) => {
     value: { chainId: 1, blockHash: fromHexString(block1Hash) },
   })
   t.equal(
-    getHistoryNetworkContentId(1, block1Hash, 0),
+    getHistoryNetworkContentId(1, 0, block1Hash),
     serializedContentKeyToContentId(block1headerContentKey),
     'produced same content id'
   )

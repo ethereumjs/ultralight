@@ -26,12 +26,6 @@ export const BlockBodyType = BlockHeaderType
 
 export const ReceiptType = BlockHeaderType
 
-export const HistoryNetworkContentKeyUnionType = new UnionType([
-  BlockHeaderType,
-  BlockBodyType,
-  ReceiptType,
-])
-
 export enum HistoryNetworkContentTypes {
   BlockHeader = 0,
   BlockBody = 1,
@@ -65,3 +59,11 @@ export type ProofView = {
   leaf: Uint8Array
   witness: Uint8Array[]
 }
+
+export const HistoryNetworkContentKeyUnionType = new UnionType([
+  BlockHeaderType,
+  BlockBodyType,
+  ReceiptType,
+  new ByteVectorType(32),
+  new ByteVectorType(32),
+])

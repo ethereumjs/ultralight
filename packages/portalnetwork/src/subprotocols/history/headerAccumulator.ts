@@ -3,6 +3,13 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types'
 
+export interface AccumulatorOpts {
+  initFromGenesis: boolean
+  storedAccumulator: {
+    historicalEpochs: Uint8Array[]
+    currentEpoch: HeaderRecordType[]
+  }
+}
 export class HeaderAccumulator {
   private _currentEpoch: HeaderRecordType[]
   private _historicalEpochs: Uint8Array[]
@@ -11,16 +18,19 @@ export class HeaderAccumulator {
    *
    * @param initFromGenesis boolean indicating whether to initialize the accumulator with the mainnet genesis block
    */
-  constructor(initFromGenesis = false) {
+  constructor(opts: Partial<AccumulatorOpts>) {
     this._currentEpoch = []
     this._historicalEpochs = []
-    if (initFromGenesis) {
+    if (opts.initFromGenesis) {
       const genesisHeaderRlp =
         '0xf90214a00000000000000000000000000000000000000000000000000000000000000000a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000850400000000808213888080a011bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82faa00000000000000000000000000000000000000000000000000000000000000000880000000000000042'
       const genesisHeader = BlockHeader.fromRLPSerializedHeader(
         Buffer.from(fromHexString(genesisHeaderRlp))
       )
       this.updateAccumulator(genesisHeader)
+    } else if (opts.storedAccumulator) {
+      this._currentEpoch = opts.storedAccumulator.currentEpoch
+      this._historicalEpochs = opts.storedAccumulator.historicalEpochs
     }
   }
 
@@ -52,7 +62,9 @@ export class HeaderAccumulator {
       totalDifficulty: lastTd + BigInt(newHeader.difficulty.toString(10)),
     }
     this._currentEpoch.push(headerRecord)
+    return this._currentEpoch.length
   }
+
   /**
    *
    * @param proof a `Proof` for a particular header's inclusion as the latest header in the accumulator's `currentEpoch`
@@ -115,5 +127,13 @@ export class HeaderAccumulator {
    */
   public currentHeight = () => {
     return this.historicalEpochs.length * EPOCH_SIZE + this.currentEpoch.length - 1
+  }
+
+  public replaceAccumulator = (
+    historicalEpochs: Uint8Array[],
+    currentEpoch: HeaderRecordType[]
+  ) => {
+    this._currentEpoch = currentEpoch
+    this._historicalEpochs = historicalEpochs
   }
 }

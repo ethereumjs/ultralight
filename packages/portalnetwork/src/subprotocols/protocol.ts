@@ -24,6 +24,7 @@ import {
 } from '../wire'
 import { randUint16, MAX_PACKET_SIZE } from '../wire/utp'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
+import { HistoryNetworkContentKeyUnionType } from './history'
 import { NodeLookup } from './nodeLookup'
 import { StateNetworkRoutingTable } from './state'
 export abstract class BaseProtocol {
@@ -45,6 +46,8 @@ export abstract class BaseProtocol {
       }
     }
   }
+
+  abstract init(): Promise<void>
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
@@ -422,6 +425,9 @@ export abstract class BaseProtocol {
     protocol: Buffer,
     decodedContentMessage: FindContentMessage
   ) => {
+    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
+      decodedContentMessage.contentKey
+    )
     this.metrics?.contentMessagesSent.inc()
     //Check to see if value in content db
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
@@ -471,7 +477,7 @@ export abstract class BaseProtocol {
           value.slice(0, 10) +
           `...`
       )
-      const payload = ContentMessageType.serialize({ selector: 1, value: value })
+      const payload = ContentMessageType.serialize({ selector: contentKey.selector, value: value })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
       this.logger(Uint8Array.from(value))
       this.client.sendPortalNetworkResponse(
