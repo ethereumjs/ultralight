@@ -151,6 +151,20 @@ export class RPCManager {
       const res = await protocol.sendFindContent(enr, contentKey)
       return res
     },
+    portal_history_getSnapshot: async (params: [string]) => {
+      const [enr] = params
+      const nodeId = ENR.decodeTxt(enr).nodeId
+      const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      if (!protocol) {
+        return `History Protocol not supported`
+      }
+      const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 4,
+        value: Uint8Array.from([]),
+      })
+      await protocol.sendFindContent(nodeId, accumulatorKey)
+      return `Received Accumulator Snapshot`
+    },
     portal_history_offer: async (params: [string, string[], number[]]) => {
       const [dstId, blockHashes, contentTypes] = params
       contentTypes.forEach((contentType) => {
