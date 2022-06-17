@@ -90,7 +90,7 @@ export class PortalNetworkUTP extends BasicUtp {
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
           requestCode,
-          contentKeys,
+          [contentKeys[0]],
           [socket],
           socketKey,
           [undefined]
@@ -441,13 +441,13 @@ export class PortalNetworkUTP extends BasicUtp {
     const streamer = async (content: Uint8Array) => {
       const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
       const decodedContent = contentKey.value as HistoryNetworkContentKey
-      this.emit(
-        'Stream',
-        (decodedContent.chainId,
-        contentKey.selector,
-        toHexString(decodedContent.blockHash),
-        content)
+      this.logger(
+        'streaming',
+        contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
       )
+      const key = contentKey.selector === 4 ? decodedContent : decodedContent.blockHash
+      this.logger(decodedContent)
+      this.emit('Stream', 1, contentKey.selector, toHexString(key as Uint8Array), content)
     }
     let content
     try {
@@ -456,14 +456,14 @@ export class PortalNetworkUTP extends BasicUtp {
           throw new Error('Why did I get a FIN packet?')
         case RequestCode.FINDCONTENT_READ:
           content = await request.socket.handleFinPacket(packet)
-          streamer(content!)
+          content && streamer(content)
           request.socket.logger(`Closing uTP Socket`)
           break
         case RequestCode.OFFER_WRITE:
           throw new Error('Why did I get a FIN packet?')
         case RequestCode.ACCEPT_READ:
           content = await request.socket.handleFinPacket(packet)
-          streamer(content!)
+          content && streamer(content)
           request.socket.logger(`Closing uTP Socket`)
           if (request.sockets.length > 0) {
             request.socket = request.sockets.pop()!

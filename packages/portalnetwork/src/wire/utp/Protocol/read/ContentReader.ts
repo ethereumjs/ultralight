@@ -46,7 +46,6 @@ export default class ContentReader {
     })
     this.logger(`${compiled.length} Bytes Received.`)
     this.logger(Uint8Array.from(compiled))
-    // await this.streamer(compiled)
 
     return Uint8Array.from(compiled)
   }
@@ -57,7 +56,6 @@ export default class ContentReader {
     })
     try {
       const compiled = await this.compile(sortedPackets)
-      // this.streamer(compiled)
       return compiled
     } catch {
       this.logger(`Cannot run reader...`)
