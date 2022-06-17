@@ -32,6 +32,7 @@ class FakeProtocol extends BaseProtocol {
     this.logger = client.logger.extend('fakeProtocol')
   }
   sendFindContent = td.func<any>()
+  init = td.func<any>()
 }
 
 tape('protocol wire message tests', async (t) => {

@@ -15,8 +15,8 @@ tape('History Subprotocol contentKey serialization/deserialization', async (t) =
   })
   let contentId = getHistoryNetworkContentId(
     chainId,
-    blockHash,
-    HistoryNetworkContentTypes.BlockHeader
+    HistoryNetworkContentTypes.BlockHeader,
+    blockHash
   )
   t.equals(
     toHexString(encodedKey),
@@ -34,7 +34,7 @@ tape('History Subprotocol contentKey serialization/deserialization', async (t) =
     selector: HistoryNetworkContentTypes.BlockBody,
     value: { chainId, blockHash: fromHexString(blockHash) },
   })
-  contentId = getHistoryNetworkContentId(chainId, blockHash, HistoryNetworkContentTypes.BlockBody)
+  contentId = getHistoryNetworkContentId(chainId, HistoryNetworkContentTypes.BlockBody, blockHash)
   t.equals(
     toHexString(encodedKey),
     '0x011400d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -51,7 +51,7 @@ tape('History Subprotocol contentKey serialization/deserialization', async (t) =
     selector: HistoryNetworkContentTypes.Receipt,
     value: { chainId, blockHash: fromHexString(blockHash) },
   })
-  contentId = getHistoryNetworkContentId(chainId, blockHash, HistoryNetworkContentTypes.Receipt)
+  contentId = getHistoryNetworkContentId(chainId, HistoryNetworkContentTypes.Receipt, blockHash)
   t.equals(
     toHexString(encodedKey),
     '0x020400d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
