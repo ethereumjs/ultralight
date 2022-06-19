@@ -477,7 +477,10 @@ export abstract class BaseProtocol {
           value.slice(0, 10) +
           `...`
       )
-      const payload = ContentMessageType.serialize({ selector: contentKey.selector, value: value })
+      const payload = HistoryNetworkContentKeyUnionType.serialize({
+        selector: contentKey.selector,
+        value: value,
+      })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
       this.logger(Uint8Array.from(value))
       this.client.sendPortalNetworkResponse(
