@@ -1,7 +1,7 @@
 import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
-import tape from 'tape'
-import td from 'testdouble'
+import * as tape from 'tape'
+import * as td from 'testdouble'
 import {
   ENR,
   generateRandomNodeIdAtDistance,
@@ -16,7 +16,7 @@ import { TransportLayer } from '../../src/client'
 import { HistoryProtocol } from '../../src/subprotocols/history/history'
 import { BaseProtocol } from '../../src/subprotocols/protocol'
 import { Debugger } from 'debug'
-import PeerId from 'peer-id'
+import * as PeerId from 'peer-id'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 
 // Fake Protocol class for testing Protocol class

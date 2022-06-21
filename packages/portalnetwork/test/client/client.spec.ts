@@ -1,6 +1,6 @@
-import tape from 'tape'
+import * as tape from 'tape'
 import { PortalNetwork, ProtocolId } from '../../src/'
-import td from 'testdouble'
+import * as td from 'testdouble'
 import { TransportLayer } from '../../src/client'
 
 tape('Client unit tests', async (t) => {

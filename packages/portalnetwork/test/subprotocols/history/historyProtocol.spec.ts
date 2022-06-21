@@ -1,8 +1,7 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { BlockHeader } from '@ethereumjs/block'
-import { Multiaddr } from 'multiaddr'
-import tape from 'tape'
-import td from 'testdouble'
+import * as tape from 'tape'
+import * as td from 'testdouble'
 import {
   fromHexString,
   PortalNetwork,
