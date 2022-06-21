@@ -1,7 +1,6 @@
 import { Client } from 'jayson/promise'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import fs from 'fs'
 import { ProtocolId } from 'portalnetwork'
 
 const args: any = yargs(hideBin(process.argv))
