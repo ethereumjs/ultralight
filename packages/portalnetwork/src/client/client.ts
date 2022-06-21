@@ -17,7 +17,7 @@ import {
   PortalNetworkOpts,
   TransportLayer,
 } from './types'
-import PeerId from 'peer-id'
+import * as PeerId from 'peer-id'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 
@@ -25,7 +25,7 @@ import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
 import { Multiaddr } from 'multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
-import LRU from 'lru-cache'
+import * as LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util'
 import { DBManager } from './dbManager'
 import { CanonicalIndicesProtocol } from '../subprotocols/canonicalIndices/canonicalIndices'
