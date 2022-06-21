@@ -1,5 +1,4 @@
-import PeerId from 'peer-id'
-
+import * as PeerId from 'peer-id'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 

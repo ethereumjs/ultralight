@@ -1,7 +1,6 @@
-import { Client } from 'jayson/promise'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import fs from 'fs'
+import * as fs from 'fs'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process' 
 
 const args: any = yargs(hideBin(process.argv))
