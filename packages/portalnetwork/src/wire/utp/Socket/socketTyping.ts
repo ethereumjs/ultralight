@@ -1,5 +1,5 @@
 import { Packet } from '../Packets/Packet'
-import dgram from 'dgram'
+import * as dgram from 'dgram'
 import { Multiaddr } from 'multiaddr'
 import { Uint16, Uint32 } from '..'
 

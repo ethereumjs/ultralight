@@ -1,4 +1,4 @@
-import PromClient from 'prom-client'
+import * as PromClient from 'prom-client'
 
 export const setupMetrics = () => {
   return {

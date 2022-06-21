@@ -1,5 +1,5 @@
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
-import EventEmitter from 'events'
+import EventEmitter = require('events')
 import { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
 import { StateNetworkRoutingTable, ProtocolId } from '..'
 import { PortalNetworkRoutingTable } from '.'

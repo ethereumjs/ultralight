@@ -1,11 +1,11 @@
-import WS from 'ws'
+import * as WS from 'ws'
 import * as dgram from 'dgram'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import http from 'http'
+import http = require('http')
 import * as PromClient from 'prom-client'
 import debug from 'debug'
-import https from 'https'
+import https = require('https')
 const log = debug('proxy')
 debug.enable('proxy')
 

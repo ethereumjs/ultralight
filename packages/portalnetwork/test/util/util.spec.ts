@@ -1,4 +1,4 @@
-import tape from 'tape'
+import * as tape from 'tape'
 import { shortId, generateRandomNodeIdAtDistance } from '../../src/util'
 import { log2Distance } from '@chainsafe/discv5'
 tape('utility method tests', (t) => {

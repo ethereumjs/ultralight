@@ -1,5 +1,5 @@
 import { fromHexString } from '@chainsafe/ssz'
-import tape from 'tape'
+import * as tape from 'tape'
 import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,

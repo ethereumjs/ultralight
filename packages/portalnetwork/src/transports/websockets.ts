@@ -7,8 +7,8 @@ import {
   ITransportService,
   TransportEventEmitter,
 } from '@chainsafe/discv5/lib/transport/types'
-import WebSocketAsPromised from 'websocket-as-promised'
-import WebSocket from 'isomorphic-ws'
+import WebSocketAsPromised = require('websocket-as-promised')
+import WebSocket = require('isomorphic-ws')
 import { numberToBuffer } from '@chainsafe/discv5'
 const log = debug('discv5:transport')
 
