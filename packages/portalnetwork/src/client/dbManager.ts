@@ -1,15 +1,15 @@
-//eslint-disable-next-line implicit-dependencies/no-implicit
 import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
-const level = require('level-mem')
+import { MemoryLevel } from 'memory-level'
 
 export class DBManager {
-  db: AbstractLevel<string>
+  db: AbstractLevel<string, string>
   logger: Debugger
   currentSize: () => Promise<number>
 
   constructor(logger: Debugger, currentSize: () => Promise<number>, db?: AbstractLevel<string>) {
-    this.db = db ?? level()
+    //@ts-ignore Because level doesn't know how to get along with itself
+    this.db = db ?? new MemoryLevel()
     this.logger = logger.extend('DB')
     this.currentSize = currentSize
   }
@@ -25,7 +25,7 @@ export class DBManager {
   }
 
   batch(ops: AbstractBatchOperation<string, string, string>[]) {
-    //@ts-ignore
+    //@ts-ignore Because level doesn't know how to get along with itself
     return this.db.batch(ops)
   }
 
