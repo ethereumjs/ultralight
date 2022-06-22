@@ -157,7 +157,7 @@ export const App = () => {
     }
 
     setPortal(node)
-    node.enableLog('*discv5*, *Portal:HistoryNetwork, *uTP*')
+    node.enableLog('*Portal*, *uTP*')
     await node.start()
     node.storeNodeDetails()
     ;(window as any).portal = node
