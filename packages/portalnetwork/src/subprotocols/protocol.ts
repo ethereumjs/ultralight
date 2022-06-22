@@ -24,7 +24,6 @@ import {
 } from '../wire'
 import { randUint16, MAX_PACKET_SIZE } from '../wire/utp'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
-import { HistoryNetworkContentKeyUnionType } from './history'
 import { NodeLookup } from './nodeLookup'
 import { StateNetworkRoutingTable } from './state'
 export abstract class BaseProtocol {
@@ -425,9 +424,6 @@ export abstract class BaseProtocol {
     protocol: Buffer,
     decodedContentMessage: FindContentMessage
   ) => {
-    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
-      decodedContentMessage.contentKey
-    )
     this.metrics?.contentMessagesSent.inc()
     //Check to see if value in content db
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
@@ -472,13 +468,13 @@ export abstract class BaseProtocol {
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
-        'Found value for requested content' +
+        'Found value for requested content ' +
           Buffer.from(decodedContentMessage.contentKey).toString('hex') +
           value.slice(0, 10) +
           `...`
       )
-      const payload = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentKey.selector,
+      const payload = ContentMessageType.serialize({
+        selector: 1,
         value: value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
