@@ -10,8 +10,7 @@ import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { RPCManager } from './rpc'
 import { setupMetrics } from './metrics'
-
-const level = require('level')
+import { Level } from 'level'
 
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
@@ -94,8 +93,8 @@ const main = async () => {
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
   const metrics = setupMetrics()
   let db
-  if (args.datadir) {
-    db = level(args.datadir)
+  if (args.dataDir) {
+    db = new Level<string, string>(args.dataDir)
   }
 
   const portal = await PortalNetwork.create({
@@ -110,6 +109,7 @@ const main = async () => {
       },
     },
     radius: 2n ** 256n,
+    //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
     supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.CanonicalIndicesNetwork],

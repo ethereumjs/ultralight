@@ -21,7 +21,7 @@ export interface PortalNetworkOpts {
   supportedProtocols: ProtocolId[]
   radius?: bigint
   bootnodes?: string[]
-  db?: AbstractLevel<string>
+  db?: AbstractLevel<string, string> | undefined
   metrics?: PortalNetworkMetrics
   bindAddress?: string
   transport?: TransportLayer

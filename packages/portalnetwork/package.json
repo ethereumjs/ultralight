@@ -28,7 +28,7 @@
     "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "isomorphic-ws": "^4.0.1",
-    "level-mem": "^6.0.1",
+    "memory-level": "^1.0.0",
     "lru-cache": "^7.10.1",
     "multiaddr": "^10.0.1",
     "peer-id": "^0.16.0",
