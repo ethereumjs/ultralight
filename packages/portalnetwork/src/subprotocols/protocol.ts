@@ -36,7 +36,7 @@ export abstract class BaseProtocol {
   public client: PortalNetwork
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     this.client = client
-    this.nodeRadius = nodeRadius ?? 2n ** 256n
+    this.nodeRadius = nodeRadius ?? 2n ** 256n - 1n
     this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
     this.metrics = metrics
     if (this.metrics) {
@@ -152,7 +152,7 @@ export abstract class BaseProtocol {
   private sendPong = async (src: INodeAddress, requestId: bigint) => {
     const payload = {
       enrSeq: this.client.discv5.enr.seq,
-      customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
+      customPayload: PingPongCustomDataType.serialize({ radius: this.nodeRadius }),
     }
     const pongMsg = PortalWireMessageType.serialize({
       selector: MessageCodes.PONG,
