@@ -137,6 +137,7 @@ export const App = () => {
     let node: PortalNetwork
     if (process.env.BINDADDRESS) {
       node = await PortalNetwork.create({
+        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.CanonicalIndicesNetwork],
         proxyAddress: proxy,
         db: LDB as any,
         transport: TransportLayer.WEB,

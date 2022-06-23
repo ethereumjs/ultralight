@@ -175,11 +175,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
-      if (!enr) return
-      await this.sendPortalNetworkMessage(enr, msg, protocolId, true)
+      await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
     })
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
-      if (!verified) {
+      if (!verified || !enr.getLocationMultiaddr('udp')) {
         // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
         // corresponding to the node's observed IP/Port so that we can send outbound messages to
         // those nodes later on if needed.  This is currently used by uTP when responding to
@@ -189,6 +188,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           enr.nodeId,
           new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toB58String())
         )
+        this.logger(this.unverifiedSessionCache.get(enr.nodeId))
       }
     })
 
@@ -234,9 +234,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   /**
    *
    * @param namespaces comma separated list of logging namespaces
-   * defaults to "portalnetwork*, discv5:service, <uTP>*"
+   * defaults to "*Portal*,*uTP*"
    */
-  public enableLog = (namespaces: string = '*portalnetwork*,*discv5:service*,*uTP*') => {
+  public enableLog = (namespaces: string = '*Portal*,*uTP*') => {
     debug.enable(namespaces)
   }
 
@@ -419,7 +419,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @returns response from `dstId` as `Buffer` or null `Buffer`
    */
   public sendPortalNetworkMessage = async (
-    enr: ENR,
+    enr: ENR | string,
     payload: Buffer,
     protocolId: ProtocolId,
     utpMessage?: boolean
@@ -427,16 +427,30 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const nodeAddr = this.unverifiedSessionCache.get(enr.nodeId)
-      const res = await this.discv5.sendTalkReq(
-        nodeAddr ?? enr,
-        payload,
-        fromHexString(messageProtocol)
-      )
+      let nodeAddr
+      if (typeof enr === 'string') {
+        // If ENR is not provided, look up ENR in protocol routing table by nodeId
+        const protocol = this.protocols.get(protocolId)
+        if (protocol) {
+          nodeAddr = protocol.routingTable.getValue(enr)
+          if (!nodeAddr) {
+            // Check in unverified sessions cache if no ENR found in routing table
+            nodeAddr = this.unverifiedSessionCache.get(enr)
+          }
+        }
+      } else {
+        // Assume enr is of type ENR and send request as is
+        nodeAddr = enr
+      }
+      if (!nodeAddr) {
+        this.logger(`${enr} has no reachable address.  Aborting request`)
+        return Buffer.from([])
+      }
+      const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)
-      return Buffer.from([0])
+      return Buffer.from([])
     }
   }
 
