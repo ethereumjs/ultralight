@@ -108,7 +108,7 @@ const main = async () => {
         allowUnverifiedSessions: true,
       },
     },
-    radius: 2n ** 256n,
+    radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
