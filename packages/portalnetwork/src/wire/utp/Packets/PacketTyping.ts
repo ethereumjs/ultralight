@@ -1,4 +1,4 @@
-import { Multiaddr } from 'multiaddr'
+import { Multiaddr } from '@multiformats/multiaddr'
 import { PacketHeader } from './PacketHeader'
 
 export const minimalHeaderSize = 20

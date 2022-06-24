@@ -1,16 +1,17 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR } from 'portalnetwork'
-import * as PeerId from 'peer-id'
-import { Multiaddr } from 'multiaddr'
+import { PortalNetwork, ProtocolId, ENR, fromHexString } from 'portalnetwork'
+import type { PeerId } from '@libp2p/interface-peer-id'
+import { Multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { Server as RPCServer, Client as RpcClient, Method } from 'jayson/promise'
-import http = require('http')
+import jayson from 'jayson/promise/index.js'
+import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
-import { RPCManager } from './rpc'
-import { setupMetrics } from './metrics'
+import { RPCManager } from './rpc.js'
+import { setupMetrics } from './metrics.js'
 import { Level } from 'level'
+import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
@@ -74,11 +75,11 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   let id: PeerId
-  let web3: RpcClient | undefined
+  let web3: jayson.Client | undefined
   if (!args.pk) {
-    id = await PeerId.create({ keyType: 'secp256k1' })
+    id = await createSecp256k1PeerId()
   } else {
-    id = await PeerId.createFromPrivKey(args.pk)
+    id = await createFromProtobuf(fromHexString(args.pk))
   }
   const enr = ENR.createFromPeerId(id)
   let initMa: Multiaddr
@@ -149,17 +150,17 @@ const main = async () => {
   if (args.web3) {
     const [host, port] = args.web3.split(':')
     if (host && port) {
-      web3 = RpcClient.http({ host: host, port: port })
+      web3 = jayson.Client.http({ host: host, port: port })
     }
   }
 
   if (args.rpc) {
     const manager = new RPCManager(portal)
     const methods = manager.getMethods()
-    const server = new RPCServer(methods, {
+    const server = new jayson.Server(methods, {
       router: function (method, params) {
         if (!this._methods[method] && web3) {
-          return new Method(async function () {
+          return new jayson.Method(async function () {
             const res = await web3!.request(method, params)
             if (res.result) return res.result
             else return res.error
@@ -187,4 +188,4 @@ main().catch((err) => {
   console.log('Shutting down...')
 })
 
-export * from './rpc'
+export * from './rpc.js'

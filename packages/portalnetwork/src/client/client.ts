@@ -6,27 +6,29 @@ import {
   IDiscv5CreateOptions,
   NodeId,
 } from '@chainsafe/discv5'
-import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/lib/message'
+import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ProtocolId } from '../subprotocols'
+import { ProtocolId } from '../subprotocols/index'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
   PortalNetworkOpts,
   TransportLayer,
 } from './types'
-import * as PeerId from 'peer-id'
+import { peerIdFromString} from '@libp2p/peer-id'
+import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 
 import { BaseProtocol } from '../subprotocols/protocol'
 import { HistoryProtocol } from '../subprotocols/history/history'
-import { Multiaddr } from 'multiaddr'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports'
-import * as LRU from 'lru-cache'
-import { dirSize, MEGABYTE } from '../util'
+import { Multiaddr } from '@multiformats/multiaddr'
+import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index'
+import LRU from 'lru-cache'
+import { dirSize, MEGABYTE } from '../util/index'
 import { DBManager } from './dbManager'
 import { CanonicalIndicesProtocol } from '../subprotocols/canonicalIndices/canonicalIndices'
 
@@ -46,7 +48,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
       enr: {} as ENR,
-      peerId: {} as PeerId,
+      peerId: {} as Secp256k1PeerId,
       multiaddr: new Multiaddr(),
       config: {
         addrVotesToUpdateEnr: 5,
@@ -58,14 +60,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     let bootnodes
     if (opts.rebuildFromMemory && opts.db) {
       const prev_enr_string = await opts.db.get('enr')
-      const prev_peerid = JSON.parse(await opts.db.get('peerid'))
+      const prev_peerid = await opts.db.get('peerid')
       config.enr = ENR.decodeTxt(prev_enr_string)
-      config.peerId = await PeerId.createFromJSON(prev_peerid)
+      config.peerId = await peerIdFromString(prev_peerid)
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
     } else {
-      config.peerId = opts.config?.peerId ?? (await PeerId.create({ keyType: 'secp256k1' }))
+      config.peerId = opts.config?.peerId ?? (await createSecp256k1PeerId())
       if (opts.config?.enr) {
         config.enr =
           typeof opts.config.enr === 'string' ? ENR.decodeTxt(opts.config.enr) : opts.config.enr
@@ -186,7 +188,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const peerId = await createPeerIdFromKeypair(enr.keypair)
         this.unverifiedSessionCache.set(
           enr.nodeId,
-          new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toB58String())
+          new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
         )
         this.logger(this.unverifiedSessionCache.get(enr.nodeId))
       }
@@ -254,7 +256,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         {
           type: 'put',
           key: 'peerid',
-          value: JSON.stringify(this.peerId.toJSON()),
+          value: this.peerId.toString(),
         },
       ])
     } catch (err) {}

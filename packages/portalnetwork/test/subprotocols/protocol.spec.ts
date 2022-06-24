@@ -1,4 +1,4 @@
-import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
+import { EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
 import * as tape from 'tape'
 import * as td from 'testdouble'
@@ -16,8 +16,8 @@ import { TransportLayer } from '../../src/client'
 import { HistoryProtocol } from '../../src/subprotocols/history/history'
 import { BaseProtocol } from '../../src/subprotocols/protocol'
 import { Debugger } from 'debug'
-import * as PeerId from 'peer-id'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 
 // Fake Protocol class for testing Protocol class
 class FakeProtocol extends BaseProtocol {
@@ -210,9 +210,10 @@ tape('handleFindNodes message handler tests', async (t) => {
 
   for (let x = 239; x < 257; x++) {
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
-    const peerId = await PeerId.create({ keyType: 'secp256k1' })
+    const peerId = await createSecp256k1PeerId()
+    //@ts-ignore
     const enr = ENR.createFromPeerId(peerId)
-    enr.encode(createKeypairFromPeerId(peerId).privateKey)
+    enr.encode(Buffer.from(peerId.privateKey!))
     sortedEnrs.push(enr)
     ;(enr as any)._nodeId = id
     protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
@@ -255,9 +256,9 @@ tape('handleFindNodes message handler tests', async (t) => {
   td.reset()
 
   const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
-  const peerId = await PeerId.create({ keyType: 'secp256k1' })
+  const peerId = await createSecp256k1PeerId() //@ts-ignore
   const enr = ENR.createFromPeerId(peerId)
-  enr.encode(createKeypairFromPeerId(peerId).privateKey)
+  enr.encode(Buffer.from(peerId.privateKey!))
   ;(enr as any)._nodeId = id
   protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
 

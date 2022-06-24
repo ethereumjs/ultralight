@@ -1,3 +1,3 @@
-export * from './history'
-export * from './canonicalIndices'
+export * from './history/index'
+export * from './canonicalIndices/index'
 export * from './types'

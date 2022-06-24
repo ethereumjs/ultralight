@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "engines": {
     "node": "^16"
   },
@@ -10,19 +11,23 @@
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
     "@types/yargs": "^17.0.7",
+    "@zoltu/typescript-transformer-append-js-extension": "^1.0.1",
     "eslint": "^8.6.0",
     "prettier": "^2.5.1",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
+    "ttypescript": "^1.5.13",
     "typescript": "^4.4.2"
   },
   "dependencies": {
     "@ethereumjs/block": "^3.6.0",
+    "@libp2p/interface-peer-id": "^1.0.2",
+    "@libp2p/peer-id": "^1.1.13",
+    "@libp2p/peer-id-factory": "^1.0.15",
+    "@multiformats/multiaddr": "^10.2.1",
     "debug": "^4.3.3",
     "jayson": "^3.6.6",
     "level": "^8.0.0",
-    "multiaddr": "^10.0.0",
-    "peer-id": "^0.16.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
     "rlp": "2.2.4",
@@ -30,8 +35,8 @@
   },
   "scripts": {
     "start": "ts-node src/index.ts",
-    "dev": "tsc --watch",
-    "build": "tsc",
+    "dev": "ttsc --watch",
+    "build": "ttsc",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
   },

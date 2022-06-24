@@ -1,13 +1,13 @@
 import { distance, ENR, EntryStatus, NodeId } from '@chainsafe/discv5'
-import { ITalkReqMessage } from '@chainsafe/discv5/lib/message'
+import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'
 import { Union } from '@chainsafe/ssz/lib/interface'
 import { Debugger } from 'debug'
-import { ProtocolId } from '.'
-import { PortalNetwork, PortalNetworkRoutingTable } from '../client'
+import { ProtocolId } from './types'
+import { PortalNetwork, PortalNetworkRoutingTable } from '../client/index'
 import { PortalNetworkMetrics } from '../client/types'
-import { shortId, serializedContentKeyToContentId, generateRandomNodeIdAtDistance } from '../util'
+import { shortId, serializedContentKeyToContentId, generateRandomNodeIdAtDistance } from '../util/index'
 import {
   AcceptMessage,
   ContentMessageType,
@@ -21,8 +21,8 @@ import {
   PongMessage,
   PortalWireMessageType,
   connectionIdType,
-} from '../wire'
-import { randUint16, MAX_PACKET_SIZE } from '../wire/utp'
+} from '../wire/index'
+import { randUint16, MAX_PACKET_SIZE } from '../wire/utp/index'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { NodeLookup } from './nodeLookup'
 import { StateNetworkRoutingTable } from './state'

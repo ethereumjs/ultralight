@@ -1,8 +1,8 @@
-import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE } from '..'
-import { ConnectionState } from '.'
+import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE } from '../index'
+import { ConnectionState } from './index'
 
-import * as EventEmitter from 'events'
-import { ProtocolId } from '../../..'
+import EventEmitter from 'events'
+import { ProtocolId } from '../../../index'
 import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import ContentReader from '../Protocol/read/ContentReader'

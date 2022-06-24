@@ -1,7 +1,7 @@
 import { protocolVersion, PacketType, IPacketOptions } from './PacketTyping'
 import { PacketHeader } from './PacketHeader'
-import { SelectiveAckHeader, Uint16, Uint32 } from '.'
-import { Bytes32TimeStamp } from '..'
+import { SelectiveAckHeader, Uint16, Uint32 } from './index'
+import { Bytes32TimeStamp } from '../index'
 
 export function packetToBuffer(packet: Packet): Buffer {
   const buffer = Buffer.alloc(packet.header.length)

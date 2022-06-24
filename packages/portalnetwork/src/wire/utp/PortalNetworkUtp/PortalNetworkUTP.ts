@@ -1,11 +1,11 @@
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '..'
-import { ProtocolId } from '../../..'
+import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '../index'
+import { ProtocolId } from '../../../index'
 import {
   HistoryNetworkContentKey,
   HistoryNetworkContentKeyUnionType,
-} from '../../../subprotocols/history'
+} from '../../../subprotocols/history/index'
 import { sendFinPacket } from '../Packets/PacketSenders'
 import { BasicUtp } from '../Protocol/BasicUtp'
 import { ContentRequest } from './ContentRequest'

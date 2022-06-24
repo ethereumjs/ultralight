@@ -1,18 +1,18 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
-import { ProtocolId } from '..'
-import { PortalNetwork } from '../../client'
+import { ProtocolId } from '../types'
+import { PortalNetwork } from '../../client/client'
 import { PortalNetworkMetrics } from '../../client/types'
-import { shortId } from '../../util'
-import { HeaderAccumulator } from '.'
+import { shortId } from '../../util/index'
+import { HeaderAccumulator } from './headerAccumulator'
 import {
   connectionIdType,
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
   PortalWireMessageType,
-} from '../../wire'
+} from '../../wire/index'
 import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
 import { ContentLookup } from '../contentLookup'
 import { BaseProtocol } from '../protocol'

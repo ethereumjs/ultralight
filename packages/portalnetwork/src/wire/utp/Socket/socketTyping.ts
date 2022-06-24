@@ -1,7 +1,7 @@
 import { Packet } from '../Packets/Packet'
 import * as dgram from 'dgram'
-import { Multiaddr } from 'multiaddr'
-import { Uint16, Uint32 } from '..'
+import { Multiaddr } from '@multiformats/multiaddr'
+import { Uint16, Uint32 } from '../index'
 
 export const reorderBufferMaxSize: number = 1024
 //   # Maximal number of payload bytes per packet. Total packet size will be equal to

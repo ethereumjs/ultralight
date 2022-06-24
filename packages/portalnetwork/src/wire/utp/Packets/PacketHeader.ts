@@ -1,4 +1,4 @@
-import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '..'
+import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '../index'
 import { VERSION, DEFAULT_WINDOW_SIZE } from '../Utils/constants'
 import { SelectiveAckHeaderExtension } from './Extentions'
 import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping'

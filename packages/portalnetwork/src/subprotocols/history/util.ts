@@ -1,6 +1,6 @@
 import SHA256 from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from '.'
+import { HistoryNetworkContentKeyUnionType } from './index'
 import { HistoryNetworkContentTypes } from './types'
 import * as rlp from 'rlp'
 import { Block, BlockBuffer } from '@ethereumjs/block'

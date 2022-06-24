@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { TWO_MINUTES, UtpSocket } from '../..'
+import { TWO_MINUTES, UtpSocket } from '../../index'
 import { sendDataPacket } from '../../Packets/PacketSenders'
 import { BasicUtp } from '../BasicUtp'
 

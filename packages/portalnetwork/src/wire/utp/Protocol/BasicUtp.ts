@@ -1,6 +1,6 @@
 import { Debugger } from 'debug'
 import { EventEmitter } from 'events'
-import { Packet } from '../Packets'
+import { Packet } from '../Packets/index'
 import {
   sendSynPacket,
   sendSynAckPacket,
@@ -10,7 +10,7 @@ import {
   sendResetPacket,
   sendFinPacket,
 } from '../Packets/PacketSenders'
-import { UtpSocket } from '../Socket'
+import { UtpSocket } from '../Socket/index'
 import ContentReader from './read/ContentReader'
 import ContentWriter from './write/ContentWriter'
 

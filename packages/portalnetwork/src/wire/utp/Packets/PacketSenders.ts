@@ -1,4 +1,4 @@
-import { UtpSocket, ConnectionState } from '../Socket'
+import { UtpSocket, ConnectionState } from '../Socket/index'
 import {
   createSynPacket,
   createAckPacket,

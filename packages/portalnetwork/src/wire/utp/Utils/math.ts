@@ -1,4 +1,4 @@
-import { Uint16 } from '..'
+import { Uint16 } from '../index'
 import { Duration, Miliseconds } from '../Socket/socketTyping'
 
 export function MicrosecondTimeStamp(): number {

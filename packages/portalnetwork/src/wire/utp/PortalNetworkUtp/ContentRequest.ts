@@ -1,10 +1,10 @@
-import { UtpSocket } from '..'
+import { UtpSocket } from '../index'
 import ContentReader from '../Protocol/read/ContentReader'
 import ContentWriter from '../Protocol/write/ContentWriter'
 import { sendSynPacket } from '../Packets/PacketSenders'
 import { RequestCode } from './PortalNetworkUTP'
-import { ConnectionState } from '../Socket'
-import { ProtocolId } from '../../../subprotocols'
+import { ConnectionState } from '../Socket/index'
+import { ProtocolId } from '../../../subprotocols/types'
 
 export class ContentRequest {
   protocolId: ProtocolId
