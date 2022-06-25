@@ -13,14 +13,15 @@
   "scripts": {
     "preinstall": "npm run checkNpmVersion",
     "checkNpmVersion": "bash ./scripts/check-npm-version.sh",
-    "postinstall": "npm run build --workspaces --if-present",
+    "postinstall": "npm run hackDiscv5 && npm run build --workspaces --if-present",
     "start-proxy": "npm run start -w=proxy -- --nat=localhost",
     "start-browser-client": "npm run start-testnet -w=browser-client",
     "start-cli": "npm run start -w=cli -- --bindAddress=127.0.0.1:5500",
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
     "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
     "clean": "bash ./scripts/clean-root.sh",
-    "devnet": "bash ./scripts/devnet.sh"
+    "devnet": "bash ./scripts/devnet.sh",
+    "hackDiscv5": "node scripts/hackNode.js"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "5.0.0",
