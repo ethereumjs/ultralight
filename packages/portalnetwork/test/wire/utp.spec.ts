@@ -1,5 +1,5 @@
 import { toHexString } from '@chainsafe/ssz'
-import * as tape from 'tape'
+import tape from 'tape'
 import {
   Packet,
   PacketHeader,

@@ -2,7 +2,7 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint', 'implicit-dependencies', 'prettier'],
   env: {
-    es6: true,
+    es2020: true,
     node: true,
   },
   parserOptions: {
@@ -13,11 +13,11 @@ module.exports = {
     'dist/',
     'dist.browser/',
     'coverage/',
-    'prettier.config.js',
+    'prettier.config.cjs',
     'typedoc.js',
     'packages/discv5/',
     'docs',
-    '.eslintrc.js',
+    '.eslintrc.cjs',
     'scripts/'
   ],
   extends: ['eslint:recommended'],

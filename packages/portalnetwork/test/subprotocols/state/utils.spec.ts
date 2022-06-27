@@ -1,4 +1,4 @@
-import * as tape from 'tape'
+import tape from 'tape'
 import { distance, MODULO } from '../../../src/subprotocols/state/util'
 
 tape('distance()', (t) => {

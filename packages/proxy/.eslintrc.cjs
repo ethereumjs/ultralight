@@ -1,5 +1,5 @@
 module.exports = {
-  extends: "../../config/eslint.js",
+  extends: "../../config/eslint.cjs",
   rules: {
     // Everything the proxy does is console based
     'no-console': 'off',

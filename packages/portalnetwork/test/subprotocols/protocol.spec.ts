@@ -1,6 +1,6 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from 'multiaddr'
-import * as tape from 'tape'
+import tape from 'tape'
 import * as td from 'testdouble'
 import {
   ENR,

@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsc --watch",
-    "build": "ttsc",
+    "build": "tsc",
     "docs": "typedoc src/index.ts",
-    "tape": "tape -r  ts-node/register",
+    "tape": "NODE_OPTIONS='--loader ts-node/esm --experimental-json-modules' tape",
     "test": "tape -r  ts-node/register 'test/!(integration)/**/*.spec.ts'",
     "test:integration": "tape -r ts-node/register 'test/integration/**/*.spec.ts'",
     "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'",
@@ -54,7 +54,6 @@
     "testdouble": "^3.16.3",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
-    "ttypescript": "^1.5.13",
     "typedoc": "^0.22.5",
     "typedoc-plugin-markdown": "^3.11.3",
     "typescript": "^4.4.2"

@@ -1,6 +1,6 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { BlockHeader } from '@ethereumjs/block'
-import * as tape from 'tape'
+import tape from 'tape'
 import * as td from 'testdouble'
 import {
   fromHexString,

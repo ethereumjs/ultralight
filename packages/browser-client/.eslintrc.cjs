@@ -1,5 +1,5 @@
 module.exports = {
-  extends: "../../config/eslint.js",
+  extends: "../../config/eslint.cjs",
   ignorePatterns: ["*.js", "serviceWorker.ts", "index.ts"],
   rules: {
   },

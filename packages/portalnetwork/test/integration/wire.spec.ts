@@ -1,4 +1,4 @@
-import * as tape from 'tape'
+import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { Multiaddr } from 'multiaddr'
 import { PortalNetwork, ProtocolId } from '../../src'

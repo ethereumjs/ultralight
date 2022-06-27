@@ -14,9 +14,9 @@ module.exports = {
             "buffer": require.resolve('buffer/'),
             "assert": require.resolve('assert/'),
             "util": require.resolve('util/'),
-            "fs/promises": false,
+            "fs/promises": false, 
             "fs": false,
-            "url": require.resolve("url/")            
+            "bcrypto/lib": require.resolve('bcrypto/')
         }
     },
     module: {
