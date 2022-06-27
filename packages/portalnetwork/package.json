@@ -11,7 +11,7 @@
     "docs": "typedoc src/index.ts",
     "tape": "NODE_OPTIONS='--loader ts-node/esm --experimental-json-modules' tape",
     "test":  "npm run tape -- 'test/!(integration)/**/*.spec.ts'",
-    "test:integration": "tape -r ts-node/register 'test/integration/**/*.spec.ts'",
+    "test:integration": "npm run tape -- 'test/integration/**/*.spec.ts'",
     "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
