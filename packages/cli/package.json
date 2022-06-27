@@ -11,12 +11,10 @@
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
     "@types/yargs": "^17.0.7",
-    "@zoltu/typescript-transformer-append-js-extension": "^1.0.1",
     "eslint": "^8.6.0",
     "prettier": "^2.5.1",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
-    "ttypescript": "^1.5.13",
     "typescript": "^4.4.2"
   },
   "dependencies": {
@@ -35,8 +33,8 @@
   },
   "scripts": {
     "start": "ts-node src/index.ts",
-    "dev": "ttsc --watch",
-    "build": "ttsc",
+    "dev": "tsc --watch",
+    "build": "tsc",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
   },
