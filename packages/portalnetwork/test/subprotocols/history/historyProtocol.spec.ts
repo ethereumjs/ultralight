@@ -7,8 +7,8 @@ import {
   PortalNetwork,
   ProtocolId,
   serializedContentKeyToContentId,
-} from '../../../src'
-import { TransportLayer } from '../../../src/client'
+} from '../../../src/index.js'
+import { TransportLayer } from '../../../src/client/index.js'
 import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
 import {
   HistoryNetworkContentKeyUnionType,

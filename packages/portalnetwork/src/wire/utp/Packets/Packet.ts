@@ -211,4 +211,4 @@ export function bufferToPacket(buffer: Buffer): Packet {
   }
 }
 
-export * from './PacketTyping.ts'
+export * from './PacketTyping.js'

@@ -6,7 +6,7 @@ import {
   PacketType,
   SelectiveAckHeader,
   bufferToPacket,
-} from '../../src/wire/utp'
+} from '../../src/wire/utp/index.js'
 
 tape('uTP encoding tests', (t) => {
   t.test('SYN packet encoding test', (st) => {

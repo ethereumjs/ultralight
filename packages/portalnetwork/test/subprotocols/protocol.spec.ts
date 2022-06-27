@@ -1,5 +1,5 @@
 import { EntryStatus } from '@chainsafe/discv5'
-import { Multiaddr } from 'multiaddr'
+import { Multiaddr } from '@multiformats/multiaddr'
 import tape from 'tape'
 import * as td from 'testdouble'
 import {
@@ -11,12 +11,12 @@ import {
   PortalNetwork,
   PortalWireMessageType,
   ProtocolId,
-} from '../../src'
-import { TransportLayer } from '../../src/client'
+} from '../../src/index.js'
+import { TransportLayer } from '../../src/client/index.js'
 import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
 import { BaseProtocol } from '../../src/subprotocols/protocol.js'
 import { Debugger } from 'debug'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 
 // Fake Protocol class for testing Protocol class

@@ -3,7 +3,7 @@ import tape from 'tape'
 import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
-} from '../../../src/subprotocols/history'
+} from '../../../src/subprotocols/history/index.js'
 import { HistoryNetworkContentTypes } from '../../../src/subprotocols/history/types.js'
 
 tape('History Subprotocol contentKey serialization/deserialization', async (t) => {

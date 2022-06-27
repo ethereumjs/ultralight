@@ -25,10 +25,10 @@ import {
   PongMessage,
   PortalWireMessageType,
   connectionIdType,
-} from '../wire/index.ts'
-import { randUint16, MAX_PACKET_SIZE } from '../wire/utp/index.ts'
-import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.ts'
-import { NodeLookup } from './nodeLookup.ts'
+} from '../wire/index.js'
+import { randUint16, MAX_PACKET_SIZE } from '../wire/utp/index.js'
+import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
+import { NodeLookup } from './nodeLookup.js'
 import { StateNetworkRoutingTable } from './state'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
