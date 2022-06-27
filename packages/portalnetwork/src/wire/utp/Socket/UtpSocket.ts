@@ -1,13 +1,11 @@
-import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE } from '../index'
-import { ConnectionState } from './index'
-
+import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE, ConnectionState } from '../index.js'
 import EventEmitter from 'events'
-import { ProtocolId } from '../../../index'
+import { ProtocolId } from '../../../index.js'
 import { Debugger } from 'debug'
-import ContentWriter from '../Protocol/write/ContentWriter'
-import ContentReader from '../Protocol/read/ContentReader'
-import { BasicUtp } from '../Protocol/BasicUtp'
-import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders'
+import ContentWriter from '../Protocol/write/ContentWriter.js'
+import ContentReader from '../Protocol/read/ContentReader.js'
+import { BasicUtp } from '../Protocol/BasicUtp.js'
+import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders.js'
 
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'

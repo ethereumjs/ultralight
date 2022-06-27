@@ -9,11 +9,11 @@ import {
   serializedContentKeyToContentId,
 } from '../../../src'
 import { TransportLayer } from '../../../src/client'
-import { HistoryProtocol } from '../../../src/subprotocols/history/history'
+import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
 import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
-} from '../../../src/subprotocols/history/types'
+} from '../../../src/subprotocols/history/types.js'
 
 tape('history Protocol message handler tests', async (t) => {
   const node = await PortalNetwork.create({

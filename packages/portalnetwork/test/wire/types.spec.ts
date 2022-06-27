@@ -4,7 +4,7 @@ import {
   MessageCodes,
   PortalWireMessageType,
   PingPongCustomDataType,
-} from '../../src/wire/types'
+} from '../../src/wire/types.js'
 import { ENR } from '@chainsafe/discv5'
 import { BitArray, fromHexString } from '@chainsafe/ssz'
 

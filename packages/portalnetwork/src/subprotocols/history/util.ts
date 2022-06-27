@@ -1,10 +1,10 @@
 import SHA256 from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from './index'
-import { HistoryNetworkContentTypes } from './types'
+import { HistoryNetworkContentKeyUnionType } from './index.js'
+import { HistoryNetworkContentTypes } from './types.js'
 import * as rlp from 'rlp'
 import { Block, BlockBuffer } from '@ethereumjs/block'
-import { HistoryProtocol } from './history'
+import { HistoryProtocol } from './history.js'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key

@@ -1,3 +1,3 @@
-export * from './history/index'
-export * from './canonicalIndices/index'
-export * from './types'
+export * from './history/index.js'
+export * from './canonicalIndices/index.js'
+export * from './types.js'

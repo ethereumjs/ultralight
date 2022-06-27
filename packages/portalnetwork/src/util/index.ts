@@ -1,2 +1,2 @@
-export * from './util'
-export * from './discv5'
+export * from './util.js'
+export * from './discv5.js'

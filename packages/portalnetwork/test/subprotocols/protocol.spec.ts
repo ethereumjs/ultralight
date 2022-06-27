@@ -13,8 +13,8 @@ import {
   ProtocolId,
 } from '../../src'
 import { TransportLayer } from '../../src/client'
-import { HistoryProtocol } from '../../src/subprotocols/history/history'
-import { BaseProtocol } from '../../src/subprotocols/protocol'
+import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
+import { BaseProtocol } from '../../src/subprotocols/protocol.js'
 import { Debugger } from 'debug'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'

@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "type": "module",
+  "engines": {"node": ">=16"},
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",

@@ -1,5 +1,5 @@
-import { Uint16 } from '../index'
-import { Duration, Miliseconds } from '../Socket/socketTyping'
+import { Uint16 } from '../index.js'
+import { Duration, Miliseconds } from '../Socket/socketTyping.js'
 
 export function MicrosecondTimeStamp(): number {
   // this is only a millisecond timestamp

@@ -20,8 +20,19 @@ module.exports = {
     '.eslintrc.cjs',
     'scripts/'
   ],
-  extends: ['eslint:recommended'],
+  extends: ['eslint:recommended', 'plugin:node/recommended'],
   rules: {
+    "node/file-extension-in-import": [
+
+      {
+          "tryExtensions": [".js", ".json", ".node"],
+
+      }
+  ],
+    'no-undef':'warn',
+    'no-process-exit':'off',
+    'node/no-unpublished-import':'off',
+    'node/no-missing-import': 'off',
     'no-empty': 'off',
     'no-console': 'warn',
     'no-debugger': 'error',
@@ -49,6 +60,7 @@ module.exports = {
     'no-redeclare': 'off',
     '@typescript-eslint/no-redeclare': ['error'],
     'no-case-declarations': 'warn',
+    "node/file-extension-in-import": ["error", "always"],
   },
   parserOptions: {
     sourceType: 'module',

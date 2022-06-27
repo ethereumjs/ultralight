@@ -6,7 +6,7 @@ import {
   IRemoteInfo,
   ITransportService,
   TransportEventEmitter,
-} from '@chainsafe/discv5/lib/transport/types'
+} from '@chainsafe/discv5/lib/transport/types.js'
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
 import { numberToBuffer } from '@chainsafe/discv5'

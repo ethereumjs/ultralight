@@ -1,5 +1,5 @@
 import { Multiaddr } from '@multiformats/multiaddr'
-import { PacketHeader } from './PacketHeader'
+import { PacketHeader } from './PacketHeader.js'
 
 export const minimalHeaderSize = 20
 export const protocolVersion = 1

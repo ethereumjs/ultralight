@@ -10,27 +10,27 @@ import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ProtocolId } from '../subprotocols/index'
+import { ProtocolId } from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
   PortalNetworkOpts,
   TransportLayer,
-} from './types'
-import { peerIdFromString} from '@libp2p/peer-id'
+} from './types.js'
+import { peerIdFromString } from '@libp2p/peer-id'
 import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
-import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
 
-import { BaseProtocol } from '../subprotocols/protocol'
-import { HistoryProtocol } from '../subprotocols/history/history'
+import { BaseProtocol } from '../subprotocols/protocol.js'
+import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr } from '@multiformats/multiaddr'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index'
+import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import LRU from 'lru-cache'
-import { dirSize, MEGABYTE } from '../util/index'
-import { DBManager } from './dbManager'
-import { CanonicalIndicesProtocol } from '../subprotocols/canonicalIndices/canonicalIndices'
+import { dirSize, MEGABYTE } from '../util/index.js'
+import { DBManager } from './dbManager.js'
+import { CanonicalIndicesProtocol } from '../subprotocols/canonicalIndices/canonicalIndices.js'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5

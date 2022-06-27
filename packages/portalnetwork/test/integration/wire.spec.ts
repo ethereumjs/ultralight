@@ -1,13 +1,13 @@
 import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { Multiaddr } from 'multiaddr'
+import { Multiaddr } from '@multiformats/multiaddr'
 import { PortalNetwork, ProtocolId } from '../../src'
-import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types'
+import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types.js'
 import { fromHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history'
 import { Block } from '@ethereumjs/block'
-import { TransportLayer } from '../../src/client/types'
-import { HistoryProtocol } from '../../src/subprotocols/history/history'
+import { TransportLayer } from '../../src/client/types.js'
+import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
 
 const end = async (
   child: ChildProcessWithoutNullStreams,

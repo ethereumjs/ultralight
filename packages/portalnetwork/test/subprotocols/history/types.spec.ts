@@ -4,7 +4,7 @@ import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
 } from '../../../src/subprotocols/history'
-import { HistoryNetworkContentTypes } from '../../../src/subprotocols/history/types'
+import { HistoryNetworkContentTypes } from '../../../src/subprotocols/history/types.js'
 
 tape('History Subprotocol contentKey serialization/deserialization', async (t) => {
   let chainId = 15

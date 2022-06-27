@@ -1,10 +1,10 @@
 import { BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
-import { ProtocolId } from '../index'
-import { PortalNetwork } from '../../client/client'
-import { toHexString } from '../../util/discv5'
-import { HistoryProtocol } from '../history/history'
-import { BaseProtocol } from '../protocol'
+import { ProtocolId } from '../index.js'
+import { PortalNetwork } from '../../client/client.js'
+import { toHexString } from '../../util/discv5.js'
+import { HistoryProtocol } from '../history/history.js'
+import { BaseProtocol } from '../protocol.js'
 
 export class CanonicalIndicesProtocol extends BaseProtocol {
   logger: Debugger

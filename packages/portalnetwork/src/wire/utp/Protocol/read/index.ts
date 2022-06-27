@@ -1,1 +1,1 @@
-export * from './ContentReader'
+export * from './ContentReader.js'

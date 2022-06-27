@@ -1,3 +1,3 @@
-export * from './BasicUtp'
-export * from './read/index'
-export * from './write/index'
+export * from './BasicUtp.js'
+export * from './read/index.js'
+export * from './write/index.js'

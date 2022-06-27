@@ -1,14 +1,21 @@
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { bufferToPacket, ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '../index'
-import { ProtocolId } from '../../../index'
+import {
+  bufferToPacket,
+  ConnectionState,
+  Packet,
+  PacketType,
+  randUint16,
+  UtpSocket,
+} from '../index.js'
+import { ProtocolId } from '../../../index.js'
 import {
   HistoryNetworkContentKey,
   HistoryNetworkContentKeyUnionType,
-} from '../../../subprotocols/history/index'
-import { sendFinPacket } from '../Packets/PacketSenders'
-import { BasicUtp } from '../Protocol/BasicUtp'
-import { ContentRequest } from './ContentRequest'
+} from '../../../subprotocols/history/index.js'
+import { sendFinPacket } from '../Packets/PacketSenders.js'
+import { BasicUtp } from '../Protocol/BasicUtp.js'
+import { ContentRequest } from './ContentRequest.js'
 
 type UtpSocketKey = string
 

@@ -1,2 +1,2 @@
-export * from './websockets'
-export * from './capacitorUdp'
+export * from './websockets.js'
+export * from './capacitorUdp.js'
