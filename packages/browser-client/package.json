@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "electron/main.ts",
+  "engines": {
+    "node": ">=16"
+  },
   "scripts": {
     "start-local": "BINDADDRESS=127.0.0.1 webpack serve",
     "start-testnet": "webpack serve",

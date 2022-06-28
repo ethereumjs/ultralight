@@ -1,4 +1,4 @@
-import { EntryStatus } from '@chainsafe/discv5'
+import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
 import { Multiaddr } from '@multiformats/multiaddr'
 import tape from 'tape'
 import * as td from 'testdouble'
@@ -212,7 +212,8 @@ tape('handleFindNodes message handler tests', async (t) => {
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
     const peerId = await createSecp256k1PeerId()
     const enr = ENR.createFromPeerId(peerId)
-    enr.encode(Buffer.from(peerId.privateKey!.slice(4!)))
+    const keypair = createKeypairFromPeerId(peerId)
+    enr.encode(keypair.privateKey)
     sortedEnrs.push(enr)
     ;(enr as any)._nodeId = id
     protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
@@ -255,9 +256,10 @@ tape('handleFindNodes message handler tests', async (t) => {
   td.reset()
 
   const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
-  const peerId = await createSecp256k1PeerId() //@ts-ignore
+  const peerId = await createSecp256k1PeerId()
   const enr = ENR.createFromPeerId(peerId)
-  enr.encode(Buffer.from(peerId.privateKey!.slice(4)))
+  const keypair = createKeypairFromPeerId(peerId)
+  enr.encode(keypair.privateKey)
   ;(enr as any)._nodeId = id
   protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
 
