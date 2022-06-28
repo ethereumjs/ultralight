@@ -16,7 +16,12 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'create prometheus scrape_target file',
         boolean: true,
         default: false
-    }).argv
+    })
+    .option('accumulator', {
+        describe: 'stored accumulator in json',
+        number: true,
+        optional: true,
+      }).argv
 
 const main = async () => {
     let children: ChildProcessWithoutNullStreams[] = []
@@ -28,9 +33,22 @@ const main = async () => {
         children.push(child)
     })
     } else if (args.numNodes){
-        for (let x = 0; x < args.numNodes; x++) {//@ts-ignore
-            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', this.stderr, process.stderr]})
-            children.push(child)
+        if (args.accumulator) {
+            console.log('accumulators', args.accumulator)
+            for (let i=0; i<args.accumulator; i++) {//@ts-ignore
+                const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + i}`, `--rpcPort=${8545 + i}`, `--metrics=true`, `--metricsPort=${18545 + i}`, `--accumulator`], {stdio: ['pipe', this.stderr, process.stderr]})
+                children.push(child)
+            }
+            for (let x = args.accumulator; x < args.numNodes; x++) {//@ts-ignore
+                const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', this.stderr, process.stderr]})
+                children.push(child)
+            }
+        } else {
+            for (let x = 0; x < args.numNodes; x++) {//@ts-ignore
+                const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', this.stderr, process.stderr]})
+                children.push(child)
+            }
+
         }
     }
 
