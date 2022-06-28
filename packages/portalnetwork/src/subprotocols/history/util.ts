@@ -1,4 +1,4 @@
-import SHA256 from '@chainsafe/as-sha256'
+import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from './index.js'
 import { HistoryNetworkContentTypes } from './types.js'
@@ -44,7 +44,7 @@ export const getHistoryNetworkContentId = (
       throw new Error('unsupported content type')
   }
 
-  return toHexString(SHA256.digest(encodedKey))
+  return toHexString(digest(encodedKey))
 }
 
 /**

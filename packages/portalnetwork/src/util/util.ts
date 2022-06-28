@@ -1,4 +1,4 @@
-import SHA256 from '@chainsafe/as-sha256'
+import { digest } from '@chainsafe/as-sha256'
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
@@ -37,7 +37,7 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
 export const serializedContentKeyToContentId = (contentKey: Uint8Array) => {
-  return toHexString(SHA256.digest(contentKey))
+  return toHexString(digest(contentKey))
 }
 
 export const dirSize = async (directory: string) => {

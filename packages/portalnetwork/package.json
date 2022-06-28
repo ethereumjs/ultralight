@@ -20,7 +20,7 @@
   "author": "acolytec3",
   "license": "MIT",
   "dependencies": {
-    "@chainsafe/as-sha256": "^0.2.4",
+    "@chainsafe/as-sha256": "^0.3.1",
     "@chainsafe/discv5": "^1.0.2",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
     "@chainsafe/ssz": "^0.9.1",

@@ -211,7 +211,6 @@ tape('handleFindNodes message handler tests', async (t) => {
   for (let x = 239; x < 257; x++) {
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
     const peerId = await createSecp256k1PeerId()
-    //@ts-ignore
     const enr = ENR.createFromPeerId(peerId)
     enr.encode(Buffer.from(peerId.privateKey!))
     sortedEnrs.push(enr)

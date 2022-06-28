@@ -8,6 +8,9 @@ import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/histor
 import { Block } from '@ethereumjs/block'
 import { TransportLayer } from '../../src/client/types.js'
 import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 const end = async (
   child: ChildProcessWithoutNullStreams,
