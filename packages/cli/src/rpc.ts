@@ -152,6 +152,7 @@ export class RPCManager {
       return res
     },
     portal_history_getSnapshot: async (params: [string]) => {
+      this.logger('getSnapshot RPC call received')
       const [enr] = params
       const nodeId = ENR.decodeTxt(enr).nodeId
       const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol

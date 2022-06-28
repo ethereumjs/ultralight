@@ -1,5 +1,12 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR } from 'portalnetwork'
+import {
+  PortalNetwork,
+  ProtocolId,
+  ENR,
+  HeaderAccumulator,
+  HeaderAccumulatorType,
+  fromHexString,
+} from 'portalnetwork'
 import * as PeerId from 'peer-id'
 import { Multiaddr } from 'multiaddr'
 import yargs from 'yargs'
@@ -11,6 +18,11 @@ import debug from 'debug'
 import { RPCManager } from './rpc'
 import { setupMetrics } from './metrics'
 import { Level } from 'level'
+const fromDisk = require('../scripts/storedAccumulator.json')
+const O = require('../scripts/storedHashLists.json')
+
+const V: [string, string][] = Object.values(O)
+const hashListFromDisk: Record<string, string> = Object.fromEntries(V)
 
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
@@ -59,6 +71,11 @@ const args: any = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
+  .option('accumulator', {
+    describe: 'stored accumulator in json',
+    boolean: true,
+    optional: true,
+  })
   .option('web3', {
     describe: 'web3 JSON RPC HTTP endpoint for local Ethereum node for sourcing chain data',
     string: true,
@@ -96,6 +113,18 @@ const main = async () => {
   if (args.dataDir) {
     db = new Level<string, string>(args.dataDir)
   }
+  let accumulator = undefined
+  if (args.accumulator) {
+    const serialized = fromDisk.serialized
+    const stored = HeaderAccumulatorType.deserialize(fromHexString(serialized))
+    accumulator = new HeaderAccumulator({
+      initFromGenesis: false,
+      storedAccumulator: {
+        historicalEpochs: stored.historicalEpochs,
+        currentEpoch: stored.currentEpoch,
+      },
+    })
+  }
 
   const portal = await PortalNetwork.create({
     config: {
@@ -114,11 +143,13 @@ const main = async () => {
     metrics,
     supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.CanonicalIndicesNetwork],
     dataDir: args.datadir,
+    accumulator: accumulator,
+    hashLists: hashListFromDisk,
   })
   portal.discv5.enableLogs()
   portal.enableLog('*ultralight*, *Portal*, *uTP*')
   let metricsServer: http.Server | undefined
-
+  log(fromDisk.hashTreeRoot, args.accumulator)
   if (args.metrics) {
     metricsServer = http.createServer(reportMetrics)
     Object.entries(metrics).forEach((entry) => {
