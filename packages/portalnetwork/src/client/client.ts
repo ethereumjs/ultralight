@@ -122,6 +122,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       supportedProtocols: opts.supportedProtocols ?? [ProtocolId.HistoryNetwork],
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
+      accumulator: opts.accumulator,
+      hashArrays: opts.hashArrays,
     })
   }
 
@@ -150,12 +152,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
-          this.protocols.set(protocol, new HistoryProtocol(this, opts.radius, opts.metrics))
+          this.protocols.set(
+            protocol,
+            new HistoryProtocol(this, opts.radius, opts.metrics, opts.accumulator)
+          )
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
           break
         case ProtocolId.CanonicalIndicesNetwork:
+          if (opts.hashArrays) {
+            const keys = Object.keys(opts.hashArrays)
+            const values = Object.values(opts.hashArrays)
+            keys.forEach((key, idx) => {
+              this.db.put(key, values[idx])
+              this.logger(`${key}: ${values[idx].slice(0, 10)}...`)
+            })
+            this.logger(`Started with ${keys.length} HashArrays`)
+          }
           this.protocols.set(protocol, new CanonicalIndicesProtocol(this))
           break
       }

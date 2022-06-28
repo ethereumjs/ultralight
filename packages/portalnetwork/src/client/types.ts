@@ -4,6 +4,7 @@ import { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
 import { StateNetworkRoutingTable, ProtocolId } from '..'
 import { PortalNetworkRoutingTable } from '.'
 import { AbstractLevel } from 'abstract-level'
+import { HeaderAccumulator } from '../subprotocols'
 
 export interface IPortalNetworkEvents {
   NodeAdded: (nodeId: NodeId, protocolId: ProtocolId) => void
@@ -30,6 +31,8 @@ export interface PortalNetworkOpts {
   config: IDiscv5CreateOptions
   dataDir?: string
   dbSize(): Promise<number>
+  accumulator?: HeaderAccumulator
+  hashArrays?: Record<string, string>
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>
