@@ -47,6 +47,9 @@ export type HeaderRecordType = {
   totalDifficulty: bigint
 }
 export const EpochAccumulator = new ListCompositeType(HeaderRecord, EPOCH_SIZE)
+export type EpochAccumulatorType = {
+  headerRecords: HeaderRecordType[]
+}
 
 export const HeaderAccumulatorType = new ContainerType({
   historicalEpochs: new ListCompositeType(new ByteVectorType(32), MAX_HISTORICAL_EPOCHS),

@@ -1,4 +1,4 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { ByteVectorType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
 import { ProtocolId } from '..'
@@ -21,6 +21,8 @@ import {
   HistoryNetworkContentKeyUnionType,
   HeaderAccumulatorType,
   HistoryNetworkContentKey,
+  EPOCH_SIZE,
+  EpochAccumulator,
 } from './types'
 import { getHistoryNetworkContentId, reassembleBlock } from './util'
 import * as rlp from 'rlp'
@@ -30,32 +32,44 @@ export class HistoryProtocol extends BaseProtocol {
   protocolName: string
   accumulator: HeaderAccumulator
   logger: Debugger
-  constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
+  constructor(
+    client: PortalNetwork,
+    nodeRadius?: bigint,
+    metrics?: PortalNetworkMetrics,
+    accumulator?: HeaderAccumulator
+  ) {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.protocolName = 'History Network'
     this.logger = client.logger.extend('HistoryNetwork')
-    this.accumulator = new HeaderAccumulator({})
+    this.accumulator = accumulator ?? new HeaderAccumulator({})
   }
 
   public init = async () => {
-    let storedAccumulator
-    try {
-      storedAccumulator = await this.client.db.get(
-        getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator)
-      )
-    } catch {}
+    this.client.logger('Accumulator', this.accumulator.currentHeight())
+    this.client.db.put(
+      getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
+      toHexString(HeaderAccumulatorType.serialize(this.accumulator))
+    )
 
-    if (storedAccumulator) {
-      const accumulator = HeaderAccumulatorType.deserialize(fromHexString(storedAccumulator))
-      this.accumulator = new HeaderAccumulator({
-        storedAccumulator: {
-          historicalEpochs: accumulator.historicalEpochs,
-          currentEpoch: accumulator.currentEpoch,
-        },
-      })
-    } else {
-      this.accumulator = new HeaderAccumulator({ initFromGenesis: true })
+    if (this.accumulator.currentHeight() < 1) {
+      let storedAccumulator
+      try {
+        storedAccumulator = await this.client.db.get(
+          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator)
+        )
+      } catch {}
+      if (storedAccumulator) {
+        const accumulator = HeaderAccumulatorType.deserialize(fromHexString(storedAccumulator))
+        this.accumulator = new HeaderAccumulator({
+          storedAccumulator: {
+            historicalEpochs: accumulator.historicalEpochs,
+            currentEpoch: accumulator.currentEpoch,
+          },
+        })
+      } else {
+        this.accumulator = new HeaderAccumulator({ initFromGenesis: true })
+      }
     }
   }
 
@@ -147,7 +161,7 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  private receiveShapshot = (decoded: Uint8Array) => {
+  public receiveShapshot = (decoded: Uint8Array) => {
     try {
       const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
       const newAccumulator = new HeaderAccumulator({
@@ -192,9 +206,11 @@ export class HistoryProtocol extends BaseProtocol {
               ),
               accumulatorHeight
             )
+            canonicalIndices.rootsUpdate(receivedAccumulator.historicalEpochs)
           }
         }
       }
+      return toHexString(HeaderAccumulatorType.hashTreeRoot(receivedAccumulator))
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
     }
@@ -300,14 +316,30 @@ export class HistoryProtocol extends BaseProtocol {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
           const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          const canonicalIndices = this.client.protocols.get(
+            ProtocolId.CanonicalIndicesNetwork
+          ) as CanonicalIndicesProtocol
           if (
             header.number.toNumber() === this.accumulator.currentHeight() + 1 &&
             header.parentHash.equals(
               this.accumulator.currentEpoch[this.accumulator.currentEpoch.length - 1].blockHash
             )
           ) {
+            if (canonicalIndices && this.accumulator.currentEpoch.length === EPOCH_SIZE) {
+              // Before the currentEpoch is emptied, the currentEpoch is stored in db as {key: HashArrayRequestKey value: HashArrayContent.serialize({array: CurrentEpoch.values(), proof: CurrentEpoch.hashTreeRoot()})}
+              const currentEpochHash = EpochAccumulator.hashTreeRoot(this.accumulator.currentEpoch)
+              const _hashArray = this.accumulator.currentEpoch.map((record) => {
+                return new ByteVectorType(32).serialize(record.blockHash)
+              })
+              canonicalIndices.storeEpoch(
+                _hashArray,
+                currentEpochHash,
+                (header.number.toNumber() + 1) / 8192
+              )
+            }
             // Update the header accumulator if the block header is the next in the chain
             this.accumulator.updateAccumulator(header)
+
             this.logger(
               `Updated header accumulator at slot ${this.accumulator.currentEpoch.length}/8192 of current Epoch`
             )
@@ -317,9 +349,6 @@ export class HistoryProtocol extends BaseProtocol {
             )
           }
           // Try updating the canonical block index when a new header is received
-          const canonicalIndices = this.client.protocols.get(
-            ProtocolId.CanonicalIndicesNetwork
-          ) as CanonicalIndicesProtocol
           if (canonicalIndices) canonicalIndices.incrementBlockIndex(header)
           this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {

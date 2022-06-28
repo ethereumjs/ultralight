@@ -179,7 +179,7 @@ export abstract class BaseProtocol {
     })
 
     try {
-      this.logger.extend(`FINDNODES`)(`Sending to ${shortId(dstId)}`)
+      // this.logger.extend(`FINDNODES`)(`Sending to ${shortId(dstId)}`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) {
         this.logger(`Invalid node ID provided. FINDNODES aborted`)
@@ -205,11 +205,13 @@ export abstract class BaseProtocol {
               counter++
             }
           })
-          this.logger.extend(`NODES`)(
-            `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
-              decoded.total - counter
-            } unknown.`
-          )
+          if (decoded.total - counter > 0) {
+            this.logger.extend(`NODES`)(
+              `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
+                decoded.total - counter
+              } unknown.`
+            )
+          }
 
           return decoded
         }
@@ -249,12 +251,14 @@ export abstract class BaseProtocol {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this.logger.extend(`NODES`)(
-        `Sending`,
-        nodesPayload.enrs.length.toString(),
-        `ENRs to `,
-        shortId(src.nodeId)
-      )
+      if (nodesPayload.enrs.length > 0) {
+        this.logger.extend(`NODES`)(
+          `Sending`,
+          nodesPayload.enrs.length.toString(),
+          `ENRs to `,
+          shortId(src.nodeId)
+        )
+      }
       this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
