@@ -1,5 +1,18 @@
 # HashArray -- Proposed block index sharing for Canonical Indices
 
+## Overview
+
+    HashArray is a SSZ Vector of 8192 block_hashes.
+    The Key / Content Address for a HashArray is the hash_tree_root of a SSZ Vector of 8192 consecutive block_numbers
+    HashArrays can be validated by accumulator, accumulator snapshots, history_getBlockByHash, canonicalIndices_getBlockByNumber.
+    HashArray with proof can be created by accumulator for an array of blockHashes corresponding to a historical_epoch
+
+    HashArray without proof can be created by block_index or accumulator, and are not constrained to starting number or length.
+
+    The Key/Address for a HashArray is the hash_tree_root of a merkle_tree, so should be evenly dispersed.
+    Canonical Indices nodes could gossip and store HashArrays.
+
+
 ## Types
 
 - `EpochAccumulator`
@@ -115,3 +128,4 @@
         - **This guards against a malicious node serving bogus HashArrays and Proofs using**
     - Also validate by randomly requesting **`getBlockByNumber`** for a subset of the `block_numbers`.
         - **This guards against a malicious node serving valid Proofs with bogus HashArrays**
+
