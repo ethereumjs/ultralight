@@ -16,8 +16,7 @@ module.exports = {
             "util": require.resolve('util/'),
             "fs/promises": false, 
             "fs": false,
-            "bcrypto/lib": require.resolve('bcrypto/')
-        }
+        },
     },
     module: {
         rules: [

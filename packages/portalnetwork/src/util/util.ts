@@ -1,8 +1,8 @@
 import { digest } from '@chainsafe/as-sha256'
 import { NodeId, toHex, fromHex } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
+import { promises as fs } from 'fs'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
-import { readdir, stat } from 'fs/promises'
 import * as path from 'path'
 
 export const MEGABYTE = 1048576
@@ -41,8 +41,8 @@ export const serializedContentKeyToContentId = (contentKey: Uint8Array) => {
 }
 
 export const dirSize = async (directory: string) => {
-  const files = await readdir(directory)
-  const stats = files.map((file) => stat(path.join(directory, file)))
+  const files = await fs?.readdir(directory)
+  const stats = files.map((file) => fs?.stat(path.join(directory, file)))
   const bytesSize = (await Promise.all(stats)).reduce(
     (accumulator, { size }) => accumulator + size,
     0
