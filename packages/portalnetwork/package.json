@@ -46,7 +46,6 @@
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
     "@types/ws": "^7.4.7",
-    "@zoltu/typescript-transformer-append-js-extension": "^1.0.1",
     "eslint": "^8.6.0",
     "nyc": "^15.1.0",
     "prettier": "^2.5.1",
