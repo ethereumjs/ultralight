@@ -11,12 +11,12 @@ import {
   shortId,
 } from 'portalnetwork'
 
-import { isValidId } from './util'
-import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
-import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types'
-import { CanonicalIndicesProtocol } from 'portalnetwork/dist/subprotocols/canonicalIndices/canonicalIndices'
-import { BaseProtocol } from 'portalnetwork/dist/subprotocols/protocol'
-import { NodeLookup } from 'portalnetwork/dist/subprotocols/nodeLookup'
+import { isValidId } from './util.js'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history.js'
+import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types.js'
+import { CanonicalIndicesProtocol } from 'portalnetwork/dist/subprotocols/canonicalIndices/canonicalIndices.js'
+import { BaseProtocol } from 'portalnetwork/dist/subprotocols/protocol.js'
+import { NodeLookup } from 'portalnetwork/dist/subprotocols/nodeLookup.js'
 
 export class RPCManager {
   public _client: PortalNetwork

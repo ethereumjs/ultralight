@@ -1,8 +1,8 @@
 import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { serializedContentKeyToContentId, shortId } from '../util'
-import { BaseProtocol } from './protocol'
+import { serializedContentKeyToContentId, shortId } from '../util/index.js'
+import { BaseProtocol } from './protocol.js'
 
 type lookupPeer = {
   nodeId: NodeId

@@ -1,30 +1,30 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
-import { ProtocolId } from '..'
-import { PortalNetwork } from '../../client'
-import { PortalNetworkMetrics } from '../../client/types'
-import { shortId } from '../../util'
-import { HeaderAccumulator } from '.'
+import { ProtocolId } from '../types.js'
+import { PortalNetwork } from '../../client/client.js'
+import { PortalNetworkMetrics } from '../../client/types.js'
+import { shortId } from '../../util/index.js'
+import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
   PortalWireMessageType,
-} from '../../wire'
-import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP'
-import { ContentLookup } from '../contentLookup'
-import { BaseProtocol } from '../protocol'
+} from '../../wire/index.js'
+import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
+import { ContentLookup } from '../contentLookup.js'
+import { BaseProtocol } from '../protocol.js'
 import {
   HistoryNetworkContentTypes,
   HistoryNetworkContentKeyUnionType,
   HeaderAccumulatorType,
   HistoryNetworkContentKey,
-} from './types'
-import { getHistoryNetworkContentId, reassembleBlock } from './util'
+} from './types.js'
+import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
-import { CanonicalIndicesProtocol } from '../canonicalIndices/canonicalIndices'
+import { CanonicalIndicesProtocol } from '../canonicalIndices/canonicalIndices.js'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string

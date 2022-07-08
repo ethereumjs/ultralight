@@ -1,12 +1,12 @@
 import { toHexString } from '@chainsafe/ssz'
-import * as tape from 'tape'
+import tape from 'tape'
 import {
   Packet,
   PacketHeader,
   PacketType,
   SelectiveAckHeader,
   bufferToPacket,
-} from '../../src/wire/utp'
+} from '../../src/wire/utp/index.js'
 
 tape('uTP encoding tests', (t) => {
   t.test('SYN packet encoding test', (st) => {

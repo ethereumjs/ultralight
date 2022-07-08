@@ -1,19 +1,19 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { BlockHeader } from '@ethereumjs/block'
-import * as tape from 'tape'
+import tape from 'tape'
 import * as td from 'testdouble'
 import {
   fromHexString,
   PortalNetwork,
   ProtocolId,
   serializedContentKeyToContentId,
-} from '../../../src'
-import { TransportLayer } from '../../../src/client'
-import { HistoryProtocol } from '../../../src/subprotocols/history/history'
+} from '../../../src/index.js'
+import { TransportLayer } from '../../../src/client/index.js'
+import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
 import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
-} from '../../../src/subprotocols/history/types'
+} from '../../../src/subprotocols/history/types.js'
 
 tape('history Protocol message handler tests', async (t) => {
   const node = await PortalNetwork.create({

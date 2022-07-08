@@ -1,6 +1,6 @@
 import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
-import { Multiaddr } from 'multiaddr'
-import * as tape from 'tape'
+import { Multiaddr } from '@multiformats/multiaddr'
+import tape from 'tape'
 import * as td from 'testdouble'
 import {
   ENR,
@@ -11,13 +11,13 @@ import {
   PortalNetwork,
   PortalWireMessageType,
   ProtocolId,
-} from '../../src'
-import { TransportLayer } from '../../src/client'
-import { HistoryProtocol } from '../../src/subprotocols/history/history'
-import { BaseProtocol } from '../../src/subprotocols/protocol'
+} from '../../src/index.js'
+import { TransportLayer } from '../../src/client/index.js'
+import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
+import { BaseProtocol } from '../../src/subprotocols/protocol.js'
 import { Debugger } from 'debug'
-import * as PeerId from 'peer-id'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 
 // Fake Protocol class for testing Protocol class
 class FakeProtocol extends BaseProtocol {
@@ -108,12 +108,12 @@ tape('protocol wire message tests', async (t) => {
       )
     ).thenResolve(findNodesResponse)
     let res = await protocol.sendFindNodes(decodedEnr.nodeId, [0, 1, 2])
-    st.ok(res.total === 1, 'received 1 ENR from FINDNODES')
+    st.equals(res.total, 1, 'received 1 ENR from FINDNODES')
     res = await protocol.sendFindNodes(
       'c875efa288b97fce46c93adbeb05b25465acfe00121ec00f6db7f3bd883ac6f2',
       []
     )
-    st.ok(res === undefined, 'received undefined when no valid NODES response received')
+    st.equals(res, undefined, 'received undefined when no valid NODES response received')
 
     node.sendPortalNetworkResponse = td.func<any>()
     const findNodesMessageWithDistance = { distances: [2, 4, 0, 0, 0, 0, 0] }
@@ -191,7 +191,7 @@ tape('protocol wire message tests', async (t) => {
       )
     ).thenResolve(Buffer.from(noWantResponse))
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([0])])
-    st.ok(res === undefined, 'received undefined when no valid ACCEPT message received')
+    st.equals(res, undefined, 'received undefined when no valid ACCEPT message received')
   })
 })
 
@@ -210,9 +210,10 @@ tape('handleFindNodes message handler tests', async (t) => {
 
   for (let x = 239; x < 257; x++) {
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
-    const peerId = await PeerId.create({ keyType: 'secp256k1' })
+    const peerId = await createSecp256k1PeerId()
     const enr = ENR.createFromPeerId(peerId)
-    enr.encode(createKeypairFromPeerId(peerId).privateKey)
+    const keypair = createKeypairFromPeerId(peerId)
+    enr.encode(keypair.privateKey)
     sortedEnrs.push(enr)
     ;(enr as any)._nodeId = id
     protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
@@ -255,9 +256,10 @@ tape('handleFindNodes message handler tests', async (t) => {
   td.reset()
 
   const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
-  const peerId = await PeerId.create({ keyType: 'secp256k1' })
+  const peerId = await createSecp256k1PeerId()
   const enr = ENR.createFromPeerId(peerId)
-  enr.encode(createKeypairFromPeerId(peerId).privateKey)
+  const keypair = createKeypairFromPeerId(peerId)
+  enr.encode(keypair.privateKey)
   ;(enr as any)._nodeId = id
   protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
 

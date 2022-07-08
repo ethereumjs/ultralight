@@ -1,3 +1,3 @@
-export * from './client'
-export * from './routingTable'
-export * from './types'
+export * from './client.js'
+export * from './routingTable.js'
+export * from './types.js'

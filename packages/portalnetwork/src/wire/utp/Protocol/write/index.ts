@@ -1,1 +1,1 @@
-export * from './ContentWriter'
+export * from './ContentWriter.js'

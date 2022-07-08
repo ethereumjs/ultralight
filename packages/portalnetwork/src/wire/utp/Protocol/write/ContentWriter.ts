@@ -1,9 +1,8 @@
 import { Debugger } from 'debug'
-import { TWO_MINUTES, UtpSocket } from '../..'
-import { sendDataPacket } from '../../Packets/PacketSenders'
-import { BasicUtp } from '../BasicUtp'
+import { UtpSocket } from '../../index.js'
+import { sendDataPacket } from '../../Packets/PacketSenders.js'
+import { BasicUtp } from '../BasicUtp.js'
 
-const _MIN_RTO = TWO_MINUTES
 export default class ContentWriter {
   protocol: BasicUtp
   socket: UtpSocket

@@ -1,5 +1,5 @@
-import * as tape from 'tape'
-import { distance, MODULO } from '../../../src/subprotocols/state/util'
+import tape from 'tape'
+import { distance, MODULO } from '../../../src/subprotocols/state/util.js'
 
 tape('distance()', (t) => {
   t.test('should calculate distance between two values', (st) => {

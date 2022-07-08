@@ -1,13 +1,16 @@
-import * as tape from 'tape'
+import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { Multiaddr } from 'multiaddr'
-import { PortalNetwork, ProtocolId } from '../../src'
-import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types'
+import { Multiaddr } from '@multiformats/multiaddr'
+import { PortalNetwork, ProtocolId } from '../../src/index.js'
+import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types.js'
 import { fromHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history'
+import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history/index.js'
 import { Block } from '@ethereumjs/block'
-import { TransportLayer } from '../../src/client/types'
-import { HistoryProtocol } from '../../src/subprotocols/history/history'
+import { TransportLayer } from '../../src/client/types.js'
+import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 const end = async (
   child: ChildProcessWithoutNullStreams,

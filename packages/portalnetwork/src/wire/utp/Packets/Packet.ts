@@ -1,7 +1,7 @@
-import { protocolVersion, PacketType, IPacketOptions } from './PacketTyping'
-import { PacketHeader } from './PacketHeader'
-import { SelectiveAckHeader, Uint16, Uint32 } from '.'
-import { Bytes32TimeStamp } from '..'
+import { protocolVersion, PacketType, IPacketOptions } from './PacketTyping.js'
+import { PacketHeader } from './PacketHeader.js'
+import { SelectiveAckHeader, Uint16, Uint32 } from './index.js'
+import { Bytes32TimeStamp } from '../index.js'
 
 export function packetToBuffer(packet: Packet): Buffer {
   const buffer = Buffer.alloc(packet.header.length)
@@ -211,4 +211,4 @@ export function bufferToPacket(buffer: Buffer): Packet {
   }
 }
 
-export * from './PacketTyping'
+export * from './PacketTyping.js'
