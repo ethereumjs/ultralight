@@ -1,7 +1,11 @@
-import { Client } from 'jayson/promise/index.js'
+import jayson from 'jayson/promise/index.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ProtocolId } from 'portalnetwork'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
+const { Client } = jayson
 
 const args: any = yargs(hideBin(process.argv))
     .option('sourceFile', {

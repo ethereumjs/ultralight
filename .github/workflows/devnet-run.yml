@@ -31,10 +31,10 @@ jobs:
 
       - run: npm i
         working-directory: ${{ github.workspace }}
-
-      - run: npx ts-node scripts/devnet.ts --numNodes=10 &
+      
+      - run: npx ts-node --esm node scripts/devnet.js --numNodes=10 &
 
       - run: |
           sleep 10 &&
-          npx ts-node scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10
+          npx ts-node --esm scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10
 
