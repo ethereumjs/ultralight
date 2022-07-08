@@ -1,4 +1,4 @@
-import { Client } from 'jayson/promise'
+import { Client } from 'jayson/promise/index.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ProtocolId } from 'portalnetwork'
