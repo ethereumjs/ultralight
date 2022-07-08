@@ -32,7 +32,7 @@ jobs:
       - run: npm i
         working-directory: ${{ github.workspace }}
       
-      - run: npx ts-node --esm scripts/devnet.js --numNodes=10 &
+      - run: npx ts-node --esm scripts/devnet.ts --numNodes=10 &
 
       - run: |
           sleep 10 &&
