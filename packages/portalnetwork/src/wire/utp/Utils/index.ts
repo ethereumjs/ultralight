@@ -1,3 +1,3 @@
-export * from './math'
-export * from './constants'
-export * from './Convert'
+export * from './math.js'
+export * from './constants.js'
+export * from './Convert.js'

@@ -1,12 +1,8 @@
 import { EventEmitter } from 'events'
-import { Multiaddr } from 'multiaddr'
+import { Multiaddr } from '@multiformats/multiaddr'
 import { UDP } from '@frontall/capacitor-udp'
-import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/lib/packet'
-import {
-  IRemoteInfo,
-  ITransportService,
-  TransportEventEmitter,
-} from '@chainsafe/discv5/lib/transport/types'
+import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
+import { IRemoteInfo, ITransportService, TransportEventEmitter } from '@chainsafe/discv5/transport'
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP

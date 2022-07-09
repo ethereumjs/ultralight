@@ -1,10 +1,10 @@
 import { fromHexString } from '@chainsafe/ssz'
-import * as tape from 'tape'
+import tape from 'tape'
 import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
   serializedContentKeyToContentId,
-} from '../../../src'
+} from '../../../src/index.js'
 
 tape('utility functions', (t) => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'

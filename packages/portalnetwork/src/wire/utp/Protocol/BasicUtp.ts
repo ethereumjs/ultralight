@@ -1,6 +1,6 @@
 import { Debugger } from 'debug'
 import { EventEmitter } from 'events'
-import { Packet } from '../Packets'
+import { Packet } from '../Packets/index.js'
 import {
   sendSynPacket,
   sendSynAckPacket,
@@ -9,10 +9,10 @@ import {
   sendDataPacket,
   sendResetPacket,
   sendFinPacket,
-} from '../Packets/PacketSenders'
-import { UtpSocket } from '../Socket'
-import ContentReader from './read/ContentReader'
-import ContentWriter from './write/ContentWriter'
+} from '../Packets/PacketSenders.js'
+import { UtpSocket } from '../Socket/index.js'
+import ContentReader from './read/ContentReader.js'
+import ContentWriter from './write/ContentWriter.js'
 
 export class BasicUtp extends EventEmitter {
   constructor() {

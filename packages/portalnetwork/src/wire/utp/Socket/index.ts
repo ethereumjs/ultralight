@@ -1,2 +1,2 @@
-export * from './UtpSocket'
-export * from './socketTyping'
+export * from './UtpSocket.js'
+export * from './socketTyping.js'

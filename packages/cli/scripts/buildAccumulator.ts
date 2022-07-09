@@ -1,7 +1,7 @@
-import { Client } from 'jayson/promise'
+import jayson from 'jayson/promise'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, ProtocolId } from 'portalnetwork'
-
+const { Client } = jayson
 
 const main = async () => {
     const web3 = Client.http({ host: '127.0.0.1', port: 8544 })

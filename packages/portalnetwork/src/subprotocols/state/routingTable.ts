@@ -1,6 +1,6 @@
 import { ENR, NodeId } from '@chainsafe/discv5'
-import { distance } from './util'
-import { PortalNetworkRoutingTable } from '../../client'
+import { distance } from './util.js'
+import { PortalNetworkRoutingTable } from '../../client/routingTable.js'
 
 export class StateNetworkRoutingTable extends PortalNetworkRoutingTable {
   /**

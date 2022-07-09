@@ -1,7 +1,7 @@
-import * as tape from 'tape'
-import { PortalNetwork, ProtocolId } from '../../src/'
+import tape from 'tape'
+import { PortalNetwork, ProtocolId } from '../../src/index.js'
 import * as td from 'testdouble'
-import { TransportLayer } from '../../src/client'
+import { TransportLayer } from '../../src/client/index.js'
 
 tape('Client unit tests', async (t) => {
   const node = await PortalNetwork.create({

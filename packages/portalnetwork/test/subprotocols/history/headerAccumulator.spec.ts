@@ -1,5 +1,8 @@
-import * as tape from 'tape'
-import { HeaderAccumulator, HeaderAccumulatorType } from '../../../src/subprotocols/history'
+import tape from 'tape'
+import {
+  HeaderAccumulator,
+  HeaderAccumulatorType,
+} from '../../../src/subprotocols/history/index.js'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 

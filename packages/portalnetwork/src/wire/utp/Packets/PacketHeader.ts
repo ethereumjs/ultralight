@@ -1,8 +1,7 @@
-import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '..'
-import { VERSION, DEFAULT_WINDOW_SIZE } from '../Utils/constants'
-import { SelectiveAckHeaderExtension } from './Extentions'
-import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping'
-
+import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '../index.js'
+import { VERSION, DEFAULT_WINDOW_SIZE } from '../Utils/constants.js'
+import { SelectiveAckHeaderExtension } from './Extentions.js'
+import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping.js'
 export class PacketHeader {
   pType: PacketType
   version: Uint8

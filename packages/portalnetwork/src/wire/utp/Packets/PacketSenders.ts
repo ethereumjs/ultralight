@@ -1,4 +1,4 @@
-import { UtpSocket, ConnectionState } from '../Socket'
+import { UtpSocket, ConnectionState } from '../Socket/index.js'
 import {
   createSynPacket,
   createAckPacket,
@@ -6,7 +6,7 @@ import {
   createResetPacket,
   createFinPacket,
   createSelectiveAckPacket,
-} from './Packet'
+} from './Packet.js'
 
 export async function sendSynPacket(socket: UtpSocket): Promise<void> {
   const packet = createSynPacket(socket.sndConnectionId - 1, 1, socket.ackNr)

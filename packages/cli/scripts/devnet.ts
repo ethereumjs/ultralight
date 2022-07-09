@@ -1,7 +1,10 @@
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import * as fs from 'fs'
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process' 
+import { spawn, ChildProcessByStdio } from 'child_process' 
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 const args: any = yargs(hideBin(process.argv))
     .option('pks', {
@@ -19,17 +22,17 @@ const args: any = yargs(hideBin(process.argv))
     }).argv
 
 const main = async () => {
-    let children: ChildProcessWithoutNullStreams[] = []
+    let children: ChildProcessByStdio<any, any, null>[] = []
     const file = require.resolve(process.cwd() + '/dist/index.js')
     if (args.pks) {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
     pks.forEach((key, idx) => { //@ts-ignore
-        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', this.stderr, process.stderr]})
+        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', 'pipe', process.stderr]})
         children.push(child)
     })
     } else if (args.numNodes){
-        for (let x = 0; x < args.numNodes; x++) {//@ts-ignore
-            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', this.stderr, process.stderr]})
+        for (let x = 0; x < args.numNodes; x++) {
+            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', 'pipe', process.stderr]})
             children.push(child)
         }
     }

@@ -1,3 +1,3 @@
-export * from './types'
-export * from './util'
-export * from './headerAccumulator'
+export * from './types.js'
+export * from './util.js'
+export * from './headerAccumulator.js'

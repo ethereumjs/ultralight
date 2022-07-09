@@ -5,7 +5,7 @@ There are a collection of scripts in the `cli` package's `scripts` directory to 
 ## Starting the devnet
 
 1. Build all packages -- `npm i`
-2. Run the devnet script from `[repo root]/packages/cli` -- `bash scripts/devnet.sh -n [Number of nodes to start]`
+2. Run the devnet script from `[repo root]/packages/cli` -- `npx ts-node --esm scripts/devnet.ts --numNodes=[Number of nodes to start]`
 3. Observe logs to confirm nodes are running
 4. Press `Ctrl+c` to shutdown the devnet at any time
 
@@ -21,7 +21,6 @@ npx ts-node scripts/seeder.ts --rpcPort=8546 --numBlocks=[number of blocks to se
 This will load the first `numBlocks` blocks from your `sourceFile` to the the node with the `rpcPort` specified.
 
 3. If all goes well, you should see the nodes start to connect with one another
-4. Pass the optional `--utpTest` parameter to the script in order to have the nodes execute uTP tests, streaming data to each other over uTP.
 
 Note: The block data file should contain a json object of the below structure where the RLP is the rlp encoded hex string form of the block:
 ```json

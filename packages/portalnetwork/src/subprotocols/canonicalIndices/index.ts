@@ -1,1 +1,1 @@
-export * from './canonicalIndices'
+export * from './canonicalIndices.js'
