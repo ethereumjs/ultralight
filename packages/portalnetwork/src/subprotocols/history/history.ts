@@ -180,22 +180,6 @@ export class HistoryProtocol extends BaseProtocol {
           getHistoryNetworkContentId(1, 4),
           toHexString(HeaderAccumulatorType.serialize(receivedAccumulator))
         )
-
-        const canonicalIndices = this.client.protocols.get(
-          ProtocolId.CanonicalIndicesNetwork
-        ) as CanonicalIndicesProtocol
-        if (canonicalIndices) {
-          const accumulatorHeight = this.accumulator.currentHeight()
-          const blockIndexHeight = canonicalIndices._blockIndex.length
-          if (accumulatorHeight > blockIndexHeight) {
-            canonicalIndices.batchUpdate(
-              this.accumulator.currentEpoch.map((headerRecord) =>
-                toHexString(headerRecord.blockHash)
-              ),
-              accumulatorHeight
-            )
-          }
-        }
       }
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
