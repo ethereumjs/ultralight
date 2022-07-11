@@ -14,7 +14,8 @@ import {
  */
 export type HistoryNetworkContentKey = {
   chainId: number
-  blockHash: Uint8Array
+  blockHash?: Uint8Array
+  epochHash?: Uint8Array
 }
 
 export const BlockHeaderType = new ContainerType({
@@ -47,6 +48,7 @@ export type HeaderRecordType = {
   totalDifficulty: bigint
 }
 export const EpochAccumulator = new ListCompositeType(HeaderRecord, EPOCH_SIZE)
+export type EpochHash = Uint8Array
 
 export const HeaderAccumulatorType = new ContainerType({
   historicalEpochs: new ListCompositeType(new ByteVectorType(32), MAX_HISTORICAL_EPOCHS),
