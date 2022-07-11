@@ -180,6 +180,16 @@ export class HistoryProtocol extends BaseProtocol {
           getHistoryNetworkContentId(1, 4),
           toHexString(HeaderAccumulatorType.serialize(receivedAccumulator))
         )
+        const historicalEpochs = this.accumulator.historicalEpochs
+        historicalEpochs.forEach((epochHash) => {
+          const lookupKey = getHistoryNetworkContentId(
+            1,
+            HistoryNetworkContentTypes.EpochAccumulator,
+            toHexString(epochHash)
+          )
+          const lookup = new ContentLookup(this, fromHexString(lookupKey))
+          const epoch = lookup.startLookup()
+        })
       }
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
