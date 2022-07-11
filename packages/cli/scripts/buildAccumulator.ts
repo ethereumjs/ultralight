@@ -1,4 +1,4 @@
-import jayson from 'jayson/promise'
+import jayson from 'jayson/promise/index.js'
 import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, ProtocolId } from 'portalnetwork'
 const { Client } = jayson
