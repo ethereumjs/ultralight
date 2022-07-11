@@ -21,6 +21,8 @@ import {
   HistoryNetworkContentKeyUnionType,
   HeaderAccumulatorType,
   HistoryNetworkContentKey,
+  EPOCH_SIZE,
+  EpochAccumulator,
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
@@ -306,6 +308,15 @@ export class HistoryProtocol extends BaseProtocol {
               this.accumulator.currentEpoch[this.accumulator.currentEpoch.length - 1].blockHash
             )
           ) {
+            if (this.accumulator.currentEpoch.length === EPOCH_SIZE) {
+              const currentEpoch = toHexString(
+                EpochAccumulator.serialize(this.accumulator.currentEpoch)
+              )
+              const currentEpochHash = toHexString(
+                EpochAccumulator.hashTreeRoot(this.accumulator.currentEpoch)
+              )
+              this.client.db.put(currentEpochHash, currentEpoch)
+            }
             // Update the header accumulator if the block header is the next in the chain
             this.accumulator.updateAccumulator(header)
             this.logger(
