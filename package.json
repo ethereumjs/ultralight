@@ -17,7 +17,7 @@
     "postinstall": "npm run tapeHotFix && npm run build --workspaces --if-present",
     "start-proxy": "npm run start -w=proxy -- --nat=localhost",
     "start-browser-client": "npm run start-testnet -w=browser-client",
-    "start-cli": "npm run start -w=cli -- --bindAddress=127.0.0.1:5500",
+    "start-cli": "npm run dev -w=cli",
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
     "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
     "clean": "bash ./scripts/clean-root.sh",
