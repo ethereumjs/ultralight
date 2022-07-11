@@ -132,7 +132,7 @@ export class HistoryProtocol extends BaseProtocol {
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
                   const decoded = ContentMessageType.deserialize(res.subarray(1))
-                  this.receiveShapshot(decoded.value as Uint8Array)
+                  this.receiveSnapshot(decoded.value as Uint8Array)
                 }
               }
             }
@@ -149,7 +149,7 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  private receiveShapshot = (decoded: Uint8Array) => {
+  private receiveSnapshot = (decoded: Uint8Array) => {
     try {
       const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
       const newAccumulator = new HeaderAccumulator({
@@ -377,7 +377,7 @@ export class HistoryProtocol extends BaseProtocol {
         throw new Error('Receipts data not implemented')
       case HistoryNetworkContentTypes.HeaderAccumulator:
         this.client.db.put(getHistoryNetworkContentId(1, 4, hashKey), toHexString(value))
-        this.receiveShapshot(value)
+        this.receiveSnapshot(value)
         break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
