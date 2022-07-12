@@ -335,11 +335,6 @@ export class HistoryProtocol extends BaseProtocol {
               toHexString(HeaderAccumulatorType.serialize(this.accumulator))
             )
           }
-          // Try updating the canonical block index when a new header is received
-          const canonicalIndices = this.client.protocols.get(
-            ProtocolId.CanonicalIndicesNetwork
-          ) as CanonicalIndicesProtocol
-          if (canonicalIndices) canonicalIndices.incrementBlockIndex(header)
           this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
