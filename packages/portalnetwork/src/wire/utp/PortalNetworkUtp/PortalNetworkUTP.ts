@@ -117,9 +117,15 @@ export class PortalNetworkUTP extends BasicUtp {
         sndId = connectionId + 1
         rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        sockets = contents.map((content) => {
-          return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content)!
-        })
+        // Instead of creating a socket for each piece of content,
+        // We will now join all content into one bytestring sent over one socket
+        // The individual pieces of content will be separated by a VARIANT PREFIX
+        // The variant prefix will convey the length of the proceeding content
+        // The compiler will separate the single stream into individual pieces of content
+        // Whether this is done during the stream or after should be trivial to end result
+        const packed = packWithVariantPrefix(contents)
+
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, packed)!
 
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
