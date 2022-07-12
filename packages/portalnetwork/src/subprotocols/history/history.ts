@@ -250,12 +250,11 @@ export class HistoryProtocol extends BaseProtocol {
               block = reassembleBlock(header, body)
               resolve(block)
             } catch {}
-          } ///@ts-ignore
+          }
           if (body && body.length === 2) {
             // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
             this.client.on('ContentAdded', (key, _type, content) => {
               if (key === blockHash) {
-                //@ts-ignore
                 block = reassembleBlock(header, fromHexString(content))
                 this.client.removeAllListeners('ContentAdded')
                 resolve(block)
