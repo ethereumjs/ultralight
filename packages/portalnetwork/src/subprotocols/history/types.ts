@@ -2,6 +2,7 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
+  NoneType,
   UintBigintType,
   UintNumberType,
   UnionType,
@@ -60,10 +61,11 @@ export type ProofView = {
   witness: Uint8Array[]
 }
 
+export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
 export const HistoryNetworkContentKeyUnionType = new UnionType([
   BlockHeaderType,
   BlockBodyType,
   ReceiptType,
   new ByteVectorType(32),
-  new ByteVectorType(32),
+  MasterAccumulatorType,
 ])
