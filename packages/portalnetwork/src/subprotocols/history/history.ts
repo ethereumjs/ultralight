@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
-import { shortId } from '../../util/index.js'
+import { serializedContentKeyToContentId, shortId } from '../../util/index.js'
 import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
@@ -21,6 +21,8 @@ import {
   HistoryNetworkContentKeyUnionType,
   HeaderAccumulatorType,
   HistoryNetworkContentKey,
+  EPOCH_SIZE,
+  EpochAccumulator,
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
@@ -120,7 +122,7 @@ export class HistoryProtocol extends BaseProtocol {
                       this.addContentToHistory(
                         content.chainId,
                         decodedKey.selector,
-                        toHexString(Buffer.from(content.blockHash)),
+                        toHexString(Buffer.from(content.blockHash!)),
                         decoded.value as Uint8Array
                       )
                     } catch {
@@ -130,7 +132,7 @@ export class HistoryProtocol extends BaseProtocol {
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
                   const decoded = ContentMessageType.deserialize(res.subarray(1))
-                  this.receiveShapshot(decoded.value as Uint8Array)
+                  this.receiveSnapshot(decoded.value as Uint8Array)
                 }
               }
             }
@@ -147,7 +149,7 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  private receiveShapshot = (decoded: Uint8Array) => {
+  private receiveSnapshot = (decoded: Uint8Array) => {
     try {
       const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
       const newAccumulator = new HeaderAccumulator({
@@ -178,22 +180,23 @@ export class HistoryProtocol extends BaseProtocol {
           getHistoryNetworkContentId(1, 4),
           toHexString(HeaderAccumulatorType.serialize(receivedAccumulator))
         )
-
-        const canonicalIndices = this.client.protocols.get(
-          ProtocolId.CanonicalIndicesNetwork
-        ) as CanonicalIndicesProtocol
-        if (canonicalIndices) {
-          const accumulatorHeight = this.accumulator.currentHeight()
-          const blockIndexHeight = canonicalIndices._blockIndex.length
-          if (accumulatorHeight > blockIndexHeight) {
-            canonicalIndices.batchUpdate(
-              this.accumulator.currentEpoch.map((headerRecord) =>
-                toHexString(headerRecord.blockHash)
-              ),
-              accumulatorHeight
+        const historicalEpochs = this.accumulator.historicalEpochs
+        historicalEpochs.forEach(async (epochHash, idx) => {
+          this.logger(`looking up ${toHexString(epochHash)} hash`)
+          const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
+            selector: HistoryNetworkContentTypes.EpochAccumulator,
+            value: { chainId: 1, blockHash: epochHash },
+          })
+          const lookup = new ContentLookup(this, lookupKey)
+          const epoch = await lookup.startLookup()
+          if (epoch) {
+            this.logger(
+              `Storing EpochAccumulator for Blocks ${idx * EPOCH_SIZE} - ${
+                idx * EPOCH_SIZE + EPOCH_SIZE - 1
+              }`
             )
           }
-        }
+        })
       }
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
@@ -237,12 +240,11 @@ export class HistoryProtocol extends BaseProtocol {
               block = reassembleBlock(header, body)
               resolve(block)
             } catch {}
-          } ///@ts-ignore
+          }
           if (body && body.length === 2) {
             // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
             this.client.on('ContentAdded', (key, _type, content) => {
               if (key === blockHash) {
-                //@ts-ignore
                 block = reassembleBlock(header, fromHexString(content))
                 this.client.removeAllListeners('ContentAdded')
                 resolve(block)
@@ -283,18 +285,18 @@ export class HistoryProtocol extends BaseProtocol {
   /**
    * Convenience method to add content for the History Network to the DB
    * @param chainId - decimal number representing chain Id
-   * @param blockHash - hex string representation of block hash
    * @param contentType - content type of the data item being stored
+   * @param hashKey - hex string representation of blockHash or epochHash
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
   public addContentToHistory = async (
     chainId: number,
     contentType: HistoryNetworkContentTypes,
-    blockHash: string,
+    hashKey: string,
     value: Uint8Array
   ) => {
-    const contentId = getHistoryNetworkContentId(chainId, contentType, blockHash)
+    const contentId = getHistoryNetworkContentId(chainId, contentType, hashKey)
 
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
@@ -306,21 +308,29 @@ export class HistoryProtocol extends BaseProtocol {
               this.accumulator.currentEpoch[this.accumulator.currentEpoch.length - 1].blockHash
             )
           ) {
+            if (this.accumulator.currentEpoch.length === EPOCH_SIZE) {
+              const currentEpoch = EpochAccumulator.serialize(this.accumulator.currentEpoch)
+
+              const currentEpochHash = toHexString(
+                EpochAccumulator.hashTreeRoot(this.accumulator.currentEpoch)
+              )
+              this.addContentToHistory(
+                chainId,
+                HistoryNetworkContentTypes.EpochAccumulator,
+                currentEpochHash,
+                currentEpoch
+              )
+            }
             // Update the header accumulator if the block header is the next in the chain
             this.accumulator.updateAccumulator(header)
             this.logger(
-              `Updated header accumulator at slot ${this.accumulator.currentEpoch.length}/8192 of current Epoch`
+              `Updated header accumulator at slot ${this.accumulator.currentEpoch.length}/${EPOCH_SIZE} of current Epoch`
             )
             this.client.db.put(
               getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
               toHexString(HeaderAccumulatorType.serialize(this.accumulator))
             )
           }
-          // Try updating the canonical block index when a new header is received
-          const canonicalIndices = this.client.protocols.get(
-            ProtocolId.CanonicalIndicesNetwork
-          ) as CanonicalIndicesProtocol
-          if (canonicalIndices) canonicalIndices.incrementBlockIndex(header)
           this.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
@@ -334,7 +344,7 @@ export class HistoryProtocol extends BaseProtocol {
           const headerContentId = getHistoryNetworkContentId(
             1,
             HistoryNetworkContentTypes.BlockHeader,
-            blockHash
+            hashKey
           )
           const hexHeader = await this.client.db.get(headerContentId)
           // Verify we can construct a valid block from the header and body provided
@@ -342,9 +352,9 @@ export class HistoryProtocol extends BaseProtocol {
           validBlock = true
         } catch {
           this.logger(
-            `Block Header for ${shortId(blockHash)} not found locally.  Querying network...`
+            `Block Header for ${shortId(hashKey)} not found locally.  Querying network...`
           )
-          const retrievedHeader = await this.getBlockByHash(blockHash, false)
+          const retrievedHeader = await this.getBlockByHash(hashKey, false)
           try {
             if (retrievedHeader instanceof Block) validBlock = true
           } catch {}
@@ -361,20 +371,23 @@ export class HistoryProtocol extends BaseProtocol {
       case HistoryNetworkContentTypes.Receipt:
         throw new Error('Receipts data not implemented')
       case HistoryNetworkContentTypes.HeaderAccumulator:
-        this.client.db.put(getHistoryNetworkContentId(1, 4, blockHash), toHexString(value))
-        this.receiveShapshot(value)
+        this.client.db.put(getHistoryNetworkContentId(1, 4, hashKey), toHexString(value))
+        this.receiveSnapshot(value)
+        break
+      case HistoryNetworkContentTypes.EpochAccumulator:
+        this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
         break
       default:
         throw new Error('unknown data type provided')
     }
 
-    this.client.emit('ContentAdded', blockHash, contentType, toHexString(value))
+    this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
     this.logger(
       `added ${
         Object.keys(HistoryNetworkContentTypes)[
           Object.values(HistoryNetworkContentTypes).indexOf(contentType)
         ]
-      } for ${blockHash} to content db`
+      } for ${hashKey} to content db`
     )
     if (
       contentType !== HistoryNetworkContentTypes.HeaderAccumulator &&
@@ -382,7 +395,7 @@ export class HistoryProtocol extends BaseProtocol {
     ) {
       // Gossip new content to network (except header accumulators)
       this.logger('Gossiping new content to network')
-      await this.gossipHistoryNetworkContent(blockHash, contentType)
+      await this.gossipHistoryNetworkContent(hashKey, contentType)
     }
   }
 

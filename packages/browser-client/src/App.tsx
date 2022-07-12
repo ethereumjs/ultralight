@@ -158,7 +158,7 @@ export const App = () => {
     }
 
     setPortal(node)
-    node.enableLog('*Portal*, *uTP*')
+    node.enableLog('*Portal*, -*uTP*, -*FINDNODES*')
     await node.start()
     node.storeNodeDetails()
     ;(window as any).portal = node
