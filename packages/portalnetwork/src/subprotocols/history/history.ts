@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
-import { shortId } from '../../util/index.js'
+import { serializedContentKeyToContentId, shortId } from '../../util/index.js'
 import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
@@ -190,21 +190,11 @@ export class HistoryProtocol extends BaseProtocol {
           const lookup = new ContentLookup(this, lookupKey)
           const epoch = await lookup.startLookup()
           if (epoch) {
-            try {
-              this.addContentToHistory(
-                1,
-                HistoryNetworkContentTypes.EpochAccumulator,
-                toHexString(epochHash),
-                epoch as Uint8Array
-              )
-              this.logger(
-                `Storing EpochAccumulator for Blocks ${idx * EPOCH_SIZE} - ${
-                  idx * EPOCH_SIZE + EPOCH_SIZE - 1
-                }`
-              )
-            } catch (err: any) {
-              this.logger(`error ${err.message}`)
-            }
+            this.logger(
+              `Storing EpochAccumulator for Blocks ${idx * EPOCH_SIZE} - ${
+                idx * EPOCH_SIZE + EPOCH_SIZE - 1
+              }`
+            )
           }
         })
       }
