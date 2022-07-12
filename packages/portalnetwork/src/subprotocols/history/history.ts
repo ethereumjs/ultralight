@@ -181,14 +181,22 @@ export class HistoryProtocol extends BaseProtocol {
           toHexString(HeaderAccumulatorType.serialize(receivedAccumulator))
         )
         const historicalEpochs = this.accumulator.historicalEpochs
-        historicalEpochs.forEach((epochHash) => {
+        historicalEpochs.forEach(async (epochHash, idx) => {
           const lookupKey = getHistoryNetworkContentId(
             1,
             HistoryNetworkContentTypes.EpochAccumulator,
             toHexString(epochHash)
           )
           const lookup = new ContentLookup(this, fromHexString(lookupKey))
-          const epoch = lookup.startLookup()
+          const epoch = await lookup.startLookup()
+          if (epoch) {
+            try {
+              const des = HistoryNetworkContentKeyUnionType.deserialize(epoch as Uint8Array)
+              const value = des.value as HistoryNetworkContentKey
+              this.addContentToHistory(value.chainId, des.selector, lookupKey, value.epochHash!)
+            } catch {}
+          }
+          this.logger(`Storing EpochAccumulator for Blocks ${idx * 8192} - ${idx * 8192 + 8191}`)
         })
       }
     } catch (err: any) {
