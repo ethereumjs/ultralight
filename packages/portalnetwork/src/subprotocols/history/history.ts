@@ -182,22 +182,29 @@ export class HistoryProtocol extends BaseProtocol {
         )
         const historicalEpochs = this.accumulator.historicalEpochs
         historicalEpochs.forEach(async (epochHash, idx) => {
-          const lookupKey = getHistoryNetworkContentId(
-            1,
-            HistoryNetworkContentTypes.EpochAccumulator,
-            toHexString(epochHash)
-          )
-          const lookup = new ContentLookup(this, fromHexString(lookupKey))
+          this.logger(`looking up ${toHexString(epochHash)} hash`)
+          const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
+            selector: HistoryNetworkContentTypes.EpochAccumulator,
+            value: { chainId: 1, blockHash: epochHash },
+          })
+          const lookup = new ContentLookup(this, lookupKey)
           const epoch = await lookup.startLookup()
           if (epoch) {
             try {
-              const des = HistoryNetworkContentKeyUnionType.deserialize(epoch as Uint8Array)
-              const value = des.value as HistoryNetworkContentKey
-              this.addContentToHistory(value.chainId, des.selector, lookupKey, value.epochHash!)
-              this.logger(
-                `Storing EpochAccumulator for Blocks ${idx * 8192} - ${idx * 8192 + 8191}`
+              this.addContentToHistory(
+                1,
+                HistoryNetworkContentTypes.EpochAccumulator,
+                toHexString(epochHash),
+                epoch as Uint8Array
               )
-            } catch {}
+              this.logger(
+                `Storing EpochAccumulator for Blocks ${idx * EPOCH_SIZE} - ${
+                  idx * EPOCH_SIZE + EPOCH_SIZE - 1
+                }`
+              )
+            } catch (err: any) {
+              this.logger(`error ${err.message}`)
+            }
           }
         })
       }
@@ -289,8 +296,8 @@ export class HistoryProtocol extends BaseProtocol {
   /**
    * Convenience method to add content for the History Network to the DB
    * @param chainId - decimal number representing chain Id
-   * @param hashKey - hex string representation of blockHash or epochHash
    * @param contentType - content type of the data item being stored
+   * @param hashKey - hex string representation of blockHash or epochHash
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
@@ -328,7 +335,7 @@ export class HistoryProtocol extends BaseProtocol {
             // Update the header accumulator if the block header is the next in the chain
             this.accumulator.updateAccumulator(header)
             this.logger(
-              `Updated header accumulator at slot ${this.accumulator.currentEpoch.length}/8192 of current Epoch`
+              `Updated header accumulator at slot ${this.accumulator.currentEpoch.length}/${EPOCH_SIZE} of current Epoch`
             )
             this.client.db.put(
               getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
