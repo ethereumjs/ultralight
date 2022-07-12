@@ -41,6 +41,10 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public init = async () => {
+    this.client.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
+      await this.addContentToHistory(chainId, selector, blockHash, content)
+    })
+
     let storedAccumulator
     try {
       storedAccumulator = await this.client.db.get(
@@ -176,10 +180,6 @@ export class HistoryProtocol extends BaseProtocol {
           receivedAccumulator.currentEpoch
         )
 
-        this.client.db.put(
-          getHistoryNetworkContentId(1, 4),
-          toHexString(HeaderAccumulatorType.serialize(receivedAccumulator))
-        )
         const historicalEpochs = this.accumulator.historicalEpochs
         historicalEpochs.forEach(async (epochHash, idx) => {
           this.logger(`looking up ${toHexString(epochHash)} hash`)
