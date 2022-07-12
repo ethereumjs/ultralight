@@ -194,9 +194,11 @@ export class HistoryProtocol extends BaseProtocol {
               const des = HistoryNetworkContentKeyUnionType.deserialize(epoch as Uint8Array)
               const value = des.value as HistoryNetworkContentKey
               this.addContentToHistory(value.chainId, des.selector, lookupKey, value.epochHash!)
+              this.logger(
+                `Storing EpochAccumulator for Blocks ${idx * 8192} - ${idx * 8192 + 8191}`
+              )
             } catch {}
           }
-          this.logger(`Storing EpochAccumulator for Blocks ${idx * 8192} - ${idx * 8192 + 8191}`)
         })
       }
     } catch (err: any) {

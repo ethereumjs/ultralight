@@ -40,6 +40,17 @@ export const getHistoryNetworkContentId = (
       })
       break
     }
+    case HistoryNetworkContentTypes.EpochAccumulator: {
+      if (!hash) throw new Error('accumulator root hash is required to generate contentId')
+      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: contentType,
+        value: {
+          chainId: chainId,
+          blockHash: fromHexString(hash),
+        },
+      })
+      break
+    }
     default:
       throw new Error('unsupported content type')
   }
