@@ -105,7 +105,7 @@ export default function DevTools(props: DevToolsProps) {
     protocol.logger('Requesting Accumulator Snapshot')
     const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 4,
-      value: Uint8Array.from([]),
+      value: { selector: 0, value: null },
     })
     protocol.sendFindContent(peer, accumulatorKey)
   }

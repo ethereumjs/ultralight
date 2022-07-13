@@ -167,14 +167,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    this.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
-      await (this.protocols.get(ProtocolId.HistoryNetwork)! as HistoryProtocol).addContentToHistory(
-        chainId,
-        selector,
-        blockHash,
-        content
-      )
-    })
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
       await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)

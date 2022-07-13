@@ -62,5 +62,12 @@ tape('History Subprotocol contentKey serialization/deserialization', async (t) =
     '0xaa39e1423e92f5a667ace5b79c2c98adbfd79c055d891d0b9c49c40f816563b2',
     'receipt content ID matches'
   )
+  chainId = 1
+  encodedKey = HistoryNetworkContentKeyUnionType.serialize({
+    selector: HistoryNetworkContentTypes.HeaderAccumulator,
+    value: { selector: 0, value: null },
+  })
+  contentId = getHistoryNetworkContentId(chainId, HistoryNetworkContentTypes.HeaderAccumulator)
+  t.equals(contentId, '0xc0ba8a33ac67f44abff5984dfbb6f56c46b880ac2b86e1f23e7fa9c402c53ae7')
   t.end()
 })

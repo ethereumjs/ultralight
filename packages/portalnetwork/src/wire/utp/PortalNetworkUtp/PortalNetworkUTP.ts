@@ -436,17 +436,24 @@ export class PortalNetworkUTP extends BasicUtp {
   async _handleFinPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
-      request.contentKeys?.forEach((key) => {
-        const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
-        const decodedContent = contentKey.value as HistoryNetworkContentKey
-        this.logger(
-          'streaming',
-          contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
-        )
-        const _key = contentKey.selector > 2 ? decodedContent : decodedContent.blockHash
-        this.logger(decodedContent)
-        this.emit('Stream', 1, contentKey.selector, toHexString(_key as Uint8Array), content)
-      })
+      const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
+      const decodedContent = contentKey.value as HistoryNetworkContentKey
+      this.logger(
+        'streaming',
+        contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
+      )
+      let key
+      switch (contentKey.selector) {
+        case 0:
+        case 1:
+        case 2:
+          key = decodedContent.blockHash
+          break
+        case 4:
+          key = undefined
+      }
+      this.logger(decodedContent)
+      this.emit('Stream', 1, contentKey.selector, toHexString(key ?? Uint8Array.from([])), content)
     }
     let content
     try {

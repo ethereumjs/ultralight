@@ -36,7 +36,7 @@ export const getHistoryNetworkContentId = (
     case HistoryNetworkContentTypes.HeaderAccumulator: {
       encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
-        value: Uint8Array.from([]),
+        value: { selector: 0, value: null },
       })
       break
     }
