@@ -16,6 +16,7 @@ import {
 import { sendFinPacket } from '../Packets/PacketSenders.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { ContentRequest } from './ContentRequest.js'
+import { encodeWithVariantPrefix } from '../Utils/variantPrefix.js'
 
 type UtpSocketKey = string
 
@@ -57,7 +58,6 @@ export class PortalNetworkUTP extends BasicUtp {
     let socket: UtpSocket
     let socketKey: string
     let newRequest: ContentRequest
-    let sockets: UtpSocket[]
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
         if (contents === undefined) {
@@ -73,10 +73,10 @@ export class PortalNetworkUTP extends BasicUtp {
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
           requestCode,
-          [contentKeys[0]],
-          [socket],
+          socket,
           socketKey,
-          [undefined]
+          Uint8Array.from([]),
+          contentKeys
         )
         if (this.openContentRequest[socketKey]) {
           this.logger(`Request already Open`)
@@ -97,10 +97,10 @@ export class PortalNetworkUTP extends BasicUtp {
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
           requestCode,
-          [contentKeys[0]],
-          [socket],
+          socket,
           socketKey,
-          [undefined]
+          Uint8Array.from([]),
+          contentKeys
         )
         if (this.openContentRequest[socketKey]) {
           this.logger(`Request already Open`)
@@ -117,23 +117,14 @@ export class PortalNetworkUTP extends BasicUtp {
         sndId = connectionId + 1
         rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        // Instead of creating a socket for each piece of content,
-        // We will now join all content into one bytestring sent over one socket
-        // The individual pieces of content will be separated by a VARIANT PREFIX
-        // The variant prefix will convey the length of the proceeding content
-        // The compiler will separate the single stream into individual pieces of content
-        // Whether this is done during the stream or after should be trivial to end result
-        const packed = packWithVariantPrefix(contents)
-
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, packed)!
-
+        contents = [encodeWithVariantPrefix(contents)]
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
           requestCode,
-          contentKeys,
-          sockets,
+          socket,
           socketKey,
-          contents
+          contents[0]
         )
 
         if (this.openContentRequest[socketKey]) {
@@ -153,16 +144,14 @@ export class PortalNetworkUTP extends BasicUtp {
           this.logger(`Request already Open`)
         } else {
           this.logger(`Opening request with key: ${socketKey}`)
-          sockets = contentKeys.map(() => {
-            return this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
-          })
+          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
           newRequest = new ContentRequest(
             ProtocolId.HistoryNetwork,
             requestCode,
-            contentKeys,
-            sockets,
+            socket,
             socketKey,
-            []
+            Uint8Array.from([]),
+            contentKeys
           )
           this.openContentRequest[socketKey] = newRequest
           await newRequest.init()
@@ -403,13 +392,7 @@ export class PortalNetworkUTP extends BasicUtp {
           await request.writer?.start()
           await this.sendFinPacket(request.socket)
         } else if (packet.header.ackNr === request.socket.finNr) {
-          request.socket.logger(
-            `FIN Packet ACK received.  Closing Socket.  There are ${request.sockets.length} more pieces of content to send.`
-          )
-          if (request.sockets.length > 0) {
-            this.logger(`Starting next Stream`)
-            await request.init()
-          }
+          request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
         } else {
           request.socket.logger('Ack Packet Received.')
           request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
@@ -449,18 +432,21 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     delete this.openContentRequest[requestCode]
   }
+
   async _handleFinPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     const streamer = async (content: Uint8Array) => {
-      const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
-      const decodedContent = contentKey.value as HistoryNetworkContentKey
-      this.logger(
-        'streaming',
-        contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
-      )
-      const key = contentKey.selector > 2 ? decodedContent : decodedContent.blockHash
-      this.logger(decodedContent)
-      this.emit('Stream', 1, contentKey.selector, toHexString(key as Uint8Array), content)
+      request.contentKeys?.forEach((key) => {
+        const contentKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+        const decodedContent = contentKey.value as HistoryNetworkContentKey
+        this.logger(
+          'streaming',
+          contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
+        )
+        const _key = contentKey.selector > 2 ? decodedContent : decodedContent.blockHash
+        this.logger(decodedContent)
+        this.emit('Stream', 1, contentKey.selector, toHexString(_key as Uint8Array), content)
+      })
     }
     let content
     try {
@@ -478,11 +464,6 @@ export class PortalNetworkUTP extends BasicUtp {
           content = await request.socket.handleFinPacket(packet)
           content && streamer(content)
           request.socket.logger(`Closing uTP Socket`)
-          if (request.sockets.length > 0) {
-            request.socket = request.sockets.pop()!
-            request.contentKey = request.contentKeys.pop()!
-            await request.init()
-          }
           break
       }
     } catch (err) {

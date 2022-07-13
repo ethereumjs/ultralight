@@ -33,6 +33,7 @@
     "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "isomorphic-ws": "^4.0.1",
+    "@thi.ng/leb128": "^2.1.11",
     "lru-cache": "^7.10.1",
     "memory-level": "^1.0.0",
     "prom-client": "^14.0.1",
