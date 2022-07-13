@@ -370,12 +370,12 @@ export class HistoryProtocol extends BaseProtocol {
       }
       case HistoryNetworkContentTypes.Receipt:
         throw new Error('Receipts data not implemented')
-      case HistoryNetworkContentTypes.HeaderAccumulator:
-        this.client.db.put(getHistoryNetworkContentId(1, 4, hashKey), toHexString(value))
-        this.receiveSnapshot(value)
-        break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
+        break
+      case HistoryNetworkContentTypes.HeaderAccumulator:
+        this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(value))
+        this.receiveSnapshot(value)
         break
       default:
         throw new Error('unknown data type provided')

@@ -452,9 +452,18 @@ export class PortalNetworkUTP extends BasicUtp {
         'streaming',
         contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
       )
-      const key = contentKey.selector > 2 ? decodedContent : decodedContent.blockHash
+      let key
+      switch (contentKey.selector) {
+        case 0:
+        case 1:
+        case 2:
+          key = decodedContent.blockHash
+          break
+        case 4:
+          key = undefined
+      }
       this.logger(decodedContent)
-      this.emit('Stream', 1, contentKey.selector, toHexString(key as Uint8Array), content)
+      this.emit('Stream', 1, contentKey.selector, toHexString(key ?? Uint8Array.from([])), content)
     }
     let content
     try {
