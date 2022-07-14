@@ -203,7 +203,7 @@ tape('uTP encoding tests', (t) => {
     const lengths = []
     let totalLength = 0
     for (let i = 0; i < 10; i++) {
-      const length = 1000 + Math.ceil(Math.random() * 1000)
+      const length = 1000 + Math.ceil(Math.random() * 10000)
       const content = Uint8Array.from(randomBytes(length))
       lengths.push(length)
       totalLength += length
