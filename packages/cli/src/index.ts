@@ -114,7 +114,7 @@ const main = async () => {
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
-    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.CanonicalIndicesNetwork],
+    supportedProtocols: [ProtocolId.HistoryNetwork],
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
