@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
-import { serializedContentKeyToContentId, shortId } from '../../util/index.js'
+import { shortId } from '../../util/index.js'
 import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
@@ -26,7 +26,7 @@ import {
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
-import { CanonicalIndicesProtocol } from '../canonicalIndices/canonicalIndices.js'
+
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
@@ -180,7 +180,7 @@ export class HistoryProtocol extends BaseProtocol {
           receivedAccumulator.currentEpoch
         )
 
-        const historicalEpochs = this.accumulator.historicalEpochs
+        /*    const historicalEpochs = this.accumulator.historicalEpochs
         historicalEpochs.forEach(async (epochHash, idx) => {
           this.logger(`looking up ${toHexString(epochHash)} hash`)
           const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
@@ -196,7 +196,7 @@ export class HistoryProtocol extends BaseProtocol {
               }`
             )
           }
-        })
+        })*/
       }
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
@@ -267,18 +267,44 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public getBlockByNumber = async (blockNumber: number, includeTransactions: boolean) => {
-    const canonicalIndices = this.client.protocols.get(
-      ProtocolId.CanonicalIndicesNetwork
-    ) as CanonicalIndicesProtocol
-    const blockHash = canonicalIndices.blockHash(blockNumber)
-    if (!blockHash) {
-      this.logger(`No block hash found in Block Index for ${blockNumber}`)
+    if (blockNumber > this.accumulator.currentHeight()) {
+      this.logger(`Block number ${blockNumber} is higher than current known chain height`)
       return
     }
-    // TODO: Request block number from the Canonical Indices protocol if we don't have it locally
+    const blockIndex = blockNumber % EPOCH_SIZE
+    const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
+    const epochRootHash = this.accumulator.historicalEpochs[historicalEpochIndex]
 
-    const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as never as HistoryProtocol
-    const block = await history.getBlockByHash(blockHash, includeTransactions)
+    let blockHash
+    if (!epochRootHash) {
+      blockHash = toHexString(this.accumulator.currentEpoch[blockIndex].blockHash)
+    } else {
+      let epoch
+      try {
+        const encodedEpoch = await this.client.db.get(
+          getHistoryNetworkContentId(
+            1,
+            HistoryNetworkContentTypes.EpochAccumulator,
+            toHexString(epochRootHash)
+          )
+        )
+        epoch = EpochAccumulator.deserialize(fromHexString(encodedEpoch))
+      } catch {
+        const lookup = new ContentLookup(
+          this,
+          HistoryNetworkContentKeyUnionType.serialize({
+            selector: HistoryNetworkContentTypes.EpochAccumulator,
+            value: { chainId: 1, blockHash: epochRootHash },
+          })
+        )
+        const encodedEpoch = await lookup.startLookup()
+        if (!(encodedEpoch instanceof Uint8Array)) return
+        epoch = EpochAccumulator.deserialize(encodedEpoch)
+      }
+
+      blockHash = toHexString(epoch[blockIndex].blockHash)
+    }
+    const block = await this.getBlockByHash(blockHash, includeTransactions)
     return block
   }
 

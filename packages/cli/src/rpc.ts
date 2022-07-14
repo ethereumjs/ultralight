@@ -14,7 +14,6 @@ import {
 import { isValidId } from './util.js'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history.js'
 import { HistoryNetworkContentTypes } from 'portalnetwork/dist/subprotocols/history/types.js'
-import { CanonicalIndicesProtocol } from 'portalnetwork/dist/subprotocols/canonicalIndices/canonicalIndices.js'
 import { BaseProtocol } from 'portalnetwork/dist/subprotocols/protocol.js'
 import { NodeLookup } from 'portalnetwork/dist/subprotocols/nodeLookup.js'
 
@@ -47,15 +46,10 @@ export class RPCManager {
         `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
       )
       try {
-        const canonicalIndices = this._client.protocols.get(
-          ProtocolId.CanonicalIndicesNetwork
-        ) as CanonicalIndicesProtocol
-        const blockHash = canonicalIndices.blockHash(parseInt(blockNumber))
         const history = this._client.protocols.get(
           ProtocolId.HistoryNetwork
         ) as never as HistoryProtocol
-        if (!blockHash) return 'Block not found'
-        const block = await history.getBlockByHash(blockHash, includeTransactions)
+        const block = await history.getBlockByNumber(parseInt(blockNumber), includeTransactions)
         this.logger(block)
         return block ?? 'Block not found'
       } catch {

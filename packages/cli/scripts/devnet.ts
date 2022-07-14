@@ -26,7 +26,7 @@ const main = async () => {
     const file = require.resolve(process.cwd() + '/dist/index.js')
     if (args.pks) {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
-    pks.forEach((key, idx) => { //@ts-ignore
+    pks.forEach((key, idx) => {
         const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', 'pipe', process.stderr]})
         children.push(child)
     })
