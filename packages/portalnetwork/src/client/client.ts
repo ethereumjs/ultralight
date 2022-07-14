@@ -30,7 +30,6 @@ import { CapacitorUDPTransportService, WebSocketTransportService } from '../tran
 import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
-import { CanonicalIndicesProtocol } from '../subprotocols/canonicalIndices/canonicalIndices.js'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
@@ -156,9 +155,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
-          break
-        case ProtocolId.CanonicalIndicesNetwork:
-          this.protocols.set(protocol, new CanonicalIndicesProtocol(this))
           break
       }
     }
