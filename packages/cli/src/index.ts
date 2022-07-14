@@ -188,5 +188,3 @@ main().catch((err) => {
   console.log('Encountered an error', err)
   console.log('Shutting down...')
 })
-
-export * from './rpc.js'

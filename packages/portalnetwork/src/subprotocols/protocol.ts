@@ -273,69 +273,71 @@ export abstract class BaseProtocol {
    * @param protocolId network ID of subprotocol being used
    */
   public sendOffer = async (dstId: string, contentKeys: Uint8Array[]) => {
-    this.metrics?.offerMessagesSent.inc()
-    const offerMsg: OfferMessage = {
-      contentKeys,
-    }
-    const payload = PortalWireMessageType.serialize({
-      selector: MessageCodes.OFFER,
-      value: offerMsg,
-    })
-    const enr = this.routingTable.getValue(dstId)
-    if (!enr) {
-      this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
-      return
-    }
-    this.logger.extend(`OFFER`)(`Sent to ${shortId(dstId)}`)
-    const res = await this.client.sendPortalNetworkMessage(
-      enr,
-      Buffer.from(payload),
-      this.protocolId
-    )
-    if (res.length > 0) {
-      try {
-        const decoded = PortalWireMessageType.deserialize(res)
-        if (decoded.selector === MessageCodes.ACCEPT) {
-          this.metrics?.acceptMessagesReceived.inc()
-          const msg = decoded.value as AcceptMessage
-          const id = Buffer.from(msg.connectionId).readUInt16BE(0)
-          // Initiate uTP streams with serving of requested content
-          const requestedKeys: Uint8Array[] = contentKeys.filter(
-            (n, idx) => msg.contentKeys.get(idx) === true
-          )
-          if (requestedKeys.length === 0) {
-            // Don't start uTP stream if no content ACCEPTed
-            this.logger.extend('ACCEPT')(`Received no desired content`)
-            return []
+    if (contentKeys.length > 0) {
+      this.metrics?.offerMessagesSent.inc()
+      const offerMsg: OfferMessage = {
+        contentKeys,
+      }
+      const payload = PortalWireMessageType.serialize({
+        selector: MessageCodes.OFFER,
+        value: offerMsg,
+      })
+      const enr = this.routingTable.getValue(dstId)
+      if (!enr) {
+        this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
+        return
+      }
+      this.logger.extend(`OFFER`)(`Sent to ${shortId(dstId)}`)
+      const res = await this.client.sendPortalNetworkMessage(
+        enr,
+        Buffer.from(payload),
+        this.protocolId
+      )
+      if (res.length > 0) {
+        try {
+          const decoded = PortalWireMessageType.deserialize(res)
+          if (decoded.selector === MessageCodes.ACCEPT) {
+            this.metrics?.acceptMessagesReceived.inc()
+            const msg = decoded.value as AcceptMessage
+            const id = Buffer.from(msg.connectionId).readUInt16BE(0)
+            // Initiate uTP streams with serving of requested content
+            const requestedKeys: Uint8Array[] = contentKeys.filter(
+              (n, idx) => msg.contentKeys.get(idx) === true
+            )
+            if (requestedKeys.length === 0) {
+              // Don't start uTP stream if no content ACCEPTed
+              this.logger.extend('ACCEPT')(`Received no desired content`)
+              return []
+            }
+
+            const requestedData: Uint8Array[] = []
+            await Promise.all(
+              requestedKeys.map(async (key) => {
+                let value = Uint8Array.from([])
+                const lookupKey = serializedContentKeyToContentId(key)
+                try {
+                  value = fromHexString(await this.client.db.get(lookupKey))
+                  requestedData.push(value)
+                } catch (err: any) {
+                  this.logger(`Error retrieving content -- ${err.toString()}`)
+                  requestedData.push(value)
+                }
+              })
+            )
+
+            await this.client.uTP.handleNewRequest(
+              requestedKeys,
+              dstId,
+              id,
+              RequestCode.OFFER_WRITE,
+              requestedData
+            )
+
+            return msg.contentKeys
           }
-
-          const requestedData: Uint8Array[] = []
-          await Promise.all(
-            requestedKeys.map(async (key) => {
-              let value = Uint8Array.from([])
-              const lookupKey = serializedContentKeyToContentId(key)
-              try {
-                value = fromHexString(await this.client.db.get(lookupKey))
-                requestedData.push(value)
-              } catch (err: any) {
-                this.logger(`Error retrieving content -- ${err.toString()}`)
-                requestedData.push(value)
-              }
-            })
-          )
-
-          await this.client.uTP.handleNewRequest(
-            requestedKeys,
-            dstId,
-            id,
-            RequestCode.OFFER_WRITE,
-            requestedData
-          )
-
-          return msg.contentKeys
+        } catch (err: any) {
+          this.logger(`Error sending to ${shortId(dstId)} - ${err.message}`)
         }
-      } catch (err: any) {
-        this.logger(`Error sending to ${shortId(dstId)} - ${err.message}`)
       }
     }
   }

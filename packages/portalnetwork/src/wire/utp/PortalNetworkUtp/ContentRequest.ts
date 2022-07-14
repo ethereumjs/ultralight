@@ -9,31 +9,30 @@ import { ProtocolId } from '../../../subprotocols/types.js'
 export class ContentRequest {
   protocolId: ProtocolId
   requestCode: RequestCode
-  contentKey: Uint8Array
+  contentKey?: Uint8Array
   contentKeys: Uint8Array[]
   socket: UtpSocket
-  sockets: UtpSocket[]
   socketKey: string
-  content?: Uint8Array
+  content: Uint8Array
+  contents?: Uint8Array[] | undefined[]
   reader?: ContentReader
   writer?: ContentWriter
 
   constructor(
     protocolId: ProtocolId,
     requestCode: RequestCode,
-    contentKeys: Uint8Array[],
-    socket: UtpSocket[],
+    socket: UtpSocket,
     socketKey: string,
-    content: Uint8Array[] | undefined[]
+    content: Uint8Array,
+    contentKeys?: Uint8Array[]
   ) {
     this.protocolId = protocolId
-    this.sockets = socket
-    this.contentKeys = contentKeys
+    this.contentKeys = contentKeys ?? []
     this.requestCode = requestCode
-    this.contentKey = this.contentKeys[0]
-    this.content = content[0]
+    // this.contentKey = undefined
+    this.content = content
     this.socketKey = socketKey
-    this.socket = this.sockets[0]
+    this.socket = socket
   }
 
   async init(): Promise<void> {
@@ -45,10 +44,8 @@ export class ContentRequest {
         await sendSynPacket(this.socket)
         break
       case RequestCode.OFFER_WRITE:
-        if (this.sockets.length > 0 && this.contentKeys.length > 0 && this.content) {
-          this.socket = this.sockets.pop()!
-          this.contentKey = this.contentKeys.pop()!
-          writer = await this.socket!.utp.createNewWriter(this.socket, 2)
+        if (this.content) {
+          writer = await this.socket.utp.createNewWriter(this.socket, 2)
           this.writer = writer
           await sendSynPacket(this.socket)
           this.socket.state = ConnectionState.SynSent

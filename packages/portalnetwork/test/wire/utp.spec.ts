@@ -1,4 +1,5 @@
 import { toHexString } from '@chainsafe/ssz'
+import { randomBytes } from 'crypto'
 import tape from 'tape'
 import {
   Packet,
@@ -6,6 +7,10 @@ import {
   PacketType,
   SelectiveAckHeader,
   bufferToPacket,
+  attatchPrefix,
+  encodeWithVariantPrefix,
+  dropPrefixes,
+  parsePrefix,
 } from '../../src/wire/utp/index.js'
 
 tape('uTP encoding tests', (t) => {
@@ -193,41 +198,45 @@ tape('uTP encoding tests', (t) => {
     )
     st.end()
   })
+  t.test('VarInt Prefix encoding test', (st) => {
+    const contents: Uint8Array[] = []
+    const lengths: number[] = []
+    let totalLength = 0
+    for (let i = 0; i < 10; i++) {
+      const length = 1000 + Math.ceil(Math.random() * 10000)
+      const content = Uint8Array.from(randomBytes(length))
+      lengths.push(length)
+      totalLength += length
+      contents.push(content)
+    }
+    const encoded = encodeWithVariantPrefix(contents)
+    st.ok(
+      encoded.length > totalLength,
+      `Length should be greater with prefixes...${encoded.length} > ${totalLength}`
+    )
+    const c = contents[0]
+    const ci = attatchPrefix(c)
+    st.ok(ci.length > c.length, `prefix adds length to content, ${ci.length} > ${c.length}`)
+
+    const cii = parsePrefix(ci)
+    st.equal(cii[0], c.length, `Length parsed by parsePrefix, ${cii[0]} = ${c.length}`)
+    st.equal(cii[1], ci.length - c.length, `Offset calculated correctly, ${cii[1]}`)
+    const decoded = dropPrefixes(encoded)
+    st.ok(decoded.length > 0, `Decoded returns non-empty array, length = ${decoded.length}`)
+    st.deepEqual(
+      contents.length,
+      decoded.length,
+      `decoded array is same length as original, ${contents.length} = ${decoded.length}`
+    )
+    st.deepEqual(
+      contents[0],
+      decoded[0],
+      `first item matches, "${toHexString(contents[0]).slice(0, 5)}..." === "${toHexString(
+        decoded[0]
+      ).slice(0, 5)}..."`
+    )
+    st.deepEqual(contents, decoded, `Whole content array successfully encoded/decoded`)
+
+    st.end()
+  })
 })
-
-// tape('uTP packet handling', async (t) => {
-//   // Start the proxy and a CLI (or browser) node.  Copy ENR and NodeId from CLI node and paste in here.  Then run test.
-//   const cli_enr =
-//     'enr:-IS4QLjuQ4EC8GRSa2EEVnL2Uf1C55rHQIgF-YXyx_dU9r_tYr3TvQhH4FZ2YmPzxeqqhgkhqd9aswCmbQjgcjeEL98FgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQILMMDMddILLqfkMkjaT5MuthwaiKFuasOmxaBrUP3RYYN1ZHCCl30'
-//   const cli_nodeId = '6a576d481b39141aa4bcd77c9f30cef7beceed49453c9fd629ff73ca6724816a'
-
-//   const contentKey = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-
-//   const id = await PeerId.create({ keyType: 'secp256k1' })
-//   const enr = ENR.createFromPeerId(id)
-//   enr.setLocationMultiaddr(new Multiaddr('/ip4/127.0.0.1/udp/0'))
-//   const portal = new PortalNetwork(
-//     {
-//       enr: enr,
-//       peerId: id,
-//       multiaddr: new Multiaddr('/ip4/127.0.0.1/udp/0'),
-//       transport: 'wss',
-//       proxyAddress: `ws://127.0.0.1:5050`,
-//     },
-//     1n
-//   )
-//   await portal.start()
-//   portal.client.addEnr(cli_enr)
-//   // const syn = await portal.uTP.initiateConnectionRequest(cli_nodeId, 5555)
-//   t.test('Portal Client Test', async (st) => {
-//     st.ok(portal.client.isStarted(), 'Portal Client Started')
-//     const pong = await portal.sendPing(cli_nodeId, ProtocolId.HistoryNetwork)
-//     st.ok(pong, 'Ping/Pong 1 successful')
-//     const res = await portal.historyNetworkContentLookup(0, contentKey)
-//     st.ok(
-//       toHexString(res as Uint8Array) ===
-//         '0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4',
-//       'find content successful'
-//     )
-//   })
-// })
