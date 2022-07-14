@@ -16,7 +16,7 @@ import {
 import { sendFinPacket } from '../Packets/PacketSenders.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { ContentRequest } from './ContentRequest.js'
-import { encodeWithVariantPrefix } from '../Utils/variantPrefix.js'
+import { dropPrefixes, encodeWithVariantPrefix } from '../Utils/variantPrefix.js'
 
 type UtpSocketKey = string
 
@@ -111,13 +111,20 @@ export class PortalNetworkUTP extends BasicUtp {
         }
         break
       case RequestCode.OFFER_WRITE:
-        if (contents === undefined) {
+        if (contents === undefined || contents.length <= 0) {
           throw new Error('No contents to write')
+        } else {
+          this.logger(`Opening a uTP socket to send ${contents.length} pieces of content`)
         }
         sndId = connectionId + 1
         rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        contents = [encodeWithVariantPrefix(contents)]
+        if (contents.length > 1) {
+          this.logger(
+            `Encoding ${contents.length} contents with VarInt prefix for stream as a single bytestring`
+          )
+          contents = [encodeWithVariantPrefix(contents)]
+        }
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
@@ -333,32 +340,6 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
-        /*    if (packet.header.seqNr === 2) {
-          this.logger(`SYN-ACK-ACK received for FINDCONTENT request.  Beginning DATA stream.`)
-          // request.socket.ackNr = packet.header.seqNr
-          request.socket.seqNr = request.socket.seqNr + 1
-          request.socket.nextSeq = 3
-          request.socket.nextAck = packet.header.ackNr + 1
-          await request.writer?.start()
-          await sendFinPacket(request.socket)
-        } else {
-          if (packet.header.extension === 1) {
-            this.logger('SELECTIVE ACK RECEIVED')
-            bitmask = (packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask
-            this.logger(`${Array.from(bitmask.values())}`)
-          } else {
-            request.socket.logger('Ack Packet Received.')
-            request.socket.logger(
-              `Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`
-            )
-            request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          }
-          // request.socket.ackNr = packet.header.seqNr
-          // request.socket.seqNr = request.socket.seqNr + 1
-          request.socket.nextSeq = packet.header.seqNr + 1
-          request.socket.nextAck = packet.header.ackNr + 1
-          await this.handleStatePacket(request.socket, packet)
-        }*/
         break
       case RequestCode.FINDCONTENT_READ:
         if (packet.header.ackNr === 1) {
@@ -435,43 +416,90 @@ export class PortalNetworkUTP extends BasicUtp {
 
   async _handleFinPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
+    const keys = request.contentKeys
     const streamer = async (content: Uint8Array) => {
-      const contentKey = HistoryNetworkContentKeyUnionType.deserialize(request.contentKey)
-      const decodedContent = contentKey.value as HistoryNetworkContentKey
-      this.logger(
-        'streaming',
-        contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
-      )
-      let key
-      switch (contentKey.selector) {
-        case 0:
-        case 1:
-        case 2:
-          key = decodedContent.blockHash
-          break
-        case 4:
-          key = undefined
+      let contentKey = HistoryNetworkContentKeyUnionType.deserialize(keys[0])
+      let decodedContentKey = contentKey.value as HistoryNetworkContentKey
+      let key: Uint8Array | undefined
+      if (keys.length > 1) {
+        this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+        const contents = dropPrefixes(content)
+        keys.forEach((k, idx) => {
+          contentKey = HistoryNetworkContentKeyUnionType.deserialize(k)
+          decodedContentKey = contentKey.value as HistoryNetworkContentKey
+          const _content = contents[idx]
+          this.logger.extend(`FINISHED`)(
+            `${idx + 1}/${keys.length} -- sending ${
+              contentKey.selector === 0
+                ? `BlockHeader: "${toHexString(decodedContentKey.blockHash).slice(0, 10)}..."`
+                : contentKey.selector === 1
+                ? `BlockBody: "${toHexString(decodedContentKey.blockHash).slice(0, 10)}..."`
+                : contentKey.selector === 2
+                ? 'Receipt'
+                : contentKey.selector === 3
+                ? 'EpochAccumulator'
+                : contentKey.selector === 4
+                ? 'HeaderAccumulator'
+                : 'Unknown Data type'
+            } to database`
+          )
+          switch (contentKey.selector) {
+            case 0:
+            case 1:
+            case 2:
+              key = decodedContentKey.blockHash
+              break
+            case 4:
+              key = undefined
+              break
+          }
+          this.emit(
+            'Stream',
+            1,
+            contentKey.selector,
+            toHexString(key ?? Uint8Array.from([])),
+            _content
+          )
+        })
+      } else {
+        this.logger(
+          'streaming',
+          contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
+        )
+        switch (contentKey.selector) {
+          case 0:
+          case 1:
+          case 2:
+            key = decodedContentKey.blockHash
+            break
+          case 4:
+            key = undefined
+            break
+        }
+        this.logger(decodedContentKey)
+        this.emit(
+          'Stream',
+          1,
+          contentKey.selector,
+          toHexString(key ?? Uint8Array.from([])),
+          content
+        )
       }
-      this.logger(decodedContent)
-      this.emit('Stream', 1, contentKey.selector, toHexString(key ?? Uint8Array.from([])), content)
     }
+
     let content
     try {
       switch (requestCode) {
-        case RequestCode.FOUNDCONTENT_WRITE:
-          throw new Error('Why did I get a FIN packet?')
         case RequestCode.FINDCONTENT_READ:
-          content = await request.socket.handleFinPacket(packet)
-          content && streamer(content)
-          request.socket.logger(`Closing uTP Socket`)
-          break
-        case RequestCode.OFFER_WRITE:
-          throw new Error('Why did I get a FIN packet?')
         case RequestCode.ACCEPT_READ:
           content = await request.socket.handleFinPacket(packet)
           content && streamer(content)
           request.socket.logger(`Closing uTP Socket`)
           break
+        case RequestCode.FOUNDCONTENT_WRITE:
+        case RequestCode.OFFER_WRITE:
+        default:
+          throw new Error('Why did I get a FIN packet?')
       }
     } catch (err) {
       this.logger('Error processing FIN packet')

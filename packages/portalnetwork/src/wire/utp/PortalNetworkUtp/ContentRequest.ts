@@ -10,7 +10,7 @@ export class ContentRequest {
   protocolId: ProtocolId
   requestCode: RequestCode
   contentKey?: Uint8Array
-  contentKeys?: Uint8Array[]
+  contentKeys: Uint8Array[]
   socket: UtpSocket
   socketKey: string
   content: Uint8Array
@@ -27,9 +27,9 @@ export class ContentRequest {
     contentKeys?: Uint8Array[]
   ) {
     this.protocolId = protocolId
-    this.contentKeys = contentKeys
+    this.contentKeys = contentKeys ?? []
     this.requestCode = requestCode
-    this.contentKey = undefined
+    // this.contentKey = undefined
     this.content = content
     this.socketKey = socketKey
     this.socket = socket
