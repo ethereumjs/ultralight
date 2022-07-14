@@ -40,5 +40,11 @@
     "lint:fix": "../../config/cli/lint-fix.sh"
   },
   "author": "acolytec3",
-  "license": "MIT"
+  "license": "MIT",
+  "nodemonConfig": {
+    "watch": [
+      "src",
+      "../portalnetwork/dist"
+    ]
+  }
 }

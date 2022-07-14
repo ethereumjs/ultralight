@@ -5,7 +5,7 @@ import { Debugger } from 'debug'
 import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
-import { serializedContentKeyToContentId, shortId } from '../../util/index.js'
+import { shortId } from '../../util/index.js'
 import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
@@ -418,7 +418,7 @@ export class HistoryProtocol extends BaseProtocol {
     const contentIds = gossipQueue.map(([blockHash, contentType]) => {
       return getHistoryNetworkContentId(1, contentType, blockHash)
     })
-    const encodedKeys = gossipQueue.map(([blockHash, contentType], idx) => {
+    const encodedKeys = gossipQueue.map(([blockHash, _contentType], idx) => {
       return HistoryNetworkContentKeyUnionType.serialize({
         selector: gossipQueue[idx][1],
         value: { chainId: 1, blockHash: fromHexString(blockHash) },
@@ -427,7 +427,7 @@ export class HistoryProtocol extends BaseProtocol {
     contentIds.forEach((contentId) => {
       nearestPeers = [...nearestPeers, ...this.routingTable.nearest(contentId, 5)]
     })
-    nearestPeers.forEach((peer, idx) => {
+    nearestPeers.forEach((peer) => {
       const _encodedKeys = [...new Set(encodedKeys)].filter(
         (n) => !this.routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(n))
       )
