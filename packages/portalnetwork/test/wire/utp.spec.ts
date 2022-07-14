@@ -200,7 +200,7 @@ tape('uTP encoding tests', (t) => {
   })
   t.test('VarInt Prefix encoding test', (st) => {
     const contents: Uint8Array[] = []
-    const lengths = []
+    const lengths: number[] = []
     let totalLength = 0
     for (let i = 0; i < 10; i++) {
       const length = 1000 + Math.ceil(Math.random() * 10000)

@@ -69,8 +69,8 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-        portal1.enableLog('*portalnetwork*,*discv5*')
-        portal2.enableLog('*portalnetwork*,*discv5*')
+        portal1.enableLog('*Portal*,*discv5*')
+        portal2.enableLog('*Portal*,*discv5*')
         await portal1.start()
       } else if (data.toString().includes('UDP proxy listening on')) {
         const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
@@ -107,8 +107,8 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
         const nodes = await setupNetwork()
         portal1 = nodes[0]
         portal2 = nodes[1]
-        portal1.enableLog('*portalnetwork*,*discv5*')
-        portal2.enableLog('*portalnetwork*,*discv5*')
+        portal1.enableLog('*Portal*')
+        portal2.enableLog('*Portal*')
         portal1.on('ContentAdded', (blockHash) => {
           if (blockHash === '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220') {
             st.pass('OFFER/ACCEPT/uTP Stream succeeded')
@@ -127,21 +127,27 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           if (!protocol) throw new Error('should have History Protocol')
           await protocol.sendPing(portal1.discv5.enr)
           await portal2.discv5.sendPing(portal1.discv5.enr)
-          const testBlock = Block.fromRLPSerializedBlock(
-            Buffer.from(fromHexString(require('./testBlock.json').rlp))
-          )
-          await protocol.addContentToHistory(
-            1,
-            HistoryNetworkContentTypes.BlockHeader,
-            '0x' + testBlock.header.hash().toString('hex'),
-            testBlock.header.serialize()
-          )
-          await protocol.sendOffer(portal1.discv5.enr.nodeId, [
-            HistoryNetworkContentKeyUnionType.serialize({
-              selector: 0,
-              value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
-            }),
-          ])
+          const testBlocks = require('./testBlocks.json')
+          const testBlockKeys: Uint8Array[] = []
+          for (const blockData of testBlocks) {
+            const testBlock = Block.fromRLPSerializedBlock(
+              Buffer.from(fromHexString(blockData.rlp))
+            )
+            await protocol.addContentToHistory(
+              1,
+              HistoryNetworkContentTypes.BlockHeader,
+              '0x' + testBlock.header.hash().toString('hex'),
+              testBlock.header.serialize()
+            )
+            testBlockKeys.push(
+              HistoryNetworkContentKeyUnionType.serialize({
+                selector: 0,
+                value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+              })
+            )
+          }
+
+          await protocol.sendOffer(portal1.discv5.enr.nodeId, testBlockKeys)
         }
       }
     })
