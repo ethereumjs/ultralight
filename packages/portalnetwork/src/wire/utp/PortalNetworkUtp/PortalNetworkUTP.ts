@@ -173,7 +173,7 @@ export class PortalNetworkUTP extends BasicUtp {
     sndId: number,
     rcvId: number,
     content?: Uint8Array
-  ): UtpSocket | undefined {
+  ): UtpSocket {
     let socket: UtpSocket
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:

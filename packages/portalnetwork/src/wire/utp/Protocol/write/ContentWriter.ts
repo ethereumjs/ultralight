@@ -1,6 +1,7 @@
 import { Debugger } from 'debug'
 import { UtpSocket } from '../../index.js'
 import { sendDataPacket } from '../../Packets/PacketSenders.js'
+import { BUFFER_SIZE } from '../../Packets/PacketTyping.js'
 import { BasicUtp } from '../BasicUtp.js'
 
 export default class ContentWriter {
@@ -20,7 +21,7 @@ export default class ContentWriter {
     this.writing = false
     this.sentChunks = []
     this.logger = this.socket.logger.extend('WRITING')
-    this.dataChunks = this.chunk(this.content, 500)
+    this.dataChunks = this.chunk()
   }
 
   async start(): Promise<void> {
@@ -62,18 +63,18 @@ export default class ContentWriter {
     this.logger('All Data Written')
   }
 
-  chunk(content: Uint8Array, size: number): Record<number, Uint8Array> {
-    let arrayMod = content
+  chunk(): Record<number, Uint8Array> {
+    let arrayMod = this.content
     this.logger(`Preparing`)
-    this.logger(content)
-    this.logger(`For transfer as ${size} byte chunks.`)
-    const full = Math.floor(content.length / size)
-    const partial = content.length % size > 0 ? 1 : 0
+    this.logger(this.content)
+    this.logger(`For transfer as ${BUFFER_SIZE} byte chunks.`)
+    const full = Math.floor(this.content.length / BUFFER_SIZE)
+    const partial = this.content.length % BUFFER_SIZE > 0 ? 1 : 0
     const total = full + partial
     const dataChunks: Record<number, Uint8Array> = {}
     for (let i = 0; i < total; i++) {
       const start = 0
-      const end = arrayMod.length > 500 ? 500 : undefined
+      const end = arrayMod.length > 512 ? 512 : undefined
       dataChunks[i + this.startingSeqNr] = arrayMod.subarray(start, end)
       arrayMod = arrayMod.subarray(end)
 
