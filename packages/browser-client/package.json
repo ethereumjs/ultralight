@@ -12,7 +12,9 @@
     "build": "webpack",
     "mobile-dev": "CAP_ENV=liveReload npx cap run android",
     "build-debug-apk": "npx cap run android",
-    "start-electron": "electron ."
+    "start-electron": "electron .",
+    "tauri-dev": "tauri dev",
+    "tauri-build": "tauri build"
   },
   "author": "",
   "license": "MIT",
