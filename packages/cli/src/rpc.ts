@@ -160,16 +160,7 @@ export class RPCManager {
       return `Received Accumulator Snapshot`
     },
     portal_history_offer: async (params: [string, string[], number[]]) => {
-      const [dstId, blockHashes, contentTypes] = params
-      contentTypes.forEach((contentType) => {
-        try {
-          isValidId(dstId)
-          contentType > 0
-          contentType < 2
-        } catch {
-          throw new Error('invalid parameters')
-        }
-      })
+      const [enr, blockHashes, contentTypes] = params
       const contentKeys = blockHashes.map((blockHash, idx) => {
         return HistoryNetworkContentKeyUnionType.serialize({
           selector: contentTypes[idx],
@@ -179,11 +170,10 @@ export class RPCManager {
           },
         })
       })
-      const protocol = this._client.protocols.get(
-        ProtocolId.HistoryNetwork
-      ) as never as HistoryProtocol
-      const res = await protocol.sendOffer(dstId, contentKeys)
-      return res
+      const e = ENR.decodeTxt(enr)
+      const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      await protocol.sendOffer(e.nodeId, contentKeys)
+      return 'Send History Offer'
     },
     portal_headerAccumulatorRoot: async () => {
       this.logger(`Received request for current header accumulator root hashF`)

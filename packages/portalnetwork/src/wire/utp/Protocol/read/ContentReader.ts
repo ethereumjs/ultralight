@@ -39,10 +39,10 @@ export default class ContentReader {
     return this.packets.length > 0
   }
 
-  async compile(packets: Packet[]): Promise<Uint8Array> {
+  async compile(precompiled: Uint8Array[]): Promise<Uint8Array> {
     let compiled = Buffer.from([])
-    packets.forEach((p) => {
-      compiled = Buffer.concat([compiled, Buffer.from(p.payload)])
+    precompiled.forEach((p) => {
+      compiled = Buffer.concat([compiled, Buffer.from(p)])
     })
     this.logger(`${compiled.length} Bytes Received.`)
     this.logger(Uint8Array.from(compiled))
@@ -50,15 +50,18 @@ export default class ContentReader {
     return Uint8Array.from(compiled)
   }
 
-  async run(): Promise<Uint8Array | undefined> {
+  async run(): Promise<Uint8Array> {
     const sortedPackets = this.packets.sort((a, b) => {
       return a.header.seqNr - b.header.seqNr
     })
     try {
-      const compiled = await this.compile(sortedPackets)
+      const precompiled = sortedPackets.map((pk) => {
+        return pk.payload
+      })
+      const compiled = await this.compile(precompiled)
       return compiled
     } catch {
-      this.logger(`Cannot run reader...`)
+      throw new Error(`Cannot run reader...`)
     }
   }
 }

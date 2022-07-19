@@ -57,12 +57,18 @@ export class Packet {
   }
 }
 
-export function createSynPacket(rcvConnectionId: Uint16, seqNr: Uint16, ackNr?: number): Packet {
+export function createSynPacket(
+  rcvConnectionId: Uint16,
+  seqNr: Uint16,
+  ackNr?: number,
+  timestamp?: number
+): Packet {
   const h: PacketHeader = new PacketHeader({
     pType: PacketType.ST_SYN,
     connectionId: rcvConnectionId,
     seqNr: seqNr,
     ackNr: ackNr ?? 0,
+    timestamp: timestamp,
   })
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array() })
   return packet
@@ -73,7 +79,8 @@ export function createAckPacket(
   sndConnectionId: Uint16,
   ackNr: Uint16,
   rtt_var: number,
-  wndSize: number
+  wndSize: number,
+  timestamp?: number
 ): Packet {
   const h: PacketHeader = new PacketHeader({
     pType: PacketType.ST_STATE,
@@ -81,6 +88,7 @@ export function createAckPacket(
     seqNr: seqNr,
     ackNr: ackNr,
     wndSize: wndSize,
+    timestamp: timestamp,
     timestampDiff: rtt_var,
   })
 
@@ -93,7 +101,8 @@ export function createSelectiveAckPacket(
   ackNr: Uint16,
   rtt_var: number,
   wndSize: number,
-  ackNrs: number[]
+  ackNrs: number[],
+  timestamp?: number
 ): Packet {
   const h: SelectiveAckHeader = new SelectiveAckHeader(
     {
@@ -103,6 +112,7 @@ export function createSelectiveAckPacket(
       ackNr: ackNr,
       wndSize: wndSize,
       timestampDiff: rtt_var,
+      timestamp: timestamp,
     },
     Uint8Array.from(ackNrs)
   )
@@ -117,7 +127,8 @@ export function createDataPacket(
   ackNr: Uint16,
   bufferSize: Uint32,
   payload: Uint8Array,
-  rtt_var: number
+  rtt_var: number,
+  timestamp?: number
 ): Packet {
   const h: PacketHeader = new PacketHeader({
     pType: PacketType.ST_DATA,
@@ -128,17 +139,23 @@ export function createDataPacket(
     wndSize: bufferSize,
     seqNr: seqNr,
     ackNr: ackNr,
+    timestamp: timestamp,
   })
   const packet: Packet = new Packet({ header: h, payload: payload })
   return packet
 }
-export function createResetPacket(seqNr: Uint16, sndConnectionId: Uint16, ackNr: Uint16): Packet {
+export function createResetPacket(
+  seqNr: Uint16,
+  sndConnectionId: Uint16,
+  ackNr: Uint16,
+  timestamp?: number
+): Packet {
   const h = new PacketHeader({
     pType: PacketType.ST_RESET,
     version: protocolVersion,
     extension: 0,
     connectionId: sndConnectionId,
-    timestamp: Date.now(),
+    timestamp: timestamp,
     timestampDiff: 0,
     wndSize: 0,
     seqNr: seqNr,
@@ -150,14 +167,15 @@ export function createFinPacket(
   connectionId: Uint16,
   seqNr: number,
   ackNr: number,
-  wndSize: number
+  wndSize: number,
+  timestamp?: number
 ): Packet {
   const h = new PacketHeader({
     pType: PacketType.ST_FIN,
     version: protocolVersion,
     extension: 0,
     connectionId: connectionId,
-    timestamp: Bytes32TimeStamp(),
+    timestamp: timestamp,
     timestampDiff: 0,
     wndSize: wndSize,
     seqNr: seqNr,
