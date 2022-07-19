@@ -27,7 +27,7 @@ export enum RequestCode {
   ACCEPT_READ = 3,
 }
 
-function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
+export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
 export class PortalNetworkUTP extends BasicUtp {

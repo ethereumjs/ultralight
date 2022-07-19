@@ -50,7 +50,7 @@ export default class ContentReader {
     return Uint8Array.from(compiled)
   }
 
-  async run(): Promise<Uint8Array | undefined> {
+  async run(): Promise<Uint8Array> {
     const sortedPackets = this.packets.sort((a, b) => {
       return a.header.seqNr - b.header.seqNr
     })
@@ -61,7 +61,7 @@ export default class ContentReader {
       const compiled = await this.compile(precompiled)
       return compiled
     } catch {
-      this.logger(`Cannot run reader...`)
+      throw new Error(`Cannot run reader...`)
     }
   }
 }

@@ -287,7 +287,9 @@ export abstract class BaseProtocol {
         this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
         return
       }
-      this.logger.extend(`OFFER`)(`Sent to ${shortId(dstId)}`)
+      this.logger.extend(`OFFER`)(
+        `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`
+      )
       const res = await this.client.sendPortalNetworkMessage(
         enr,
         Buffer.from(payload),
