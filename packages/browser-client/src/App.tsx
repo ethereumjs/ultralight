@@ -37,12 +37,26 @@ import { TransportLayer } from 'portalnetwork/dist/client'
 import { toHexString } from './Components/DisplayTx'
 import _block from './block.json'
 import { TypedTransaction } from '@ethereumjs/tx'
+import { decodeReceipt, JsonRpcReceipt, jsonRpcTx } from './receipts'
+import txReceipts from './txReceipts.json'
+
 const exampleBlock = Block.fromRLPSerializedBlock(Buffer.from(_block.rlp, 'hex'), {
   hardforkByBlockNumber: true,
 })
+const exampleReceipt: JsonRpcReceipt = decodeReceipt(
+  txReceipts[0].rawReceipt,
+  toHexString(exampleBlock.transactions[0].hash()),
+  exampleBlock.transactions[0],
+  jsonRpcTx(exampleBlock.transactions[0]).gasPrice,
+  exampleBlock,
+  0
+)
+
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
-export const PortalContext = React.createContext(PortalNetwork.prototype)
+export const PortalContext = React.createContext({
+  portal: PortalNetwork.prototype,
+})
 export const BlockContext = React.createContext({
   block: exampleBlock,
   setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
@@ -51,9 +65,14 @@ export const TxContext = React.createContext({
   tx: exampleBlock.transactions[0],
   setTx: (() => {}) as React.Dispatch<React.SetStateAction<TypedTransaction>>,
 })
+export const ReceiptContext = React.createContext({
+  receipt: exampleReceipt,
+  setReceipt: (() => {}) as React.Dispatch<React.SetStateAction<JsonRpcReceipt>>,
+})
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
+  const portalValue = React.useMemo(() => ({ portal }), [portal])
   const [peers, setPeers] = React.useState<ENR[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
@@ -65,8 +84,10 @@ export const App = () => {
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>(exampleBlock)
   const [tx, setTx] = React.useState<TypedTransaction>(exampleBlock.transactions[0])
+  const [receipt, setReceipt] = React.useState<JsonRpcReceipt>(exampleReceipt)
   const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
   const txValue = React.useMemo(() => ({ tx, setTx }), [tx])
+  const receiptValue = React.useMemo(() => ({ receipt, setReceipt }), [receipt])
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
@@ -222,8 +243,8 @@ export const App = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      {portal && (
-        <PortalContext.Provider value={portal}>
+      {portalValue && (
+        <PortalContext.Provider value={portalValue as { portal: PortalNetwork }}>
           <Center bg={'gray.200'}>
             <VStack width={'80%'}>
               <Heading size={'2xl'} textAlign="start">
@@ -276,23 +297,25 @@ export const App = () => {
             {portal && (
               <BlockContext.Provider value={blockValue}>
                 <TxContext.Provider value={txValue}>
-                  <Layout
-                    copy={copy}
-                    onOpen={onOpen}
-                    enr={enr}
-                    peerEnr={peerEnr}
-                    setPeerEnr={setPeerEnr}
-                    handleClick={handleClick}
-                    invalidHash={invalidHash}
-                    getBlockByHash={getBlockByHash}
-                    blockHash={blockHash}
-                    setBlockHash={setBlockHash}
-                    findParent={findParent}
-                    block={block}
-                    peers={peers}
-                    sortedDistList={sortedDistList}
-                    capacitor={Capacitor}
-                  />
+                  <ReceiptContext.Provider value={receiptValue}>
+                    <Layout
+                      copy={copy}
+                      onOpen={onOpen}
+                      enr={enr}
+                      peerEnr={peerEnr}
+                      setPeerEnr={setPeerEnr}
+                      handleClick={handleClick}
+                      invalidHash={invalidHash}
+                      getBlockByHash={getBlockByHash}
+                      blockHash={blockHash}
+                      setBlockHash={setBlockHash}
+                      findParent={findParent}
+                      block={block}
+                      peers={peers}
+                      sortedDistList={sortedDistList}
+                      capacitor={Capacitor}
+                    />
+                  </ReceiptContext.Provider>
                 </TxContext.Provider>
               </BlockContext.Provider>
             )}
