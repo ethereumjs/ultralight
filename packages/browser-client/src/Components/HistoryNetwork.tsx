@@ -15,7 +15,7 @@ import DisplayBlock from './DisplayBlock'
 import RoutingTableView from './RoutingTableView'
 import { ENR } from 'portalnetwork'
 import GetBlockByNumber from './GetBlockByNumber'
-
+import GetTransactionReceipt from './GetTransactionReceipt'
 interface HistoryNetworkProps {
   findParent: (hash: string) => Promise<void>
   block: Block | undefined
@@ -74,6 +74,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
         </FormControl>
       </HStack>
       <GetBlockByNumber setIsLoading={setIsLoading} setBlockHash={props.setBlockHash} />
+      <GetTransactionReceipt setIsLoading={setIsLoading} />
       <Tabs index={tabIndex} onChange={handleTabsChange}>
         <TabList>
           <Tab>Network</Tab>
