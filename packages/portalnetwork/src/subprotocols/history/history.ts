@@ -269,6 +269,22 @@ export class HistoryProtocol extends BaseProtocol {
     } catch {}
   }
 
+  public eth_getTransactionReceipt = async (txHash: string) => {
+    const lookup = new ContentLookup(
+      this,
+      HistoryNetworkContentKeyUnionType.serialize({
+        selector: HistoryNetworkContentTypes.Receipt,
+        value: {
+          chainId: 1,
+          blockHash: fromHexString(txHash),
+        },
+      })
+    )
+    const txReceipt = await lookup.startLookup()
+
+    return txReceipt
+  }
+
   public getBlockByNumber = async (blockNumber: number, includeTransactions: boolean) => {
     if (blockNumber > this.accumulator.currentHeight()) {
       this.logger(`Block number ${blockNumber} is higher than current known chain height`)
