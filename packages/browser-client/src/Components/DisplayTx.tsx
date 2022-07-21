@@ -1,8 +1,29 @@
-import { Box, Table, Tbody, Td, Tr } from '@chakra-ui/react'
+import { ChevronDownIcon } from '@chakra-ui/icons'
+import {
+  Box,
+  Tab,
+  Table,
+  TabList,
+  TabPanels,
+  Tabs,
+  Tbody,
+  Td,
+  Tr,
+  TabPanel,
+  Accordion,
+  AccordionPanel,
+  AccordionItem,
+  AccordionButton,
+  Text,
+} from '@chakra-ui/react'
 import { TypedTransaction } from '@ethereumjs/tx'
 import React from 'react'
+import { JsonRpcReceipt, JsonRpcTx, jsonRpcTx } from '../receipts'
+
 interface DisplayTxProps {
   tx: TypedTransaction
+  receipt: JsonRpcReceipt
+  txIdx: number
 }
 
 export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
@@ -18,53 +39,121 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const trans = Object.entries(props.tx.toJSON())
+  const jsonTx: JsonRpcTx = jsonRpcTx(props.tx)
   const data = {
     baseFee: `0x${props.tx.getBaseFee().toJSON()}`,
     dataFee: `0x${props.tx.getDataFee().toJSON()}`,
-    message_to_sign: toHexString(props.tx.getMessageToSign()),
-    message_to_verify_signature: toHexString(props.tx.getMessageToVerifySignature()),
+    message: toHexString(props.tx.getMessageToSign()),
     sender_address: props.tx.getSenderAddress().toString(),
     sender_public_key: toHexString(props.tx.getSenderPublicKey()),
     up_front_cost: `0x${props.tx.getUpfrontCost().toJSON()}`,
-    hash: toHexString(props.tx.hash()),
     isSigned: props.tx.isSigned().toString(),
-    // raw: props.tx.raw(),
-    // serialize: props.tx.serialize(),
-    to_creation_address: props.tx.toCreationAddress().toString(),
-    validate: props.tx.validate().toString(),
-    verify_signature: props.tx.verifySignature().toString(),
   }
-  //    props.tx.data
-
   return (
-    <Box>
-      <Table size={'sm'}>
-        <Tbody>
-          {trans.map(([k, v], idx) => {
-            return (
-              k !== 'data' && (
-                <Tr key={idx}>
-                  <Td paddingBottom={'0'}>{k}</Td>
-                  <Td paddingBottom={'0'} wordBreak={'break-all'}>
-                    {v}
-                  </Td>
-                </Tr>
-              )
-            )
-          })}
-          {Object.entries(data).map(([k, v], idx) => {
-            return (
-              <Tr key={idx}>
-                <Td paddingBottom={'0'}>{k}</Td>
-                <Td paddingBottom={'0'} wordBreak={'break-all'}>
-                  {v}
-                </Td>
-              </Tr>
-            )
-          })}
-        </Tbody>
-      </Table>
-    </Box>
+    <Tabs>
+      <TabList>
+        <Tab>TxData</Tab>
+        <Tab>TxReceipt</Tab>
+        <Tab>Logs</Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel>
+          <Box>
+            <Table size={'sm'}>
+              <Tbody>
+                {Object.entries(jsonTx).map(([k, v], idx) => {
+                  return (
+                    typeof v === 'string' && (
+                      <Tr key={idx}>
+                        <Td paddingBottom={'0'}>{k}</Td>
+                        <Td paddingBottom={'0'} wordBreak={'break-all'}>
+                          {v}
+                        </Td>
+                      </Tr>
+                    )
+                  )
+                })}
+                {Object.entries(data).map(([k, v], idx) => {
+                  return (
+                    <Tr key={idx}>
+                      <Td paddingBottom={'0'}>{k}</Td>
+                      <Td paddingBottom={'0'} wordBreak={'break-all'}>
+                        {v}
+                      </Td>
+                    </Tr>
+                  )
+                })}
+              </Tbody>
+            </Table>
+          </Box>
+        </TabPanel>
+        <TabPanel>
+          <Box>
+            <Table size="sm">
+              <Tbody>
+                {Object.entries(props.receipt).map(([key, value]) => {
+                  return (
+                    <Tr key={key}>
+                      <Td>{key}</Td>
+                      <Td wordBreak={'break-all'}>
+                        {typeof value === 'string'
+                          ? value
+                          : value === null
+                          ? 'null'
+                          : typeof value === 'object'
+                          ? Object.values(value).length
+                          : typeof value}
+                      </Td>
+                    </Tr>
+                  )
+                })}
+              </Tbody>
+            </Table>
+          </Box>
+        </TabPanel>
+        <TabPanel>
+          {props.receipt.logs && (
+            <Accordion allowToggle size={'xs'}>
+              {props.receipt.logs.map((log, idx) => {
+                return (
+                  <AccordionItem key={idx}>
+                    <AccordionButton>
+                      <Box textAlign={'left'}>
+                        Log {log.logIndex} <ChevronDownIcon />
+                      </Box>
+                    </AccordionButton>
+                    <AccordionPanel>
+                      <Table size={'sm'}>
+                        <Tbody>
+                          {Object.entries(log).map(([key, value]) => {
+                            return (
+                              <Tr key={key}>
+                                <Td>{key}</Td>
+                                <Td wordBreak={'break-all'}>
+                                  {typeof value === 'object'
+                                    ? value?.map((v, idx) => {
+                                        const color = idx % 2 === 0 ? 'gray.100' : 'gray.300'
+                                        return (
+                                          <Text key={v} bgColor={color}>
+                                            {v.toString()}
+                                          </Text>
+                                        )
+                                      })
+                                    : value.toString()}
+                                </Td>
+                              </Tr>
+                            )
+                          })}
+                        </Tbody>
+                      </Table>
+                    </AccordionPanel>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
+          )}
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   )
 }

@@ -128,7 +128,6 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           <TabList>
             <Tab>Header</Tab>
             <Tab>Transactions</Tab>
-            <Tab>Uncles</Tab>
             <Tab>JSON</Tab>
           </TabList>
         </Center>
@@ -142,7 +141,6 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
             </Grid>
           </TabPanel>
           <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
-          <TabPanel>Uncles</TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!props.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>

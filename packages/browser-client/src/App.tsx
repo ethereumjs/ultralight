@@ -35,11 +35,15 @@ import bns from './bootnodes.json'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import { TransportLayer } from 'portalnetwork/dist/client'
 import { toHexString } from './Components/DisplayTx'
+import _block from './block.json'
+const exampleBlock = Block.fromRLPSerializedBlock(Buffer.from(_block.rlp, 'hex'), {
+  hardforkByBlockNumber: true,
+})
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
 export const BlockContext = React.createContext({
-  block: Block.prototype,
+  block: exampleBlock,
   setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
 })
 
@@ -54,7 +58,7 @@ export const App = () => {
     '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
   )
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
-  const [block, setBlock] = React.useState<Block>(Block.prototype)
+  const [block, setBlock] = React.useState<Block>(exampleBlock)
   const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
