@@ -16,12 +16,11 @@ import {
   AccordionButton,
   Text,
 } from '@chakra-ui/react'
-import { TypedTransaction } from '@ethereumjs/tx'
-import React from 'react'
-import { JsonRpcReceipt, JsonRpcTx, jsonRpcTx } from '../receipts'
+import React, { useContext } from 'react'
+import { TxContext } from '../App'
+import { JsonRpcReceipt, jsonRpcTx } from '../receipts'
 
 interface DisplayTxProps {
-  tx: TypedTransaction
   receipt: JsonRpcReceipt
   txIdx: number
 }
@@ -39,16 +38,17 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const jsonTx: JsonRpcTx = jsonRpcTx(props.tx)
+  const { tx, setTx } = useContext(TxContext)
   const data = {
-    baseFee: `0x${props.tx.getBaseFee().toJSON()}`,
-    dataFee: `0x${props.tx.getDataFee().toJSON()}`,
-    message: toHexString(props.tx.getMessageToSign()),
-    sender_address: props.tx.getSenderAddress().toString(),
-    sender_public_key: toHexString(props.tx.getSenderPublicKey()),
-    up_front_cost: `0x${props.tx.getUpfrontCost().toJSON()}`,
-    isSigned: props.tx.isSigned().toString(),
+    baseFee: `0x${tx.getBaseFee().toJSON()}`,
+    dataFee: `0x${tx.getDataFee().toJSON()}`,
+    message: toHexString(tx.getMessageToSign()),
+    sender_address: tx.getSenderAddress().toString(),
+    sender_public_key: toHexString(tx.getSenderPublicKey()),
+    up_front_cost: `0x${tx.getUpfrontCost().toJSON()}`,
+    isSigned: tx.isSigned().toString(),
   }
+
   return (
     <Tabs>
       <TabList>
@@ -61,7 +61,7 @@ export default function DisplayTx(props: DisplayTxProps) {
           <Box>
             <Table size={'sm'}>
               <Tbody>
-                {Object.entries(jsonTx).map(([k, v], idx) => {
+                {Object.entries(jsonRpcTx(tx)).map(([k, v], idx) => {
                   return (
                     typeof v === 'string' && (
                       <Tr key={idx}>

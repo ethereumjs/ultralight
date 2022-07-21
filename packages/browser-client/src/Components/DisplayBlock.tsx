@@ -26,7 +26,7 @@ interface DisplayBlockProps {
 }
 
 const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
-  const { block } = useContext(BlockContext)
+  const { block, setBlock } = useContext(BlockContext)
   const findParent = props.findParent
   const header = Object.entries(block!.header!.toJSON())
   const txList = block.transactions
@@ -140,7 +140,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
                 })}
             </Grid>
           </TabPanel>
-          <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
+          <TabPanel>{tx.length > 0 && <SelectTx />}</TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!props.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>

@@ -12,41 +12,37 @@ import {
   Input,
 } from '@chakra-ui/react'
 // eslint-disable-next-line implicit-dependencies/no-implicit
-import { TypedTransaction } from '@ethereumjs/tx'
-import { useContext, useEffect, useState } from 'react'
+import { Transaction, TypedTransaction } from '@ethereumjs/tx'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
-import DisplayTx from './DisplayTx'
+import DisplayTx, { toHexString } from './DisplayTx'
 import React from 'react'
 import txReceipts from '../txReceipts.json'
 import { decodeReceipt, JsonRpcReceipt, JsonRpcTx, jsonRpcTx } from '../receipts'
-import { BlockContext } from '../App'
+import { BlockContext, TxContext } from '../App'
 
 const rawReceipts = txReceipts.map((tx) => {
   return tx.rawReceipt
 })
 
-interface SelectTxProps {
-  txList: string[]
-  tx: TypedTransaction[]
-}
-
-export default function SelectTx(props: SelectTxProps) {
+export default function SelectTx() {
+  const { tx, setTx } = useContext(TxContext)
   const { block, setBlock } = useContext(BlockContext)
+  const [jsonTx, setJsonTx] = useState<JsonRpcTx>(jsonRpcTx(tx))
+  const [txReceipt, setTxReceipt] = useState<JsonRpcReceipt>(
+    decodeReceipt(rawReceipts[0], tx, jsonTx.gasPrice, block, 0)
+  )
   const [txHash, setTxHash] = useState('0x')
   const [txIdx, setTxIdx] = useState(0)
-
-  const jsonTx: JsonRpcTx = jsonRpcTx(props.tx[txIdx])
-  const [txReceipt, setTxReceipt] = useState<JsonRpcReceipt>(
-    decodeReceipt(rawReceipts[txIdx], props.tx[txIdx], jsonTx.gasPrice, block, txIdx)
-  )
-  const len = props.txList.length
-  const length = props.txList.filter((t) => t.startsWith(txHash)).length
+  const len = block.transactions.length
+  const length = block.transactions.filter((t) => toHexString(t.hash()).startsWith(txHash)).length
 
   useEffect(() => {
-    const jsonTx: JsonRpcTx = jsonRpcTx(props.tx[txIdx])
+    setTx(block.transactions[txIdx])
+    setJsonTx(jsonRpcTx(tx))
     const txReceipt: JsonRpcReceipt = decodeReceipt(
       rawReceipts[txIdx],
-      props.tx[txIdx],
+      tx,
       jsonTx.gasPrice,
       block,
       txIdx
@@ -67,11 +63,11 @@ export default function SelectTx(props: SelectTxProps) {
           </MenuButton>
           <MenuList>
             <MenuOptionGroup onChange={(v) => setTxIdx(parseInt(v as string))}>
-              {props.txList.map((t, idx) => {
+              {block.transactions.map((t, idx) => {
                 return (
-                  t.startsWith(txHash) && (
+                  toHexString(t.hash()).startsWith(txHash) && (
                     <MenuItemOption value={idx.toString()} key={idx} wordBreak={'break-all'}>
-                      {t}
+                      {toHexString(t.hash())}
                     </MenuItemOption>
                   )
                 )
@@ -79,7 +75,10 @@ export default function SelectTx(props: SelectTxProps) {
             </MenuOptionGroup>
           </MenuList>
         </Menu>
-        <Button onClick={() => setTxIdx(txIdx + 1)} disabled={txIdx === props.txList.length - 1}>
+        <Button
+          onClick={() => setTxIdx(txIdx + 1)}
+          disabled={txIdx === block.transactions.length - 1}
+        >
           <FaChevronRight />
         </Button>
       </HStack>
@@ -91,12 +90,12 @@ export default function SelectTx(props: SelectTxProps) {
           size={'xs'}
           wordBreak={'break-all'}
         >
-          {props.txList[txIdx]}
+          {toHexString(tx.hash())}
         </Heading>
       </Box>
       <HStack height={'vh'} justifyContent={'start'} align={'start'}>
         <Box width={'65%'} height={'100%'}>
-          <DisplayTx tx={props.tx[txIdx]} receipt={txReceipt} txIdx={txIdx} />
+          <DisplayTx receipt={txReceipt} txIdx={txIdx} />
         </Box>
       </HStack>
     </VStack>

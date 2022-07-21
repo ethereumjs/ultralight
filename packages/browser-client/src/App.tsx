@@ -36,6 +36,7 @@ import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history
 import { TransportLayer } from 'portalnetwork/dist/client'
 import { toHexString } from './Components/DisplayTx'
 import _block from './block.json'
+import { TypedTransaction } from '@ethereumjs/tx'
 const exampleBlock = Block.fromRLPSerializedBlock(Buffer.from(_block.rlp, 'hex'), {
   hardforkByBlockNumber: true,
 })
@@ -45,6 +46,10 @@ export const PortalContext = React.createContext(PortalNetwork.prototype)
 export const BlockContext = React.createContext({
   block: exampleBlock,
   setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
+})
+export const TxContext = React.createContext({
+  tx: exampleBlock.transactions[0],
+  setTx: (() => {}) as React.Dispatch<React.SetStateAction<TypedTransaction>>,
 })
 
 export const App = () => {
@@ -59,7 +64,9 @@ export const App = () => {
   )
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>(exampleBlock)
+  const [tx, setTx] = React.useState<TypedTransaction>(exampleBlock.transactions[0])
   const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
+  const txValue = React.useMemo(() => ({ tx, setTx }), [tx])
   const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
   const disclosure = useDisclosure()
@@ -268,23 +275,25 @@ export const App = () => {
           <Box>
             {portal && (
               <BlockContext.Provider value={blockValue}>
-                <Layout
-                  copy={copy}
-                  onOpen={onOpen}
-                  enr={enr}
-                  peerEnr={peerEnr}
-                  setPeerEnr={setPeerEnr}
-                  handleClick={handleClick}
-                  invalidHash={invalidHash}
-                  getBlockByHash={getBlockByHash}
-                  blockHash={blockHash}
-                  setBlockHash={setBlockHash}
-                  findParent={findParent}
-                  block={block}
-                  peers={peers}
-                  sortedDistList={sortedDistList}
-                  capacitor={Capacitor}
-                />
+                <TxContext.Provider value={txValue}>
+                  <Layout
+                    copy={copy}
+                    onOpen={onOpen}
+                    enr={enr}
+                    peerEnr={peerEnr}
+                    setPeerEnr={setPeerEnr}
+                    handleClick={handleClick}
+                    invalidHash={invalidHash}
+                    getBlockByHash={getBlockByHash}
+                    blockHash={blockHash}
+                    setBlockHash={setBlockHash}
+                    findParent={findParent}
+                    block={block}
+                    peers={peers}
+                    sortedDistList={sortedDistList}
+                    capacitor={Capacitor}
+                  />
+                </TxContext.Provider>
               </BlockContext.Provider>
             )}
             <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
