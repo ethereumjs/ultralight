@@ -18,36 +18,54 @@ import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import DisplayTx, { toHexString } from './DisplayTx'
 import React from 'react'
 import txReceipts from '../txReceipts.json'
-import { decodeReceipt, JsonRpcReceipt, JsonRpcTx, jsonRpcTx } from '../receipts'
-import { BlockContext, TxContext } from '../App'
+import { decodeReceipt, jsonRpcReceipt, JsonRpcReceipt, JsonRpcTx, jsonRpcTx } from '../receipts'
+import { BlockContext, PortalContext, ReceiptContext, TxContext } from '../App'
+import { ProtocolId } from 'portalnetwork'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 
 const rawReceipts = txReceipts.map((tx) => {
   return tx.rawReceipt
 })
 
 export default function SelectTx() {
+  const { portal } = useContext(PortalContext)
   const { tx, setTx } = useContext(TxContext)
   const { block, setBlock } = useContext(BlockContext)
   const [jsonTx, setJsonTx] = useState<JsonRpcTx>(jsonRpcTx(tx))
-  const [txReceipt, setTxReceipt] = useState<JsonRpcReceipt>(
-    decodeReceipt(rawReceipts[0], tx, jsonTx.gasPrice, block, 0)
-  )
+  const { receipt, setReceipt } = useContext(ReceiptContext)
   const [txHash, setTxHash] = useState('0x')
   const [txIdx, setTxIdx] = useState(0)
   const len = block.transactions.length
   const length = block.transactions.filter((t) => toHexString(t.hash()).startsWith(txHash)).length
 
+  async function getTransactionReceipt(txHash: string): Promise<void> {
+    const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    const rawReceipt =
+      toHexString(block.hash()) ===
+      '0xe62e4959741c3c68bd613de5e381dd1d80e3f9627669c06bc9a193a679e77ba5'
+        ? txReceipts[txIdx].rawReceipt
+        : toHexString((await history.eth_getTransactionReceipt(txHash)) as Uint8Array)
+    const txReceipt: JsonRpcReceipt = rawReceipt
+      ? (decodeReceipt(
+          rawReceipt,
+          txHash,
+          tx,
+          jsonRpcTx(tx).gasPrice,
+          block,
+          txIdx
+        ) as JsonRpcReceipt)
+      : {
+          gasUsed: '',
+          logs: [],
+          logsBloom: '',
+        }
+    setReceipt(txReceipt)
+  }
+
   useEffect(() => {
     setTx(block.transactions[txIdx])
-    setJsonTx(jsonRpcTx(tx))
-    const txReceipt: JsonRpcReceipt = decodeReceipt(
-      rawReceipts[txIdx],
-      tx,
-      jsonTx.gasPrice,
-      block,
-      txIdx
-    )
-    setTxReceipt(txReceipt)
+    setJsonTx(jsonRpcTx(block.transactions[txIdx]))
+    getTransactionReceipt(toHexString(block.transactions[txIdx].hash()))
   }, [txIdx])
 
   return (
@@ -95,7 +113,7 @@ export default function SelectTx() {
       </Box>
       <HStack height={'vh'} justifyContent={'start'} align={'start'}>
         <Box width={'65%'} height={'100%'}>
-          <DisplayTx receipt={txReceipt} txIdx={txIdx} />
+          <DisplayTx txIdx={txIdx} />
         </Box>
       </HStack>
     </VStack>

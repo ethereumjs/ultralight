@@ -14,11 +14,13 @@ import {
   Center,
   Skeleton,
   HStack,
+  VStack,
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import SelectTx from './SelectTx'
 import React, { useContext } from 'react'
 import { BlockContext } from '../App'
+import { toHexString } from './DisplayTx'
 
 interface DisplayBlockProps {
   findParent: (hash: string) => Promise<void>
@@ -29,8 +31,6 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
   const { block, setBlock } = useContext(BlockContext)
   const findParent = props.findParent
   const header = Object.entries(block!.header!.toJSON())
-  const txList = block.transactions
-  const tx: string[] = block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
   const headerlookupKey =
     '0x' +
     Buffer.from(
@@ -78,10 +78,15 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
   return (
     <Box>
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
-        <HStack justifyContent={'center'}>
-          <span>Block #</span>
-          <Skeleton isLoaded={!props.isLoading}>{block.header.number.toNumber()}</Skeleton>
-        </HStack>
+        <VStack>
+          <HStack justifyContent={'center'}>
+            <span>Block #</span>
+            <Skeleton isLoaded={!props.isLoading}>{block.header.number.toNumber()}</Skeleton>
+          </HStack>
+          <HStack justifyContent={'center'}>
+            <Skeleton isLoaded={!props.isLoading}>{toHexString(block.header.hash())}</Skeleton>
+          </HStack>
+        </VStack>
       </Heading>
       <Grid templateColumns={'repeat(16, 1fr'} columnGap={1}>
         <GridItem colSpan={4}>
@@ -140,7 +145,13 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
                 })}
             </Grid>
           </TabPanel>
-          <TabPanel>{tx.length > 0 && <SelectTx />}</TabPanel>
+          <TabPanel>
+            {block.transactions.length > 0 ? (
+              <SelectTx />
+            ) : (
+              <Text>This Block Has No Transactions</Text>
+            )}
+          </TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!props.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>

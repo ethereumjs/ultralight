@@ -16,12 +16,14 @@ import {
   AccordionButton,
   Text,
 } from '@chakra-ui/react'
-import React, { useContext } from 'react'
-import { TxContext } from '../App'
-import { JsonRpcReceipt, jsonRpcTx } from '../receipts'
+import { ProtocolId } from 'portalnetwork'
+import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import React, { useContext, useEffect, useState } from 'react'
+import { BlockContext, PortalContext, ReceiptContext, TxContext } from '../App'
+import { decodeReceipt, JsonRpcReceipt, jsonRpcTx } from '../receipts'
+import txReceipts from '../txReceipts.json'
 
 interface DisplayTxProps {
-  receipt: JsonRpcReceipt
   txIdx: number
 }
 
@@ -38,7 +40,10 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const { tx, setTx } = useContext(TxContext)
+  const { block } = useContext(BlockContext)
+  const { tx } = useContext(TxContext)
+  const { portal } = useContext(PortalContext)
+  const { receipt, setReceipt } = useContext(ReceiptContext)
   const data = {
     baseFee: `0x${tx.getBaseFee().toJSON()}`,
     dataFee: `0x${tx.getDataFee().toJSON()}`,
@@ -49,11 +54,38 @@ export default function DisplayTx(props: DisplayTxProps) {
     isSigned: tx.isSigned().toString(),
   }
 
+  async function getTransactionReceipt(txHash: string): Promise<void> {
+    const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    const rawReceipt =
+      toHexString(block.hash()) ===
+      '0xe62e4959741c3c68bd613de5e381dd1d80e3f9627669c06bc9a193a679e77ba5'
+        ? txReceipts[props.txIdx].rawReceipt
+        : toHexString((await history.eth_getTransactionReceipt(txHash)) as Uint8Array)
+    const txReceipt: JsonRpcReceipt = rawReceipt
+      ? (decodeReceipt(
+          rawReceipt,
+          txHash,
+          tx,
+          jsonRpcTx(tx).gasPrice,
+          block,
+          props.txIdx
+        ) as JsonRpcReceipt)
+      : {
+          gasUsed: '',
+          logs: [],
+          logsBloom: '',
+        }
+    setReceipt(txReceipt)
+  }
+
+  useEffect(() => {
+    getTransactionReceipt(toHexString(tx.hash()))
+  }, [tx])
   return (
     <Tabs>
       <TabList>
         <Tab>TxData</Tab>
-        <Tab>TxReceipt</Tab>
+        <Tab onClick={async () => getTransactionReceipt(toHexString(tx.hash()))}>TxReceipt</Tab>
         <Tab>Logs</Tab>
       </TabList>
       <TabPanels>
@@ -91,66 +123,92 @@ export default function DisplayTx(props: DisplayTxProps) {
           <Box>
             <Table size="sm">
               <Tbody>
-                {Object.entries(props.receipt).map(([key, value]) => {
-                  return (
-                    <Tr key={key}>
-                      <Td>{key}</Td>
-                      <Td wordBreak={'break-all'}>
-                        {typeof value === 'string'
-                          ? value
-                          : value === null
-                          ? 'null'
-                          : typeof value === 'object'
-                          ? Object.values(value).length
-                          : typeof value}
-                      </Td>
-                    </Tr>
-                  )
-                })}
+                {receipt ? (
+                  Object.entries(receipt).map(([key, value]) => {
+                    return (
+                      <Tr key={key}>
+                        <Td>{key}</Td>
+                        <Td wordBreak={'break-all'}>
+                          {typeof value === 'string'
+                            ? value
+                            : value === null
+                            ? 'null'
+                            : typeof value === 'object'
+                            ? Object.values(value).length
+                            : typeof value}
+                        </Td>
+                      </Tr>
+                    )
+                  })
+                ) : (
+                  <Box>
+                    <Text textAlign={'center'}>
+                      fetching receipt from History Network <br />
+                      eth_getTransactionReceipt...
+                    </Text>
+                  </Box>
+                )}
               </Tbody>
             </Table>
           </Box>
         </TabPanel>
         <TabPanel>
-          {props.receipt.logs && (
-            <Accordion allowToggle size={'xs'}>
-              {props.receipt.logs.map((log, idx) => {
-                return (
-                  <AccordionItem key={idx}>
-                    <AccordionButton>
-                      <Box textAlign={'left'}>
-                        Log {log.logIndex} <ChevronDownIcon />
-                      </Box>
-                    </AccordionButton>
-                    <AccordionPanel>
-                      <Table size={'sm'}>
-                        <Tbody>
-                          {Object.entries(log).map(([key, value]) => {
-                            return (
-                              <Tr key={key}>
-                                <Td>{key}</Td>
-                                <Td wordBreak={'break-all'}>
-                                  {typeof value === 'object'
-                                    ? value?.map((v, idx) => {
-                                        const color = idx % 2 === 0 ? 'gray.100' : 'gray.300'
-                                        return (
-                                          <Text key={v} bgColor={color}>
-                                            {v.toString()}
-                                          </Text>
-                                        )
-                                      })
-                                    : value.toString()}
-                                </Td>
-                              </Tr>
-                            )
-                          })}
-                        </Tbody>
-                      </Table>
-                    </AccordionPanel>
-                  </AccordionItem>
-                )
-              })}
-            </Accordion>
+          {receipt ? (
+            <>
+              {receipt.logs.length > 0 ? (
+                <>
+                  <Accordion allowToggle size={'xs'}>
+                    {receipt.logs.map((log, idx) => {
+                      return (
+                        <AccordionItem key={idx}>
+                          <AccordionButton>
+                            <Box textAlign={'left'}>
+                              Log {log.logIndex} <ChevronDownIcon />
+                            </Box>
+                          </AccordionButton>
+                          <AccordionPanel>
+                            <Table size={'sm'}>
+                              <Tbody>
+                                {Object.entries(log).map(([key, value]) => {
+                                  return (
+                                    <Tr key={key}>
+                                      <Td>{key}</Td>
+                                      <Td wordBreak={'break-all'}>
+                                        {typeof value === 'object'
+                                          ? value?.map((v, idx) => {
+                                              const color = idx % 2 === 0 ? 'gray.100' : 'gray.300'
+                                              return (
+                                                <Text key={v} bgColor={color}>
+                                                  {v.toString()}
+                                                </Text>
+                                              )
+                                            })
+                                          : value.toString()}
+                                      </Td>
+                                    </Tr>
+                                  )
+                                })}
+                              </Tbody>
+                            </Table>
+                          </AccordionPanel>
+                        </AccordionItem>
+                      )
+                    })}
+                  </Accordion>
+                </>
+              ) : (
+                <Box>
+                  <Text>There are no Logs in this Tx</Text>
+                </Box>
+              )}
+            </>
+          ) : (
+            <Box>
+              <Text textAlign={'center'}>
+                Fetching Logs from History Network <br />
+                eth_getLogs...
+              </Text>
+            </Box>
           )}
         </TabPanel>
       </TabPanels>
