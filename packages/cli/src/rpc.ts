@@ -56,6 +56,18 @@ export class RPCManager {
         return 'Block not found'
       }
     },
+    eth_getTransactionReceipt: async (params: [string]) => {
+      const [txHash] = params
+      this.logger(`eth_getTransactionReceipt request received for tx: ${txHash}.`)
+      try {
+        const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        const receipt = await history.eth_getTransactionReceipt(txHash)
+        this.logger(receipt)
+        return receipt ?? 'Receipt not found'
+      } catch {
+        return 'getTransactionReceipt request failed'
+      }
+    },
     portal_addBootNode: async (params: [string, string]) => {
       const [enr, protocolId] = params
       const encodedENR = ENR.decodeTxt(enr)
