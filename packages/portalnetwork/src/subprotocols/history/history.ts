@@ -414,7 +414,8 @@ export class HistoryProtocol extends BaseProtocol {
         break
       }
       case HistoryNetworkContentTypes.Receipt:
-        throw new Error('Receipts data not implemented')
+        this.client.db.put(getHistoryNetworkContentId(1, 2, hashKey), toHexString(value))
+        break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
         break
