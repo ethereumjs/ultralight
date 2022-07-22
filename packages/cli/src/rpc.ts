@@ -56,6 +56,18 @@ export class RPCManager {
         return 'Block not found'
       }
     },
+    eth_getTransactionReceipt: async (params: [string]) => {
+      const [txHash] = params
+      this.logger(`eth_getTransactionReceipt request received for tx: ${txHash}.`)
+      try {
+        const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        const receipt = await history.eth_getTransactionReceipt(txHash)
+        this.logger(receipt)
+        return receipt ?? 'Receipt not found'
+      } catch {
+        return 'getTransactionReceipt request failed'
+      }
+    },
     portal_addBootNode: async (params: [string, string]) => {
       const [enr, protocolId] = params
       const encodedENR = ENR.decodeTxt(enr)
@@ -94,6 +106,23 @@ export class RPCManager {
           fromHexString(rlpHex)
         )
         return `blockheader for ${blockHash} added to content DB`
+      } catch (err: any) {
+        this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
+        return `Error trying to load block to DB. ${err.message.toString()}`
+      }
+    },
+    portal_addReceiptToHistory: async (params: [string, string]) => {
+      const [rawReceipt, txHash] = params
+      this.logger(`Received request to add receipt to history db`)
+      try {
+        const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        history.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.Receipt,
+          txHash,
+          fromHexString(rawReceipt)
+        )
+        return `Receipt for tx:${txHash} added to history db`
       } catch (err: any) {
         this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
         return `Error trying to load block to DB. ${err.message.toString()}`
