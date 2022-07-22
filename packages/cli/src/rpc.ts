@@ -111,6 +111,21 @@ export class RPCManager {
         return `Error trying to load block to DB. ${err.message.toString()}`
       }
     },
+    portal_addReceiptToHistory: async (params: [string, string]) => {
+      const [rawReceipt, txHash] = params
+      try {
+        const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        history.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.Receipt,
+          txHash,
+          fromHexString(rawReceipt)
+        )
+      } catch (err: any) {
+        this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
+        return `Error trying to load block to DB. ${err.message.toString()}`
+      }
+    },
     portal_nodeEnr: async () => {
       this.logger(`portal_nodeEnr request received`)
       try {
