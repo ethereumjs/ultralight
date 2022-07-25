@@ -1,7 +1,12 @@
 import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { Multiaddr } from '@multiformats/multiaddr'
-import { PortalNetwork, ProtocolId } from '../../src/index.js'
+import {
+  decodeSszBlockBody,
+  PortalNetwork,
+  ProtocolId,
+  sszEncodeBlockBody,
+} from '../../src/index.js'
 import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types.js'
 import { fromHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history/index.js'
@@ -9,6 +14,8 @@ import { Block } from '@ethereumjs/block'
 import { TransportLayer } from '../../src/client/types.js'
 import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
 import { createRequire } from 'module'
+import { BlockHeader } from '@ethereumjs/block'
+import * as rlp from 'rlp'
 
 const require = createRequire(import.meta.url)
 
@@ -109,8 +116,20 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
         portal2 = nodes[1]
         portal1.enableLog('*Portal*')
         portal2.enableLog('*Portal*')
-        portal1.on('ContentAdded', (blockHash) => {
-          if (blockHash === '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220') {
+        portal1.on('ContentAdded', (blockHash, contentType, content) => {
+          if (
+            blockHash === '0x8849ec758533f05f4bd2d45694a44281c99ff7e261d313ac5f68f83ecb5ab6a7' &&
+            contentType === HistoryNetworkContentTypes.BlockBody
+          ) {
+            const body = decodeSszBlockBody(fromHexString(content)) //@ts-ignore
+            const uncleHeaderHash = BlockHeader.fromValuesArray(rlp.decode(body[1])[0])
+              .hash()
+              .toString('hex')
+            st.equal(
+              'cff59476231018cf57fe41cd0ed8ddea672d8dc4c2b40a10190cb2533522cfaf',
+              uncleHeaderHash,
+              'successfully sent an SSZ encoded block'
+            )
             st.pass('OFFER/ACCEPT/uTP Stream succeeded')
             end(child, [portal1, portal2], st)
           }
@@ -139,9 +158,19 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
               '0x' + testBlock.header.hash().toString('hex'),
               testBlock.header.serialize()
             )
+            await protocol.addContentToHistory(
+              1,
+              HistoryNetworkContentTypes.BlockBody,
+              '0x' + testBlock.header.hash().toString('hex'),
+              sszEncodeBlockBody(testBlock)
+            )
             testBlockKeys.push(
               HistoryNetworkContentKeyUnionType.serialize({
                 selector: 0,
+                value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+              }),
+              HistoryNetworkContentKeyUnionType.serialize({
+                selector: 1,
                 value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
               })
             )
