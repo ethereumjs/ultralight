@@ -38,6 +38,10 @@ export const BlockHeaderType = new ContainerType({
   blockHash: new ByteVectorType(32),
 })
 
+export const BlockBodyType = BlockHeaderType
+
+export const ReceiptType = BlockHeaderType
+
 export enum HistoryNetworkContentTypes {
   BlockHeader = 0,
   BlockBody = 1,
@@ -69,6 +73,16 @@ export type ProofView = {
   witness: Uint8Array[]
 }
 
+export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
+
+export const HistoryNetworkContentKeyUnionType = new UnionType([
+  BlockHeaderType,
+  BlockBodyType,
+  ReceiptType,
+  new ByteVectorType(32),
+  MasterAccumulatorType,
+])
+
 export const sszTransaction = new ByteListType(MAX_TRANSACTION_LENGTH)
 export const allTransactions = new ListCompositeType(sszTransaction, MAX_TRANSACTION_COUNT)
 export const sszUncles = new ByteListType(MAX_ENCODED_UNCLES_LENGTH)
@@ -80,12 +94,3 @@ export const BlockBodyContentType = new ContainerType({
 export const sszReceipt = new ByteListType(MAX_RECEIPT_LENGTH)
 
 export const ReceiptsContentType = new ListCompositeType(sszReceipt, MAX_TRANSACTION_COUNT)
-
-export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
-export const HistoryNetworkContentKeyUnionType = new UnionType([
-  BlockHeaderType,
-  BlockBodyContentType,
-  ReceiptsContentType,
-  new ByteVectorType(32),
-  MasterAccumulatorType,
-])

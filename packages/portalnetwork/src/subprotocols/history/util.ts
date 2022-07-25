@@ -117,6 +117,6 @@ export const addRLPSerializedBlock = async (
     1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
-    rlp.encode([(decodedBlock as any)[1], (decodedBlock as any)[2]])
+    sszEncodeBlockBody(Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex))))
   )
 }
