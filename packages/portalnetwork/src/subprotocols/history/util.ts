@@ -1,7 +1,12 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from './index.js'
-import { HistoryNetworkContentTypes } from './types.js'
+import {
+  BlockBodyContentType,
+  HistoryNetworkContentTypes,
+  sszTransaction,
+  sszUncles,
+} from './types.js'
 import * as rlp from 'rlp'
 import { Block, BlockBuffer } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
@@ -58,6 +63,22 @@ export const getHistoryNetworkContentId = (
   return toHexString(digest(encodedKey))
 }
 
+export const decodeSszBlockBody = (sszBody: Uint8Array) => {
+  const body = BlockBodyContentType.deserialize(sszBody)
+  const txsRlp = body.allTransactions.map((sszTx) => Buffer.from(sszTransaction.deserialize(sszTx)))
+  const unclesRlp = sszUncles.deserialize(body.sszUncles)
+  return [txsRlp, unclesRlp]
+}
+
+export const sszEncodeBlockBody = (block: Block) => {
+  const encodedSSZTxs = block.transactions.map((tx) => sszTransaction.serialize(tx.serialize()))
+  const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
+  return BlockBodyContentType.serialize({
+    allTransactions: encodedSSZTxs,
+    sszUncles: sszUncles.serialize(encodedUncles),
+  })
+}
+
 /**
  * Assembles RLP encoded block headers and bodies from the portal network into a `Block` object
  * @param rawHeader RLP encoded block header as Uint8Array
@@ -65,14 +86,10 @@ export const getHistoryNetworkContentId = (
  * @returns a `Block` object assembled from the header and body provided
  */
 export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
-  const decodedBody = rlp.decode(rawBody)
+  const decodedBody = decodeSszBlockBody(rawBody)
   const block = Block.fromValuesArray(
     //@ts-ignore
-    [
-      rlp.decode(Buffer.from(rawHeader)),
-      (decodedBody as Buffer[])[0],
-      (decodedBody as Buffer[])[1],
-    ] as BlockBuffer
+    [rlp.decode(Buffer.from(rawHeader)), decodedBody[0], rlp.decode(decodedBody[1])] as BlockBuffer
   )
 
   return block
@@ -100,6 +117,6 @@ export const addRLPSerializedBlock = async (
     1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
-    rlp.encode([(decodedBlock as any)[1], (decodedBlock as any)[2]])
+    sszEncodeBlockBody(Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex))))
   )
 }

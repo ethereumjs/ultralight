@@ -4,13 +4,15 @@
   "description": "",
   "main": "dist/index.js",
   "type": "module",
-  "engines": {"node": ">=16"},
+  "engines": {
+    "node": ">=16"
+  },
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
     "docs": "typedoc src/index.ts",
     "tape": "NODE_OPTIONS='--loader ts-node/esm --experimental-json-modules' tape",
-    "test":  "npm run tape -- 'test/!(integration)/**/*.spec.ts'",
+    "test": "npm run tape -- 'test/!(integration)/**/*.spec.ts'",
     "test:integration": "npm run tape -- 'test/integration/**/*.spec.ts'",
     "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'",
     "lint": "../../config/cli/lint.sh",
@@ -29,11 +31,11 @@
     "@libp2p/peer-id": "^1.1.13",
     "@libp2p/peer-id-factory": "^1.0.15",
     "@multiformats/multiaddr": "^10.2.1",
+    "@thi.ng/leb128": "^2.1.11",
     "abstract-level": "^1.0.3",
     "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "isomorphic-ws": "^4.0.1",
-    "@thi.ng/leb128": "^2.1.11",
     "lru-cache": "^7.10.1",
     "memory-level": "^1.0.0",
     "prom-client": "^14.0.1",
@@ -43,6 +45,7 @@
     "ws": "^8.2.1"
   },
   "devDependencies": {
+    "@ethereumjs/tx": "^3.5.2",
     "@libp2p/interface-peer-id": "^1.0.2",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
