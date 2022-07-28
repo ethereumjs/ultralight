@@ -13,10 +13,13 @@ import * as RLP from 'rlp'
 import type { Block } from '@ethereumjs/block'
 import { HistoryProtocol } from './history/history.js'
 import { DBManager } from '../client/dbManager.js'
-import Bloom from '@ethereumjs/vm/dist/bloom/index.js'
+import { Bloom } from './types.js'
 import { PreByzantiumTxReceipt, PostByzantiumTxReceipt, TxReceipt, Log } from '../client/types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { getHistoryNetworkContentId } from './index.js'
+
+
+
 
 /**
  * TxReceiptWithType extends TxReceipt to provide:
