@@ -13,7 +13,6 @@ import {
   NodeLookup,
   PortalNetwork,
 } from 'portalnetwork'
-import { RPCManager } from '../rpc.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 

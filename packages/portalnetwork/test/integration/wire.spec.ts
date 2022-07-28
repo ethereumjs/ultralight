@@ -150,7 +150,8 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           const testBlockKeys: Uint8Array[] = []
           for (const blockData of testBlocks) {
             const testBlock = Block.fromRLPSerializedBlock(
-              Buffer.from(fromHexString(blockData.rlp))
+              Buffer.from(fromHexString(blockData.rlp)),
+              { hardforkByBlockNumber: true }
             )
             await protocol.addContentToHistory(
               1,

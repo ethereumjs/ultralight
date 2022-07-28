@@ -89,7 +89,8 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
   const decodedBody = decodeSszBlockBody(rawBody)
   const block = Block.fromValuesArray(
     //@ts-ignore
-    [rlp.decode(Buffer.from(rawHeader)), decodedBody[0], rlp.decode(decodedBody[1])] as BlockBuffer
+    [rlp.decode(Buffer.from(rawHeader)), decodedBody[0], rlp.decode(decodedBody[1])] as BlockBuffer,
+    { hardforkByBlockNumber: true }
   )
 
   return block
@@ -117,6 +118,10 @@ export const addRLPSerializedBlock = async (
     1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
-    sszEncodeBlockBody(Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex))))
+    sszEncodeBlockBody(
+      Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+        hardforkByBlockNumber: true,
+      })
+    )
   )
 }
