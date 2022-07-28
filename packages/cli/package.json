@@ -31,7 +31,7 @@
     "level": "^8.0.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
-    "rlp": "2.2.4",
+    "rlp": "^4.0.0-beta.2",
     "yargs": "^17.3.0"
   },
   "scripts": {

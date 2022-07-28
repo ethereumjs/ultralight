@@ -41,7 +41,7 @@
     "lru-cache": "^7.10.1",
     "memory-level": "^1.0.0",
     "prom-client": "^14.0.1",
-    "rlp": "2.2.4",
+    "rlp": "^4.0.0-beta.2",
     "strict-event-emitter-types": "^2.0.0",
     "websocket-as-promised": "^2.0.1",
     "ws": "^8.2.1"
