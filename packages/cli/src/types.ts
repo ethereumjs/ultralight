@@ -144,7 +144,7 @@ export const jsonRpcTx = (tx: TypedTransaction, block?: Block, txIndex?: number)
   const txJSON = tx.toJSON()
   return {
     blockHash: block ? bufferToHex(block.hash()) : null,
-    blockNumber: block ? intToHex(block.header.number.toNumber()) : null,
+    blockNumber: block ? bigIntToHex(block.header.number) : null,
     from: tx.getSenderAddress().toString(),
     gas: txJSON.gasLimit!,
     gasPrice: txJSON.gasPrice ?? txJSON.maxFeePerGas!,
@@ -219,7 +219,7 @@ export const jsonRpcLog = async (
   transactionIndex: txIndex !== undefined ? intToHex(txIndex) : null,
   transactionHash: tx ? bufferToHex(tx.hash()) : null,
   blockHash: block ? bufferToHex(block.hash()) : null,
-  blockNumber: block ? intToHex(block.header.number.toNumber()) : null,
+  blockNumber: block ? bigIntToHex(block.header.number) : null,
   address: bufferToHex(log[0]),
   topics: log[1].map((t) => bufferToHex(t as Buffer)),
   data: bufferToHex(log[2]),
@@ -241,7 +241,7 @@ export const jsonRpcReceipt = async (
   transactionHash: bufferToHex(tx.hash()),
   transactionIndex: intToHex(txIndex),
   blockHash: bufferToHex(block.hash()),
-  blockNumber: intToHex(block.header.number.toNumber()),
+  blockNumber: bigIntToHex(block.header.number),
   from: tx.getSenderAddress().toString(),
   to: tx.to?.toString() ?? null,
   cumulativeGasUsed: bigIntToHex(receipt.cumulativeBlockGasUsed),
