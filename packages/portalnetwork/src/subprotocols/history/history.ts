@@ -333,9 +333,12 @@ export class HistoryProtocol extends BaseProtocol {
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
-          const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value))
+          const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value), {
+            hardforkByBlockNumber: true,
+          })
+
           if (
-            header.number.toNumber() === this.accumulator.currentHeight() + 1 &&
+            Number(header.number) === this.accumulator.currentHeight() + 1 &&
             header.parentHash.equals(
               this.accumulator.currentEpoch[this.accumulator.currentEpoch.length - 1].blockHash
             )

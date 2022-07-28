@@ -122,7 +122,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
             contentType === HistoryNetworkContentTypes.BlockBody
           ) {
             const body = decodeSszBlockBody(fromHexString(content)) //@ts-ignore
-            const uncleHeaderHash = BlockHeader.fromValuesArray(rlp.decode(body[1])[0])
+            const uncleHeaderHash = BlockHeader.fromValuesArray(rlp.decode(body[1])[0], {
+              hardforkByBlockNumber: true,
+            })
               .hash()
               .toString('hex')
             st.equal(
@@ -150,7 +152,8 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           const testBlockKeys: Uint8Array[] = []
           for (const blockData of testBlocks) {
             const testBlock = Block.fromRLPSerializedBlock(
-              Buffer.from(fromHexString(blockData.rlp))
+              Buffer.from(fromHexString(blockData.rlp)),
+              { hardforkByBlockNumber: true }
             )
             await protocol.addContentToHistory(
               1,

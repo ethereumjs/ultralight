@@ -78,8 +78,10 @@ tape('history Protocol message handler tests', async (t) => {
     })
 
     const val = await node.db.get(serializedContentKeyToContentId(contentKey))
-    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)))
-    st.ok(header.number.eqn(1), 'retrieved block header based on content key')
+    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)), {
+      hardforkByBlockNumber: true,
+    })
+    st.equal(header.number, 1n, 'retrieved block header based on content key')
     st.end()
   })
 })

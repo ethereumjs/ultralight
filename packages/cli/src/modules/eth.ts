@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import { ProtocolId, ReceiptsManager, HistoryProtocol, PortalNetwork } from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
-import { validators, middleware, isTruthy, isFalsy } from '../validators.js'
+import { validators, middleware, isTruthy } from '../validators.js'
 
 /**
  * eth_* RPC module
@@ -249,7 +249,7 @@ export class eth {
       }
     }
     if (
-      to.header.number.toNumber() - from.header.number.toNumber() >
+      Number(to.header.number) - Number(from.header.number) >
       this.receiptsManager.GET_LOGS_BLOCK_RANGE_LIMIT
     ) {
       throw {

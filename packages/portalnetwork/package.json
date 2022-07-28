@@ -26,7 +26,7 @@
     "@chainsafe/discv5": "acolytec3/discv5#c5f9026abbfe73b915659055fb3d2afca8e341de",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
     "@chainsafe/ssz": "^0.9.1",
-    "@ethereumjs/block": "^3.6.3",
+    "@ethereumjs/block": "^4.0.0-beta.2",
     "@ethereumjs/util": "^8.0.0-beta.2",
     "@frontall/capacitor-udp": "^0.3.4",
     "@libp2p/peer-id": "^1.1.13",
@@ -47,7 +47,7 @@
     "ws": "^8.2.1"
   },
   "devDependencies": {
-    "@ethereumjs/tx": "^3.5.2",
+    "@ethereumjs/tx": "^4.0.0-beta.2",
     "@libp2p/interface-peer-id": "^1.0.2",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
