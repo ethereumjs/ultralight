@@ -10,7 +10,8 @@ export enum ProtocolId {
 }
 
 import assert from 'assert'
-import { zeros, keccak256 } from 'ethereumjs-util'
+import { zeros } from '@ethereumjs/util'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 const BYTE_SIZE = 256
 
@@ -35,7 +36,7 @@ export class Bloom {
    */
   add(e: Buffer) {
     assert(Buffer.isBuffer(e), 'Element should be buffer')
-    e = keccak256(e)
+    e = Buffer.from(keccak256(e))
     const mask = 2047 // binary 11111111111
 
     for (let i = 0; i < 3; i++) {
@@ -53,7 +54,7 @@ export class Bloom {
    */
   check(e: Buffer): boolean {
     assert(Buffer.isBuffer(e), 'Element should be Buffer')
-    e = keccak256(e)
+    e = Buffer.from(keccak256(e))
     const mask = 2047 // binary 11111111111
     let match = true
 
