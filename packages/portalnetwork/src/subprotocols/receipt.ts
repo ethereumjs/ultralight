@@ -161,7 +161,7 @@ export class ReceiptsManager {
   ): Promise<GetLogsReturn> {
     const returnedLogs: GetLogsReturn = []
     let returnedLogsSize = 0
-    for (let i = from.header.number.toNumber(); i <= to.header.number.toNumber(); i++) {
+    for (let i = Number(from.header.number); i <= Number(to.header.number); i++) {
       const block = await this.protocol.getBlockByNumber(i, true)
       const receipts = await this.getReceipts(block!.hash())
       if (receipts.length === 0) continue
