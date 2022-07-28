@@ -27,6 +27,7 @@ import {
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
+import { ReceiptsManager } from '../receipt.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -34,6 +35,7 @@ export class HistoryProtocol extends BaseProtocol {
   accumulator: HeaderAccumulator
   logger: Debugger
   gossipQueue: [string, HistoryNetworkContentTypes][]
+  public receiptManager: ReceiptsManager
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
@@ -41,6 +43,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.logger = client.logger.extend('HistoryNetwork')
     this.accumulator = new HeaderAccumulator({})
     this.gossipQueue = []
+    this.receiptManager = new ReceiptsManager(this.client.db, this)
   }
 
   public init = async () => {

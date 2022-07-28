@@ -41,7 +41,7 @@ export class ContentLookup {
     } catch (err) {
       this.logger(err)
     }
-    this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer) => {
+    this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer: any) => {
       try {
         const dist = distance(peer.nodeId, this.contentId)
         this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
