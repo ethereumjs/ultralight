@@ -126,8 +126,8 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
               .hash()
               .toString('hex')
             st.equal(
-              'cff59476231018cf57fe41cd0ed8ddea672d8dc4c2b40a10190cb2533522cfaf',
               uncleHeaderHash,
+              '48914d50d3fd6f1fccbaf12640aa8527723ae7d462adc1945eab2a4754279a09',
               'successfully sent an SSZ encoded block'
             )
             st.pass('OFFER/ACCEPT/uTP Stream succeeded')
