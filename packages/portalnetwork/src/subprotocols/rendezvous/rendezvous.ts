@@ -7,6 +7,7 @@ import { BaseProtocol } from '../protocol.js'
 import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/index.js'
 
+/** NOTE: This code is untested in current form and definitely DOES NOT work without more labor */
 export class Rendezvous extends BaseProtocol {
   logger: Debugger
   protocolId: ProtocolId
