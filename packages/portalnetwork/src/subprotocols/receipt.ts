@@ -18,9 +18,6 @@ import { PreByzantiumTxReceipt, PostByzantiumTxReceipt, TxReceipt, Log } from '.
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { getHistoryNetworkContentId } from './index.js'
 
-
-
-
 /**
  * TxReceiptWithType extends TxReceipt to provide:
  *  - txType: byte prefix for serializing typed tx receipts
