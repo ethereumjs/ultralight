@@ -26,7 +26,7 @@
     "@chainsafe/discv5": "acolytec3/discv5#c5f9026abbfe73b915659055fb3d2afca8e341de",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
     "@chainsafe/ssz": "^0.9.1",
-    "@ethereumjs/block": "^3.6.0",
+    "@ethereumjs/block": "^3.6.3",
     "@ethereumjs/util": "^8.0.0-beta.2",
     "@frontall/capacitor-udp": "^0.3.4",
     "@libp2p/peer-id": "^1.1.13",

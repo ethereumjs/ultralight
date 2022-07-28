@@ -1,11 +1,9 @@
 import jayson from 'jayson/promise/index.js'
 import { ENR, PortalNetwork, ProtocolId } from 'portalnetwork'
 import { RPCManager } from '../src/rpc.js'
-import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { Multiaddr } from '@multiformats/multiaddr'
-import debug from 'debug'
-import { Level } from 'level'
-import { spawn, ChildProcessByStdio } from 'child_process' 
+import debug, {Debugger} from 'debug'
 import * as PromClient from 'prom-client'
 import http from 'http'
 import { setupMetrics } from '../src/metrics.js'
@@ -22,8 +20,8 @@ const main = async (numNodes: number) => {
     
     const portals: PortalNetwork[] = [
     ]
-    const logs = []
-    
+    const logs: Debugger[] = []
+
     
     for (let i=0;i<2;i++) {
         const id = await createSecp256k1PeerId()

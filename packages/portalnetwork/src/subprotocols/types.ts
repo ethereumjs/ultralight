@@ -1,3 +1,6 @@
+import { zeros } from '@ethereumjs/util'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
+
 // subprotocol IDs
 export enum ProtocolId {
   StateNetwork = '0x500a',
@@ -8,10 +11,6 @@ export enum ProtocolId {
   UTPNetwork = '0x757470',
   Rendezvous = '0x72656e',
 }
-
-import assert from 'assert'
-import { zeros } from '@ethereumjs/util'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 const BYTE_SIZE = 256
 
@@ -25,7 +24,9 @@ export class Bloom {
     if (!bitvector) {
       this.bitvector = zeros(BYTE_SIZE)
     } else {
-      assert(bitvector.length === BYTE_SIZE, 'bitvectors must be 2048 bits long')
+      if (bitvector.length !== BYTE_SIZE) {
+        throw new Error('bitvectors must be 2048 bits long')
+      }
       this.bitvector = bitvector
     }
   }
@@ -35,7 +36,9 @@ export class Bloom {
    * @param e - The element to add
    */
   add(e: Buffer) {
-    assert(Buffer.isBuffer(e), 'Element should be buffer')
+    if (!Buffer.isBuffer(e)) {
+      throw new Error('Element should be buffer')
+    }
     e = Buffer.from(keccak256(e))
     const mask = 2047 // binary 11111111111
 
@@ -53,7 +56,9 @@ export class Bloom {
    * @param e - The element to check
    */
   check(e: Buffer): boolean {
-    assert(Buffer.isBuffer(e), 'Element should be Buffer')
+    if (!Buffer.isBuffer(e)) {
+      throw new Error('Element should be Buffer')
+    }
     e = Buffer.from(keccak256(e))
     const mask = 2047 // binary 11111111111
     let match = true

@@ -1,5 +1,4 @@
 import jayson from 'jayson/promise/index.js'
-import { BlockHeader } from '@ethereumjs/block'
 import { fromHexString, getHistoryNetworkContentId, ProtocolId } from 'portalnetwork'
 
 const testBlocks = [

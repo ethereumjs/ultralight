@@ -9,7 +9,6 @@ import {
   NestedUint8Array,
 } from '@ethereumjs/util'
 import * as RLP from 'rlp'
-// import { MetaDBManager, DBKey } from '../util/metaDBManager'
 import type { Block } from '@ethereumjs/block'
 import { HistoryProtocol } from './history/history.js'
 import { DBManager } from '../client/dbManager.js'
@@ -35,12 +34,13 @@ interface PostByzantiumTxReceiptWithType extends PostByzantiumTxReceipt {
 /**
  * Function return values
  */
-type GetReceiptByTxHashReturn = [
+type _GetReceiptByTxHashReturn = [
   receipt: TxReceipt,
   blockHash: Buffer,
   txIndex: number,
   logIndex: number
 ]
+
 type GetLogsReturn = {
   log: Log
   block: Block
@@ -53,14 +53,6 @@ type GetLogsReturn = {
  * Indexes
  */
 type TxHashIndex = [blockHash: Buffer, txIndex: number]
-
-enum IndexType {
-  TxHash,
-}
-enum IndexOperation {
-  Save,
-  Delete,
-}
 
 /**
  * Storage encodings
