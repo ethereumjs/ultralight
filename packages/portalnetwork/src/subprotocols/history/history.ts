@@ -431,7 +431,6 @@ export class HistoryProtocol extends BaseProtocol {
       // Gossip new content to network (except header accumulators)
       this.gossipQueue.push([hashKey, contentType])
       if (this.gossipQueue.length >= 5) {
-        this.logger('Gossiping new content to network')
         await this.gossipHistoryNetworkContent(this.gossipQueue)
         this.gossipQueue = []
       }
@@ -465,9 +464,6 @@ export class HistoryProtocol extends BaseProtocol {
       )
       // If peer hasn't already been OFFERed this contentKey and the content is within the peer's advertised radius, OFFER
       if (_encodedKeys.length > 0) {
-        this.logger(
-          `Offering ${_encodedKeys.length} pieces of content to ${peer.nodeId.slice(0, 5)}...`
-        )
         this.sendOffer(peer.nodeId, _encodedKeys)
       }
     })
