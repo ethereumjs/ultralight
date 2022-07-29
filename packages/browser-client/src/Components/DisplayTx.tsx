@@ -20,22 +20,19 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
 export default function DisplayTx(props: DisplayTxProps) {
   const trans = Object.entries(props.tx.toJSON())
   const data = {
-    baseFee: `0x${props.tx.getBaseFee().toJSON()}`,
-    dataFee: `0x${props.tx.getDataFee().toJSON()}`,
+    baseFee: `0x${props.tx.getBaseFee()}`,
+    dataFee: `0x${props.tx.getDataFee()}`,
     message_to_sign: toHexString(props.tx.getMessageToSign()),
     message_to_verify_signature: toHexString(props.tx.getMessageToVerifySignature()),
     sender_address: props.tx.getSenderAddress().toString(),
     sender_public_key: toHexString(props.tx.getSenderPublicKey()),
-    up_front_cost: `0x${props.tx.getUpfrontCost().toJSON()}`,
+    up_front_cost: `0x${props.tx.getUpfrontCost()}`,
     hash: toHexString(props.tx.hash()),
     isSigned: props.tx.isSigned().toString(),
-    // raw: props.tx.raw(),
-    // serialize: props.tx.serialize(),
     to_creation_address: props.tx.toCreationAddress().toString(),
     validate: props.tx.validate().toString(),
     verify_signature: props.tx.verifySignature().toString(),
   }
-  //    props.tx.data
 
   return (
     <Box>
