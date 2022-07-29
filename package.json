@@ -21,7 +21,6 @@
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
     "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
     "clean": "bash ./scripts/clean-root.sh",
-    "devnet": "bash ./scripts/devnet.sh",
     "tapeHotFix": "sed -i -e 's/js/ts/g' node_modules/tape/bin/import-or-require.js"
   },
   "devDependencies": {
