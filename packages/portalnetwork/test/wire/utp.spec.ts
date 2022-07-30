@@ -94,7 +94,7 @@ export const packetTestData: Record<string, testParams> = {
   syn: {
     type: PacketType.ST_SYN,
     data: {
-      rcvConnectionId: DEFAULT_RAND_ID,
+      sndConnectionId: DEFAULT_RAND_ID,
       seqNr: 1,
       ackNr: DEFAULT_RAND_ACKNR,
       timestamp: DEFAULT_TIMESTAMP,
