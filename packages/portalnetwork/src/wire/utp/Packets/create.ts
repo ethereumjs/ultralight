@@ -4,7 +4,7 @@ import { PacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import { PacketType, Uint16, Uint32, protocolVersion } from './PacketTyping.js'
 
 export type createSynOpts = {
-  rcvConnectionId: Uint16
+  sndConnectionId: Uint16
   seqNr: Uint16
   ackNr?: number
   timestamp?: number
@@ -65,7 +65,7 @@ export type createPacketOpts =
 export function createSynPacket(opts: createSynOpts): Packet {
   const h: PacketHeader = new PacketHeader({
     pType: PacketType.ST_SYN,
-    connectionId: opts.rcvConnectionId,
+    connectionId: opts.sndConnectionId,
     seqNr: opts.seqNr,
     ackNr: opts.ackNr ?? 0,
     timestamp: opts.timestamp,
