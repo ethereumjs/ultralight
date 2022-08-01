@@ -14,7 +14,7 @@
     "tape": "NODE_OPTIONS='--loader ts-node/esm --experimental-json-modules' tape",
     "test": "npm run tape -- 'test/!(integration)/**/*.spec.ts'",
     "test:integration": "npm run tape -- 'test/integration/**/*.spec.ts'",
-    "coverage": "nyc tape -r ts-node/register 'test/!(integration)/**/*.spec.ts'",
+    "coverage": "c8 npm run test",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
   },
@@ -52,8 +52,8 @@
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
     "@types/ws": "^7.4.7",
+    "c8": "^7.12.0",
     "eslint": "^8.6.0",
-    "nyc": "^15.1.0",
     "prettier": "^2.5.1",
     "tape": "^5.3.1",
     "testdouble": "^3.16.3",
