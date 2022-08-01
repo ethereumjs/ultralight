@@ -86,7 +86,7 @@ export class UtpSocket extends EventEmitter {
   // }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
-    const msg = packet.encodePacket()
+    const msg = packet.encode()
     this.logger(
       `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
     )

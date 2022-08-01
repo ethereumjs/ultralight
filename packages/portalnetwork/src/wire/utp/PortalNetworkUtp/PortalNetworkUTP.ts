@@ -1,13 +1,6 @@
 import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import {
-  bufferToPacket,
-  ConnectionState,
-  Packet,
-  PacketType,
-  randUint16,
-  UtpSocket,
-} from '../index.js'
+import { ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '../index.js'
 import { ProtocolId } from '../../../index.js'
 import {
   HistoryNetworkContentKey,
@@ -27,7 +20,7 @@ export enum RequestCode {
   ACCEPT_READ = 3,
 }
 
-function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
+export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
 export class PortalNetworkUTP extends BasicUtp {
@@ -173,7 +166,7 @@ export class PortalNetworkUTP extends BasicUtp {
     sndId: number,
     rcvId: number,
     content?: Uint8Array
-  ): UtpSocket | undefined {
+  ): UtpSocket {
     let socket: UtpSocket
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
@@ -236,7 +229,7 @@ export class PortalNetworkUTP extends BasicUtp {
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
     const request = this.openContentRequest[requestKey]
-    const packet = bufferToPacket(packetBuffer)
+    const packet = Packet.bufferToPacket(packetBuffer)
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
         this.logger(
@@ -274,7 +267,7 @@ export class PortalNetworkUTP extends BasicUtp {
   }
 
   getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
-    const packet = bufferToPacket(packetBuffer)
+    const packet = Packet.bufferToPacket(packetBuffer)
     const connId = packet.header.connectionId
     const idA = connId + 1
     const idB = connId - 1

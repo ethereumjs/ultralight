@@ -137,9 +137,12 @@ export class portal {
     this.logger(
       `PING request received on ${protocol.protocolName} for ${shortId(encodedENR.nodeId)}`
     )
-    await protocol.sendPing(enr)
-    this.logger(`PONG received from ${encodedENR.nodeId}`)
-    return `PING/PONG successful with ${encodedENR.nodeId}`
+    const pong = await protocol.sendPing(enr)
+    if (pong) {
+      return `PING/PONG successful with ${encodedENR.nodeId}`
+    } else {
+      return `PING/PONG with ${encodedENR.nodeId} was unsuccessful`
+    }
   }
   async history_findContent(params: [string, Uint8Array]) {
     const [enr, contentKey] = params
