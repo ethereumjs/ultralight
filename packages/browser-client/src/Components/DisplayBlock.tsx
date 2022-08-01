@@ -80,7 +80,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
         <HStack justifyContent={'center'}>
           <span>Block #</span>
-          <Skeleton isLoaded={!props.isLoading}>{block.header.number.toNumber()}</Skeleton>
+          <Skeleton isLoaded={!props.isLoading}>{Number(block.header.number)}</Skeleton>
         </HStack>
       </Heading>
       <Grid templateColumns={'repeat(16, 1fr'} columnGap={1}>
