@@ -58,6 +58,6 @@ module.exports = {
         new webpack.ProvidePlugin({
             process: 'process/browser',
         }),
-        new webpack.EnvironmentPlugin({ BINDADDRESS : '' })
+        new webpack.EnvironmentPlugin({ BINDADDRESS : '' , NODE_BACKEND : 'js'})
     ],
 };
