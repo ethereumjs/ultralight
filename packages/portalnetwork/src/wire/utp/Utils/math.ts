@@ -15,9 +15,6 @@ export function Bytes32TimeStamp(): number {
 export function randUint16(): Uint16 {
   return Math.floor(Math.random() * (2 ** 16 - 1))
 }
-export function randUint32(): Uint16 {
-  return Math.floor(Math.random() * 2 ** 32)
-}
 
 export function bitLength(n: number): number {
   const bitstring = n.toString(2)
