@@ -22,9 +22,5 @@ export class SelectiveAckHeaderExtension extends UtpHeaderExtension {
     this.bitmask = bitmask
   }
 
-  isBitMarked(i: number, j: number): boolean {
-    return i === j
-  }
-
   public static BITMAP = [1, 2, 4, 8, 16, 32, 64, 128]
 }

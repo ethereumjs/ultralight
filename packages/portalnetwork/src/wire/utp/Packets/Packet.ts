@@ -109,10 +109,6 @@ export class Packet {
     this.extensions = []
   }
 
-  getExtensions() {
-    return this.extensions
-  }
-
   encode(): Buffer {
     const buffer = Buffer.alloc(this.header.length)
     const p = this.header.pType.toString(16)
