@@ -103,7 +103,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     })
   })
 
-  t.test('node should stream block to another', { timeout: 10000 }, (st) => {
+  t.test('node should stream block to another', (st) => {
     const file = require.resolve('../../../proxy/dist/index.js')
     const child = spawn(process.execPath, [file])
     let portal1: PortalNetwork
@@ -146,8 +146,6 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
           const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
           if (!protocol) throw new Error('should have History Protocol')
-          await protocol.sendPing(portal1.discv5.enr)
-          await portal2.discv5.sendPing(portal1.discv5.enr)
           const testBlocks = require('./testBlocks.json')
           const testBlockKeys: Uint8Array[] = []
           for (const blockData of testBlocks) {
@@ -179,6 +177,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
             )
           }
 
+          await protocol.sendPing(portal1.discv5.enr)
           await protocol.sendOffer(portal1.discv5.enr.nodeId, testBlockKeys)
         }
       }
