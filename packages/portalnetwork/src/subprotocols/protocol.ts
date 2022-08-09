@@ -327,13 +327,13 @@ export abstract class BaseProtocol {
               })
             )
 
-            await this.client.uTP.handleNewRequest(
-              requestedKeys,
-              dstId,
-              id,
-              RequestCode.OFFER_WRITE,
-              requestedData
-            )
+            await this.client.uTP.handleNewRequest({
+              contentKeys: requestedKeys,
+              peerId: dstId,
+              connectionId: id,
+              requestCode: RequestCode.OFFER_WRITE,
+              contents: requestedData,
+            })
 
             return msg.contentKeys
           }
@@ -405,13 +405,13 @@ export abstract class BaseProtocol {
 
     this.metrics?.acceptMessagesSent.inc()
     const id = randUint16()
-    await this.client.uTP.handleNewRequest(
-      desiredContentKeys,
-      src.nodeId,
-      id,
-      RequestCode.ACCEPT_READ,
-      []
-    )
+    await this.client.uTP.handleNewRequest({
+      contentKeys: desiredContentKeys,
+      peerId: src.nodeId,
+      connectionId: id,
+      requestCode: RequestCode.ACCEPT_READ,
+      contents: [],
+    })
     const idBuffer = Buffer.alloc(2)
     idBuffer.writeUInt16BE(id, 0)
 
@@ -506,13 +506,13 @@ export abstract class BaseProtocol {
       )
       const _id = randUint16()
       this.client.uTP.logger(`Generating Random Connection Id...`, _id)
-      await this.client.uTP.handleNewRequest(
-        [decodedContentMessage.contentKey],
-        src.nodeId,
-        _id,
-        RequestCode.FOUNDCONTENT_WRITE,
-        [value]
-      )
+      await this.client.uTP.handleNewRequest({
+        contentKeys: [decodedContentMessage.contentKey],
+        peerId: src.nodeId,
+        connectionId: _id,
+        requestCode: RequestCode.FOUNDCONTENT_WRITE,
+        contents: [value],
+      })
 
       const id = connectionIdType.serialize(_id)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)

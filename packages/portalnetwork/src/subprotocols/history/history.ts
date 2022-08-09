@@ -108,13 +108,13 @@ export class HistoryProtocol extends BaseProtocol {
           case 0: {
             const id = connectionIdType.deserialize(decoded.value as Uint8Array)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            await this.client.uTP.handleNewRequest(
-              [key],
-              dstId,
-              id,
-              RequestCode.FINDCONTENT_READ,
-              []
-            )
+            await this.client.uTP.handleNewRequest({
+              contentKeys: [key],
+              peerId: dstId,
+              connectionId: id,
+              requestCode: RequestCode.FINDCONTENT_READ,
+              contents: [],
+            })
             break
           }
           case 1:

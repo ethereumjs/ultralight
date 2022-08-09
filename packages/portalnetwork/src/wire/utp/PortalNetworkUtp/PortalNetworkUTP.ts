@@ -23,6 +23,13 @@ export enum RequestCode {
 export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
+export interface INewRequest {
+  contentKeys: Uint8Array[]
+  peerId: string
+  connectionId: number
+  requestCode: RequestCode
+  contents?: Uint8Array[]
+}
 export class PortalNetworkUTP extends BasicUtp {
   openContentRequest: Record<UtpSocketKey, ContentRequest> // TODO enable other networks
   logger: Debugger
