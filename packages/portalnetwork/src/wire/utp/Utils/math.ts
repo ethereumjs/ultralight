@@ -1,5 +1,4 @@
 import { Uint16 } from '../index.js'
-import { Duration, Miliseconds } from '../Socket/socketTyping.js'
 
 export function MicrosecondTimeStamp(): number {
   // this is only a millisecond timestamp
@@ -15,9 +14,6 @@ export function Bytes32TimeStamp(): number {
 export function randUint16(): Uint16 {
   return Math.floor(Math.random() * 2 ** 16)
 }
-export function randUint32(): Uint16 {
-  return Math.floor(Math.random() * 2 ** 32)
-}
 
 export function bitLength(n: number): number {
   const bitstring = n.toString(2)
@@ -29,14 +25,4 @@ export function bitLength(n: number): number {
 
 export function nextPowerOf2(n: number): number {
   return n <= 0 ? 1 : Math.pow(2, bitLength(n - 1))
-}
-
-export function sleep(ms: Miliseconds) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
-
-export function max(a: number, b: Duration): Duration {
-  return a > b ? a : b
 }
