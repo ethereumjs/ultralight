@@ -18,6 +18,8 @@ import { BaseProtocol } from '../../src/subprotocols/protocol.js'
 import { Debugger } from 'debug'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { ContentRequest } from '../../src/wire/utp/PortalNetworkUtp/ContentRequest.js'
+import { INewRequest } from '../../src/wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
 
 // Fake Protocol class for testing Protocol class
 class FakeProtocol extends BaseProtocol {
@@ -172,13 +174,13 @@ tape('protocol wire message tests', async (t) => {
 
     node.uTP.handleNewRequest = td.func<any>()
     td.when(
-      node.uTP.handleNewRequest(
-        td.matchers.anything(),
-        td.matchers.contains('abc'),
-        td.matchers.anything(),
-        td.matchers.anything()
-      )
-    ).thenResolve(undefined)
+      node.uTP.handleNewRequest({
+        contentKeys: td.matchers.anything(),
+        peerId: td.matchers.contains('abc'),
+        connectionId: td.matchers.anything(),
+        contents: td.matchers.anything(),
+      } as INewRequest)
+    ).thenResolve(ContentRequest.prototype)
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([1])])
     st.deepEqual(res.uint8Array, Buffer.from([1]), 'received valid ACCEPT response to OFFER')
 
