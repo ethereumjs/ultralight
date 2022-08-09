@@ -90,21 +90,24 @@ export class UtpSocket extends EventEmitter {
     this.logger(
       `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
     )
-    await this.utp.emit('Send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
+    this.utp.emit('Send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
     return msg
   }
 
-  async sendSynPacket(packet: Packet): Promise<void> {
+  async sendSynPacket(packet: Packet): Promise<ConnectionState> {
     await this.sendPacket(packet, PacketType.ST_SYN)
+    this.state = ConnectionState.SynSent
+    return this.state
   }
 
   async sendSynAckPacket(packet: Packet): Promise<void> {
     await this.sendPacket(packet, PacketType.ST_STATE)
   }
 
-  async sendDataPacket(packet: Packet): Promise<number> {
+  async sendDataPacket(packet: Packet): Promise<Packet> {
+    this.state = ConnectionState.Connected
     await this.sendPacket(packet, PacketType.ST_DATA)
-    return packet.header.seqNr
+    return packet
   }
 
   async sendStatePacket(packet: Packet): Promise<void> {
@@ -112,44 +115,50 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendResetPacket(packet: Packet) {
+    this.state = ConnectionState.Reset
     await this.sendPacket(packet, PacketType.ST_RESET)
   }
 
-  async sendFinPacket(packet: Packet) {
+  async sendFinPacket(packet: Packet): Promise<Buffer> {
     this.finNr = packet.header.seqNr
-    await this.sendPacket(packet, PacketType.ST_FIN)
+    return await this.sendPacket(packet, PacketType.ST_FIN)
   }
 
-  async handleSynPacket(): Promise<void> {
+  async handleSynPacket(): Promise<Packet> {
     this.logger(`Connection State: SynRecv`)
     this.state = ConnectionState.SynRecv
-    await sendSynAckPacket(this)
+    return sendSynAckPacket(this)
   }
 
-  async handleStatePacket(packet: Packet): Promise<void | boolean> {
+  async handleStatePacket(packet: Packet): Promise<void | boolean | Packet> {
     if (packet.header.ackNr === this.finNr) {
       this.logger(`FIN packet acked`)
       this.logger(`Closing Socket.  Goodnight.`)
-      return
+      this.state = ConnectionState.Closed
+      return true
     }
     if (this.type === 'read') {
-      await sendAckPacket(this)
+      this.state = ConnectionState.Connected
+      return await sendAckPacket(this)
     } else {
-      this.ackNrs.push(packet.header.ackNr)
+      this.state = ConnectionState.Connected
+      if (packet.header.ackNr > 1 && !this.ackNrs.includes(packet.header.ackNr)) {
+        this.ackNrs.push(packet.header.ackNr)
+      }
       this.logger(
         `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
       )
       if (this.compare()) {
         this.logger(`all data packets acked`)
         return true
-        // this.utp.sendFinPacket(this)
       } else {
         this.logger(`Still waiting for ${this.dataNrs.length - this.ackNrs.length} STATE packets.`)
       }
     }
   }
 
-  async handleDataPacket(packet: Packet): Promise<void> {
+  async handleDataPacket(packet: Packet): Promise<Packet> {
+    this.state = ConnectionState.Connected
     this.logger(
       `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
     )
@@ -157,23 +166,16 @@ export class UtpSocket extends EventEmitter {
     this.nextSeq = packet.header.seqNr + 1
     this.seqNr = this.seqNr + 1
     this.ackNr = packet.header.seqNr
-    try {
-      await this.reader!.addPacket(packet)
-      if (expected === true) {
-        this.ackNrs.push(this.ackNr)
-        await this.utp.sendStatePacket(this)
-      } else if (expected === false) {
-        this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
-        this.ackNrs.push(this.ackNr)
-        await this.utp.sendSelectiveAckPacket(this, this.ackNrs)
-        return
-        // await this.utp.sendStatePacket(this)
-      } else {
-        throw new Error('Packet Read Error')
-      }
-    } catch {
-      this.logger(`Socket Reader is unavailable.`)
-      return
+    await this.reader!.addPacket(packet)
+    if (expected) {
+      this.ackNrs.push(this.ackNr)
+      return await this.utp.sendStatePacket(this)
+    } else {
+      this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
+      this.ackNrs.push(this.ackNr)
+      return await this.utp.sendSelectiveAckPacket(this, this.ackNrs)
+
+      // await this.utp.sendStatePacket(this)
     }
   }
 
@@ -183,11 +185,7 @@ export class UtpSocket extends EventEmitter {
     )
     this.logger(`Connection State: GotFin`)
     this.state = ConnectionState.GotFin
-    try {
-      this.readerContent = await this.reader!.run()
-    } catch {
-      this.logger('Problem with Reader.run()')
-    }
+    this.readerContent = await this.reader!.run()
     this.logger(`Packet payloads compiled`)
     this.logger(this.readerContent)
     this.seqNr = this.seqNr + 1
@@ -196,28 +194,24 @@ export class UtpSocket extends EventEmitter {
     return this.readerContent
   }
 
-  async startDataTransfer(): Promise<void> {
-    this.logger(`Beginning transfer of ${this.content.length} bytes...`)
-    this.logger(this.content)
-    await this.write()
-    return
-  }
-
-  updateRTT(packetRTT: number) {
+  updateRTT(packetRTT: number): number {
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
     this.rtt_var += Math.abs(this.rtt - packetRTT - this.rtt_var) / 4
     this.rtt += (packetRTT - this.rtt) / 8
-  }
-
-  async write(): Promise<void> {
-    await this.writer!.start()
-    this.logger('All data packets sent')
-    return
+    return this.rtt
   }
 
   compare(): boolean {
-    const sent = JSON.stringify(this.dataNrs)
-    const received = JSON.stringify(this.ackNrs)
+    const sent = JSON.stringify(
+      this.dataNrs.sort((a, b) => {
+        return a - b
+      })
+    )
+    const received = JSON.stringify(
+      this.ackNrs.sort((a, b) => {
+        return a - b
+      })
+    )
     const equal = sent === received
     return equal
   }
