@@ -12,7 +12,7 @@ export function Bytes32TimeStamp(): number {
 }
 
 export function randUint16(): Uint16 {
-  return Math.floor(Math.random() * 2 ** 16)
+  return Math.floor(Math.random() * 2 ** 15)
 }
 
 export function bitLength(n: number): number {
