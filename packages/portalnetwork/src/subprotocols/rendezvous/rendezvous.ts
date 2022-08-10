@@ -23,6 +23,10 @@ export class Rendezvous extends BaseProtocol {
     return Promise.resolve()
   }
 
+  //@ts-ignore
+  public handleFindContent(): any {
+    return Promise.resolve()
+  }
   public sendFindContent = (_dstId: string, _key: Uint8Array) => {
     return Promise.resolve(undefined)
   }

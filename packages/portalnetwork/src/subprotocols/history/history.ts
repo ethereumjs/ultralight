@@ -1,5 +1,5 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { distance, ENR } from '@chainsafe/discv5/index.js'
+import { distance, ENR } from '@chainsafe/discv5'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
