@@ -241,12 +241,8 @@ export abstract class BaseProtocol {
             if (enr.nodeId === src.nodeId) return true
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
-            this.logger(
-              `# ENRs in message ${
-                nodesPayload.enrs.length
-              } and length of payload ${arrayByteLength(nodesPayload.enrs)}`
-            )
-            if (arrayByteLength(nodesPayload.enrs) + enr.size > 1200) return false
+
+            if (arrayByteLength(nodesPayload.enrs) + enr.encode().length > 1200) return false
             nodesPayload.total++
             nodesPayload.enrs.push(enr.encode())
             return true

@@ -280,4 +280,22 @@ tape('handleFindNodes message handler tests', async (t) => {
     )
   )
   t.pass('Nodes response contained 3 ENRs since one more ENR added to bucket 256')
+
+  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+    distances: [239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 255, 256],
+  })
+
+  td.verify(
+    node.sendPortalNetworkResponse(
+      { socketAddr: new Multiaddr(), nodeId: newNode },
+      1n,
+      td.matchers.argThat((arg: Uint8Array) => {
+        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+        return msg.enrs.length === 10
+      })
+    )
+  )
+  t.pass(
+    'Nodes response contained 10 ENRs even though requested nodes in 12 buckets since nodes max payload size met'
+  )
 })
