@@ -67,7 +67,7 @@ tape('Basic uTP Tests', async (t) => {
     st.equal(
       (await basic.sendSynAckPacket(_socket)).header.pType,
       PacketType.ST_STATE,
-      `Basic successfully sendt a SynAck`
+      `Basic successfully sent a SynAck`
     )
     st.deepEqual(synack, _synAck, 'Basic handles Syn Packet correctly')
     st.doesNotThrow(async () => {

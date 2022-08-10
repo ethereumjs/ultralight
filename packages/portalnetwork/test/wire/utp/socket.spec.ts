@@ -138,8 +138,6 @@ tape('FIND/FOUND Socket Tests', (t) => {
     const lastAck = await findSocket.handleDataPacket(packets[packets.length - 1])
     const handled = await foundSocket.handleStatePacket(lastAck)
 
-    // st.equal(foundSocket.dataNrs, dataNrs)
-    // st.equal(foundSocket.ackNrs, dataNrs)
     st.ok(handled)
     st.equal(
       packets.length,
