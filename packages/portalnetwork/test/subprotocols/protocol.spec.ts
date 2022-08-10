@@ -35,6 +35,7 @@ class FakeProtocol extends BaseProtocol {
   }
   sendFindContent = td.func<any>()
   init = td.func<any>()
+  handleFindContent = td.func<any>()
 }
 
 tape('protocol wire message tests', async (t) => {

@@ -1,11 +1,12 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ENR } from '@chainsafe/discv5/index.js'
+import { distance, ENR } from '@chainsafe/discv5/index.js'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
 import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
-import { shortId } from '../../util/index.js'
+import { serializedContentKeyToContentId, shortId } from '../../util/index.js'
 import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
@@ -28,6 +29,7 @@ import {
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
 import { ReceiptsManager } from '../receipt.js'
+import { MAX_PACKET_SIZE, randUint16 } from '../../wire/utp/index.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -156,6 +158,103 @@ export class HistoryProtocol extends BaseProtocol {
       }
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+    }
+  }
+
+  public handleFindContent = async (
+    src: INodeAddress,
+    requestId: bigint,
+    protocol: Buffer,
+    decodedContentMessage: FindContentMessage
+  ) => {
+    this.metrics?.contentMessagesSent.inc()
+    //Check to see if value in content db
+    const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
+    this.logger(`handleFindContent lookupKey ${toHexString(decodedContentMessage.contentKey)}`)
+
+    let value = Uint8Array.from([])
+    try {
+      value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+    } catch {}
+    if (value.length === 0) {
+      if (toHexString(protocol) === this.protocolId) {
+        // Discv5 calls for maximum of 16 nodes per NODES message
+        const ENRs = this.routingTable.nearest(lookupKey, 16)
+        const encodedEnrs = ENRs.map((enr) => {
+          // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
+          // contentId than this node
+          return enr.nodeId !== src.nodeId &&
+            distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
+            ? enr.encode()
+            : undefined
+        }).filter((enr) => enr !== undefined)
+        if (encodedEnrs.length > 0) {
+          this.logger(`Found ${encodedEnrs.length} closer to content than us`)
+          // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
+          while (encodedEnrs.flat().length > 1200) {
+            // Remove ENRs until total ENRs less than 1200 bytes
+            encodedEnrs.pop()
+          }
+          const payload = ContentMessageType.serialize({
+            selector: 2,
+            value: encodedEnrs as Buffer[],
+          })
+          this.client.sendPortalNetworkResponse(
+            src,
+            requestId,
+            Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
+          )
+        } else {
+          this.logger(`Found no ENRs closer to content than us`)
+          this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
+        }
+      } else {
+        this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
+      }
+    } else if (value && value.length < MAX_PACKET_SIZE) {
+      this.logger(
+        'Found value for requested content ' +
+          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
+          value.slice(0, 10) +
+          `...`
+      )
+      const payload = ContentMessageType.serialize({
+        selector: 1,
+        value: value,
+      })
+      this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
+      this.logger(Uint8Array.from(value))
+      this.client.sendPortalNetworkResponse(
+        src,
+        requestId,
+        Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
+      )
+    } else {
+      this.logger.extend('FOUNDCONTENT')(
+        'Found value for requested content.  Larger than 1 packet.  uTP stream needed.' +
+          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
+          value.slice(0, 10) +
+          `...`
+      )
+      const _id = randUint16()
+      this.client.uTP.logger(`Generating Random Connection Id...`, _id)
+      await this.client.uTP.handleNewRequest({
+        contentKeys: [decodedContentMessage.contentKey],
+        peerId: src.nodeId,
+        connectionId: _id,
+        requestCode: RequestCode.FOUNDCONTENT_WRITE,
+        contents: [value],
+      })
+
+      const id = connectionIdType.serialize(_id)
+      this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
+      this.client.uTP.logger('Waiting for SYN Packet')
+      const payload = ContentMessageType.serialize({ selector: 0, value: id })
+      this.client.sendPortalNetworkResponse(
+        src,
+        requestId,
+        Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
+      )
     }
   }
 
