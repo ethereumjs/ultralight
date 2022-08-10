@@ -90,6 +90,7 @@ export const BlockBodyContentType = new ContainerType({
   allTransactions: allTransactions,
   sszUncles: sszUncles,
 })
+export type BlockBodyContent = { txsRlp: Buffer[]; unclesRlp: Uint8Array }
 
 export const sszReceipt = new ByteListType(MAX_RECEIPT_LENGTH)
 

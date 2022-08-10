@@ -54,35 +54,31 @@ export class BasicUtp extends EventEmitter {
     return new ContentWriter(this, socket, startingDataNr)
   }
 
-  async startDataTransfer(socket: UtpSocket) {
-    await socket.startDataTransfer()
-  }
-
   async sendSynPacket(socket: UtpSocket) {
-    await sendSynPacket(socket)
+    return await sendSynPacket(socket)
   }
-  async sendSynAckPacket(socket: UtpSocket) {
-    await sendSynAckPacket(socket)
+  async sendSynAckPacket(socket: UtpSocket): Promise<Packet> {
+    return await sendSynAckPacket(socket)
   }
-  async sendStatePacket(socket: UtpSocket) {
-    await sendAckPacket(socket)
+  async sendStatePacket(socket: UtpSocket): Promise<Packet> {
+    return await sendAckPacket(socket)
   }
-  async sendSelectiveAckPacket(socket: UtpSocket, ackNrs: number[]) {
-    await sendSelectiveAckPacket(socket, ackNrs)
+  async sendSelectiveAckPacket(socket: UtpSocket, ackNrs: number[]): Promise<Packet> {
+    return await sendSelectiveAckPacket(socket, ackNrs)
   }
-  async sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<number> {
-    const seqNr = await sendDataPacket(socket, payload)
-    return seqNr
+  async sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<Packet> {
+    const packet = await sendDataPacket(socket, payload)
+    return packet
   }
-  async sendResetPacket(socket: UtpSocket) {
-    await sendResetPacket(socket)
+  async sendResetPacket(socket: UtpSocket): Promise<Packet> {
+    return await sendResetPacket(socket)
   }
-  async sendFinPacket(socket: UtpSocket) {
-    await sendFinPacket(socket)
+  async sendFinPacket(socket: UtpSocket): Promise<Packet> {
+    return await sendFinPacket(socket)
   }
 
-  async handleSynPacket(socket: UtpSocket, _packet: Packet) {
-    await socket.handleSynPacket()
+  async handleSynPacket(socket: UtpSocket, _packet: Packet): Promise<Packet> {
+    return await socket.handleSynPacket()
   }
   async handleSynAckPacket(socket: UtpSocket, packet: Packet) {
     await socket.handleStatePacket(packet)
@@ -96,7 +92,7 @@ export class BasicUtp extends EventEmitter {
     }
   }
   async handleDataPacket(socket: UtpSocket, packet: Packet) {
-    await socket.handleDataPacket(packet)
+    return await socket.handleDataPacket(packet)
   }
   async handleFinPacket(socket: UtpSocket, packet: Packet): Promise<Uint8Array | undefined> {
     const content = await socket.handleFinPacket(packet)

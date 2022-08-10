@@ -62,11 +62,7 @@ export function dropPrefixes(_content: Uint8Array): Uint8Array[] {
     const [length, offset] = parsePrefix(content)
     contents.push(content.subarray(offset, length + offset))
     if (content.length > offset + length) {
-      try {
-        content = content.subarray(length + offset)
-      } catch {
-        content = null
-      }
+      content = content.subarray(length + offset)
     } else {
       content = null
     }

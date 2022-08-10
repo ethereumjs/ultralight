@@ -6,7 +6,7 @@ import { PacketType, Uint16, Uint32, protocolVersion } from './PacketTyping.js'
 export type createSynOpts = {
   sndConnectionId: Uint16
   seqNr: Uint16
-  ackNr?: number
+  ackNr: number
   timestamp?: number
   rtt_var?: number
   wndSide?: number
@@ -67,7 +67,7 @@ export function createSynPacket(opts: createSynOpts): Packet {
     pType: PacketType.ST_SYN,
     connectionId: opts.sndConnectionId,
     seqNr: opts.seqNr,
-    ackNr: opts.ackNr ?? 0,
+    ackNr: opts.ackNr,
     timestamp: opts.timestamp,
   })
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array() })
