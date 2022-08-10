@@ -12,7 +12,9 @@ tape('utility method tests', (t) => {
   randomNodeId = generateRandomNodeIdAtDistance(nodeId, 25)
   t.ok(log2Distance(nodeId, randomNodeId) === 25, 'calculated random node id at distance 25')
 
-  const arrayOfByteArrays = [Uint8Array.from([1, 2, 3]), Uint8Array.from([1, 2])]
-  t.equal(arrayByteLength(arrayOfByteArrays), 5, 'computed correct length of nested Uint8Array')
+  const arrayOfUint8Arrays = [Uint8Array.from([1, 2, 3]), Uint8Array.from([1, 2])]
+  const arrayOfBuffers = [Buffer.from([1, 2, 3]), Buffer.from([1, 2, 3, 4, 5])]
+  t.equal(arrayByteLength(arrayOfUint8Arrays), 5, 'computed correct length of nested Uint8Arrays')
+  t.equal(arrayByteLength(arrayOfBuffers), 8, 'computed correct length of nested Buffers')
   t.end()
 })
