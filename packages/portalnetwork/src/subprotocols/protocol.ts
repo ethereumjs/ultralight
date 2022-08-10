@@ -433,15 +433,17 @@ export abstract class BaseProtocol {
     decodedContentMessage: FindContentMessage
   ) => {
     this.metrics?.contentMessagesSent.inc()
-    //Check to see if value in content db
+
+    this.logger(
+      `Received handleFindContent request for contentKey: ${toHexString(
+        decodedContentMessage.contentKey
+      )}`
+    )
+
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
-    this.logger(`handleFindContent lookupKey ${toHexString(decodedContentMessage.contentKey)}`)
-    if (toHexString(decodedContentMessage.contentKey) === '0x0400') {
-      //@ts-ignore
-      this.logger(`height ${this.accumulator.currentHeight()}`)
-    }
     let value = Uint8Array.from([])
     try {
+      //Check to see if value in content db
       value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
     } catch {}
     if (value.length === 0) {
