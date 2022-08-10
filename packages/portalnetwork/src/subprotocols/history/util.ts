@@ -2,6 +2,7 @@ import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { HistoryNetworkContentKeyUnionType } from './index.js'
 import {
+  BlockBodyContent,
   BlockBodyContentType,
   HistoryNetworkContentTypes,
   sszTransaction,
@@ -63,11 +64,11 @@ export const getHistoryNetworkContentId = (
   return toHexString(digest(encodedKey))
 }
 
-export const decodeSszBlockBody = (sszBody: Uint8Array) => {
+export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
   const body = BlockBodyContentType.deserialize(sszBody)
   const txsRlp = body.allTransactions.map((sszTx) => Buffer.from(sszTransaction.deserialize(sszTx)))
   const unclesRlp = sszUncles.deserialize(body.sszUncles)
-  return [txsRlp, unclesRlp]
+  return { txsRlp, unclesRlp }
 }
 
 export const sszEncodeBlockBody = (block: Block) => {
@@ -89,7 +90,11 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
   const decodedBody = decodeSszBlockBody(rawBody)
   const block = Block.fromValuesArray(
     //@ts-ignore
-    [rlp.decode(Buffer.from(rawHeader)), decodedBody[0], rlp.decode(decodedBody[1])] as BlockBuffer,
+    [
+      rlp.decode(Buffer.from(rawHeader)),
+      decodedBody.txsRlp,
+      rlp.decode(decodedBody.unclesRlp),
+    ] as BlockBuffer,
     { hardforkByBlockNumber: true }
   )
 
