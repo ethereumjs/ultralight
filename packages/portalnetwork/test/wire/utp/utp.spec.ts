@@ -3,7 +3,6 @@ import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
 import tape from 'tape'
-import test from 'tape-promise/tape.js'
 import {
   HistoryNetworkContentKey,
   HistoryNetworkContentKeyUnionType,
@@ -413,12 +412,14 @@ tape('PortalNetworkUTP tests', (t) => {
             seqNr: 1,
             ackNr: 1,
           })
-          test('syn wrong', async (at) => {
-            await at.rejects(
-              async () => await utp._handleSynPacket(request, badsyn),
-              'Syn rejected correctly'
-            )
-            at.end()
+          t.test('syn wrong', async (st) => {
+            try {
+              await utp._handleSynPacket(request, badsyn)
+              st.fail('should throw')
+            } catch (e: any) {
+              st.equal(e.message, 'I send SYNs, I do not handle them.', 'throws with correct error')
+              st.end()
+            }
           })
           const synack = testPacketList.rec.synack as Packet
           const p = await utp.handleUtpPacket(synack.encode(), params.peerId)
@@ -488,31 +489,54 @@ tape('PortalNetworkUTP tests', (t) => {
           ackNr: 987,
         })
 
-        test('Packet Rejectors', async (at) => {
-          await at.rejects(
-            async () => await utp.handleUtpPacket(bogusPacket.encode(), params.peerId),
-            'Unknown Packet Type rejected'
-          )
+        t.test('Packet Rejectors', async (st) => {
+          try {
+            await utp.handleUtpPacket(bogusPacket.encode(), params.peerId)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(e.message, 'Unknown Packet Type 9', 'Unknown Packet Type rejected')
+          }
           if (type === 'ACCEPT_READ') {
             bogusPacket.header.pType = PacketType.ST_STATE
-            await at.rejects(async () => {
+            try {
               await utp._handleStatePacket(request, bogusPacket)
-            }, 'Accept Request rejects STATE packet')
+              st.fail('should throw')
+            } catch (e: any) {
+              st.equal(
+                e.message,
+                'Why did I get a STATE packet?',
+                'Accept Request rejects STATE packet'
+              )
+            }
           }
           if (mode === 'write') {
             bogusPacket.header.pType = PacketType.ST_DATA
-            await at.rejects(async () => {
+            try {
               await utp._handleDataPacket(request, bogusPacket)
-            }, `${type} request rejects all DATA packets`)
+              st.fail('should throw')
+            } catch (e: any) {
+              st.equal(
+                e.message,
+                'Why did I get a DATA packet?',
+                `${type} request rejects all DATA packets`
+              )
+            }
           }
           if (type === 'FINDCONTENT_READ') {
             bogusPacket.header.pType = PacketType.ST_STATE
             bogusPacket.header.seqNr = 2
-            await at.rejects(async () => {
+            try {
               await utp._handleStatePacket(request, bogusPacket)
-            }, 'FINDCONTENT rejects STATE packets beyond SYNACK')
+              st.fail('should throw')
+            } catch (e: any) {
+              st.equal(
+                e.message,
+                'READ socket should not get acks',
+                'FINDCONTENT rejects STATE packets beyond SYNACK'
+              )
+            }
           }
-          at.end()
+          st.end()
         })
 
         utp.on('send', (peerId: string) => {
