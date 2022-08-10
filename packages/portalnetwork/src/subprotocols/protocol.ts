@@ -11,6 +11,7 @@ import {
   shortId,
   serializedContentKeyToContentId,
   generateRandomNodeIdAtDistance,
+  arrayByteLength,
 } from '../util/index.js'
 import {
   AcceptMessage,
@@ -230,7 +231,7 @@ export abstract class BaseProtocol {
         enrs: [],
       }
       payload.distances.every((distance) => {
-        if (distance === 0 && nodesPayload.enrs.flat().length < 1200) {
+        if (distance === 0 && arrayByteLength(nodesPayload.enrs) < 1200) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
           nodesPayload.enrs.push(this.client.discv5.enr.encode())
@@ -240,7 +241,8 @@ export abstract class BaseProtocol {
             if (enr.nodeId === src.nodeId) return true
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
-            if (nodesPayload.enrs.flat().length + enr.size > 1200) return false
+
+            if (arrayByteLength(nodesPayload.enrs) + enr.encode().length > 1200) return false
             nodesPayload.total++
             nodesPayload.enrs.push(enr.encode())
             return true
@@ -461,7 +463,7 @@ export abstract class BaseProtocol {
         if (encodedEnrs.length > 0) {
           this.logger(`Found ${encodedEnrs.length} closer to content than us`)
           // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-          while (encodedEnrs.flat().length > 1200) {
+          while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > 1200) {
             // Remove ENRs until total ENRs less than 1200 bytes
             encodedEnrs.pop()
           }
