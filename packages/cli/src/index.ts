@@ -160,12 +160,16 @@ const main = async () => {
     const methods = manager.getMethods()
     const server = new jayson.Server(methods, {
       router: function (method, params) {
+        // `_methods` is not part of the jayson.Server interface but exists on the object
+        // but the docs recommend this pattern for custom routing
+        // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js
+        //@ts-expect-error
         if (!this._methods[method] && web3) {
           return new jayson.Method(async function () {
             const res = await web3!.request(method, params)
             if (res.result) return res.result
             else return res.error
-          })
+          }) //@ts-expect-error
         } else return this._methods[method]
       },
     })
