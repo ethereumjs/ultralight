@@ -164,10 +164,14 @@ export const App = () => {
       }
     }
 
-    // List for proxy reflected multiaddr to allow browser client to specify a valid ENR
-    if (node.discv5.sessionService.transport instanceof WebSocketTransportService) {
-      node.discv5.sessionService.transport.on('multiAddr', (multiaddr) => {
+    // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR
+    if (
+      node.discv5.sessionService.transport instanceof WebSocketTransportService &&
+      process.env.BINDADDRESS
+    ) {
+      node.discv5.sessionService.transport.once('multiAddr', (multiaddr) => {
         node.discv5.enr.setLocationMultiaddr(multiaddr)
+        // Remove listener after multiAddr received from proxy as this is a one time event
         node.discv5.sessionService.transport.removeAllListeners('multiAddr')
       })
     }
