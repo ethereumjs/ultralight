@@ -1,6 +1,6 @@
 import * as WS from 'ws'
 import * as dgram from 'dgram'
-import yargs from 'yargs'
+import yargs from 'yargs' //eslint-disable-next-line
 import { hideBin } from 'yargs/helpers'
 import http = require('http')
 import * as PromClient from 'prom-client'
@@ -94,6 +94,17 @@ const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050, ud
         log(err)
       }
     }
+    // Send external IP address/port to websocket client to update ENR
+    const remoteAddrArray = externalIp.split('.')
+    const bAddress = Uint8Array.from([
+      parseInt(remoteAddrArray[0]),
+      parseInt(remoteAddrArray[1]),
+      parseInt(remoteAddrArray[2]),
+      parseInt(remoteAddrArray[3]),
+    ])
+    const bPort = Buffer.alloc(2)
+    bPort.writeUIntBE(udpsocket.address().port, 0, 2)
+    websocket.send(Buffer.concat([bAddress, bPort]))
     log('UDP proxy listening on ', externalIp, udpsocket.address().port)
     websocket.on('message', (data) => {
       try {

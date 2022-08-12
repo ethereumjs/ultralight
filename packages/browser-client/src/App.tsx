@@ -22,7 +22,14 @@ import {
   Divider,
   ChakraProvider,
 } from '@chakra-ui/react'
-import { PortalNetwork, ProtocolId, ENR, log2Distance, fromHexString } from 'portalnetwork'
+import {
+  PortalNetwork,
+  ProtocolId,
+  ENR,
+  log2Distance,
+  fromHexString,
+  WebSocketTransportService,
+} from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
 import DevTools from './Components/DevTools'
 import StartNode from './Components/StartNode'
@@ -155,6 +162,18 @@ export const App = () => {
       } catch {
         node = await createNodeFromScratch()
       }
+    }
+
+    // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR if doing local testing
+    if (
+      node.discv5.sessionService.transport instanceof WebSocketTransportService &&
+      process.env.BINDADDRESS
+    ) {
+      node.discv5.sessionService.transport.once('multiAddr', (multiaddr) => {
+        node.discv5.enr.setLocationMultiaddr(multiaddr)
+        // Remove listener after multiAddr received from proxy as this is a one time event
+        node.discv5.sessionService.transport.removeAllListeners('multiAddr')
+      })
     }
 
     setPortal(node)
