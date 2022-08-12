@@ -285,7 +285,7 @@ export class PortalNetworkUTP extends BasicUtp {
         request.socket.ackNr = packet.header.seqNr
         request.socket.seqNr = randUint16()
         await this.sendSynAckPacket(request.socket)
-        writer = await this.createNewWriter(request.socket, request.socket.seqNr)
+        writer = await this.createNewWriter(request.socket, request.socket.seqNr++)
         request.writer = writer
         request.socket.nextSeq = request.socket.seqNr + 1
         request.socket.nextAck = packet.header.ackNr + 1
