@@ -69,10 +69,6 @@ export default function DevTools(props: DevToolsProps) {
     protocol!.sendOffer(nodeId, [fromHexString(blockHash)])
   }
 
-  const sendRendezvous = async (peer: string) => {
-    portal.sendRendezvous(targetNodeId, peer, ProtocolId.HistoryNetwork)
-    setTarget('')
-  }
   async function handleCopy() {
     await props.copy()
     toast({
@@ -206,9 +202,6 @@ export default function DevTools(props: DevToolsProps) {
         value={targetNodeId}
         onChange={(evt) => setTarget(evt.target.value)}
       />
-      <Button isDisabled={!targetNodeId} onClick={() => sendRendezvous(peer)} w="100%" size="sm">
-        Send Rendezvous Request
-      </Button>
     </VStack>
   )
 }
