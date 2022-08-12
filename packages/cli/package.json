@@ -27,7 +27,7 @@
     "@libp2p/peer-id-factory": "^1.0.15",
     "@multiformats/multiaddr": "^10.2.1",
     "debug": "^4.3.3",
-    "jayson": "^3.6.6",
+    "jayson": "^4.0.0",
     "level": "^8.0.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
