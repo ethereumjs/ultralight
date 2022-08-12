@@ -4,19 +4,28 @@ import { Multiaddr } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
 import {
   IRemoteInfo,
+  ITransportEvents,
   ITransportService,
-  TransportEventEmitter,
 } from '@chainsafe/discv5/lib/transport/types.js'
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
 import { numberToBuffer } from '@chainsafe/discv5'
+import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 const log = debug('discv5:transport')
 
+interface IWebSocketTransportEvents extends ITransportEvents {
+  multiAddr: (src: Multiaddr) => void
+}
+
+export declare type WSTransportEventEmitter = StrictEventEmitter<
+  EventEmitter,
+  IWebSocketTransportEvents
+>
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over Websockets
  */
 export class WebSocketTransportService
-  extends (EventEmitter as { new (): TransportEventEmitter })
+  extends (EventEmitter as { new (): WSTransportEventEmitter })
   implements ITransportService
 {
   public multiaddr: Multiaddr
@@ -40,8 +49,6 @@ export class WebSocketTransportService
 
   public async start(): Promise<void> {
     await this.socket.open()
-    //@ts-ignore
-    this.emit('connection', `connected to ${this.socket.ws.url}`)
     this.socket.ws.binaryType = 'arraybuffer'
     this.socket.onMessage.addListener((msg: MessageEvent | ArrayBuffer) => {
       const data = msg instanceof MessageEvent ? Buffer.from(msg.data) : Buffer.from(msg)
@@ -50,7 +57,7 @@ export class WebSocketTransportService
         const address = `${data[0].toString()}.${data[1].toString()}.${data[2].toString()}.${data[3].toString()}`
         const port = data.readUIntBE(4, 2)
         this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`)
-        //@ts-ignore
+
         this.emit('multiAddr', this.multiaddr)
       } else {
         this.handleIncoming(data)
