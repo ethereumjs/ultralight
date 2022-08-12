@@ -212,7 +212,7 @@ export abstract class BaseProtocol {
           })
           this.logger.extend(`NODES`)(
             `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
-              decoded.total - counter
+              decoded.enrs.length - counter
             } unknown.`
           )
 
