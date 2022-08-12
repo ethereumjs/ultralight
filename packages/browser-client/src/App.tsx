@@ -164,7 +164,7 @@ export const App = () => {
       }
     }
 
-    // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR
+    // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR if doing local testing
     if (
       node.discv5.sessionService.transport instanceof WebSocketTransportService &&
       process.env.BINDADDRESS
