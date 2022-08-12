@@ -62,8 +62,7 @@ export class HeaderAccumulator {
       blockHash: newHeader.hash(),
       totalDifficulty: lastTd + BigInt(newHeader.difficulty.toString(10)),
     }
-    this._currentEpoch.push(headerRecord)
-    return this._currentEpoch.length
+    return this._currentEpoch.push(headerRecord) - 1
   }
 
   /**

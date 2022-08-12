@@ -35,12 +35,10 @@ export default class ContentWriter {
           `Ahead of Reader by ${this.sentChunks.length - this.socket.ackNrs.length} packets`
         )
       }
-      bytes = this.dataChunks[this.socket.seqNr]
+      bytes = this.dataChunks[this.socket.seqNr] ?? []
       this.sentChunks.push(this.socket.seqNr)
       this.socket.logger(
-        `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${
-          this.socket.seqNr
-        }.  size: ${bytes && bytes.length}`
+        `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${this.socket.seqNr}.  size: ${bytes.length}`
       )
       const sent = await sendDataPacket(this.socket, bytes)
       this.socket.logger(sent)
@@ -50,27 +48,12 @@ export default class ContentWriter {
     return
   }
 
-  async startAgain(seqNr: number) {
-    this.logger(`starting again from ${seqNr}`, Uint8Array.from(this.content))
-    this.writing = Object.keys(this.dataChunks).length > this.sentChunks.length
-    this.sentChunks = this.sentChunks.filter((n) => n < seqNr)
-    while (this.writing) {
-      const bytes = this.dataChunks[seqNr]
-      seqNr = await this.protocol.sendDataPacket(this.socket, bytes!)
-      this.sentChunks.push(seqNr)
-      this.writing = Object.keys(this.dataChunks).length > this.sentChunks.length
-    }
-    this.logger('All Data Written')
-  }
-
   chunk(): Record<number, Uint8Array> {
     let arrayMod = this.content
     this.logger(`Preparing`)
     this.logger(this.content)
     this.logger(`For transfer as ${BUFFER_SIZE} byte chunks.`)
-    const full = Math.floor(this.content.length / BUFFER_SIZE)
-    const partial = this.content.length % BUFFER_SIZE > 0 ? 1 : 0
-    const total = full + partial
+    const total = Math.ceil(this.content.length / BUFFER_SIZE)
     const dataChunks: Record<number, Uint8Array> = {}
     for (let i = 0; i < total; i++) {
       const start = 0

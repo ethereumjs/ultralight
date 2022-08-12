@@ -26,25 +26,6 @@ export class PacketHeader {
     this.ackNr = options.ackNr
     this.length = 20
   }
-  encodeTypeVer(): Uint8 {
-    let typeVer: Uint8 = 0
-    const typeOrd: Uint8 = this.pType
-    typeVer = (typeVer & 0xf0) | (this.version & 0xf)
-    typeVer = (typeVer & 0xf) | (typeOrd << 4)
-    return typeVer
-  }
-  encodeHeaderStream(): Buffer {
-    const buffer = Buffer.alloc(20)
-    buffer[0] = 1
-    buffer[1] = 0
-    buffer.writeUInt16BE(this.connectionId, 2)
-    buffer.writeUInt32BE(this.timestamp, 4)
-    buffer.writeUInt32BE(this.timestampDiff, 8)
-    buffer.writeUInt32BE(this.wndSize, 12)
-    buffer.writeUInt16BE(this.seqNr, 16)
-    buffer.writeUInt16BE(this.ackNr, 18)
-    return buffer
-  }
 }
 
 export class SelectiveAckHeader extends PacketHeader {

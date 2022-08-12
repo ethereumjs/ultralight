@@ -24,10 +24,10 @@ export class ContentRequest {
     socket: UtpSocket,
     socketKey: string,
     content: Uint8Array,
-    contentKeys?: Uint8Array[]
+    contentKeys: Uint8Array[]
   ) {
     this.protocolId = protocolId
-    this.contentKeys = contentKeys ?? []
+    this.contentKeys = contentKeys
     this.requestCode = requestCode
     // this.contentKey = undefined
     this.content = content
@@ -35,7 +35,7 @@ export class ContentRequest {
     this.socket = socket
   }
 
-  async init(): Promise<void> {
+  async init(): Promise<RequestCode> {
     let writer
     switch (this.requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
@@ -54,5 +54,6 @@ export class ContentRequest {
       case RequestCode.ACCEPT_READ:
         break
     }
+    return this.requestCode
   }
 }

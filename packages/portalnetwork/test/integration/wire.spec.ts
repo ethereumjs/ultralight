@@ -8,8 +8,11 @@ import {
   sszEncodeBlockBody,
 } from '../../src/index.js'
 import { HistoryNetworkContentTypes } from '../../src/subprotocols/history/types.js'
-import { fromHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from '../../src/subprotocols/history/index.js'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import {
+  getHistoryNetworkContentId,
+  HistoryNetworkContentKeyUnionType,
+} from '../../src/subprotocols/history/index.js'
 import { Block } from '@ethereumjs/block'
 import { TransportLayer } from '../../src/client/types.js'
 import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
@@ -58,130 +61,227 @@ const setupNetwork = async () => {
   return [portal1, portal2]
 }
 
+function connectAndTest(
+  t: tape.Test,
+  st: tape.Test,
+  testFunction: (
+    portal1: PortalNetwork,
+    portal2: PortalNetwork,
+    child: ChildProcessWithoutNullStreams
+  ) => Promise<void>,
+  ends?: boolean
+) {
+  const file = require.resolve('../../../proxy/dist/index.js')
+  const child = spawn(process.execPath, [file])
+  let portal1: PortalNetwork
+  let portal2: PortalNetwork
+  child.stderr.on('data', async (data) => {
+    if (data.toString().includes('Error: listen EADDRINUSE')) {
+      // Terminate test process early if proxy can't start or tape will hang
+      t.fail('proxy did not start successfully')
+      process.exit(0)
+    }
+
+    if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
+      const nodes = await setupNetwork()
+      portal1 = nodes[0]
+      portal2 = nodes[1]
+      // portal1.enableLog('*Portal*,*discv5*')
+      // portal2.enableLog('*Portal*,*discv5*')
+      await portal1.start()
+    } else if (data.toString().includes('UDP proxy listening on')) {
+      const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
+      if (!portal2.discv5.isStarted()) {
+        portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        await portal2.start()
+      } else if (portal2.discv5.isStarted()) {
+        portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        await testFunction(portal1, portal2, child)
+        if (!ends) {
+          await end(child, [portal1, portal2], st)
+        }
+      }
+    }
+  })
+}
+
 tape('Portal Network Wire Spec Integration Tests', (t) => {
   t.test('clients start and connect to each other', (st) => {
-    const file = require.resolve('../../../proxy/dist/index.js')
-    const child = spawn(process.execPath, [file])
-    let portal1: PortalNetwork
-    let portal2: PortalNetwork
-    child.stderr.on('data', async (data) => {
-      if (data.toString().includes('Error: listen EADDRINUSE')) {
-        // Terminate test process early if proxy can't start or tape will hang
-        t.fail('proxy did not start successfully')
-        process.exit(0)
-      }
-
-      if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
-        st.pass('proxy started successfully')
-        const nodes = await setupNetwork()
-        portal1 = nodes[0]
-        portal2 = nodes[1]
-        portal1.enableLog('*Portal*,*discv5*')
-        portal2.enableLog('*Portal*,*discv5*')
-        await portal1.start()
-      } else if (data.toString().includes('UDP proxy listening on')) {
-        const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
-        if (!portal2.discv5.isStarted()) {
-          portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-          await portal2.start()
-        } else if (portal2.discv5.isStarted()) {
-          portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-          let done = false
-          const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork)
-          if (!protocol) throw new Error('should have History Protocol')
-          while (!done) {
-            const res = await protocol.sendPing(portal1.discv5.enr)
-            if (res && (res as any).enrSeq >= 1n) {
-              st.pass('Nodes connected and played PING/PONG')
-              await end(child, [portal1, portal2], st)
-              done = true
-              break
-            }
-          }
-        }
-      }
-    })
+    const ping = async (portal1: PortalNetwork, portal2: PortalNetwork) => {
+      const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork)
+      if (!protocol) throw new Error('should have History Protocol')
+      const res = await protocol.sendPing(portal1.discv5.enr)
+      st.ok(res!.enrSeq >= 1n, 'Nodes connected and played PING/PONG')
+    }
+    connectAndTest(t, st, ping)
   })
 
-  t.test('node should stream block to another', { timeout: 10000 }, (st) => {
-    const file = require.resolve('../../../proxy/dist/index.js')
-    const child = spawn(process.execPath, [file])
-    let portal1: PortalNetwork
-    let portal2: PortalNetwork
+  t.test('Nodes should stream content with FINDCONTENT / FOUNDCONTENT', (st) => {
+    const findBlocks = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
+      const testBlockData: any[] = require('./testBlocks.json')
+      const testBlock = Block.fromRLPSerializedBlock(
+        Buffer.from(fromHexString(testBlockData[2].rlp)),
+        {
+          hardforkByBlockNumber: true,
+        }
+      )
 
-    child.stderr.on('data', async (data) => {
-      if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
-        const nodes = await setupNetwork()
-        portal1 = nodes[0]
-        portal2 = nodes[1]
-        portal1.enableLog('*Portal*')
-        portal2.enableLog('*Portal*')
-        portal1.on('ContentAdded', (blockHash, contentType, content) => {
-          if (
-            blockHash === '0x8849ec758533f05f4bd2d45694a44281c99ff7e261d313ac5f68f83ecb5ab6a7' &&
-            contentType === HistoryNetworkContentTypes.BlockBody
-          ) {
-            const body = decodeSszBlockBody(fromHexString(content)) //@ts-ignore
-            const uncleHeaderHash = BlockHeader.fromValuesArray(rlp.decode(body[1])[0], {
-              hardforkByBlockNumber: true,
-            })
-              .hash()
-              .toString('hex')
-            st.equal(
-              'cff59476231018cf57fe41cd0ed8ddea672d8dc4c2b40a10190cb2533522cfaf',
-              uncleHeaderHash,
-              'successfully sent an SSZ encoded block'
+      const testHash = toHexString(testBlock.hash())
+      const testBlockKeys: Uint8Array[] = []
+
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        '0x' + testBlock.header.hash().toString('hex'),
+        testBlock.header.serialize()
+      )
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockBody,
+        '0x' + testBlock.header.hash().toString('hex'),
+        sszEncodeBlockBody(testBlock)
+      )
+      testBlockKeys.push(
+        HistoryNetworkContentKeyUnionType.serialize({
+          selector: 0,
+          value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+        }),
+        HistoryNetworkContentKeyUnionType.serialize({
+          selector: 1,
+          value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+        }),
+        HistoryNetworkContentKeyUnionType.serialize({
+          selector: 4,
+          value: { selector: 0, value: null },
+        })
+      )
+      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+        st.equal(
+          await portal1.db.get(getHistoryNetworkContentId(1, contentType, testHash)),
+          content,
+          `${HistoryNetworkContentTypes[contentType]} successfully stored in database`
+        )
+        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
+          st.ok(blockHash === testHash, 'FINDCONTENT/FOUNDCONTENT sent a block header')
+        }
+        if (contentType === HistoryNetworkContentTypes.BlockBody) {
+          st.ok(blockHash === testHash, 'FINDCONTENT/FOUNDCONTENT sent a block')
+          if (blockHash === testHash && contentType === HistoryNetworkContentTypes.BlockBody) {
+            const body = decodeSszBlockBody(fromHexString(content))
+            const uncleHeaderHash = toHexString(
+              //@ts-ignore
+              BlockHeader.fromValuesArray(rlp.decode(body.unclesRlp)[0], {
+                hardforkByBlockNumber: true,
+              }).hash()
             )
-            st.pass('OFFER/ACCEPT/uTP Stream succeeded')
+            st.equal(
+              toHexString(testBlock.uncleHeaders[0].hash()),
+              uncleHeaderHash,
+              'FINDCONTENT/FOUNDCONTENT successfully sent an SSZ encoded block'
+            )
+            st.pass('FINDCONTENT/FOUNDCONTENT uTP Stream succeeded')
             end(child, [portal1, portal2], st)
           }
-        })
-        await portal1.start()
-      } else if (data.toString().includes('UDP proxy listening on')) {
-        const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
-        if (!portal2.discv5.isStarted()) {
-          portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-          await portal2.start()
-        } else if (portal2.discv5.isStarted()) {
-          portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-          const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-          if (!protocol) throw new Error('should have History Protocol')
-          await protocol.sendPing(portal1.discv5.enr)
-          await portal2.discv5.sendPing(portal1.discv5.enr)
-          const testBlocks = require('./testBlocks.json')
-          const testBlockKeys: Uint8Array[] = []
-          for (const blockData of testBlocks) {
-            const testBlock = Block.fromRLPSerializedBlock(
-              Buffer.from(fromHexString(blockData.rlp)),
-              { hardforkByBlockNumber: true }
-            )
-            await protocol.addContentToHistory(
-              1,
-              HistoryNetworkContentTypes.BlockHeader,
-              '0x' + testBlock.header.hash().toString('hex'),
-              testBlock.header.serialize()
-            )
-            await protocol.addContentToHistory(
-              1,
-              HistoryNetworkContentTypes.BlockBody,
-              '0x' + testBlock.header.hash().toString('hex'),
-              sszEncodeBlockBody(testBlock)
-            )
-            testBlockKeys.push(
-              HistoryNetworkContentKeyUnionType.serialize({
-                selector: 0,
-                value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
-              }),
-              HistoryNetworkContentKeyUnionType.serialize({
-                selector: 1,
-                value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
-              })
-            )
-          }
-
-          await protocol.sendOffer(portal1.discv5.enr.nodeId, testBlockKeys)
         }
+      })
+
+      await protocol1.sendPing(portal2.discv5.enr)
+      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, testBlockKeys[0])
+      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, testBlockKeys[1])
+    }
+    connectAndTest(t, st, findBlocks, true)
+  })
+
+  t.test('Nodes should stream multiple pieces of content with OFFER / ACCEPT', (st) => {
+    const offerBlocks = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      if (!protocol) throw new Error('should have History Protocol')
+      const testBlockData = require('./testBlocks.json')
+      const testBlocks: Block[] = testBlockData.map((blockData: any) => {
+        return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(blockData.rlp)), {
+          hardforkByBlockNumber: true,
+        })
+      })
+      const testHashes = testBlocks.map((testBlock) => {
+        return toHexString(testBlock.hash())
+      })
+      const testBlockKeys: Uint8Array[] = []
+      for (const testBlock of testBlocks) {
+        await protocol.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.BlockHeader,
+          '0x' + testBlock.header.hash().toString('hex'),
+          testBlock.header.serialize()
+        )
+        await protocol.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.BlockBody,
+          '0x' + testBlock.header.hash().toString('hex'),
+          sszEncodeBlockBody(testBlock)
+        )
+        testBlockKeys.push(
+          HistoryNetworkContentKeyUnionType.serialize({
+            selector: 0,
+            value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+          }),
+          HistoryNetworkContentKeyUnionType.serialize({
+            selector: 1,
+            value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+          })
+        )
       }
-    })
+      let i = 0
+      const _blocks: string[] = []
+
+      portal1.on('ContentAdded', async (blockHash, contentType, content) => {
+        i++
+        st.equal(
+          await portal1.db.get(
+            getHistoryNetworkContentId(1, contentType, testHashes[testHashes.indexOf(blockHash)])
+          ),
+          content,
+          `${HistoryNetworkContentTypes[contentType]} successfully stored in db`
+        )
+        if (contentType === HistoryNetworkContentTypes.BlockBody) {
+          _blocks.push(blockHash)
+        }
+        if (
+          blockHash === testHashes[testHashes.length - 1] &&
+          contentType === HistoryNetworkContentTypes.BlockBody
+        ) {
+          st.equal(i, testBlockKeys.length, 'OFFER/ACCEPT sent all the items')
+          st.deepEqual(_blocks, testHashes, 'OFFER/ACCEPT sent the correct items')
+          const body = decodeSszBlockBody(fromHexString(content))
+          const uncleHeaderHash = toHexString(
+            //@ts-ignore
+            BlockHeader.fromValuesArray(rlp.decode(body.unclesRlp)[0], {
+              hardforkByBlockNumber: true,
+            }).hash()
+          )
+          st.equal(
+            toHexString(testBlocks[testBlocks.length - 1].uncleHeaders[0].hash()),
+            uncleHeaderHash,
+            'OFFER/ACCEPT successfully streamed an SSZ encoded block OFFER/ACCEPT'
+          )
+          st.pass('OFFER/ACCEPT uTP Stream succeeded')
+          end(child, [portal1, portal2], st)
+        }
+      })
+
+      await protocol.sendPing(portal1.discv5.enr)
+      await protocol.sendOffer(portal1.discv5.enr.nodeId, testBlockKeys)
+    }
+    connectAndTest(t, st, offerBlocks, true)
   })
 })

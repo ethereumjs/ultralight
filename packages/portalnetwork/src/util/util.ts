@@ -49,3 +49,8 @@ export const dirSize = async (directory: string) => {
   )
   return bytesSize / MEGABYTE
 }
+
+export function arrayByteLength(byteArray: any[]): number {
+  const length = byteArray.reduce((prev, curr) => prev + curr.length, 0)
+  return length
+}

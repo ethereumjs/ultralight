@@ -16,7 +16,7 @@
     "yargs": "^17.3.0"
   },
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "ts-node --esm src/index.ts",
     "build": "tsc",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"

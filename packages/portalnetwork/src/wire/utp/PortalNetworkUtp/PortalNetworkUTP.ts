@@ -10,6 +10,7 @@ import { sendFinPacket } from '../Packets/PacketSenders.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { ContentRequest } from './ContentRequest.js'
 import { dropPrefixes, encodeWithVariantPrefix } from '../Utils/variantPrefix.js'
+import ContentReader from '../Protocol/read/ContentReader.js'
 
 type UtpSocketKey = string
 
@@ -23,6 +24,13 @@ export enum RequestCode {
 export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
+export interface INewRequest {
+  contentKeys: Uint8Array[]
+  peerId: string
+  connectionId: number
+  requestCode: RequestCode
+  contents?: Uint8Array[]
+}
 export class PortalNetworkUTP extends BasicUtp {
   openContentRequest: Record<UtpSocketKey, ContentRequest> // TODO enable other networks
   logger: Debugger
@@ -35,128 +43,22 @@ export class PortalNetworkUTP extends BasicUtp {
     this.working = false
   }
 
-  async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {
-    this.emit('Send', peerId, msg, protocolId, true)
-  }
-
-  async handleNewRequest(
-    contentKeys: Uint8Array[],
-    peerId: string,
-    connectionId: number,
-    requestCode: RequestCode,
-    contents?: Uint8Array[]
-  ) {
-    let sndId: number
-    let rcvId: number
-    let socket: UtpSocket
-    let socketKey: string
-    let newRequest: ContentRequest
-    switch (requestCode) {
-      case RequestCode.FOUNDCONTENT_WRITE:
-        if (contents === undefined) {
-          throw new Error('No contents to write')
-        }
-        sndId = connectionId
-        rcvId = connectionId + 1
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
-        if (socket === undefined) {
-          throw new Error('Error in Socket Creation')
-        }
-        socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new ContentRequest(
-          ProtocolId.HistoryNetwork,
-          requestCode,
-          socket,
-          socketKey,
-          Uint8Array.from([]),
-          contentKeys
-        )
-        if (this.openContentRequest[socketKey]) {
-          this.logger(`Request already Open`)
-        } else {
-          this.openContentRequest[socketKey] = newRequest
-          this.logger(`Opening request with key: ${socketKey}`)
-          await newRequest.init()
-        }
-        break
-      case RequestCode.FINDCONTENT_READ:
-        sndId = connectionId + 1
-        rcvId = connectionId
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
-        if (socket === undefined) {
-          throw new Error('Error in Socket Creation')
-        }
-        socketKey = createSocketKey(peerId, sndId, rcvId)
-        newRequest = new ContentRequest(
-          ProtocolId.HistoryNetwork,
-          requestCode,
-          socket,
-          socketKey,
-          Uint8Array.from([]),
-          contentKeys
-        )
-        if (this.openContentRequest[socketKey]) {
-          this.logger(`Request already Open`)
-        } else {
-          this.openContentRequest[socketKey] = newRequest
-          this.logger(`Opening request with key: ${socketKey}`)
-          await newRequest.init()
-        }
-        break
-      case RequestCode.OFFER_WRITE:
-        if (contents === undefined || contents.length <= 0) {
-          throw new Error('No contents to write')
-        } else {
-          this.logger(`Opening a uTP socket to send ${contents.length} pieces of content`)
-        }
-        sndId = connectionId + 1
-        rcvId = connectionId
-        socketKey = createSocketKey(peerId, sndId, rcvId)
-        if (contents.length > 1) {
-          this.logger(
-            `Encoding ${contents.length} contents with VarInt prefix for stream as a single bytestring`
-          )
-          contents = [encodeWithVariantPrefix(contents)]
-        }
-        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents[0])!
-        newRequest = new ContentRequest(
-          ProtocolId.HistoryNetwork,
-          requestCode,
-          socket,
-          socketKey,
-          contents[0]
-        )
-
-        if (this.openContentRequest[socketKey]) {
-          this.logger(`Request already Open`)
-        } else {
-          this.openContentRequest[socketKey] = newRequest
-          this.logger(`Opening request with key: ${socketKey}`)
-          await newRequest.init()
-        }
-
-        break
-      case RequestCode.ACCEPT_READ:
-        sndId = connectionId
-        rcvId = connectionId + 1
-        socketKey = createSocketKey(peerId, sndId, rcvId)
-        if (this.openContentRequest[socketKey]) {
-          this.logger(`Request already Open`)
-        } else {
-          this.logger(`Opening request with key: ${socketKey}`)
-          socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
-          newRequest = new ContentRequest(
-            ProtocolId.HistoryNetwork,
-            requestCode,
-            socket,
-            socketKey,
-            Uint8Array.from([]),
-            contentKeys
-          )
-          this.openContentRequest[socketKey] = newRequest
-          await newRequest.init()
-        }
-        break
+  getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
+    const packet = Packet.bufferToPacket(packetBuffer)
+    const connId = packet.header.connectionId
+    const idA = connId + 1
+    const idB = connId - 1
+    const keyA = createSocketKey(peerId, connId, idA)
+    const keyB = createSocketKey(peerId, idA, connId)
+    const keyC = createSocketKey(peerId, idB, connId)
+    if (this.openContentRequest[keyA] !== undefined) {
+      return keyA
+    } else if (this.openContentRequest[keyB] !== undefined) {
+      return keyB
+    } else if (this.openContentRequest[keyC] !== undefined) {
+      return keyC
+    } else {
+      throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
     }
   }
 
@@ -226,10 +128,111 @@ export class PortalNetworkUTP extends BasicUtp {
     }
   }
 
-  async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
+  async handleNewRequest(params: INewRequest): Promise<ContentRequest> {
+    const { contentKeys, peerId, connectionId, requestCode } = params
+    let contents = params.contents
+    let sndId: number
+    let rcvId: number
+    let socket: UtpSocket
+    let socketKey: string
+    let newRequest: ContentRequest
+    switch (requestCode) {
+      case RequestCode.FOUNDCONTENT_WRITE:
+        sndId = connectionId
+        rcvId = connectionId + 1
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents![0])!
+        socketKey = createSocketKey(peerId, sndId, rcvId)
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
+          requestCode,
+          socket,
+          socketKey,
+          Uint8Array.from([]),
+          contentKeys
+        )
+
+        this.openContentRequest[socketKey] = newRequest
+        this.logger(`Opening request with key: ${socketKey}`)
+        await newRequest.init()
+        break
+      case RequestCode.FINDCONTENT_READ:
+        sndId = connectionId + 1
+        rcvId = connectionId
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
+        socketKey = createSocketKey(peerId, sndId, rcvId)
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
+          requestCode,
+          socket,
+          socketKey,
+          Uint8Array.from([]),
+          contentKeys
+        )
+
+        this.openContentRequest[socketKey] = newRequest
+        this.logger(`Opening request with key: ${socketKey}`)
+        await newRequest.init()
+        break
+      case RequestCode.OFFER_WRITE:
+        this.logger(`Opening a uTP socket to send ${contents!.length} pieces of content`)
+
+        sndId = connectionId + 1
+        rcvId = connectionId
+        socketKey = createSocketKey(peerId, sndId, rcvId)
+        if (contents!.length > 1) {
+          this.logger(
+            `Encoding ${
+              contents!.length
+            } contents with VarInt prefix for stream as a single bytestring`
+          )
+          contents = [encodeWithVariantPrefix(contents!)]
+        }
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents![0])!
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
+          requestCode,
+          socket,
+          socketKey,
+          contents![0],
+          contentKeys
+        )
+
+        this.openContentRequest[socketKey] = newRequest
+        this.logger(`Opening request with key: ${socketKey}`)
+        await newRequest.init()
+        break
+      default:
+        //      case RequestCode.ACCEPT_READ:
+        sndId = connectionId
+        rcvId = connectionId + 1
+        socketKey = createSocketKey(peerId, sndId, rcvId)
+
+        this.logger(`Opening request with key: ${socketKey}`)
+        socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId)!
+        newRequest = new ContentRequest(
+          ProtocolId.HistoryNetwork,
+          requestCode,
+          socket,
+          socketKey,
+          Uint8Array.from([]),
+          contentKeys
+        )
+        this.openContentRequest[socketKey] = newRequest
+        await newRequest.init()
+
+        break
+    }
+    return newRequest
+  }
+
+  async handleUtpPacket(
+    packetBuffer: Buffer,
+    srcId: string
+  ): Promise<{ request: ContentRequest; packet: Packet }> {
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
     const request = this.openContentRequest[requestKey]
     const packet = Packet.bufferToPacket(packetBuffer)
+    let returnPacket
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
         this.logger(
@@ -262,77 +265,52 @@ export class PortalNetworkUTP extends BasicUtp {
         requestKey && (await this._handleFinPacket(request, packet))
         break
       default:
-        this.logger(`Unknown Packet Type ${packet.header.pType}`)
+        throw new Error(`Unknown Packet Type ${packet.header.pType}`)
     }
+    return { request, packet }
   }
 
-  getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
-    const packet = Packet.bufferToPacket(packetBuffer)
-    const connId = packet.header.connectionId
-    const idA = connId + 1
-    const idB = connId - 1
-    const keyA = createSocketKey(peerId, connId, idA)
-    const keyB = createSocketKey(peerId, idA, connId)
-    const keyC = createSocketKey(peerId, connId, idB)
-    const keyD = createSocketKey(peerId, idB, connId)
-    if (this.openContentRequest[keyA] !== undefined) {
-      return keyA
-    } else if (this.openContentRequest[keyB] !== undefined) {
-      return keyB
-    } else if (this.openContentRequest[keyC] !== undefined) {
-      return keyC
-    } else if (this.openContentRequest[keyD] !== undefined) {
-      return keyD
-    } else {
-      this.logger(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`)
-      return ''
-    }
+  async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {
+    this.emit('Send', peerId, msg, protocolId, true)
   }
 
-  async _handleSynPacket(request: ContentRequest, packet: Packet) {
+  async _handleSynPacket(request: ContentRequest, packet: Packet): Promise<Packet | ContentReader> {
     const requestCode = request.requestCode
     let writer
     let reader
-    try {
-      switch (requestCode) {
-        case RequestCode.FOUNDCONTENT_WRITE:
-          this.logger(`SYN received to initiate stream for FINDCONTENT request`)
-          this.logger(`Expected: 1-RANDOM`)
-          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          request.socket.ackNr = packet.header.seqNr
-          request.socket.seqNr = randUint16()
-          writer = await this.createNewWriter(request.socket, request.socket.seqNr)
-          request.writer = writer
-          await this.sendSynAckPacket(request.socket)
-          request.socket.nextSeq = request.socket.seqNr + 1
-          request.socket.nextAck = packet.header.ackNr + 1
-          await request.writer?.start()
-          await sendFinPacket(request.socket)
-          break
-        case RequestCode.FINDCONTENT_READ:
-          this.logger(`Why did I get a SYN?`)
-          break
-        case RequestCode.OFFER_WRITE:
-          this.logger(`Why did I get a SYN?`)
-          break
-        case RequestCode.ACCEPT_READ:
-          this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
-          request.socket.ackNr = packet.header.seqNr
-          request.socket.nextSeq = 2
-          request.socket.nextAck = packet.header.ackNr
-          reader = await this.createNewReader(request.socket, 2)
-          request.socket.reader = reader
-          await this.handleSynPacket(request.socket, packet)
-          break
-      }
-    } catch {
-      this.logger('Request Type Not Implemented')
+    let r: Packet | ContentReader
+    switch (requestCode) {
+      case RequestCode.FOUNDCONTENT_WRITE:
+        this.logger(`SYN received to initiate stream for FINDCONTENT request`)
+        request.socket.ackNr = packet.header.seqNr
+        request.socket.seqNr = randUint16()
+        writer = await this.createNewWriter(request.socket, request.socket.seqNr)
+        request.writer = writer
+        request.socket.nextSeq = request.socket.seqNr + 1
+        request.socket.nextAck = packet.header.ackNr + 1
+        await request.writer?.start()
+        r = await sendFinPacket(request.socket)
+        break
+      case RequestCode.ACCEPT_READ:
+        this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
+        request.socket.ackNr = packet.header.seqNr
+        request.socket.nextSeq = 2
+        request.socket.nextAck = packet.header.ackNr + 1
+        r = await this.createNewReader(request.socket, 2)
+        request.socket.reader = r
+        await this.sendSynAckPacket(request.socket)
+        break
+      default:
+        throw new Error('I send SYNs, I do not handle them.')
     }
+    return r
   }
   async _handleStatePacket(request: ContentRequest, packet: Packet): Promise<void> {
     const requestCode = request.requestCode
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
+        request.socket.ackNrs.includes(packet.header.ackNr) ||
+          request.socket.ackNrs.push(packet.header.ackNr)
         break
       case RequestCode.FINDCONTENT_READ:
         if (packet.header.ackNr === 1) {
@@ -350,9 +328,7 @@ export class PortalNetworkUTP extends BasicUtp {
           request.reader = reader
           await this.sendStatePacket(request.socket)
         } else {
-          this.logger(`Expecting: ${request.socket.nextSeq} - ${request.socket.nextAck}`)
-          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          this.handleStatePacket(request.socket, packet)
+          throw new Error('READ socket should not get acks')
         }
         break
       case RequestCode.OFFER_WRITE:
@@ -378,35 +354,29 @@ export class PortalNetworkUTP extends BasicUtp {
         }
         break
       case RequestCode.ACCEPT_READ:
-        this.logger('Why did I get a STATE packet?')
-        break
+        throw new Error('Why did I get a STATE packet?')
     }
   }
-
   async _handleDataPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
-    try {
-      switch (requestCode) {
-        case RequestCode.FOUNDCONTENT_WRITE:
-          throw new Error('Why did I get a DATA packet?')
-        case RequestCode.FINDCONTENT_READ:
-          await this.handleDataPacket(request.socket, packet)
-          break
-        case RequestCode.OFFER_WRITE:
-          throw new Error('Why did I get a DATA packet?')
-        case RequestCode.ACCEPT_READ:
-          await this.handleDataPacket(request.socket, packet)
-          break
-      }
-    } catch {
-      this.logger('Request Type Not Implemented')
+    let ack: Packet
+    switch (requestCode) {
+      case RequestCode.FINDCONTENT_READ:
+        ack = await this.handleDataPacket(request.socket, packet)
+        break
+      case RequestCode.ACCEPT_READ:
+        ack = await this.handleDataPacket(request.socket, packet)
+        break
+      default:
+        throw new Error('Why did I get a DATA packet?')
     }
+
+    return ack
   }
   async _handleResetPacket(request: ContentRequest) {
     const requestCode = request.requestCode
     delete this.openContentRequest[requestCode]
   }
-
   async _handleFinPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     const keys = request.contentKeys
@@ -421,36 +391,12 @@ export class PortalNetworkUTP extends BasicUtp {
           contentKey = HistoryNetworkContentKeyUnionType.deserialize(k)
           decodedContentKey = contentKey.value as HistoryNetworkContentKey
           const _content = contents[idx]
-          this.logger.extend(`FINISHED`)(
-            `${idx + 1}/${keys.length} -- sending ${
-              contentKey.selector === 0
-                ? `BlockHeader: "${toHexString(decodedContentKey.blockHash).slice(0, 10)}..."`
-                : contentKey.selector === 1
-                ? `BlockBody: "${toHexString(decodedContentKey.blockHash).slice(0, 10)}..."`
-                : contentKey.selector === 2
-                ? 'Receipt'
-                : contentKey.selector === 3
-                ? 'EpochAccumulator'
-                : contentKey.selector === 4
-                ? 'HeaderAccumulator'
-                : 'Unknown Data type'
-            } to database`
-          )
-          switch (contentKey.selector) {
-            case 0:
-            case 1:
-            case 2:
-              key = decodedContentKey.blockHash
-              break
-            case 4:
-              key = undefined
-              break
-          }
+          this.logger.extend(`FINISHED`)(`${idx + 1}/${keys.length} -- sending content to database`)
           this.emit(
             'Stream',
             1,
             contentKey.selector,
-            toHexString(key ?? Uint8Array.from([])),
+            toHexString(decodedContentKey.blockHash),
             _content
           )
         })
@@ -460,43 +406,35 @@ export class PortalNetworkUTP extends BasicUtp {
           contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
         )
         switch (contentKey.selector) {
-          case 0:
-          case 1:
-          case 2:
-            key = decodedContentKey.blockHash
-            break
           case 4:
-            key = undefined
+            key = HistoryNetworkContentKeyUnionType.serialize({
+              selector: 4,
+              value: { selector: 0, value: null },
+            })
+            break
+          default:
+            key = decodedContentKey.blockHash
             break
         }
         this.logger(decodedContentKey)
-        this.emit(
-          'Stream',
-          1,
-          contentKey.selector,
-          toHexString(key ?? Uint8Array.from([])),
-          content
-        )
+        this.emit('Stream', 1, contentKey.selector, toHexString(key), content)
       }
     }
 
     let content
-    try {
-      switch (requestCode) {
-        case RequestCode.FINDCONTENT_READ:
-        case RequestCode.ACCEPT_READ:
-          content = await request.socket.handleFinPacket(packet)
-          content && streamer(content)
-          request.socket.logger(`Closing uTP Socket`)
-          break
-        case RequestCode.FOUNDCONTENT_WRITE:
-        case RequestCode.OFFER_WRITE:
-        default:
-          throw new Error('Why did I get a FIN packet?')
-      }
-    } catch (err) {
-      this.logger('Error processing FIN packet')
-      this.logger(err)
+    switch (requestCode) {
+      case RequestCode.FINDCONTENT_READ:
+      case RequestCode.ACCEPT_READ:
+        content = await request.socket.handleFinPacket(packet)
+        content && streamer(content)
+        request.socket.logger(`Closing uTP Socket`)
+        break
+      case RequestCode.FOUNDCONTENT_WRITE:
+      case RequestCode.OFFER_WRITE:
+      default:
+        this.logger('I send FIN not handle FIN')
+        return false
     }
+    return true
   }
 }
