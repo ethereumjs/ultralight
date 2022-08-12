@@ -156,7 +156,10 @@ export const App = () => {
         node = await createNodeFromScratch()
       }
     }
-
+    //@ts-ignore
+    node.discv5.sessionService.transport.on('multiAddr', (multiaddr) =>
+      node.discv5.enr.setLocationMultiaddr(multiaddr)
+    )
     setPortal(node)
     node.enableLog('*Portal*, -*uTP*, -*FINDNODES*')
     await node.start()

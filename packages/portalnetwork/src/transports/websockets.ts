@@ -40,10 +40,21 @@ export class WebSocketTransportService
 
   public async start(): Promise<void> {
     await this.socket.open()
+    //@ts-ignore
+    this.emit('connection', `connected to ${this.socket.ws.url}`)
     this.socket.ws.binaryType = 'arraybuffer'
     this.socket.onMessage.addListener((msg: MessageEvent | ArrayBuffer) => {
       const data = msg instanceof MessageEvent ? Buffer.from(msg.data) : Buffer.from(msg)
-      this.handleIncoming(data)
+
+      if (data.length === 6) {
+        const address = `${data[0].toString()}.${data[1].toString()}.${data[2].toString()}.${data[3].toString()}`
+        const port = data.readUIntBE(4, 2)
+        this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`)
+        //@ts-ignore
+        this.emit('multiAddr', this.multiaddr)
+      } else {
+        this.handleIncoming(data)
+      }
     })
     this.socket.onClose.addListener(() => log('socket to proxy closed'))
   }
