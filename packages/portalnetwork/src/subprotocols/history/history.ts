@@ -159,7 +159,7 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  private receiveSnapshot = (decoded: Uint8Array) => {
+  receiveSnapshot = (decoded: Uint8Array) => {
     try {
       const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
       const newAccumulator = new HeaderAccumulator({
