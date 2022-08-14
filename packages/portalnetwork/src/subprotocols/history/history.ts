@@ -434,7 +434,7 @@ export class HistoryProtocol extends BaseProtocol {
     ) {
       // Gossip new content to network (except header accumulators)
       this.gossipQueue.push([hashKey, contentType])
-      if (this.gossipQueue.length >= 5) {
+      if (this.gossipQueue.length >= 26) {
         await this.gossipHistoryNetworkContent(this.gossipQueue)
         this.gossipQueue = []
       }
