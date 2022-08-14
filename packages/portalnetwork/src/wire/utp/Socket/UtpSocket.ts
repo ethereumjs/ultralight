@@ -87,9 +87,10 @@ export class UtpSocket extends EventEmitter {
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encode()
-    this.logger(
-      `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
-    )
+    type !== PacketType.ST_DATA &&
+      this.logger(
+        `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
+      )
     this.utp.emit('Send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
     return msg
   }
@@ -102,11 +103,13 @@ export class UtpSocket extends EventEmitter {
 
   async sendSynAckPacket(packet: Packet): Promise<void> {
     await this.sendPacket(packet, PacketType.ST_STATE)
+    this.ackNr++
   }
 
   async sendDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
     await this.sendPacket(packet, PacketType.ST_DATA)
+    this.seqNr++
     return packet
   }
 
@@ -159,14 +162,19 @@ export class UtpSocket extends EventEmitter {
 
   async handleDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
-    this.logger(
-      `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
-    )
+    if (this.nextSeq !== packet.header.seqNr || this.nextAck !== packet.header.ackNr) {
+      this.logger(
+        `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
+      )
+    }
     const expected = this.nextSeq === packet.header.seqNr
     this.nextSeq = packet.header.seqNr + 1
     this.seqNr = this.seqNr + 1
     this.ackNr = packet.header.seqNr
-    await this.reader!.addPacket(packet)
+    if (!this.reader) {
+      this.reader = new ContentReader(this, packet.header.seqNr)
+    }
+    await this.reader.addPacket(packet)
     if (expected) {
       this.ackNrs.push(this.ackNr)
       return await this.utp.sendStatePacket(this)
