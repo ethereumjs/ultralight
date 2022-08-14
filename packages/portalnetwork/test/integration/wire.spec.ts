@@ -218,6 +218,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, findBlocks, true)
   })
+
   t.test('Nodes should share accumulator snapshot with FINDCONTENT / FOUNDCONTENT', (st) => {
     const findAccumulator = async (
       portal1: PortalNetwork,
@@ -459,6 +460,75 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           sszEncodeBlockBody(testBlock)
         )
       })
+    }
+    connectAndTest(t, st, gossip, true)
+  })
+
+  t.test('Node should gossip new content to peer', (st) => {
+    const gossip = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const testBlockData = require('./testBlocks.json')
+      const idx = Math.floor(Math.random() * testBlockData.length)
+      const testBlocks: Block[] = testBlockData.map((testBlock: any) => {
+        return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
+          hardforkByBlockNumber: true,
+        })
+      })
+      const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
+        return testBlock.hash()
+      })
+      const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
+        return toHexString(testHash)
+      })
+      const returned = false
+      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
+          st.equal(testHashStrings[idx], blockHash, `eth_getBlockByHash retrieved a blockHash`)
+        }
+        if (contentType === HistoryNetworkContentTypes.BlockBody) {
+          st.equal(testHashStrings[idx], blockHash, `eth_getBlockByHash retrieved a block body`)
+          const header = fromHexString(
+            await portal2.db.get(
+              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+            )
+          )
+          const body = fromHexString(
+            await portal2.db.get(
+              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockBody, blockHash)
+            )
+          )
+          const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
+          const block = reassembleBlock(header, body)
+          st.deepEqual(
+            block.serialize(),
+            testBlock.serialize(),
+            `eth_getBlockByHash retrieved a Block from History Network`
+          )
+          end(child, [portal1, portal2], st)
+        }
+      })
+      testBlocks.forEach(async (testBlock: Block, idx: number) => {
+        await protocol1.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.BlockHeader,
+          testHashStrings[idx],
+          testBlock.header.serialize()
+        )
+        await protocol1.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.BlockBody,
+          testHashStrings[idx],
+          sszEncodeBlockBody(testBlock)
+        )
+      })
+      await protocol1.sendPing(portal2.discv5.enr)
+      const returnedBlock = (await protocol2.getBlockByHash(testHashStrings[idx], true)) as Block
+      st.deepEqual(returnedBlock.hash(), testBlocks[idx].hash(), 'eth_getBlockByHash test passed')
     }
     connectAndTest(t, st, gossip, true)
   })
