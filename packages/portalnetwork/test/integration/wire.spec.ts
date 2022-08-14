@@ -127,64 +127,80 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
       const testBlockData: any[] = require('./testBlocks.json')
       const testBlock = Block.fromRLPSerializedBlock(
-        Buffer.from(fromHexString(testBlockData[2].rlp)),
+        Buffer.from(fromHexString(testBlockData[29].rlp)),
         {
           hardforkByBlockNumber: true,
         }
       )
+      const testblockHeader = testBlock.header
+      const testBlockBody = sszEncodeBlockBody(testBlock)
 
-      const testHash = toHexString(testBlock.hash())
+      const testHash = testBlockData[29].blockHash
       const testBlockKeys: Uint8Array[] = []
 
       await protocol1.addContentToHistory(
         1,
         HistoryNetworkContentTypes.BlockHeader,
-        '0x' + testBlock.header.hash().toString('hex'),
-        testBlock.header.serialize()
+        testHash,
+        testblockHeader.serialize()
       )
       await protocol1.addContentToHistory(
         1,
         HistoryNetworkContentTypes.BlockBody,
-        '0x' + testBlock.header.hash().toString('hex'),
-        sszEncodeBlockBody(testBlock)
+        testHash,
+        testBlockBody
       )
       testBlockKeys.push(
         HistoryNetworkContentKeyUnionType.serialize({
-          selector: 0,
-          value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+          selector: HistoryNetworkContentTypes.BlockHeader,
+          value: { chainId: 1, blockHash: fromHexString(testHash) },
         }),
         HistoryNetworkContentKeyUnionType.serialize({
-          selector: 1,
-          value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
-        }),
-        HistoryNetworkContentKeyUnionType.serialize({
-          selector: 4,
-          value: { selector: 0, value: null },
+          selector: HistoryNetworkContentTypes.BlockBody,
+          value: { chainId: 1, blockHash: fromHexString(testHash) },
         })
       )
+      let header: Uint8Array
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
         st.equal(
           await portal1.db.get(getHistoryNetworkContentId(1, contentType, testHash)),
-          content,
+          await portal2.db.get(getHistoryNetworkContentId(1, contentType, testHash)),
           `${HistoryNetworkContentTypes[contentType]} successfully stored in database`
         )
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
           st.ok(blockHash === testHash, 'FINDCONTENT/FOUNDCONTENT sent a block header')
+          st.equal(
+            toHexString(testBlock.header.serialize()),
+            content,
+            'Received header matches test block header'
+          )
+          header = fromHexString(content)
         }
         if (contentType === HistoryNetworkContentTypes.BlockBody) {
           st.ok(blockHash === testHash, 'FINDCONTENT/FOUNDCONTENT sent a block')
           if (blockHash === testHash && contentType === HistoryNetworkContentTypes.BlockBody) {
-            const body = decodeSszBlockBody(fromHexString(content))
-            const uncleHeaderHash = toHexString(
-              //@ts-ignore
-              BlockHeader.fromValuesArray(rlp.decode(body.unclesRlp)[0], {
-                hardforkByBlockNumber: true,
-              }).hash()
-            )
+            try {
+              decodeSszBlockBody(fromHexString(content))
+              st.pass('SSZ decoding successfull')
+            } catch (err) {
+              st.fail(`SSZ Decoding failed: ${(err as any).message}`)
+            }
+
+            const block = reassembleBlock(header, fromHexString(content))
             st.equal(
-              toHexString(testBlock.uncleHeaders[0].hash()),
-              uncleHeaderHash,
-              'FINDCONTENT/FOUNDCONTENT successfully sent an SSZ encoded block'
+              toHexString(block.hash()),
+              toHexString(testBlock.hash()),
+              'FINDCONTENT/FOUNDCONTENT successfully sent a Block over uTP.'
+            )
+            st.deepEqual(
+              block.transactions,
+              testBlock.transactions,
+              'Received Block matches Test Block'
+            )
+            st.deepEqual(
+              block.uncleHeaders,
+              testBlock.uncleHeaders,
+              'Received Block matches Test Block'
             )
             st.pass('FINDCONTENT/FOUNDCONTENT uTP Stream succeeded')
             end(child, [portal1, portal2], st)
