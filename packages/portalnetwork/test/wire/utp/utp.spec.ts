@@ -427,7 +427,7 @@ tape('PortalNetworkUTP tests', (t) => {
           st.deepEqual(p.packet.header, synack.header, `handled SYNACK Packet`)
         }
         if (mode === 'read') {
-          request.reader = await utp.createNewReader(request.socket, 2)
+          request.socket.reader = await utp.createNewReader(request.socket, 2)
           const data = testPacketList.rec.data as Packet[]
           const p = await utp.handleUtpPacket(data[0].encode(), params.peerId)
           st.equal(
