@@ -141,8 +141,12 @@ export class HistoryProtocol extends BaseProtocol {
                   }
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  const decoded = ContentMessageType.deserialize(res.subarray(1))
-                  this.receiveSnapshot(decoded.value as Uint8Array)
+                  this.addContentToHistory(
+                    1,
+                    decodedKey.selector,
+                    getHistoryNetworkContentId(1, 4),
+                    decoded.value as Uint8Array
+                  )
                 }
               }
             }
@@ -185,6 +189,7 @@ export class HistoryProtocol extends BaseProtocol {
           receivedAccumulator.historicalEpochs,
           receivedAccumulator.currentEpoch
         )
+        this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(decoded))
 
         /*    const historicalEpochs = this.accumulator.historicalEpochs
         historicalEpochs.forEach(async (epochHash, idx) => {
@@ -409,7 +414,6 @@ export class HistoryProtocol extends BaseProtocol {
         this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
         break
       case HistoryNetworkContentTypes.HeaderAccumulator:
-        this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(value))
         this.receiveSnapshot(value)
         break
       default:
