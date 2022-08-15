@@ -1,7 +1,12 @@
 import tape from 'tape'
-import { shortId, generateRandomNodeIdAtDistance, arrayByteLength } from '../../src/util/index.js'
+import {
+  shortId,
+  generateRandomNodeIdAtDistance,
+  arrayByteLength,
+  dirSize,
+} from '../../src/util/index.js'
 import { log2Distance } from '@chainsafe/discv5'
-tape('utility method tests', (t) => {
+tape('utility method tests', async (t) => {
   const nodeId = '82418605a77ea8c8f47802d71661d3812ff64e70fd2fc5f0ff57a113185b2c41'
 
   const short = shortId(nodeId)
@@ -16,5 +21,7 @@ tape('utility method tests', (t) => {
   const arrayOfBuffers = [Buffer.from([1, 2, 3]), Buffer.from([1, 2, 3, 4, 5])]
   t.equal(arrayByteLength(arrayOfUint8Arrays), 5, 'computed correct length of nested Uint8Arrays')
   t.equal(arrayByteLength(arrayOfBuffers), 8, 'computed correct length of nested Buffers')
+  t.equal(await dirSize('./test/util/testDir'), 0.00002765655517578125)
+
   t.end()
 })

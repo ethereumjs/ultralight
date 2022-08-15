@@ -1,6 +1,4 @@
 import { UtpSocket } from '../index.js'
-import ContentReader from '../Protocol/read/ContentReader.js'
-import ContentWriter from '../Protocol/write/ContentWriter.js'
 import { sendSynPacket } from '../Packets/PacketSenders.js'
 import { RequestCode } from './PortalNetworkUTP.js'
 import { ConnectionState } from '../Socket/index.js'
@@ -14,9 +12,6 @@ export class ContentRequest {
   socket: UtpSocket
   socketKey: string
   content: Uint8Array
-  contents?: Uint8Array[] | undefined[]
-  reader?: ContentReader
-  writer?: ContentWriter
 
   constructor(
     protocolId: ProtocolId,
@@ -46,7 +41,7 @@ export class ContentRequest {
       case RequestCode.OFFER_WRITE:
         if (this.content) {
           writer = await this.socket.utp.createNewWriter(this.socket, 2)
-          this.writer = writer
+          this.socket.writer = writer
           await sendSynPacket(this.socket)
           this.socket.state = ConnectionState.SynSent
         }
