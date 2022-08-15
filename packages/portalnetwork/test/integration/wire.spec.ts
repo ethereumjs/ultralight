@@ -375,7 +375,6 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       child: ChildProcessWithoutNullStreams
     ) => {
       const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const testBlockData = require('./testBlocks.json')
       const testBlocks: Block[] = testBlockData.map((testBlock: any) => {
         return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
@@ -389,21 +388,10 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
         return toHexString(testHash)
       })
-      const testHeaderKeys: Uint8Array[] = testHashes.map((testHash: Uint8Array) => {
-        return HistoryNetworkContentKeyUnionType.serialize({
-          selector: 0,
-          value: { chainId: 1, blockHash: testHash },
-        })
-      })
-      const testBlockKeys: Uint8Array[] = testHashes.map((testHash: Uint8Array) => {
-        return HistoryNetworkContentKeyUnionType.serialize({
-          selector: 1,
-          value: { chainId: 1, blockHash: testHash },
-        })
-      })
+
       const headers: string[] = []
       const blocks: string[] = []
-      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+      portal2.on('ContentAdded', async (blockHash, contentType, _content) => {
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
           headers.includes(blockHash) || headers.push(blockHash)
           if (headers.length === testBlocks.length) {
@@ -489,8 +477,8 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
         return toHexString(testHash)
       })
-      const returned = false
-      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+
+      portal2.on('ContentAdded', async (blockHash, contentType, _content) => {
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
           st.equal(testHashStrings[idx], blockHash, `eth_getBlockByHash retrieved a blockHash`)
         }
@@ -548,8 +536,6 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
       const testAccumulator = require('./testAccumulator.json')
       const testBlockData = require('./testBlock.json')
-      const desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(testAccumulator))
-      const rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: desAccumulator })
       const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 4,
         value: { selector: 0, value: null },
@@ -575,12 +561,10 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       let header: Uint8Array
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-          console.log('eth_getBlockByNumber returned a block header')
           st.equal(content, toHexString(block8200Header))
           header = fromHexString(content)
         }
         if (contentType === HistoryNetworkContentTypes.BlockBody) {
-          console.log('eth_getBlockByNumber returned a block body')
           const block = reassembleBlock(header, fromHexString(content))
           st.equal(
             toHexString(block.serialize()),
@@ -590,11 +574,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           end(child, [portal1, portal2], st)
         }
       })
-      // end(child, [portal1, portal2], st)
 
       await protocol1.sendPing(portal2.discv5.enr)
       await protocol2.getBlockByNumber(8200, true)
-      // await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
     }
     connectAndTest(t, st, findAccumulator, true)
   })
@@ -676,14 +658,11 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
             end(child, [portal1, portal2], st)
           }
         })
-        // end(child, [portal1, portal2], st)
 
         await protocol1.sendPing(portal2.discv5.enr)
         await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
       }
       connectAndTest(t, st, findEpoch, true)
-
-      //     const res = await protocol.sendPing(portal1.discv5.enr)
     }
   )
   t.test('eth_getBlockByNumber -- HistoricalEpoch', (st) => {
@@ -706,20 +685,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     const body = sszEncodeBlockBody(rebuiltBlock)
     const _header = rebuiltBlock.header.serialize()
     const blockHash = block1000.hash
-    // const headerKey = HistoryNetworkContentKeyUnionType.serialize({
-    //   selector: 0,
-    //   value: {
-    //     chainId: 1,
-    //     blockHash: blockHash,
-    //   },
-    // })
-    // const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
-    //   selector: 1,
-    //   value: {
-    //     chainId: 1,
-    //     blockHash: blockHash,
-    //   },
-    // })
+
     const findEpoch = async (
       portal1: PortalNetwork,
       portal2: PortalNetwork,
@@ -793,13 +759,10 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
           end(child, [portal1, portal2], st)
         }
       })
-      // end(child, [portal1, portal2], st)
 
       await protocol1.sendPing(portal2.discv5.enr)
       await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
     }
     connectAndTest(t, st, findEpoch, true)
-
-    //     const res = await protocol.sendPing(portal1.discv5.enr)
   })
 })

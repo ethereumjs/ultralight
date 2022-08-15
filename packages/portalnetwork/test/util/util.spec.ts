@@ -25,13 +25,3 @@ tape('utility method tests', async (t) => {
 
   t.end()
 })
-
-// export const dirSize = async (directory: string) => {
-//   const files = await fs?.readdir(directory)
-//   const stats = files.map((file) => fs?.stat(path.join(directory, file)))
-//   const bytesSize = (await Promise.all(stats)).reduce(
-//     (accumulator, { size }) => accumulator + size,
-//     0
-//   )
-//   return bytesSize / MEGABYTE
-// }
