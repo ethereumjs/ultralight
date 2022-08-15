@@ -5,6 +5,7 @@ import { ProtocolId } from '../../../index.js'
 import {
   HistoryNetworkContentKey,
   HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
 } from '../../../subprotocols/history/index.js'
 import { sendFinPacket } from '../Packets/PacketSenders.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
@@ -391,16 +392,25 @@ export class PortalNetworkUTP extends BasicUtp {
       } else {
         contents = [content]
       }
+      if (keys.length < 1) {
+        throw new Error('Missing content keys')
+      }
       keys.forEach((k, idx) => {
         contentKey = HistoryNetworkContentKeyUnionType.deserialize(k)
         decodedContentKey = contentKey.value as HistoryNetworkContentKey
         const _content = contents[idx]
-        this.logger.extend(`FINISHED`)(`${idx + 1}/${keys.length} -- sending content to database`)
+        this.logger.extend(`FINISHED`)(
+          `${idx + 1}/${keys.length} -- sending ${
+            HistoryNetworkContentTypes[contentKey.selector]
+          } to database`
+        )
+        // Hack -- decodedContentKey.blockHash is undefined for
+        // EpochAccumulator requests...
         this.emit(
           'Stream',
           1,
           contentKey.selector,
-          contentKey.selector === 4
+          contentKey.selector > 2
             ? toHexString(Uint8Array.from([]))
             : toHexString(decodedContentKey.blockHash),
           _content
