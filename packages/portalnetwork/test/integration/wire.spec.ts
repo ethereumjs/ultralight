@@ -18,11 +18,15 @@ import {
 } from '../../src/subprotocols/history/index.js'
 import { Block } from '@ethereumjs/block'
 import { TransportLayer } from '../../src/client/types.js'
-import { HistoryProtocol, HeaderAccumulator } from '../../src/subprotocols/history/index.js'
+import {
+  HistoryProtocol,
+  HeaderAccumulator,
+  EpochAccumulator,
+  reassembleBlock,
+} from '../../src/subprotocols/history/index.js'
 import { createRequire } from 'module'
 import { BlockHeader } from '@ethereumjs/block'
 import * as rlp from 'rlp'
-import { reassembleBlock } from '../../dist/index.js'
 
 const require = createRequire(import.meta.url)
 
@@ -90,8 +94,8 @@ function connectAndTest(
       const nodes = await setupNetwork()
       portal1 = nodes[0]
       portal2 = nodes[1]
-      // portal1.enableLog('*Portal*')
-      // portal2.enableLog('*Portal*')
+      // portal1.enableLog('*Portal*, -*NODES*')
+      // portal2.enableLog('*Portal*, -*NODES*')
       await portal1.start()
     } else if (data.toString().includes('UDP proxy listening on')) {
       const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
@@ -593,5 +597,209 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       // await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
     }
     connectAndTest(t, st, findAccumulator, true)
+  })
+
+  t.test(
+    'Node should request a HeaderAccumulator, then request an EpochAccumulator from the historical_epochs',
+    (st) => {
+      const accumulatorData = require('./testAccumulator.json')
+      const epochData = require('./testEpoch.json')
+      const epochHash = epochData.hash
+      const serialized = epochData.serialized
+      const epochKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 3,
+        value: {
+          chainId: 1,
+          blockHash: fromHexString(epochHash),
+        },
+      })
+      const findEpoch = async (
+        portal1: PortalNetwork,
+        portal2: PortalNetwork,
+        child: ChildProcessWithoutNullStreams
+      ) => {
+        const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+          selector: 4,
+          value: { selector: 0, value: null },
+        })
+        await protocol1.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.HeaderAccumulator,
+          toHexString(accumulatorKey),
+          fromHexString(accumulatorData)
+        )
+        await protocol1.addContentToHistory(
+          1,
+          HistoryNetworkContentTypes.EpochAccumulator,
+          toHexString(epochKey),
+          fromHexString(serialized)
+        )
+
+        portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+          if (contentType === HistoryNetworkContentTypes.HeaderAccumulator) {
+            const headerAccumulator = HeaderAccumulatorType.deserialize(fromHexString(content))
+            const _epochHash = toHexString(headerAccumulator.historicalEpochs[0])
+            st.equal(
+              _epochHash,
+              epochHash,
+              'Received Accumulator has historical epoch hash for blocks 0 - 8191.'
+            )
+            await protocol2.sendFindContent(portal1.discv5.enr.nodeId, epochKey)
+          }
+          if (contentType === HistoryNetworkContentTypes.EpochAccumulator) {
+            st.equal(
+              contentType,
+              HistoryNetworkContentTypes.EpochAccumulator,
+              'FINDCONTENT has returned an EpochAccumulator'
+            )
+            const _epochAccumulator = EpochAccumulator.deserialize(fromHexString(content))
+            const _epochAccumulatorHash = toHexString(
+              EpochAccumulator.hashTreeRoot(_epochAccumulator)
+            )
+            const _block1000Hash = toHexString(_epochAccumulator[1000].blockHash)
+            st.equal(
+              _epochAccumulatorHash,
+              epochData.hash,
+              'Epoch Accumulator has correct hash tree root'
+            )
+            st.equal(
+              _block1000Hash,
+              '0x5b4590a9905fa1c9cc273f32e6dc63b4c512f0ee14edc6fa41c26b416a7b5d58',
+              'EpochAccumulator has valid hash for block 1000'
+            )
+            st.equal(content, epochData.serialized, 'EpochAccumulator matches test Data')
+            const contentId = getHistoryNetworkContentId(1, 3, blockHash)
+            const stored = await portal2.db.get(contentId)
+            st.equal(stored, epochData.serialized, 'EpochAccumulator stored in db')
+            end(child, [portal1, portal2], st)
+          }
+        })
+        // end(child, [portal1, portal2], st)
+
+        await protocol1.sendPing(portal2.discv5.enr)
+        await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
+      }
+      connectAndTest(t, st, findEpoch, true)
+
+      //     const res = await protocol.sendPing(portal1.discv5.enr)
+    }
+  )
+  t.test('eth_getBlockByNumber -- HistoricalEpoch', (st) => {
+    const accumulatorData = require('./testAccumulator.json')
+    const epochData = require('./testEpoch.json')
+    const block1000 = require('./testBlock1000.json')
+    const epochHash = epochData.hash
+    const serialized = epochData.serialized
+    const epochKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 3,
+      value: {
+        chainId: 1,
+        blockHash: fromHexString(epochHash),
+      },
+    })
+    const blockRlp = block1000.raw
+    const rebuiltBlock = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(blockRlp)), {
+      hardforkByBlockNumber: true,
+    })
+    const body = sszEncodeBlockBody(rebuiltBlock)
+    const _header = rebuiltBlock.header.serialize()
+    const blockHash = block1000.hash
+    // const headerKey = HistoryNetworkContentKeyUnionType.serialize({
+    //   selector: 0,
+    //   value: {
+    //     chainId: 1,
+    //     blockHash: blockHash,
+    //   },
+    // })
+    // const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
+    //   selector: 1,
+    //   value: {
+    //     chainId: 1,
+    //     blockHash: blockHash,
+    //   },
+    // })
+    const findEpoch = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 4,
+        value: { selector: 0, value: null },
+      })
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.HeaderAccumulator,
+        toHexString(accumulatorKey),
+        fromHexString(accumulatorData)
+      )
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.EpochAccumulator,
+        toHexString(epochKey),
+        fromHexString(serialized)
+      )
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        blockHash,
+        _header
+      )
+      await protocol1.addContentToHistory(1, HistoryNetworkContentTypes.BlockBody, blockHash, body)
+      let header: Uint8Array
+      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+        if (contentType === HistoryNetworkContentTypes.HeaderAccumulator) {
+          const headerAccumulator = HeaderAccumulatorType.deserialize(fromHexString(content))
+          const _epochHash = toHexString(headerAccumulator.historicalEpochs[0])
+          st.equal(
+            _epochHash,
+            epochHash,
+            'Received Accumulator has historical epoch hash for blocks 0 - 8191.'
+          )
+          protocol2.getBlockByNumber(1000, true)
+        }
+        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
+          st.equal(
+            contentType,
+            HistoryNetworkContentTypes.BlockHeader,
+            'eth_getBlockByNumber returned a block header'
+          )
+          header = fromHexString(content)
+        }
+        if (contentType === HistoryNetworkContentTypes.BlockBody) {
+          st.equal(
+            contentType,
+            HistoryNetworkContentTypes.BlockBody,
+            'eth_getBlockByNumber returned a block body'
+          )
+          const body = fromHexString(content)
+          const block = reassembleBlock(header, body)
+          st.equal(block.header.number, 1000n, 'eth_getBlockByNumber returned block 1000')
+          st.deepEqual(
+            block.header,
+            rebuiltBlock.header,
+            'eth_getBlockByNumber retrieved block 1000'
+          )
+          st.deepEqual(
+            block.serialize(),
+            rebuiltBlock.serialize(),
+            'eth_getBlockByNumber retrieved block 1000'
+          )
+          st.pass('eth_getBlockByNumber test passed')
+          end(child, [portal1, portal2], st)
+        }
+      })
+      // end(child, [portal1, portal2], st)
+
+      await protocol1.sendPing(portal2.discv5.enr)
+      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
+    }
+    connectAndTest(t, st, findEpoch, true)
+
+    //     const res = await protocol.sendPing(portal1.discv5.enr)
   })
 })
