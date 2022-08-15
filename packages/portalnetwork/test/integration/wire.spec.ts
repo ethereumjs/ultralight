@@ -524,6 +524,49 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, gossip, true)
   })
+  t.test('eth_getBlockByHash test -- no body available', (st) => {
+    const getBlock = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const testBlockData = require('./testBlock.json')
+      const testBlock: Block = Block.fromRLPSerializedBlock(
+        Buffer.from(fromHexString(testBlockData[0].rlp)),
+        {
+          hardforkByBlockNumber: true,
+        }
+      )
+      const testHash = toHexString(testBlock.hash())
+      const testHeader = testBlock.header.serialize()
+      await protocol1.addContentToHistory(1, 0, testHash, testHeader)
+
+      await protocol1.sendPing(portal2.discv5.enr)
+      const returnedBlock = (await protocol2.getBlockByHash(testHash, true)) as Block
+      st.deepEqual(
+        returnedBlock.header.hash(),
+        testBlock.header.hash(),
+        'eth_getBlockByHash test passed'
+      )
+      const _h = await portal2.db.get(getHistoryNetworkContentId(1, 0, testHash))
+      st.equal(_h, toHexString(testHeader), 'eth_getBlockByHash returned a Block Header')
+
+      try {
+        const body = await portal2.db.get(getHistoryNetworkContentId(1, 1, testHash))
+        console.log(body)
+        st.fail('should not find block body')
+      } catch (e: any) {
+        st.equal(
+          e.message,
+          'NotFound',
+          'eth_getBlockByHash returned a BlockHeader when a BlockBody could not be found'
+        )
+      }
+    }
+    connectAndTest(t, st, getBlock)
+  })
 
   t.test('eth_getBlockByNumber test', (st) => {
     const findAccumulator = async (
