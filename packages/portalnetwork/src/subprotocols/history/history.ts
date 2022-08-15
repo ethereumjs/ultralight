@@ -239,7 +239,7 @@ export class HistoryProtocol extends BaseProtocol {
       let lookup = new ContentLookup(this, headerContentKey)
       header = await lookup.startLookup()
       if (!header) {
-        undefined
+        return undefined
       }
       if (!includeTransactions) {
         block = reassembleBlock(header, rlp.encode([[], []]))
@@ -272,7 +272,7 @@ export class HistoryProtocol extends BaseProtocol {
             }, 2000)
           } else {
             // Assume we weren't able to find the block body and just return the header
-            block = reassembleBlock(header, rlp.encode([[], []]))
+            block = reassembleBlock(header)
             resolve(block)
           }
         })
@@ -322,7 +322,6 @@ export class HistoryProtocol extends BaseProtocol {
               `Found EpochAccumulator with blockHash for block ${blockNumber}`
             )
             const epoch = EpochAccumulator.deserialize(fromHexString(content))
-            this.logger.extend(`ETH_GETBLOCKBYNUMBER`)
             blockHash = toHexString(epoch[blockIndex].blockHash)
             try {
               const block = await this.getBlockByHash(blockHash, includeTransactions)
