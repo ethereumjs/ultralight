@@ -185,10 +185,7 @@ export class HistoryProtocol extends BaseProtocol {
           'with Accumulator of height',
           newAccumulator.currentHeight()
         )
-        this.accumulator.replaceAccumulator(
-          receivedAccumulator.historicalEpochs,
-          receivedAccumulator.currentEpoch
-        )
+        this.accumulator = newAccumulator
         this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(decoded))
 
         /*    const historicalEpochs = this.accumulator.historicalEpochs
@@ -242,7 +239,7 @@ export class HistoryProtocol extends BaseProtocol {
         block = reassembleBlock(header, rlp.encode([[], []]))
         return block
       } else {
-        lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
+        lookup = new ContentLookup(this, bodyContentKey!)
         body = await lookup.startLookup()
         return new Promise((resolve) => {
           if (body) {
@@ -282,41 +279,51 @@ export class HistoryProtocol extends BaseProtocol {
       this.logger(`Block number ${blockNumber} is higher than current known chain height`)
       return
     }
-    const blockIndex = blockNumber % EPOCH_SIZE
-    const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
-    const epochRootHash = this.accumulator.historicalEpochs[historicalEpochIndex]
-
-    let blockHash
-    if (!epochRootHash) {
-      blockHash = toHexString(this.accumulator.currentEpoch[blockIndex].blockHash)
-    } else {
-      let epoch
+    if (blockNumber > 8192 * this.accumulator.historicalEpochs.length) {
+      const blockIndex = blockNumber % EPOCH_SIZE
+      const blockHash = toHexString(this.accumulator.currentEpoch[blockIndex].blockHash)
+      this.logger(`Blockhash found for BlockNumber ${blockNumber}: ${blockHash}`)
       try {
-        const encodedEpoch = await this.client.db.get(
-          getHistoryNetworkContentId(
-            1,
-            HistoryNetworkContentTypes.EpochAccumulator,
-            toHexString(epochRootHash)
-          )
-        )
-        epoch = EpochAccumulator.deserialize(fromHexString(encodedEpoch))
-      } catch {
-        const lookup = new ContentLookup(
-          this,
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.EpochAccumulator,
-            value: { chainId: 1, blockHash: epochRootHash },
-          })
-        )
-        const encodedEpoch = await lookup.startLookup()
-        if (!(encodedEpoch instanceof Uint8Array)) return
-        epoch = EpochAccumulator.deserialize(encodedEpoch)
+        const block = await this.getBlockByHash(blockHash, includeTransactions)
+        return block
+      } catch (err) {
+        this.logger(`getBlockByNumber error: ${(err as any).message}`)
       }
-
-      blockHash = toHexString(epoch[blockIndex].blockHash)
+    } else {
+      throw new Error(`Blockhash index lookup not implemented`)
     }
-    const block = await this.getBlockByHash(blockHash, includeTransactions)
-    return block
+    // const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
+    // const epochRootHash = this.accumulator.historicalEpochs[historicalEpochIndex]
+
+    // let blockHash
+    // if (!epochRootHash) {
+    //   blockHash = toHexString(this.accumulator.currentEpoch[blockIndex].blockHash)
+    // } else {
+    //   let epoch
+    //   try {
+    //     const encodedEpoch = await this.client.db.get(
+    //       getHistoryNetworkContentId(
+    //         1,
+    //         HistoryNetworkContentTypes.EpochAccumulator,
+    //         toHexString(epochRootHash)
+    //       )
+    //     )
+    //     epoch = EpochAccumulator.deserialize(fromHexString(encodedEpoch))
+    //   } catch {
+    //     const lookup = new ContentLookup(
+    //       this,
+    //       HistoryNetworkContentKeyUnionType.serialize({
+    //         selector: HistoryNetworkContentTypes.EpochAccumulator,
+    //         value: { chainId: 1, blockHash: epochRootHash },
+    //       })
+    //     )
+    //     const encodedEpoch = await lookup.startLookup()
+    //     if (!(encodedEpoch instanceof Uint8Array)) return
+    //     epoch = EpochAccumulator.deserialize(encodedEpoch)
+    //   }
+
+    //   blockHash = toHexString(epoch[blockIndex].blockHash)
+    // }
   }
 
   /**

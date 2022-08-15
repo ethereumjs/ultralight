@@ -90,8 +90,8 @@ function connectAndTest(
       const nodes = await setupNetwork()
       portal1 = nodes[0]
       portal2 = nodes[1]
-      // portal1.enableLog('*Portal*,*discv5*')
-      // portal2.enableLog('*Portal*,*discv5*')
+      // portal1.enableLog('*Portal*')
+      // portal2.enableLog('*Portal*')
       await portal1.start()
     } else if (data.toString().includes('UDP proxy listening on')) {
       const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
@@ -464,7 +464,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     connectAndTest(t, st, gossip, true)
   })
 
-  t.test('Node should gossip new content to peer', (st) => {
+  t.test('eth_getBlockByHash test', (st) => {
     const gossip = async (
       portal1: PortalNetwork,
       portal2: PortalNetwork,
@@ -531,5 +531,67 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       st.deepEqual(returnedBlock.hash(), testBlocks[idx].hash(), 'eth_getBlockByHash test passed')
     }
     connectAndTest(t, st, gossip, true)
+  })
+
+  t.test('eth_getBlockByNumber test', (st) => {
+    const findAccumulator = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
+      const testAccumulator = require('./testAccumulator.json')
+      const testBlockData = require('./testBlock.json')
+      const desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(testAccumulator))
+      const rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: desAccumulator })
+      const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 4,
+        value: { selector: 0, value: null },
+      })
+
+      const block8200Hash = testBlockData[0].blockHash
+      const block8200Rlp = testBlockData[0].rlp
+      const headerKey = getHistoryNetworkContentId(1, 0, block8200Hash)
+      const blockKey = getHistoryNetworkContentId(1, 1, block8200Hash)
+      const testBlock = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(block8200Rlp)), {
+        hardforkByBlockNumber: true,
+      })
+      const block8200Body = sszEncodeBlockBody(testBlock)
+      const block8200Header = testBlock.header.serialize()
+      portal1.db.put(headerKey, toHexString(block8200Header))
+      portal1.db.put(blockKey, toHexString(block8200Body))
+      await protocol2.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.HeaderAccumulator,
+        toHexString(accumulatorKey),
+        fromHexString(testAccumulator)
+      )
+      let header: Uint8Array
+      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
+          console.log('eth_getBlockByNumber returned a block header')
+          st.equal(content, toHexString(block8200Header))
+          header = fromHexString(content)
+        }
+        if (contentType === HistoryNetworkContentTypes.BlockBody) {
+          console.log('eth_getBlockByNumber returned a block body')
+          const block = reassembleBlock(header, fromHexString(content))
+          st.equal(
+            toHexString(block.serialize()),
+            block8200Rlp,
+            'eth_getBlockByNumber test passed.'
+          )
+          end(child, [portal1, portal2], st)
+        }
+      })
+      // end(child, [portal1, portal2], st)
+
+      await protocol1.sendPing(portal2.discv5.enr)
+      await protocol2.getBlockByNumber(8200, true)
+      // await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
+    }
+    connectAndTest(t, st, findAccumulator, true)
   })
 })
