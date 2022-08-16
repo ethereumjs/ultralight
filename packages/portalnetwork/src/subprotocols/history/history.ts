@@ -255,26 +255,8 @@ export class HistoryProtocol extends BaseProtocol {
               resolve(block)
             } catch {}
           }
-          if (body && body.length === 2) {
-            // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
-            this.client.on('ContentAdded', (key, _type, content) => {
-              if (key === blockHash) {
-                block = reassembleBlock(header, fromHexString(content))
-                this.client.removeAllListeners('ContentAdded')
-                resolve(block)
-              }
-            })
-            setTimeout(() => {
-              // Body lookup didn't return within 2 seconds so timeout and return header
-              this.client.removeAllListeners('ContentAdded')
-              block = reassembleBlock(header, rlp.encode([[], []]))
-              resolve(block)
-            }, 2000)
-          } else {
-            // Assume we weren't able to find the block body and just return the header
-            block = reassembleBlock(header)
-            resolve(block)
-          }
+          block = reassembleBlock(header, body)
+          resolve(block)
         })
       }
     } catch {}
