@@ -113,7 +113,7 @@ function connectAndTest(
   })
 }
 
-tape('Portal Network Wire Spec Integration Tests', (t) => {
+tape('Integration Tests -- PING/PONG', (t) => {
   t.test('clients start and connect to each other', (st) => {
     const ping = async (portal1: PortalNetwork, portal2: PortalNetwork) => {
       const protocol = portal2.protocols.get(ProtocolId.HistoryNetwork)
@@ -123,7 +123,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, ping)
   })
+})
 
+tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
   t.test('Nodes should stream content with FINDCONTENT / FOUNDCONTENT', (st) => {
     const findBlocks = async (
       portal1: PortalNetwork,
@@ -222,7 +224,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, findBlocks, true)
   })
+})
 
+tape('FINDCONTENT/FOUNDCONTENT -- Accumulator Snapshots', (t) => {
   t.test('Nodes should share accumulator snapshot with FINDCONTENT / FOUNDCONTENT', (st) => {
     const findAccumulator = async (
       portal1: PortalNetwork,
@@ -280,7 +284,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, findAccumulator, true)
   })
+})
 
+tape('OFFER/ACCEPT', (t) => {
   t.test('Nodes should stream multiple blocks OFFER / ACCEPT', (st) => {
     const offerBlocks = async (
       portal1: PortalNetwork,
@@ -455,7 +461,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, gossip, true)
   })
+})
 
+tape('getBlockByHash', (t) => {
   t.test('eth_getBlockByHash test', (st) => {
     const gossip = async (
       portal1: PortalNetwork,
@@ -525,11 +533,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     connectAndTest(t, st, gossip, true)
   })
   t.test('eth_getBlockByHash test -- no body available', (st) => {
-    const getBlock = async (
-      portal1: PortalNetwork,
-      portal2: PortalNetwork,
-      child: ChildProcessWithoutNullStreams
-    ) => {
+    const getBlock = async (portal1: PortalNetwork, portal2: PortalNetwork) => {
       const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const testBlockData = require('./testBlock.json')
@@ -554,8 +558,7 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
       st.equal(_h, toHexString(testHeader), 'eth_getBlockByHash returned a Block Header')
 
       try {
-        const body = await portal2.db.get(getHistoryNetworkContentId(1, 1, testHash))
-        console.log(body)
+        await portal2.db.get(getHistoryNetworkContentId(1, 1, testHash))
         st.fail('should not find block body')
       } catch (e: any) {
         st.equal(
@@ -567,7 +570,9 @@ tape('Portal Network Wire Spec Integration Tests', (t) => {
     }
     connectAndTest(t, st, getBlock)
   })
+})
 
+tape('getBlockByNumber', (t) => {
   t.test('eth_getBlockByNumber test', (st) => {
     const findAccumulator = async (
       portal1: PortalNetwork,
