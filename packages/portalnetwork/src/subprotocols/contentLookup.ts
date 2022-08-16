@@ -39,7 +39,7 @@ export class ContentLookup {
       const res = await this.protocol.client.db.get(this.contentId)
       return fromHexString(res)
     } catch (err) {
-      // this.logger(err)
+      this.logger(err)
     }
     this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer: any) => {
       try {

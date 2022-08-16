@@ -86,19 +86,27 @@ export const sszEncodeBlockBody = (block: Block) => {
  * @param rawBody RLP encoded block body consisting of transactions and uncles as nested Uint8Arrays
  * @returns a `Block` object assembled from the header and body provided
  */
-export const reassembleBlock = (rawHeader: Uint8Array, rawBody: Uint8Array) => {
-  const decodedBody = decodeSszBlockBody(rawBody)
-  const block = Block.fromValuesArray(
-    //@ts-ignore
-    [
+export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => {
+  if (rawBody) {
+    const decodedBody = decodeSszBlockBody(rawBody)
+    const block = Block.fromValuesArray(
+      [
+        rlp.decode(Buffer.from(rawHeader)),
+        decodedBody.txsRlp,
+        rlp.decode(decodedBody.unclesRlp),
+      ] as BlockBuffer,
+      { hardforkByBlockNumber: true }
+    )
+    return block
+  } else {
+    const blockBuffer: BlockBuffer = [
       rlp.decode(Buffer.from(rawHeader)),
-      decodedBody.txsRlp,
-      rlp.decode(decodedBody.unclesRlp),
-    ] as BlockBuffer,
-    { hardforkByBlockNumber: true }
-  )
-
-  return block
+      rlp.decode(Buffer.from(Uint8Array.from([]))),
+      rlp.decode(Buffer.from(Uint8Array.from([]))),
+    ] as BlockBuffer
+    const block = Block.fromValuesArray(blockBuffer, { hardforkByBlockNumber: true })
+    return block
+  }
 }
 
 /**
