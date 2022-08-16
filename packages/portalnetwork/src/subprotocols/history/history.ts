@@ -255,26 +255,8 @@ export class HistoryProtocol extends BaseProtocol {
               resolve(block)
             } catch {}
           }
-          if (body && body.length === 2) {
-            // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
-            this.client.on('ContentAdded', (key, _type, content) => {
-              if (key === blockHash) {
-                block = reassembleBlock(header, fromHexString(content))
-                this.client.removeAllListeners('ContentAdded')
-                resolve(block)
-              }
-            })
-            setTimeout(() => {
-              // Body lookup didn't return within 2 seconds so timeout and return header
-              this.client.removeAllListeners('ContentAdded')
-              block = reassembleBlock(header, rlp.encode([[], []]))
-              resolve(block)
-            }, 2000)
-          } else {
-            // Assume we weren't able to find the block body and just return the header
-            block = reassembleBlock(header)
-            resolve(block)
-          }
+          block = reassembleBlock(header, body)
+          resolve(block)
         })
       }
     } catch {}
@@ -317,54 +299,25 @@ export class HistoryProtocol extends BaseProtocol {
         this.logger('eth_getBlockByNumber failed to retrieve historical epoch accumulator')
         return undefined
       }
-      if (result.length !== 2) {
-        try {
-          const epoch = EpochAccumulator.deserialize(result)
-          blockHash = toHexString(epoch[blockIndex].blockHash)
 
-          const block = await this.getBlockByHash(blockHash, includeTransactions)
-          if (block?.header.number === BigInt(blockNumber)) {
-            return block
-          } else if (block !== undefined) {
-            this.logger(`eth_getBlockByNumber returned the wrong block, ${block?.header.number}`)
-            return
-          } else {
-            this.logger(`eth_getBlockByNumber failed to find block`)
-          }
-        } catch (err: any) {
-          this.logger(`eth_getBlockByNumber encountered an error: ${err.message}`)
+      try {
+        const epoch = EpochAccumulator.deserialize(result)
+        this.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
+          `Found EpochAccumulator with blockHash for block ${blockNumber}`
+        )
+        blockHash = toHexString(epoch[blockIndex].blockHash)
+
+        const block = await this.getBlockByHash(blockHash, includeTransactions)
+        if (block?.header.number === BigInt(blockNumber)) {
+          return block
+        } else if (block !== undefined) {
+          this.logger(`eth_getBlockByNumber returned the wrong block, ${block?.header.number}`)
+          return
+        } else {
+          this.logger(`eth_getBlockByNumber failed to find block`)
         }
-      } else {
-        return new Promise((resolve) => {
-          this.client.on('ContentAdded', async (key, contentType, content) => {
-            if (contentType === HistoryNetworkContentTypes.EpochAccumulator) {
-              try {
-                this.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-                  `Found EpochAccumulator with blockHash for block ${blockNumber}`
-                )
-                const epoch = EpochAccumulator.deserialize(fromHexString(content))
-                blockHash = toHexString(epoch[blockIndex].blockHash)
-                try {
-                  const block = await this.getBlockByHash(blockHash, includeTransactions)
-                  if (block?.header.number === BigInt(blockNumber)) {
-                    resolve(block)
-                  } else {
-                    this.logger(
-                      `eth_getBlockByNumber returned the wrong block, ${block?.header.number}`
-                    )
-                    resolve(undefined)
-                  }
-                } catch (err) {
-                  this.logger(`getBlockByNumber error: ${(err as any).message}`)
-                  return
-                }
-              } catch (err) {
-                this.logger(`getBlockByNumber error *Epoch*: ${(err as any).message}`)
-                return
-              }
-            }
-          })
-        })
+      } catch (err: any) {
+        this.logger(`eth_getBlockByNumber encountered an error: ${err.message}`)
       }
     }
   }

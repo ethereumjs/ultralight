@@ -2,6 +2,7 @@ import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
+import { HistoryNetworkContentTypes } from './history/types.js'
 import { BaseProtocol } from './protocol.js'
 
 type lookupPeer = {
@@ -17,6 +18,7 @@ export class ContentLookup {
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
+  private uTPlistener: any
 
   constructor(protocol: BaseProtocol, contentKey: Uint8Array) {
     this.protocol = protocol
@@ -31,15 +33,15 @@ export class ContentLookup {
    * Queries the 5 nearest nodes in the history network routing table and recursively
    * requests peers closer to the content until either the content is found or there are no more peers to query
    */
-  public startLookup = async () => {
+  public startLookup = async (): Promise<Uint8Array | Uint8Array[] | undefined> => {
     // Don't support content lookups for protocols that don't implement it (i.e. Canonical Indices)
     if (!this.protocol.sendFindContent) return
     this.protocol.client.metrics?.totalContentLookups.inc()
     try {
       const res = await this.protocol.client.db.get(this.contentId)
       return fromHexString(res)
-    } catch (err) {
-      this.logger(err)
+    } catch (err: any) {
+      this.logger(err.message)
     }
     this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer: any) => {
       try {
@@ -79,8 +81,19 @@ export class ContentLookup {
           this.logger(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
           finished = true
           nearestPeer.hasContent = true
-          return res.value
+          return new Promise((resolve) => {
+            const utpDecoder = (
+              contentKey: string,
+              contentType: HistoryNetworkContentTypes,
+              content: string
+            ) => {
+              this.protocol.client.removeListener('ContentAdded', utpDecoder)
+              resolve(fromHexString(content))
+            }
+            this.protocol.client.on('ContentAdded', utpDecoder)
+          })
         }
+
         case 1: {
           // findContent returned data sought
           this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
