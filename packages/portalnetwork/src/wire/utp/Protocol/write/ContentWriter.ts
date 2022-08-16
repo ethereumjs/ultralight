@@ -1,3 +1,4 @@
+import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { UtpSocket } from '../../index.js'
 import { sendDataPacket } from '../../Packets/PacketSenders.js'
@@ -8,6 +9,7 @@ export default class ContentWriter {
   protocol: BasicUtp
   socket: UtpSocket
   startingSeqNr: number
+  seqNr: number
   content: Uint8Array
   writing: boolean
   sentChunks: number[]
@@ -18,6 +20,7 @@ export default class ContentWriter {
     this.socket = socket
     this.content = socket.content
     this.startingSeqNr = startingSeqNr
+    this.seqNr = startingSeqNr
     this.writing = false
     this.sentChunks = []
     this.logger = this.socket.logger.extend('WRITING')
@@ -30,29 +33,26 @@ export default class ContentWriter {
     this.writing = true
     let bytes: Uint8Array
     while (this.writing) {
-      if (this.sentChunks.length > this.socket.ackNrs.length) {
-        this.socket.logger(
-          `Ahead of Reader by ${this.sentChunks.length - this.socket.ackNrs.length} packets`
-        )
-      }
-      bytes = this.dataChunks[this.socket.seqNr] ?? []
-      this.sentChunks.push(this.socket.seqNr)
+      bytes = this.dataChunks[this.seqNr] ?? []
+      this.sentChunks.push(this.seqNr)
       this.socket.logger(
-        `Sending Data Packet ${this.sentChunks.length}/${chunks} with seqNr: ${this.socket.seqNr}.  size: ${bytes.length}`
+        `Sending ST-DATA ${this.sentChunks.length}/${chunks} -- SeqNr: ${this.socket.seqNr}  AckNr: ${this.socket.ackNr}`
       )
-      const sent = await sendDataPacket(this.socket, bytes)
-      this.socket.logger(sent)
+      await sendDataPacket(this.socket, bytes)
       this.writing = chunks !== this.sentChunks.length
-      this.socket.seqNr += 1
+      this.seqNr++
     }
     return
   }
 
   chunk(): Record<number, Uint8Array> {
     let arrayMod = this.content
-    this.logger(`Preparing`)
-    this.logger(this.content)
-    this.logger(`For transfer as ${BUFFER_SIZE} byte chunks.`)
+    this.logger(
+      `Preparing ${toHexString(this.content).slice(
+        0,
+        20
+      )} For transfer as ${BUFFER_SIZE} byte chunks.`
+    )
     const total = Math.ceil(this.content.length / BUFFER_SIZE)
     const dataChunks: Record<number, Uint8Array> = {}
     for (let i = 0; i < total; i++) {

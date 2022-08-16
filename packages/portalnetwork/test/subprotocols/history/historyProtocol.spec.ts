@@ -1,10 +1,11 @@
-import { ENR, EntryStatus } from '@chainsafe/discv5'
+import { ENR, EntryStatus, toHex } from '@chainsafe/discv5'
 import { BlockHeader } from '@ethereumjs/block'
 import tape from 'tape'
 import * as td from 'testdouble'
 import {
   fromHexString,
   PortalNetwork,
+  toHexString,
   ProtocolId,
   serializedContentKeyToContentId,
 } from '../../../src/index.js'
@@ -14,6 +15,9 @@ import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
 } from '../../../src/subprotocols/history/types.js'
+import { createRequire } from 'module'
+import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
+const require = createRequire(import.meta.url)
 
 tape('history Protocol message handler tests', async (t) => {
   const node = await PortalNetwork.create({
@@ -56,7 +60,7 @@ tape('history Protocol message handler tests', async (t) => {
     // TODO: Write good `handleFindContent` tests
   })
 
-  t.test('addContentToHistory handler', async (st) => {
+  t.test('Should store and retrieve block header and body from DB', async (st) => {
     const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
     const protocol = new HistoryProtocol(node, 2n) as any
     st.plan(1)
@@ -83,5 +87,21 @@ tape('history Protocol message handler tests', async (t) => {
     })
     st.equal(header.number, 1n, 'retrieved block header based on content key')
     st.end()
+  })
+  t.test('Should store and retrieve an EpochAccumulator from DB', async (st) => {
+    const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
+    const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
+    const epochAccumulator = require('../../integration/testEpoch.json')
+    const rebuilt = EpochAccumulator.deserialize(fromHexString(epochAccumulator.serialized))
+    const hashRoot = EpochAccumulator.hashTreeRoot(rebuilt)
+    const contentId = getHistoryNetworkContentId(1, 3, toHexString(hashRoot))
+    await protocol.addContentToHistory(
+      1,
+      3,
+      toHexString(hashRoot),
+      fromHexString(epochAccumulator.serialized)
+    )
+    const fromDB = await node.db.get(contentId)
+    st.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
   })
 })

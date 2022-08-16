@@ -55,20 +55,20 @@ tape('Basic uTP Tests', async (t) => {
       timestamp: syn.header.timestamp,
     })
     st.deepEqual(syn, synPacket, 'Basic Sends Syn Packet successfully')
-    const synack = await basic.handleSynPacket(_socket, synPacket)
     const _synAck = Packet.create(PacketType.ST_STATE, {
       seqNr: _socket.seqNr,
       sndConnectionId: _socket.sndConnectionId,
       ackNr: _socket.ackNr,
       rtt_var: _socket.rtt_var,
       wndSide: _socket.cur_window,
-      timestamp: synack.header.timestamp,
     })
-    st.equal(
-      (await basic.sendSynAckPacket(_socket)).header.pType,
-      PacketType.ST_STATE,
-      `Basic successfully sent a SynAck`
-    )
+    const synack = await basic.handleSynPacket(_socket, synPacket)
+    ;(_synAck.header.timestamp = synack.header.timestamp),
+      st.equal(
+        (await basic.sendSynAckPacket(_socket)).header.pType,
+        PacketType.ST_STATE,
+        `Basic successfully sent a SynAck`
+      )
     st.deepEqual(synack, _synAck, 'Basic handles Syn Packet correctly')
     st.doesNotThrow(async () => {
       await basic.handleSynAckPacket(socket, synack)

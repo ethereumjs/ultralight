@@ -48,6 +48,11 @@ export class HistoryProtocol extends BaseProtocol {
 
   public init = async () => {
     this.client.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
+      if (selector === HistoryNetworkContentTypes.EpochAccumulator) {
+        blockHash = toHexString(
+          EpochAccumulator.hashTreeRoot(EpochAccumulator.deserialize(content))
+        )
+      }
       await this.addContentToHistory(chainId, selector, blockHash, content)
     })
 
@@ -126,6 +131,7 @@ export class HistoryProtocol extends BaseProtocol {
                 case HistoryNetworkContentTypes.BlockHeader:
                 case HistoryNetworkContentTypes.BlockBody:
                 case HistoryNetworkContentTypes.Receipt:
+                case HistoryNetworkContentTypes.EpochAccumulator:
                   {
                     const content = decodedKey.value as HistoryNetworkContentKey
                     try {
@@ -141,8 +147,12 @@ export class HistoryProtocol extends BaseProtocol {
                   }
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  const decoded = ContentMessageType.deserialize(res.subarray(1))
-                  this.receiveSnapshot(decoded.value as Uint8Array)
+                  this.addContentToHistory(
+                    1,
+                    decodedKey.selector,
+                    getHistoryNetworkContentId(1, 4),
+                    decoded.value as Uint8Array
+                  )
                 }
               }
             }
@@ -181,10 +191,8 @@ export class HistoryProtocol extends BaseProtocol {
           'with Accumulator of height',
           newAccumulator.currentHeight()
         )
-        this.accumulator.replaceAccumulator(
-          receivedAccumulator.historicalEpochs,
-          receivedAccumulator.currentEpoch
-        )
+        this.accumulator = newAccumulator
+        this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(decoded))
 
         /*    const historicalEpochs = this.accumulator.historicalEpochs
         historicalEpochs.forEach(async (epochHash, idx) => {
@@ -231,13 +239,13 @@ export class HistoryProtocol extends BaseProtocol {
       let lookup = new ContentLookup(this, headerContentKey)
       header = await lookup.startLookup()
       if (!header) {
-        undefined
+        return undefined
       }
       if (!includeTransactions) {
         block = reassembleBlock(header, rlp.encode([[], []]))
         return block
       } else {
-        lookup = new ContentLookup(this, bodyContentKey as Uint8Array)
+        lookup = new ContentLookup(this, bodyContentKey!)
         body = await lookup.startLookup()
         return new Promise((resolve) => {
           if (body) {
@@ -247,73 +255,72 @@ export class HistoryProtocol extends BaseProtocol {
               resolve(block)
             } catch {}
           }
-          if (body && body.length === 2) {
-            // If we got a response that wasn't valid block, assume body lookup returned uTP connection ID and wait for content
-            this.client.on('ContentAdded', (key, _type, content) => {
-              if (key === blockHash) {
-                block = reassembleBlock(header, fromHexString(content))
-                this.client.removeAllListeners('ContentAdded')
-                resolve(block)
-              }
-            })
-            setTimeout(() => {
-              // Body lookup didn't return within 2 seconds so timeout and return header
-              this.client.removeAllListeners('ContentAdded')
-              block = reassembleBlock(header, rlp.encode([[], []]))
-              resolve(block)
-            }, 2000)
-          } else {
-            // Assume we weren't able to find the block body and just return the header
-            block = reassembleBlock(header, rlp.encode([[], []]))
-            resolve(block)
-          }
+          block = reassembleBlock(header, body)
+          resolve(block)
         })
       }
     } catch {}
   }
 
-  public getBlockByNumber = async (blockNumber: number, includeTransactions: boolean) => {
+  public getBlockByNumber = async (
+    blockNumber: number,
+    includeTransactions: boolean
+  ): Promise<Block | undefined> => {
     if (blockNumber > this.accumulator.currentHeight()) {
       this.logger(`Block number ${blockNumber} is higher than current known chain height`)
       return
     }
-    const blockIndex = blockNumber % EPOCH_SIZE
-    const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
-    const epochRootHash = this.accumulator.historicalEpochs[historicalEpochIndex]
-
     let blockHash
-    if (!epochRootHash) {
+    const blockIndex = blockNumber % EPOCH_SIZE
+    if (blockNumber > 8192 * this.accumulator.historicalEpochs.length) {
       blockHash = toHexString(this.accumulator.currentEpoch[blockIndex].blockHash)
-    } else {
-      let epoch
+      this.logger(`Blockhash found for BlockNumber ${blockNumber}: ${blockHash}`)
       try {
-        const encodedEpoch = await this.client.db.get(
-          getHistoryNetworkContentId(
-            1,
-            HistoryNetworkContentTypes.EpochAccumulator,
-            toHexString(epochRootHash)
-          )
-        )
-        epoch = EpochAccumulator.deserialize(fromHexString(encodedEpoch))
-      } catch {
-        const lookup = new ContentLookup(
-          this,
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.EpochAccumulator,
-            value: { chainId: 1, blockHash: epochRootHash },
-          })
-        )
-        const encodedEpoch = await lookup.startLookup()
-        if (!(encodedEpoch instanceof Uint8Array)) return
-        epoch = EpochAccumulator.deserialize(encodedEpoch)
+        const block = await this.getBlockByHash(blockHash, includeTransactions)
+        return block
+      } catch (err) {
+        this.logger(`getBlockByNumber error: ${(err as any).message}`)
+      }
+    } else {
+      const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
+      const epochRootHash = this.accumulator.historicalEpochs[historicalEpochIndex]
+      if (!epochRootHash) {
+        this.logger('Error with epoch root lookup')
+        return
+      }
+      const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 3,
+        value: { chainId: 1, blockHash: epochRootHash },
+      })
+
+      const lookup = new ContentLookup(this, lookupKey)
+      const result = await lookup.startLookup()
+      if (result === undefined || !(result instanceof Uint8Array)) {
+        this.logger('eth_getBlockByNumber failed to retrieve historical epoch accumulator')
+        return undefined
       }
 
-      blockHash = toHexString(epoch[blockIndex].blockHash)
-    }
-    const block = await this.getBlockByHash(blockHash, includeTransactions)
-    return block
-  }
+      try {
+        const epoch = EpochAccumulator.deserialize(result)
+        this.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
+          `Found EpochAccumulator with blockHash for block ${blockNumber}`
+        )
+        blockHash = toHexString(epoch[blockIndex].blockHash)
 
+        const block = await this.getBlockByHash(blockHash, includeTransactions)
+        if (block?.header.number === BigInt(blockNumber)) {
+          return block
+        } else if (block !== undefined) {
+          this.logger(`eth_getBlockByNumber returned the wrong block, ${block?.header.number}`)
+          return
+        } else {
+          this.logger(`eth_getBlockByNumber failed to find block`)
+        }
+      } catch (err: any) {
+        this.logger(`eth_getBlockByNumber encountered an error: ${err.message}`)
+      }
+    }
+  }
   /**
    * Convenience method to add content for the History Network to the DB
    * @param chainId - decimal number representing chain Id
@@ -409,7 +416,6 @@ export class HistoryProtocol extends BaseProtocol {
         this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
         break
       case HistoryNetworkContentTypes.HeaderAccumulator:
-        this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(value))
         this.receiveSnapshot(value)
         break
       default:
@@ -430,7 +436,7 @@ export class HistoryProtocol extends BaseProtocol {
     ) {
       // Gossip new content to network (except header accumulators)
       this.gossipQueue.push([hashKey, contentType])
-      if (this.gossipQueue.length >= 5) {
+      if (this.gossipQueue.length >= 26) {
         await this.gossipHistoryNetworkContent(this.gossipQueue)
         this.gossipQueue = []
       }

@@ -24,7 +24,6 @@ export default class ContentReader {
   }
 
   async addPacket(packet: Packet): Promise<boolean> {
-    this.logger(`Reading packet S:${packet.header.seqNr} A:${packet.header.ackNr}`)
     this.packets.push(packet)
     if (packet.header.seqNr === this.nextDataNr) {
       this.inOrder.push(packet)
@@ -41,8 +40,6 @@ export default class ContentReader {
       compiled = Buffer.concat([compiled, Buffer.from(p)])
     })
     this.logger(`${compiled.length} Bytes Received.`)
-    this.logger(Uint8Array.from(compiled))
-
     return Uint8Array.from(compiled)
   }
 

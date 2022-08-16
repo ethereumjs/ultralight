@@ -5,6 +5,7 @@ import { ProtocolId } from '../../../index.js'
 import {
   HistoryNetworkContentKey,
   HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
 } from '../../../subprotocols/history/index.js'
 import { sendFinPacket } from '../Packets/PacketSenders.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
@@ -286,10 +287,10 @@ export class PortalNetworkUTP extends BasicUtp {
         request.socket.seqNr = randUint16()
         await this.sendSynAckPacket(request.socket)
         writer = await this.createNewWriter(request.socket, request.socket.seqNr++)
-        request.writer = writer
+        request.socket.writer = writer
         request.socket.nextSeq = request.socket.seqNr + 1
         request.socket.nextAck = packet.header.ackNr + 1
-        await request.writer?.start()
+        await request.socket.writer?.start()
         r = await sendFinPacket(request.socket)
         break
       case RequestCode.ACCEPT_READ:
@@ -326,7 +327,7 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = packet.header.ackNr + 1
           const reader = await this.createNewReader(request.socket, startingSeqNr)
-          request.reader = reader
+          request.socket.reader = reader
           await this.sendStatePacket(request.socket)
         } else {
           throw new Error('READ socket should not get acks')
@@ -340,7 +341,7 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.nextSeq = packet.header.seqNr + 1
           request.socket.nextAck = 2
           request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
-          await request.writer?.start()
+          await request.socket.writer?.start()
           await this.sendFinPacket(request.socket)
         } else if (packet.header.ackNr === request.socket.finNr) {
           request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
@@ -384,42 +385,37 @@ export class PortalNetworkUTP extends BasicUtp {
     const streamer = async (content: Uint8Array) => {
       let contentKey = HistoryNetworkContentKeyUnionType.deserialize(keys[0])
       let decodedContentKey = contentKey.value as HistoryNetworkContentKey
-      let key: Uint8Array | undefined
+      let contents: Uint8Array[]
       if (keys.length > 1) {
         this.logger(`Decompressing stream into ${keys.length} pieces of content`)
-        const contents = dropPrefixes(content)
-        keys.forEach((k, idx) => {
-          contentKey = HistoryNetworkContentKeyUnionType.deserialize(k)
-          decodedContentKey = contentKey.value as HistoryNetworkContentKey
-          const _content = contents[idx]
-          this.logger.extend(`FINISHED`)(`${idx + 1}/${keys.length} -- sending content to database`)
-          this.emit(
-            'Stream',
-            1,
-            contentKey.selector,
-            toHexString(decodedContentKey.blockHash),
-            _content
-          )
-        })
+        contents = dropPrefixes(content)
       } else {
-        this.logger(
-          'streaming',
-          contentKey.selector === 4 ? 'an accumulator...' : contentKey.selector
-        )
-        switch (contentKey.selector) {
-          case 4:
-            key = HistoryNetworkContentKeyUnionType.serialize({
-              selector: 4,
-              value: { selector: 0, value: null },
-            })
-            break
-          default:
-            key = decodedContentKey.blockHash
-            break
-        }
-        this.logger(decodedContentKey)
-        this.emit('Stream', 1, contentKey.selector, toHexString(key), content)
+        contents = [content]
       }
+      if (keys.length < 1) {
+        throw new Error('Missing content keys')
+      }
+      keys.forEach((k, idx) => {
+        contentKey = HistoryNetworkContentKeyUnionType.deserialize(k)
+        decodedContentKey = contentKey.value as HistoryNetworkContentKey
+        const _content = contents[idx]
+        this.logger.extend(`FINISHED`)(
+          `${idx + 1}/${keys.length} -- sending ${
+            HistoryNetworkContentTypes[contentKey.selector]
+          } to database`
+        )
+        // Hack -- decodedContentKey.blockHash is undefined for
+        // EpochAccumulator requests...
+        this.emit(
+          'Stream',
+          1,
+          contentKey.selector,
+          contentKey.selector > 2
+            ? toHexString(Uint8Array.from([]))
+            : toHexString(decodedContentKey.blockHash),
+          _content
+        )
+      })
     }
 
     let content
