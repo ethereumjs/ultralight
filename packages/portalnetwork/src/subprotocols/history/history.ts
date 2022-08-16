@@ -310,42 +310,64 @@ export class HistoryProtocol extends BaseProtocol {
         selector: 3,
         value: { chainId: 1, blockHash: epochRootHash },
       })
+
       const lookup = new ContentLookup(this, lookupKey)
       const result = await lookup.startLookup()
-      if (result === undefined) {
+      if (result === undefined || !(result instanceof Uint8Array)) {
         this.logger('eth_getBlockByNumber failed to retrieve historical epoch accumulator')
+        return undefined
       }
-      this.client.on('ContentAdded', async (key, contentType, content) => {
-        if (contentType === HistoryNetworkContentTypes.EpochAccumulator) {
-          try {
-            this.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-              `Found EpochAccumulator with blockHash for block ${blockNumber}`
-            )
-            const epoch = EpochAccumulator.deserialize(fromHexString(content))
-            blockHash = toHexString(epoch[blockIndex].blockHash)
-            try {
-              const block = await this.getBlockByHash(blockHash, includeTransactions)
-              if (block?.header.number === BigInt(blockNumber)) {
-                return block
-              } else {
-                this.logger(
-                  `eth_getBlockByNumber returned the wrong block, ${block?.header.number}`
+      if (result.length !== 2) {
+        try {
+          const epoch = EpochAccumulator.deserialize(result)
+          blockHash = toHexString(epoch[blockIndex].blockHash)
+
+          const block = await this.getBlockByHash(blockHash, includeTransactions)
+          if (block?.header.number === BigInt(blockNumber)) {
+            return block
+          } else if (block !== undefined) {
+            this.logger(`eth_getBlockByNumber returned the wrong block, ${block?.header.number}`)
+            return
+          } else {
+            this.logger(`eth_getBlockByNumber failed to find block`)
+          }
+        } catch (err: any) {
+          this.logger(`eth_getBlockByNumber encountered an error: ${err.message}`)
+        }
+      } else {
+        return new Promise((resolve) => {
+          this.client.on('ContentAdded', async (key, contentType, content) => {
+            if (contentType === HistoryNetworkContentTypes.EpochAccumulator) {
+              try {
+                this.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
+                  `Found EpochAccumulator with blockHash for block ${blockNumber}`
                 )
+                const epoch = EpochAccumulator.deserialize(fromHexString(content))
+                blockHash = toHexString(epoch[blockIndex].blockHash)
+                try {
+                  const block = await this.getBlockByHash(blockHash, includeTransactions)
+                  if (block?.header.number === BigInt(blockNumber)) {
+                    resolve(block)
+                  } else {
+                    this.logger(
+                      `eth_getBlockByNumber returned the wrong block, ${block?.header.number}`
+                    )
+                    resolve(undefined)
+                  }
+                } catch (err) {
+                  this.logger(`getBlockByNumber error: ${(err as any).message}`)
+                  return
+                }
+              } catch (err) {
+                this.logger(`getBlockByNumber error *Epoch*: ${(err as any).message}`)
                 return
               }
-            } catch (err) {
-              this.logger(`getBlockByNumber error: ${(err as any).message}`)
-              return
             }
-          } catch (err) {
-            this.logger(`getBlockByNumber error *Epoch*: ${(err as any).message}`)
-            return
-          }
-        }
-      })
+          })
+        })
+      }
     }
   }
-
   /**
    * Convenience method to add content for the History Network to the DB
    * @param chainId - decimal number representing chain Id
