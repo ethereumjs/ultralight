@@ -572,7 +572,7 @@ tape('getBlockByHash', (t) => {
   })
 })
 
-tape('getBlockByNumber', (t) => {
+tape.only('getBlockByNumber', (t) => {
   t.test('eth_getBlockByNumber test', (st) => {
     const findAccumulator = async (
       portal1: PortalNetwork,
