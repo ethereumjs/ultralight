@@ -57,7 +57,7 @@ export function parsePrefix(content: Uint8Array): number[] {
  */
 export function dropPrefixes(_content: Uint8Array): Uint8Array[] {
   let content: Uint8Array | null = _content
-  const contents = []
+  const contents: Uint8Array[] = []
   while (content) {
     const [length, offset] = parsePrefix(content)
     contents.push(content.subarray(offset, length + offset))
