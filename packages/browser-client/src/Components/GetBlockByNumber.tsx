@@ -2,7 +2,7 @@ import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
 import { ProtocolId } from 'portalnetwork'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, PortalContext } from '../App'
+import { BlockContext, HistoryProtocolContext } from '../App'
 
 interface IGetBlockByNumberProps {
   setBlockHash: Dispatch<SetStateAction<string>>
@@ -10,14 +10,12 @@ interface IGetBlockByNumberProps {
 }
 
 export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
-  const [searchNumber, setSearchNumber] = useState('0')
+  const history = useContext(HistoryProtocolContext)
+  const [searchNumber, setSearchNumber] = useState(history.accumulator.currentHeight().toString())
   const { setBlock } = useContext(BlockContext)
-
-  const portal = useContext(PortalContext)
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
-      const history = portal.protocols.get(ProtocolId.HistoryNetwork) as never as HistoryProtocol
       const block = await history.getBlockByNumber(parseInt(blockNumber), includeTransactions)
       setBlock(block!)
     } catch {
@@ -33,15 +31,18 @@ export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
 
   return (
     <HStack marginY={1}>
-      <Button width={'100%'} onClick={handleClick}>
+      <Button
+        disabled={history.accumulator.currentHeight() < 1}
+        width={'100%'}
+        onClick={handleClick}
+      >
         Get Block by Number
       </Button>
       <FormControl isInvalid={parseInt(searchNumber) < 0}>
         <Input
           bg="whiteAlpha.800"
-          placeholder={'209999'}
+          placeholder={`BlockNumber (Max: ${history.accumulator.currentHeight()})`}
           type={'number'}
-          value={searchNumber}
           onChange={(e) => setSearchNumber(e.target.value)}
         />
       </FormControl>

@@ -49,9 +49,11 @@ export const BlockContext = React.createContext({
   block: Block.prototype,
   setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
 })
+export const HistoryProtocolContext = React.createContext(HistoryProtocol.prototype)
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
+  const [historyProtocol, setHistoryProtocol] = React.useState<HistoryProtocol>()
   const [peers, setPeers] = React.useState<ENR[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
