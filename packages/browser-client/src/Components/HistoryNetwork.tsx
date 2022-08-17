@@ -2,6 +2,7 @@ import {
   Button,
   FormControl,
   HStack,
+  IconButton,
   Input,
   Tab,
   TabList,
@@ -15,6 +16,7 @@ import DisplayBlock from './DisplayBlock'
 import RoutingTableView from './RoutingTableView'
 import { ENR } from 'portalnetwork'
 import GetBlockByNumber from './GetBlockByNumber'
+import { RepeatIcon } from '@chakra-ui/icons'
 
 interface HistoryNetworkProps {
   findParent: (hash: string) => Promise<void>
@@ -25,6 +27,7 @@ interface HistoryNetworkProps {
   setBlockHash: Dispatch<SetStateAction<string>>
   peers: ENR[] | undefined
   sortedDistList: [number, string[]][]
+  refresh: () => void
 }
 
 export default function HistoryNetwork(props: HistoryNetworkProps) {
@@ -60,7 +63,7 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
           disabled={props.invalidHash}
           onClick={async () => handleClick()}
         >
-          Get Block by Blockhash
+          Get Block by Hash
         </Button>
         <FormControl isInvalid={props.invalidHash}>
           <Input
@@ -76,12 +79,21 @@ export default function HistoryNetwork(props: HistoryNetworkProps) {
       <GetBlockByNumber setIsLoading={setIsLoading} setBlockHash={props.setBlockHash} />
       <Tabs index={tabIndex} onChange={handleTabsChange}>
         <TabList>
-          <Tab>Network</Tab>
+          <Tab>
+            {`Network`}{' '}
+            <IconButton
+              onClick={props.refresh}
+              aria-label="refresh routing table"
+              icon={<RepeatIcon />}
+            />
+          </Tab>
           <Tab>Block Explorer</Tab>
         </TabList>
         <TabPanels>
           <TabPanel>
-            <RoutingTableView peers={props.peers} sortedDistList={props.sortedDistList} />
+            {props.peers && (
+              <RoutingTableView peers={props.peers} sortedDistList={props.sortedDistList} />
+            )}
           </TabPanel>
           <TabPanel>
             {props.block?.header && <DisplayBlock isLoading={isLoading} findParent={findParent} />}
