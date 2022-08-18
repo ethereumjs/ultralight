@@ -31,7 +31,6 @@ import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history
 import { TransportLayer } from 'portalnetwork/dist/client'
 import { toHexString } from './Components/DisplayTx'
 import { PortalContext, BlockContext, HistoryProtocolContext, PeersContext } from './ContextHooks'
-
 import Header from './Components/Header'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
@@ -41,8 +40,6 @@ export const App = () => {
   const [historyProtocol, setHistoryProtocol] = React.useState<HistoryProtocol>()
   const [peers, setPeers] = React.useState<ENR[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
-  const [enr, setENR] = React.useState<string>('')
-  const [id, _setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>(Block.prototype)
@@ -54,7 +51,7 @@ export const App = () => {
     try {
       const known = historyProtocol!.routingTable.values()
       const formattedKnown: [number, string, string, string, string][] = known.map((_enr: ENR) => {
-        const distToSelf = log2Distance(id, _enr.nodeId)
+        const distToSelf = log2Distance(portal!.discv5.enr.nodeId, _enr.nodeId)
         return [
           distToSelf,
           `${_enr.ip}`,
@@ -73,14 +70,12 @@ export const App = () => {
     } catch {}
   }
 
-  async function handleClick() {
+  async function connectToPeer() {
     try {
-      const protocol = portal?.protocols.get(ProtocolId.HistoryNetwork)
-      await protocol?.addBootNode(peerEnr)
+      await historyProtocol?.addBootNode(peerEnr)
+      setPeerEnr('')
+      updateAddressBook()
     } catch (err) {}
-    setPeerEnr('')
-    updateAddressBook()
-    // Only rerender the address book if we actually got a response from the node
   }
 
   async function createNodeFromScratch(): Promise<PortalNetwork> {
@@ -167,7 +162,6 @@ export const App = () => {
     ;(window as any).ENR = ENR
     ;(window as any).hexer = { toHexString, fromHexString }
     node.discv5.on('multiaddrUpdated', () => {
-      setENR(node.discv5.enr.encodeTxt(node.discv5.keypair.privateKey))
       portal?.storeNodeDetails()
     })
   }
@@ -180,11 +174,11 @@ export const App = () => {
     <ChakraProvider theme={theme}>
       {portal && (
         <PortalContext.Provider value={portal}>
-          <Header enr={enr} />
+          <Header enr={portal.discv5.enr.encodeTxt(portal.discv5.keypair.privateKey)} />
           {historyProtocol && (
             <>
               <HStack border={'1px'} width={'100%'} paddingY={1}>
-                <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={handleClick}>
+                <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={connectToPeer}>
                   Connect to new peer
                 </Button>
                 <Input
