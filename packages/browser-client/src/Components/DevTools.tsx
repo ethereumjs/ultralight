@@ -1,12 +1,9 @@
 import { Share } from '@capacitor/share'
 import { Button, useToast, VStack } from '@chakra-ui/react'
-import { ENR } from 'portalnetwork'
-import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { PortalContext } from '../App'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 import ContentManager from './ContentManager'
 
 interface DevToolsProps {
-  peers: ENR[]
   copy: () => Promise<void>
   enr: string
   peerEnr: string
@@ -16,7 +13,6 @@ interface DevToolsProps {
 }
 
 export default function DevTools(props: DevToolsProps) {
-  const portal = useContext(PortalContext)
   const [canShare, setCanShare] = useState(false)
   const toast = useToast()
 
