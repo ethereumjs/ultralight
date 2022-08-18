@@ -1,11 +1,8 @@
 import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
-import { ProtocolId } from 'portalnetwork'
-import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../App'
+import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
 
 interface IGetBlockByNumberProps {
-  setBlockHash: Dispatch<SetStateAction<string>>
   setIsLoading: Dispatch<SetStateAction<boolean>>
 }
 
@@ -33,7 +30,7 @@ export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
     <HStack marginY={1}>
       <Button
         disabled={history.accumulator.currentHeight() < 1}
-        width={'100%'}
+        width={'40%'}
         onClick={handleClick}
       >
         Get Block by Number
