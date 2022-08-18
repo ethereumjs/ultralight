@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react'
 import { ProtocolId, ENR, fromHexString, HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { ContentManager } from './ContentManager'
+import ContentManager from './ContentManager'
 import { Share } from '@capacitor/share'
 import { PortalContext } from '../App'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
@@ -117,7 +117,7 @@ export default function DevTools(props: DevToolsProps) {
           COPY ENR
         </Button>
       )}
-      <ContentManager portal={portal} />
+      <ContentManager />
 
       {props.native ? (
         <Center>
