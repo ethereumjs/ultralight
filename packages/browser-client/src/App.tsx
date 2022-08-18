@@ -31,15 +31,11 @@ import bns from './bootnodes.json'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import { TransportLayer } from 'portalnetwork/dist/client'
 import { toHexString } from './Components/DisplayTx'
+import { PortalContext, BlockContext, HistoryProtocolContext, PeersContext } from './ContextHooks'
+
 import Header from './Components/Header'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
-export const PortalContext = React.createContext(PortalNetwork.prototype)
-export const BlockContext = React.createContext({
-  block: Block.prototype,
-  setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
-})
-export const HistoryProtocolContext = React.createContext(HistoryProtocol.prototype)
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
