@@ -1,6 +1,6 @@
 import { Share } from '@capacitor/share'
-import { Button, Center, Input, useToast, VStack } from '@chakra-ui/react'
-import { ENR, ProtocolId } from 'portalnetwork'
+import { Button, useToast, VStack } from '@chakra-ui/react'
+import { ENR } from 'portalnetwork'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
 import { PortalContext } from '../App'
 import ContentManager from './ContentManager'
