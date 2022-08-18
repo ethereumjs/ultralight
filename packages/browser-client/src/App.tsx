@@ -2,20 +2,10 @@ import * as React from 'react'
 import { BrowserLevel } from 'browser-level'
 import {
   theme,
-  useClipboard,
   Button,
   useDisclosure,
-  Drawer,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerCloseButton,
-  DrawerHeader,
-  DrawerBody,
-  DrawerFooter,
   Box,
-  Heading,
   Center,
-  VStack,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -33,17 +23,15 @@ import {
   WebSocketTransportService,
 } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
-import DevTools from './Components/DevTools'
-import StartNode from './Components/StartNode'
 import Layout from './Components/Layout'
 import { Capacitor } from '@capacitor/core'
-import { HamburgerIcon } from '@chakra-ui/icons'
 import Footer from './Components/Footer'
 import InfoMenu from './Components/InfoMenu'
 import bns from './bootnodes.json'
 import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
 import { TransportLayer } from 'portalnetwork/dist/client'
 import { toHexString } from './Components/DisplayTx'
+import Header from './Components/Header'
 export const lightblue = theme.colors.blue[100]
 export const mediumblue = theme.colors.blue[200]
 export const PortalContext = React.createContext(PortalNetwork.prototype)
@@ -67,9 +55,7 @@ export const App = () => {
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>(Block.prototype)
   const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
-  const { onCopy } = useClipboard(enr)
   const { onOpen } = useDisclosure()
-  const disclosure = useDisclosure()
   const [modalStatus, setModal] = React.useState(false)
   const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
 
@@ -195,11 +181,6 @@ export const App = () => {
     })
   }
 
-  const copy = async () => {
-    await setENR(portal?.discv5.enr.encodeTxt(portal.discv5.keypair.privateKey) ?? '')
-    onCopy()
-  }
-
   React.useEffect(() => {
     init()
   }, [])
@@ -228,64 +209,13 @@ export const App = () => {
     portal?.logger('Showing Block')
   }
 
-  const openInfoMenu = () => {
-    setModal(true)
-    disclosure.onClose()
-  }
   const invalidHash = /([^0-z])+/.test(blockHash)
 
   return (
     <ChakraProvider theme={theme}>
       {portal && (
         <PortalContext.Provider value={portal}>
-          <Center bg={'gray.200'}>
-            <VStack width={'80%'}>
-              <Heading size={'2xl'} textAlign="start">
-                Ultralight
-              </Heading>
-              <Heading size={'l'} textAlign="start">
-                Portal Network Explorer
-              </Heading>
-            </VStack>
-          </Center>
-          <Button
-            position="fixed"
-            top="5"
-            right="5"
-            leftIcon={<HamburgerIcon />}
-            onClick={disclosure.onOpen}
-          ></Button>
-          <Drawer isOpen={disclosure.isOpen} placement="right" onClose={disclosure.onClose}>
-            <DrawerOverlay />
-            <DrawerContent>
-              <DrawerCloseButton />
-              <DrawerHeader>Ultralight</DrawerHeader>
-              <DrawerBody>
-                <Button w="100%" mb="5px" onClick={openInfoMenu}>
-                  More Info
-                </Button>
-                {!Capacitor.isNativePlatform() && (
-                  <>
-                    <Divider my="10px" />
-                    <StartNode setProxy={setProxy} init={init} />
-                  </>
-                )}
-                <Divider my="10px" />
-                <DevTools
-                  peerEnr={peerEnr}
-                  setPeerEnr={setPeerEnr}
-                  native={Capacitor.isNativePlatform()}
-                  enr={enr}
-                  copy={copy}
-                  peers={peers!}
-                  handleClick={handleClick}
-                />
-              </DrawerBody>
-              <DrawerFooter>
-                <Button onClick={disclosure.onClose}>CLOSE</Button>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
+          <Header enr={enr} />
           {historyProtocol && (
             <HStack border={'1px'} width={'100%'} paddingY={1}>
               <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={handleClick}>
