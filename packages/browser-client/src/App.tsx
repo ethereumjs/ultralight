@@ -3,7 +3,6 @@ import { BrowserLevel } from 'browser-level'
 import {
   theme,
   Button,
-  useDisclosure,
   Box,
   Center,
   Modal,
@@ -45,13 +44,9 @@ export const App = () => {
   const [enr, setENR] = React.useState<string>('')
   const [id, _setId] = React.useState<string>('')
   const [peerEnr, setPeerEnr] = React.useState('')
-  const [blockHash, setBlockHash] = React.useState<string>(
-    '0xf37c632d361e0a93f08ba29b1a2c708d9caa3ee19d1ee8d2a02612bffe49f0a9'
-  )
   const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>(Block.prototype)
   const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
-  const { onOpen } = useDisclosure()
   const [modalStatus, setModal] = React.useState(false)
   const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
 
@@ -181,82 +176,45 @@ export const App = () => {
     init()
   }, [])
 
-  async function getBlockByHash(_blockHash: string) {
-    const prevBlock = blockHash
-    if (portal) {
-      if (_blockHash.slice(0, 2) !== '0x') {
-        setBlockHash('')
-      } else {
-        const protocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-        if (!protocol) return
-        const block = await protocol.getBlockByHash(_blockHash, true)
-        try {
-          setBlock(block!)
-        } catch {
-          setBlockHash(prevBlock)
-        }
-      }
-    }
-  }
-
-  async function findParent(hash: string) {
-    setBlockHash(hash)
-    getBlockByHash(hash)
-    portal?.logger('Showing Block')
-  }
-
-  const invalidHash = /([^0-z])+/.test(blockHash)
-
   return (
     <ChakraProvider theme={theme}>
       {portal && (
         <PortalContext.Provider value={portal}>
           <Header enr={enr} />
           {historyProtocol && (
-            <HStack border={'1px'} width={'100%'} paddingY={1}>
-              <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={handleClick}>
-                Connect to new peer
-              </Button>
-              <Input
-                width={'75%'}
-                size={'xs'}
-                type="text"
-                placeholder={'enr:IS...'}
-                value={peerEnr}
-                onChange={(e) => {
-                  setPeerEnr(e.target.value)
-                }}
-              />
-            </HStack>
-          )}
-          <Divider />
+            <>
+              <HStack border={'1px'} width={'100%'} paddingY={1}>
+                <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={handleClick}>
+                  Connect to new peer
+                </Button>
+                <Input
+                  width={'75%'}
+                  size={'xs'}
+                  type="text"
+                  placeholder={'enr:IS...'}
+                  value={peerEnr}
+                  onChange={(e) => {
+                    setPeerEnr(e.target.value)
+                  }}
+                />
+              </HStack>
+              <Divider />
 
-          <Box>
-            {historyProtocol && (
-              <HistoryProtocolContext.Provider value={historyProtocol}>
-                <BlockContext.Provider value={blockValue}>
-                  <Layout
-                    copy={copy}
-                    onOpen={onOpen}
-                    enr={enr}
-                    peerEnr={peerEnr}
-                    setPeerEnr={setPeerEnr}
-                    handleClick={handleClick}
-                    invalidHash={invalidHash}
-                    getBlockByHash={getBlockByHash}
-                    blockHash={blockHash}
-                    setBlockHash={setBlockHash}
-                    findParent={findParent}
-                    block={block}
-                    peers={peers}
-                    sortedDistList={sortedDistList}
-                    capacitor={Capacitor}
-                    refresh={updateAddressBook}
-                  />
-                </BlockContext.Provider>
-              </HistoryProtocolContext.Provider>
-            )}
-          </Box>
+              <Box>
+                <HistoryProtocolContext.Provider value={historyProtocol}>
+                  <PeersContext.Provider value={peers}>
+                    <BlockContext.Provider value={blockValue}>
+                      <Layout
+                        peers={peers.length > 0}
+                        refresh={updateAddressBook}
+                        table={sortedDistList}
+                      />
+                    </BlockContext.Provider>
+                  </PeersContext.Provider>
+                </HistoryProtocolContext.Provider>
+              </Box>
+            </>
+          )}
           <Box width={'100%'} pos={'fixed'} bottom={'0'}>
             <Center>
               <Footer />
