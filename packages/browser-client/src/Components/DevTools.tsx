@@ -49,10 +49,6 @@ export default function DevTools(props: DevToolsProps) {
     sharing()
   }, [])
 
-  const addBootNode = () => {
-    portal.protocols.get(ProtocolId.HistoryNetwork)!.addBootNode(props.peerEnr)
-  }
-
   return (
     <VStack>
       {canShare ? (
@@ -65,41 +61,6 @@ export default function DevTools(props: DevToolsProps) {
         </Button>
       )}
       <ContentManager />
-
-      {props.native ? (
-        <Center>
-          <VStack>
-            <Button
-              isDisabled={!props.peerEnr.startsWith('enr:')}
-              width={'100%'}
-              onClick={addBootNode}
-            >
-              Connect To Node
-            </Button>
-            <Input
-              width={'100%'}
-              bg="whiteAlpha.800"
-              value={props.peerEnr}
-              placeholder={'Node ENR'}
-              onChange={(evt) => props.setPeerEnr(evt.target.value)}
-            />
-          </VStack>
-        </Center>
-      ) : (
-        <VStack width={'100%'} spacing={0} border="1px" borderRadius={'0.375rem'}>
-          <Input
-            size="sm"
-            bg="whiteAlpha.800"
-            value={props.peerEnr}
-            placeholder="Node ENR"
-            onChange={(evt) => props.setPeerEnr(evt.target.value)}
-            mb={2}
-          />
-          <Button width={'100%'} onClick={props.handleClick}>
-            Connect To Node
-          </Button>
-        </VStack>
-      )}
     </VStack>
   )
 }
