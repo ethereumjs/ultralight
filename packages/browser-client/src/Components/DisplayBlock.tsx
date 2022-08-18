@@ -17,44 +17,26 @@ import {
 } from '@chakra-ui/react'
 import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
 import SelectTx from './SelectTx'
-import React, { useContext } from 'react'
-import { BlockContext } from '../App'
+import React, { Dispatch, SetStateAction, useContext } from 'react'
+import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
+import { toHexString } from './DisplayTx'
 
 interface DisplayBlockProps {
-  findParent: (hash: string) => Promise<void>
   isLoading: boolean
+  setIsLoading: Dispatch<SetStateAction<boolean>>
 }
 
 const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
-  const { block } = useContext(BlockContext)
-  const findParent = props.findParent
-  const header = Object.entries(block!.header!.toJSON())
-  const txList = block.transactions
-  const tx: string[] = block.transactions.map((tx) => '0x' + tx.hash().toString('hex'))
-  const headerlookupKey =
-    '0x' +
-    Buffer.from(
-      HistoryNetworkContentKeyUnionType.serialize({
-        selector: 0,
-        value: {
-          chainId: 1,
-          blockHash: block.header.hash(),
-        },
-      })
-    ).toString('hex')
-
-  const bodylookupKey =
-    '0x' +
-    Buffer.from(
-      HistoryNetworkContentKeyUnionType.serialize({
-        selector: 1,
-        value: {
-          chainId: 1,
-          blockHash: block.header.hash(),
-        },
-      })
-    ).toString('hex')
-
+  const history = useContext(HistoryProtocolContext)
+  const { block, setBlock } = useContext(BlockContext)
+  const findParent = async (blockHash: string) => {
+    props.setIsLoading(true)
+    const block = await history.getBlockByHash(blockHash, true)
+    if (block) {
+      setBlock(block)
+    }
+    props.setIsLoading(false)
+  }
   function GridRow(props: any) {
     return (
       <>
@@ -63,7 +45,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
         </GridItem>
         <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
           {props.idx === 0 ? (
-            <Link color={'blue'} onClick={() => findParent(props.k[1])}>
+            <Link color={'blue'} onClick={async () => await findParent(props.k[1])}>
               {props.k[1]}
             </Link>
           ) : (
@@ -74,6 +56,29 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
       </>
     )
   }
+  const header = Object.entries(block!.header!.toJSON())
+  const txList = block.transactions
+  const tx: string[] = block.transactions?.map((tx) => '0x' + tx.hash().toString('hex'))
+
+  const headerlookupKey = toHexString(
+    HistoryNetworkContentKeyUnionType.serialize({
+      selector: 0,
+      value: {
+        chainId: 1,
+        blockHash: block.header.hash(),
+      },
+    })
+  )
+
+  const bodylookupKey = toHexString(
+    HistoryNetworkContentKeyUnionType.serialize({
+      selector: 1,
+      value: {
+        chainId: 1,
+        blockHash: block.header.hash(),
+      },
+    })
+  )
 
   return (
     <Box>
