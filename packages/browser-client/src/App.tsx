@@ -21,6 +21,8 @@ import {
   ModalContent,
   Divider,
   ChakraProvider,
+  HStack,
+  Input,
 } from '@chakra-ui/react'
 import {
   PortalNetwork,
@@ -49,9 +51,11 @@ export const BlockContext = React.createContext({
   block: Block.prototype,
   setBlock: (() => {}) as React.Dispatch<React.SetStateAction<Block>>,
 })
+export const HistoryProtocolContext = React.createContext(HistoryProtocol.prototype)
 
 export const App = () => {
   const [portal, setPortal] = React.useState<PortalNetwork>()
+  const [historyProtocol, setHistoryProtocol] = React.useState<HistoryProtocol>()
   const [peers, setPeers] = React.useState<ENR[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [enr, setENR] = React.useState<string>('')
@@ -70,27 +74,26 @@ export const App = () => {
   const LDB = new BrowserLevel('ultralight_history', { prefix: '', version: 1 })
 
   function updateAddressBook() {
-    const protocol = portal?.protocols.get(ProtocolId.HistoryNetwork)
-    if (!protocol) return
-    const known = protocol.routingTable.values()
-    const formattedKnown = known!.map((_enr: ENR) => {
-      const distToSelf = log2Distance(id, _enr.nodeId)
-      return [
-        distToSelf,
-        `${_enr.ip}`,
-        `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`,
-        _enr.nodeId,
-        _enr.encodeTxt(),
-      ]
-    })
-    //@ts-ignore
-    const sorted = formattedKnown.sort((a, b) => a[0] - b[0]) //@ts-ignore
-    const table: [number, string[]][] = sorted.map((d) => {
-      return [d[0], [d[1], d[2], d[3], d[4]]]
-    })
-    setSortedDistList(table)
-    const peers = protocol.routingTable.values()
-    setPeers(peers)
+    try {
+      const known = historyProtocol!.routingTable.values()
+      const formattedKnown: [number, string, string, string, string][] = known.map((_enr: ENR) => {
+        const distToSelf = log2Distance(id, _enr.nodeId)
+        return [
+          distToSelf,
+          `${_enr.ip}`,
+          `${_enr.getLocationMultiaddr('udp')?.nodeAddress().port}`,
+          _enr.nodeId,
+          _enr.encodeTxt(),
+        ]
+      })
+      const sorted = formattedKnown.sort((a: any, b: any) => a[0] - b[0])
+      const table: [number, string[]][] = sorted.map((d) => {
+        return [d[0], [d[1], d[2], d[3], d[4]]]
+      })
+      setSortedDistList(table)
+      const peers = historyProtocol!.routingTable.values()
+      setPeers(peers)
+    } catch {}
   }
 
   async function handleClick() {
@@ -177,6 +180,9 @@ export const App = () => {
     }
 
     setPortal(node)
+    try {
+      setHistoryProtocol(node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol)
+    } catch {}
     node.enableLog('*Portal*, -*uTP*, -*FINDNODES*')
     await node.start()
     node.storeNodeDetails()
@@ -280,29 +286,50 @@ export const App = () => {
               </DrawerFooter>
             </DrawerContent>
           </Drawer>
+          {historyProtocol && (
+            <HStack border={'1px'} width={'100%'} paddingY={1}>
+              <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={handleClick}>
+                Connect to new peer
+              </Button>
+              <Input
+                width={'75%'}
+                size={'xs'}
+                type="text"
+                placeholder={'enr:IS...'}
+                value={peerEnr}
+                onChange={(e) => {
+                  setPeerEnr(e.target.value)
+                }}
+              />
+            </HStack>
+          )}
+          <Divider />
+
           <Box>
-            {portal && (
-              <BlockContext.Provider value={blockValue}>
-                <Layout
-                  copy={copy}
-                  onOpen={onOpen}
-                  enr={enr}
-                  peerEnr={peerEnr}
-                  setPeerEnr={setPeerEnr}
-                  handleClick={handleClick}
-                  invalidHash={invalidHash}
-                  getBlockByHash={getBlockByHash}
-                  blockHash={blockHash}
-                  setBlockHash={setBlockHash}
-                  findParent={findParent}
-                  block={block}
-                  peers={peers}
-                  sortedDistList={sortedDistList}
-                  capacitor={Capacitor}
-                />
-              </BlockContext.Provider>
+            {historyProtocol && (
+              <HistoryProtocolContext.Provider value={historyProtocol}>
+                <BlockContext.Provider value={blockValue}>
+                  <Layout
+                    copy={copy}
+                    onOpen={onOpen}
+                    enr={enr}
+                    peerEnr={peerEnr}
+                    setPeerEnr={setPeerEnr}
+                    handleClick={handleClick}
+                    invalidHash={invalidHash}
+                    getBlockByHash={getBlockByHash}
+                    blockHash={blockHash}
+                    setBlockHash={setBlockHash}
+                    findParent={findParent}
+                    block={block}
+                    peers={peers}
+                    sortedDistList={sortedDistList}
+                    capacitor={Capacitor}
+                    refresh={updateAddressBook}
+                  />
+                </BlockContext.Provider>
+              </HistoryProtocolContext.Provider>
             )}
-            <Button onClick={() => updateAddressBook()}>Update Address Book</Button>
           </Box>
           <Box width={'100%'} pos={'fixed'} bottom={'0'}>
             <Center>

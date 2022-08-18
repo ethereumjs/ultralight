@@ -21,6 +21,7 @@ interface LayoutProps {
   peers: ENR[] | undefined
   sortedDistList: [number, string[]][]
   capacitor: CapacitorGlobal
+  refresh: () => void
 }
 
 export default function Layout(props: LayoutProps) {
@@ -64,6 +65,7 @@ export default function Layout(props: LayoutProps) {
                 block={props.block}
                 peers={props.peers}
                 sortedDistList={props.sortedDistList}
+                refresh={props.refresh}
               />
             </TabPanel>
             <TabPanel>State Network</TabPanel>
