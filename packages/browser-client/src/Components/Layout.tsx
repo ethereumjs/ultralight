@@ -1,80 +1,68 @@
-import { Tab, TabList, TabPanel, TabPanels, Tabs, VStack, StackDivider } from '@chakra-ui/react'
-import React, { Dispatch, SetStateAction, useEffect } from 'react'
-import { Block } from '@ethereumjs/block'
-import { ENR } from 'portalnetwork'
-import HistoryNetwork from './HistoryNetwork'
-import { NotAllowedIcon } from '@chakra-ui/icons'
-import { CapacitorGlobal } from '@capacitor/core'
+import {
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  VStack,
+  StackDivider,
+  Box,
+  IconButton,
+} from '@chakra-ui/react'
+import React, { useContext, useEffect, useState } from 'react'
+import { RepeatIcon } from '@chakra-ui/icons'
+import { BlockContext } from '../ContextHooks'
+import GetBlockByHash from './getBlockByHash'
+import GetBlockByNumber from './GetBlockByNumber'
+import RoutingTableView from './RoutingTableView'
+import DisplayBlock from './DisplayBlock'
 interface LayoutProps {
-  copy: () => Promise<void>
-  onOpen: () => void
-  enr: string
-  peerEnr: string
-  setPeerEnr: Dispatch<SetStateAction<string>>
-  handleClick: () => Promise<void>
-  invalidHash: boolean
-  getBlockByHash: (blockHash: string) => Promise<void | Block>
-  blockHash: string
-  setBlockHash: Dispatch<SetStateAction<string>>
-  findParent: (hash: string) => Promise<void>
-  block: Block | undefined
-  peers: ENR[] | undefined
-  sortedDistList: [number, string[]][]
-  capacitor: CapacitorGlobal
+  table: [number, string[]][]
   refresh: () => void
+  peers: boolean
 }
 
 export default function Layout(props: LayoutProps) {
+  const { block } = useContext(BlockContext)
+  const [tabIndex, setTabIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  function handleTabsChange(index: number) {
+    setTabIndex(index)
+  }
   useEffect(() => {
-    setTimeout(async () => {
-      await props.handleClick()
-    }, 2000)
+    setTimeout(() => {
+      props.refresh()
+    }, 1000)
+    setInterval(() => {
+      props.refresh()
+    }, 5000)
   }, [])
 
   return (
-    <VStack spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
-      <Tabs width={'100%'} size={'sm'}>
-        <TabList style={{ scrollbarWidth: 'none' }} overflowX="auto">
-          <Tab>History Network</Tab>
-          <Tab isDisabled>
-            State Network
-            <NotAllowedIcon />
-          </Tab>
-          <Tab isDisabled>
-            Transaction Gossip Network
-            <NotAllowedIcon />
-          </Tab>
-          <Tab isDisabled>
-            Header Gossip Network
-            <NotAllowedIcon />
-          </Tab>
-          <Tab isDisabled>
-            Canonical Indices Network
-            <NotAllowedIcon />
-          </Tab>
-        </TabList>
-        {props.peers && props.peers.length > 0 && (
-          <TabPanels>
-            <TabPanel>
-              <HistoryNetwork
-                invalidHash={props.invalidHash}
-                getBlockByHash={props.getBlockByHash}
-                blockHash={props.blockHash}
-                setBlockHash={props.setBlockHash}
-                findParent={props.findParent}
-                block={props.block}
-                peers={props.peers}
-                sortedDistList={props.sortedDistList}
-                refresh={props.refresh}
+    <VStack width={'100%'} spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
+      {props.peers && (
+        <Box width={'95%'}>
+          <GetBlockByHash setIsLoading={setIsLoading} />
+          <GetBlockByNumber setIsLoading={setIsLoading} />
+          <Tabs index={tabIndex} onChange={handleTabsChange}>
+            <TabList>
+              <IconButton
+                onClick={props.refresh}
+                aria-label="refresh routing table"
+                icon={<RepeatIcon />}
               />
-            </TabPanel>
-            <TabPanel>State Network</TabPanel>
-            <TabPanel>Transaction Gossip Network</TabPanel>
-            <TabPanel>Header Gossip Network</TabPanel>
-            <TabPanel>Canonical Indices Network</TabPanel>
-          </TabPanels>
-        )}
-      </Tabs>
+              <Tab>{`Network`} </Tab>
+              <Tab>Block Explorer</Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel>{<RoutingTableView table={props.table} />}</TabPanel>
+              <TabPanel>
+                {block.header && <DisplayBlock setIsLoading={setIsLoading} isLoading={isLoading} />}
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+      )}
     </VStack>
   )
 }

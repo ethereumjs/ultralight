@@ -1,16 +1,8 @@
 import { Button } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
-import {
-  PortalNetwork,
-  addRLPSerializedBlock,
-  getHistoryNetworkContentId,
-  distance,
-  ProtocolId,
-  fromHexString,
-} from 'portalnetwork'
-import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import { addRLPSerializedBlock, distance, fromHexString } from 'portalnetwork'
 import React, { useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext, PortalContext } from '../App'
+import { BlockContext, HistoryProtocolContext, PortalContext } from '../ContextHooks'
 
 export default function ContentManager() {
   // Add list of blocks to db from json file
@@ -79,8 +71,8 @@ export default function ContentManager() {
   }
 
   return (
-    <Button isDisabled={!portal} width={'100%'} onClick={handleClick}>
-      Load Blocks from File
+    <Button wordBreak={'break-word'} isDisabled={!portal} width={'100%'} onClick={handleClick}>
+      Upload Content
     </Button>
   )
 }

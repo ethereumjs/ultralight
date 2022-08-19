@@ -6,7 +6,7 @@ import { toHexString } from '../../portalnetwork/dist/index.js'
 
 const args: any = yargs(hideBin(process.argv))
     .option('numKeys', {
-        descrbie: 'number of private keys to generate',
+        describe: 'number of private keys to generate',
         number: true,
         demandOption: true
     }).argv
