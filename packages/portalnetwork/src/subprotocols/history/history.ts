@@ -77,7 +77,7 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   /**
-   * Starts recursive lookup for content corresponding to `key`
+   * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
    * @param dstId node id of peer
    * @param key content key defined by the subprotocol spec
    * @param protocolId subprotocol ID on which content is being sought

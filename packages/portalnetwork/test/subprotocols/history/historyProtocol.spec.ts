@@ -22,8 +22,11 @@ import { RLP } from 'rlp'
 import { bufArrToArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
+const testBlock = require('./testdata/testBlock.json')
+const block1Rlp = testBlock.blockRlp
+const block1Hash = testBlock.blockHash
 
-tape('history Protocol message handler tests', async (t) => {
+tape.only('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
@@ -33,37 +36,54 @@ tape('history Protocol message handler tests', async (t) => {
   node.sendPortalNetworkMessage = td.func<any>()
   node.sendPortalNetworkResponse = td.func<any>()
 
-  t.test('FINDCONTENT/FOUNDCONTENT message handlers', async (st) => {
-    st.plan(1)
-    const protocol = new HistoryProtocol(node, 2n) as any
-    const remoteEnr =
-      'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
-    const decodedEnr = ENR.decodeTxt(remoteEnr)
-    protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-    const key = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 1,
-      value: {
-        chainId: 1,
-        blockHash: fromHexString(
-          '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-        ),
-      },
-    })
-    const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
-    protocol.addContentToHistory = td.func<any>()
-    td.when(
-      node.sendPortalNetworkMessage(
-        td.matchers.anything(),
-        td.matchers.anything(),
-        td.matchers.anything()
-      )
-    ).thenResolve(Buffer.from(findContentResponse))
-    const res = await protocol.sendFindContent(decodedEnr.nodeId, key)
-    st.deepEqual(res.value, Buffer.from([97, 98, 99]), 'got correct response for content abc')
-
-    // TODO: Write good `handleFindContent` tests
+  const protocol = new HistoryProtocol(node, 2n)
+  const remoteEnr =
+    'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
+  const decodedEnr = ENR.decodeTxt(remoteEnr)
+  protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
+  const key = HistoryNetworkContentKeyUnionType.serialize({
+    selector: 1,
+    value: {
+      chainId: 1,
+      blockHash: fromHexString(
+        '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
+      ),
+    },
   })
+  const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
+  protocol.addContentToHistory = td.func<any>()
+  td.when(
+    node.sendPortalNetworkMessage(
+      td.matchers.anything(),
+      td.matchers.anything(),
+      td.matchers.anything()
+    )
+  ).thenResolve(Buffer.from(findContentResponse))
+  const res = await protocol.sendFindContent(decodedEnr.nodeId, key)
+  t.deepEqual(res!.value, Buffer.from([97, 98, 99]), 'got correct response for content abc')
 
+  // TODO: Write good `handleFindContent` tests
+
+  td.reset()
+
+  await protocol.addContentToHistory(
+    1,
+    HistoryNetworkContentTypes.BlockHeader,
+    block1Hash,
+    fromHexString(block1Rlp)
+  )
+  const contentKey = HistoryNetworkContentKeyUnionType.serialize({
+    selector: HistoryNetworkContentTypes.BlockHeader,
+    value: {
+      chainId: 1,
+      blockHash: fromHexString(block1Hash),
+    },
+  })
+  const header = await protocol.sendFindContent('0xabcd', contentKey)
+  t.equal(header, undefined, 'received undefined for unknown peer')
+})
+
+tape('addContentToHistory', async (t) => {
   t.test('Should store and retrieve block header and body from DB', async (st) => {
     const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
     const protocol = new HistoryProtocol(node, 2n) as any
@@ -92,6 +112,7 @@ tape('history Protocol message handler tests', async (t) => {
     st.equal(header.number, 1n, 'retrieved block header based on content key')
     st.end()
   })
+
   t.test('Should store and retrieve an EpochAccumulator from DB', async (st) => {
     const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
     const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
@@ -108,29 +129,33 @@ tape('history Protocol message handler tests', async (t) => {
     const fromDB = await node.db.get(contentId)
     st.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
   })
-})
 
-tape(
-  'Should not store block headers where hash generated from block header does not match provided hash',
-  async (t) => {
-    const common = new Common({ chain: 1, hardfork: Hardfork.London })
-    const header = BlockHeader.fromHeaderData({ number: 100000000000000 }, { common })
-    const headerValues = header.raw()
-    headerValues[15] = Buffer.from([9])
-    const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
-    const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
-    protocol.addContentToHistory(
-      1,
-      0,
-      toHexString(header.hash()),
-      RLP.encode(bufArrToArr(headerValues))
-    )
-    try {
-      await protocol.client.db.get(getHistoryNetworkContentId(1, 0, toHexString(header.hash())))
-      t.fail('should not find header')
-    } catch (err: any) {
-      t.equal(err.message, 'NotFound', 'did not find header in db')
+  t.test(
+    'Should not store block headers where hash generated from block header does not match provided hash',
+    async (st) => {
+      const common = new Common({ chain: 1, hardfork: Hardfork.London })
+      const header = BlockHeader.fromHeaderData({ number: 100000000000000 }, { common })
+      const headerValues = header.raw()
+      headerValues[15] = Buffer.from([9])
+      const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
+      const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
+      protocol.addContentToHistory(
+        1,
+        0,
+        toHexString(header.hash()),
+        RLP.encode(bufArrToArr(headerValues))
+      )
+      try {
+        await protocol.client.db.get(getHistoryNetworkContentId(1, 0, toHexString(header.hash())))
+        st.fail('should not find header')
+      } catch (err: any) {
+        st.equal(
+          err.message,
+          'NotFound',
+          'did not store header with data that does not match block hash'
+        )
+      }
+      st.end()
     }
-    t.end()
-  }
-)
+  )
+})
