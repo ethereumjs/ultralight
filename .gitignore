@@ -6,3 +6,4 @@ lib
 .nyc_output
 targets.json
 capacitor.config.json
+coverage

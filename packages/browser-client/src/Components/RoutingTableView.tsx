@@ -58,7 +58,10 @@ export default function RoutingTableView(props: RoutingTableProps) {
                         onMouseLeave={() => {
                           setHover(undefined)
                         }}
-                        onClick={() => setPeerIdx(idx)}
+                        onClick={() => {
+                          setPeerIdx(idx)
+                          _setPeer(peers[idx])
+                        }}
                         backgroundColor={
                           idx === hover
                             ? 'blue.100'

@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ArrowRightIcon, CopyIcon } from '@chakra-ui/icons'
+import { CopyIcon } from '@chakra-ui/icons'
 import {
   Box,
   Button,
@@ -6,7 +6,6 @@ import {
   GridItem,
   Heading,
   HStack,
-  IconButton,
   Input,
   Table,
   Tbody,
@@ -25,7 +24,7 @@ import {
   reassembleBlock,
   shortId,
 } from 'portalnetwork'
-import React, { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react'
+import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
 import { BlockContext, HistoryProtocolContext, PeersContext } from '../ContextHooks'
 
 export interface PeerButtonsProps {
@@ -40,7 +39,7 @@ export default function PeerButtons(props: PeerButtonsProps) {
   const { setBlock } = useContext(BlockContext)
   const peers = useContext(PeersContext)
   const [epoch, setEpoch] = useState(0)
-  const { peerIdx, setPeerIdx, sortedDistList, peer } = props
+  const { peerIdx, sortedDistList, peer } = props
   const [offer, setOffer] = useState<Uint8Array[]>([])
   const [pinging, setPinging] = useState(false)
   const [ponged, setPonged] = useState<boolean | undefined>()
@@ -126,6 +125,14 @@ export default function PeerButtons(props: PeerButtonsProps) {
     historyProtocol.sendFindContent(peer.nodeId, accumulatorKey)
   }
 
+  const offerSnapshot = () => {
+    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+      selector: 4,
+      value: { selector: 0, value: null },
+    })
+    historyProtocol.sendOffer(peer.nodeId, [accumulatorKey])
+  }
+
   const handleOffer = () => {
     historyProtocol.sendOffer(peer.nodeId, offer)
   }
@@ -181,7 +188,7 @@ export default function PeerButtons(props: PeerButtonsProps) {
         setBlock(block)
       } catch {}
     } else if (type === 'epoch') {
-      const epochKey = HistoryNetworkContentKeyUnionType.serialize({
+      const _epochKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 3,
         value: {
           chainId: 1,
@@ -197,21 +204,9 @@ export default function PeerButtons(props: PeerButtonsProps) {
           <HStack>
             <VStack>
               <HStack>
-                <IconButton
-                  disabled={peerIdx < 1}
-                  onClick={() => setPeerIdx(peerIdx - 1)}
-                  aria-label="prev peer"
-                  icon={<ArrowLeftIcon />}
-                />
                 <Heading size={'md'}>
                   Peer {peerIdx + 1} / {peers.length}
                 </Heading>
-                <IconButton
-                  onClick={() => setPeerIdx(peerIdx + 1)}
-                  disabled={peerIdx === peers.length - 1}
-                  aria-label="prev peer"
-                  icon={<ArrowRightIcon />}
-                />
               </HStack>
               <Table size="xs">
                 <Tbody>
@@ -265,6 +260,9 @@ export default function PeerButtons(props: PeerButtonsProps) {
           </HStack>
           <Button width="100%" onClick={() => handleRequestSnapshot()}>
             Request Accumulator Snapshot
+          </Button>
+          <Button mt="5px" width="100%" onClick={() => offerSnapshot()}>
+            Offer Accumulator Snapshot
           </Button>
           <Divider />
           <HStack width={'100%'}>
