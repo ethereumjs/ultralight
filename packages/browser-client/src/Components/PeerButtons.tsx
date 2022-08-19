@@ -25,19 +25,20 @@ import {
   reassembleBlock,
   shortId,
 } from 'portalnetwork'
-import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../App'
+import React, { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react'
+import { BlockContext, HistoryProtocolContext, PeersContext } from '../ContextHooks'
 
 export interface PeerButtonsProps {
   peerIdx: number
   setPeerIdx: Dispatch<SetStateAction<number>>
-  sortedDistList: any
+  sortedDistList: [number, string[]][]
   peer: ENR
-  peers: ENR[]
+  // peers: ENR[]
 }
 
 export default function PeerButtons(props: PeerButtonsProps) {
-  const { block, setBlock } = useContext(BlockContext)
+  const { setBlock } = useContext(BlockContext)
+  const peers = useContext(PeersContext)
   const [epoch, setEpoch] = useState(0)
   const { peerIdx, setPeerIdx, sortedDistList, peer } = props
   const [offer, setOffer] = useState<Uint8Array[]>([])
@@ -125,7 +126,7 @@ export default function PeerButtons(props: PeerButtonsProps) {
     historyProtocol.sendFindContent(peer.nodeId, accumulatorKey)
   }
 
-  const handleOffer = (peer: ENR) => {
+  const handleOffer = () => {
     historyProtocol.sendOffer(peer.nodeId, offer)
   }
   const sendFindContent = async (type: string) => {
@@ -203,11 +204,11 @@ export default function PeerButtons(props: PeerButtonsProps) {
                   icon={<ArrowLeftIcon />}
                 />
                 <Heading size={'md'}>
-                  Peer {peerIdx + 1} / {props.peers.length}
+                  Peer {peerIdx + 1} / {peers.length}
                 </Heading>
                 <IconButton
                   onClick={() => setPeerIdx(peerIdx + 1)}
-                  disabled={peerIdx === props.peers.length - 1}
+                  disabled={peerIdx === peers.length - 1}
                   aria-label="prev peer"
                   icon={<ArrowRightIcon />}
                 />
@@ -385,7 +386,7 @@ export default function PeerButtons(props: PeerButtonsProps) {
           <Box width={'90%'} border={'1px'}>
             <Text textAlign={'center'}>OFFER: {offer.length} / 26</Text>
           </Box>
-          <Button width={'100%'} onClick={() => handleOffer(peer)}>
+          <Button width={'100%'} onClick={() => handleOffer()}>
             Send Offer
           </Button>
         </VStack>

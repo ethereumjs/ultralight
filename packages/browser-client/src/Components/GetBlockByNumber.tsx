@@ -1,11 +1,8 @@
-import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
-import { ProtocolId } from 'portalnetwork'
-import { HistoryProtocol } from 'portalnetwork/dist/subprotocols/history/history'
+import { Button, FormControl, HStack, Input, useToast } from '@chakra-ui/react'
 import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../App'
+import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
 
 interface IGetBlockByNumberProps {
-  setBlockHash: Dispatch<SetStateAction<string>>
   setIsLoading: Dispatch<SetStateAction<boolean>>
 }
 
@@ -13,6 +10,7 @@ export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
   const history = useContext(HistoryProtocolContext)
   const [searchNumber, setSearchNumber] = useState(history.accumulator.currentHeight().toString())
   const { setBlock } = useContext(BlockContext)
+  const toast = useToast()
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
@@ -24,6 +22,17 @@ export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
   }
 
   async function handleClick() {
+    if (parseInt(searchNumber) > history.accumulator.currentHeight()) {
+      toast({
+        title: 'Invalid Block Number',
+        status: 'error',
+        description: 'Block number higher than current known chain height',
+        duration: 3000,
+        position: 'bottom',
+      })
+      setSearchNumber('')
+      return
+    }
     props.setIsLoading(true)
     await eth_getBlockByNumber(searchNumber, true)
     props.setIsLoading(false)
@@ -33,7 +42,7 @@ export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
     <HStack marginY={1}>
       <Button
         disabled={history.accumulator.currentHeight() < 1}
-        width={'100%'}
+        width={'40%'}
         onClick={handleClick}
       >
         Get Block by Number
