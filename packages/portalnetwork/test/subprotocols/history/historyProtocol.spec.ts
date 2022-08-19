@@ -1,5 +1,5 @@
 import { ENR, EntryStatus, toHex } from '@chainsafe/discv5'
-import { BlockHeader } from '@ethereumjs/block'
+import { , BlockHeader } from '@ethereumjs/block'
 import tape from 'tape'
 import * as td from 'testdouble'
 import {
@@ -17,6 +17,7 @@ import {
 } from '../../../src/subprotocols/history/types.js'
 import { createRequire } from 'module'
 import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
+
 const require = createRequire(import.meta.url)
 
 tape('history Protocol message handler tests', async (t) => {
@@ -104,4 +105,16 @@ tape('history Protocol message handler tests', async (t) => {
     const fromDB = await node.db.get(contentId)
     st.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
   })
+})
+
+tape.only('fake out blockheader', async (t) => {
+  const common = new Common({ hardfork: Hardfork.})
+  const header = BlockHeader.fromHeaderData({}, { common: })
+  const rlp = header.serialize()
+  const fakeRlp = Buffer.from(rlp)
+  fakeRlp[25] = 120
+  const newHeader = BlockHeader.fromRLPSerializedHeader(rlp)
+  const fakeHeader = BlockHeader.fromRLPSerializedHeader(fakeRlp)
+  console.log(newHeader.hash().toString('hex'), fakeHeader.hash().toString('hex'))
+  t.end()
 })

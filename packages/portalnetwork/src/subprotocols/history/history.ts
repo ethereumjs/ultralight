@@ -124,8 +124,6 @@ export class HistoryProtocol extends BaseProtocol {
           }
           case 1:
             {
-              this.logger(`received content`)
-              this.logger(decoded.value)
               // Store content in local DB
               switch (decodedKey.selector) {
                 case HistoryNetworkContentTypes.BlockHeader:
@@ -134,6 +132,7 @@ export class HistoryProtocol extends BaseProtocol {
                 case HistoryNetworkContentTypes.EpochAccumulator:
                   {
                     const content = decodedKey.value as HistoryNetworkContentKey
+                    this.logger(`received content corresponding to ${content!.blockHash}`)
                     try {
                       this.addContentToHistory(
                         content.chainId,
@@ -343,7 +342,10 @@ export class HistoryProtocol extends BaseProtocol {
           const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value), {
             hardforkByBlockNumber: true,
           })
-
+          if (toHexString(header.hash()) !== hashKey) {
+            this.logger(`Block header content doesn't match header hash ${hashKey}`)
+            return
+          }
           if (
             Number(header.number) === this.accumulator.currentHeight() + 1 &&
             header.parentHash.equals(
