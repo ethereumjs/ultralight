@@ -1,4 +1,4 @@
-import { ENR, EntryStatus, toHex } from '@chainsafe/discv5'
+import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
 import tape from 'tape'
@@ -19,7 +19,7 @@ import {
 import { createRequire } from 'module'
 import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
 import { RLP } from 'rlp'
-import { arrToBufArr, bufArrToArr } from '@ethereumjs/util'
+import { bufArrToArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 
