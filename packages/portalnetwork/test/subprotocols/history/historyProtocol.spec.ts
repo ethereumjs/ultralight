@@ -1,5 +1,6 @@
 import { ENR, EntryStatus, toHex } from '@chainsafe/discv5'
-import { , BlockHeader } from '@ethereumjs/block'
+import { BlockHeader } from '@ethereumjs/block'
+import { Common, Hardfork } from '@ethereumjs/common'
 import tape from 'tape'
 import * as td from 'testdouble'
 import {
@@ -17,6 +18,8 @@ import {
 } from '../../../src/subprotocols/history/types.js'
 import { createRequire } from 'module'
 import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
+import { RLP } from 'rlp'
+import { arrToBufArr, bufArrToArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 
@@ -107,14 +110,27 @@ tape('history Protocol message handler tests', async (t) => {
   })
 })
 
-tape.only('fake out blockheader', async (t) => {
-  const common = new Common({ hardfork: Hardfork.})
-  const header = BlockHeader.fromHeaderData({}, { common: })
-  const rlp = header.serialize()
-  const fakeRlp = Buffer.from(rlp)
-  fakeRlp[25] = 120
-  const newHeader = BlockHeader.fromRLPSerializedHeader(rlp)
-  const fakeHeader = BlockHeader.fromRLPSerializedHeader(fakeRlp)
-  console.log(newHeader.hash().toString('hex'), fakeHeader.hash().toString('hex'))
-  t.end()
-})
+tape(
+  'Should not store block headers where hash generated from block header does not match provided hash',
+  async (t) => {
+    const common = new Common({ chain: 1, hardfork: Hardfork.London })
+    const header = BlockHeader.fromHeaderData({ number: 100000000000000 }, { common })
+    const headerValues = header.raw()
+    headerValues[15] = Buffer.from([9])
+    const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
+    const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
+    protocol.addContentToHistory(
+      1,
+      0,
+      toHexString(header.hash()),
+      RLP.encode(bufArrToArr(headerValues))
+    )
+    try {
+      await protocol.client.db.get(getHistoryNetworkContentId(1, 0, toHexString(header.hash())))
+      t.fail('should not find header')
+    } catch (err: any) {
+      t.equal(err.message, 'NotFound', 'did not find header in db')
+    }
+    t.end()
+  }
+)
