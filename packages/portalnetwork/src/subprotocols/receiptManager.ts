@@ -13,27 +13,16 @@ import type { Block } from '@ethereumjs/block'
 import { HistoryProtocol } from './history/history.js'
 import { DBManager } from '../client/dbManager.js'
 import { Bloom } from './types.js'
-import { PreByzantiumTxReceipt, PostByzantiumTxReceipt, TxReceipt, Log } from '../client/types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { getHistoryNetworkContentId } from './index.js'
+import {
+  Log,
+  PostByzantiumTxReceipt,
+  PreByzantiumTxReceipt,
+  TxReceipt,
+  TxReceiptWithType,
+} from './history/types.js'
 
-/**
- * TxReceiptWithType extends TxReceipt to provide:
- *  - txType: byte prefix for serializing typed tx receipts
- */
-export type TxReceiptWithType = PreByzantiumTxReceiptWithType | PostByzantiumTxReceiptWithType
-interface PreByzantiumTxReceiptWithType extends PreByzantiumTxReceipt {
-  /* EIP-2718 Typed Transaction Envelope type */
-  txType: number
-}
-interface PostByzantiumTxReceiptWithType extends PostByzantiumTxReceipt {
-  /* EIP-2718 Typed Transaction Envelope type */
-  txType: number
-}
-
-/**
- * Function return values
- */
 type _GetReceiptByTxHashReturn = [
   receipt: TxReceipt,
   blockHash: Buffer,

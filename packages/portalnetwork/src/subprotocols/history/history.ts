@@ -27,7 +27,7 @@ import {
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
-import { ReceiptsManager } from '../receipt.js'
+import { ReceiptsManager } from '../receiptManager.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
