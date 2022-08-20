@@ -16,11 +16,11 @@ export const EPOCH_SIZE = 8192
 const MAX_HISTORICAL_EPOCHS = 131072
 
 // Block Body SSZ encoding related constants
-const MAX_TRANSACTION_LENGTH = 2 ** 24
-const MAX_TRANSACTION_COUNT = 2 ** 14
-const MAX_RECEIPT_LENGTH = 2 ** 27
-const MAX_HEADER_LENGTH = 2 ** 13
-const MAX_ENCODED_UNCLES_LENGTH = MAX_HEADER_LENGTH * 2 ** 4
+export const MAX_TRANSACTION_LENGTH = 2 ** 24
+export const MAX_TRANSACTION_COUNT = 2 ** 14
+export const MAX_RECEIPT_LENGTH = 2 ** 27
+export const MAX_HEADER_LENGTH = 2 ** 13
+export const MAX_ENCODED_UNCLES_LENGTH = MAX_HEADER_LENGTH * 2 ** 4
 
 /* ----------------- Types ----------- */
 /**
@@ -92,6 +92,94 @@ export const BlockBodyContentType = new ContainerType({
 })
 export type BlockBodyContent = { txsRlp: Buffer[]; unclesRlp: Uint8Array }
 
-export const sszReceipt = new ByteListType(MAX_RECEIPT_LENGTH)
+// Receipt Types
 
-export const ReceiptsContentType = new ListCompositeType(sszReceipt, MAX_TRANSACTION_COUNT)
+export type rlpReceipt = [postStateOrStatus: Buffer, cumulativeGasUsed: Buffer, logs: Log[]]
+
+export type Log = [address: Buffer, topics: Buffer[], data: Buffer]
+export type TxReceipt = PreByzantiumTxReceipt | PostByzantiumTxReceipt
+
+export const sszReceiptType = new ByteListType(MAX_RECEIPT_LENGTH)
+export const ReceiptsContentType = new ListCompositeType(sszReceiptType, MAX_TRANSACTION_COUNT)
+
+/**
+ * Abstract interface with common transaction receipt fields
+ */
+export interface BaseTxReceipt {
+  /**
+   * Cumulative gas used in the block including this tx
+   */
+  cumulativeBlockGasUsed: bigint
+  /**
+   * Bloom bitvector
+   */
+  bitvector: Buffer
+  /**
+   * Logs emitted
+   */
+  logs: Log[]
+}
+/**
+ * Pre-Byzantium receipt type with a field
+ * for the intermediary state root
+ */
+export interface PreByzantiumTxReceipt extends BaseTxReceipt {
+  /**
+   * Intermediary state root
+   */
+  stateRoot: Buffer
+}
+/**
+ * Receipt type for Byzantium and beyond replacing the intermediary
+ * state root field with a status code field (EIP-658)
+ */
+export interface PostByzantiumTxReceipt extends BaseTxReceipt {
+  /**
+   * Status of transaction, `1` if successful, `0` if an exception occured
+   */
+  status: 0 | 1
+}
+/**
+ * TxReceiptWithType extends TxReceipt to provide:
+ *  - txType: byte prefix for serializing typed tx receipts
+ */
+interface PreByzantiumTxReceiptWithType extends PreByzantiumTxReceipt {
+  /* EIP-2718 Typed Transaction Envelope type */
+  txType: number
+}
+interface PostByzantiumTxReceiptWithType extends PostByzantiumTxReceipt {
+  /* EIP-2718 Typed Transaction Envelope type */
+  txType: number
+}
+
+/**
+ * TxReceiptWithType extends TxReceipt to provide:
+ *  - txType: byte prefix for serializing typed tx receipts
+ */
+export type TxReceiptWithType = PreByzantiumTxReceiptWithType | PostByzantiumTxReceiptWithType
+
+export type TxReceiptType = TxReceipt | TxReceiptWithType
+export interface IReceiptOpts {
+  /**
+   * Cumulative gas used in the block including this tx
+   */
+  cumulativeBlockGasUsed: bigint
+  /**
+   * Bloom bitvector
+   */
+  bitvector: Buffer
+  /**
+   * Logs emitted
+   */
+  logs: Log[]
+  /**
+   * Intermediary state root
+   */
+  stateRoot?: Buffer
+  /**
+   * Status of transaction, `1` if successful, `0` if an exception occured
+   */
+  status?: 0 | 1
+  /* EIP-2718 Typed Transaction Envelope type */
+  txType?: number
+}
