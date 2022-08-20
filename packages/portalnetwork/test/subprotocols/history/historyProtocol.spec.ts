@@ -26,7 +26,7 @@ const testBlock = require('./testdata/testBlock.json')
 const block1Rlp = testBlock.blockRlp
 const block1Hash = testBlock.blockHash
 
-tape.only('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
+tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
