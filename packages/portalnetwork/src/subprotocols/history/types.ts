@@ -94,7 +94,12 @@ export type BlockBodyContent = { txsRlp: Buffer[]; unclesRlp: Uint8Array }
 
 // Receipt Types
 
-export type rlpReceipt = [postStateOrStatus: Buffer, cumulativeGasUsed: Buffer, logs: Log[]]
+export type rlpReceipt = [
+  postStateOrStatus: Buffer,
+  cumulativeGasUsed: Buffer,
+  bitvector: Buffer,
+  logs: Log[]
+]
 
 export type Log = [address: Buffer, topics: Buffer[], data: Buffer]
 export type TxReceipt = PreByzantiumTxReceipt | PostByzantiumTxReceipt
@@ -143,11 +148,11 @@ export interface PostByzantiumTxReceipt extends BaseTxReceipt {
  * TxReceiptWithType extends TxReceipt to provide:
  *  - txType: byte prefix for serializing typed tx receipts
  */
-interface PreByzantiumTxReceiptWithType extends PreByzantiumTxReceipt {
+export interface PreByzantiumTxReceiptWithType extends PreByzantiumTxReceipt {
   /* EIP-2718 Typed Transaction Envelope type */
   txType: number
 }
-interface PostByzantiumTxReceiptWithType extends PostByzantiumTxReceipt {
+export interface PostByzantiumTxReceiptWithType extends PostByzantiumTxReceipt {
   /* EIP-2718 Typed Transaction Envelope type */
   txType: number
 }

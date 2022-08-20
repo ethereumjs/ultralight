@@ -4,7 +4,9 @@ import {
   IReceiptOpts,
   Log,
   PostByzantiumTxReceipt,
+  PostByzantiumTxReceiptWithType,
   PreByzantiumTxReceipt,
+  PreByzantiumTxReceiptWithType,
   rlpReceipt,
   TxReceiptType,
 } from './types.js'
@@ -16,6 +18,35 @@ export class Receipt {
   stateRoot?: Buffer
   status?: 0 | 1
   txType?: number
+  public static fromReceiptData(r: TxReceiptType): Receipt {
+    return new Receipt(r)
+  }
+
+  public static fromEncodedReceipt(encoded: Buffer): Receipt {
+    try {
+      const receipt = RLP.decode(Uint8Array.from(encoded.subarray(1))) as rlpReceipt
+      const type = encoded[0]
+      return new Receipt({
+        bitvector: receipt[2],
+        cumulativeBlockGasUsed: bufferToBigInt(receipt[1]),
+        logs: receipt[3],
+        status: bufferToInt(receipt[0]) as 0 | 1,
+        txType: type,
+      })
+    } catch {
+      const receipt = RLP.decode(Uint8Array.from(encoded)) as rlpReceipt
+      return new Receipt({
+        bitvector: receipt[2],
+        cumulativeBlockGasUsed: bufferToBigInt(receipt[1]),
+        logs: receipt[3],
+        status: bufferToInt(receipt[0]) as 0 | 1,
+      })
+    }
+  }
+
+  public static decodeReceiptBuffer(encoded: Buffer): TxReceiptType {
+    return this.fromEncodedReceipt(encoded).decoded()
+  }
 
   constructor(opts: IReceiptOpts) {
     this.cumulativeBlockGasUsed = opts.cumulativeBlockGasUsed
@@ -29,6 +60,7 @@ export class Receipt {
     const rlpReceipt: rlpReceipt = [
       this.stateRoot ?? intToBuffer(this.status!),
       bigIntToBuffer(this.cumulativeBlockGasUsed),
+      this.bitvector,
       this.logs,
     ]
     const receipt = Buffer.from(RLP.encode(rlpReceipt))
@@ -41,47 +73,41 @@ export class Receipt {
     }
   }
 
-  rlpDecode = (receipt: Buffer): TxReceiptType => {
-    const r = RLP.decode(Uint8Array.from(receipt)) as rlpReceipt
-    const cumulativeBlockGasUsed = bufferToBigInt(r[1])
-    const logs = RLP.decode(r[2])
-    if (r[0].length === 32) {
-      // Pre-Byzantium Receipt
-      return {
-        stateRoot: r[0],
-        cumulativeBlockGasUsed,
-        logs,
-      } as PreByzantiumTxReceipt
+  public decoded = (): TxReceiptType => {
+    if (this.txType) {
+      if (Buffer.isBuffer(this.stateRoot)) {
+        return {
+          cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
+          bitvector: this.bitvector,
+          logs: this.logs,
+          stateRoot: this.stateRoot!,
+          txType: this.txType,
+        } as PreByzantiumTxReceiptWithType
+      } else {
+        return {
+          status: this.status!,
+          cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
+          bitvector: this.bitvector,
+          logs: this.logs,
+          txType: this.txType,
+        } as PostByzantiumTxReceiptWithType
+      }
     } else {
-      // Post-Byzantium Receipt
-      return {
-        status: bufferToInt(r[0]),
-        cumulativeBlockGasUsed,
-        logs,
-      } as PostByzantiumTxReceipt
-    }
-  }
-
-  fromEncoded = (encoded: Buffer, type: boolean): Receipt => {
-    const receipt = this.rlpDecode(encoded.subarray(1))
-    if (type) {
-      const type = encoded[0]
-      return new Receipt({
-        bitvector: receipt.bitvector,
-        cumulativeBlockGasUsed: receipt.cumulativeBlockGasUsed,
-        logs: receipt.logs,
-        stateRoot: (receipt as any).stateRoot,
-        status: (receipt as any).status,
-        txType: type,
-      })
-    } else {
-      return new Receipt({
-        bitvector: receipt.bitvector,
-        cumulativeBlockGasUsed: receipt.cumulativeBlockGasUsed,
-        logs: receipt.logs,
-        stateRoot: (receipt as any).stateRoot,
-        status: (receipt as any).status,
-      })
+      if (Buffer.isBuffer(this.stateRoot)) {
+        return {
+          stateRoot: this.stateRoot!,
+          cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
+          bitvector: this.bitvector,
+          logs: this.logs,
+        } as PreByzantiumTxReceipt
+      } else {
+        return {
+          status: this.status!,
+          cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
+          bitvector: this.bitvector,
+          logs: this.logs,
+        } as PostByzantiumTxReceipt
+      }
     }
   }
 }
