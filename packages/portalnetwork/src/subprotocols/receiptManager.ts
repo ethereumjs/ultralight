@@ -20,8 +20,10 @@ import {
   PostByzantiumTxReceipt,
   PreByzantiumTxReceipt,
   TxReceipt,
+  TxReceiptType,
   TxReceiptWithType,
 } from './history/types.js'
+import { VM } from '@ethereumjs/vm'
 
 type _GetReceiptByTxHashReturn = [
   receipt: TxReceipt,
@@ -90,7 +92,24 @@ export class ReceiptsManager {
    * @param block the block to save receipts for
    * @param receipts the receipts to save
    */
-  async saveReceipts(block: Block, receipts: TxReceipt[]) {
+  async saveReceipts(block: Block) {
+    const common = block._common
+    const vm = await VM.create({
+      common: common,
+      hardforkByBlockNumber: true,
+    })
+    const receipts: TxReceiptType[] = []
+    block.transactions.forEach(async (tx) => {
+      const txResult = await vm.runTx({
+        tx: tx,
+        skipBalance: true,
+        skipBlockGasLimitValidation: true,
+        skipNonce: true,
+      })
+      receipts.push(txResult.receipt)
+      this.protocol.logger(txResult.receipt)
+    })
+    this.protocol.logger.extend('RECEIPT_MANAGER')(`Encoding ${receipts.length} receipts for db`)
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
     this.protocol.addContentToHistory(1, 2, toHexString(block.hash()), encoded)
   }

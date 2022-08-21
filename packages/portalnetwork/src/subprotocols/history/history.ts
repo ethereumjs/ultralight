@@ -384,6 +384,7 @@ export class HistoryProtocol extends BaseProtocol {
       }
       case HistoryNetworkContentTypes.BlockBody: {
         let validBlock = false
+        let block: Block
         try {
           const headerContentId = getHistoryNetworkContentId(
             1,
@@ -392,7 +393,7 @@ export class HistoryProtocol extends BaseProtocol {
           )
           const hexHeader = await this.client.db.get(headerContentId)
           // Verify we can construct a valid block from the header and body provided
-          reassembleBlock(fromHexString(hexHeader), value)
+          block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
         } catch {
           this.logger(
@@ -405,6 +406,7 @@ export class HistoryProtocol extends BaseProtocol {
         }
         if (validBlock) {
           this.client.db.put(contentId, toHexString(value))
+          await this.receiptManager.saveReceipts(block!)
         } else {
           this.logger(`Could not verify block content`)
           // Don't store block body where we can't assemble a valid block
@@ -413,7 +415,9 @@ export class HistoryProtocol extends BaseProtocol {
         break
       }
       case HistoryNetworkContentTypes.Receipt:
-        throw new Error('Receipts data not implemented')
+        this.client.db.put(getHistoryNetworkContentId(1, 2, hashKey), toHexString(value))
+        this.logger('TODO: Implement Receipts')
+        break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
         break
