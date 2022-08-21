@@ -32,7 +32,7 @@ const main = async () => {
     })
     } else if (args.numNodes){
         for (let x = 0; x < args.numNodes; x++) {
-            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', 'pipe', process.stderr]})
+            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8546+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', 'pipe', process.stderr]})
             children.push(child)
         }
     }
