@@ -105,7 +105,7 @@ export type Log = [address: Buffer, topics: Buffer[], data: Buffer]
 export type TxReceipt = PreByzantiumTxReceipt | PostByzantiumTxReceipt
 
 export const sszReceiptType = new ByteListType(MAX_RECEIPT_LENGTH)
-export const ReceiptsContentType = new ListCompositeType(sszReceiptType, MAX_TRANSACTION_COUNT)
+export const sszReceiptsListType = new ListCompositeType(sszReceiptType, MAX_TRANSACTION_COUNT)
 
 /**
  * Abstract interface with common transaction receipt fields

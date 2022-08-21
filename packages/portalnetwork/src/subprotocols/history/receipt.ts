@@ -1,4 +1,10 @@
-import { bigIntToBuffer, bufferToBigInt, bufferToInt, intToBuffer } from '@ethereumjs/util'
+import {
+  bigIntToBuffer,
+  bufArrToArr,
+  bufferToBigInt,
+  bufferToInt,
+  intToBuffer,
+} from '@ethereumjs/util'
 import { RLP } from 'rlp'
 import {
   IReceiptOpts,
@@ -8,6 +14,7 @@ import {
   PreByzantiumTxReceipt,
   PreByzantiumTxReceiptWithType,
   rlpReceipt,
+  TxReceipt,
   TxReceiptType,
 } from './types.js'
 
@@ -110,4 +117,28 @@ export class Receipt {
       }
     }
   }
+}
+
+export function encodeReceipt(receipt: TxReceipt, txType: number) {
+  const encoded = Buffer.from(
+    RLP.encode(
+      bufArrToArr([
+        (receipt as PreByzantiumTxReceipt).stateRoot ??
+          ((receipt as PostByzantiumTxReceipt).status === 0
+            ? Buffer.from([])
+            : Buffer.from('01', 'hex')),
+        bigIntToBuffer(receipt.cumulativeBlockGasUsed),
+        receipt.bitvector,
+        receipt.logs,
+      ])
+    )
+  )
+
+  if (txType === 0) {
+    return encoded
+  }
+
+  // Serialize receipt according to EIP-2718:
+  // `typed-receipt = tx-type || receipt-data`
+  return Buffer.concat([intToBuffer(txType), encoded])
 }
