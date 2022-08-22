@@ -14,9 +14,9 @@ const args: any = yargs(hideBin(process.argv))
     }).argv
 
 const main = async () => {
-    const web3 = Client.http({ host: '127.0.0.1', port: 8545 })
-    const ultralight = Client.http({ host: '127.0.0.1', port: 8546 })
-    const peer0 = Client.http({host: '127.0.0.1', port: 8547})
+    const web3 = Client.http({ host: '127.0.0.1', port: 8544 })
+    const ultralight = Client.http({ host: '127.0.0.1', port: 8545 })
+    const peer0 = Client.http({host: '127.0.0.1', port: 8546})
     console.log(args.blockHeight)
 
     for (let x = 1; x < args.blockHeight; x++) {
