@@ -333,7 +333,6 @@ tape('OFFER/ACCEPT', (t) => {
       const _blocks: string[] = []
 
       portal1.on('ContentAdded', async (blockHash, contentType, content) => {
-        i++
         st.equal(
           await portal1.db.get(
             getHistoryNetworkContentId(1, contentType, testHashes[testHashes.indexOf(blockHash)])
@@ -341,7 +340,11 @@ tape('OFFER/ACCEPT', (t) => {
           content,
           `${HistoryNetworkContentTypes[contentType]} successfully stored in db`
         )
+        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
+          i++
+        }
         if (contentType === HistoryNetworkContentTypes.BlockBody) {
+          i++
           _blocks.push(blockHash)
         }
         if (
