@@ -162,7 +162,7 @@ export class portal {
     }
     const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 4,
-      value: Uint8Array.from([]),
+      value: { selector: 0, value: null },
     })
     await protocol.sendFindContent(nodeId, accumulatorKey)
     return `Received Accumulator Snapshot`
