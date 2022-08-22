@@ -16,7 +16,7 @@ import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
 } from '../../src/subprotocols/history/index.js'
-import { Block } from '@ethereumjs/block'
+import { Block, BlockHeaderBuffer } from '@ethereumjs/block'
 import { TransportLayer } from '../../src/client/types.js'
 import {
   HistoryProtocol,
@@ -356,8 +356,7 @@ tape('OFFER/ACCEPT', (t) => {
           const body = decodeSszBlockBody(fromHexString(content))
           try {
             const uncleHeaderHash = toHexString(
-              //@ts-ignore
-              BlockHeader.fromValuesArray(rlp.decode(body.unclesRlp)[0], {
+              BlockHeader.fromValuesArray(rlp.decode(body.unclesRlp)[0] as BlockHeaderBuffer, {
                 hardforkByBlockNumber: true,
               }).hash()
             )
