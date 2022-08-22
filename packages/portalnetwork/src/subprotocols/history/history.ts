@@ -24,10 +24,12 @@ import {
   HistoryNetworkContentKey,
   EPOCH_SIZE,
   EpochAccumulator,
+  SszProof,
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
 import { ReceiptsManager } from './receiptManager.js'
+import { Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -152,6 +154,32 @@ export class HistoryProtocol extends BaseProtocol {
                     getHistoryNetworkContentId(1, 4),
                     decoded.value as Uint8Array
                   )
+                  break
+                }
+                case HistoryNetworkContentTypes.HeaderProof: {
+                  const contentKey = decodedKey.value as HistoryNetworkContentKey
+                  const serialized = decoded.value as Uint8Array
+                  const deserialized = SszProof.deserialize(serialized)
+                  const proof: SingleProof = {
+                    type: ProofType.single,
+                    gindex: deserialized.gIndex,
+                    leaf: deserialized.leaf,
+                    witnesses: deserialized.witnesses,
+                  }
+                  const header = BlockHeader.fromRLPSerializedHeader(
+                    Buffer.from(
+                      fromHexString(
+                        await this.client.db.get(
+                          getHistoryNetworkContentId(1, 0, toHexString(contentKey.blockHash))
+                        )
+                      )
+                    ),
+                    {
+                      hardforkByBlockNumber: true,
+                    }
+                  )
+                  this.accumulator.verifyInclusionProof(proof, header, Number(header.number) % 8192)
+                  break
                 }
               }
             }
