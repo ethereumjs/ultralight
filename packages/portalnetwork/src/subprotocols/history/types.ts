@@ -48,6 +48,7 @@ export enum HistoryNetworkContentTypes {
   Receipt = 2,
   EpochAccumulator = 3,
   HeaderAccumulator = 4,
+  HeaderProof = 5,
 }
 
 export const HeaderRecord = new ContainerType({
