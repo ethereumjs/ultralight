@@ -9,6 +9,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
+  HeaderAccumulator,
 } from '../../src/subprotocols/history/index.js'
 import { Block } from '@ethereumjs/block'
 import {
@@ -22,6 +23,63 @@ import { connectAndTest, end } from './integrationTest.js'
 const require = createRequire(import.meta.url)
 
 tape('History Protocol Integration Tests', (t) => {
+  t.test('Nodes should share accumulator snapshot with FINDCONTENT / FOUNDCONTENT', (st) => {
+    const findAccumulator = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
+      const testAccumulator = require('./testAccumulator.json')
+      const desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(testAccumulator))
+      const rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: desAccumulator })
+      const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 4,
+        value: { selector: 0, value: null },
+      })
+
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.HeaderAccumulator,
+        toHexString(accumulatorKey),
+        fromHexString(testAccumulator)
+      )
+      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+        const _desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(content))
+        const _rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: _desAccumulator })
+        st.equal(
+          _rebuiltAccumulator.currentHeight(),
+          8999,
+          'Streamed accumulator matches test data'
+        )
+
+        const history = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        st.equal(
+          contentType,
+          HistoryNetworkContentTypes.HeaderAccumulator,
+          'Accumulator received with correct contentType'
+        )
+        st.equal(
+          blockHash,
+          toHexString(Uint8Array.from([])),
+          'Accumulator received with correct contentKey'
+        )
+        st.equal(
+          history.accumulator.currentHeight(),
+          rebuiltAccumulator.currentHeight(),
+          `Accumulator current Epoch received matches test Accumulator's current Epoch`
+        )
+        end(child, [portal1, portal2], st)
+      })
+      // end(child, [portal1, portal2], st)
+
+      await protocol1.sendPing(portal2.discv5.enr)
+      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
+    }
+    connectAndTest(t, st, findAccumulator, true)
+  })
   t.test('Node should gossip new content to peer', (st) => {
     const gossip = async (
       portal1: PortalNetwork,
