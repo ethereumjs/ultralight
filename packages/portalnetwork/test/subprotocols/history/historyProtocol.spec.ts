@@ -22,6 +22,7 @@ import { createRequire } from 'module'
 import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
 import { RLP } from 'rlp'
 import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
+import { RlpConvert, RlpType } from '../../../src/subprotocols/history/receiptManager.js'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('./testdata/testBlocks.json')
@@ -175,7 +176,7 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
     RLP.encode(blockRlp[0])
   )
 
-  protocol.addContentToHistory(
+  await protocol.addContentToHistory(
     1,
     HistoryNetworkContentTypes.BlockBody,
     serializedBlock.blockHash,
@@ -196,5 +197,19 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
   const body = await protocol.client.db.get(bodyId)
   const newBlock = reassembleBlock(fromHexString(header), fromHexString(body))
   t.equal(newBlock.header.number, block.header.number, 'reassembled block from components in DB')
+
+  const receiptKey = getHistoryNetworkContentId(
+    1,
+    HistoryNetworkContentTypes.Receipt,
+    serializedBlock.blockHash
+  )
+
+  const receipt = await node.db.get(receiptKey)
+  const decodedReceipt = protocol.receiptManager.rlp(
+    RlpConvert.Decode,
+    RlpType.Receipts,
+    Buffer.from(fromHexString(receipt))
+  )
+  t.equal(decodedReceipt[0].cumulativeBlockGasUsed, 43608n, 'retrieved receipt from db')
   t.end()
 })

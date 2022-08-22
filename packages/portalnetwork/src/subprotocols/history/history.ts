@@ -27,7 +27,7 @@ import {
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
-import { ReceiptsManager } from '../receiptManager.js'
+import { ReceiptsManager } from './receiptManager.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -397,8 +397,7 @@ export class HistoryProtocol extends BaseProtocol {
           // Verify we can construct a valid block from the header and body provided
           block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
-        } catch (err) {
-          console.log(err)
+        } catch {
           this.logger(
             `Block Header for ${shortId(hashKey)} not found locally.  Querying network...`
           )
@@ -419,11 +418,16 @@ export class HistoryProtocol extends BaseProtocol {
         break
       }
       case HistoryNetworkContentTypes.Receipt:
-        this.client.db.put(getHistoryNetworkContentId(1, 2, hashKey), toHexString(value))
-        this.logger('TODO: Implement Receipts')
+        this.client.db.put(
+          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.Receipt, hashKey),
+          toHexString(value)
+        )
         break
       case HistoryNetworkContentTypes.EpochAccumulator:
-        this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
+        this.client.db.put(
+          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.EpochAccumulator, hashKey),
+          toHexString(value)
+        )
         break
       case HistoryNetworkContentTypes.HeaderAccumulator:
         this.receiveSnapshot(value)

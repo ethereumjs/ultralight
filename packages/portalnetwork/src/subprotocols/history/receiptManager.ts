@@ -10,19 +10,20 @@ import {
 } from '@ethereumjs/util'
 import * as RLP from 'rlp'
 import type { Block } from '@ethereumjs/block'
-import { HistoryProtocol } from './history/history.js'
-import { DBManager } from '../client/dbManager.js'
-import { Bloom } from './types.js'
+import { HistoryProtocol } from './history.js'
+import { DBManager } from '../../client/dbManager.js'
+import { Bloom } from '../types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { getHistoryNetworkContentId } from './index.js'
+import { getHistoryNetworkContentId } from '../index.js'
 import {
+  HistoryNetworkContentTypes,
   Log,
   PostByzantiumTxReceipt,
   PreByzantiumTxReceipt,
   TxReceipt,
   TxReceiptType,
   TxReceiptWithType,
-} from './history/types.js'
+} from './types.js'
 import { VM } from '@ethereumjs/vm'
 
 type _GetReceiptByTxHashReturn = [
@@ -52,11 +53,11 @@ type rlpLog = Log
 type rlpReceipt = [postStateOrStatus: Buffer, cumulativeGasUsed: Buffer, logs: rlpLog[]]
 type rlpTxHash = [blockHash: Buffer, txIndex: Buffer]
 
-enum RlpConvert {
+export enum RlpConvert {
   Encode,
   Decode,
 }
-enum RlpType {
+export enum RlpType {
   Receipts,
   Logs,
   TxHash,
@@ -93,9 +94,8 @@ export class ReceiptsManager {
    * @param receipts the receipts to save
    */
   async saveReceipts(block: Block) {
-    const common = block._common
     const vm = await VM.create({
-      common: common,
+      common: block._common,
       hardforkByBlockNumber: true,
     })
     const receipts: TxReceiptType[] = []
@@ -107,11 +107,16 @@ export class ReceiptsManager {
         skipNonce: true,
       })
       receipts.push(txResult.receipt)
-      this.protocol.logger(txResult.receipt)
+      this.protocol.logger.extend('RECEIPT_MANAGER')(txResult.receipt)
     }
     this.protocol.logger.extend('RECEIPT_MANAGER')(`Encoding ${receipts.length} receipts for db`)
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
-    this.protocol.addContentToHistory(1, 2, toHexString(block.hash()), encoded)
+    await this.protocol.addContentToHistory(
+      1,
+      HistoryNetworkContentTypes.Receipt,
+      toHexString(block.hash()),
+      encoded
+    )
   }
 
   /**
