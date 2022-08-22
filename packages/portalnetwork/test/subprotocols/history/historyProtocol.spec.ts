@@ -86,7 +86,7 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
 })
 
 tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
-  t.test('Should store and retrieve block header and body from DB', async (st) => {
+  t.test('Should store and retrieve block header from DB', async (st) => {
     const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
     const protocol = new HistoryProtocol(node, 2n) as any
     st.plan(1)
