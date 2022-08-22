@@ -2,6 +2,7 @@ import {
   ByteListType,
   ByteVectorType,
   ContainerType,
+  ListBasicType,
   ListCompositeType,
   NoneType,
   UintBigintType,
@@ -52,12 +53,15 @@ export enum HistoryNetworkContentTypes {
 }
 
 export const HashRoot = new ByteVectorType(32)
-export const Witnesses = new ListCompositeType(HashRoot, 256)
+export const Witnesses = new ListCompositeType(HashRoot, 2 ** 16)
+export const gIndex = new UintBigintType(4)
+export const gIndices = new ListBasicType(gIndex, 8192)
+export const leaves = new ListCompositeType(HashRoot, 8192)
 
 export const SszProof = new ContainerType({
   type: new UintNumberType(1),
-  gIndex: new UintBigintType(4),
-  leaf: HashRoot,
+  gIndices: gIndices,
+  leaves: leaves,
   witnesses: Witnesses,
 })
 

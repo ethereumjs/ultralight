@@ -29,7 +29,7 @@ import {
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
 import { ReceiptsManager } from './receiptManager.js'
-import { Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
+import { MultiProof, Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -160,10 +160,10 @@ export class HistoryProtocol extends BaseProtocol {
                   const contentKey = decodedKey.value as HistoryNetworkContentKey
                   const serialized = decoded.value as Uint8Array
                   const deserialized = SszProof.deserialize(serialized)
-                  const proof: SingleProof = {
-                    type: ProofType.single,
-                    gindex: deserialized.gIndex,
-                    leaf: deserialized.leaf,
+                  const proof: MultiProof = {
+                    type: ProofType.multi,
+                    gindices: deserialized.gIndices,
+                    leaves: deserialized.leaves,
                     witnesses: deserialized.witnesses,
                   }
                   const header = BlockHeader.fromRLPSerializedHeader(
