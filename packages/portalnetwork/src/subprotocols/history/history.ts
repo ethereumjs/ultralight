@@ -391,11 +391,14 @@ export class HistoryProtocol extends BaseProtocol {
             HistoryNetworkContentTypes.BlockHeader,
             hashKey
           )
+
           const hexHeader = await this.client.db.get(headerContentId)
+
           // Verify we can construct a valid block from the header and body provided
           block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
-        } catch {
+        } catch (err) {
+          console.log(err)
           this.logger(
             `Block Header for ${shortId(hashKey)} not found locally.  Querying network...`
           )
@@ -405,6 +408,7 @@ export class HistoryProtocol extends BaseProtocol {
           } catch {}
         }
         if (validBlock) {
+          this.logger('found valid block')
           this.client.db.put(contentId, toHexString(value))
           await this.receiptManager.saveReceipts(block!)
         } else {

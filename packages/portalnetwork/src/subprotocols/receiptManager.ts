@@ -99,7 +99,7 @@ export class ReceiptsManager {
       hardforkByBlockNumber: true,
     })
     const receipts: TxReceiptType[] = []
-    block.transactions.forEach(async (tx) => {
+    for (const tx of block.transactions) {
       const txResult = await vm.runTx({
         tx: tx,
         skipBalance: true,
@@ -108,7 +108,7 @@ export class ReceiptsManager {
       })
       receipts.push(txResult.receipt)
       this.protocol.logger(txResult.receipt)
-    })
+    }
     this.protocol.logger.extend('RECEIPT_MANAGER')(`Encoding ${receipts.length} receipts for db`)
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
     this.protocol.addContentToHistory(1, 2, toHexString(block.hash()), encoded)
