@@ -10,30 +10,22 @@ import {
 } from '@ethereumjs/util'
 import * as RLP from 'rlp'
 import type { Block } from '@ethereumjs/block'
-import { HistoryProtocol } from './history/history.js'
-import { DBManager } from '../client/dbManager.js'
-import { Bloom } from './types.js'
-import { PreByzantiumTxReceipt, PostByzantiumTxReceipt, TxReceipt, Log } from '../client/types.js'
+import { HistoryProtocol } from './history.js'
+import { DBManager } from '../../client/dbManager.js'
+import { Bloom } from '../types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { getHistoryNetworkContentId } from './index.js'
+import { getHistoryNetworkContentId } from '../index.js'
+import {
+  HistoryNetworkContentTypes,
+  Log,
+  PostByzantiumTxReceipt,
+  PreByzantiumTxReceipt,
+  TxReceipt,
+  TxReceiptType,
+  TxReceiptWithType,
+} from './types.js'
+import { VM } from '@ethereumjs/vm'
 
-/**
- * TxReceiptWithType extends TxReceipt to provide:
- *  - txType: byte prefix for serializing typed tx receipts
- */
-export type TxReceiptWithType = PreByzantiumTxReceiptWithType | PostByzantiumTxReceiptWithType
-interface PreByzantiumTxReceiptWithType extends PreByzantiumTxReceipt {
-  /* EIP-2718 Typed Transaction Envelope type */
-  txType: number
-}
-interface PostByzantiumTxReceiptWithType extends PostByzantiumTxReceipt {
-  /* EIP-2718 Typed Transaction Envelope type */
-  txType: number
-}
-
-/**
- * Function return values
- */
 type _GetReceiptByTxHashReturn = [
   receipt: TxReceipt,
   blockHash: Buffer,
@@ -61,11 +53,11 @@ type rlpLog = Log
 type rlpReceipt = [postStateOrStatus: Buffer, cumulativeGasUsed: Buffer, logs: rlpLog[]]
 type rlpTxHash = [blockHash: Buffer, txIndex: Buffer]
 
-enum RlpConvert {
+export enum RlpConvert {
   Encode,
   Decode,
 }
-enum RlpType {
+export enum RlpType {
   Receipts,
   Logs,
   TxHash,
@@ -101,9 +93,30 @@ export class ReceiptsManager {
    * @param block the block to save receipts for
    * @param receipts the receipts to save
    */
-  async saveReceipts(block: Block, receipts: TxReceipt[]) {
+  async saveReceipts(block: Block) {
+    const vm = await VM.create({
+      common: block._common,
+      hardforkByBlockNumber: true,
+    })
+    const receipts: TxReceiptType[] = []
+    for (const tx of block.transactions) {
+      const txResult = await vm.runTx({
+        tx: tx,
+        skipBalance: true,
+        skipBlockGasLimitValidation: true,
+        skipNonce: true,
+      })
+      receipts.push(txResult.receipt)
+      this.protocol.logger.extend('RECEIPT_MANAGER')(txResult.receipt)
+    }
+    this.protocol.logger.extend('RECEIPT_MANAGER')(`Encoding ${receipts.length} receipts for db`)
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
-    this.protocol.addContentToHistory(1, 2, toHexString(block.hash()), encoded)
+    await this.protocol.addContentToHistory(
+      1,
+      HistoryNetworkContentTypes.Receipt,
+      toHexString(block.hash()),
+      encoded
+    )
   }
 
   /**

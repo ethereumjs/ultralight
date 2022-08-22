@@ -27,7 +27,7 @@ import {
 } from './types.js'
 import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
-import { ReceiptsManager } from '../receipt.js'
+import { ReceiptsManager } from './receiptManager.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -384,15 +384,18 @@ export class HistoryProtocol extends BaseProtocol {
       }
       case HistoryNetworkContentTypes.BlockBody: {
         let validBlock = false
+        let block: Block
         try {
           const headerContentId = getHistoryNetworkContentId(
             1,
             HistoryNetworkContentTypes.BlockHeader,
             hashKey
           )
+
           const hexHeader = await this.client.db.get(headerContentId)
+
           // Verify we can construct a valid block from the header and body provided
-          reassembleBlock(fromHexString(hexHeader), value)
+          block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
         } catch {
           this.logger(
@@ -404,7 +407,9 @@ export class HistoryProtocol extends BaseProtocol {
           } catch {}
         }
         if (validBlock) {
+          this.logger('found valid block')
           this.client.db.put(contentId, toHexString(value))
+          await this.receiptManager.saveReceipts(block!)
         } else {
           this.logger(`Could not verify block content`)
           // Don't store block body where we can't assemble a valid block
@@ -413,9 +418,16 @@ export class HistoryProtocol extends BaseProtocol {
         break
       }
       case HistoryNetworkContentTypes.Receipt:
-        throw new Error('Receipts data not implemented')
+        this.client.db.put(
+          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.Receipt, hashKey),
+          toHexString(value)
+        )
+        break
       case HistoryNetworkContentTypes.EpochAccumulator:
-        this.client.db.put(getHistoryNetworkContentId(1, 3, hashKey), toHexString(value))
+        this.client.db.put(
+          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.EpochAccumulator, hashKey),
+          toHexString(value)
+        )
         break
       case HistoryNetworkContentTypes.HeaderAccumulator:
         this.receiveSnapshot(value)

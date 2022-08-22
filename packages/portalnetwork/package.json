@@ -28,8 +28,6 @@
     "@chainsafe/discv5": "^1.1.1",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
     "@chainsafe/ssz": "^0.9.1",
-    "@ethereumjs/block": "^4.0.0-beta.3",
-    "@ethereumjs/util": "^8.0.0-beta.3",
     "@frontall/capacitor-udp": "^0.3.4",
     "@libp2p/peer-id": "^1.1.13",
     "@libp2p/peer-id-factory": "^1.0.15",
@@ -46,15 +44,17 @@
     "rlp": "^4.0.0-beta.2",
     "strict-event-emitter-types": "^2.0.0",
     "websocket-as-promised": "^2.0.1",
-    "ws": "^8.2.1"
+    "ws": "^8.2.1",
+    "@ethereumjs/vm": "6.0.0-beta.3",
+    "@ethereumjs/block": "^4.0.0-beta.3"    
   },
   "devDependencies": {
     "@ethereumjs/common": "^3.0.0-beta.3",
     "@ethereumjs/tx": "^4.0.0-beta.3",
+    "@ethereumjs/util": "^8.0.0-beta.3",
     "@libp2p/interface-peer-id": "^1.0.2",
     "@types/debug": "^4.1.7",
     "@types/tape": "^4.13.2",
-    "@types/tape-promise": "^4.0.1",
     "@types/ws": "^7.4.7",
     "c8": "^7.12.0",
     "eslint": "^8.6.0",

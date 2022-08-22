@@ -1,5 +1,5 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
 import tape from 'tape'
 import * as td from 'testdouble'
@@ -9,6 +9,8 @@ import {
   toHexString,
   ProtocolId,
   serializedContentKeyToContentId,
+  sszEncodeBlockBody,
+  reassembleBlock,
 } from '../../../src/index.js'
 import { TransportLayer } from '../../../src/client/index.js'
 import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
@@ -19,14 +21,15 @@ import {
 import { createRequire } from 'module'
 import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
 import { RLP } from 'rlp'
-import { bufArrToArr } from '@ethereumjs/util'
+import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
+import { RlpConvert, RlpType } from '../../../src/subprotocols/history/receiptManager.js'
 
 const require = createRequire(import.meta.url)
-const testBlock = require('./testdata/testBlock.json')
-const block1Rlp = testBlock.blockRlp
-const block1Hash = testBlock.blockHash
+const testBlocks = require('./testdata/testBlocks.json')
 
-tape.only('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
+tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
+  const block1Rlp = testBlocks.block1.blockRlp
+  const block1Hash = testBlocks.block1.blockHash
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
@@ -83,8 +86,8 @@ tape.only('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t
   t.equal(header, undefined, 'received undefined for unknown peer')
 })
 
-tape('addContentToHistory', async (t) => {
-  t.test('Should store and retrieve block header and body from DB', async (st) => {
+tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
+  t.test('Should store and retrieve block header from DB', async (st) => {
     const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
     const protocol = new HistoryProtocol(node, 2n) as any
     st.plan(1)
@@ -122,7 +125,7 @@ tape('addContentToHistory', async (t) => {
     const contentId = getHistoryNetworkContentId(1, 3, toHexString(hashRoot))
     await protocol.addContentToHistory(
       1,
-      3,
+      HistoryNetworkContentTypes.EpochAccumulator,
       toHexString(hashRoot),
       fromHexString(epochAccumulator.serialized)
     )
@@ -141,7 +144,7 @@ tape('addContentToHistory', async (t) => {
       const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
       protocol.addContentToHistory(
         1,
-        0,
+        HistoryNetworkContentTypes.BlockHeader,
         toHexString(header.hash()),
         RLP.encode(bufArrToArr(headerValues))
       )
@@ -158,4 +161,55 @@ tape('addContentToHistory', async (t) => {
       st.end()
     }
   )
+})
+
+tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
+  const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
+  const protocol = new HistoryProtocol(node, 2n) as any
+  const serializedBlock = testBlocks.block207686
+  const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp)) //@ts-ignore
+  const block = Block.fromValuesArray(arrToBufArr(blockRlp))
+  protocol.addContentToHistory(
+    1,
+    HistoryNetworkContentTypes.BlockHeader,
+    serializedBlock.blockHash,
+    RLP.encode(blockRlp[0])
+  )
+
+  await protocol.addContentToHistory(
+    1,
+    HistoryNetworkContentTypes.BlockBody,
+    serializedBlock.blockHash,
+    sszEncodeBlockBody(block)
+  )
+  const headerId = getHistoryNetworkContentId(
+    1,
+    HistoryNetworkContentTypes.BlockHeader,
+    serializedBlock.blockHash
+  )
+
+  const bodyId = getHistoryNetworkContentId(
+    1,
+    HistoryNetworkContentTypes.BlockBody,
+    serializedBlock.blockHash
+  )
+  const header = await protocol.client.db.get(headerId)
+  const body = await protocol.client.db.get(bodyId)
+  const newBlock = reassembleBlock(fromHexString(header), fromHexString(body))
+  t.equal(newBlock.header.number, block.header.number, 'reassembled block from components in DB')
+
+  const receiptKey = getHistoryNetworkContentId(
+    1,
+    HistoryNetworkContentTypes.Receipt,
+    serializedBlock.blockHash
+  )
+
+  const receipt = await node.db.get(receiptKey)
+  const decodedReceipt = protocol.receiptManager.rlp(
+    RlpConvert.Decode,
+    RlpType.Receipts,
+    Buffer.from(fromHexString(receipt))
+  )
+  t.equal(decodedReceipt[0].cumulativeBlockGasUsed, 43608n, 'retrieved receipt from db')
+  t.end()
 })
