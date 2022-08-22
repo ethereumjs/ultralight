@@ -51,6 +51,12 @@ export enum HistoryNetworkContentTypes {
   HeaderProof = 5,
 }
 
+export const HashRoot = new ByteVectorType(32)
+
+// TODO: List limit should be equal to max possible height of epoch accumulator merkle tree.
+//       (SSZ Proof includes one hash from each level of the tree)
+export const HeaderProof = new ListCompositeType(HashRoot, 256)
+
 export const HeaderRecord = new ContainerType({
   blockHash: new ByteVectorType(32),
   totalDifficulty: new UintBigintType(32),
