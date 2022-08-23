@@ -1,3 +1,5 @@
 import tape from 'tape'
 
-tape('Receipt Manager Tests', (t) => {})
+tape('Receipt Manager Tests', (t) => {
+  t.end()
+})
