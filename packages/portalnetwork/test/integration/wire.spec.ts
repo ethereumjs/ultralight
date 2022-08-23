@@ -18,7 +18,6 @@ import {
 import { Block } from '@ethereumjs/block'
 import {
   HistoryProtocol,
-  HeaderAccumulator,
   EpochAccumulator,
   reassembleBlock,
 } from '../../src/subprotocols/history/index.js'
@@ -28,6 +27,8 @@ import * as rlp from 'rlp'
 import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)
+
+// TODO: Test requesting and sending and receiving a header proof
 
 tape('Integration Tests -- PING/PONG', (t) => {
   t.test('clients start and connect to each other', (st) => {
