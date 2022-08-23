@@ -247,22 +247,18 @@ tape('Header Proof Tests', async (t) => {
       fromHexString(_block8199.rawHeader)
     )
     const proof = await protocol.generateInclusionProof(_block8199.hash)
-    st.equal(proof.type, 'multi', 'Hisotry Protocol generated inclusion proof')
+    st.equal(
+      toHexString(proof.epochRoot),
+      toHexString(EpochAccumulator.hashTreeRoot(protocol.accumulator.currentEpoch.slice(0, 8))),
+      'Hisotry Protocol generated inclusion proof'
+    )
     st.equal(
       proof.gindices[0],
       blockNumberToGindex(BigInt(8199)),
       'Proof created for correct Header'
     )
-    st.equal(
-      toHexString(proof.leaves[0]),
-      toHexString(HeaderRecord.hashTreeRoot(_headerRecord)),
-      'Proof created for correct Header Record'
-    )
     st.equal(proof.witnesses.length, 14, 'Proof has correct size')
-    st.ok(
-      protocol.verifyInclusionProof(proof, header8199),
-      'History Protocol verified an inclusion proof.'
-    )
+    st.ok(protocol.verifyInclusionProof(proof), 'History Protocol verified an inclusion proof.')
     st.end()
   })
   t.test(
@@ -292,20 +288,19 @@ tape('Header Proof Tests', async (t) => {
         fromHexString(_block1000.rawHeader)
       )
       const proof = await protocol.generateInclusionProof(_block1000.hash)
-      st.equal(proof.type, 'multi', 'Hisotry Protocol generated inclusion proof')
+      st.equal(
+        toHexString(proof.epochRoot),
+        _epoch1.hash,
+        'Hisotry Protocol generated inclusion proof'
+      )
       st.equal(
         proof.gindices[0],
         blockNumberToGindex(BigInt(1000)),
         'Proof created for correct Header'
       )
-      st.equal(
-        toHexString(proof.leaves[0]),
-        toHexString(HeaderRecord.hashTreeRoot(_headerRecord)),
-        'Proof created for correct Header Record'
-      )
       st.equal(proof.witnesses.length, 14, 'Proof has correct size')
       st.ok(
-        protocol.verifyInclusionProof(proof, header1000),
+        protocol.verifyInclusionProof(proof),
         'History Protocol verified an inclusion proof from a historical epoch.'
       )
       st.end()
