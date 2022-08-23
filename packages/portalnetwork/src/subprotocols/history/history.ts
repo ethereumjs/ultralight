@@ -593,5 +593,30 @@ export class HistoryProtocol extends BaseProtocol {
       type: ProofType.multi,
       gindices: [gIndex],
     }) as MultiProof
+  async getHeaderRecordFromBlockhash(blockHash: string) {
+    const header = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(
+        fromHexString(await this.client.db.get(getHistoryNetworkContentId(1, 0, blockHash)))
+      ),
+      { hardforkByBlockNumber: true }
+    )
+    const epochIndex = Math.ceil(Number(header.number) / 8192)
+    const listIndex = Number(header.number) % 8192
+    if (this.accumulator.historicalEpochs.length < epochIndex) {
+      return this.accumulator.currentEpoch[listIndex]
+    } else {
+      const epoch = EpochAccumulator.deserialize(
+        fromHexString(
+          await this.client.db.get(
+            getHistoryNetworkContentId(
+              1,
+              3,
+              toHexString(this.accumulator.historicalEpochs[epochIndex - 1])
+            )
+          )
+        )
+      )
+      return epoch[listIndex]
+    }
   }
 }
