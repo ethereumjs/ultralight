@@ -530,22 +530,23 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
    * @returns true if proof is valid, false otherwise
    */
-  public verifyInclusionProof = async (proof: MultiProof, header: BlockHeader) => {
-    const epochIdx = Math.ceil(Number(header.number) / 8192)
+  public verifyInclusionProof = async (proof: MultiProof, blockHeader: BlockHeader) => {
+    const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
+    const listIdx = (Number(blockHeader.number) % 8192) + 1
     const epoch =
-      this.accumulator.historicalEpochs.length >= epochIdx
-        ? EpochAccumulator.deserialize(
+      this.accumulator.historicalEpochs.length < epochIdx
+        ? this.accumulator.currentEpoch.slice(0, listIdx)
+        : EpochAccumulator.deserialize(
             fromHexString(
               await this.client.db.get(
                 getHistoryNetworkContentId(
                   1,
                   HistoryNetworkContentTypes.EpochAccumulator,
-                  toHexString(this.accumulator.historicalEpochs[epochIdx - 1])
+                  toHexString(blockHeader.hash())
                 )
               )
             )
           )
-        : this.accumulator.currentEpoch
     try {
       EpochAccumulator.createFromProof(proof, EpochAccumulator.hashTreeRoot(epoch))
     } catch {
@@ -562,24 +563,20 @@ export class HistoryProtocol extends BaseProtocol {
   public generateInclusionProof = async (blockHeader: BlockHeader): Promise<MultiProof> => {
     const gIndex = blockNumberToGindex(blockHeader.number)
     const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
-
+    const listIdx = (Number(blockHeader.number) % 8192) + 1
     const epoch =
-      this.accumulator.historicalEpochs.length >= epochIdx
-        ? EpochAccumulator.deserialize(
-            fromHexString(
-              await this.client.db.get(
-                getHistoryNetworkContentId(
-                  1,
-                  HistoryNetworkContentTypes.EpochAccumulator,
-                  toHexString(this.accumulator.historicalEpochs[epochIdx - 1])
-                )
+      this.accumulator.historicalEpochs.length < epochIdx
+        ? EpochAccumulator.serialize(this.accumulator.currentEpoch.slice(0, listIdx))
+        : fromHexString(
+            await this.client.db.get(
+              getHistoryNetworkContentId(
+                1,
+                HistoryNetworkContentTypes.EpochAccumulator,
+                toHexString(blockHeader.hash())
               )
             )
           )
-        : this.accumulator.currentEpoch
-
-    const epochView = EpochAccumulator.deserializeToView(EpochAccumulator.serialize(epoch))
-
+    const epochView = EpochAccumulator.deserializeToView(epoch)
     return createProof(epochView.node, {
       type: ProofType.multi,
       gindices: [gIndex],
