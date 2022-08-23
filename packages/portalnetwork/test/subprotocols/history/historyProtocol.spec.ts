@@ -214,3 +214,16 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
   t.equal(decodedReceipt[0].cumulativeBlockGasUsed, 43608n, 'retrieved receipt from db')
   t.end()
 })
+
+// tape('Header Proof Tests', (t) => {
+//   t.test('Header Accumulator can validate proofs for current Epoch.', (st) => {
+//     const masterAccumulator = new HeaderAccumulator({
+//       storedAccumulator: headerAccumulator,
+//     })
+//     const proof = generateInclusionProof(header)
+//     st.ok(
+//       masterAccumulator.verifyInclusionProof(proof, header),
+//       'current_epoch inclusion proof verified'
+//     )
+//   })
+// })

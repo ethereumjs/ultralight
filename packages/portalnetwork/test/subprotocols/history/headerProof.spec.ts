@@ -3,6 +3,7 @@ import { Block, BlockHeader } from '@ethereumjs/block'
 import {
   blockNumberToGindex,
   EpochAccumulator,
+  HeaderAccumulator,
   HeaderAccumulatorType,
   HeaderRecord,
 } from '../../../src/index.js'
@@ -45,6 +46,7 @@ tape('Header Record Proof tests', (t) => {
     st.ok(hashes.includes(toHexString(header.hash())), 'Header is a part of EpochAccumulator')
     st.end()
   })
+
   t.test('Epoch Accumulator can create proof for header record.', (st) => {
     const gIndex = blockNumberToGindex(header.number)
     const tree = EpochAccumulator.deserializeToView(fromHexString(epoch.serialized))
