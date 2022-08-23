@@ -28,7 +28,8 @@ export const getHistoryNetworkContentId = (
   switch (contentType) {
     case HistoryNetworkContentTypes.BlockHeader:
     case HistoryNetworkContentTypes.BlockBody:
-    case HistoryNetworkContentTypes.Receipt: {
+    case HistoryNetworkContentTypes.Receipt:
+    case HistoryNetworkContentTypes.HeaderProof: {
       if (!hash) throw new Error('block hash is required to generate contentId')
       encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
