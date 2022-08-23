@@ -43,6 +43,8 @@ export const BlockBodyType = BlockHeaderType
 
 export const ReceiptType = BlockHeaderType
 
+export const ProofType = BlockHeaderType
+
 export enum HistoryNetworkContentTypes {
   BlockHeader = 0,
   BlockBody = 1,
@@ -59,8 +61,8 @@ export const gIndices = new ListBasicType(gIndex, 8192)
 export const leaves = new ListCompositeType(HashRoot, 8192)
 
 export const SszProof = new ContainerType({
-  type: new UintNumberType(1),
-  gIndices: gIndices,
+  epochRoot: HashRoot,
+  gindices: gIndices,
   leaves: leaves,
   witnesses: Witnesses,
 })
@@ -82,10 +84,10 @@ export const HeaderAccumulatorType = new ContainerType({
 })
 
 export type ProofView = {
-  type: string
-  gIndex: bigint
-  leaf: Uint8Array
-  witness: Uint8Array[]
+  epochRoot: Uint8Array
+  gindices: bigint[]
+  leaves: Uint8Array[]
+  witnesses: Uint8Array[]
 }
 
 export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
@@ -96,6 +98,7 @@ export const HistoryNetworkContentKeyUnionType = new UnionType([
   ReceiptType,
   new ByteVectorType(32),
   MasterAccumulatorType,
+  ProofType,
 ])
 
 export const sszTransaction = new ByteListType(MAX_TRANSACTION_LENGTH)
