@@ -530,29 +530,20 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
    * @returns true if proof is valid, false otherwise
    */
-  public verifyInclusionProof = async (proof: MultiProof, blockHeader: BlockHeader) => {
-    const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
-    const listIdx = (Number(blockHeader.number) % 8192) + 1
-    const epoch =
-      this.accumulator.historicalEpochs.length < epochIdx
-        ? this.accumulator.currentEpoch.slice(0, listIdx)
-        : EpochAccumulator.deserialize(
-            fromHexString(
-              await this.client.db.get(
-                getHistoryNetworkContentId(
-                  1,
-                  HistoryNetworkContentTypes.EpochAccumulator,
-                  toHexString(blockHeader.hash())
-                )
-              )
-            )
-          )
+  public verifyInclusionProof = async (proof: ProofView) => {
     try {
-      EpochAccumulator.createFromProof(proof, EpochAccumulator.hashTreeRoot(epoch))
-    } catch {
+      const _proof: MultiProof = {
+        type: ProofType.multi,
+        gindices: proof.gindices,
+        leaves: proof.leaves,
+        witnesses: proof.witnesses,
+      }
+      EpochAccumulator.createFromProof(_proof, proof.epochRoot)
+    } catch (err) {
+      this.logger(`Verify Proof FAILED: ${(err as any).mess}`)
       return false
     }
-    return false
+    return true
   }
 
   /**
@@ -560,15 +551,15 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockHash blockhash of header used in proof
    * @returns a merkle multiproof representing the header at the last position in the current epoch
    */
-  public generateInclusionProof = async (blockHash: string): Promise<MultiProof> => {
-    const blockHeader = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(
-        fromHexString(
-          await this.client.db.get(
+  public generateInclusionProof = async (blockHash: string): Promise<ProofView> => {
+    const _blockHeader = await this.client.db.get(
             getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
           )
-        )
-      ),
+    if (_blockHeader === undefined) {
+      throw new Error('Cannot create proof for unknown header')
+    }
+    const blockHeader = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(fromHexString(_blockHeader)),
       {
         hardforkByBlockNumber: true,
       }
@@ -584,15 +575,23 @@ export class HistoryProtocol extends BaseProtocol {
               getHistoryNetworkContentId(
                 1,
                 HistoryNetworkContentTypes.EpochAccumulator,
-                toHexString(blockHeader.hash())
+                toHexString(this.accumulator.historicalEpochs[epochIdx - 1])
               )
             )
           )
     const epochView = EpochAccumulator.deserializeToView(epoch)
-    return createProof(epochView.node, {
+    const proof = createProof(epochView.node, {
       type: ProofType.multi,
       gindices: [gIndex],
     }) as MultiProof
+    const proofView: ProofView = {
+      epochRoot: epochView.hashTreeRoot(),
+      gindices: [proof.gindices[0]],
+      leaves: proof.leaves,
+      witnesses: proof.witnesses,
+    }
+    return proofView
+  }
   async getHeaderRecordFromBlockhash(blockHash: string) {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
