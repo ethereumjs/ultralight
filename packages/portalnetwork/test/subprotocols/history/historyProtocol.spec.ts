@@ -17,9 +17,10 @@ import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
 import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
-} from '../../../src/subprotocols/history/types.js'
+  EpochAccumulator,
+  getHistoryNetworkContentId,
+} from '../../../src/subprotocols/history/index.js'
 import { createRequire } from 'module'
-import { EpochAccumulator, getHistoryNetworkContentId } from '../../../dist/index.js'
 import { RLP } from 'rlp'
 import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
 import { RlpConvert, RlpType } from '../../../src/subprotocols/history/receiptManager.js'
