@@ -67,6 +67,8 @@ tape('Header Record Proof tests', (t) => {
       toHexString(HeaderRecord.hashTreeRoot(headerRecord)),
       'Successfully made a proof for a HeaderRecord'
     )
+    st.equal(proof.witnesses.length, 14, 'proof is correct size')
+
     try {
       const reconstructedEpoch = EpochAccumulator.createFromProof(
         proof,
