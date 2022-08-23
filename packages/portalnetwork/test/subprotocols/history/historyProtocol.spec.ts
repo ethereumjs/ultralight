@@ -240,7 +240,13 @@ tape('Header Proof Tests', async (t) => {
       blockHash: fromHexString(_block8199.hash),
       totalDifficulty: 1348252821321668n,
     }
-    const proof = await protocol.generateInclusionProof(header8199)
+    await protocol.addContentToHistory(
+      1,
+      HistoryNetworkContentTypes.BlockHeader,
+      _block8199.hash,
+      fromHexString(_block8199.rawHeader)
+    )
+    const proof = await protocol.generateInclusionProof(_block8199.hash)
     st.equal(proof.type, 'multi', 'Hisotry Protocol generated inclusion proof')
     st.equal(
       proof.gindices[0],
@@ -276,10 +282,16 @@ tape('Header Proof Tests', async (t) => {
       await protocol.addContentToHistory(
         1,
         HistoryNetworkContentTypes.EpochAccumulator,
-        toHexString(header1000.hash()),
+        _epoch1.hash,
         fromHexString(_epoch1.serialized)
       )
-      const proof = await protocol.generateInclusionProof(header1000)
+      await protocol.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        _block1000.hash,
+        fromHexString(_block1000.rawHeader)
+      )
+      const proof = await protocol.generateInclusionProof(_block1000.hash)
       st.equal(proof.type, 'multi', 'Hisotry Protocol generated inclusion proof')
       st.equal(
         proof.gindices[0],
