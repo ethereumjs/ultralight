@@ -1,4 +1,4 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { ByteVectorType, fromHexString, toHexString, UintNumberType } from '@chainsafe/ssz'
 import { ENR } from '@chainsafe/discv5/index.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
@@ -25,6 +25,7 @@ import {
   EPOCH_SIZE,
   EpochAccumulator,
   SszProof,
+  ProofView,
 } from './types.js'
 import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
@@ -36,6 +37,7 @@ import {
   ProofType,
   SingleProof,
 } from '@chainsafe/persistent-merkle-tree'
+import { ValueOfFields } from '@chainsafe/ssz/lib/view/container.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -163,29 +165,43 @@ export class HistoryProtocol extends BaseProtocol {
                   break
                 }
                 case HistoryNetworkContentTypes.HeaderProof: {
-                  const contentKey = decodedKey.value as HistoryNetworkContentKey
-                  const serialized = decoded.value as Uint8Array
-                  const deserialized = SszProof.deserialize(serialized)
-                  const proof: MultiProof = {
-                    type: ProofType.multi,
-                    gindices: deserialized.gIndices,
-                    leaves: deserialized.leaves,
-                    witnesses: deserialized.witnesses,
-                  }
+                  const contentKey = decodedKey.value as ValueOfFields<{
+                    chainId: UintNumberType
+                    blockHash: ByteVectorType
+                  }>
+                  const _header = await this.client.db.get(
+                    getHistoryNetworkContentId(1, 0, toHexString(contentKey.blockHash))
+                  )
                   const header = BlockHeader.fromRLPSerializedHeader(
-                    Buffer.from(
-                      fromHexString(
-                        await this.client.db.get(
-                          getHistoryNetworkContentId(1, 0, toHexString(contentKey.blockHash))
-                        )
-                      )
-                    ),
+                    Buffer.from(fromHexString(_header)),
                     {
                       hardforkByBlockNumber: true,
                     }
                   )
-                  this.verifyInclusionProof(proof, header)
-                  break
+                  this.logger(`Received a HeaderRecord proof for blockHeader ${header.number}`)
+                  try {
+                    const serialized = decoded.value as Uint8Array
+                    const proofView = SszProof.deserialize(serialized)
+                    const verified = await this.verifyInclusionProof(proofView)
+                    if (verified === true) {
+                      this.client.emit(
+                        'ContentAdded',
+                        toHexString(header.hash()),
+                        5,
+                        'Header Record Validated'
+                      )
+                    } else {
+                      this.client.emit(
+                        'ContentAdded',
+                        toHexString(header.hash()),
+                        5,
+                        'Header Record Not Validated'
+                      )
+                    }
+                    break
+                  } catch (err) {
+                    this.logger((err as any).message)
+                  }
                 }
               }
             }
@@ -553,8 +569,8 @@ export class HistoryProtocol extends BaseProtocol {
    */
   public generateInclusionProof = async (blockHash: string): Promise<ProofView> => {
     const _blockHeader = await this.client.db.get(
-            getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
-          )
+      getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+    )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
     }
