@@ -11,7 +11,7 @@ import {
   HistoryNetworkContentKeyUnionType,
   HeaderAccumulator,
 } from '../../src/subprotocols/history/index.js'
-import { Block } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import {
   HistoryProtocol,
   EpochAccumulator,
@@ -166,6 +166,107 @@ tape('History Protocol Integration Tests', (t) => {
       })
     }
     connectAndTest(t, st, gossip, true)
+  })
+  t.test('Protocol should respond to request for HeaderRecord Proof', (st) => {
+    const getProof = async (
+      portal1: PortalNetwork,
+      portal2: PortalNetwork,
+      child: ChildProcessWithoutNullStreams
+    ) => {
+      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
+      const _accumulator = require('./testAccumulator.json')
+      const _epoch1 = require('./testEpoch.json')
+      const _block1000 = require('./testBlock1000.json')
+      const _block8199 = require('./testBlock8199.json')
+      const header1000 = BlockHeader.fromRLPSerializedHeader(
+        Buffer.from(fromHexString(_block1000.rawHeader)),
+        {
+          hardforkByBlockNumber: true,
+        }
+      )
+      const header8199 = BlockHeader.fromRLPSerializedHeader(
+        Buffer.from(fromHexString(_block8199.rawHeader)),
+        {
+          hardforkByBlockNumber: true,
+        }
+      )
+      const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
+      protocol1.accumulator = new HeaderAccumulator({ storedAccumulator: accumulator })
+      protocol2.accumulator = new HeaderAccumulator({ storedAccumulator: accumulator })
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.EpochAccumulator,
+        _epoch1.hash,
+        fromHexString(_epoch1.serialized)
+      )
+      await protocol2.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.EpochAccumulator,
+        _epoch1.hash,
+        fromHexString(_epoch1.serialized)
+      )
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        toHexString(header1000.hash()),
+        header1000.serialize()
+      )
+      await protocol1.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        toHexString(header8199.hash()),
+        header8199.serialize()
+      )
+      await protocol2.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        toHexString(header1000.hash()),
+        header1000.serialize()
+      )
+      await protocol2.addContentToHistory(
+        1,
+        HistoryNetworkContentTypes.BlockHeader,
+        toHexString(header8199.hash()),
+        header8199.serialize()
+      )
+      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
+        if (contentType === HistoryNetworkContentTypes.HeaderProof) {
+          st.equal(content, 'Header Record Validated', 'Validated HeaderRecord from received Proof')
+          if (blockHash === _block8199.hash) {
+            if (content === 'Header Record Validated') {
+              st.pass('Header Record Validation test passed')
+              end(child, [portal1, portal2], st)
+            } else {
+              st.fail('Header validation test failed')
+              end(child, [portal1, portal2], st)
+            }
+          }
+        } else {
+          st.fail('Something went wrong')
+        }
+      })
+      const proofKey1000 = HistoryNetworkContentKeyUnionType.serialize({
+        selector: HistoryNetworkContentTypes.HeaderProof,
+        value: {
+          chainId: 1,
+          blockHash: fromHexString(_block1000.hash),
+        },
+      })
+      const proofKey8199 = HistoryNetworkContentKeyUnionType.serialize({
+        selector: 5,
+        value: {
+          chainId: 1,
+          blockHash: header8199.hash(),
+        },
+      })
+
+      await protocol1.sendPing(portal2.discv5.enr)
+      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, proofKey1000)
+      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, proofKey8199)
+    }
+    connectAndTest(t, st, getProof, true)
   })
 })
 
