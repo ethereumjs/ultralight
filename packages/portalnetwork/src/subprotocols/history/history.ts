@@ -560,7 +560,19 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockHash blockhash of header used in proof
    * @returns a merkle multiproof representing the header at the last position in the current epoch
    */
-  public generateInclusionProof = async (blockHeader: BlockHeader): Promise<MultiProof> => {
+  public generateInclusionProof = async (blockHash: string): Promise<MultiProof> => {
+    const blockHeader = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(
+        fromHexString(
+          await this.client.db.get(
+            getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+          )
+        )
+      ),
+      {
+        hardforkByBlockNumber: true,
+      }
+    )
     const gIndex = blockNumberToGindex(blockHeader.number)
     const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
     const listIdx = (Number(blockHeader.number) % 8192) + 1
