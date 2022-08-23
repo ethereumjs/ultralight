@@ -31,6 +31,12 @@ import { randUint16, MAX_PACKET_SIZE } from '../wire/utp/index.js'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
 import { NodeLookup } from './nodeLookup.js'
 import { StateNetworkRoutingTable } from './state'
+import {
+  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
+  SszProof,
+} from './history/types.js'
+import { HistoryProtocol } from './history/history.js'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
@@ -443,10 +449,22 @@ export abstract class BaseProtocol {
     )
 
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
+    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
+      decodedContentMessage.contentKey
+    )
     let value = Uint8Array.from([])
     try {
-      //Check to see if value in content db
-      value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+      if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+        // Create Header Proof
+        const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        const proof = await history.generateInclusionProof(
+          toHexString((contentKey.value as any).blockHash)
+        )
+        value = SszProof.serialize(proof)
+      } else {
+        //Check to see if value in content db
+        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+      }
     } catch {}
     if (value.length === 0) {
       if (toHexString(protocol) === this.protocolId) {
