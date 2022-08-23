@@ -26,10 +26,16 @@ import {
   EpochAccumulator,
   SszProof,
 } from './types.js'
-import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
+import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
 import { ReceiptsManager } from './receiptManager.js'
-import { MultiProof, Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
+import {
+  createProof,
+  MultiProof,
+  Proof,
+  ProofType,
+  SingleProof,
+} from '@chainsafe/persistent-merkle-tree'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -178,7 +184,7 @@ export class HistoryProtocol extends BaseProtocol {
                       hardforkByBlockNumber: true,
                     }
                   )
-                  this.accumulator.verifyInclusionProof(proof, header, Number(header.number) % 8192)
+                  this.verifyInclusionProof(proof, header)
                   break
                 }
               }
@@ -515,5 +521,68 @@ export class HistoryProtocol extends BaseProtocol {
         this.sendOffer(peer.nodeId, _encodedKeys)
       }
     })
+  }
+
+  /**
+   *
+   * @param proof a `Proof` for a particular header's inclusion as the latest header in the accumulator's `currentEpoch`
+   * @param header the blockheader being proved to be included in the `currentEpoch`
+   * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
+   * @returns true if proof is valid, false otherwise
+   */
+  public verifyInclusionProof = async (proof: MultiProof, header: BlockHeader) => {
+    const epochIdx = Math.ceil(Number(header.number) / 8192)
+    const epoch =
+      this.accumulator.historicalEpochs.length >= epochIdx
+        ? EpochAccumulator.deserialize(
+            fromHexString(
+              await this.client.db.get(
+                getHistoryNetworkContentId(
+                  1,
+                  HistoryNetworkContentTypes.EpochAccumulator,
+                  toHexString(this.accumulator.historicalEpochs[epochIdx - 1])
+                )
+              )
+            )
+          )
+        : this.accumulator.currentEpoch
+    try {
+      EpochAccumulator.createFromProof(proof, EpochAccumulator.hashTreeRoot(epoch))
+    } catch {
+      return false
+    }
+    return false
+  }
+
+  /**
+   *
+   * @param blockHash blockhash of header used in proof
+   * @returns a merkle multiproof representing the header at the last position in the current epoch
+   */
+  public generateInclusionProof = async (blockHeader: BlockHeader): Promise<MultiProof> => {
+    const gIndex = blockNumberToGindex(blockHeader.number)
+    const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
+
+    const epoch =
+      this.accumulator.historicalEpochs.length >= epochIdx
+        ? EpochAccumulator.deserialize(
+            fromHexString(
+              await this.client.db.get(
+                getHistoryNetworkContentId(
+                  1,
+                  HistoryNetworkContentTypes.EpochAccumulator,
+                  toHexString(this.accumulator.historicalEpochs[epochIdx - 1])
+                )
+              )
+            )
+          )
+        : this.accumulator.currentEpoch
+
+    const epochView = EpochAccumulator.deserializeToView(EpochAccumulator.serialize(epoch))
+
+    return createProof(epochView.node, {
+      type: ProofType.multi,
+      gindices: [gIndex],
+    }) as MultiProof
   }
 }
