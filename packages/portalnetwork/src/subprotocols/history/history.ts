@@ -556,21 +556,14 @@ export class HistoryProtocol extends BaseProtocol {
           const proofView = SszProof.deserialize(value)
           const verified = await this.verifyInclusionProof(proofView)
           if (verified === true) {
-            this.client.emit(
-              'Verified',
-              toHexString(HeaderRecord.deserialize(proofView.leaves[0]).blockHash),
-              true
-            )
+            this.client.emit('Verified', hashKey, true)
           } else {
-            this.client.emit(
-              'Verified',
-              toHexString(HeaderRecord.deserialize(proofView.leaves[0]).blockHash),
-              false
-            )
+            this.client.emit('Verified', hashKey, false)
           }
           break
         } catch (err) {
           this.logger(`VERIFY Error: ${(err as any).message}`)
+          this.client.emit('Verified', hashKey, false)
           break
         }
       }
