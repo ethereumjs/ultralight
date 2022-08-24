@@ -26,6 +26,7 @@ import {
   EpochAccumulator,
   SszProof,
   ProofView,
+  HeaderRecord,
 } from './types.js'
 import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
@@ -140,6 +141,7 @@ export class HistoryProtocol extends BaseProtocol {
                 case HistoryNetworkContentTypes.BlockBody:
                 case HistoryNetworkContentTypes.Receipt:
                 case HistoryNetworkContentTypes.EpochAccumulator:
+                case HistoryNetworkContentTypes.HeaderProof:
                   {
                     const content = decodedKey.value as HistoryNetworkContentKey
                     this.logger(`received content corresponding to ${content!.blockHash}`)
@@ -164,45 +166,38 @@ export class HistoryProtocol extends BaseProtocol {
                   )
                   break
                 }
-                case HistoryNetworkContentTypes.HeaderProof: {
-                  const contentKey = decodedKey.value as ValueOfFields<{
-                    chainId: UintNumberType
-                    blockHash: ByteVectorType
-                  }>
-                  const _header = await this.client.db.get(
-                    getHistoryNetworkContentId(1, 0, toHexString(contentKey.blockHash))
-                  )
-                  const header = BlockHeader.fromRLPSerializedHeader(
-                    Buffer.from(fromHexString(_header)),
-                    {
-                      hardforkByBlockNumber: true,
-                    }
-                  )
-                  this.logger(`Received a HeaderRecord proof for blockHeader ${header.number}`)
-                  try {
-                    const serialized = decoded.value as Uint8Array
-                    const proofView = SszProof.deserialize(serialized)
-                    const verified = await this.verifyInclusionProof(proofView)
-                    if (verified === true) {
-                      this.client.emit(
-                        'ContentAdded',
-                        toHexString(header.hash()),
-                        5,
-                        'Header Record Validated'
-                      )
-                    } else {
-                      this.client.emit(
-                        'ContentAdded',
-                        toHexString(header.hash()),
-                        5,
-                        'Header Record Not Validated'
-                      )
-                    }
-                    break
-                  } catch (err) {
-                    this.logger((err as any).message)
-                  }
-                }
+                // case HistoryNetworkContentTypes.HeaderProof: {
+                //   const contentKey = decodedKey.value as ValueOfFields<{
+                //     chainId: UintNumberType
+                //     blockHash: ByteVectorType
+                //   }>
+                //   const _header = await this.client.db.get(
+                //     getHistoryNetworkContentId(1, 0, toHexString(contentKey.blockHash))
+                //   )
+                //   const header = BlockHeader.fromRLPSerializedHeader(
+                //     Buffer.from(fromHexString(_header)),
+                //     {
+                //       hardforkByBlockNumber: true,
+                //     }
+                //   )
+                //   this.logger(`Received a HeaderRecord proof for blockHeader ${header.number}`)
+                //   try {
+                //     const serialized = decoded.value as Uint8Array
+                //     const proofView = SszProof.deserialize(serialized)
+                //     const verified = await this.verifyInclusionProof(proofView)
+                //     if (verified === true) {
+                //       this.client.emit(
+                //         'ContentAdded',
+                //         toHexString(HeaderRecord.deserialize(proofView.leaves[0]).blockHash),
+                //         5,
+                //         'Header Record Validated'
+                //       )
+                //     }
+                //   } catch (err) {
+                //     this.logger((err as any).message)
+                //   }
+                //   break
+                // }
               }
             }
             break
@@ -218,7 +213,89 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  private receiveSnapshot = (decoded: Uint8Array) => {
+  private verifySnapshot = async (snapshot: HeaderAccumulator) => {
+    // Look up a sample (10%?) of historical epochs from snapshot
+    const historicalEpochs = []
+    const testSize = Math.ceil(snapshot.historicalEpochs.length / 10)
+    for (let i = 0; i < testSize; i++) {
+      historicalEpochs.push(
+        snapshot.historicalEpochs[Math.floor(Math.random() * historicalEpochs.length)]
+      )
+    }
+    if (historicalEpochs.length > 0) {
+      this.logger.extend('VERIFY')(
+        `Searching networks to verify ${historicalEpochs.length} historical epochs`
+      )
+
+      for (const epochHash of snapshot.historicalEpochs) {
+        this.logger(`looking up ${toHexString(epochHash)}`)
+        const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
+          selector: HistoryNetworkContentTypes.EpochAccumulator,
+          value: { chainId: 1, blockHash: epochHash },
+        })
+        const lookup = new ContentLookup(this, lookupKey)
+        const epoch = await lookup.startLookup()
+        if (epoch) {
+          this.logger(`Epoch found, validating 10 header records`)
+          const epochAccumulator = EpochAccumulator.deserialize(epoch as Uint8Array)
+          for (let i = 1; i < 10; i++) {
+            const proofLookupKey = HistoryNetworkContentKeyUnionType.serialize({
+              selector: HistoryNetworkContentTypes.HeaderProof,
+              value: {
+                chainId: 1,
+                blockHash: epochAccumulator[Math.floor(Math.random() * 8192)].blockHash,
+              },
+            })
+            const proofLookup = new ContentLookup(this, proofLookupKey)
+            const _proof = await proofLookup.startLookup()
+            if (_proof) {
+              const proof = SszProof.deserialize(_proof as Uint8Array)
+              if (!(await this.verifyInclusionProof(proof))) {
+                this.logger('HeaderRecord not Verified')
+                return false
+              } else {
+                this.logger('HeaderRecord Verified')
+              }
+            } else {
+              return false
+            }
+          }
+        } else {
+          return false
+        }
+      }
+    }
+    this.logger(
+      `Verifying ${Math.ceil(snapshot.currentEpoch.length / 10)} header records from current epoch`
+    )
+    for (let i = 0; i < Math.ceil(snapshot.currentEpoch.length / 100); i++) {
+      const proofLookupKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: HistoryNetworkContentTypes.HeaderProof,
+        value: {
+          chainId: 1,
+          blockHash:
+            snapshot.currentEpoch[Math.floor(Math.random() * snapshot.currentEpoch.length)]
+              .blockHash,
+        },
+      })
+      const proofLookup = new ContentLookup(this, proofLookupKey)
+      const _proof = await proofLookup.startLookup()
+      if (_proof) {
+        const proof = SszProof.deserialize(_proof as Uint8Array)
+        if (!(await this.verifyInclusionProof(proof))) {
+          return false
+        } else {
+          this.logger('HeaderRecord Verified')
+        }
+      } else {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  private receiveSnapshot = async (decoded: Uint8Array) => {
     try {
       const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
       const newAccumulator = new HeaderAccumulator({
@@ -234,6 +311,16 @@ export class HistoryProtocol extends BaseProtocol {
       if (this.accumulator.currentHeight() < newAccumulator.currentHeight()) {
         // If we don't have an accumulator, adopt the snapshot received
         // TODO: Decide how to verify if this snapshot is trustworthy
+        try {
+          this.logger('Verifying HeaderAccumulator snapshot')
+          const verified = await this.verifySnapshot(newAccumulator)
+          verified
+            ? this.logger('Header Snapshot validated')
+            : this.logger('Snapshot not verified -- Saving an unverified accumulator')
+        } catch {
+          throw new Error('Verify Snapshot failed')
+        }
+        //
         this.logger(
           'Replacing Accumulator of height',
           this.accumulator.currentHeight(),
@@ -242,24 +329,6 @@ export class HistoryProtocol extends BaseProtocol {
         )
         this.accumulator = newAccumulator
         this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(decoded))
-
-        /*    const historicalEpochs = this.accumulator.historicalEpochs
-        historicalEpochs.forEach(async (epochHash, idx) => {
-          this.logger(`looking up ${toHexString(epochHash)} hash`)
-          const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.EpochAccumulator,
-            value: { chainId: 1, blockHash: epochHash },
-          })
-          const lookup = new ContentLookup(this, lookupKey)
-          const epoch = await lookup.startLookup()
-          if (epoch) {
-            this.logger(
-              `Storing EpochAccumulator for Blocks ${idx * EPOCH_SIZE} - ${
-                idx * EPOCH_SIZE + EPOCH_SIZE - 1
-              }`
-            )
-          }
-        })*/
       }
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
@@ -480,20 +549,44 @@ export class HistoryProtocol extends BaseProtocol {
         )
         break
       case HistoryNetworkContentTypes.HeaderAccumulator:
-        this.receiveSnapshot(value)
+        await this.receiveSnapshot(value)
         break
+      case HistoryNetworkContentTypes.HeaderProof: {
+        try {
+          const proofView = SszProof.deserialize(value)
+          const verified = await this.verifyInclusionProof(proofView)
+          if (verified === true) {
+            this.client.emit(
+              'Verified',
+              toHexString(HeaderRecord.deserialize(proofView.leaves[0]).blockHash),
+              true
+            )
+          } else {
+            this.client.emit(
+              'Verified',
+              toHexString(HeaderRecord.deserialize(proofView.leaves[0]).blockHash),
+              false
+            )
+          }
+          break
+        } catch (err) {
+          this.logger(`VERIFY Error: ${(err as any).message}`)
+          break
+        }
+      }
       default:
         throw new Error('unknown data type provided')
     }
-
-    this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
-    this.logger(
-      `added ${
-        Object.keys(HistoryNetworkContentTypes)[
-          Object.values(HistoryNetworkContentTypes).indexOf(contentType)
-        ]
-      } for ${hashKey} to content db`
-    )
+    if (contentType !== HistoryNetworkContentTypes.HeaderProof) {
+      this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
+      this.logger(
+        `added ${
+          Object.keys(HistoryNetworkContentTypes)[
+            Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+          ]
+        } for ${hashKey} to content db`
+      )
+    }
     if (
       contentType !== HistoryNetworkContentTypes.HeaderAccumulator &&
       this.routingTable.values().length > 0
@@ -580,6 +673,7 @@ export class HistoryProtocol extends BaseProtocol {
         hardforkByBlockNumber: true,
       }
     )
+    this.logger(`generating proof for block ${blockHeader.number}`)
     const gIndex = blockNumberToGindex(blockHeader.number)
     const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
     const listIdx = (Number(blockHeader.number) % 8192) + 1
@@ -602,7 +696,7 @@ export class HistoryProtocol extends BaseProtocol {
     }) as MultiProof
     const proofView: ProofView = {
       epochRoot: epochView.hashTreeRoot(),
-      gindices: [proof.gindices[0]],
+      gindices: proof.gindices,
       leaves: proof.leaves,
       witnesses: proof.witnesses,
     }

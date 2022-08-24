@@ -453,19 +453,30 @@ export abstract class BaseProtocol {
       decodedContentMessage.contentKey
     )
     let value = Uint8Array.from([])
-    try {
-      if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+    if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+      try {
         // Create Header Proof
         const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        this.logger(`Creating proof for ${toHexString((contentKey.value as any).blockHash)}`)
         const proof = await history.generateInclusionProof(
           toHexString((contentKey.value as any).blockHash)
         )
-        value = SszProof.serialize(proof)
-      } else {
+        // this.logger(proof)
+        value = SszProof.serialize({
+          epochRoot: proof.epochRoot,
+          gindices: proof.gindices,
+          leaves: proof.leaves,
+          witnesses: proof.witnesses,
+        })
+      } catch (err) {
+        this.logger(`Unable to generate Proof: ${(err as any).message}`)
+      }
+    } else {
+      try {
         //Check to see if value in content db
         value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
-      }
-    } catch {}
+      } catch {}
+    }
     if (value.length === 0) {
       if (toHexString(protocol) === this.protocolId) {
         // Discv5 calls for maximum of 16 nodes per NODES message

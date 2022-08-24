@@ -71,8 +71,8 @@ export function connectAndTest(
       const nodes = await setupNetwork()
       portal1 = nodes[0]
       portal2 = nodes[1]
-      // portal1.enableLog('*Portal*, -*NODES*')
-      // portal2.enableLog('*Portal*, -*NODES*')
+      portal1.enableLog('*Portal*, -*NODES*')
+      portal2.enableLog('*Portal*, -*NODES*')
       await portal1.start()
     } else if (data.toString().includes('UDP proxy listening on')) {
       const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
