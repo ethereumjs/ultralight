@@ -252,11 +252,7 @@ tape('Header Proof Tests', async (t) => {
       toHexString(EpochAccumulator.hashTreeRoot(protocol.accumulator.currentEpoch.slice(0, 8))),
       'Hisotry Protocol generated inclusion proof'
     )
-    st.equal(
-      proof.gindices[0],
-      blockNumberToGindex(BigInt(8199)),
-      'Proof created for correct Header'
-    )
+    st.equal(proof.gindex, blockNumberToGindex(BigInt(8199)), 'Proof created for correct Header')
     st.equal(proof.witnesses.length, 14, 'Proof has correct size')
     st.ok(protocol.verifyInclusionProof(proof), 'History Protocol verified an inclusion proof.')
     st.end()
@@ -293,11 +289,7 @@ tape('Header Proof Tests', async (t) => {
         _epoch1.hash,
         'Hisotry Protocol generated inclusion proof'
       )
-      st.equal(
-        proof.gindices[0],
-        blockNumberToGindex(BigInt(1000)),
-        'Proof created for correct Header'
-      )
+      st.equal(proof.gindex, blockNumberToGindex(BigInt(1000)), 'Proof created for correct Header')
       st.equal(proof.witnesses.length, 14, 'Proof has correct size')
       st.ok(
         protocol.verifyInclusionProof(proof),

@@ -1,8 +1,6 @@
-import { createProof, MultiProof, Proof, ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types.js'
-import { blockNumberToGindex } from './util.js'
 
 export interface AccumulatorOpts {
   initFromGenesis: boolean

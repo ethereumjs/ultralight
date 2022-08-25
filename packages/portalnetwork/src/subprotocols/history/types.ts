@@ -57,13 +57,12 @@ export enum HistoryNetworkContentTypes {
 export const HashRoot = new ByteVectorType(32)
 export const Witnesses = new ListCompositeType(HashRoot, 2 ** 16)
 export const gIndex = new UintBigintType(4)
-export const gIndices = new ListBasicType(gIndex, 8192)
-export const leaves = new ListCompositeType(HashRoot, 8192)
+// export const leaves = new ListCompositeType(HashRoot, 8192)
 
 export const SszProof = new ContainerType({
   epochRoot: HashRoot,
-  gindices: gIndices,
-  leaves: leaves,
+  gindex: gIndex,
+  leaf: HashRoot,
   witnesses: Witnesses,
 })
 
@@ -83,10 +82,10 @@ export const HeaderAccumulatorType = new ContainerType({
   currentEpoch: EpochAccumulator,
 })
 
-export type ProofView = {
+export type HeaderProofInterface = {
   epochRoot: Uint8Array
-  gindices: bigint[]
-  leaves: Uint8Array[]
+  gindex: bigint
+  leaf: Uint8Array
   witnesses: Uint8Array[]
 }
 

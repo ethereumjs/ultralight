@@ -15,13 +15,7 @@ import {
   UintBigintType,
 } from '@chainsafe/ssz'
 import { createRequire } from 'module'
-import {
-  createProof,
-  LeafNode,
-  MultiProof,
-  ProofType,
-  Tree,
-} from '@chainsafe/persistent-merkle-tree'
+import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 import { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposite.js'
 const require = createRequire(import.meta.url)
 
@@ -91,16 +85,16 @@ tape('Header Record Proof tests', (t) => {
     )
 
     const proof = createProof(tree.node, {
-      type: ProofType.multi,
-      gindices: [gIndex],
-    }) as MultiProof
+      type: ProofType.single,
+      gindex: gIndex,
+    }) as SingleProof
     st.equal(
-      toHexString(proof.leaves[0]),
+      toHexString(proof.leaf),
       toHexString(HeaderRecord.hashTreeRoot(headerRecord)),
       'Successfully created a Proof for Header Record'
     )
     st.equal(proof.witnesses.length, 14, 'proof is correct size')
-    st.equal(proof.gindices[0], gIndex, 'Proof is for correct Index')
+    st.equal(proof.gindex, gIndex, 'Proof is for correct Index')
     let reconstructedEpoch: ListCompositeTreeView<
       ContainerType<{
         blockHash: ByteVectorType

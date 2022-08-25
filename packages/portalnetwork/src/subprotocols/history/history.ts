@@ -25,19 +25,13 @@ import {
   EPOCH_SIZE,
   EpochAccumulator,
   SszProof,
-  ProofView,
+  HeaderProofInterface,
   HeaderRecord,
 } from './types.js'
 import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
 import * as rlp from 'rlp'
 import { ReceiptsManager } from './receiptManager.js'
-import {
-  createProof,
-  MultiProof,
-  Proof,
-  ProofType,
-  SingleProof,
-} from '@chainsafe/persistent-merkle-tree'
+import { createProof, Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container.js'
 
 export class HistoryProtocol extends BaseProtocol {
@@ -183,12 +177,12 @@ export class HistoryProtocol extends BaseProtocol {
                 //   this.logger(`Received a HeaderRecord proof for blockHeader ${header.number}`)
                 //   try {
                 //     const serialized = decoded.value as Uint8Array
-                //     const proofView = SszProof.deserialize(serialized)
-                //     const verified = await this.verifyInclusionProof(proofView)
+                //     const HeaderProofInterface = SszProof.deserialize(serialized)
+                //     const verified = await this.verifyInclusionProof(HeaderProofInterface)
                 //     if (verified === true) {
                 //       this.client.emit(
                 //         'ContentAdded',
-                //         toHexString(HeaderRecord.deserialize(proofView.leaves[0]).blockHash),
+                //         toHexString(HeaderRecord.deserialize(HeaderProofInterface.leaves[0]).blockHash),
                 //         5,
                 //         'Header Record Validated'
                 //       )
@@ -553,8 +547,8 @@ export class HistoryProtocol extends BaseProtocol {
         break
       case HistoryNetworkContentTypes.HeaderProof: {
         try {
-          const proofView = SszProof.deserialize(value)
-          const verified = await this.verifyInclusionProof(proofView)
+          const HeaderProofInterface = SszProof.deserialize(value)
+          const verified = await this.verifyInclusionProof(HeaderProofInterface)
           if (verified === true) {
             this.client.emit('Verified', hashKey, true)
           } else {
@@ -632,12 +626,12 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
    * @returns true if proof is valid, false otherwise
    */
-  public verifyInclusionProof = async (proof: ProofView) => {
+  public verifyInclusionProof = async (proof: HeaderProofInterface) => {
     try {
-      const _proof: MultiProof = {
-        type: ProofType.multi,
-        gindices: proof.gindices,
-        leaves: proof.leaves,
+      const _proof: SingleProof = {
+        type: ProofType.single,
+        gindex: proof.gindex,
+        leaf: proof.leaf,
         witnesses: proof.witnesses,
       }
       EpochAccumulator.createFromProof(_proof, proof.epochRoot)
@@ -653,7 +647,7 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockHash blockhash of header used in proof
    * @returns a merkle multiproof representing the header at the last position in the current epoch
    */
-  public generateInclusionProof = async (blockHash: string): Promise<ProofView> => {
+  public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this.client.db.get(
       getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
     )
@@ -684,16 +678,16 @@ export class HistoryProtocol extends BaseProtocol {
           )
     const epochView = EpochAccumulator.deserializeToView(epoch)
     const proof = createProof(epochView.node, {
-      type: ProofType.multi,
-      gindices: [gIndex],
-    }) as MultiProof
-    const proofView: ProofView = {
+      type: ProofType.single,
+      gindex: gIndex,
+    }) as SingleProof
+    const HeaderProofInterface: HeaderProofInterface = {
       epochRoot: epochView.hashTreeRoot(),
-      gindices: proof.gindices,
-      leaves: proof.leaves,
+      gindex: proof.gindex,
+      leaf: proof.leaf,
       witnesses: proof.witnesses,
     }
-    return proofView
+    return HeaderProofInterface
   }
   async getHeaderRecordFromBlockhash(blockHash: string) {
     const header = BlockHeader.fromRLPSerializedHeader(
