@@ -2,6 +2,7 @@ import {
   ByteListType,
   ByteVectorType,
   ContainerType,
+  ListBasicType,
   ListCompositeType,
   NoneType,
   UintBigintType,
@@ -42,13 +43,26 @@ export const BlockBodyType = BlockHeaderType
 
 export const ReceiptType = BlockHeaderType
 
+export const ProofType = BlockHeaderType
+
 export enum HistoryNetworkContentTypes {
   BlockHeader = 0,
   BlockBody = 1,
   Receipt = 2,
   EpochAccumulator = 3,
   HeaderAccumulator = 4,
+  HeaderProof = 5,
 }
+
+export const HashRoot = new ByteVectorType(32)
+export const Witnesses = new ListCompositeType(HashRoot, 2 ** 16)
+export const gIndex = new UintBigintType(4)
+// export const leaves = new ListCompositeType(HashRoot, 8192)
+
+export const SszProof = new ContainerType({
+  leaf: HashRoot,
+  witnesses: Witnesses,
+})
 
 export const HeaderRecord = new ContainerType({
   blockHash: new ByteVectorType(32),
@@ -66,11 +80,11 @@ export const HeaderAccumulatorType = new ContainerType({
   currentEpoch: EpochAccumulator,
 })
 
-export type ProofView = {
-  type: string
-  gIndex: bigint
+export type HeaderProofInterface = {
+  epochRoot: Uint8Array
+  gindex: bigint
   leaf: Uint8Array
-  witness: Uint8Array[]
+  witnesses: Uint8Array[]
 }
 
 export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
@@ -81,6 +95,7 @@ export const HistoryNetworkContentKeyUnionType = new UnionType([
   ReceiptType,
   new ByteVectorType(32),
   MasterAccumulatorType,
+  ProofType,
 ])
 
 export const sszTransaction = new ByteListType(MAX_TRANSACTION_LENGTH)

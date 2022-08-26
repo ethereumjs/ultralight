@@ -42,12 +42,5 @@ tape('Validate accumulator updates', (t) => {
     'roots match after Block 2'
   )
 
-  const multiProof = accumulator.generateInclusionProof(toHexString(block2Header.hash()))
-
-  t.ok(
-    accumulator.verifyInclusionProof(multiProof, block2Header, 2),
-    'validated multiproof for block 2 header record in current epoch'
-  )
-
   t.end()
 })

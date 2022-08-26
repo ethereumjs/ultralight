@@ -1,6 +1,5 @@
 import tape from 'tape'
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { ChildProcessWithoutNullStreams } from 'child_process'
 import {
   decodeSszBlockBody,
   PortalNetwork,
@@ -17,101 +16,19 @@ import {
   HistoryNetworkContentKeyUnionType,
 } from '../../src/subprotocols/history/index.js'
 import { Block } from '@ethereumjs/block'
-import { TransportLayer } from '../../src/client/types.js'
 import {
   HistoryProtocol,
-  HeaderAccumulator,
   EpochAccumulator,
   reassembleBlock,
 } from '../../src/subprotocols/history/index.js'
 import { createRequire } from 'module'
 import { BlockHeader } from '@ethereumjs/block'
 import * as rlp from 'rlp'
+import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)
 
-const end = async (
-  child: ChildProcessWithoutNullStreams,
-  nodes: PortalNetwork[],
-  st: tape.Test
-) => {
-  child.stdout.removeAllListeners()
-  child.kill('SIGINT')
-  nodes.forEach(async (node) => await node.stop())
-  st.end()
-}
-
-const setupNetwork = async () => {
-  const portal1 = await PortalNetwork.create({
-    bindAddress: '127.0.0.1',
-    transport: TransportLayer.WEB,
-    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.UTPNetwork],
-    //@ts-ignore
-    config: {
-      config: {
-        enrUpdate: true,
-        addrVotesToUpdateEnr: 1,
-      },
-    },
-  })
-  const portal2 = await PortalNetwork.create({
-    bindAddress: '127.0.0.1',
-    transport: TransportLayer.WEB,
-    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.UTPNetwork],
-    //@ts-ignore
-    config: {
-      config: {
-        enrUpdate: true,
-        addrVotesToUpdateEnr: 1,
-      },
-    },
-  })
-  return [portal1, portal2]
-}
-
-function connectAndTest(
-  t: tape.Test,
-  st: tape.Test,
-  testFunction: (
-    portal1: PortalNetwork,
-    portal2: PortalNetwork,
-    child: ChildProcessWithoutNullStreams
-  ) => Promise<void>,
-  ends?: boolean
-) {
-  const file = require.resolve('../../../proxy/dist/index.js')
-  const child = spawn(process.execPath, [file])
-  let portal1: PortalNetwork
-  let portal2: PortalNetwork
-  child.stderr.on('data', async (data) => {
-    if (data.toString().includes('Error: listen EADDRINUSE')) {
-      // Terminate test process early if proxy can't start or tape will hang
-      t.fail('proxy did not start successfully')
-      process.exit(0)
-    }
-
-    if (data.toString().includes('websocket server listening on 127.0.0.1:5050')) {
-      const nodes = await setupNetwork()
-      portal1 = nodes[0]
-      portal2 = nodes[1]
-      // portal1.enableLog('*Portal*, -*NODES*')
-      // portal2.enableLog('*Portal*, -*NODES*')
-      await portal1.start()
-    } else if (data.toString().includes('UDP proxy listening on')) {
-      const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
-      if (!portal2.discv5.isStarted()) {
-        portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-        await portal2.start()
-      } else if (portal2.discv5.isStarted()) {
-        portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
-        await testFunction(portal1, portal2, child)
-        if (!ends) {
-          await end(child, [portal1, portal2], st)
-        }
-      }
-    }
-  })
-}
+// TODO: Test requesting and sending and receiving a header proof
 
 tape('Integration Tests -- PING/PONG', (t) => {
   t.test('clients start and connect to each other', (st) => {
@@ -223,66 +140,6 @@ tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
       await protocol2.sendFindContent(portal1.discv5.enr.nodeId, testBlockKeys[1])
     }
     connectAndTest(t, st, findBlocks, true)
-  })
-})
-
-tape('FINDCONTENT/FOUNDCONTENT -- Accumulator Snapshots', (t) => {
-  t.test('Nodes should share accumulator snapshot with FINDCONTENT / FOUNDCONTENT', (st) => {
-    const findAccumulator = async (
-      portal1: PortalNetwork,
-      portal2: PortalNetwork,
-      child: ChildProcessWithoutNullStreams
-    ) => {
-      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
-      const testAccumulator = require('./testAccumulator.json')
-      const desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(testAccumulator))
-      const rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: desAccumulator })
-      const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 4,
-        value: { selector: 0, value: null },
-      })
-
-      await protocol1.addContentToHistory(
-        1,
-        HistoryNetworkContentTypes.HeaderAccumulator,
-        toHexString(accumulatorKey),
-        fromHexString(testAccumulator)
-      )
-      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
-        const _desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(content))
-        const _rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: _desAccumulator })
-        st.equal(
-          _rebuiltAccumulator.currentHeight(),
-          8999,
-          'Streamed accumulator matches test data'
-        )
-
-        const history = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-        st.equal(
-          contentType,
-          HistoryNetworkContentTypes.HeaderAccumulator,
-          'Accumulator received with correct contentType'
-        )
-        st.equal(
-          blockHash,
-          toHexString(Uint8Array.from([])),
-          'Accumulator received with correct contentKey'
-        )
-        st.equal(
-          history.accumulator.currentHeight(),
-          rebuiltAccumulator.currentHeight(),
-          `Accumulator current Epoch received matches test Accumulator's current Epoch`
-        )
-        end(child, [portal1, portal2], st)
-      })
-      // end(child, [portal1, portal2], st)
-
-      await protocol1.sendPing(portal2.discv5.enr)
-      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
-    }
-    connectAndTest(t, st, findAccumulator, true)
   })
 })
 

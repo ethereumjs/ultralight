@@ -28,7 +28,8 @@ export const getHistoryNetworkContentId = (
   switch (contentType) {
     case HistoryNetworkContentTypes.BlockHeader:
     case HistoryNetworkContentTypes.BlockBody:
-    case HistoryNetworkContentTypes.Receipt: {
+    case HistoryNetworkContentTypes.Receipt:
+    case HistoryNetworkContentTypes.HeaderProof: {
       if (!hash) throw new Error('block hash is required to generate contentId')
       encodedKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: contentType,
@@ -137,4 +138,14 @@ export const addRLPSerializedBlock = async (
       })
     )
   )
+}
+
+// Each EpochAccumulator is a merkle tree with 16384 leaves, and 16383 parent nodes.
+// gIndex refers to index within the tree starting at the root
+// So the gIndices of the leaf nodes start at 16384
+
+export const blockNumberToGindex = (blockNumber: bigint): bigint => {
+  const listIndex = blockNumber % BigInt(8192)
+  const gIndex = listIndex + BigInt(16384)
+  return gIndex
 }

@@ -52,6 +52,6 @@ jobs:
       - run: npm i
         working-directory: ${{ github.workspace }}
 
-      - run: npm run tape -- 'test/integration/wire.spec.ts'    
+      - run: npm run test:integration  
 
   

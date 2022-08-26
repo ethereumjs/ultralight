@@ -45,7 +45,7 @@
     "strict-event-emitter-types": "^2.0.0",
     "websocket-as-promised": "^2.0.1",
     "ws": "^8.2.1",
-    "@ethereumjs/vm": "6.0.0-beta.3",
+    "@ethereumjs/vm": "^6.0.0-beta.3",
     "@ethereumjs/block": "^4.0.0-beta.3"    
   },
   "devDependencies": {

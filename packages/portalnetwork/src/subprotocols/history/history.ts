@@ -1,12 +1,12 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { ENR } from '@chainsafe/discv5/index.js'
+import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
-import { ProtocolId } from '../types.js'
+import * as rlp from 'rlp'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
 import { shortId } from '../../util/index.js'
-import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
   ContentMessageType,
@@ -17,17 +17,20 @@ import {
 import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
 import { ContentLookup } from '../contentLookup.js'
 import { BaseProtocol } from '../protocol.js'
-import {
-  HistoryNetworkContentTypes,
-  HistoryNetworkContentKeyUnionType,
-  HeaderAccumulatorType,
-  HistoryNetworkContentKey,
-  EPOCH_SIZE,
-  EpochAccumulator,
-} from './types.js'
-import { getHistoryNetworkContentId, reassembleBlock } from './util.js'
-import * as rlp from 'rlp'
+import { ProtocolId } from '../types.js'
+import { HeaderAccumulator } from './headerAccumulator.js'
 import { ReceiptsManager } from './receiptManager.js'
+import {
+  EpochAccumulator,
+  EPOCH_SIZE,
+  HeaderAccumulatorType,
+  HeaderProofInterface,
+  HistoryNetworkContentKey,
+  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
+  SszProof,
+} from './types.js'
+import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -35,6 +38,7 @@ export class HistoryProtocol extends BaseProtocol {
   accumulator: HeaderAccumulator
   logger: Debugger
   gossipQueue: [string, HistoryNetworkContentTypes][]
+  verifiers: Record<number, Uint8Array>
   public receiptManager: ReceiptsManager
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     super(client, undefined, metrics)
@@ -42,6 +46,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.protocolName = 'History Network'
     this.logger = client.logger.extend('HistoryNetwork')
     this.accumulator = new HeaderAccumulator({})
+    this.verifiers = {}
     this.gossipQueue = []
     this.receiptManager = new ReceiptsManager(this.client.db, this)
   }
@@ -130,6 +135,7 @@ export class HistoryProtocol extends BaseProtocol {
                 case HistoryNetworkContentTypes.BlockBody:
                 case HistoryNetworkContentTypes.Receipt:
                 case HistoryNetworkContentTypes.EpochAccumulator:
+                case HistoryNetworkContentTypes.HeaderProof:
                   {
                     const content = decodedKey.value as HistoryNetworkContentKey
                     this.logger(`received content corresponding to ${content!.blockHash}`)
@@ -152,6 +158,7 @@ export class HistoryProtocol extends BaseProtocol {
                     getHistoryNetworkContentId(1, 4),
                     decoded.value as Uint8Array
                   )
+                  break
                 }
               }
             }
@@ -168,7 +175,45 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
-  private receiveSnapshot = (decoded: Uint8Array) => {
+  private verifySnapshot = async (snapshot: HeaderAccumulator) => {
+    const threshold = snapshot.historicalEpochs.length < 3 ? snapshot.historicalEpochs.length : 3
+    this.logger(`Need ${threshold} votes to validate`)
+    let votes = 0
+    for (let i = 0; i < Object.entries(this.verifiers).length; i++) {
+      const blockHash = Object.values(this.verifiers)[i]
+
+      const proofLookupKey = HistoryNetworkContentKeyUnionType.serialize({
+        selector: HistoryNetworkContentTypes.HeaderProof,
+        value: {
+          chainId: 1,
+          blockHash: blockHash,
+        },
+      })
+      const proofLookup = new ContentLookup(this, proofLookupKey)
+      const _proof = await proofLookup.startLookup()
+      if (_proof) {
+        const proof = SszProof.deserialize(_proof as Uint8Array)
+        if (!(await this.verifyInclusionProof(proof, toHexString(blockHash)))) {
+          this.logger('HeaderRecord not Verified')
+          return false
+        } else {
+          votes++
+          this.logger('HeaderRecord Verified')
+        }
+      } else {
+        return false
+      }
+    }
+    if (votes >= threshold) {
+      this.client.emit('Verified', '', true)
+      return true
+    } else {
+      this.client.emit('Verified', '', false)
+      return false
+    }
+  }
+
+  private receiveSnapshot = async (decoded: Uint8Array) => {
     try {
       const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
       const newAccumulator = new HeaderAccumulator({
@@ -184,6 +229,16 @@ export class HistoryProtocol extends BaseProtocol {
       if (this.accumulator.currentHeight() < newAccumulator.currentHeight()) {
         // If we don't have an accumulator, adopt the snapshot received
         // TODO: Decide how to verify if this snapshot is trustworthy
+        try {
+          this.logger('Verifying HeaderAccumulator snapshot')
+          const verified = await this.verifySnapshot(newAccumulator)
+          verified
+            ? this.logger('Header Snapshot validated')
+            : this.logger('Snapshot not verified -- Saving an unverified accumulator')
+        } catch {
+          throw new Error('Verify Snapshot failed')
+        }
+        //
         this.logger(
           'Replacing Accumulator of height',
           this.accumulator.currentHeight(),
@@ -192,24 +247,6 @@ export class HistoryProtocol extends BaseProtocol {
         )
         this.accumulator = newAccumulator
         this.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(decoded))
-
-        /*    const historicalEpochs = this.accumulator.historicalEpochs
-        historicalEpochs.forEach(async (epochHash, idx) => {
-          this.logger(`looking up ${toHexString(epochHash)} hash`)
-          const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.EpochAccumulator,
-            value: { chainId: 1, blockHash: epochHash },
-          })
-          const lookup = new ContentLookup(this, lookupKey)
-          const epoch = await lookup.startLookup()
-          if (epoch) {
-            this.logger(
-              `Storing EpochAccumulator for Blocks ${idx * EPOCH_SIZE} - ${
-                idx * EPOCH_SIZE + EPOCH_SIZE - 1
-              }`
-            )
-          }
-        })*/
       }
     } catch (err: any) {
       this.logger(`Error parsing accumulator snapshot: ${err.message}`)
@@ -346,6 +383,16 @@ export class HistoryProtocol extends BaseProtocol {
             this.logger(`Block header content doesn't match header hash ${hashKey}`)
             return
           }
+          const epochIdx = Math.floor(Number(header.number) / 8192)
+          if (Object.entries(this.verifiers).length < 3) {
+            this.verifiers[epochIdx] = header.hash()
+          }
+          if (Object.entries(this.verifiers).length >= 3) {
+            if (!Object.keys(this.verifiers).includes(epochIdx.toString())) {
+              this.verifiers[epochIdx] = header.hash()
+            }
+          }
+
           if (
             Number(header.number) === this.accumulator.currentHeight() + 1 &&
             header.parentHash.equals(
@@ -430,20 +477,37 @@ export class HistoryProtocol extends BaseProtocol {
         )
         break
       case HistoryNetworkContentTypes.HeaderAccumulator:
-        this.receiveSnapshot(value)
+        await this.receiveSnapshot(value)
         break
+      case HistoryNetworkContentTypes.HeaderProof: {
+        try {
+          const proof = SszProof.deserialize(value)
+          const verified = await this.verifyInclusionProof(proof, hashKey)
+          if (verified === true) {
+            this.client.emit('Verified', hashKey, true)
+          } else {
+            this.client.emit('Verified', hashKey, false)
+          }
+          break
+        } catch (err) {
+          this.logger(`VERIFY Error: ${(err as any).message}`)
+          this.client.emit('Verified', hashKey, false)
+          break
+        }
+      }
       default:
         throw new Error('unknown data type provided')
     }
-
-    this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
-    this.logger(
-      `added ${
-        Object.keys(HistoryNetworkContentTypes)[
-          Object.values(HistoryNetworkContentTypes).indexOf(contentType)
-        ]
-      } for ${hashKey} to content db`
-    )
+    if (contentType !== HistoryNetworkContentTypes.HeaderProof) {
+      this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
+      this.logger(
+        `added ${
+          Object.keys(HistoryNetworkContentTypes)[
+            Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+          ]
+        } for ${hashKey} to content db`
+      )
+    }
     if (
       contentType !== HistoryNetworkContentTypes.HeaderAccumulator &&
       this.routingTable.values().length > 0
@@ -487,5 +551,108 @@ export class HistoryProtocol extends BaseProtocol {
         this.sendOffer(peer.nodeId, _encodedKeys)
       }
     })
+  }
+
+  /**
+   *
+   * @param proof a `Proof` for a particular header's inclusion as the latest header in the accumulator's `currentEpoch`
+   * @param header the blockheader being proved to be included in the `currentEpoch`
+   * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
+   * @returns true if proof is valid, false otherwise
+   */
+  public verifyInclusionProof = async (proof: any, blockHash: string) => {
+    const header = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(
+        fromHexString(await this.client.db.get(getHistoryNetworkContentId(1, 0, blockHash)))
+      ),
+      { hardforkByBlockNumber: true }
+    )
+    try {
+      const _proof: SingleProof = {
+        type: ProofType.single,
+        gindex: blockNumberToGindex(header.number),
+        leaf: proof.leaf,
+        witnesses: proof.witnesses,
+      }
+      EpochAccumulator.createFromProof(_proof, proof.epochRoot)
+    } catch (err) {
+      this.logger(`Verify Proof FAILED: ${(err as any).mess}`)
+      return false
+    }
+    return true
+  }
+
+  /**
+   *
+   * @param blockHash blockhash of header used in proof
+   * @returns a merkle multiproof representing the header at the last position in the current epoch
+   */
+  public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
+    const _blockHeader = await this.client.db.get(
+      getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+    )
+    if (_blockHeader === undefined) {
+      throw new Error('Cannot create proof for unknown header')
+    }
+    const blockHeader = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(fromHexString(_blockHeader)),
+      {
+        hardforkByBlockNumber: true,
+      }
+    )
+    this.logger(`generating proof for block ${blockHeader.number}`)
+    const gIndex = blockNumberToGindex(blockHeader.number)
+    const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
+    const listIdx = (Number(blockHeader.number) % 8192) + 1
+    const epoch =
+      this.accumulator.historicalEpochs.length < epochIdx
+        ? EpochAccumulator.serialize(this.accumulator.currentEpoch.slice(0, listIdx))
+        : fromHexString(
+            await this.client.db.get(
+              getHistoryNetworkContentId(
+                1,
+                HistoryNetworkContentTypes.EpochAccumulator,
+                toHexString(this.accumulator.historicalEpochs[epochIdx - 1])
+              )
+            )
+          )
+    const epochView = EpochAccumulator.deserializeToView(epoch)
+    const proof = createProof(epochView.node, {
+      type: ProofType.single,
+      gindex: gIndex,
+    }) as SingleProof
+    const HeaderProofInterface: HeaderProofInterface = {
+      epochRoot: epochView.hashTreeRoot(),
+      gindex: proof.gindex,
+      leaf: proof.leaf,
+      witnesses: proof.witnesses,
+    }
+    return HeaderProofInterface
+  }
+  async getHeaderRecordFromBlockhash(blockHash: string) {
+    const header = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(
+        fromHexString(await this.client.db.get(getHistoryNetworkContentId(1, 0, blockHash)))
+      ),
+      { hardforkByBlockNumber: true }
+    )
+    const epochIndex = Math.ceil(Number(header.number) / 8192)
+    const listIndex = Number(header.number) % 8192
+    if (this.accumulator.historicalEpochs.length < epochIndex) {
+      return this.accumulator.currentEpoch[listIndex]
+    } else {
+      const epoch = EpochAccumulator.deserialize(
+        fromHexString(
+          await this.client.db.get(
+            getHistoryNetworkContentId(
+              1,
+              3,
+              toHexString(this.accumulator.historicalEpochs[epochIndex - 1])
+            )
+          )
+        )
+      )
+      return epoch[listIndex]
+    }
   }
 }

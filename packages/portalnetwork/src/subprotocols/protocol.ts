@@ -31,6 +31,12 @@ import { randUint16, MAX_PACKET_SIZE } from '../wire/utp/index.js'
 import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
 import { NodeLookup } from './nodeLookup.js'
 import { StateNetworkRoutingTable } from './state'
+import {
+  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
+  SszProof,
+} from './history/types.js'
+import { HistoryProtocol } from './history/history.js'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
@@ -443,11 +449,32 @@ export abstract class BaseProtocol {
     )
 
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
+    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
+      decodedContentMessage.contentKey
+    )
     let value = Uint8Array.from([])
-    try {
-      //Check to see if value in content db
-      value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
-    } catch {}
+    if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+      try {
+        // Create Header Proof
+        const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+        this.logger(`Creating proof for ${toHexString((contentKey.value as any).blockHash)}`)
+        const proof = await history.generateInclusionProof(
+          toHexString((contentKey.value as any).blockHash)
+        )
+        // this.logger(proof)
+        value = SszProof.serialize({
+          leaf: proof.leaf,
+          witnesses: proof.witnesses,
+        })
+      } catch (err) {
+        this.logger(`Unable to generate Proof: ${(err as any).message}`)
+      }
+    } else {
+      try {
+        //Check to see if value in content db
+        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+      } catch {}
+    }
     if (value.length === 0) {
       if (toHexString(protocol) === this.protocolId) {
         // Discv5 calls for maximum of 16 nodes per NODES message
