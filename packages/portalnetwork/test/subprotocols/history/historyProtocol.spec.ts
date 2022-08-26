@@ -254,7 +254,10 @@ tape('Header Proof Tests', async (t) => {
     )
     st.equal(proof.gindex, blockNumberToGindex(BigInt(8199)), 'Proof created for correct Header')
     st.equal(proof.witnesses.length, 14, 'Proof has correct size')
-    st.ok(protocol.verifyInclusionProof(proof), 'History Protocol verified an inclusion proof.')
+    st.ok(
+      protocol.verifyInclusionProof(proof, _block8199.hash),
+      'History Protocol verified an inclusion proof.'
+    )
     st.end()
   })
   t.test(
@@ -292,7 +295,7 @@ tape('Header Proof Tests', async (t) => {
       st.equal(proof.gindex, blockNumberToGindex(BigInt(1000)), 'Proof created for correct Header')
       st.equal(proof.witnesses.length, 14, 'Proof has correct size')
       st.ok(
-        protocol.verifyInclusionProof(proof),
+        protocol.verifyInclusionProof(proof, _block1000.hash),
         'History Protocol verified an inclusion proof from a historical epoch.'
       )
       st.end()
