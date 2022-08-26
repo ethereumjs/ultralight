@@ -1,6 +1,6 @@
 # Ultralight - Portal Network Clients in the browser
 
-This monorepo comprises a suite of tools **currently in development** to allow dapps, wallet providers, and really any Javascript based Ethereum application to connect into the Portal Network once development is complete and the Portal Network is live. 
+This monorepo comprises a suite of tools **currently in development** to allow dapps, wallet providers, and any Javascript-based Ethereum application to connect to the Portal Network once development is complete, and the Portal Network is live.
 
 ## Prequisites
 
