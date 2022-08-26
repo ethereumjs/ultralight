@@ -125,14 +125,6 @@ export default function PeerButtons(props: PeerButtonsProps) {
     historyProtocol.sendFindContent(peer.nodeId, accumulatorKey)
   }
 
-  const offerSnapshot = () => {
-    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 4,
-      value: { selector: 0, value: null },
-    })
-    historyProtocol.sendOffer(peer.nodeId, [accumulatorKey])
-  }
-
   const handleOffer = () => {
     historyProtocol.sendOffer(peer.nodeId, offer)
   }
@@ -260,9 +252,6 @@ export default function PeerButtons(props: PeerButtonsProps) {
           </HStack>
           <Button width="100%" onClick={() => handleRequestSnapshot()}>
             Request Accumulator Snapshot
-          </Button>
-          <Button mt="5px" width="100%" onClick={() => offerSnapshot()}>
-            Offer Accumulator Snapshot
           </Button>
           <Divider />
           <HStack width={'100%'}>

@@ -20,6 +20,7 @@ import SelectTx from './SelectTx'
 import React, { Dispatch, SetStateAction, useContext } from 'react'
 import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
 import { toHexString } from './DisplayTx'
+import GetHeaderProofByHash from './GetHeaderProofByHash'
 
 interface DisplayBlockProps {
   isLoading: boolean
@@ -155,6 +156,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           </TabPanel>
         </TabPanels>
       </Tabs>
+      <GetHeaderProofByHash />
     </Box>
   )
 }

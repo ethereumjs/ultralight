@@ -1,31 +1,32 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
-import { arrToBufArr, bufArrToArr } from '@ethereumjs/util'
-import { createRequire } from 'module'
-import { RLP } from 'rlp'
 import tape from 'tape'
 import * as td from 'testdouble'
-import { TransportLayer } from '../../../src/client/index.js'
 import {
   fromHexString,
   PortalNetwork,
+  toHexString,
   ProtocolId,
-  reassembleBlock,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
-  toHexString,
+  reassembleBlock,
 } from '../../../src/index.js'
+import { TransportLayer } from '../../../src/client/index.js'
 import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
 import {
-  blockNumberToGindex,
+  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
   EpochAccumulator,
   getHistoryNetworkContentId,
   HeaderAccumulator,
   HeaderAccumulatorType,
-  HistoryNetworkContentKeyUnionType,
-  HistoryNetworkContentTypes,
+  blockNumberToGindex,
+  HeaderRecord,
 } from '../../../src/subprotocols/history/index.js'
+import { createRequire } from 'module'
+import { RLP } from 'rlp'
+import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
 import { RlpConvert, RlpType } from '../../../src/subprotocols/history/receiptManager.js'
 
 const require = createRequire(import.meta.url)
