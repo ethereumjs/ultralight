@@ -1,12 +1,4 @@
-import tape from 'tape'
-import { Block, BlockHeader } from '@ethereumjs/block'
-import {
-  blockNumberToGindex,
-  EpochAccumulator,
-  HeaderAccumulator,
-  HeaderAccumulatorType,
-  HeaderRecord,
-} from '../../../src/index.js'
+import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 import {
   ByteVectorType,
   ContainerType,
@@ -14,9 +6,16 @@ import {
   toHexString,
   UintBigintType,
 } from '@chainsafe/ssz'
-import { createRequire } from 'module'
-import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 import { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposite.js'
+import { BlockHeader } from '@ethereumjs/block'
+import { createRequire } from 'module'
+import tape from 'tape'
+import {
+  blockNumberToGindex,
+  EpochAccumulator,
+  HeaderAccumulatorType,
+  HeaderRecord,
+} from '../../../src/index.js'
 const require = createRequire(import.meta.url)
 
 // 1. Build accumulator to >0 historical_epochs
