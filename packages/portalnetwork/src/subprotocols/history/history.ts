@@ -162,38 +162,6 @@ export class HistoryProtocol extends BaseProtocol {
                   )
                   break
                 }
-                // case HistoryNetworkContentTypes.HeaderProof: {
-                //   const contentKey = decodedKey.value as ValueOfFields<{
-                //     chainId: UintNumberType
-                //     blockHash: ByteVectorType
-                //   }>
-                //   const _header = await this.client.db.get(
-                //     getHistoryNetworkContentId(1, 0, toHexString(contentKey.blockHash))
-                //   )
-                //   const header = BlockHeader.fromRLPSerializedHeader(
-                //     Buffer.from(fromHexString(_header)),
-                //     {
-                //       hardforkByBlockNumber: true,
-                //     }
-                //   )
-                //   this.logger(`Received a HeaderRecord proof for blockHeader ${header.number}`)
-                //   try {
-                //     const serialized = decoded.value as Uint8Array
-                //     const HeaderProofInterface = SszProof.deserialize(serialized)
-                //     const verified = await this.verifyInclusionProof(HeaderProofInterface)
-                //     if (verified === true) {
-                //       this.client.emit(
-                //         'ContentAdded',
-                //         toHexString(HeaderRecord.deserialize(HeaderProofInterface.leaves[0]).blockHash),
-                //         5,
-                //         'Header Record Validated'
-                //       )
-                //     }
-                //   } catch (err) {
-                //     this.logger((err as any).message)
-                //   }
-                //   break
-                // }
               }
             }
             break
