@@ -12,6 +12,7 @@ import {
 import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
 import ContentManager from './ContentManager'
+import ValidateAccumulator from './ValidateAccumulator'
 
 interface HeaderProps {
   enr: string
@@ -52,6 +53,14 @@ export default function Header(props: HeaderProps) {
             COPY ENR
           </Button>
         )}
+        <Button
+          width={'12.5%'}
+          onClick={() => {
+            toast({ title: props.enr })
+          }}
+        >
+          SHOW ENR
+        </Button>
         <VStack width={'50%'}>
           <Heading size={'2xl'} textAlign="start">
             Ultralight
@@ -60,8 +69,11 @@ export default function Header(props: HeaderProps) {
             Portal Network Explorer
           </Heading>
         </VStack>
-        <Box width={'25%'}>
+        <Box width={'12.5%'}>
           <ContentManager />
+        </Box>
+        <Box width={'12.5%'}>
+          <ValidateAccumulator />
         </Box>
       </HStack>
     </Center>
