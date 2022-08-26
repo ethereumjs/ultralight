@@ -30,7 +30,6 @@ interface DisplayBlockProps {
 const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
   const history = useContext(HistoryProtocolContext)
   const { block, setBlock } = useContext(BlockContext)
-  const blockHash = toHexString(block.header.hash())
   const findParent = async (blockHash: string) => {
     props.setIsLoading(true)
     const block = await history.getBlockByHash(blockHash, true)
