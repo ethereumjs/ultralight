@@ -173,7 +173,7 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
   const protocol = new HistoryProtocol(node, 2n) as any
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp)) //@ts-ignore
-  const block = Block.fromValuesArray(arrToBufArr(blockRlp))
+  const block = Block.fromValuesArray(arrToBufArr(blockRlp), { hardforkByBlockNumber: true })
   protocol.addContentToHistory(
     1,
     HistoryNetworkContentTypes.BlockHeader,
