@@ -1,11 +1,17 @@
-import { HStack, Button, FormControl, Input, useToast } from '@chakra-ui/react'
-import { ContentLookup, fromHexString, HistoryNetworkContentKeyUnionType } from 'portalnetwork'
-import React, { useContext, useState } from 'react'
-import { HistoryProtocolContext } from '../ContextHooks'
+import { HStack, Button, useToast } from '@chakra-ui/react'
+import {
+  ContentLookup,
+  fromHexString,
+  HistoryNetworkContentKeyUnionType,
+  toHexString,
+} from 'portalnetwork'
+import React, { useContext } from 'react'
+import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
 
 export default function GetHeaderProofByHash() {
   const history = useContext(HistoryProtocolContext)
-  const [blockHash, setBlockHash] = useState('')
+  const { block } = useContext(BlockContext)
+  const blockHash = toHexString(block.header.hash())
   const toast = useToast()
 
   async function portal_getHeaderProof(blockHash: string) {
@@ -25,25 +31,17 @@ export default function GetHeaderProofByHash() {
   async function handleClick() {
     const valid = await portal_getHeaderProof(blockHash)
     if (valid === true) {
-      toast({ title: `HeaderRecord validated!` })
+      toast({ title: `Header Record validated!` })
     } else {
-      toast({ title: `HeaderRecord NOT validated` })
+      toast({ title: `Header Record NOT validated` })
     }
   }
 
   return (
     <HStack marginY={1}>
       <Button width={'40%'} onClick={handleClick}>
-        Validate HeaderProof by BlockHash
+        Validate Header Proof by BlockHash
       </Button>
-      <FormControl isInvalid={!blockHash.startsWith('0x')}>
-        <Input
-          bg="whiteAlpha.800"
-          placeholder={`BlockHash`}
-          type={'string'}
-          onChange={(e) => setBlockHash(e.target.value)}
-        />
-      </FormControl>
     </HStack>
   )
 }

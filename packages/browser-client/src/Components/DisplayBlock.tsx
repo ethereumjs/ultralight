@@ -20,6 +20,7 @@ import SelectTx from './SelectTx'
 import React, { Dispatch, SetStateAction, useContext } from 'react'
 import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
 import { toHexString } from './DisplayTx'
+import GetHeaderProofByHash from './GetHeaderProofByHash'
 
 interface DisplayBlockProps {
   isLoading: boolean
@@ -29,6 +30,7 @@ interface DisplayBlockProps {
 const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
   const history = useContext(HistoryProtocolContext)
   const { block, setBlock } = useContext(BlockContext)
+  const blockHash = toHexString(block.header.hash())
   const findParent = async (blockHash: string) => {
     props.setIsLoading(true)
     const block = await history.getBlockByHash(blockHash, true)
@@ -155,6 +157,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           </TabPanel>
         </TabPanels>
       </Tabs>
+      <GetHeaderProofByHash />
     </Box>
   )
 }
