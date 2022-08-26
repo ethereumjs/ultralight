@@ -41,7 +41,7 @@ de2f8:portalnetwork adding b81736575498a5850b0dd52f2695268cf60fe6c89ab74289692c5
 
 Use `npm run dev` in the `portalnetwork` library to have Typescript automatically recompile code as changes are made.  
 
-The browser client supports live reload as well as so any changes made in the `portalnetwork` or `browser-client` libraries will result in the browser client reloading.
+The browser client supports live reload as well, so any changes made in the `portalnetwork` or `browser-client` libraries will result in the browser client reloading.
 ### Detailed Node Usage/Interop Instructions
 
 See the [`browser client`](./packages/browser-client) and [`cli`](./packages/cli) READMEs for more specific usage with each client.
@@ -55,7 +55,7 @@ The `portalnetwork` library is the application layer needed to interact with the
 
 ### [`Ultralight-Proxy`](./packages/proxy)
 
-This a simple nodejs server that accepts incoming websocket connections from clients running the `portalnetwork` module and routes their messages on to other Portal Network clients
+This is a simple nodejs server that accepts incoming websocket connections from clients running the `portalnetwork` module and routes their messages on to other Portal Network clients
 ### [`Ultralight-Browser-Client`](./packages/browser-client)
 
 This is a technical demonstration of a web application that uses the `portalnetwork` module to connect to the Portal Network
