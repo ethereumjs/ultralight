@@ -124,7 +124,6 @@ tape('History Protocol Integration Tests', (t) => {
       portal2.on('Verified', (blockHash, verified) => {
         if (blockHash === '') {
           st.notOk(verified, 'History should fail to validate Accumulator Snapshot')
-          st.notOk(protocol2.accumulator.validated, 'Accumulator should not be validated')
         }
       })
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
