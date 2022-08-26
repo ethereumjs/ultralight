@@ -182,18 +182,20 @@ export class HistoryProtocol extends BaseProtocol {
     this.logger(`Need ${threshold} votes to validate`)
     let votes = 0
     for (let i = 0; i < Object.entries(this.verifiers).length; i++) {
+      const blockHash = Object.values(this.verifiers)[i]
+
       const proofLookupKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: HistoryNetworkContentTypes.HeaderProof,
         value: {
           chainId: 1,
-          blockHash: Object.values(this.verifiers)[i],
+          blockHash: blockHash,
         },
       })
       const proofLookup = new ContentLookup(this, proofLookupKey)
       const _proof = await proofLookup.startLookup()
       if (_proof) {
         const proof = SszProof.deserialize(_proof as Uint8Array)
-        if (!(await this.verifyInclusionProof(proof))) {
+        if (!(await this.verifyInclusionProof(proof, toHexString(blockHash)))) {
           this.logger('HeaderRecord not Verified')
           return false
         } else {
@@ -481,8 +483,8 @@ export class HistoryProtocol extends BaseProtocol {
         break
       case HistoryNetworkContentTypes.HeaderProof: {
         try {
-          const HeaderProofInterface = SszProof.deserialize(value)
-          const verified = await this.verifyInclusionProof(HeaderProofInterface)
+          const proof = SszProof.deserialize(value)
+          const verified = await this.verifyInclusionProof(proof, hashKey)
           if (verified === true) {
             this.client.emit('Verified', hashKey, true)
           } else {
@@ -560,11 +562,17 @@ export class HistoryProtocol extends BaseProtocol {
    * @param blockPosition the index in the array of `HeaderRecord`s of the header in the `currentEpoch`
    * @returns true if proof is valid, false otherwise
    */
-  public verifyInclusionProof = async (proof: HeaderProofInterface) => {
+  public verifyInclusionProof = async (proof: any, blockHash: string) => {
+    const header = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(
+        fromHexString(await this.client.db.get(getHistoryNetworkContentId(1, 0, blockHash)))
+      ),
+      { hardforkByBlockNumber: true }
+    )
     try {
       const _proof: SingleProof = {
         type: ProofType.single,
-        gindex: proof.gindex,
+        gindex: blockNumberToGindex(header.number),
         leaf: proof.leaf,
         witnesses: proof.witnesses,
       }

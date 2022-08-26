@@ -60,8 +60,6 @@ export const gIndex = new UintBigintType(4)
 // export const leaves = new ListCompositeType(HashRoot, 8192)
 
 export const SszProof = new ContainerType({
-  epochRoot: HashRoot,
-  gindex: gIndex,
   leaf: HashRoot,
   witnesses: Witnesses,
 })

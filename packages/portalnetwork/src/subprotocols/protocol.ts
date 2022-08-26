@@ -463,8 +463,6 @@ export abstract class BaseProtocol {
         )
         // this.logger(proof)
         value = SszProof.serialize({
-          epochRoot: proof.epochRoot,
-          gindex: proof.gindex,
           leaf: proof.leaf,
           witnesses: proof.witnesses,
         })
