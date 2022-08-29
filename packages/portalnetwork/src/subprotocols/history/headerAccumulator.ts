@@ -1,6 +1,6 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
-import { EpochAccumulator, EPOCH_SIZE, HeaderAccumulatorType, HeaderRecordType } from './types.js'
+import { EpochAccumulator, EPOCH_SIZE, HeaderRecordType } from './types.js'
 
 export interface AccumulatorOpts {
   initFromGenesis: boolean

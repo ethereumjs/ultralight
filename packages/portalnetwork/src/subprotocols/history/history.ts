@@ -1,12 +1,12 @@
-import { ByteVectorType, fromHexString, toHexString, UintNumberType } from '@chainsafe/ssz'
 import { ENR } from '@chainsafe/discv5/index.js'
+import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Debugger } from 'debug'
-import { ProtocolId } from '../types.js'
+import * as rlp from 'rlp'
 import { PortalNetwork } from '../../client/client.js'
 import { PortalNetworkMetrics } from '../../client/types.js'
 import { shortId } from '../../util/index.js'
-import { HeaderAccumulator } from './headerAccumulator.js'
 import {
   connectionIdType,
   ContentMessageType,
@@ -17,22 +17,20 @@ import {
 import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
 import { ContentLookup } from '../contentLookup.js'
 import { BaseProtocol } from '../protocol.js'
+import { ProtocolId } from '../types.js'
+import { HeaderAccumulator } from './headerAccumulator.js'
+import { ReceiptsManager } from './receiptManager.js'
 import {
-  HistoryNetworkContentTypes,
-  HistoryNetworkContentKeyUnionType,
-  HeaderAccumulatorType,
-  HistoryNetworkContentKey,
-  EPOCH_SIZE,
   EpochAccumulator,
-  SszProof,
+  EPOCH_SIZE,
+  HeaderAccumulatorType,
   HeaderProofInterface,
-  HeaderRecord,
+  HistoryNetworkContentKey,
+  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
+  SszProof,
 } from './types.js'
 import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
-import * as rlp from 'rlp'
-import { ReceiptsManager } from './receiptManager.js'
-import { createProof, Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
-import { ValueOfFields } from '@chainsafe/ssz/lib/view/container.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
@@ -177,6 +175,13 @@ export class HistoryProtocol extends BaseProtocol {
     }
   }
 
+  /**
+   * Requests header proofs from the History Network when a header accumulator snapshot is received
+   * to verify the validity of the accumulator
+   * @param snapshot A header accumulator snapshot received from the network
+   * @returns true if header is verified or false otherwise
+   * @emits Verified event with no hash key if the accumulator is verified
+   */
   public verifySnapshot = async (snapshot: HeaderAccumulator) => {
     const threshold = snapshot.historicalEpochs.length < 3 ? snapshot.historicalEpochs.length : 3
     this.logger(`Need ${threshold} votes to validate`)
@@ -386,13 +391,9 @@ export class HistoryProtocol extends BaseProtocol {
             return
           }
           const epochIdx = Math.floor(Number(header.number) / 8192)
-          if (Object.entries(this.verifiers).length < 3) {
+          if (!Object.keys(this.verifiers).includes(epochIdx.toString())) {
+            // If the epoch accumulator for this block hasn't been verified previously, add this block hash for future reference
             this.verifiers[epochIdx] = header.hash()
-          }
-          if (Object.entries(this.verifiers).length >= 3) {
-            if (!Object.keys(this.verifiers).includes(epochIdx.toString())) {
-              this.verifiers[epochIdx] = header.hash()
-            }
           }
 
           if (
@@ -578,7 +579,7 @@ export class HistoryProtocol extends BaseProtocol {
       }
       EpochAccumulator.createFromProof(_proof, proof.epochRoot)
     } catch (err) {
-      this.logger(`Verify Proof FAILED: ${(err as any).mess}`)
+      this.logger(`Verify Proof FAILED: ${(err as any).message}`)
       return false
     }
     return true

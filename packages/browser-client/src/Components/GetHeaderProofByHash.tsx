@@ -1,9 +1,9 @@
 import { HStack, Button, useToast } from '@chakra-ui/react'
-import { m } from 'framer-motion'
 import {
   ContentLookup,
   fromHexString,
   HistoryNetworkContentKeyUnionType,
+  SszProof,
   toHexString,
 } from 'portalnetwork'
 import React, { useContext } from 'react'
@@ -25,13 +25,15 @@ export default function GetHeaderProofByHash() {
     })
     const lookup = new ContentLookup(history, lookupKey)
     const proof = await lookup.startLookup()
-    const valid = await history.verifyInclusionProof(proof, blockHash)
+    const valid = await history.verifyInclusionProof(
+      SszProof.deserialize(proof as Uint8Array),
+      blockHash
+    )
     return valid
   }
 
   async function handleClick() {
     const valid = await portal_getHeaderProof(blockHash)
-    console.log('valid', valid)
     if (valid === true) {
       toast({
         title: `Header Record validated!`,
