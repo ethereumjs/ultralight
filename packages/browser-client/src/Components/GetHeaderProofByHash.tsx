@@ -1,5 +1,4 @@
 import { HStack, Button, useToast } from '@chakra-ui/react'
-import { m } from 'framer-motion'
 import {
   ContentLookup,
   fromHexString,
@@ -31,7 +30,6 @@ export default function GetHeaderProofByHash() {
 
   async function handleClick() {
     const valid = await portal_getHeaderProof(blockHash)
-    console.log('valid', valid)
     if (valid === true) {
       toast({
         title: `Header Record validated!`,

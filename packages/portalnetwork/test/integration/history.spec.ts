@@ -91,7 +91,6 @@ tape('History Protocol Integration Tests', (t) => {
           end(child, [portal1, portal2], st)
         }
       })
-      // end(child, [portal1, portal2], st)
 
       await protocol1.sendPing(portal2.discv5.enr)
       await protocol2.sendFindContent(portal1.discv5.enr.nodeId, accumulatorKey)
