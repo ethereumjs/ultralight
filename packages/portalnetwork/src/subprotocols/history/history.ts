@@ -32,14 +32,14 @@ import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from
 import * as rlp from 'rlp'
 import { ReceiptsManager } from './receiptManager.js'
 import { createProof, Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
-import { ValueOfFields } from '@chainsafe/ssz/lib/view/container.js'
+import GossipManager from './Gossip.js'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
   accumulator: HeaderAccumulator
   logger: Debugger
-  gossipQueue: [string, HistoryNetworkContentTypes][]
+  gossipManager: GossipManager
   verifiers: Record<number, Uint8Array>
   public receiptManager: ReceiptsManager
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
@@ -49,7 +49,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.logger = client.logger.extend('HistoryNetwork')
     this.accumulator = new HeaderAccumulator({})
     this.verifiers = {}
-    this.gossipQueue = []
+    this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
   }
 
@@ -518,44 +518,8 @@ export class HistoryProtocol extends BaseProtocol {
       this.routingTable.values().length > 0
     ) {
       // Gossip new content to network (except header accumulators)
-      this.gossipQueue.push([hashKey, contentType])
-      if (this.gossipQueue.length >= 26) {
-        await this.gossipHistoryNetworkContent(this.gossipQueue)
-        this.gossipQueue = []
-      }
+      this.gossipManager.add(hashKey, contentType)
     }
-  }
-
-  /**
-   * Gossips recently added content to the nearest 5 nodes
-   * @param blockHash hex prefixed blockhash of content to be gossipped
-   * @param contentType type of content being gossipped
-   */
-  private gossipHistoryNetworkContent = async (
-    gossipQueue: [string, HistoryNetworkContentTypes][]
-  ) => {
-    let nearestPeers: ENR[] = []
-    const contentIds = gossipQueue.map(([blockHash, contentType]) => {
-      return getHistoryNetworkContentId(1, contentType, blockHash)
-    })
-    const encodedKeys = gossipQueue.map(([blockHash, _contentType], idx) => {
-      return HistoryNetworkContentKeyUnionType.serialize({
-        selector: gossipQueue[idx][1],
-        value: { chainId: 1, blockHash: fromHexString(blockHash) },
-      })
-    })
-    contentIds.forEach((contentId) => {
-      nearestPeers = [...nearestPeers, ...this.routingTable.nearest(contentId, 5)]
-    })
-    nearestPeers.forEach((peer) => {
-      const _encodedKeys = [...new Set(encodedKeys)].filter(
-        (n) => !this.routingTable.contentKeyKnownToPeer(peer.nodeId, toHexString(n))
-      )
-      // If peer hasn't already been OFFERed this contentKey and the content is within the peer's advertised radius, OFFER
-      if (_encodedKeys.length > 0) {
-        this.sendOffer(peer.nodeId, _encodedKeys)
-      }
-    })
   }
 
   /**
