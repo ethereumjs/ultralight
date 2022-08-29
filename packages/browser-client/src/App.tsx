@@ -41,7 +41,7 @@ export const App = () => {
   const [peers, setPeers] = React.useState<ENR[]>([])
   const [sortedDistList, setSortedDistList] = React.useState<[number, string[]][]>([])
   const [peerEnr, setPeerEnr] = React.useState('')
-  const [proxy, setProxy] = React.useState('ws://127.0.0.1:5050')
+  const [proxy, _setProxy] = React.useState('ws://127.0.0.1:5050')
   const [block, setBlock] = React.useState<Block>(Block.prototype)
   const blockValue = React.useMemo(() => ({ block, setBlock }), [block])
   const [modalStatus, setModal] = React.useState(false)
@@ -152,11 +152,12 @@ export const App = () => {
     }
 
     setPortal(node)
+
+    node.enableLog('*Portal*, -*uTP*, -*FINDNODES*')
+    await node.start()
     try {
       setHistoryProtocol(node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol)
     } catch {}
-    node.enableLog('*Portal*, -*uTP*, -*FINDNODES*')
-    await node.start()
     node.storeNodeDetails()
     ;(window as any).portal = node
     ;(window as any).ENR = ENR
@@ -175,7 +176,7 @@ export const App = () => {
       {portal && (
         <PortalContext.Provider value={portal}>
           <Header enr={portal.discv5.enr.encodeTxt(portal.discv5.keypair.privateKey)} />
-          {historyProtocol && (
+          {historyProtocol !== undefined && (
             <>
               <HStack border={'1px'} width={'100%'} paddingY={1}>
                 <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={connectToPeer}>
