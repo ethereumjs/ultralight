@@ -2,7 +2,6 @@ import {
   ByteListType,
   ByteVectorType,
   ContainerType,
-  ListBasicType,
   ListCompositeType,
   NoneType,
   UintBigintType,

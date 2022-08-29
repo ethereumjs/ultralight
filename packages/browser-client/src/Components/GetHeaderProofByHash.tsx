@@ -3,6 +3,7 @@ import {
   ContentLookup,
   fromHexString,
   HistoryNetworkContentKeyUnionType,
+  SszProof,
   toHexString,
 } from 'portalnetwork'
 import React, { useContext } from 'react'
@@ -24,7 +25,10 @@ export default function GetHeaderProofByHash() {
     })
     const lookup = new ContentLookup(history, lookupKey)
     const proof = await lookup.startLookup()
-    const valid = await history.verifyInclusionProof(proof, blockHash)
+    const valid = await history.verifyInclusionProof(
+      SszProof.deserialize(proof as Uint8Array),
+      blockHash
+    )
     return valid
   }
 
