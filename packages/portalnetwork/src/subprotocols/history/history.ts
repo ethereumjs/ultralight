@@ -29,7 +29,7 @@ import {
 import { BaseProtocol } from '../protocol.js'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
-  protocolName: string
+  protocolName = 'HistoryNetwork'
   accumulator: AccumulatorManager
   logger: Debugger
   ETH: ETH
@@ -39,7 +39,6 @@ export class HistoryProtocol extends BaseProtocol {
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
-    this.protocolName = 'History Network'
     this.logger = client.logger.extend('HistoryNetwork')
     this.accumulator = new AccumulatorManager({ history: this })
     this.ETH = new ETH(this)
