@@ -103,6 +103,10 @@ export class AccumulatorManager {
     this.init()
   }
 
+  public get header() {
+    return this.headerAccumulator
+  }
+
   public updateAccumulator(newHeader: BlockHeader) {
     this.headerAccumulator.updateAccumulator(newHeader)
   }
@@ -243,7 +247,7 @@ export class AccumulatorManager {
       return epoch[listIndex]
     }
   }
-  private verifySnapshot = async (snapshot: HeaderAccumulator) => {
+  public verifySnapshot = async (snapshot: HeaderAccumulator) => {
     const threshold = snapshot.historicalEpochs.length < 3 ? snapshot.historicalEpochs.length : 3
     this._history.logger(`Need ${threshold} votes to validate`)
     let votes = 0

@@ -10,10 +10,10 @@ export default function ValidateAccumulator() {
   const handleClick = async () => {
     const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     if (history.accumulator) {
-      const valid = await history.verifySnapshot(history.accumulator)
+      const valid = await history.accumulator.verifySnapshot(history.accumulator.header)
       if (valid === true) {
         toast({
-          title: `Header Accumulator validated at height ${history.accumulator.currentHeight()}!`,
+          title: `Header Accumulator validated at height ${history.accumulator.currentHeight}!`,
           status: 'info',
           duration: 3000,
           position: 'bottom',
