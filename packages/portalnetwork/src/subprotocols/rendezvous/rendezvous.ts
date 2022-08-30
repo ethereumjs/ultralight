@@ -26,6 +26,10 @@ export class Rendezvous extends BaseProtocol {
     return Promise.resolve()
   }
 
+  public _handleFindContent = (decodedContentMessage: FindContentMessage): Promise<Uint8Array> => {
+    return Promise.resolve(Uint8Array.from([]))
+  }
+
   public sendFindContent = (_dstId: string, _key: Uint8Array) => {
     return Promise.resolve(undefined)
   }
