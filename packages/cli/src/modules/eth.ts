@@ -79,7 +79,7 @@ export class eth {
    */
   async blockNumber(_params = []) {
     const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    return history.accumulator.currentHeight()
+    return history.accumulator.currentHeight
   }
 
   /**
@@ -106,7 +106,7 @@ export class eth {
       const protocol = this._client.protocols.get(
         ProtocolId.HistoryNetwork
       ) as never as HistoryProtocol
-      const block = await protocol.getBlockByHash(blockHash, includeTransactions)
+      const block = await protocol.ETH.getBlockByHash(blockHash, includeTransactions)
       return block ?? 'Block not found'
     } catch {
       return 'Block not found'
@@ -128,7 +128,7 @@ export class eth {
       const history = this._client.protocols.get(
         ProtocolId.HistoryNetwork
       ) as never as HistoryProtocol
-      const block = await history.getBlockByNumber(parseInt(blockNumber), includeTransactions)
+      const block = await history.ETH.getBlockByNumber(parseInt(blockNumber), includeTransactions)
       this.logger(block)
       return block ?? 'Block not found'
     } catch {
@@ -222,9 +222,8 @@ export class eth {
         const blockNum = BigInt(fromBlock)
         if (
           blockNum >
-          (
-            this._client.protocols.get(ProtocolId.HeaderGossipNetwork) as HistoryProtocol
-          ).accumulator.currentHeight()
+          (this._client.protocols.get(ProtocolId.HeaderGossipNetwork) as HistoryProtocol)
+            .accumulator.currentHeight
         ) {
           throw {
             code: INVALID_PARAMS,

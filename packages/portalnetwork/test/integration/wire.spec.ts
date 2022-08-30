@@ -384,7 +384,10 @@ tape('getBlockByHash', (t) => {
         )
       })
       await protocol1.sendPing(portal2.discv5.enr)
-      const returnedBlock = (await protocol2.getBlockByHash(testHashStrings[idx], true)) as Block
+      const returnedBlock = (await protocol2.ETH.getBlockByHash(
+        testHashStrings[idx],
+        true
+      )) as Block
       st.deepEqual(returnedBlock.hash(), testBlocks[idx].hash(), 'eth_getBlockByHash test passed')
     }
     connectAndTest(t, st, gossip, true)
@@ -405,7 +408,7 @@ tape('getBlockByHash', (t) => {
       await protocol1.addContentToHistory(1, 0, testHash, testHeader)
 
       await protocol1.sendPing(portal2.discv5.enr)
-      const returnedBlock = (await protocol2.getBlockByHash(testHash, true)) as Block
+      const returnedBlock = (await protocol2.ETH.getBlockByHash(testHash, true)) as Block
       st.deepEqual(
         returnedBlock.header.hash(),
         testBlock.header.hash(),
@@ -481,7 +484,7 @@ tape('getBlockByNumber', (t) => {
       })
 
       await protocol1.sendPing(portal2.discv5.enr)
-      await protocol2.getBlockByNumber(8200, true)
+      await protocol2.ETH.getBlockByNumber(8200, true)
     }
     connectAndTest(t, st, findAccumulator, true)
   })
@@ -631,7 +634,7 @@ tape('getBlockByNumber', (t) => {
             epochHash,
             'Received Accumulator has historical epoch hash for blocks 0 - 8191.'
           )
-          protocol2.getBlockByNumber(1000, true)
+          protocol2.ETH.getBlockByNumber(1000, true)
         }
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
           st.equal(

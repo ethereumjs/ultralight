@@ -154,7 +154,7 @@ export class ReceiptsManager {
       })
     }
     if (includeTxType) {
-      const block = (await this.protocol.getBlockByHash(toHexString(blockHash), true)) as Block
+      const block = (await this.protocol.ETH.getBlockByHash(toHexString(blockHash), true)) as Block
       receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
         r.txType = block.transactions[i].type
         return r
@@ -175,7 +175,7 @@ export class ReceiptsManager {
     const returnedLogs: GetLogsReturn = []
     let returnedLogsSize = 0
     for (let i = Number(from.header.number); i <= Number(to.header.number); i++) {
-      const block = await this.protocol.getBlockByNumber(i, true)
+      const block = await this.protocol.ETH.getBlockByNumber(i, true)
       const receipts = await this.getReceipts(block!.hash())
       if (receipts.length === 0) continue
       let logs: GetLogsReturn = []
