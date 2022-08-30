@@ -32,6 +32,7 @@ export class HistoryProtocol extends BaseProtocol {
   protocolName: string
   accumulator: HeaderAccumulator
   logger: Debugger
+  ETH: ETH
   gossipManager: GossipManager
   verifiers: Record<number, Uint8Array>
   public receiptManager: ReceiptsManager
@@ -41,7 +42,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.protocolName = 'History Network'
     this.logger = client.logger.extend('HistoryNetwork')
     this.accumulator = new HeaderAccumulator({})
-    this.verifiers = {}
+    this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
   }
