@@ -21,7 +21,7 @@ import { peerIdFromString } from '@libp2p/peer-id'
 import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
+import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'

@@ -1,39 +1,32 @@
-import { ByteVectorType, fromHexString, toHexString, UintNumberType } from '@chainsafe/ssz'
-import { ENR } from '@chainsafe/discv5/index.js'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { ProtocolId } from '../types.js'
-import { PortalNetwork } from '../../client/client.js'
-import { PortalNetworkMetrics } from '../../client/types.js'
-import { shortId } from '../../util/index.js'
-import { HeaderAccumulator } from './headerAccumulator.js'
 import {
+  AccumulatorManager,
   connectionIdType,
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
   PortalWireMessageType,
-} from '../../wire/index.js'
-import { RequestCode } from '../../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
-import { ContentLookup } from '../contentLookup.js'
-import { BaseProtocol } from '../protocol.js'
-import {
+  shortId,
+  PortalNetwork,
+  RequestCode,
+  ProtocolId,
+  PortalNetworkMetrics,
   HistoryNetworkContentTypes,
   HistoryNetworkContentKeyUnionType,
-  HeaderAccumulatorType,
   HistoryNetworkContentKey,
-  EPOCH_SIZE,
   EpochAccumulator,
-  SszProof,
   HeaderProofInterface,
-  HeaderRecord,
-} from './types.js'
-import { blockNumberToGindex, getHistoryNetworkContentId, reassembleBlock } from './util.js'
-import * as rlp from 'rlp'
-import { ReceiptsManager } from './receiptManager.js'
-import { createProof, Proof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
-import GossipManager from './Gossip.js'
+  ReceiptsManager,
+  ContentManager,
+  ETH,
+  GossipManager,
+  getHistoryNetworkContentId,
+  SszProof,
+  serializedContentKeyToContentId,
+} from '../../index.js'
 
+import { BaseProtocol } from '../protocol.js'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
@@ -234,11 +227,11 @@ export class HistoryProtocol extends BaseProtocol {
       })
       this.logger(
         `Received an accumulator snapshot with ${receivedAccumulator.currentEpoch.length} headers in the current epoch`
-      )
+    )
       if (this.accumulator.currentHeight() < newAccumulator.currentHeight()) {
         // If we don't have an accumulator, adopt the snapshot received
         // TODO: Decide how to verify if this snapshot is trustworthy
-        try {
+      try {
           this.logger('Verifying HeaderAccumulator snapshot')
           const verified = await this.verifySnapshot(newAccumulator)
           verified
@@ -269,7 +262,7 @@ export class HistoryProtocol extends BaseProtocol {
     const headerContentKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 0,
       value: { chainId: 1, blockHash: fromHexString(blockHash) },
-    })
+        })
 
     const bodyContentKey = includeTransactions
       ? HistoryNetworkContentKeyUnionType.serialize({
@@ -289,17 +282,17 @@ export class HistoryProtocol extends BaseProtocol {
       if (!includeTransactions) {
         block = reassembleBlock(header, rlp.encode([[], []]))
         return block
-      } else {
+    } else {
         lookup = new ContentLookup(this, bodyContentKey!)
         body = await lookup.startLookup()
         return new Promise((resolve) => {
           if (body) {
             // Try assembling block
-            try {
+      try {
               block = reassembleBlock(header, body)
               resolve(block)
-            } catch {}
-          }
+      } catch {}
+    }
           block = reassembleBlock(header, body)
           resolve(block)
         })

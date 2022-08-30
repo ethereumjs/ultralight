@@ -5,22 +5,16 @@ import {
   PortalNetwork,
   ProtocolId,
   sszEncodeBlockBody,
-} from '../../src/index.js'
-import {
   HistoryNetworkContentTypes,
   HeaderAccumulatorType,
-} from '../../src/subprotocols/history/types.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
-} from '../../src/subprotocols/history/index.js'
-import { Block } from '@ethereumjs/block'
-import {
   HistoryProtocol,
   EpochAccumulator,
   reassembleBlock,
-} from '../../src/subprotocols/history/index.js'
+} from '../../src/index.js'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Block } from '@ethereumjs/block'
 import { createRequire } from 'module'
 import { BlockHeader } from '@ethereumjs/block'
 import * as rlp from 'rlp'

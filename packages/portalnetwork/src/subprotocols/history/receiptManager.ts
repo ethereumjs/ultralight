@@ -10,12 +10,11 @@ import {
 } from '@ethereumjs/util'
 import * as RLP from 'rlp'
 import type { Block } from '@ethereumjs/block'
-import { HistoryProtocol } from './history.js'
 import { DBManager } from '../../client/dbManager.js'
-import { Bloom } from '../types.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { getHistoryNetworkContentId } from '../index.js'
 import {
+  Bloom,
+  HistoryProtocol,
+  getHistoryNetworkContentId,
   HistoryNetworkContentTypes,
   Log,
   PostByzantiumTxReceipt,
@@ -23,7 +22,8 @@ import {
   TxReceipt,
   TxReceiptType,
   TxReceiptWithType,
-} from './types.js'
+} from '../index.js'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { VM } from '@ethereumjs/vm'
 
 type _GetReceiptByTxHashReturn = [

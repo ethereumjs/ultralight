@@ -5,7 +5,7 @@ import { getHistoryNetworkContentId } from './util.js'
 
 type Peer = string
 
-export default class GossipManager {
+export class GossipManager {
   pulse: number
   history: HistoryProtocol
   gossipQueues: Record<Peer, Uint8Array[]>

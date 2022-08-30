@@ -11,23 +11,19 @@ import {
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
   reassembleBlock,
-} from '../../../src/index.js'
-import { TransportLayer } from '../../../src/client/index.js'
-import { HistoryProtocol } from '../../../src/subprotocols/history/history.js'
-import {
+  AccumulatorManager,
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
   EpochAccumulator,
   getHistoryNetworkContentId,
-  HeaderAccumulator,
   HeaderAccumulatorType,
   blockNumberToGindex,
-  HeaderRecord,
-} from '../../../src/subprotocols/history/index.js'
+  TransportLayer,
+  HistoryProtocol,
+} from '../../../src/index.js'
 import { createRequire } from 'module'
 import { RLP } from 'rlp'
 import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
-import { RlpConvert, RlpType } from '../../../src/subprotocols/history/receiptManager.js'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('./testdata/testBlocks.json')

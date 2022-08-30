@@ -154,6 +154,7 @@ export class PortalNetworkUTP extends BasicUtp {
 
         this.openContentRequest[socketKey] = newRequest
         this.logger(`Opening request with key: ${socketKey}`)
+        this.logger('Waiting for SYN Packet')
         await newRequest.init()
         break
       case RequestCode.FINDCONTENT_READ:
@@ -435,3 +436,5 @@ export class PortalNetworkUTP extends BasicUtp {
     return true
   }
 }
+
+export * from './ContentRequest.js'

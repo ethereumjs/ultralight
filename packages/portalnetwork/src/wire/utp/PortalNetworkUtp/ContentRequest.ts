@@ -1,8 +1,5 @@
-import { UtpSocket } from '../index.js'
-import { sendSynPacket } from '../Packets/PacketSenders.js'
-import { RequestCode } from './PortalNetworkUTP.js'
-import { ConnectionState } from '../Socket/index.js'
-import { ProtocolId } from '../../../subprotocols/types.js'
+import { UtpSocket, ConnectionState, sendSynPacket, RequestCode } from '../index.js'
+import { ProtocolId } from '../../../index.js'
 
 export class ContentRequest {
   protocolId: ProtocolId

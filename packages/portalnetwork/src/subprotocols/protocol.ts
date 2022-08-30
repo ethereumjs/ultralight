@@ -4,16 +4,17 @@ import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { Debugger } from 'debug'
-import { ProtocolId } from './types.js'
-import { PortalNetwork, PortalNetworkRoutingTable } from '../client/index.js'
-import { PortalNetworkMetrics } from '../client/types.js'
 import {
+  randUint16,
+  MAX_PACKET_SIZE,
+  arrayByteLength,
+  PortalNetworkMetrics,
+  ProtocolId,
+  PortalNetwork,
+  PortalNetworkRoutingTable,
   shortId,
   serializedContentKeyToContentId,
   generateRandomNodeIdAtDistance,
-  arrayByteLength,
-} from '../util/index.js'
-import {
   AcceptMessage,
   ContentMessageType,
   FindContentMessage,
@@ -26,17 +27,10 @@ import {
   PongMessage,
   PortalWireMessageType,
   connectionIdType,
-} from '../wire/index.js'
-import { randUint16, MAX_PACKET_SIZE } from '../wire/utp/index.js'
-import { RequestCode } from '../wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
-import { NodeLookup } from './nodeLookup.js'
-import { StateNetworkRoutingTable } from './state'
-import {
-  HistoryNetworkContentKeyUnionType,
-  HistoryNetworkContentTypes,
-  SszProof,
-} from './history/types.js'
-import { HistoryProtocol } from './history/history.js'
+  RequestCode,
+  NodeLookup,
+  StateNetworkRoutingTable,
+} from '../index.js'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
