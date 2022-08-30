@@ -34,7 +34,7 @@ export class HistoryProtocol extends BaseProtocol {
   logger: Debugger
   ETH: ETH
   gossipManager: GossipManager
-  verifiers: Record<number, Uint8Array>
+  contentManager: ContentManager
   public receiptManager: ReceiptsManager
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     super(client, undefined, metrics)
@@ -45,6 +45,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
+    this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
   }
 
   public _handleFindContent = async (decodedContentMessage: FindContentMessage) => {
