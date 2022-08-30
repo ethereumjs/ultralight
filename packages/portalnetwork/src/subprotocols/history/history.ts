@@ -46,6 +46,35 @@ export class HistoryProtocol extends BaseProtocol {
     this.receiptManager = new ReceiptsManager(this.client.db, this)
   }
 
+  public _handleFindContent = async (decodedContentMessage: FindContentMessage) => {
+    const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
+    let value = Uint8Array.from([])
+    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
+      decodedContentMessage.contentKey
+    )
+    if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+      try {
+        // Create Header Proof
+        this.logger(`Creating proof for ${toHexString((contentKey.value as any).blockHash)}`)
+        const proof = await this.generateInclusionProof(
+          toHexString((contentKey.value as any).blockHash)
+        )
+        // this.logger(proof)
+        value = SszProof.serialize({
+          leaf: proof.leaf,
+          witnesses: proof.witnesses,
+        })
+      } catch (err) {
+        this.logger(`Unable to generate Proof: ${(err as any).message}`)
+      }
+    } else {
+      try {
+        //Check to see if value in content db
+        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+      } catch {}
+    }
+    return value
+  }
   public init = async () => {
     this.client.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
       if (selector === HistoryNetworkContentTypes.EpochAccumulator) {
