@@ -30,7 +30,7 @@ import { BaseProtocol } from '../protocol.js'
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId
   protocolName: string
-  accumulator: HeaderAccumulator
+  accumulator: AccumulatorManager
   logger: Debugger
   ETH: ETH
   gossipManager: GossipManager
@@ -41,7 +41,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.protocolId = ProtocolId.HistoryNetwork
     this.protocolName = 'History Network'
     this.logger = client.logger.extend('HistoryNetwork')
-    this.accumulator = new HeaderAccumulator({})
+    this.accumulator = new AccumulatorManager({ history: this })
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
