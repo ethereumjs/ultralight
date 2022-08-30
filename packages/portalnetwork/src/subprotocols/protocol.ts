@@ -443,65 +443,38 @@ export abstract class BaseProtocol {
     )
 
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
-    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
-      decodedContentMessage.contentKey
-    )
-    let value = Uint8Array.from([])
-    if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
-      try {
-        // Create Header Proof
-        const history = this.client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-        this.logger(`Creating proof for ${toHexString((contentKey.value as any).blockHash)}`)
-        const proof = await history.generateInclusionProof(
-          toHexString((contentKey.value as any).blockHash)
-        )
-        // this.logger(proof)
-        value = SszProof.serialize({
-          leaf: proof.leaf,
-          witnesses: proof.witnesses,
-        })
-      } catch (err) {
-        this.logger(`Unable to generate Proof: ${(err as any).message}`)
-      }
-    } else {
-      try {
-        //Check to see if value in content db
-        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
-      } catch {}
-    }
+    const value = await this.client.protocols
+      .get(toHexString(protocol) as ProtocolId)!
+      ._handleFindContent(decodedContentMessage)
     if (value.length === 0) {
-      if (toHexString(protocol) === this.protocolId) {
-        // Discv5 calls for maximum of 16 nodes per NODES message
-        const ENRs = this.routingTable.nearest(lookupKey, 16)
-        const encodedEnrs = ENRs.map((enr) => {
-          // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
-          // contentId than this node
-          return enr.nodeId !== src.nodeId &&
-            distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
-            ? enr.encode()
-            : undefined
-        }).filter((enr) => enr !== undefined)
-        if (encodedEnrs.length > 0) {
-          this.logger(`Found ${encodedEnrs.length} closer to content than us`)
-          // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-          while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > 1200) {
-            // Remove ENRs until total ENRs less than 1200 bytes
-            encodedEnrs.pop()
-          }
-          const payload = ContentMessageType.serialize({
-            selector: 2,
-            value: encodedEnrs as Buffer[],
-          })
-          this.client.sendPortalNetworkResponse(
-            src,
-            requestId,
-            Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
-          )
-        } else {
-          this.logger(`Found no ENRs closer to content than us`)
-          this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
+      // Discv5 calls for maximum of 16 nodes per NODES message
+      const ENRs = this.routingTable.nearest(lookupKey, 16)
+      const encodedEnrs = ENRs.map((enr) => {
+        // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
+        // contentId than this node
+        return enr.nodeId !== src.nodeId &&
+          distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
+          ? enr.encode()
+          : undefined
+      }).filter((enr) => enr !== undefined)
+      if (encodedEnrs.length > 0) {
+        this.logger(`Found ${encodedEnrs.length} closer to content than us`)
+        // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
+        while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > 1200) {
+          // Remove ENRs until total ENRs less than 1200 bytes
+          encodedEnrs.pop()
         }
+        const payload = ContentMessageType.serialize({
+          selector: 2,
+          value: encodedEnrs as Buffer[],
+        })
+        this.client.sendPortalNetworkResponse(
+          src,
+          requestId,
+          Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
+        )
       } else {
+        this.logger(`Found no ENRs closer to content than us`)
         this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
@@ -516,7 +489,6 @@ export abstract class BaseProtocol {
         value: value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
-      this.logger(Uint8Array.from(value))
       this.client.sendPortalNetworkResponse(
         src,
         requestId,
@@ -524,13 +496,9 @@ export abstract class BaseProtocol {
       )
     } else {
       this.logger.extend('FOUNDCONTENT')(
-        'Found value for requested content.  Larger than 1 packet.  uTP stream needed.' +
-          Buffer.from(decodedContentMessage.contentKey).toString('hex') +
-          value.slice(0, 10) +
-          `...`
+        'Found value for requested content.  Larger than 1 packet.  uTP stream needed.'
       )
       const _id = randUint16()
-      this.client.uTP.logger(`Generating Random Connection Id...`, _id)
       await this.client.uTP.handleNewRequest({
         contentKeys: [decodedContentMessage.contentKey],
         peerId: src.nodeId,
@@ -541,7 +509,6 @@ export abstract class BaseProtocol {
 
       const id = connectionIdType.serialize(_id)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
-      this.client.uTP.logger('Waiting for SYN Packet')
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendPortalNetworkResponse(
         src,
@@ -586,6 +553,8 @@ export abstract class BaseProtocol {
     }
     return
   }
+
+  abstract _handleFindContent: (decodedContentMessage: FindContentMessage) => Promise<Uint8Array>
 
   abstract sendFindContent?: (
     dstId: string,
