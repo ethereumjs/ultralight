@@ -11,15 +11,15 @@ import {
   PortalNetwork,
   PortalWireMessageType,
   ProtocolId,
+  TransportLayer,
+  HistoryProtocol,
+  BaseProtocol,
+  ContentRequest,
+  INewRequest,
 } from '../../src/index.js'
-import { TransportLayer } from '../../src/client/index.js'
-import { HistoryProtocol } from '../../src/subprotocols/history/history.js'
-import { BaseProtocol } from '../../src/subprotocols/protocol.js'
 import { Debugger } from 'debug'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { ContentRequest } from '../../src/wire/utp/PortalNetworkUtp/ContentRequest.js'
-import { INewRequest } from '../../src/wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 // Fake Protocol class for testing Protocol class
 class FakeProtocol extends BaseProtocol {
@@ -34,6 +34,7 @@ class FakeProtocol extends BaseProtocol {
     this.logger = client.logger.extend('fakeProtocol')
   }
   sendFindContent = td.func<any>()
+  findContentLocally = td.func<any>()
   init = td.func<any>()
 }
 

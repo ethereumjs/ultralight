@@ -25,7 +25,7 @@ export default function GetHeaderProofByHash() {
     })
     const lookup = new ContentLookup(history, lookupKey)
     const proof = await lookup.startLookup()
-    const valid = await history.verifyInclusionProof(
+    const valid = await history.accumulator.verifyInclusionProof(
       SszProof.deserialize(proof as Uint8Array),
       blockHash
     )

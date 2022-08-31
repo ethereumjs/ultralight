@@ -12,6 +12,7 @@ import {
   HistoryProtocol,
   EpochAccumulator,
   reassembleBlock,
+  AccumulatorManager,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
@@ -186,7 +187,10 @@ tape('History Protocol Integration Tests', (t) => {
         }
       )
       const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
-      protocol1.accumulator = new HeaderAccumulator({ storedAccumulator: accumulator })
+      protocol1.accumulator = new AccumulatorManager({
+        history: protocol1,
+        storedAccumulator: accumulator,
+      })
       await protocol1.addContentToHistory(
         1,
         HistoryNetworkContentTypes.HeaderAccumulator,

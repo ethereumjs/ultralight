@@ -8,21 +8,17 @@ import {
   HistoryNetworkContentKeyUnionType,
   HistoryNetworkContentTypes,
   ProtocolId,
-} from '../../../src/index.js'
-import {
   BUFFER_SIZE,
   dropPrefixes,
   encodeWithVariantPrefix,
   Packet,
   PacketType,
-} from '../../../src/wire/utp/index.js'
-import { ContentRequest } from '../../../src/wire/utp/PortalNetworkUtp/ContentRequest.js'
-import {
   createSocketKey,
   INewRequest,
   PortalNetworkUTP,
   RequestCode,
-} from '../../../src/wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
+  ContentRequest,
+} from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Protocol/read/ContentReader.js'
 import { Packets } from '../packets.js'
 

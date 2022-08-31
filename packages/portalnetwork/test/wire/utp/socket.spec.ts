@@ -2,11 +2,14 @@ import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
 import tape from 'tape'
-import { ConnectionState, Packet, PacketType, UtpSocket } from '../../../src/wire/utp/index.js'
 import {
+  ConnectionState,
+  Packet,
+  PacketType,
+  UtpSocket,
   PortalNetworkUTP,
   RequestCode,
-} from '../../../src/wire/utp/PortalNetworkUtp/PortalNetworkUTP.js'
+} from '../../../src/index.js'
 
 const sampleSize = 50000
 const peerId = await createSecp256k1PeerId()

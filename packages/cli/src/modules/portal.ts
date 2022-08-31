@@ -192,11 +192,11 @@ export class portal {
     return res
   }
   async headerAccumulatorRoot() {
-    this.logger(`Received request for current header accumulator root hashF`)
+    this.logger(`Received request for current header accumulator root hash`)
     const protocol = this._client.protocols.get(
       ProtocolId.HistoryNetwork
     ) as never as HistoryProtocol
-    return toHexString(HeaderAccumulatorType.hashTreeRoot(protocol.accumulator))
+    return toHexString(HeaderAccumulatorType.hashTreeRoot(protocol.accumulator.masterAccumulator()))
   }
   async nodeLookup(params: [ProtocolId, string]) {
     const [protocolId, nodeSought] = params

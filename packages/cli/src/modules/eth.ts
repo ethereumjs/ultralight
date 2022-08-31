@@ -106,7 +106,7 @@ export class eth {
       const protocol = this._client.protocols.get(
         ProtocolId.HistoryNetwork
       ) as never as HistoryProtocol
-      const block = await protocol.getBlockByHash(blockHash, includeTransactions)
+      const block = await protocol.ETH.getBlockByHash(blockHash, includeTransactions)
       return block ?? 'Block not found'
     } catch {
       return 'Block not found'
@@ -128,7 +128,7 @@ export class eth {
       const history = this._client.protocols.get(
         ProtocolId.HistoryNetwork
       ) as never as HistoryProtocol
-      const block = await history.getBlockByNumber(parseInt(blockNumber), includeTransactions)
+      const block = await history.ETH.getBlockByNumber(parseInt(blockNumber), includeTransactions)
       this.logger(block)
       return block ?? 'Block not found'
     } catch {
@@ -238,8 +238,8 @@ export class eth {
       } else if (toBlock === 'latest' || toBlock === undefined) {
         to = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
       } else {
-        const blockNum = BigInt(toBlock)
-        if (blockNum > (await this.blockNumber())) {
+        const blockNum = toBlock
+        if (parseInt(blockNum) > (await this.blockNumber())) {
           throw {
             code: INVALID_PARAMS,
             message: 'specified `toBlock` greater than current height',

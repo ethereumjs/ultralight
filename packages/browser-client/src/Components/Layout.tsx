@@ -16,6 +16,7 @@ import GetBlockByHash from './getBlockByHash'
 import GetBlockByNumber from './GetBlockByNumber'
 import RoutingTableView from './RoutingTableView'
 import DisplayBlock from './DisplayBlock'
+import GetHeaderProofByHash from './GetHeaderProofByHash'
 interface LayoutProps {
   table: [number, string[]][]
   refresh: () => void
@@ -44,6 +45,7 @@ export default function Layout(props: LayoutProps) {
         <Box width={'95%'}>
           <GetBlockByHash setIsLoading={setIsLoading} />
           <GetBlockByNumber setIsLoading={setIsLoading} />
+          <GetHeaderProofByHash />
           <Tabs index={tabIndex} onChange={handleTabsChange}>
             <TabList>
               <IconButton
