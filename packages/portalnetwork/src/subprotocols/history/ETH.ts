@@ -64,14 +64,15 @@ export class ETH {
     blockNumber: number,
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
-    if (blockNumber > this.protocol.accumulator.currentHeight) {
+    if (blockNumber > this.protocol.accumulator.currentHeight()) {
       this.protocol.logger(`Block number ${blockNumber} is higher than current known chain height`)
       return
     }
     let blockHash
     const blockIndex = blockNumber % EPOCH_SIZE
     if (blockNumber > 8192 * this.protocol.accumulator.historicalEpochs.length) {
-      blockHash = toHexString(this.protocol.accumulator.currentEpoch[blockIndex].blockHash)
+      const currentEpoch = this.protocol.accumulator.currentEpoch()
+      blockHash = toHexString(currentEpoch[blockIndex].blockHash)
       this.protocol.logger(`Blockhash found for BlockNumber ${blockNumber}: ${blockHash}`)
       try {
         const block = await this.getBlockByHash(blockHash, includeTransactions)
@@ -81,7 +82,7 @@ export class ETH {
       }
     } else {
       const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
-      const epochRootHash = this.protocol.accumulator.historicalEpochs[historicalEpochIndex]
+      const epochRootHash = this.protocol.accumulator.historicalEpochs()[historicalEpochIndex]
       if (!epochRootHash) {
         this.protocol.logger('Error with epoch root lookup')
         return

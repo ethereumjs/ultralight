@@ -234,7 +234,7 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
     const request = this.openContentRequest[requestKey]
     const packet = Packet.bufferToPacket(packetBuffer)
-    let returnPacket
+
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
         this.logger(
@@ -279,7 +279,7 @@ export class PortalNetworkUTP extends BasicUtp {
   async _handleSynPacket(request: ContentRequest, packet: Packet): Promise<Packet | ContentReader> {
     const requestCode = request.requestCode
     let writer
-    let reader
+
     let r: Packet | ContentReader
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:

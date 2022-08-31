@@ -219,7 +219,7 @@ tape('Header Proof Tests', async (t) => {
   const _accumulator = require('../../integration/testAccumulator.json')
   const _block8199 = require('../../integration/testBlock8199.json')
   const _epoch1 = require('../../integration/testEpoch.json')
-  const header8199 = BlockHeader.fromRLPSerializedHeader(
+  const _header8199 = BlockHeader.fromRLPSerializedHeader(
     Buffer.from(fromHexString(_block8199.rawHeader)),
     {
       hardforkByBlockNumber: true,
@@ -246,7 +246,7 @@ tape('Header Proof Tests', async (t) => {
     const proof = await protocol.generateInclusionProof(_block8199.hash)
     st.equal(
       toHexString(proof.epochRoot),
-      toHexString(EpochAccumulator.hashTreeRoot(protocol.accumulator.currentEpoch.slice(0, 8))),
+      toHexString(EpochAccumulator.hashTreeRoot(protocol.accumulator.currentEpoch().slice(0, 8))),
       'Hisotry Protocol generated inclusion proof'
     )
     st.equal(proof.gindex, blockNumberToGindex(BigInt(8199)), 'Proof created for correct Header')
@@ -261,7 +261,7 @@ tape('Header Proof Tests', async (t) => {
     'HistoryProtocol can create and verify proofs for a HeaderRecord from a HistoricalEpoch',
     async (st) => {
       const _block1000 = require('../../integration/testBlock1000.json')
-      const header1000 = BlockHeader.fromRLPSerializedHeader(
+      const _header1000 = BlockHeader.fromRLPSerializedHeader(
         Buffer.from(fromHexString(_block1000.rawHeader)),
         {
           hardforkByBlockNumber: true,

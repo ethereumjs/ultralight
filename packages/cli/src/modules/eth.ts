@@ -79,7 +79,7 @@ export class eth {
    */
   async blockNumber(_params = []) {
     const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    return history.accumulator.currentHeight
+    return history.accumulator.currentHeight()
   }
 
   /**
@@ -222,8 +222,9 @@ export class eth {
         const blockNum = BigInt(fromBlock)
         if (
           blockNum >
-          (this._client.protocols.get(ProtocolId.HeaderGossipNetwork) as HistoryProtocol)
-            .accumulator.currentHeight
+          (
+            this._client.protocols.get(ProtocolId.HeaderGossipNetwork) as HistoryProtocol
+          ).accumulator.currentHeight()
         ) {
           throw {
             code: INVALID_PARAMS,
@@ -237,8 +238,8 @@ export class eth {
       } else if (toBlock === 'latest' || toBlock === undefined) {
         to = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
       } else {
-        const blockNum = BigInt(toBlock)
-        if (blockNum > (await this.blockNumber())) {
+        const blockNum = toBlock
+        if (parseInt(blockNum) > (await this.blockNumber())) {
           throw {
             code: INVALID_PARAMS,
             message: 'specified `toBlock` greater than current height',

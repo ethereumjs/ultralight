@@ -63,18 +63,20 @@ export class ContentManager {
           }
 
           if (
-            Number(header.number) === this.history.accumulator.currentHeight + 1 &&
+            Number(header.number) === this.history.accumulator.currentHeight() + 1 &&
             header.parentHash.equals(
-              this.history.accumulator.currentEpoch[
+              this.history.accumulator.currentEpoch()[
                 this.history.accumulator.currentEpoch.length - 1
               ].blockHash
             )
           ) {
             if (this.history.accumulator.currentEpoch.length === EPOCH_SIZE) {
-              const currentEpoch = EpochAccumulator.serialize(this.history.accumulator.currentEpoch)
+              const currentEpoch = EpochAccumulator.serialize(
+                this.history.accumulator.currentEpoch()
+              )
 
               const currentEpochHash = toHexString(
-                EpochAccumulator.hashTreeRoot(this.history.accumulator.currentEpoch)
+                EpochAccumulator.hashTreeRoot(this.history.accumulator.currentEpoch())
               )
               this.addContentToHistory(
                 chainId,
@@ -90,7 +92,9 @@ export class ContentManager {
             )
             this.history.client.db.put(
               getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
-              toHexString(HeaderAccumulatorType.serialize(this.history.accumulator))
+              toHexString(
+                HeaderAccumulatorType.serialize(this.history.accumulator.masterAccumulator())
+              )
             )
           }
           this.history.client.db.put(contentId, toHexString(value))

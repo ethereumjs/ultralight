@@ -85,7 +85,7 @@ tape('History Protocol Integration Tests', (t) => {
             'Accumulator received with correct contentKey'
           )
           st.equal(
-            history.accumulator.currentHeight,
+            history.accumulator.currentHeight(),
             rebuiltAccumulator.currentHeight(),
             `Accumulator current Epoch received matches test Accumulator's current Epoch`
           )
@@ -147,7 +147,7 @@ tape('History Protocol Integration Tests', (t) => {
           'Accumulator received with correct contentKey'
         )
         st.equal(
-          history.accumulator.currentHeight,
+          history.accumulator.currentHeight(),
           rebuiltAccumulator.currentHeight(),
           `Accumulator current Epoch received matches test Accumulator's current Epoch`
         )

@@ -93,7 +93,7 @@ interface AccumulatorManagerOpts extends AccumulatorOpts {
 
 export class AccumulatorManager {
   private _history: HistoryProtocol
-  private headerAccumulator: HeaderAccumulator
+  public headerAccumulator: HeaderAccumulator
   public _verifiers: Record<number, Uint8Array>
 
   constructor(opts: AccumulatorManagerOpts) {
@@ -103,26 +103,25 @@ export class AccumulatorManager {
     this.init()
   }
 
-  public get header() {
-    return this.headerAccumulator
-  }
-
   public updateAccumulator(newHeader: BlockHeader) {
     this.headerAccumulator.updateAccumulator(newHeader)
   }
 
-  public get currentHeight() {
+  public currentHeight() {
     return this.headerAccumulator.currentHeight()
   }
 
-  public get currentEpoch() {
+  public currentEpoch() {
     return this.headerAccumulator.currentEpoch
   }
 
-  public get historicalEpochs() {
+  public historicalEpochs() {
     return this.headerAccumulator.historicalEpochs
   }
 
+  public masterAccumulator() {
+    return this.headerAccumulator
+  }
   public replaceAccumulator = (accumulator: HeaderAccumulator) => {
     this.headerAccumulator = accumulator
   }
