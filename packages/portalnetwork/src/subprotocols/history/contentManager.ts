@@ -1,6 +1,6 @@
 import { toHexString, fromHexString } from '@chainsafe/ssz'
 import { BlockHeader, Block } from '@ethereumjs/block'
-import { Debug, Debugger } from 'debug'
+import { Debugger } from 'debug'
 import {
   EpochAccumulator,
   EPOCH_SIZE,

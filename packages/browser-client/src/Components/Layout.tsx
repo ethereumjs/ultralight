@@ -17,7 +17,6 @@ import GetBlockByNumber from './GetBlockByNumber'
 import RoutingTableView from './RoutingTableView'
 import DisplayBlock from './DisplayBlock'
 import GetHeaderProofByHash from './GetHeaderProofByHash'
-import ValidateAccumulator from './ValidateAccumulator'
 interface LayoutProps {
   table: [number, string[]][]
   refresh: () => void

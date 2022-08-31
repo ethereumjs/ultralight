@@ -27,6 +27,12 @@ export class GossipManager {
     return this.pulse
   }
 
+  /**
+   * Adds content keys to a given peer's gossip queue
+   * @param peer nodeId of a peer to gossip content to
+   * @param key content key to be OFFERed
+   * @returns the current number of items in a peer's gossip queue
+   */
   private enqueue(peer: Peer, key: Uint8Array): number {
     if (!this.history.routingTable.contentKeyKnownToPeer(peer, toHexString(key))) {
       this.gossipQueues[peer]
@@ -36,17 +42,13 @@ export class GossipManager {
     return this.gossipQueues[peer].length
   }
 
-  private clearQueue(peer: Peer) {
-    this.gossipQueues[peer] = []
-  }
-
-  private queue(peer: Peer) {
-    return this.gossipQueues[peer]
-  }
-
+  /**
+   * Offers content from a peer's queue to that peer and clears the queue
+   * @param peer nodeId of peer being offered content
+   */
   private gossip(peer: Peer) {
-    const queue = this.queue(peer)
-    this.clearQueue(peer)
+    const queue = this.gossipQueues[peer]
+    this.gossipQueues[peer] = []
     this.history.sendOffer(peer, queue)
   }
 
