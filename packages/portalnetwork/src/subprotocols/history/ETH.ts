@@ -70,7 +70,7 @@ export class ETH {
     }
     let blockHash
     const blockIndex = blockNumber % EPOCH_SIZE
-    if (blockNumber > 8192 * this.protocol.accumulator.historicalEpochs.length) {
+    if (blockNumber > 8192 * this.protocol.accumulator.historicalEpochs().length) {
       const currentEpoch = this.protocol.accumulator.currentEpoch()
       blockHash = toHexString(currentEpoch[blockIndex].blockHash)
       this.protocol.logger(`Blockhash found for BlockNumber ${blockNumber}: ${blockHash}`)
