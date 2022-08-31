@@ -26,7 +26,9 @@ export class Rendezvous extends BaseProtocol {
     return Promise.resolve()
   }
 
-  public _handleFindContent = (_decodedContentMessage: FindContentMessage): Promise<Uint8Array> => {
+  public findContentLocally = async (
+    _decodedContentMessage: FindContentMessage
+  ): Promise<Uint8Array> => {
     return Promise.resolve(Uint8Array.from([]))
   }
 

@@ -34,7 +34,7 @@ class FakeProtocol extends BaseProtocol {
     this.logger = client.logger.extend('fakeProtocol')
   }
   sendFindContent = td.func<any>()
-  _handleFindContent = td.func<any>()
+  findContentLocally = td.func<any>()
   init = td.func<any>()
 }
 
