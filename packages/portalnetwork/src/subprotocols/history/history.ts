@@ -47,7 +47,12 @@ export class HistoryProtocol extends BaseProtocol {
     this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
   }
 
-  public _handleFindContent = async (decodedContentMessage: FindContentMessage) => {
+  /**
+   *
+   * @param decodedContentMessage content key to be found
+   * @returns content if available locally
+   */
+  public findContentLocally = async (decodedContentMessage: FindContentMessage) => {
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
     const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
