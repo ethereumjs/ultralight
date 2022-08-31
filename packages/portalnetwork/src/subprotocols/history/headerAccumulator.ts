@@ -107,7 +107,7 @@ export class AccumulatorManager {
     this.headerAccumulator.updateAccumulator(newHeader)
   }
 
-  public currentHeight() {
+  public currentHeight = () => {
     return this.headerAccumulator.currentHeight()
   }
 
