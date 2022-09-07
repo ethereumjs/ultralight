@@ -1,15 +1,12 @@
 import { Button, FormControl, HStack, Input, useToast } from '@chakra-ui/react'
-import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
+import React, { useContext, useState } from 'react'
+import { AppContext, StateChange } from '../globalReducer'
 
-interface IGetBlockByNumberProps {
-  setIsLoading: Dispatch<SetStateAction<boolean>>
-}
-
-export default function GetBlockByNumber(props: IGetBlockByNumberProps) {
-  const history = useContext(HistoryProtocolContext)
-  const [searchNumber, setSearchNumber] = useState(history.accumulator.currentHeight().toString())
-  const { setBlock } = useContext(BlockContext)
+export default function GetBlockByNumber() {
+  const { state, dispatch } = useContext(AppContext)
+  const [searchNumber, setSearchNumber] = useState(
+    state!.historyProtocol!.accumulator.masterAccumulator().currentHeight().toString()
+  )
   const toast = useToast()
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {

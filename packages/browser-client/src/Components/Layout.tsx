@@ -36,6 +36,7 @@ export default function Layout() {
       {state && dispatch && (
         <Box width={'95%'}>
           <GetBlockByHash />
+          <GetBlockByNumber />
             <TabList>
               <IconButton
                 onClick={props.refresh}
