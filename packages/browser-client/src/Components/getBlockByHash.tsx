@@ -7,17 +7,17 @@ export default function GetBlockByHash() {
   const [blockHash, setBlockhash] = useState('')
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {
-      const block = await history.getBlockByHash(blockHash, includeTransactions)
-      setBlock(block!)
+      const block = await state!.historyProtocol!.ETH.getBlockByHash(blockHash, includeTransactions)
+      dispatch!({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'
     }
   }
 
   async function handleClick() {
-    props.setIsLoading(true)
+    dispatch!({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByHash(blockHash, true)
-    props.setIsLoading(false)
+    dispatch!({ type: StateChange.TOGGLELOADING })
   }
 
   return (
@@ -30,7 +30,7 @@ export default function GetBlockByHash() {
           bg="whiteAlpha.800"
           placeholder={`BlockHash`}
           type={'string'}
-          onChange={(e) => setBlockHash(e.target.value)}
+          onChange={(e) => setBlockhash(e.target.value)}
         />
       </FormControl>
     </HStack>
