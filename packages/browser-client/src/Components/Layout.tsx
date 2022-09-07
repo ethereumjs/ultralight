@@ -35,10 +35,7 @@ export default function Layout() {
     <VStack width={'100%'} spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
       {state && dispatch && (
         <Box width={'95%'}>
-          <GetBlockByHash setIsLoading={setIsLoading} />
-          <GetBlockByNumber setIsLoading={setIsLoading} />
-          <GetHeaderProofByHash />
-          <Tabs index={tabIndex} onChange={handleTabsChange}>
+          <GetBlockByHash />
             <TabList>
               <IconButton
                 onClick={props.refresh}
