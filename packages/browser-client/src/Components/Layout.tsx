@@ -49,6 +49,7 @@ export default function Layout() {
             </TabList>
             <TabPanels>
               <TabPanel>{<RoutingTableView />}</TabPanel>
+              <TabPanel>{state!.block && state.block.header && <DisplayBlock />}</TabPanel>
             </TabPanels>
           </Tabs>
         </Box>
