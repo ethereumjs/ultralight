@@ -24,76 +24,119 @@ import {
   reassembleBlock,
   shortId,
 } from 'portalnetwork'
-import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext, PeersContext } from '../ContextHooks'
+import React, { useContext, useEffect, useReducer } from 'react'
+import { AppContext, StateChange } from '../globalReducer'
 
-export interface PeerButtonsProps {
-  peerIdx: number
-  setPeerIdx: Dispatch<SetStateAction<number>>
-  sortedDistList: [number, string[]][]
-  peer: ENR
-  // peers: ENR[]
+interface PeerButtonsState {
+  epoch: number
+  offer: Uint8Array[]
+  ping: [string, string]
+  distance: string
+  blockHash: string
 }
 
-export default function PeerButtons(props: PeerButtonsProps) {
-  const { setBlock } = useContext(BlockContext)
-  const peers = useContext(PeersContext)
-  const [epoch, setEpoch] = useState(0)
-  const { peerIdx, sortedDistList, peer } = props
-  const [offer, setOffer] = useState<Uint8Array[]>([])
-  const [pinging, setPinging] = useState(false)
-  const [ponged, setPonged] = useState<boolean | undefined>()
-  const [distance, setDistance] = useState('')
-  const [blockHash, setBlockHash] = useState('')
-  const historyProtocol = useContext(HistoryProtocolContext)
-  const addToOffer = (type: string) => {
-    const contentKeys: Uint8Array[] = []
+const peerButtonsInitialState = {
+  epoch: 0,
+  offer: [],
+  ping: ['blue.100', 'PING'] as [string, string],
+  distance: '',
+  blockHash: '',
+}
+
+enum PeerButtonsStateChange {
+  SETEPOCH = 'SETEPOCH',
+  ADDTOOFFER = 'ADDTOOFFER',
+  PING = 'PING',
+  SETDISTANCE = 'SETDISTANCE',
+  SETBLOCKHASH = 'SETBLOCKHASH',
+  SETPEERIDX = 'SETPEERIDX',
+}
+
+interface AppStateAction {
+  type: PeerButtonsStateChange
+  payload?: any
+}
+
+const reducer = (state: PeerButtonsState, action: AppStateAction) => {
+  const { type, payload } = action
+  switch (type) {
+    case PeerButtonsStateChange.SETEPOCH:
+      return state
+    case PeerButtonsStateChange.ADDTOOFFER:
+      return {
+        ...state,
+        offer: [...state.offer, payload],
+      }
+    case PeerButtonsStateChange.PING:
+      return { ...state, ping: payload }
+    case PeerButtonsStateChange.SETDISTANCE:
+      return state
+    case PeerButtonsStateChange.SETBLOCKHASH:
+      return { ...state, blockHash: payload }
+    default:
+      throw new Error()
+  }
+}
+
+export default function PeerButtons() {
+  const { state, dispatch } = useContext(AppContext)
+  const [_state, _dispatch] = useReducer(reducer, peerButtonsInitialState)
+
+  useEffect(() => {
+    if (!state!.selectedPeer) {
+      dispatch!({ type: StateChange.SETSELECTEDPEER, payload: { idx: 0 } })
+    }
+  }, [])
+
+  const peerIdx = state!.sortedPeers
+    .map((peer) => {
+      return peer[1][3]
+    })
+    .indexOf(state!.selectedPeer)
+
+  const addToOffer = (type: string): Uint8Array[] => {
     switch (type) {
       case 'header':
-        contentKeys.push(
+        return [
           HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockHeader,
             value: {
               chainId: 1,
-              blockHash: fromHexString(blockHash),
+              blockHash: fromHexString(_state.blockHash),
             },
-          })
-        )
-        break
+          }),
+        ]
       case 'body':
-        contentKeys.push(
+        return [
           HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockBody,
             value: {
               chainId: 1,
-              blockHash: fromHexString(blockHash),
+              blockHash: fromHexString(_state.blockHash),
             },
-          })
-        )
-        break
+          }),
+        ]
+
       case 'block':
-        contentKeys.push(
+        return [
           HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockHeader,
             value: {
               chainId: 1,
-              blockHash: fromHexString(blockHash),
+              blockHash: fromHexString(_state.blockHash),
             },
-          })
-        )
-        contentKeys.push(
+          }),
           HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockBody,
             value: {
               chainId: 1,
-              blockHash: fromHexString(blockHash),
+              blockHash: fromHexString(_state.blockHash),
             },
-          })
-        )
-
-        break
+          }),
+        ]
+      default:
+        throw new Error()
     }
-    setOffer([...offer, ...contentKeys])
   }
   const handlePing = async () => {
     setPinging(true)

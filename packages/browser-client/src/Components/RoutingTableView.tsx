@@ -22,12 +22,7 @@ export default function RoutingTableView() {
   return (
     <Center>
       <SimpleGrid width={'100%'} columns={[1, 1, 1, 2]}>
-        <PeerButtons
-          peer={peer}
-          setPeerIdx={setPeerIdx}
-          peerIdx={peerIdx}
-          sortedDistList={props.table}
-        />
+        {state!.peers.length > 0 && <PeerButtons />}
         <GridItem>
           <Center>
             <Table size="xs">
