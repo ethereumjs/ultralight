@@ -57,22 +57,22 @@ export const App = () => {
       {state && dispatch && state.portal && state.historyProtocol && (
         <AppContext.Provider value={{ state, dispatch }}>
           <Header />
-              <HStack border={'1px'} width={'100%'} paddingY={1}>
-                <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={connectToPeer}>
-                  Connect to new peer
-                </Button>
-                <Input
-                  width={'75%'}
-                  size={'xs'}
-                  type="text"
+          <HStack border={'1px'} width={'100%'} paddingY={1}>
+            <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={connectToPeer}>
+              Connect to new peer
+            </Button>
+            <Input
+              width={'75%'}
+              size={'xs'}
+              type="text"
               placeholder={'enr: IS...'}
               value={state.searchEnr}
-                  onChange={(e) => {
+              onChange={(e) => {
                 dispatch({ type: StateChange.SETSEARCHENR, payload: e.target.value })
-                  }}
-                />
-              </HStack>
-              <Divider />
+              }}
+            />
+          </HStack>
+          <Divider />
 
           <Box>{<Layout />}</Box>
           <Box width={'100%'} pos={'fixed'} bottom={'0'}>
