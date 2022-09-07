@@ -9,22 +9,25 @@ import {
   Heading,
   Box,
   HStack,
+  useConst,
 } from '@chakra-ui/react'
 // eslint-disable-next-line implicit-dependencies/no-implicit
-import { TypedTransaction } from '@ethereumjs/tx'
-import { useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import DisplayTx from './DisplayTx'
 import React from 'react'
+import { AppContext, StateChange } from '../globalReducer'
 
-interface SelectTxProps {
-  txList: string[]
-  tx: TypedTransaction[]
-}
-
-export default function SelectTx(props: SelectTxProps) {
+export default function SelectTx() {
+  const { state, dispatch } = useContext(AppContext)
+  useEffect(() => {
+    dispatch!({ type: StateChange.GETRECEIPTS, payload: { state: state } })
+  }, [])
   const [txIdx, setTxIdx] = useState(0)
-  const length = props.txList.length
+  const length = state!.block!.transactions.length
+  const txString: string[] = state!.block!.transactions.map(
+    (tx) => '0x' + tx.hash().toString('hex')
+  )
 
   return (
     <VStack>
@@ -38,7 +41,7 @@ export default function SelectTx(props: SelectTxProps) {
           </MenuButton>
           <MenuList>
             <MenuOptionGroup onChange={(v) => setTxIdx(parseInt(v as string))}>
-              {props.txList.map((t, idx) => {
+              {txString.map((t, idx) => {
                 return (
                   <MenuItemOption value={idx.toString()} key={idx} wordBreak={'break-all'}>
                     {t}
@@ -48,7 +51,7 @@ export default function SelectTx(props: SelectTxProps) {
             </MenuOptionGroup>
           </MenuList>
         </Menu>
-        <Button onClick={() => setTxIdx(txIdx + 1)} disabled={txIdx === props.txList.length - 1}>
+        <Button onClick={() => setTxIdx(txIdx + 1)} disabled={txIdx === txString.length - 1}>
           <FaChevronRight />
         </Button>
       </HStack>
@@ -60,7 +63,7 @@ export default function SelectTx(props: SelectTxProps) {
           size={'xs'}
           wordBreak={'break-all'}
         >
-          {props.txList[txIdx]}
+          {txString[txIdx]}
         </Heading>
       </Box>
       <DisplayTx txIdx={txIdx} />
