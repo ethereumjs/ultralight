@@ -37,9 +37,10 @@ export default function Layout() {
         <Box width={'95%'}>
           <GetBlockByHash />
           <GetBlockByNumber />
+          <Tabs index={state.tabIndex} onChange={handleTabsChange}>
             <TabList>
               <IconButton
-                onClick={props.refresh}
+                onClick={() => dispatch!({ type: StateChange.REFRESHPEERS })}
                 aria-label="refresh routing table"
                 icon={<RepeatIcon />}
               />
