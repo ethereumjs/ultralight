@@ -1,16 +1,17 @@
 import { Button, useToast } from '@chakra-ui/react'
-import { HistoryProtocol, ProtocolId } from 'portalnetwork'
 import React, { useContext } from 'react'
-import { PortalContext } from '../ContextHooks'
+import { AppContext } from '../globalReducer'
 
 export default function ValidateAccumulator() {
-  const portal = useContext(PortalContext)
+  const { state } = useContext(AppContext)
   const toast = useToast()
 
   const handleClick = async () => {
-    const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    const history = state!.historyProtocol!
     if (history.accumulator) {
-      const valid = await history.accumulator.verifySnapshot(history.accumulator.header)
+      const valid = await history.accumulator.verifySnapshot(
+        history.accumulator.masterAccumulator()
+      )
       if (valid === true) {
         toast({
           title: `Header Accumulator validated at height ${history.accumulator.currentHeight}!`,
