@@ -63,7 +63,7 @@ export default function SelectTx(props: SelectTxProps) {
           {props.txList[txIdx]}
         </Heading>
       </Box>
-      <DisplayTx tx={props.tx[txIdx]} />
+      <DisplayTx txIdx={txIdx} />
     </VStack>
   )
 }

@@ -1,8 +1,7 @@
-import { Box, Table, Tbody, Td, Tr } from '@chakra-ui/react'
-import { TypedTransaction } from '@ethereumjs/tx'
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
+import { AppContext, StateChange } from '../globalReducer'
 interface DisplayTxProps {
-  tx: TypedTransaction
+  txIdx: number
 }
 
 export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
@@ -18,7 +17,9 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const trans = Object.entries(props.tx.toJSON())
+  const { state, dispatch } = useContext(AppContext)
+  const rec = state!.receipts[props.txIdx]
+  const trans = Object.entries(state!.block!.transactions[props.txIdx].toJSON())
   const data = {
     baseFee: `0x${props.tx.getBaseFee()}`,
     dataFee: `0x${props.tx.getDataFee()}`,
