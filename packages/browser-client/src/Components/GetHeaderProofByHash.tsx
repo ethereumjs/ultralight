@@ -7,12 +7,11 @@ import {
   toHexString,
 } from 'portalnetwork'
 import React, { useContext } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
+import { AppContext } from '../globalReducer'
 
 export default function GetHeaderProofByHash() {
-  const history = useContext(HistoryProtocolContext)
-  const { block } = useContext(BlockContext)
-  const blockHash = toHexString(block.header.hash())
+  const { state, dispatch } = useContext(AppContext)
+  const blockHash = toHexString(state!.block!.header.hash())
   const toast = useToast()
 
   async function portal_getHeaderProof(blockHash: string) {
@@ -23,9 +22,9 @@ export default function GetHeaderProofByHash() {
         blockHash: fromHexString(blockHash),
       },
     })
-    const lookup = new ContentLookup(history, lookupKey)
+    const lookup = new ContentLookup(state!.historyProtocol!, lookupKey)
     const proof = await lookup.startLookup()
-    const valid = await history.accumulator.verifyInclusionProof(
+    const valid = await state!.historyProtocol!.accumulator.verifyInclusionProof(
       SszProof.deserialize(proof as Uint8Array),
       blockHash
     )
@@ -53,7 +52,7 @@ export default function GetHeaderProofByHash() {
 
   return (
     <HStack marginY={1}>
-      <Button width={'40%'} onClick={handleClick}>
+      <Button width={'100%'} onClick={handleClick}>
         Validate Header Proof
       </Button>
     </HStack>
