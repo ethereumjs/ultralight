@@ -160,21 +160,40 @@ const DisplayBlock = () => {
           <TabList>
             <Tab>Header</Tab>
             <Tab>Transactions</Tab>
-            <Tab>Uncles</Tab>
+            <Tab>Receipts</Tab>
             <Tab>JSON</Tab>
           </TabList>
         </Center>
         <TabPanels>
           <TabPanel>
-            <Grid templateColumns={'repeat(10, 1fr)'}>
-              {header &&
-                header.map((key, idx) => {
-                  return <GridRow key={idx} k={key} idx={idx} />
-                })}
-            </Grid>
+            <VStack>
+              {validated || <GetHeaderProofByHash />}
+              <Grid templateColumns={'repeat(10, 1fr)'}>
+                {header &&
+                  header.map((key, idx) => {
+                    return <GridRow key={idx} k={key} idx={idx} />
+                  })}
+              </Grid>
+            </VStack>
           </TabPanel>
-          <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
-          <TabPanel>Uncles</TabPanel>
+          <TabPanel>{state!.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
+          <TabPanel>
+            <Box>
+              <Accordion allowToggle>
+                {state!.block!.transactions.length > 0 &&
+                  receipts.length > 0 &&
+                  receipts.map((rec, idx) => {
+                    return (
+                      <TxReceipt
+                        rec={rec}
+                        idx={idx}
+                        hash={toHexString(state!.block!.transactions[idx].hash())}
+                      />
+                    )
+                  })}
+              </Accordion>
+            </Box>
+          </TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!state!.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>
@@ -182,7 +201,6 @@ const DisplayBlock = () => {
           </TabPanel>
         </TabPanels>
       </Tabs>
-      <GetHeaderProofByHash />
     </Box>
   )
 }
