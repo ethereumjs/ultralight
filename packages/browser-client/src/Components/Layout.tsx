@@ -33,7 +33,7 @@ export default function Layout() {
 
   return (
     <VStack width={'100%'} spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
-      {props.peers && (
+      {state && dispatch && (
         <Box width={'95%'}>
           <GetBlockByHash setIsLoading={setIsLoading} />
           <GetBlockByNumber setIsLoading={setIsLoading} />
