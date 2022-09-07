@@ -54,11 +54,9 @@ export const App = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      {portal && (
-        <PortalContext.Provider value={portal}>
-          <Header enr={portal.discv5.enr.encodeTxt(portal.discv5.keypair.privateKey)} />
-          {historyProtocol !== undefined && (
-            <>
+      {state && dispatch && state.portal && state.historyProtocol && (
+        <AppContext.Provider value={{ state, dispatch }}>
+          <Header />
               <HStack border={'1px'} width={'100%'} paddingY={1}>
                 <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={connectToPeer}>
                   Connect to new peer
@@ -67,42 +65,22 @@ export const App = () => {
                   width={'75%'}
                   size={'xs'}
                   type="text"
-                  placeholder={'enr:IS...'}
-                  value={peerEnr}
+              placeholder={'enr: IS...'}
+              value={state.searchEnr}
                   onChange={(e) => {
-                    setPeerEnr(e.target.value)
+                dispatch({ type: StateChange.SETSEARCHENR, payload: e.target.value })
                   }}
                 />
               </HStack>
               <Divider />
 
-              <Box>
-                <HistoryProtocolContext.Provider value={historyProtocol}>
-                  <PeersContext.Provider value={peers}>
-                    <BlockContext.Provider value={blockValue}>
-                      <Layout
-                        peers={peers.length > 0}
-                        refresh={updateAddressBook}
-                        table={sortedDistList}
-                      />
-                    </BlockContext.Provider>
-                  </PeersContext.Provider>
-                </HistoryProtocolContext.Provider>
-              </Box>
-            </>
-          )}
+          <Box>{<Layout />}</Box>
           <Box width={'100%'} pos={'fixed'} bottom={'0'}>
             <Center>
               <Footer />
             </Center>
           </Box>
-          <Modal isOpen={modalStatus} onClose={() => setModal(false)}>
-            <ModalOverlay />
-            <ModalContent>
-              <InfoMenu />
-            </ModalContent>
-          </Modal>
-        </PortalContext.Provider>
+        </AppContext.Provider>
       )}
     </ChakraProvider>
   )
