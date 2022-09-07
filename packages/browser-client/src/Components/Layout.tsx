@@ -9,33 +9,25 @@ import {
   Box,
   IconButton,
 } from '@chakra-ui/react'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { RepeatIcon } from '@chakra-ui/icons'
-import { BlockContext } from '../ContextHooks'
 import GetBlockByHash from './getBlockByHash'
 import GetBlockByNumber from './GetBlockByNumber'
 import RoutingTableView from './RoutingTableView'
 import DisplayBlock from './DisplayBlock'
-import GetHeaderProofByHash from './GetHeaderProofByHash'
-interface LayoutProps {
-  table: [number, string[]][]
-  refresh: () => void
-  peers: boolean
-}
+import { AppContext, StateChange } from '../globalReducer'
 
-export default function Layout(props: LayoutProps) {
-  const { block } = useContext(BlockContext)
-  const [tabIndex, setTabIndex] = useState(0)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+export default function Layout() {
+  const { state, dispatch } = useContext(AppContext)
   function handleTabsChange(index: number) {
-    setTabIndex(index)
+    dispatch!({ type: StateChange.SETTAB, payload: index })
   }
   useEffect(() => {
     setTimeout(() => {
-      props.refresh()
+      dispatch!({ type: StateChange.REFRESHPEERS })
     }, 1000)
     setInterval(() => {
-      props.refresh()
+      dispatch!({ type: StateChange.REFRESHPEERS })
     }, 5000)
   }, [])
 
