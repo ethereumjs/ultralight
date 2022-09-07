@@ -48,10 +48,7 @@ export default function Layout() {
               <Tab>Block Explorer</Tab>
             </TabList>
             <TabPanels>
-              <TabPanel>{<RoutingTableView table={props.table} />}</TabPanel>
-              <TabPanel>
-                {block.header && <DisplayBlock setIsLoading={setIsLoading} isLoading={isLoading} />}
-              </TabPanel>
+              <TabPanel>{<RoutingTableView />}</TabPanel>
             </TabPanels>
           </Tabs>
         </Box>

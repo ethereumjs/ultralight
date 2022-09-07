@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext } from 'react'
 import { CopyIcon } from '@chakra-ui/icons'
 import {
   Table,
@@ -13,18 +13,11 @@ import {
   GridItem,
   SimpleGrid,
 } from '@chakra-ui/react'
-import { PeersContext } from '../ContextHooks'
 import PeerButtons from './PeerButtons'
+import { AppContext, StateChange } from '../globalReducer'
 
-interface RoutingTableProps {
-  table: [number, string[]][]
-}
-
-export default function RoutingTableView(props: RoutingTableProps) {
-  const peers = useContext(PeersContext)
-  const [peerIdx, setPeerIdx] = useState(0)
-  const [hover, setHover] = useState<number>()
-  const [peer, _setPeer] = useState(peers[peerIdx])
+export default function RoutingTableView() {
+  const { state, dispatch } = useContext(AppContext)
 
   return (
     <Center>
