@@ -11,15 +11,21 @@ export default function GetBlockByNumber() {
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
-      const block = await history.getBlockByNumber(parseInt(blockNumber), includeTransactions)
-      setBlock(block!)
+      const block = await state!.historyProtocol!.ETH.getBlockByNumber(
+        parseInt(blockNumber),
+        includeTransactions
+      )
+      dispatch!({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'
     }
   }
 
   async function handleClick() {
-    if (parseInt(searchNumber) > history.accumulator.currentHeight()) {
+    if (
+      parseInt(searchNumber) >
+      state!.historyProtocol!.accumulator!.masterAccumulator().currentHeight()
+    ) {
       toast({
         title: 'Invalid Block Number',
         status: 'error',
@@ -30,15 +36,15 @@ export default function GetBlockByNumber() {
       setSearchNumber('')
       return
     }
-    props.setIsLoading(true)
+    dispatch!({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByNumber(searchNumber, true)
-    props.setIsLoading(false)
+    dispatch!({ type: StateChange.TOGGLELOADING })
   }
 
   return (
     <HStack marginY={1}>
       <Button
-        disabled={history.accumulator.currentHeight() < 1}
+        disabled={state!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1}
         width={'40%'}
         onClick={handleClick}
       >
@@ -47,7 +53,9 @@ export default function GetBlockByNumber() {
       <FormControl isInvalid={parseInt(searchNumber) < 0}>
         <Input
           bg="whiteAlpha.800"
-          placeholder={`BlockNumber (Max: ${history.accumulator.currentHeight()})`}
+          placeholder={`BlockNumber (Max: ${state!
+            .historyProtocol!.accumulator.masterAccumulator()
+            .currentHeight()})`}
           type={'number'}
           onChange={(e) => setSearchNumber(e.target.value)}
         />
