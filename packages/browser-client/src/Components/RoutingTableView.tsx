@@ -26,7 +26,7 @@ export default function RoutingTableView() {
         <GridItem>
           <Center>
             <Table size="xs">
-              <TableCaption>Peers: {peers.length}</TableCaption>
+              <TableCaption>Peers: {state!.peers.length}</TableCaption>
               <Thead>
                 <Tr>
                   <Th>ENR</Th>
@@ -37,23 +37,25 @@ export default function RoutingTableView() {
                 </Tr>
               </Thead>
               <Tbody>
-                {props.table.length > 0 &&
-                  props.table.map((peer, idx) => {
+                {state!.sortedPeers.length > 0 &&
+                  state!.sortedPeers.map((peer, idx) => {
                     return (
                       <Tr
                         key={peer[1][2]}
-                        onMouseEnter={() => setHover(idx)}
+                        onMouseEnter={() => dispatch!({ type: StateChange.SETHOVER, payload: idx })}
                         onMouseLeave={() => {
-                          setHover(undefined)
+                          dispatch!({ type: StateChange.SETHOVER, payload: undefined })
                         }}
                         onClick={() => {
-                          setPeerIdx(idx)
-                          _setPeer(peers[idx])
+                          dispatch!({
+                            type: StateChange.SETSELECTEDPEER,
+                            payload: { idx: idx },
+                          })
                         }}
                         backgroundColor={
-                          idx === hover
+                          idx === state!.hover
                             ? 'blue.100'
-                            : peerIdx === idx
+                            : state!.peerIdx === idx
                             ? 'red.100'
                             : 'whiteAlpha.100'
                         }

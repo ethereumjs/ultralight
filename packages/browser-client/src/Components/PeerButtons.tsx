@@ -248,193 +248,193 @@ export default function PeerButtons() {
   return (
     <GridItem>
       {state && dispatch && (
-      <Box border={'1px'}>
-        <VStack>
-          <HStack>
-            <VStack>
-              <HStack>
-                <Heading size={'md'}>
+        <Box border={'1px'}>
+          <VStack>
+            <HStack>
+              <VStack>
+                <HStack>
+                  <Heading size={'md'}>
                     Peer {peerIdx + 1} / {state!.peers.length}
-                </Heading>
-              </HStack>
-              <Table size="xs">
+                  </Heading>
+                </HStack>
+                <Table size="xs">
                   {state?.sortedPeers[peerIdx] && (
-                <Tbody>
-                  <Tr>
-                    <Td>ENR:</Td>
-                    <Th>
+                    <Tbody>
+                      <Tr>
+                        <Td>ENR:</Td>
+                        <Th>
                           <Tooltip label={state!.sortedPeers[peerIdx][1][3]}>
-                        <CopyIcon
-                          cursor={'pointer'}
-                          onClick={() =>
+                            <CopyIcon
+                              cursor={'pointer'}
+                              onClick={() =>
                                 navigator.clipboard.writeText(state!.sortedPeers[peerIdx][1][3])
-                          }
-                        />
-                      </Tooltip>
-                    </Th>
-                  </Tr>
-                  <Tr>
-                    <Td>Addr: </Td>
-                    <Td>
+                              }
+                            />
+                          </Tooltip>
+                        </Th>
+                      </Tr>
+                      <Tr>
+                        <Td>Addr: </Td>
+                        <Td>
                           {state!.sortedPeers[peerIdx][1][0]}: {state!.sortedPeers[peerIdx][1][1]}
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Td>NodeId: </Td>
+                        </Td>
+                      </Tr>
+                      <Tr>
+                        <Td>NodeId: </Td>
                         <Td>{shortId(ENR.decodeTxt(state!.selectedPeer).nodeId)}</Td>
-                  </Tr>
-                </Tbody>
+                      </Tr>
+                    </Tbody>
                   )}
-              </Table>
-            </VStack>
+                </Table>
+              </VStack>
               <Button size="lg" onClick={() => handlePing()} bgColor={_state.ping[0]}>
                 {_state.ping[1]}
+              </Button>
+            </HStack>
+            <Button width="100%" onClick={() => handleRequestSnapshot()}>
+              Request Accumulator Snapshot
             </Button>
-          </HStack>
-          <Button width="100%" onClick={() => handleRequestSnapshot()}>
-            Request Accumulator Snapshot
-          </Button>
-          <Divider />
-          <HStack width={'100%'}>
-            <Button
+            <Divider />
+            <HStack width={'100%'}>
+              <Button
                 isDisabled={state!.historyProtocol!.accumulator.historicalEpochs.length < 1}
-              width="70%"
-              onClick={() => sendFindContent('epoch')}
-            >
-              Request Epoch Accumulator by Epoch
-            </Button>
-            <Input
-              type={'number'}
-              min={1}
+                width="70%"
+                onClick={() => sendFindContent('epoch')}
+              >
+                Request Epoch Accumulator by Epoch
+              </Button>
+              <Input
+                type={'number'}
+                min={1}
                 max={state!.historyProtocol!.accumulator.historicalEpochs.length}
-              width={'30%'}
-              placeholder={'Epoch'}
-              onChange={(evt) => {
+                width={'30%'}
+                placeholder={'Epoch'}
+                onChange={(evt) => {
                   _dispatch({
                     type: PeerButtonsStateChange.SETEPOCH,
                     payload: parseInt(evt.target.value),
                   })
-              }}
-            />
-          </HStack>
-          <Divider />
-          <HStack width={'100%'}>
-            <Button
+                }}
+              />
+            </HStack>
+            <Divider />
+            <HStack width={'100%'}>
+              <Button
                 isDisabled={state!.historyProtocol!.accumulator.historicalEpochs.length < 1}
-              width="70%"
-              onClick={() => sendFindContent('epoch')}
-            >
-              Request Epoch Accumulator by BlockNumber
-            </Button>
-            <Input
-              type={'number'}
-              min={1}
+                width="70%"
+                onClick={() => sendFindContent('epoch')}
+              >
+                Request Epoch Accumulator by BlockNumber
+              </Button>
+              <Input
+                type={'number'}
+                min={1}
                 max={state!.historyProtocol!.accumulator.currentHeight()}
-              width={'30%'}
+                width={'30%'}
                 placeholder={`BlockNumber (Max: ${state!.historyProtocol!.accumulator.currentHeight()})`}
-              onChange={(evt) => {
+                onChange={(evt) => {
                   _dispatch({
                     type: PeerButtonsStateChange.SETEPOCH,
                     payload: Math.floor(parseInt(evt.target.value) / 8192),
                   })
-              }}
-            />
-          </HStack>
-          <Divider />
+                }}
+              />
+            </HStack>
+            <Divider />
             {state.selectedPeer && (
-          <HStack width={'100%'}>
+              <HStack width={'100%'}>
                 <Button
                   width="70%"
                   onClick={() => handleFindNodes(ENR.decodeTxt(state!.selectedPeer))}
                 >
-              FindNodes
-            </Button>
-            <Input
-              width={'30%'}
-              placeholder={'Distance'}
-              onChange={(evt) => {
+                  FindNodes
+                </Button>
+                <Input
+                  width={'30%'}
+                  placeholder={'Distance'}
+                  onChange={(evt) => {
                     _dispatch({
                       type: PeerButtonsStateChange.SETDISTANCE,
                       payload: evt.target.value,
                     })
-              }}
-            />
-          </HStack>
+                  }}
+                />
+              </HStack>
             )}
-          <Divider />
-          <Input
+            <Divider />
+            <Input
               value={_state.blockHash}
-            placeholder="BlockHash"
+              placeholder="BlockHash"
               onChange={(evt) =>
                 _dispatch({ type: PeerButtonsStateChange.SETBLOCKHASH, payload: evt.target.value })
               }
-          />
-          <HStack width={'100%'}>
-            <Button
-              width={'33%'}
-              title="Add content to offer"
-              onClick={() => {
-                sendFindContent('header')
-              }}
-            >
-              Find Header
-            </Button>
-            <Button
-              width={'33%'}
-              title="Add content to offer"
-              onClick={() => {
-                sendFindContent('body')
-              }}
-            >
-              Find Body
-            </Button>
-            <Button
-              width={'33%'}
-              title="Add content to offer"
-              onClick={() => {
-                sendFindContent('block')
-              }}
-            >
-              Find Block
-            </Button>
-          </HStack>
-          <HStack width={'100%'}>
-            <Button
-              width={'33%'}
-              title="Add content to offer"
-              onClick={() => {
-                addToOffer('header')
-              }}
-            >
-              Offer Header
-            </Button>
-            <Button
-              width={'33%'}
-              title="Add content to offer"
-              onClick={() => {
-                addToOffer('body')
-              }}
-            >
-              Offer Body
-            </Button>
-            <Button
-              width={'33%'}
-              title="Add content to offer"
-              onClick={() => {
-                addToOffer('block')
-              }}
-            >
-              Offer Block
-            </Button>
-          </HStack>
-          <Box width={'90%'} border={'1px'}>
+            />
+            <HStack width={'100%'}>
+              <Button
+                width={'33%'}
+                title="Add content to offer"
+                onClick={() => {
+                  sendFindContent('header')
+                }}
+              >
+                Find Header
+              </Button>
+              <Button
+                width={'33%'}
+                title="Add content to offer"
+                onClick={() => {
+                  sendFindContent('body')
+                }}
+              >
+                Find Body
+              </Button>
+              <Button
+                width={'33%'}
+                title="Add content to offer"
+                onClick={() => {
+                  sendFindContent('block')
+                }}
+              >
+                Find Block
+              </Button>
+            </HStack>
+            <HStack width={'100%'}>
+              <Button
+                width={'33%'}
+                title="Add content to offer"
+                onClick={() => {
+                  addToOffer('header')
+                }}
+              >
+                Offer Header
+              </Button>
+              <Button
+                width={'33%'}
+                title="Add content to offer"
+                onClick={() => {
+                  addToOffer('body')
+                }}
+              >
+                Offer Body
+              </Button>
+              <Button
+                width={'33%'}
+                title="Add content to offer"
+                onClick={() => {
+                  addToOffer('block')
+                }}
+              >
+                Offer Block
+              </Button>
+            </HStack>
+            <Box width={'90%'} border={'1px'}>
               <Text textAlign={'center'}>OFFER: {_state.offer.length} / 26</Text>
-          </Box>
-          <Button width={'100%'} onClick={() => handleOffer()}>
-            Send Offer
-          </Button>
-        </VStack>
-      </Box>
+            </Box>
+            <Button width={'100%'} onClick={() => handleOffer()}>
+              Send Offer
+            </Button>
+          </VStack>
+        </Box>
       )}
     </GridItem>
   )
