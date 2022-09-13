@@ -66,4 +66,36 @@ export const content_params = {
       }
     }
   },
+  get Enr() {
+    return (params: any[], index: number) => {
+      const result = portal.Enr([params[index]], 0)
+      if (result !== undefined) {
+        return result
+      }
+    }
+  },
+  get Enrs() {
+    return (params: any[], index: number) => {
+      if (!Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      for (const value of params[index]) {
+        const result = portal.Enr([value], 0)
+        if (result !== undefined) return result
+      }
+    }
+  },
+  get EnrSeq() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+    }
+  },
 }
