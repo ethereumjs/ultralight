@@ -130,4 +130,10 @@ export const content_params = {
       if (result !== undefined) return result
     }
   },
+  get RequestId() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.bytes8([params[index]], 0)
+      if (result !== undefined) return result
+    }
+  },
 }
