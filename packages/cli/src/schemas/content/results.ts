@@ -220,4 +220,26 @@ export const results = {
       }
     }
   },
+  get RoutingTableInfoResult() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'object') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an object`,
+        }
+      }
+      const properties = Object.values(params[index])
+      if (properties.length !== 2) {
+        return { code: INVALID_PARAMS, message: `invalid argument ${index}: invalid properties` }
+      }
+      const nodeId = baseTypes.bytes32(properties, 0)
+      if (nodeId) {
+        return nodeId
+      }
+      const buckets = portal.kBuckets(properties, 1)
+      if (buckets) {
+        return buckets
+      }
+    }
+  },
 }
