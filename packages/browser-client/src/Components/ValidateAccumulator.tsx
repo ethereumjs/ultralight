@@ -14,7 +14,7 @@ export default function ValidateAccumulator() {
       )
       if (valid === true) {
         toast({
-          title: `Header Accumulator validated at height ${history.accumulator.currentHeight}!`,
+          title: `Header Accumulator validated at height ${history.accumulator.currentHeight()}!`,
           status: 'info',
           duration: 3000,
           position: 'bottom',
