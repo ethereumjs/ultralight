@@ -1,4 +1,7 @@
 import { INVALID_PARAMS } from '../../error-code.js'
+import { baseTypes } from '../baseTypes.js'
+import { portal } from '../portal.js'
+
 export const content_params = {
   get ConnectionId() {
     return (params: any[], index: number) => {
@@ -133,6 +136,12 @@ export const content_params = {
   get RequestId() {
     return (params: any[], index: number) => {
       const result = baseTypes.bytes8([params[index]], 0)
+      if (result !== undefined) return result
+    }
+  },
+  get ContentValue() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.hexString([params[index]], 0)
       if (result !== undefined) return result
     }
   },
