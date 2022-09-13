@@ -48,4 +48,22 @@ export const content_params = {
       }
     }
   },
+  get Distances() {
+    return (params: any[], index: number) => {
+      if (!Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      for (const value of params[index]) {
+        if (typeof value !== 'number') {
+          return {
+            code: INVALID_PARAMS,
+            message: `invalid argument ${index}: array contains a non-number value`,
+          }
+        }
+      }
+    }
+  },
 }
