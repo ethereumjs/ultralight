@@ -18,4 +18,26 @@ export const content_params = {
       }
     }
   },
+  get ContentKey() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.hexString([params[index]], 0)
+      if (result !== undefined) {
+        return result
+      }
+    }
+  },
+  get ContentKeys() {
+    return (params: any[], index: number) => {
+      if (!Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      for (const value of params[index]) {
+        const result = baseTypes.hexString([value], 0)
+        if (result !== undefined) return result
+      }
+    }
+  },
 }
