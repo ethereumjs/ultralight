@@ -10,4 +10,12 @@ export const content_params = {
       }
     }
   },
+  get Content() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.hexString([params[index]], 0)
+      if (result !== undefined) {
+        return result
+      }
+    }
+  },
 }
