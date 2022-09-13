@@ -101,6 +101,14 @@ export const results = {
       }
     }
   },
+  get RecursiveFindContentResult() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.hexString([params[index]], 0)
+      if (result) {
+        return result
+      }
+    }
+  },
   get FindNodeResult() {
     return (params: any[], index: number) => {
       const findNodeResult = content_params.Enrs([params[index]], 0)
