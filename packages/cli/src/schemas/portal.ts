@@ -98,4 +98,23 @@ export const portal = {
       }
     }
   },
+  get socketAddr() {
+    const socketAddr: RegExp = new RegExp(
+      '/([0-9]{1,3}(?:\\.[0-9]{1,3}){3}|(?=[^\\/]{1,254}(?![^\\/]))(?:(?=[a-zA-Z0-9-]{1,63}\\.)(?:xn--+)?[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,63}):([0-9]{1,5})$'
+    )
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'string') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a string`,
+        }
+      }
+      if (socketAddr.test(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a valid socket address`,
+        }
+      }
+    }
+  },
 }
