@@ -1,6 +1,6 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
-import { RLP } from 'rlp'
+import { RLP } from '@ethereumjs/rlp'
 import {
   HistoryNetworkContentKeyUnionType,
   EpochAccumulator,

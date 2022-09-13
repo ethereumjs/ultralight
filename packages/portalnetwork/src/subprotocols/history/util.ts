@@ -9,7 +9,14 @@ import {
   sszUncles,
 } from './types.js'
 import * as rlp from 'rlp'
-import { Block, BlockBuffer } from '@ethereumjs/block'
+import {
+  Block,
+  BlockBodyBuffer,
+  BlockBuffer,
+  BlockHeaderBuffer,
+  TransactionsBuffer,
+  UncleHeadersBuffer,
+} from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
 
 /**
@@ -92,18 +99,18 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     const decodedBody = decodeSszBlockBody(rawBody)
     const block = Block.fromValuesArray(
       [
-        rlp.decode(Buffer.from(rawHeader)),
-        decodedBody.txsRlp,
-        rlp.decode(decodedBody.unclesRlp),
+        rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBuffer,
+        decodedBody.txsRlp as TransactionsBuffer,
+        rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBuffer,
       ] as BlockBuffer,
       { hardforkByBlockNumber: true }
     )
     return block
   } else {
     const blockBuffer: BlockBuffer = [
-      rlp.decode(Buffer.from(rawHeader)),
-      rlp.decode(Buffer.from(Uint8Array.from([]))),
-      rlp.decode(Buffer.from(Uint8Array.from([]))),
+      rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBuffer,
+      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as TransactionsBuffer,
+      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as UncleHeadersBuffer,
     ] as BlockBuffer
     const block = Block.fromValuesArray(blockBuffer, { hardforkByBlockNumber: true })
     return block
