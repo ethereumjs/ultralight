@@ -101,4 +101,20 @@ export const results = {
       }
     }
   },
+  get FindNodeResult() {
+    return (params: any[], index: number) => {
+      const findNodeResult = content_params.Enrs([params[index]], 0)
+      if (findNodeResult) {
+        return findNodeResult
+      }
+    }
+  },
+  get RecursiveFindNodeResult() {
+    return (params: any[], index: number) => {
+      const result = portal.Enr([params[index]], 0)
+      if (result) {
+        return result
+      }
+    }
+  },
 }
