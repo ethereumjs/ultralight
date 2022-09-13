@@ -117,4 +117,20 @@ export const portal = {
       }
     }
   },
+  get udpPort() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+      if (params[index] < 0 || params[index] > 65535) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a valid UDP port number`,
+        }
+      }
+    }
+  },
 }
