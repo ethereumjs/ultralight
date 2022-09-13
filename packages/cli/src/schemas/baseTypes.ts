@@ -1,3 +1,5 @@
+// portal-network-specs/jsonrpc/src/schemas/base_types.json
+
 const INVALID_PARAMS = -32602
 
 type Falsy = false | '' | 0 | null | undefined | 0n
@@ -98,7 +100,7 @@ export function validateByteString(param: any, index: number, length?: number) {
 /**
  * @memberof module:rpc
  */
-export const validators = {
+export const baseTypes = {
   /**
    * bytes2 validator to ensure has `0x` prefix and 4 bytes length
    * @param params parameters of method
