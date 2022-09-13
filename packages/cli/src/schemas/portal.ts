@@ -48,4 +48,21 @@ export const portal = {
       }
     }
   },
+  get Enr() {
+    const pattern: RegExp = new RegExp('^enr:[a-zA-Z0-9_:-]{179}$')
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'string') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a string`,
+        }
+      }
+      if (pattern.test(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a valid enr`,
+        }
+      }
+    }
+  },
 }
