@@ -70,6 +70,14 @@ export const results = {
       return baseTypes.bytes8([params[index]], 0)
     }
   },
+  get SendFindContentResult() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.bytes8([params[index]], 0)
+      if (result) {
+        return result
+      }
+    }
+  },
   get FindContentResult() {
     return (params: any[], index: number) => {
       if (typeof params[index] !== 'object') {
