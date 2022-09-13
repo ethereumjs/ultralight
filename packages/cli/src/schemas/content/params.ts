@@ -98,4 +98,24 @@ export const content_params = {
       }
     }
   },
+  get NodeId() {
+    return (params: any[], index: number) => {
+      const result = portal.Enr([params[index]], 0)
+      if (result !== undefined) return result
+    }
+  },
+  get Nodes() {
+    return (params: any[], index: number) => {
+      if (!Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      for (const value of params[index]) {
+        const result = portal.Enr([value], 0)
+        if (result !== undefined) return result
+      }
+    }
+  },
 }
