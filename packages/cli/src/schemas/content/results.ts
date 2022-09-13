@@ -135,4 +135,55 @@ export const results = {
       }
     }
   },
+  get PingResult() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'object') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an object`,
+        }
+      }
+      const values = Object.values(params[index])
+      if (values.length !== 2) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: expected 2 values`,
+        }
+      }
+      if (typeof values[0] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+      const dataRadius = portal.DataRadius([values[1]], 0)
+      if (dataRadius) {
+        return dataRadius
+      }
+    }
+  },
+  get SendPingResult() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'object') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an object`,
+        }
+      }
+      const result = baseTypes.bytes8([Object.values(params[index])[0]], 0)
+      if (result) {
+        return result
+      }
+    }
+  },
+  get SendPongResult() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+    }
+  },
 }
