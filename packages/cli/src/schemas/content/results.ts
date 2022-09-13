@@ -125,6 +125,24 @@ export const results = {
       }
     }
   },
+  get SendFindNodeResult() {
+    return (params: any[], index: number) => {
+      const result = baseTypes.bytes8([params[index]], 0)
+      if (result) {
+        return result
+      }
+    }
+  },
+  get SendNodesResult() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+    }
+  },
   get OfferResult() {
     return (params: any[], index: number) => {
       if (typeof params[index] !== 'number') {
