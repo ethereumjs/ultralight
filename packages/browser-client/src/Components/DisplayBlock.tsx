@@ -1,4 +1,4 @@
-import { CopyIcon } from '@chakra-ui/icons'
+import { CheckCircleIcon, CopyIcon } from '@chakra-ui/icons'
 import {
   Box,
   TabPanels,
@@ -10,33 +10,42 @@ import {
   Heading,
   Grid,
   GridItem,
+  Accordion,
   Link,
   Center,
   Skeleton,
   HStack,
+  VStack,
 } from '@chakra-ui/react'
-import { HistoryNetworkContentKeyUnionType } from 'portalnetwork'
+import { HistoryNetworkContentKeyUnionType, TxReceiptWithType } from 'portalnetwork'
 import SelectTx from './SelectTx'
-import React, { Dispatch, SetStateAction, useContext } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
+import React, { useContext, useEffect, useState } from 'react'
 import { toHexString } from './DisplayTx'
 import GetHeaderProofByHash from './GetHeaderProofByHash'
+import { AppContext, StateChange } from '../globalReducer'
+import TxReceipt from './TxReceipt'
 
-interface DisplayBlockProps {
-  isLoading: boolean
-  setIsLoading: Dispatch<SetStateAction<boolean>>
-}
+const DisplayBlock = () => {
+  const { state, dispatch } = useContext(AppContext)
+  const [validated, setValidated] = useState(false)
+  const [receipts, setReceipts] = useState<TxReceiptWithType[]>([])
 
-const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => {
-  const history = useContext(HistoryProtocolContext)
-  const { block, setBlock } = useContext(BlockContext)
-  const findParent = async (blockHash: string) => {
-    props.setIsLoading(true)
-    const block = await history.getBlockByHash(blockHash, true)
+  useEffect(() => {
+    state?.portal?.on('Verified', (key, verified) => {
+      setValidated(verified)
+    })
+  }, [])
+
+  const findParent = async () => {
+    dispatch!({ type: StateChange.TOGGLELOADING })
+    const block = await state!.historyProtocol!.ETH.getBlockByHash(
+      toHexString(state!.block!.header.parentHash),
+      true
+    )
     if (block) {
-      setBlock(block)
+      dispatch!({ type: StateChange.SETBLOCK, payload: block })
     }
-    props.setIsLoading(false)
+    dispatch!({ type: StateChange.TOGGLELOADING })
   }
   function GridRow(props: any) {
     return (
@@ -46,7 +55,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
         </GridItem>
         <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
           {props.idx === 0 ? (
-            <Link color={'blue'} onClick={async () => await findParent(props.k[1])}>
+            <Link color={'blue'} onClick={async () => await findParent()}>
               {props.k[1]}
             </Link>
           ) : (
@@ -57,9 +66,25 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
       </>
     )
   }
-  const header = Object.entries(block!.header!.toJSON())
-  const txList = block.transactions
-  const tx: string[] = block.transactions?.map((tx) => '0x' + tx.hash().toString('hex'))
+  const block = state!.block!
+  const header = Object.entries(block.header.toJSON())
+
+  async function init() {
+    try {
+      const receipts = await state!.historyProtocol?.receiptManager.getReceipts(block.hash())
+      if (receipts) {
+        setReceipts(receipts)
+      }
+    } catch (err) {
+      console.log((err as any).message)
+    }
+  }
+
+  useEffect(() => {
+    if (state!.block!.transactions.length > 0) {
+      init()
+    }
+  }, [state!.block])
 
   const headerlookupKey = toHexString(
     HistoryNetworkContentKeyUnionType.serialize({
@@ -86,7 +111,8 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
         <HStack justifyContent={'center'}>
           <span>Block #</span>
-          <Skeleton isLoaded={!props.isLoading}>{Number(block.header.number)}</Skeleton>
+          <Skeleton isLoaded={!state!.isLoading}>{Number(block.header.number)}</Skeleton>
+          {validated && <CheckCircleIcon />}
         </HStack>
       </Heading>
       <Grid templateColumns={'repeat(16, 1fr'} columnGap={1}>
@@ -103,7 +129,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Skeleton isLoaded={!props.isLoading}>
+          <Skeleton isLoaded={!state!.isLoading}>
             <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
               {headerlookupKey}
             </Text>
@@ -122,7 +148,7 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Skeleton isLoaded={!props.isLoading}>
+          <Skeleton isLoaded={!state!.isLoading}>
             <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
               {bodylookupKey}
             </Text>
@@ -134,29 +160,47 @@ const DisplayBlock: React.FC<DisplayBlockProps> = (props: DisplayBlockProps) => 
           <TabList>
             <Tab>Header</Tab>
             <Tab>Transactions</Tab>
-            <Tab>Uncles</Tab>
+            <Tab>Receipts</Tab>
             <Tab>JSON</Tab>
           </TabList>
         </Center>
         <TabPanels>
           <TabPanel>
-            <Grid templateColumns={'repeat(10, 1fr)'}>
-              {header &&
-                header.map((key, idx) => {
-                  return <GridRow key={idx} k={key} idx={idx} />
-                })}
-            </Grid>
+            <VStack>
+              {validated || <GetHeaderProofByHash />}
+              <Grid templateColumns={'repeat(10, 1fr)'}>
+                {header &&
+                  header.map((key, idx) => {
+                    return <GridRow key={idx} k={key} idx={idx} />
+                  })}
+              </Grid>
+            </VStack>
           </TabPanel>
-          <TabPanel>{tx.length > 0 && <SelectTx txList={tx} tx={txList} />}</TabPanel>
-          <TabPanel>Uncles</TabPanel>
+          <TabPanel>{state!.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
           <TabPanel>
-            <Skeleton isLoaded={!props.isLoading}>
+            <Box>
+              <Accordion allowToggle>
+                {state!.block!.transactions.length > 0 &&
+                  receipts.length > 0 &&
+                  receipts.map((rec, idx) => {
+                    return (
+                      <TxReceipt
+                        rec={rec}
+                        idx={idx}
+                        hash={toHexString(state!.block!.transactions[idx].hash())}
+                      />
+                    )
+                  })}
+              </Accordion>
+            </Box>
+          </TabPanel>
+          <TabPanel>
+            <Skeleton isLoaded={!state!.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>
             </Skeleton>
           </TabPanel>
         </TabPanels>
       </Tabs>
-      <GetHeaderProofByHash />
     </Box>
   )
 }

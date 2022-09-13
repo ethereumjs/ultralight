@@ -1,29 +1,23 @@
 import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
-import React, { Dispatch, SetStateAction, useContext, useState } from 'react'
-import { BlockContext, HistoryProtocolContext } from '../ContextHooks'
+import React, { useContext, useState } from 'react'
+import { AppContext, StateChange } from '../globalReducer'
 
-interface IGetBlockByNumberProps {
-  setIsLoading: Dispatch<SetStateAction<boolean>>
-}
-
-export default function GetBlockByHash(props: IGetBlockByNumberProps) {
-  const history = useContext(HistoryProtocolContext)
-  const [blockHash, setBlockHash] = useState('')
-  const { setBlock } = useContext(BlockContext)
-
+export default function GetBlockByHash() {
+  const { state, dispatch } = useContext(AppContext)
+  const [blockHash, setBlockhash] = useState('')
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {
-      const block = await history.getBlockByHash(blockHash, includeTransactions)
-      setBlock(block!)
+      const block = await state!.historyProtocol!.ETH.getBlockByHash(blockHash, includeTransactions)
+      dispatch!({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'
     }
   }
 
   async function handleClick() {
-    props.setIsLoading(true)
+    dispatch!({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByHash(blockHash, true)
-    props.setIsLoading(false)
+    dispatch!({ type: StateChange.TOGGLELOADING })
   }
 
   return (
@@ -36,7 +30,7 @@ export default function GetBlockByHash(props: IGetBlockByNumberProps) {
           bg="whiteAlpha.800"
           placeholder={`BlockHash`}
           type={'string'}
-          onChange={(e) => setBlockHash(e.target.value)}
+          onChange={(e) => setBlockhash(e.target.value)}
         />
       </FormControl>
     </HStack>

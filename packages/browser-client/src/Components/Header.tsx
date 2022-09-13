@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import {
   Button,
   Heading,
@@ -13,17 +13,17 @@ import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
 import ContentManager from './ContentManager'
 import ValidateAccumulator from './ValidateAccumulator'
+import { AppContext } from '../globalReducer'
 
-interface HeaderProps {
-  enr: string
-}
-export default function Header(props: HeaderProps) {
-  const { onCopy } = useClipboard(props.enr)
+export default function Header() {
+  const { state } = useContext(AppContext)
+  const enr = state!.portal!.discv5.enr.encodeTxt(state!.portal!.discv5.keypair.privateKey)
+  const { onCopy } = useClipboard(enr)
   const toast = useToast()
   async function share() {
     await Share.share({
       title: `Ultralight ENR`,
-      text: props.enr,
+      text: enr,
       dialogTitle: `Share ENR`,
     })
   }
@@ -56,7 +56,7 @@ export default function Header(props: HeaderProps) {
         <Button
           width={'12.5%'}
           onClick={() => {
-            toast({ title: props.enr })
+            toast({ title: enr })
           }}
         >
           SHOW ENR

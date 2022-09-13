@@ -65,9 +65,8 @@ export class ContentManager {
           if (
             Number(header.number) === this.history.accumulator.currentHeight() + 1 &&
             header.parentHash.equals(
-              this.history.accumulator.currentEpoch()[
-                this.history.accumulator.currentEpoch.length - 1
-              ].blockHash
+              this.history.accumulator.currentEpoch()[this.history.accumulator.currentHeight()]
+                .blockHash
             )
           ) {
             if (this.history.accumulator.currentEpoch.length === EPOCH_SIZE) {
@@ -88,7 +87,9 @@ export class ContentManager {
             // Update the header accumulator if the block header is the next in the chain
             this.history.accumulator.updateAccumulator(header)
             this.logger(
-              `Updated header accumulator at slot ${this.history.accumulator.currentEpoch.length}/${EPOCH_SIZE} of current Epoch`
+              `Updated header accumulator at slot ${
+                this.history.accumulator.currentEpoch().length
+              }/${EPOCH_SIZE} of current Epoch`
             )
             this.history.client.db.put(
               getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),

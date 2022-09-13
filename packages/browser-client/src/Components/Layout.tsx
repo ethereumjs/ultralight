@@ -9,47 +9,38 @@ import {
   Box,
   IconButton,
 } from '@chakra-ui/react'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { RepeatIcon } from '@chakra-ui/icons'
-import { BlockContext } from '../ContextHooks'
 import GetBlockByHash from './getBlockByHash'
 import GetBlockByNumber from './GetBlockByNumber'
 import RoutingTableView from './RoutingTableView'
 import DisplayBlock from './DisplayBlock'
-import GetHeaderProofByHash from './GetHeaderProofByHash'
-interface LayoutProps {
-  table: [number, string[]][]
-  refresh: () => void
-  peers: boolean
-}
+import { AppContext, StateChange } from '../globalReducer'
 
-export default function Layout(props: LayoutProps) {
-  const { block } = useContext(BlockContext)
-  const [tabIndex, setTabIndex] = useState(0)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+export default function Layout() {
+  const { state, dispatch } = useContext(AppContext)
   function handleTabsChange(index: number) {
-    setTabIndex(index)
+    dispatch!({ type: StateChange.SETTAB, payload: index })
   }
   useEffect(() => {
     setTimeout(() => {
-      props.refresh()
+      dispatch!({ type: StateChange.REFRESHPEERS })
     }, 1000)
     setInterval(() => {
-      props.refresh()
+      dispatch!({ type: StateChange.REFRESHPEERS })
     }, 5000)
   }, [])
 
   return (
     <VStack width={'100%'} spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
-      {props.peers && (
+      {state && dispatch && (
         <Box width={'95%'}>
-          <GetBlockByHash setIsLoading={setIsLoading} />
-          <GetBlockByNumber setIsLoading={setIsLoading} />
-          <GetHeaderProofByHash />
-          <Tabs index={tabIndex} onChange={handleTabsChange}>
+          <GetBlockByHash />
+          <GetBlockByNumber />
+          <Tabs index={state.tabIndex} onChange={handleTabsChange}>
             <TabList>
               <IconButton
-                onClick={props.refresh}
+                onClick={() => dispatch!({ type: StateChange.REFRESHPEERS })}
                 aria-label="refresh routing table"
                 icon={<RepeatIcon />}
               />
@@ -57,10 +48,8 @@ export default function Layout(props: LayoutProps) {
               <Tab>Block Explorer</Tab>
             </TabList>
             <TabPanels>
-              <TabPanel>{<RoutingTableView table={props.table} />}</TabPanel>
-              <TabPanel>
-                {block.header && <DisplayBlock setIsLoading={setIsLoading} isLoading={isLoading} />}
-              </TabPanel>
+              <TabPanel>{<RoutingTableView />}</TabPanel>
+              <TabPanel>{state!.block && state.block.header && <DisplayBlock />}</TabPanel>
             </TabPanels>
           </Tabs>
         </Box>

@@ -40,7 +40,7 @@ export class HistoryProtocol extends BaseProtocol {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.logger = client.logger.extend('HistoryNetwork')
-    this.accumulator = new AccumulatorManager({ history: this })
+    this.accumulator = new AccumulatorManager({ history: this, initFromGenesis: true })
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)

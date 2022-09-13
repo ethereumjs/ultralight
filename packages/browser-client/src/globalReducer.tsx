@@ -1,0 +1,193 @@
+import { Block } from '@ethereumjs/block'
+import { TypedTransaction } from '@ethereumjs/tx'
+import { BrowserLevel } from 'browser-level'
+import {
+  ENR,
+  HistoryProtocol,
+  PortalNetwork,
+  ProtocolId,
+  TransportLayer,
+  TxReceiptWithType,
+} from 'portalnetwork'
+import React from 'react'
+import { AsyncActionHandlers } from 'use-reducer-async'
+import { createNodeFromScratch, createNodeFromStorage, refresh, startUp } from './portalClient'
+
+export type AppState = {
+  proxy: string
+  portal: PortalNetwork | undefined
+  historyProtocol: HistoryProtocol | undefined
+  LDB: BrowserLevel
+  //
+  searchEnr: string
+  peers: ENR[]
+  sortedPeers: [number, string[]][]
+  selectedPeer: string
+  peerIdx: number
+  //
+  tabIndex: number
+  isLoading: boolean
+  hover: number | undefined
+  //
+  block: Block | undefined
+  receipts: TxReceiptWithType[]
+  transaction: TypedTransaction | undefined
+}
+
+export type AppReducer = React.Reducer<AppState, AppStateAction | AsyncAction>
+export type ReducerState = React.ReducerState<AppReducer>
+export const initialState: ReducerState = {
+  proxy: 'ws://127.0.0.1:5050',
+  portal: undefined,
+  historyProtocol: undefined,
+  LDB: new BrowserLevel('ultralight_history', { prefix: '', version: 1 }),
+  searchEnr:
+    'enr:-IS4QB-D7CEwWs-spOmhgmVJEfLmB9lkGEkTVpFI8U2mvTYfZLnrqYK8hfJvNZrPHYL0C3PUi83eJQZj0eAkJSGMU5oDgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQMdt_9PTSG9rirm8pq9jNR46jPsf2xbcvHBwQ10kgikXoN1ZHCCE4g',
+  peers: [],
+  sortedPeers: [],
+  selectedPeer: '',
+  peerIdx: 0,
+  tabIndex: 0,
+  isLoading: false,
+  hover: undefined,
+  block: undefined,
+  receipts: [],
+  transaction: undefined,
+}
+
+export enum StateChange {
+  CREATENODEFROMBINDADDRESS = 'CREATENODEFROMBINDADDRESS',
+  CREATENODE = 'CREATENODE',
+  SETPROXY = 'SETPROXY',
+  SETPORTAL = 'SETPORTAL',
+  REFRESHPEERS = 'REFRESHPEERS',
+  SETSEARCHENR = 'SETSEARCHENR',
+  SETPEERS = 'SETPEERS',
+  SORTPEERS = 'SORTPEERS',
+  SETSELECTEDPEER = 'SETSLELECTEDPEER',
+  SETTAB = 'SETTAB',
+  TOGGLELOADING = 'TOGGLELOADING',
+  SETHOVER = 'SETHOVER',
+  SETBLOCK = 'SETBLOCK',
+  GETRECEIPTS = 'GETRECEIPTS',
+  SETRECEIPTS = 'SETRECEIPTS',
+}
+
+export interface AppStateAction {
+  type: StateChange
+  payload?: any
+}
+
+export const reducer: React.Reducer<AppState, AppStateAction | AsyncAction> = (
+  state: AppState,
+  action: AppStateAction | AsyncAction
+) => {
+  const _state = state
+  const { type, payload } = action
+  switch (type) {
+    case StateChange.SETPROXY:
+      _state.proxy = payload
+      return { ..._state }
+    case StateChange.SETPORTAL:
+      _state.portal = payload
+      _state.historyProtocol = payload.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      // _state.block = _state.historyProtocol.accumulator.genesisBlock
+      return { ..._state }
+    case StateChange.REFRESHPEERS:
+      return refresh(state)
+    case StateChange.SETSEARCHENR:
+      _state.searchEnr = payload
+      return {
+        ..._state,
+      }
+    case StateChange.SETSELECTEDPEER:
+      return {
+        ...state,
+        peerIdx: payload.idx,
+        selectedPeer: state.sortedPeers[payload.idx][1][3],
+      }
+    case StateChange.SETTAB:
+      return {
+        ...state,
+        tabIndex: payload,
+      }
+    case StateChange.SETHOVER:
+      return {
+        ...state,
+        hover: payload,
+      }
+    case StateChange.TOGGLELOADING:
+      return {
+        ...state,
+        isLoading: !state.isLoading,
+      }
+    case StateChange.SETBLOCK:
+      return {
+        ...state,
+        block: payload,
+        tabIndex: 1,
+      }
+    case StateChange.SETRECEIPTS:
+      return {
+        ...state,
+        receipts: payload,
+      }
+    default:
+      throw new Error('State Change Not Possible')
+  }
+}
+
+export type reducerType = { dispatch: React.Dispatch<AppStateAction | AsyncAction> }
+export type AsyncAction = {
+  type: string
+  payload: {
+    state: AppState
+  }
+}
+export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> = {
+  CREATENODEFROMBINDADDRESS:
+    ({ dispatch }: reducerType) =>
+    async (action: AsyncAction) => {
+      const portal = await PortalNetwork.create({
+        supportedProtocols: [ProtocolId.HistoryNetwork],
+        proxyAddress: action.payload.state.proxy,
+        db: action.payload.state.LDB as any,
+        transport: TransportLayer.WEB,
+        //@ts-ignore
+        config: {
+          config: {
+            enrUpdate: true,
+            addrVotesToUpdateEnr: 1,
+          },
+        },
+      })
+      await startUp(portal)
+      dispatch({ type: StateChange.SETPORTAL, payload: portal })
+    },
+  CREATENODE:
+    ({ dispatch }: reducerType) =>
+    async (action: AsyncAction) => {
+      try {
+        const portal = await createNodeFromStorage(action.payload.state)
+        dispatch({ type: StateChange.SETPORTAL, payload: portal })
+      } catch (err: any) {
+        const portal = await createNodeFromScratch(action.payload.state)
+        dispatch({ type: StateChange.SETPORTAL, payload: portal })
+      }
+    },
+  GETRECEIPTS:
+    ({ dispatch }: reducerType) =>
+    async (action: AsyncAction) => {
+      const receipts = await action.payload.state.historyProtocol?.receiptManager.getReceipts(
+        action.payload.state.block!.hash()
+      )
+      dispatch({ type: StateChange.SETRECEIPTS, payload: receipts })
+    },
+}
+
+export type AppContextType = {
+  state?: AppState
+  dispatch?: React.Dispatch<AppStateAction | AsyncAction>
+}
+
+export const AppContext = React.createContext<AppContextType>({})
