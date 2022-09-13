@@ -117,4 +117,22 @@ export const results = {
       }
     }
   },
+  get OfferResult() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+    }
+  },
+  get SendOfferResult() {
+    return (params: any[], index: number) => {
+      const sendOfferResult = baseTypes.bytes8([params[index]], 0)
+      if (sendOfferResult) {
+        return sendOfferResult
+      }
+    }
+  },
 }
