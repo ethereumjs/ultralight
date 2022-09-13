@@ -118,4 +118,10 @@ export const content_params = {
       }
     }
   },
+  get DataRadius() {
+    return (params: any[], index: number) => {
+      const result = portal.DataRadius([params[index]], 0)
+      if (result !== undefined) return result
+    }
+  },
 }
