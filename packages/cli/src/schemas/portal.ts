@@ -32,4 +32,20 @@ export const portal = {
       }
     }
   },
+  get DataRadius() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not a number`,
+        }
+      }
+      if (params[index] >= 2 ** 256 || params[index] < 0) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be uint256`,
+        }
+      }
+    }
+  },
 }
