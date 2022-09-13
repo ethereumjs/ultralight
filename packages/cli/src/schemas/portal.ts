@@ -84,4 +84,18 @@ export const portal = {
       }
     }
   },
+  get kBuckets() {
+    return (params: any[], index: number) => {
+      if (Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      for (const value of params[index]) {
+        const result = portal.Bucket([value], 0)
+        if (result !== undefined) return result
+      }
+    }
+  },
 }
