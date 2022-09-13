@@ -10,4 +10,9 @@ export const results = {
       }
     }
   },
+  get SendAcceptResult() {
+    return (params: any[], index: number) => {
+      return baseTypes.bytes8([params[index]], 0)
+    }
+  },
 }
