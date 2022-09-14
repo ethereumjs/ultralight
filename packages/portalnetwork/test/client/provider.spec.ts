@@ -1,6 +1,18 @@
 import tape from 'tape'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
+import { spawn, ChildProcessByStdio } from 'child_process'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
+function getProxy() {
+  process.chdir('../')
+  const proxyAddr = process.cwd() + '/proxy/dist/index.js'
+  process.chdir('./portalnetwork')
+  return proxyAddr
+}
+const file = require.resolve(getProxy())
+const child = spawn(process.execPath, [file, `--nat=localhost`])
 
 tape('Test provider functionality', async (t) => {
   const provider = new UltralightProvider('https://cloudflare-eth.com/v1/mainnet', 1, {
@@ -19,5 +31,6 @@ tape('Test provider functionality', async (t) => {
   )
   t.equal(block2.number, 2, 'got block 2 from portal network')
   await (provider as any).portal.stop()
+  child.kill()
   t.end()
 })
