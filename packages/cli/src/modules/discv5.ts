@@ -96,14 +96,15 @@ export class discv5 {
   async discv5_getEnr(params: [string]) {}
   async discv5_deleteEnr(params: [string]) {}
   async discv5_lookupEnr(params: [string, number]) {}
+  async discv5_ping(params: [string]) {}
   async discv5_sendPing(params: [string]) {}
   async discv5_sendPong(params: [string, number]) {}
+  async discv5_findNode(params: [string, number[]]) {}
+  async discv5_recursiveFindNode(params: [string]) {}
   async discv5_sendFindNode(params: [string, number[]]) {}
   async discv5_sendNodes(params: [string, string[], number]) {}
   async discv5_sendTalkRequest(params: [string, number, string]) {}
   async discv5_sendTalkResponse(params: [string, string, number]) {}
-  async discv5_ping(params: [string]) {}
-  async discv5_findNode(params: [string, number[]]) {}
   async discv5_talkReq(params: [string, string, string]) {}
-  async discv5_recursiveFindNode(params: [string]) {}
+}
 }
