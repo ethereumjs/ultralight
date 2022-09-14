@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { Block as ethJsBlock } from '@ethereumjs/block'
 import { toHexString } from './index.js'
+import debug from 'debug'
 
 /**
  *
@@ -8,7 +9,8 @@ import { toHexString } from './index.js'
  * @returns returns an ethers.providers.Block representation of the data
  */
 export const ethJsBlockToEthersBlock = (block: ethJsBlock): ethers.providers.Block => {
-  console.log('found a block')
+  debug.enable('ethJsBlockToEthersBlock')
+  debug('ethJsBlockToEthersBlock')('found a block')
   return {
     hash: toHexString(block.hash()),
     transactions: [],

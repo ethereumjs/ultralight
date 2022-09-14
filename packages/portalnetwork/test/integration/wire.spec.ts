@@ -17,7 +17,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import { createRequire } from 'module'
 import { BlockHeader } from '@ethereumjs/block'
-import * as rlp from 'rlp'
+import * as rlp from '@ethereumjs/rlp'
 import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)
