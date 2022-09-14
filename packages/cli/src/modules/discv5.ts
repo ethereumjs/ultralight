@@ -52,6 +52,10 @@ export class discv5 {
     this.discv5_sendPing = middleware(this.discv5_sendPing.bind(this), 1, [
       [schema.content_params.EnrSeq],
     ])
+    this.discv5_sendPong = middleware(this.discv5_sendPong.bind(this), 2, [
+      [schema.content_params.Enr],
+      [schema.content_params.RequestId],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
