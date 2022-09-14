@@ -47,21 +47,21 @@ export class discv5 {
     this.discv5_talkReq = middleware(this.discv5_talkReq.bind(this), 0, [])
     this.discv5_recursiveFindNode = middleware(this.discv5_recursiveFindNode.bind(this), 0, [])
   }
-  async discv5_nodeInfo(params = []) {}
-  async discv5_updateNodeInfo(params = []) {}
-  async discv5_routingTableInfo(params = []) {}
-  async discv5_addEnr(params = []) {}
-  async discv5_getEnr(params = []) {}
-  async discv5_deleteEnr(params = []) {}
-  async discv5_lookupEnr(params = []) {}
-  async discv5_sendPing(params = []) {}
-  async discv5_sendPong(params = []) {}
-  async discv5_sendFindNode(params = []) {}
-  async discv5_sendNodes(params = []) {}
-  async discv5_sendTalkRequest(params = []) {}
-  async discv5_sendTalkResponse(params = []) {}
-  async discv5_ping(params = []) {}
-  async discv5_findNode(params = []) {}
-  async discv5_talkReq(params = []) {}
-  async discv5_recursiveFindNode(params = []) {}
+  async discv5_nodeInfo(params: []) {}
+  async discv5_updateNodeInfo(params: [string, boolean]) {}
+  async discv5_routingTableInfo(params: []) {}
+  async discv5_addEnr(params: [string]) {}
+  async discv5_getEnr(params: [string]) {}
+  async discv5_deleteEnr(params: [string]) {}
+  async discv5_lookupEnr(params: [string, number]) {}
+  async discv5_sendPing(params: [string]) {}
+  async discv5_sendPong(params: [string, number]) {}
+  async discv5_sendFindNode(params: [string, number[]]) {}
+  async discv5_sendNodes(params: [string, string[], number]) {}
+  async discv5_sendTalkRequest(params: [string, number, string]) {}
+  async discv5_sendTalkResponse(params: [string, string, number]) {}
+  async discv5_ping(params: [string]) {}
+  async discv5_findNode(params: [string, number[]]) {}
+  async discv5_talkReq(params: [string, string, string]) {}
+  async discv5_recursiveFindNode(params: [string]) {}
 }
