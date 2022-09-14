@@ -1,7 +1,14 @@
 import { ethers } from 'ethers'
 import { Block as ethJsBlock } from '@ethereumjs/block'
 import { toHexString } from './index.js'
+
+/**
+ *
+ * @param block An {@ethereumjs/block Block} object
+ * @returns returns an ethers.providers.Block representation of the data
+ */
 export const ethJsBlockToEthersBlock = (block: ethJsBlock): ethers.providers.Block => {
+  console.log('foudn a block')
   return {
     hash: toHexString(block.hash()),
     transactions: [],

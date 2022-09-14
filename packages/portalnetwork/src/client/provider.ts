@@ -31,15 +31,20 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
   }
 
   getBlock = async (blockTag: ethers.providers.BlockTag) => {
-    if (this.history) {
-      let block
-      if (typeof blockTag === 'string' && blockTag.length === 66) {
-        block = await this.history.ETH.getBlockByHash(blockTag, false)
-      } else if (blockTag !== 'latest') {
-        const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
-        block = await this.history.ETH.getBlockByNumber(blockNum, false)
+    let block
+    if (typeof blockTag === 'string' && blockTag.length === 66) {
+      block = await this.history?.ETH.getBlockByHash(blockTag, false)
+      if (block !== undefined) {
+        return ethJsBlockToEthersBlock(block)
       }
-      if (block !== undefined) return ethJsBlockToEthersBlock(block)
+      return this.fallbackProvider.getBlock(blockTag)
+    } else if (blockTag !== 'latest') {
+      const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
+      block = await this.history?.ETH.getBlockByNumber(blockNum, false)
+      if (block !== undefined) {
+        return ethJsBlockToEthersBlock(block)
+      }
+      return this.fallbackProvider.getBlock(blockTag)
     }
     // TODO: Add block to history network if retrieved from provider
     return this.fallbackProvider.getBlock(blockTag)

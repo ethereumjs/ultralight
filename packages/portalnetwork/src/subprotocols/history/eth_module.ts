@@ -1,12 +1,12 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
-import { RLP } from '@ethereumjs/rlp'
 import {
   HistoryNetworkContentKeyUnionType,
   EpochAccumulator,
   EPOCH_SIZE,
   reassembleBlock,
   HistoryProtocol,
+  BlockBodyContentType,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 
@@ -40,7 +40,13 @@ export class ETH {
         return undefined
       }
       if (!includeTransactions) {
-        block = reassembleBlock(header, RLP.encode([[], []]))
+        block = reassembleBlock(
+          header,
+          BlockBodyContentType.serialize({
+            allTransactions: [],
+            sszUncles: Uint8Array.from([]),
+          })
+        )
         return block
       } else {
         lookup = new ContentLookup(this.protocol, bodyContentKey!)
