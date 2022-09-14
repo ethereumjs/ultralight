@@ -1,7 +1,32 @@
 import { Debugger } from 'debug'
-import { PortalNetwork } from 'portalnetwork'
+import { NodeId, PortalNetwork } from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
 import * as schema from '../schema/index.js'
+import {
+  AddEnrResult,
+  DeleteEnrResult,
+  FindNodeResult,
+  Enr,
+  GetEnrResult,
+  isTcp,
+  LookupEnrResult,
+  NodeInfoResult,
+  PingResult,
+  RecursiveFindNodeResult,
+  RoutingTableInfoResult,
+  SendFindNodeResult,
+  SendNodesResult,
+  SendPingResult,
+  SendPongResult,
+  SendTalkRequestResult,
+  SendTalkResponseResult,
+  TalkResult,
+  EnrSeq,
+  Distances,
+  RequestId,
+  ProtocolId,
+  Discv5Payload,
+} from '../schema/types.js'
 
 const methods = [
   'discv5_nodeInfo',
@@ -93,7 +118,7 @@ export class discv5 {
    * Returns ENR and nodeId information of the local discv5 node.
    * @param params an empty array
    */
-  async discv5_nodeInfo(params: []) {}
+  async discv5_nodeInfo(params: []): Promise<NodeInfoResult> {}
 
   /**
    * Add, update, or remove a key-value pair from the local node record
@@ -101,31 +126,31 @@ export class discv5 {
    *  1. socketAddr: ENR socket address
    *  2. *optional* isTcp: TCP or UDP socket
    */
-  async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
+  async discv5_updateNodeInfo(params: [NodeId, isTcp]): Promise<NodeInfoResult> {}
 
   /**
    * Returns meta information about discv5 routing table.
    * @param params an empty array
    */
-  async discv5_routingTableInfo(params: []) {}
+  async discv5_routingTableInfo(params: []): Promise<RoutingTableInfoResult> {}
 
   /**
    * Write an ethereum node record to the routing table.
    * @param params ENR string
    */
-  async discv5_addEnr(params: [string]) {}
+  async discv5_addEnr(params: [Enr]): Promise<AddEnrResult> {}
 
   /**
    * Fetch the latest ENR associated with the given node ID
    * @param params NodeId string
    */
-  async discv5_getEnr(params: [string]) {}
+  async discv5_getEnr(params: [NodeId]): Promise<GetEnrResult> {}
 
   /**
    * Delete a Node ID from the routing table
    * @param params NodeId string
    */
-  async discv5_deleteEnr(params: [string]) {}
+  async discv5_deleteEnr(params: [NodeId]): Promise<DeleteEnrResult> {}
 
   /**
    * Fetch the ENR representation associated with the given Node ID and optional sequence number
@@ -133,43 +158,42 @@ export class discv5 {
    * 1. NodeId string
    * 2. ENR Seq number
    */
-  async discv5_lookupEnr(params: [string, number]) {}
+  async discv5_lookupEnr(params: [NodeId, EnrSeq]): Promise<LookupEnrResult> {}
 
   /**
    * Send a PING message to the designated node and wait for a PONG response.
    * @param params ENR string
    */
-  async discv5_ping(params: [string]) {}
+  async discv5_ping(params: [Enr]): Promise<PingResult> {}
 
   /**
    * Send a PING message to the specified node
    * @param params An array of two parameters
    * 1. ENR string
-   * 2. RequestId
    */
-  async discv5_sendPing(params: [string]) {}
+  async discv5_sendPing(params: [Enr]): Promise<SendPingResult> {}
 
   /**
    * Send a FINDNODE request to a peer, to search within the given set of distances
    * @param params An arrray of two parameters
    * 1. ENR string
-   * 2. Distances
+   * 2. RequestId: number
    */
-  async discv5_sendPong(params: [string, number]) {}
+  async discv5_sendPong(params: [Enr, RequestId]): Promise<SendPongResult> {}
 
   /**
    * Send a FINDNODE request for nodes that fall within the given set of distances, to the designated peer and wait for a response.
    * @param params An arrray of two parameters
    * 1. ENR string
-   * 2. Distances
+   * 2. Distances: Array of distances to search
    */
-  async discv5_findNode(params: [string, number[], number]) {}
+  async discv5_findNode(params: [Enr, Distances]): Promise<FindNodeResult> {}
 
   /**
    * Lookup a target node within in the network
    * @param params NodeId string
    */
-  async discv5_recursiveFindNode(params: [string]) {}
+  async discv5_recursiveFindNode(params: [NodeId]): Promise<RecursiveFindNodeResult> {}
 
   /**
    * Send a FINDNODE request to a peer, to search within the given set of distances
@@ -177,7 +201,7 @@ export class discv5 {
    * 1. ENR string
    * 2. Array of distances
    */
-  async discv5_sendFindNode(params: [string, number[]]) {}
+  async discv5_sendFindNode(params: [Enr, Distances]): Promise<SendFindNodeResult> {}
 
   /**
    * Respond to a specific FINDNODE request with a NODES response.
@@ -186,7 +210,7 @@ export class discv5 {
    * 2. Array of Nodes
    * 3. RequestId
    */
-  async discv5_sendNodes(params: [string, string[], number]) {}
+  async discv5_sendNodes(params: [string, string[], number]): Promise<SendNodesResult> {}
 
   /**
    * Send a TALKREQ request with a payload to the given peer.
@@ -195,7 +219,9 @@ export class discv5 {
    * 2. ProtocolId
    * 3. Discv5Payload
    */
-  async discv5_sendTalkRequest(params: [string, number, string]) {}
+  async discv5_sendTalkRequest(
+    params: [Enr, ProtocolId, Discv5Payload]
+  ): Promise<SendTalkRequestResult> {}
 
   /**
    * Respond to a TALKREQ request by sending a TALKRESP response.
@@ -204,7 +230,9 @@ export class discv5 {
    * 2. Discv5Payload
    * 3. RequestId
    */
-  async discv5_sendTalkResponse(params: [string, string, number]) {}
+  async discv5_sendTalkResponse(
+    params: [Enr, Discv5Payload, RequestId]
+  ): Promise<SendTalkResponseResult> {}
 
   /**
    * Send a TALKREQ request with a payload to a given peer and wait for response.
@@ -213,5 +241,5 @@ export class discv5 {
    * 2. ENR string
    * 3. Discv5Payload
    */
-  async discv5_talkReq(params: [string, string, string]) {}
+  async discv5_talkReq(params: [Enr, Enr, Discv5Payload]): Promise<TalkResult> {}
 }
