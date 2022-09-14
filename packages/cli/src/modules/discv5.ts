@@ -70,6 +70,11 @@ export class discv5 {
       [schema.content_params.ProtocolId],
       [schema.content_params.Discv5Payload],
     ])
+    this.discv5_sendTalkResponse = middleware(this.discv5_sendTalkResponse.bind(this), 3, [
+      [schema.content_params.Enr],
+      [schema.content_params.Discv5Payload],
+      [schema.content_params.RequestId],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
