@@ -11,9 +11,16 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
   private portal: PortalNetwork | undefined
   private history: HistoryProtocol | undefined
   private portalOpts: Partial<PortalNetworkOpts>
-  constructor(fallbackProviderUrl: string, network = 1, opts: Partial<PortalNetworkOpts>) {
+  constructor(
+    fallbackProvider: string | ethers.providers.JsonRpcProvider,
+    network = 1,
+    opts: Partial<PortalNetworkOpts>
+  ) {
     super()
-    this.fallbackProvider = new ethers.providers.StaticJsonRpcProvider(fallbackProviderUrl, network)
+    this.fallbackProvider =
+      typeof fallbackProvider === 'string'
+        ? new ethers.providers.StaticJsonRpcProvider(fallbackProvider, network)
+        : fallbackProvider
     this.portalOpts = opts
   }
 
