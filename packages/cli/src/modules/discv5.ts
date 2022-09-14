@@ -38,6 +38,7 @@ export class discv5 {
     this.discv5_routingTableInfo = middleware(this.discv5_routingTableInfo.bind(this), 1, [
       [schema.portal.Enr],
     ])
+    this.discv5_addEnr = middleware(this.discv5_addEnr.bind(this), 1, [[schema.content_params.Enr]])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
