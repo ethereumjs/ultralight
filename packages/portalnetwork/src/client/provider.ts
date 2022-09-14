@@ -1,20 +1,40 @@
-import { BlockTag, StaticJsonRpcProvider } from '@ethersproject/providers'
+import { ethers } from 'ethers'
+import { HistoryProtocol, ProtocolId } from '../subprotocols/index.js'
+import { ethJsBlockToEthersBlock } from '../util/helpers.js'
 import { PortalNetwork } from './client.js'
 import { PortalNetworkOpts } from './types.js'
 
-export class UltralightProvider extends StaticJsonRpcProvider {
-  private fallbackProvider: StaticJsonRpcProvider
+export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
+  private fallbackProvider:
+    | ethers.providers.StaticJsonRpcProvider
+    | ethers.providers.JsonRpcProvider
   private portal: PortalNetwork | undefined
+  private history: HistoryProtocol | undefined
   private portalOpts: Partial<PortalNetworkOpts>
   constructor(fallbackProviderUrl: string, network = 1, opts: Partial<PortalNetworkOpts>) {
     super()
-    this.fallbackProvider = new StaticJsonRpcProvider(fallbackProviderUrl, network)
+    this.fallbackProvider = new ethers.providers.StaticJsonRpcProvider(fallbackProviderUrl, network)
     this.portalOpts = opts
   }
 
   init = async () => {
     this.portal = await PortalNetwork.create({ ...this.portalOpts })
+    await this.portal.start()
+    this.history = this.portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   }
 
-  getBlock = (blockTag: BlockTag) => this.fallbackProvider.getBlock(blockTag)
+  getBlock = async (blockTag: ethers.providers.BlockTag) => {
+    if (this.history) {
+      let block
+      if (typeof blockTag === 'string' && blockTag.length === 66) {
+        block = await this.history.ETH.getBlockByHash(blockTag, false)
+      } else if (blockTag !== 'latest') {
+        const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
+        block = await this.history.ETH.getBlockByNumber(blockNum, false)
+      }
+      if (block !== undefined) return ethJsBlockToEthersBlock(block)
+    }
+    // TODO: Add block to history network if retrieved from provider
+    return this.fallbackProvider.getBlock(blockTag)
+  }
 }
