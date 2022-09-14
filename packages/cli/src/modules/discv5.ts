@@ -85,6 +85,9 @@ export class discv5 {
       [schema.content_params.Enr],
       [schema.content_params.Discv5Payload],
     ])
+    this.discv5_recursiveFindNode = middleware(this.discv5_recursiveFindNode.bind(this), 1, [
+      [schema.content_params.NodeId],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
