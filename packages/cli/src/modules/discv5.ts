@@ -42,6 +42,9 @@ export class discv5 {
     this.discv5_getEnr = middleware(this.discv5_getEnr.bind(this), 1, [
       [schema.content_params.NodeId],
     ])
+    this.discv5_deleteEnr = middleware(this.discv5_deleteEnr.bind(this), 1, [
+      [schema.content_params.NodeId],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
