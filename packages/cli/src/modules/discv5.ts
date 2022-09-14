@@ -35,6 +35,9 @@ export class discv5 {
       [schema.portal.socketAddr],
       [schema.schema.optional(validators.bool)],
     ])
+    this.discv5_routingTableInfo = middleware(this.discv5_routingTableInfo.bind(this), 1, [
+      [schema.portal.Enr],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
