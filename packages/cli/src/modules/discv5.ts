@@ -60,6 +60,11 @@ export class discv5 {
       [schema.content_params.Enr],
       [schema.content_params.Distances],
     ])
+    this.discv5_sendNodes = middleware(this.discv5_sendNodes.bind(this), 3, [
+      [schema.content_params.Enr],
+      [schema.content_params.Nodes],
+      [schema.content_params.RequestId],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
