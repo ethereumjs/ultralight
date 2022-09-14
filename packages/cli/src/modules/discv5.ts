@@ -1,6 +1,7 @@
 import { Debugger } from 'debug'
 import { PortalNetwork } from 'portalnetwork'
-import { middleware } from '../validators.js'
+import { middleware, validators } from '../validators.js'
+import * as schema from '../schema/index.js'
 
 const methods = [
   'discv5_nodeInfo',
@@ -30,25 +31,13 @@ export class discv5 {
     this._client = client
     this.logger = logger
     this.discv5_nodeInfo = middleware(this.discv5_nodeInfo.bind(this), 0, [])
-    this.discv5_updateNodeInfo = middleware(this.discv5_updateNodeInfo.bind(this), 0, [])
-    this.discv5_routingTableInfo = middleware(this.discv5_routingTableInfo.bind(this), 0, [])
-    this.discv5_addEnr = middleware(this.discv5_addEnr.bind(this), 0, [])
-    this.discv5_getEnr = middleware(this.discv5_getEnr.bind(this), 0, [])
-    this.discv5_deleteEnr = middleware(this.discv5_deleteEnr.bind(this), 0, [])
-    this.discv5_lookupEnr = middleware(this.discv5_lookupEnr.bind(this), 0, [])
-    this.discv5_sendPing = middleware(this.discv5_sendPing.bind(this), 0, [])
-    this.discv5_sendPong = middleware(this.discv5_sendPong.bind(this), 0, [])
-    this.discv5_sendFindNode = middleware(this.discv5_sendFindNode.bind(this), 0, [])
-    this.discv5_sendNodes = middleware(this.discv5_sendNodes.bind(this), 0, [])
-    this.discv5_sendTalkRequest = middleware(this.discv5_sendTalkRequest.bind(this), 0, [])
-    this.discv5_sendTalkResponse = middleware(this.discv5_sendTalkResponse.bind(this), 0, [])
-    this.discv5_ping = middleware(this.discv5_ping.bind(this), 0, [])
-    this.discv5_findNode = middleware(this.discv5_findNode.bind(this), 0, [])
-    this.discv5_talkReq = middleware(this.discv5_talkReq.bind(this), 0, [])
-    this.discv5_recursiveFindNode = middleware(this.discv5_recursiveFindNode.bind(this), 0, [])
+    this.discv5_updateNodeInfo = middleware(this.discv5_updateNodeInfo.bind(this), 0, [
+      [schema.portal.socketAddr],
+      [schema.schema.optional(validators.bool)],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
-  async discv5_updateNodeInfo(params: [string, boolean]) {}
+  async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
   async discv5_routingTableInfo(params: []) {}
   async discv5_addEnr(params: [string]) {}
   async discv5_getEnr(params: [string]) {}
