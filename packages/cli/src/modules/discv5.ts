@@ -39,6 +39,9 @@ export class discv5 {
       [schema.portal.Enr],
     ])
     this.discv5_addEnr = middleware(this.discv5_addEnr.bind(this), 1, [[schema.content_params.Enr]])
+    this.discv5_getEnr = middleware(this.discv5_getEnr.bind(this), 1, [
+      [schema.content_params.NodeId],
+    ])
   }
   async discv5_nodeInfo(params: []) {}
   async discv5_updateNodeInfo(params: [string, boolean | undefined]) {}
