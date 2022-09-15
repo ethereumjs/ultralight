@@ -1,21 +1,28 @@
 import tape from 'tape'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
-import { spawn, ChildProcessByStdio } from 'child_process'
+import { spawn } from 'child_process'
 import { createRequire } from 'module'
-
+import { MockProvider } from '../testUtils/mockProvider.js'
+import { Block, BlockHeader } from '@ethereumjs/block'
 const require = createRequire(import.meta.url)
+
 function getProxy() {
   process.chdir('../')
   const proxyAddr = process.cwd() + '/proxy/dist/index.js'
   process.chdir('./portalnetwork')
   return proxyAddr
 }
-const file = require.resolve(getProxy())
-const child = spawn(process.execPath, [file, `--nat=localhost`])
 
 tape('Test provider functionality', async (t) => {
-  const provider = new UltralightProvider('https://cloudflare-eth.com/v1/mainnet', 1, {
+  const file = require.resolve(getProxy())
+  const child = spawn(process.execPath, [file, `--nat=localhost`])
+  const sleep = async () => {
+    return new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+
+  await sleep()
+  const provider = new UltralightProvider(new MockProvider(), 1, {
     proxyAddress: 'ws://127.0.0.1:5050',
     transport: TransportLayer.WEB,
     bootnodes: [
@@ -23,9 +30,14 @@ tape('Test provider functionality', async (t) => {
     ],
   })
   await provider.init()
-  const block = await provider.getBlock('latest')
-  t.ok(block.number > 0, 'retrieved block from fallback provider')
 
+  const block = await provider.getBlock(5000)
+  t.ok(block.number === 5000, 'retrieved block from fallback provider')
+
+  // Stub getBlockByHash for unit testing
+  ;(provider as any).history.ETH.getBlockByHash = (_hash: string) => {
+    return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
+  }
   const block2 = await provider.getBlock(
     '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9'
   )

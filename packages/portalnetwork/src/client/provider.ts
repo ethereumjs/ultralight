@@ -16,7 +16,10 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
     network = 1,
     opts: Partial<PortalNetworkOpts>
   ) {
-    super()
+    super(
+      typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider.connection,
+      network
+    )
     this.fallbackProvider =
       typeof fallbackProvider === 'string'
         ? new ethers.providers.StaticJsonRpcProvider(fallbackProvider, network)
@@ -37,14 +40,12 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block)
       }
-      return this.fallbackProvider.getBlock(blockTag)
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
       block = await this.history?.ETH.getBlockByNumber(blockNum, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block)
       }
-      return this.fallbackProvider.getBlock(blockTag)
     }
     // TODO: Add block to history network if retrieved from provider
     return this.fallbackProvider.getBlock(blockTag)
