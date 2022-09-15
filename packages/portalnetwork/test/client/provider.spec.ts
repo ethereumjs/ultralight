@@ -1,34 +1,26 @@
 import tape from 'tape'
 import { UltralightProvider } from '../../src/client/provider.js'
-import { TransportLayer } from '../../src/index.js'
-import { spawn } from 'child_process'
-import { createRequire } from 'module'
+import { ENR, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
-const require = createRequire(import.meta.url)
-
-function getProxy() {
-  process.chdir('../')
-  const proxyAddr = process.cwd() + '/proxy/dist/index.js'
-  process.chdir('./portalnetwork')
-  return proxyAddr
-}
+import { Multiaddr } from '@multiformats/multiaddr'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 
 tape('Test provider functionality', async (t) => {
-  const file = require.resolve(getProxy())
-  const child = spawn(process.execPath, [file, `--nat=localhost`])
-  const sleep = async () => {
-    return new Promise((resolve) => setTimeout(resolve, 1000))
-  }
-
-  await sleep()
+  const ma = new Multiaddr('/ip4/0.0.0.0/udp/1500')
+  const peerId = await createSecp256k1PeerId()
+  const enr = ENR.createFromPeerId(peerId)
+  enr.setLocationMultiaddr(ma)
   const provider = new UltralightProvider(new MockProvider(), 1, {
-    proxyAddress: 'ws://127.0.0.1:5050',
-    transport: TransportLayer.WEB,
-    bootnodes: [
-      'enr:-IS4QM12WeTSgjXEFLtVgWblXCoRMDT1PLsNGdUi8rl0H5v3erClE6pD1f9pR7W7OYdfAitaza4pxg0o0X8lDZJl8EMDgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQMZR_0w_3yH2Mf_LArRUVYk0keXD5Ru_ahy6ISkMqu2NIN1ZHCCIyg',
-    ],
+    bindAddress: '0.0.0.0',
+    transport: TransportLayer.NODE,
+    config: {
+      multiaddr: ma,
+      enr: enr,
+      peerId: peerId,
+    },
   })
+
   await provider.init()
 
   const block = await provider.getBlock(5000)
@@ -43,6 +35,5 @@ tape('Test provider functionality', async (t) => {
   )
   t.equal(block2.number, 2, 'got block 2 from portal network')
   await (provider as any).portal.stop()
-  child.kill()
   t.end()
 })
