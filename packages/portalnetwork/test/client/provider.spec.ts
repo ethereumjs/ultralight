@@ -35,5 +35,7 @@ tape('Test provider functionality', async (t) => {
   )
   t.equal(block2.number, 2, 'got block 2 from portal network')
   await (provider as any).portal.stop()
+
+  t.equal(1, (await provider.detectNetwork()).chainId, 'parent class methods work as expected')
   t.end()
 })
