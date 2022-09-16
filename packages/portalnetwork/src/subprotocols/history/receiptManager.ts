@@ -8,7 +8,7 @@ import {
   intToBuffer,
   NestedUint8Array,
 } from '@ethereumjs/util'
-import * as RLP from 'rlp'
+import * as RLP from '@ethereumjs/rlp'
 import type { Block } from '@ethereumjs/block'
 import { DBManager } from '../../client/dbManager.js'
 import {

@@ -1,9 +1,8 @@
 import tape from 'tape'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { BlockHeader } from '@ethereumjs/block'
 import {
   blockNumberToGindex,
   EpochAccumulator,
-  HeaderAccumulator,
   HeaderAccumulatorType,
   HeaderRecord,
 } from '../../../src/index.js'

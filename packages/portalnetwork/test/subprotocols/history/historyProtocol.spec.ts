@@ -22,7 +22,7 @@ import {
   HistoryProtocol,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
-import { RLP } from 'rlp'
+import RLP from '@ethereumjs/rlp'
 import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)

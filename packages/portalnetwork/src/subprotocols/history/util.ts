@@ -8,10 +8,9 @@ import {
   sszTransaction,
   sszUncles,
 } from './types.js'
-import * as rlp from 'rlp'
+import rlp from '@ethereumjs/rlp'
 import {
   Block,
-  BlockBodyBuffer,
   BlockBuffer,
   BlockHeaderBuffer,
   TransactionsBuffer,
