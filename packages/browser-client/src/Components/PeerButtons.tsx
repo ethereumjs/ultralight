@@ -26,61 +26,11 @@ import {
 } from 'portalnetwork'
 import React, { useContext, useEffect, useReducer } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
-
-interface PeerButtonsState {
-  epoch: number
-  offer: Uint8Array[]
-  ping: [string, string]
-  distance: string
-  blockHash: string
-}
-
-const peerButtonsInitialState = {
-  epoch: 0,
-  offer: [],
-  ping: ['blue.100', 'PING'] as [string, string],
-  distance: '',
-  blockHash: '',
-}
-
-enum PeerButtonsStateChange {
-  SETEPOCH = 'SETEPOCH',
-  ADDTOOFFER = 'ADDTOOFFER',
-  PING = 'PING',
-  SETDISTANCE = 'SETDISTANCE',
-  SETBLOCKHASH = 'SETBLOCKHASH',
-  SETPEERIDX = 'SETPEERIDX',
-}
-
-interface AppStateAction {
-  type: PeerButtonsStateChange
-  payload?: any
-}
-
-const reducer = (state: PeerButtonsState, action: AppStateAction) => {
-  const { type, payload } = action
-  switch (type) {
-    case PeerButtonsStateChange.SETEPOCH:
-      return state
-    case PeerButtonsStateChange.ADDTOOFFER:
-      return {
-        ...state,
-        offer: [...state.offer, payload],
-      }
-    case PeerButtonsStateChange.PING:
-      return { ...state, ping: payload }
-    case PeerButtonsStateChange.SETDISTANCE:
-      return state
-    case PeerButtonsStateChange.SETBLOCKHASH:
-      return { ...state, blockHash: payload }
-    default:
-      throw new Error()
-  }
-}
+import { peerInitialState, peerReducer, PeerStateChange } from '../peerReducer'
 
 export default function PeerButtons() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
-  const [_state, _dispatch] = useReducer(reducer, peerButtonsInitialState)
+  const [_state, _dispatch] = useReducer(peerReducer, peerInitialState)
 
   useEffect(() => {
     if (!state.selectedPeer) {
@@ -139,20 +89,20 @@ export default function PeerButtons() {
     }
   }
   const handlePing = async () => {
-    _dispatch({ type: PeerButtonsStateChange.PING, payload: ['yellow.200', 'PINGING'] })
+    _dispatch({ type: PeerStateChange.PING, payload: ['yellow.200', 'PINGING'] })
     setTimeout(async () => {
       const pong = await state.provider!.historyProtocol!.sendPing(
         ENR.decodeTxt(state.selectedPeer)
       )
       if (pong) {
-        _dispatch({ type: PeerButtonsStateChange.PING, payload: ['green.200', 'PONG RECEIVED!'] })
+        _dispatch({ type: PeerStateChange.PING, payload: ['green.200', 'PONG RECEIVED!'] })
         setTimeout(() => {
-          _dispatch({ type: PeerButtonsStateChange.PING, payload: ['blue.200', 'PING'] })
+          _dispatch({ type: PeerStateChange.PING, payload: ['blue.200', 'PING'] })
         }, 1500)
       } else {
-        _dispatch({ type: PeerButtonsStateChange.PING, payload: ['red.200', 'PING FAILED'] })
+        _dispatch({ type: PeerStateChange.PING, payload: ['red.200', 'PING FAILED'] })
         setTimeout(() => {
-          _dispatch({ type: PeerButtonsStateChange.PING, payload: ['blue.200', 'PINGING'] })
+          _dispatch({ type: PeerStateChange.PING, payload: ['blue.200', 'PINGING'] })
         }, 1000)
       }
     }, 500)
@@ -321,7 +271,7 @@ export default function PeerButtons() {
               placeholder={'Epoch'}
               onChange={(evt) => {
                 _dispatch({
-                  type: PeerButtonsStateChange.SETEPOCH,
+                  type: PeerStateChange.SETEPOCH,
                   payload: parseInt(evt.target.value),
                 })
               }}
@@ -344,7 +294,7 @@ export default function PeerButtons() {
               placeholder={`BlockNumber (Max: ${state.provider!.historyProtocol!.accumulator.currentHeight()})`}
               onChange={(evt) => {
                 _dispatch({
-                  type: PeerButtonsStateChange.SETEPOCH,
+                  type: PeerStateChange.SETEPOCH,
                   payload: Math.floor(parseInt(evt.target.value) / 8192),
                 })
               }}
@@ -364,7 +314,7 @@ export default function PeerButtons() {
                 placeholder={'Distance'}
                 onChange={(evt) => {
                   _dispatch({
-                    type: PeerButtonsStateChange.SETDISTANCE,
+                    type: PeerStateChange.SETDISTANCE,
                     payload: evt.target.value,
                   })
                 }}
@@ -376,7 +326,7 @@ export default function PeerButtons() {
             value={_state.blockHash}
             placeholder="BlockHash"
             onChange={(evt) =>
-              _dispatch({ type: PeerButtonsStateChange.SETBLOCKHASH, payload: evt.target.value })
+              _dispatch({ type: PeerStateChange.SETBLOCKHASH, payload: evt.target.value })
             }
           />
           <HStack width={'100%'}>
