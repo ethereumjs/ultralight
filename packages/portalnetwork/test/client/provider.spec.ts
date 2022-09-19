@@ -11,7 +11,7 @@ tape('Test provider functionality', async (t) => {
   const peerId = await createSecp256k1PeerId()
   const enr = ENR.createFromPeerId(peerId)
   enr.setLocationMultiaddr(ma)
-  const provider = new UltralightProvider(new MockProvider(), 1, {
+  const provider = await UltralightProvider.create(new MockProvider(), 1, {
     bindAddress: '0.0.0.0',
     transport: TransportLayer.NODE,
     config: {
@@ -20,8 +20,6 @@ tape('Test provider functionality', async (t) => {
       peerId: peerId,
     },
   })
-
-  await provider.init()
 
   const block = await provider.getBlock(5000)
   t.ok(block.number === 5000, 'retrieved block from fallback provider')
