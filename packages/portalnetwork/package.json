@@ -31,6 +31,7 @@
     "@ethereumjs/block": "^4.0.0",
     "@ethereumjs/rlp": "^4.0.0",
     "@ethereumjs/vm": "^6.0.0",
+    "@ethersproject/abstract-provider": "^5.7.0",
     "@frontall/capacitor-udp": "^0.3.4",
     "@libp2p/peer-id": "^1.1.13",
     "@libp2p/peer-id-factory": "^1.0.15",
