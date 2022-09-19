@@ -8,13 +8,12 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
   private fallbackProvider:
     | ethers.providers.StaticJsonRpcProvider
     | ethers.providers.JsonRpcProvider
-  private portal: PortalNetwork | undefined
-  private history: HistoryProtocol | undefined
-  private portalOpts: Partial<PortalNetworkOpts>
+  public portal: PortalNetwork
+  public history: HistoryProtocol
   constructor(
     fallbackProvider: string | ethers.providers.JsonRpcProvider,
     network = 1,
-    opts: Partial<PortalNetworkOpts>
+    portal: PortalNetwork
   ) {
     super(
       typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider.connection,
@@ -24,13 +23,17 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
       typeof fallbackProvider === 'string'
         ? new ethers.providers.StaticJsonRpcProvider(fallbackProvider, network)
         : fallbackProvider
-    this.portalOpts = opts
+    this.portal = portal
+    this.history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   }
 
-  init = async () => {
-    this.portal = await PortalNetwork.create({ ...this.portalOpts })
-    await this.portal.start()
-    this.history = this.portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  public static create = async (
+    fallbackProviderUrl: string | ethers.providers.JsonRpcProvider,
+    network = 1,
+    opts: Partial<PortalNetworkOpts>
+  ) => {
+    const portal = await PortalNetwork.create(opts)
+    return new UltralightProvider(fallbackProviderUrl, network, portal)
   }
 
   getBlock = async (blockTag: ethers.providers.BlockTag) => {

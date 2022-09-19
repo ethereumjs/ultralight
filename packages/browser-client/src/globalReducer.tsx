@@ -8,6 +8,7 @@ import {
   ProtocolId,
   TransportLayer,
   TxReceiptWithType,
+  UltralightProvider,
 } from 'portalnetwork'
 import React from 'react'
 import { AsyncActionHandlers } from 'use-reducer-async'
@@ -148,7 +149,7 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
   CREATENODEFROMBINDADDRESS:
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
-      const portal = await PortalNetwork.create({
+      const provider = new UltralightProvider('', 1, {
         supportedProtocols: [ProtocolId.HistoryNetwork],
         proxyAddress: action.payload.state.proxy,
         db: action.payload.state.LDB as any,
@@ -161,8 +162,8 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
           },
         },
       })
-      await startUp(portal)
-      dispatch({ type: StateChange.SETPORTAL, payload: portal })
+      await startUp(provider)
+      dispatch({ type: StateChange.SETPORTAL, payload: provider })
     },
   CREATENODE:
     ({ dispatch }: reducerType) =>

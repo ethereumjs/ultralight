@@ -19,7 +19,7 @@ export enum TransportLayer {
 }
 
 export interface PortalNetworkOpts {
-  supportedProtocols: ProtocolId[]
+  supportedProtocols?: ProtocolId[]
   radius?: bigint
   bootnodes?: string[]
   db?: AbstractLevel<string, string> | undefined
