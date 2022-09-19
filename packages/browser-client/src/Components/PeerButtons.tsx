@@ -141,7 +141,7 @@ export default function PeerButtons() {
   const handlePing = async () => {
     _dispatch({ type: PeerButtonsStateChange.PING, payload: ['yellow.200', 'PINGING'] })
     setTimeout(async () => {
-      const pong = await state!.historyProtocol!.sendPing(ENR.decodeTxt(state!.selectedPeer))
+      const pong = await state!.provider!.historyProtocol!.sendPing(ENR.decodeTxt(state!.selectedPeer))
       if (pong) {
         _dispatch({ type: PeerButtonsStateChange.PING, payload: ['green.200', 'PONG RECEIVED!'] })
         setTimeout(() => {
@@ -156,21 +156,21 @@ export default function PeerButtons() {
     }, 500)
   }
   const handleFindNodes = (peer: ENR) => {
-    state!.historyProtocol!.sendFindNodes(peer.nodeId, [parseInt(_state.distance)])
+    state!.provider!.historyProtocol!.sendFindNodes(peer.nodeId, [parseInt(_state.distance)])
   }
   const handleRequestSnapshot = () => {
     const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 4,
       value: { selector: 0, value: null },
     })
-    state!.historyProtocol!.sendFindContent(
+    state!.provider!.historyProtocol!.sendFindContent(
       ENR.decodeTxt(state!.selectedPeer).nodeId,
       accumulatorKey
     )
   }
 
   const handleOffer = () => {
-    state!.historyProtocol!.sendOffer(ENR.decodeTxt(state!.selectedPeer).nodeId, _state.offer)
+    state!.provider!.historyProtocol!.sendOffer(ENR.decodeTxt(state!.selectedPeer).nodeId, _state.offer)
   }
   const sendFindContent = async (type: string) => {
     if (type === 'header') {
@@ -181,7 +181,7 @@ export default function PeerButtons() {
           blockHash: fromHexString(_state.blockHash),
         },
       })
-      const header = await state!.historyProtocol!.sendFindContent(
+      const header = await state!.provider!.historyProtocol!.sendFindContent(
         ENR.decodeTxt(state!.selectedPeer).nodeId,
         headerKey
       )
@@ -195,7 +195,7 @@ export default function PeerButtons() {
           blockHash: fromHexString(_state.blockHash),
         },
       })
-      state!.historyProtocol!.sendFindContent(ENR.decodeTxt(state!.selectedPeer).nodeId, headerKey)
+      state!.provider!.historyProtocol!.sendFindContent(ENR.decodeTxt(state!.selectedPeer).nodeId, headerKey)
       const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 1,
         value: {
@@ -203,7 +203,7 @@ export default function PeerButtons() {
           blockHash: fromHexString(_state.blockHash),
         },
       })
-      state!.historyProtocol!.sendFindContent(ENR.decodeTxt(state!.selectedPeer).nodeId, bodyKey)
+      state!.provider!.historyProtocol!.sendFindContent(ENR.decodeTxt(state!.selectedPeer).nodeId, bodyKey)
     } else if (type === 'block') {
       const headerKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 0,
@@ -221,12 +221,12 @@ export default function PeerButtons() {
       })
       try {
         const header = (
-          await state!.historyProtocol!.sendFindContent(
+          await state!.provider!.historyProtocol!.sendFindContent(
             ENR.decodeTxt(state!.selectedPeer).nodeId,
             headerKey
           )
         )?.value as Uint8Array
-        const _body = await state!.historyProtocol!.sendFindContent(
+        const _body = await state!.provider!.historyProtocol!.sendFindContent(
           ENR.decodeTxt(state!.selectedPeer).nodeId,
           bodyKey
         )
@@ -240,7 +240,7 @@ export default function PeerButtons() {
         selector: 3,
         value: {
           chainId: 1,
-          blockHash: state!.historyProtocol!.accumulator.historicalEpochs()[_state.epoch],
+          blockHash: state!.provider!.historyProtocol!.accumulator.historicalEpochs()[_state.epoch],
         },
       })
     }
@@ -297,7 +297,7 @@ export default function PeerButtons() {
             <Divider />
             <HStack width={'100%'}>
               <Button
-                isDisabled={state!.historyProtocol!.accumulator.historicalEpochs.length < 1}
+                isDisabled={state!.provider!.historyProtocol!.accumulator.historicalEpochs.length < 1}
                 width="70%"
                 onClick={() => sendFindContent('epoch')}
               >
@@ -306,7 +306,7 @@ export default function PeerButtons() {
               <Input
                 type={'number'}
                 min={1}
-                max={state!.historyProtocol!.accumulator.historicalEpochs.length}
+                max={state!.provider!.historyProtocol!.accumulator.historicalEpochs.length}
                 width={'30%'}
                 placeholder={'Epoch'}
                 onChange={(evt) => {
@@ -320,7 +320,7 @@ export default function PeerButtons() {
             <Divider />
             <HStack width={'100%'}>
               <Button
-                isDisabled={state!.historyProtocol!.accumulator.historicalEpochs.length < 1}
+                isDisabled={state!.provider!.historyProtocol!.accumulator.historicalEpochs.length < 1}
                 width="70%"
                 onClick={() => sendFindContent('epoch')}
               >
@@ -329,9 +329,9 @@ export default function PeerButtons() {
               <Input
                 type={'number'}
                 min={1}
-                max={state!.historyProtocol!.accumulator.currentHeight()}
+                max={state!.provider!.historyProtocol!.accumulator.currentHeight()}
                 width={'30%'}
-                placeholder={`BlockNumber (Max: ${state!.historyProtocol!.accumulator.currentHeight()})`}
+                placeholder={`BlockNumber (Max: ${state!.provider!.historyProtocol!.accumulator.currentHeight()})`}
                 onChange={(evt) => {
                   _dispatch({
                     type: PeerButtonsStateChange.SETEPOCH,

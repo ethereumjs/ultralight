@@ -7,7 +7,7 @@ export default function ValidateAccumulator() {
   const toast = useToast()
 
   const handleClick = async () => {
-    const history = state!.historyProtocol!
+    const history = state!.provider!.historyProtocol!
     if (history.accumulator) {
       const valid = await history.accumulator.verifySnapshot(
         history.accumulator.masterAccumulator()

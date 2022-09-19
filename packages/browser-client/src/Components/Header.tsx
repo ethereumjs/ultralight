@@ -17,7 +17,9 @@ import { AppContext } from '../globalReducer'
 
 export default function Header() {
   const { state } = useContext(AppContext)
-  const enr = state!.portal!.discv5.enr.encodeTxt(state!.portal!.discv5.keypair.privateKey)
+  const enr = state!.provider!.portal!.discv5.enr.encodeTxt(
+    state!.provider!.portal!.discv5.keypair.privateKey
+  )
   const { onCopy } = useClipboard(enr)
   const toast = useToast()
   async function share() {

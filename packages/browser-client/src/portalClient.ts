@@ -13,9 +13,9 @@ import bns from './bootnodes.json'
 
 export const refresh = (state: AppState) => {
   try {
-    const known = state.historyProtocol!.routingTable.values()
+    const known = state.provider!.historyProtocol!.routingTable.values()
     const formattedKnown: [number, string, string, string, string][] = known.map((_enr: ENR) => {
-      const distToSelf = log2Distance(state.portal!.discv5.enr.nodeId, _enr.nodeId)
+      const distToSelf = log2Distance(state.provider!.portal.discv5.enr.nodeId, _enr.nodeId)
       return [
         distToSelf,
         `${_enr.ip}`,
@@ -40,7 +40,6 @@ export const refresh = (state: AppState) => {
 
 export const startUp = async (provider: UltralightProvider) => {
   // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR if doing local testing
-  await provider.init()
 
   if (
     provider.portal.discv5.sessionService.transport instanceof WebSocketTransportService &&
@@ -65,36 +64,48 @@ export const startUp = async (provider: UltralightProvider) => {
 }
 export async function createNodeFromScratch(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? new UltralightProvider('', 1, {
-        bootnodes: bns,
-        db: state.LDB as any,
-        transport: TransportLayer.MOBILE,
-      })
-    : new UltralightProvider('', 1, {
-        proxyAddress: state.proxy,
-        bootnodes: bns,
-        db: state.LDB as any,
-        transport: TransportLayer.WEB,
-      })
+    ? await UltralightProvider.create(
+        'https://mainnet.infura.io/v3/c41bd90629a342a8b0b32504d23b2e70',
+        1,
+        {
+          bootnodes: bns,
+          db: state.LDB as any,
+          transport: TransportLayer.MOBILE,
+        }
+      )
+    : await UltralightProvider.create(
+        'https://mainnet.infura.io/v3/c41bd90629a342a8b0b32504d23b2e70',
+        1,
+        {
+          proxyAddress: state.proxy,
+          bootnodes: bns,
+          db: state.LDB as any,
+          transport: TransportLayer.WEB,
+        }
+      )
   await startUp(provider)
   return provider
 }
 
 export async function createNodeFromStorage(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? new UltralightProvider('', 1, {
+    ? await UltralightProvider.create('', 1, {
         bootnodes: bns,
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.MOBILE,
       })
-    : new UltralightProvider('', 1, {
-        proxyAddress: state.proxy,
-        bootnodes: bns,
-        db: state.LDB as any,
-        rebuildFromMemory: true,
-        transport: TransportLayer.WEB,
-      })
+    : await UltralightProvider.create(
+        'https://mainnet.infura.io/v3/c41bd90629a342a8b0b32504d23b2e70',
+        1,
+        {
+          proxyAddress: state.proxy,
+          bootnodes: bns,
+          db: state.LDB as any,
+          rebuildFromMemory: true,
+          transport: TransportLayer.WEB,
+        }
+      )
   await startUp(provider)
   return provider
 }

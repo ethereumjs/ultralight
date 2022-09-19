@@ -17,7 +17,7 @@ import {
   HStack,
   VStack,
 } from '@chakra-ui/react'
-import { HistoryNetworkContentKeyUnionType, TxReceiptWithType } from 'portalnetwork'
+import { fromHexString, HistoryNetworkContentKeyUnionType, TxReceiptWithType } from 'portalnetwork'
 import SelectTx from './SelectTx'
 import React, { useContext, useEffect, useState } from 'react'
 import { toHexString } from './DisplayTx'
@@ -31,17 +31,14 @@ const DisplayBlock = () => {
   const [receipts, setReceipts] = useState<TxReceiptWithType[]>([])
 
   useEffect(() => {
-    state?.portal?.on('Verified', (key, verified) => {
+    state?.provider?.portal?.on('Verified', (key, verified) => {
       setValidated(verified)
     })
   }, [])
 
   const findParent = async () => {
     dispatch!({ type: StateChange.TOGGLELOADING })
-    const block = await state!.historyProtocol!.ETH.getBlockByHash(
-      toHexString(state!.block!.header.parentHash),
-      true
-    )
+    const block = await state!.provider!.getBlock(state!.block!.parentHash)
     if (block) {
       dispatch!({ type: StateChange.SETBLOCK, payload: block })
     }
@@ -67,11 +64,29 @@ const DisplayBlock = () => {
     )
   }
   const block = state!.block!
-  const header = Object.entries(block.header.toJSON())
+  const header = Object.entries(block)
+    .map((entry) => {
+      let val
+      switch (typeof entry[1]) {
+        case 'string':
+          val = entry[1]
+          break
+        case 'object':
+          val = entry[1].toString(10)
+          break
+        case 'number':
+          val = entry[1].toString()
+          break
+      }
+      return [entry[0], val]
+    })
+    .filter((entry) => entry[0].slice(0, 1) !== '_')
 
   async function init() {
     try {
-      const receipts = await state!.historyProtocol?.receiptManager.getReceipts(block.hash())
+      const receipts = await state!.provider!.historyProtocol?.receiptManager.getReceipts(
+        Buffer.from(block.hash.slice(2))
+      )
       if (receipts) {
         setReceipts(receipts)
       }
@@ -91,7 +106,7 @@ const DisplayBlock = () => {
       selector: 0,
       value: {
         chainId: 1,
-        blockHash: block.header.hash(),
+        blockHash: fromHexString(block.hash),
       },
     })
   )
@@ -101,7 +116,7 @@ const DisplayBlock = () => {
       selector: 1,
       value: {
         chainId: 1,
-        blockHash: block.header.hash(),
+        blockHash: fromHexString(block.hash),
       },
     })
   )
@@ -111,7 +126,7 @@ const DisplayBlock = () => {
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
         <HStack justifyContent={'center'}>
           <span>Block #</span>
-          <Skeleton isLoaded={!state!.isLoading}>{Number(block.header.number)}</Skeleton>
+          <Skeleton isLoaded={!state!.isLoading}>{block.number}</Skeleton>
           {validated && <CheckCircleIcon />}
         </HStack>
       </Heading>
@@ -183,20 +198,14 @@ const DisplayBlock = () => {
                 {state!.block!.transactions.length > 0 &&
                   receipts.length > 0 &&
                   receipts.map((rec, idx) => {
-                    return (
-                      <TxReceipt
-                        rec={rec}
-                        idx={idx}
-                        hash={toHexString(state!.block!.transactions[idx].hash())}
-                      />
-                    )
+                    return <TxReceipt rec={rec} idx={idx} hash={state!.block!.transactions[idx]} />
                   })}
               </Accordion>
             </Box>
           </TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!state!.isLoading}>
-              <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>
+              <Text wordBreak={'break-all'}>{JSON.stringify(block)}</Text>
             </Skeleton>
           </TabPanel>
         </TabPanels>

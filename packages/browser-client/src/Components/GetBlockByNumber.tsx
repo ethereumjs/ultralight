@@ -5,13 +5,13 @@ import { AppContext, StateChange } from '../globalReducer'
 export default function GetBlockByNumber() {
   const { state, dispatch } = useContext(AppContext)
   const [searchNumber, setSearchNumber] = useState(
-    state!.historyProtocol!.accumulator.masterAccumulator().currentHeight().toString()
+    state!.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight().toString()
   )
   const toast = useToast()
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
-      const block = await state!.historyProtocol!.ETH.getBlockByNumber(
+      const block = await state!.provider!.historyProtocol!.ETH.getBlockByNumber(
         parseInt(blockNumber),
         includeTransactions
       )
@@ -24,7 +24,7 @@ export default function GetBlockByNumber() {
   async function handleClick() {
     if (
       parseInt(searchNumber) >
-      state!.historyProtocol!.accumulator!.masterAccumulator().currentHeight()
+      state!.provider!.historyProtocol!.accumulator!.masterAccumulator().currentHeight()
     ) {
       toast({
         title: 'Invalid Block Number',
@@ -44,7 +44,9 @@ export default function GetBlockByNumber() {
   return (
     <HStack marginY={1}>
       <Button
-        disabled={state!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1}
+        disabled={
+          state!.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
+        }
         width={'40%'}
         onClick={handleClick}
       >
@@ -54,7 +56,7 @@ export default function GetBlockByNumber() {
         <Input
           bg="whiteAlpha.800"
           placeholder={`BlockNumber (Max: ${state!
-            .historyProtocol!.accumulator.masterAccumulator()
+            .provider!.historyProtocol!.accumulator.masterAccumulator()
             .currentHeight()})`}
           type={'number'}
           onChange={(e) => setSearchNumber(e.target.value)}

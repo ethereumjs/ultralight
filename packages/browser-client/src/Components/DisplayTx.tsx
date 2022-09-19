@@ -16,8 +16,8 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { Log } from 'portalnetwork'
-import React, { useContext, useEffect } from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import React, { useContext } from 'react'
+import { AppContext } from '../globalReducer'
 interface DisplayTxProps {
   txIdx: number
 }
@@ -35,7 +35,7 @@ export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const { state, dispatch } = useContext(AppContext)
+  const { state } = useContext(AppContext)
   const rec = state!.receipts[props.txIdx]
   const trans = Object.entries(state!.block!.transactions[props.txIdx].toJSON())
   const data = {

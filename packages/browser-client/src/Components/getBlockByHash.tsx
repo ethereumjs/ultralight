@@ -7,7 +7,7 @@ export default function GetBlockByHash() {
   const [blockHash, setBlockhash] = useState('')
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {
-      const block = await state!.historyProtocol!.ETH.getBlockByHash(blockHash, includeTransactions)
+      const block = await state!.provider!.getBlock(blockHash)
       dispatch!({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'

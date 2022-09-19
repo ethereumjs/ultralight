@@ -9,7 +9,7 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
     | ethers.providers.StaticJsonRpcProvider
     | ethers.providers.JsonRpcProvider
   public portal: PortalNetwork
-  public history: HistoryProtocol
+  public historyProtocol: HistoryProtocol
   constructor(
     fallbackProvider: string | ethers.providers.JsonRpcProvider,
     network = 1,
@@ -24,7 +24,7 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
         ? new ethers.providers.StaticJsonRpcProvider(fallbackProvider, network)
         : fallbackProvider
     this.portal = portal
-    this.history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    this.historyProtocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   }
 
   public static create = async (
@@ -39,13 +39,13 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
   getBlock = async (blockTag: ethers.providers.BlockTag) => {
     let block
     if (typeof blockTag === 'string' && blockTag.length === 66) {
-      block = await this.history?.ETH.getBlockByHash(blockTag, false)
+      block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block)
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
-      block = await this.history?.ETH.getBlockByNumber(blockNum, false)
+      block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block)
       }
