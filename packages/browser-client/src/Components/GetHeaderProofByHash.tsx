@@ -17,7 +17,6 @@ export default function GetHeaderProofByHash() {
     const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 5,
       value: {
-        chainId: 1,
         blockHash: fromHexString(blockHash),
       },
     })
