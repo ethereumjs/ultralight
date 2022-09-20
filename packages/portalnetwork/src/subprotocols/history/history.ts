@@ -82,13 +82,13 @@ export class HistoryProtocol extends BaseProtocol {
     return value
   }
   public init = async () => {
-    this.client.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
+    this.client.uTP.on('Stream', async (selector, blockHash, content) => {
       if (selector === HistoryNetworkContentTypes.EpochAccumulator) {
         blockHash = toHexString(
           EpochAccumulator.hashTreeRoot(EpochAccumulator.deserialize(content))
         )
       }
-      await this.addContentToHistory(chainId, selector, blockHash, content)
+      await this.addContentToHistory(selector, blockHash, content)
     })
   }
 
@@ -152,7 +152,6 @@ export class HistoryProtocol extends BaseProtocol {
                     this.logger(`received content corresponding to ${content!.blockHash}`)
                     try {
                       this.addContentToHistory(
-                        content.chainId,
                         decodedKey.selector,
                         toHexString(Buffer.from(content.blockHash!)),
                         decoded.value as Uint8Array
@@ -164,9 +163,8 @@ export class HistoryProtocol extends BaseProtocol {
                   break
                 case HistoryNetworkContentTypes.HeaderAccumulator: {
                   this.addContentToHistory(
-                    1,
                     decodedKey.selector,
-                    getHistoryNetworkContentId(1, 4),
+                    getHistoryNetworkContentId(4),
                     decoded.value as Uint8Array
                   )
                   break
@@ -188,19 +186,17 @@ export class HistoryProtocol extends BaseProtocol {
 
   /**
    * Convenience method to add content for the History Network to the DB
-   * @param chainId - decimal number representing chain Id
    * @param contentType - content type of the data item being stored
    * @param hashKey - hex string representation of blockHash or epochHash
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
   public addContentToHistory = async (
-    chainId: number,
     contentType: HistoryNetworkContentTypes,
     hashKey: string,
     value: Uint8Array
   ): Promise<void> => {
-    this.contentManager.addContentToHistory(chainId, contentType, hashKey, value)
+    this.contentManager.addContentToHistory(contentType, hashKey, value)
   }
 
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {

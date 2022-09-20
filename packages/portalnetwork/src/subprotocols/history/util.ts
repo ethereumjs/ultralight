@@ -126,13 +126,11 @@ export const addRLPSerializedBlock = async (
 ) => {
   const decodedBlock = rlp.decode(fromHexString(rlpHex))
   await protocol.addContentToHistory(
-    1,
     HistoryNetworkContentTypes.BlockHeader,
     blockHash,
     rlp.encode((decodedBlock as Buffer[])[0])
   )
   await protocol.addContentToHistory(
-    1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
     sszEncodeBlockBody(
