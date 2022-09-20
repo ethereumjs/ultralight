@@ -60,13 +60,11 @@ tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
       const testBlockKeys: Uint8Array[] = []
 
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         testHash,
         testblockHeader.serialize()
       )
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockBody,
         testHash,
         testBlockBody
@@ -74,18 +72,18 @@ tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
       testBlockKeys.push(
         HistoryNetworkContentKeyUnionType.serialize({
           selector: HistoryNetworkContentTypes.BlockHeader,
-          value: { chainId: 1, blockHash: fromHexString(testHash) },
+          value: { blockHash: fromHexString(testHash) },
         }),
         HistoryNetworkContentKeyUnionType.serialize({
           selector: HistoryNetworkContentTypes.BlockBody,
-          value: { chainId: 1, blockHash: fromHexString(testHash) },
+          value: { blockHash: fromHexString(testHash) },
         })
       )
       let header: Uint8Array
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
         st.equal(
-          await portal1.db.get(getHistoryNetworkContentId(1, contentType, testHash)),
-          await portal2.db.get(getHistoryNetworkContentId(1, contentType, testHash)),
+          await portal1.db.get(getHistoryNetworkContentId(contentType, testHash)),
+          await portal2.db.get(getHistoryNetworkContentId(contentType, testHash)),
           `${HistoryNetworkContentTypes[contentType]} successfully stored in database`
         )
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
@@ -158,13 +156,11 @@ tape('OFFER/ACCEPT', (t) => {
       const testBlockKeys: Uint8Array[] = []
       for (const testBlock of testBlocks) {
         await protocol.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockHeader,
           '0x' + testBlock.header.hash().toString('hex'),
           testBlock.header.serialize()
         )
         await protocol.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockBody,
           '0x' + testBlock.header.hash().toString('hex'),
           sszEncodeBlockBody(testBlock)
@@ -172,11 +168,11 @@ tape('OFFER/ACCEPT', (t) => {
         testBlockKeys.push(
           HistoryNetworkContentKeyUnionType.serialize({
             selector: 0,
-            value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+            value: { blockHash: Uint8Array.from(testBlock.header.hash()) },
           }),
           HistoryNetworkContentKeyUnionType.serialize({
             selector: 1,
-            value: { chainId: 1, blockHash: Uint8Array.from(testBlock.header.hash()) },
+            value: { blockHash: Uint8Array.from(testBlock.header.hash()) },
           })
         )
       }
@@ -186,7 +182,7 @@ tape('OFFER/ACCEPT', (t) => {
       portal1.on('ContentAdded', async (blockHash, contentType, content) => {
         st.equal(
           await portal1.db.get(
-            getHistoryNetworkContentId(1, contentType, testHashes[testHashes.indexOf(blockHash)])
+            getHistoryNetworkContentId(contentType, testHashes[testHashes.indexOf(blockHash)])
           ),
           content,
           `${HistoryNetworkContentTypes[contentType]} successfully stored in db`
@@ -273,12 +269,12 @@ tape('OFFER/ACCEPT', (t) => {
             )
             const header = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
               )
             )
             const body = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockBody, blockHash)
+                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
               )
             )
             const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
@@ -303,13 +299,11 @@ tape('OFFER/ACCEPT', (t) => {
       await protocol1.sendPing(portal2.discv5.enr)
       testBlocks.forEach(async (testBlock: Block, idx: number) => {
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockHeader,
           testHashStrings[idx],
           testBlock.header.serialize()
         )
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockBody,
           testHashStrings[idx],
           sszEncodeBlockBody(testBlock)
@@ -351,12 +345,12 @@ tape('getBlockByHash', (t) => {
           st.equal(testHashStrings[idx], blockHash, `eth_getBlockByHash retrieved a block body`)
           const header = fromHexString(
             await portal2.db.get(
-              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+              getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
             )
           )
           const body = fromHexString(
             await portal2.db.get(
-              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockBody, blockHash)
+              getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
             )
           )
           const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
@@ -371,13 +365,11 @@ tape('getBlockByHash', (t) => {
       })
       testBlocks.forEach(async (testBlock: Block, idx: number) => {
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockHeader,
           testHashStrings[idx],
           testBlock.header.serialize()
         )
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockBody,
           testHashStrings[idx],
           sszEncodeBlockBody(testBlock)
@@ -405,7 +397,7 @@ tape('getBlockByHash', (t) => {
       )
       const testHash = toHexString(testBlock.hash())
       const testHeader = testBlock.header.serialize()
-      await protocol1.addContentToHistory(1, 0, testHash, testHeader)
+      await protocol1.addContentToHistory(0, testHash, testHeader)
 
       await protocol1.sendPing(portal2.discv5.enr)
       const returnedBlock = (await protocol2.ETH.getBlockByHash(testHash, true)) as Block
@@ -414,11 +406,11 @@ tape('getBlockByHash', (t) => {
         testBlock.header.hash(),
         'eth_getBlockByHash test passed'
       )
-      const _h = await portal2.db.get(getHistoryNetworkContentId(1, 0, testHash))
+      const _h = await portal2.db.get(getHistoryNetworkContentId(0, testHash))
       st.equal(_h, toHexString(testHeader), 'eth_getBlockByHash returned a Block Header')
 
       try {
-        await portal2.db.get(getHistoryNetworkContentId(1, 1, testHash))
+        await portal2.db.get(getHistoryNetworkContentId(1, testHash))
         st.fail('should not find block body')
       } catch (e: any) {
         st.equal(
@@ -451,8 +443,8 @@ tape('getBlockByNumber', (t) => {
 
       const block8200Hash = testBlockData[0].blockHash
       const block8200Rlp = testBlockData[0].rlp
-      const headerKey = getHistoryNetworkContentId(1, 0, block8200Hash)
-      const blockKey = getHistoryNetworkContentId(1, 1, block8200Hash)
+      const headerKey = getHistoryNetworkContentId(0, block8200Hash)
+      const blockKey = getHistoryNetworkContentId(1, block8200Hash)
       const testBlock = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(block8200Rlp)), {
         hardforkByBlockNumber: true,
       })
@@ -461,7 +453,6 @@ tape('getBlockByNumber', (t) => {
       portal1.db.put(headerKey, toHexString(block8200Header))
       portal1.db.put(blockKey, toHexString(block8200Body))
       await protocol2.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.HeaderAccumulator,
         toHexString(accumulatorKey),
         fromHexString(testAccumulator)
@@ -499,7 +490,6 @@ tape('getBlockByNumber', (t) => {
       const epochKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 3,
         value: {
-          chainId: 1,
           blockHash: fromHexString(epochHash),
         },
       })
@@ -515,13 +505,11 @@ tape('getBlockByNumber', (t) => {
           value: { selector: 0, value: null },
         })
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.HeaderAccumulator,
           toHexString(accumulatorKey),
           fromHexString(accumulatorData)
         )
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.EpochAccumulator,
           toHexString(epochKey),
           fromHexString(serialized)
@@ -560,7 +548,7 @@ tape('getBlockByNumber', (t) => {
               'EpochAccumulator has valid hash for block 1000'
             )
             st.equal(content, epochData.serialized, 'EpochAccumulator matches test Data')
-            const contentId = getHistoryNetworkContentId(1, 3, blockHash)
+            const contentId = getHistoryNetworkContentId(3, blockHash)
             const stored = await portal2.db.get(contentId)
             st.equal(stored, epochData.serialized, 'EpochAccumulator stored in db')
             end(child, [portal1, portal2], st)
@@ -582,7 +570,6 @@ tape('getBlockByNumber', (t) => {
     const epochKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 3,
       value: {
-        chainId: 1,
         blockHash: fromHexString(epochHash),
       },
     })
@@ -606,24 +593,21 @@ tape('getBlockByNumber', (t) => {
         value: { selector: 0, value: null },
       })
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.HeaderAccumulator,
         toHexString(accumulatorKey),
         fromHexString(accumulatorData)
       )
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.EpochAccumulator,
         toHexString(epochKey),
         fromHexString(serialized)
       )
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         blockHash,
         _header
       )
-      await protocol1.addContentToHistory(1, HistoryNetworkContentTypes.BlockBody, blockHash, body)
+      await protocol1.addContentToHistory(HistoryNetworkContentTypes.BlockBody, blockHash, body)
       let header: Uint8Array
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
         if (contentType === HistoryNetworkContentTypes.HeaderAccumulator) {

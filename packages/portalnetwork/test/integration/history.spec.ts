@@ -39,21 +39,19 @@ tape('History Protocol Integration Tests', (t) => {
       const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       for (const block of blocks) {
-        portal1.db.put(getHistoryNetworkContentId(1, 0, block.hash), block.rawHeader)
+        portal1.db.put(getHistoryNetworkContentId(0, block.hash), block.rawHeader)
       }
-      portal1.db.put(getHistoryNetworkContentId(1, 3, epoch.hash), epoch.serialized)
+      portal1.db.put(getHistoryNetworkContentId(3, epoch.hash), epoch.serialized)
       const testAccumulator = require('./testAccumulator.json')
       const desAccumulator = HeaderAccumulatorType.deserialize(fromHexString(testAccumulator))
       const rebuiltAccumulator = new HeaderAccumulator({ storedAccumulator: desAccumulator })
 
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.HeaderAccumulator,
         toHexString(accumulatorKey),
         fromHexString(testAccumulator)
       )
       await protocol2.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         blocks[1000].hash,
         fromHexString(blocks[1000].rawHeader)
@@ -116,7 +114,6 @@ tape('History Protocol Integration Tests', (t) => {
       })
 
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.HeaderAccumulator,
         toHexString(accumulatorKey),
         fromHexString(testAccumulator)
@@ -192,43 +189,36 @@ tape('History Protocol Integration Tests', (t) => {
         storedAccumulator: accumulator,
       })
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.HeaderAccumulator,
         toHexString(accumulatorKey),
         HeaderAccumulatorType.serialize(accumulator)
       )
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.EpochAccumulator,
         _epoch1.hash,
         fromHexString(_epoch1.serialized)
       )
       await protocol2.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.EpochAccumulator,
         _epoch1.hash,
         fromHexString(_epoch1.serialized)
       )
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         toHexString(header1000.hash()),
         header1000.serialize()
       )
       await protocol1.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         toHexString(header8199.hash()),
         header8199.serialize()
       )
       await protocol2.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         toHexString(header1000.hash()),
         header1000.serialize()
       )
       await protocol2.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         toHexString(header8199.hash()),
         header8199.serialize()
@@ -249,14 +239,12 @@ tape('History Protocol Integration Tests', (t) => {
       const proofKey1000 = HistoryNetworkContentKeyUnionType.serialize({
         selector: HistoryNetworkContentTypes.HeaderProof,
         value: {
-          chainId: 1,
           blockHash: header1000.hash(),
         },
       })
       const proofKey8199 = HistoryNetworkContentKeyUnionType.serialize({
         selector: HistoryNetworkContentTypes.HeaderProof,
         value: {
-          chainId: 1,
           blockHash: header8199.hash(),
         },
       })
@@ -309,12 +297,12 @@ tape('History Protocol Integration Tests', (t) => {
             )
             const header = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
               )
             )
             const body = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockBody, blockHash)
+                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
               )
             )
             const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
@@ -338,13 +326,11 @@ tape('History Protocol Integration Tests', (t) => {
       await protocol1.sendPing(portal2.discv5.enr)
       testBlocks.forEach(async (testBlock: Block, idx: number) => {
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockHeader,
           testHashStrings[idx],
           testBlock.header.serialize()
         )
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.BlockBody,
           testHashStrings[idx],
           sszEncodeBlockBody(testBlock)
@@ -363,7 +349,6 @@ tape('History Protocol Integration Tests', (t) => {
       const epochKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 3,
         value: {
-          chainId: 1,
           blockHash: fromHexString(epochHash),
         },
       })
@@ -379,13 +364,11 @@ tape('History Protocol Integration Tests', (t) => {
           value: { selector: 0, value: null },
         })
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.HeaderAccumulator,
           toHexString(accumulatorKey),
           fromHexString(accumulatorData)
         )
         await protocol1.addContentToHistory(
-          1,
           HistoryNetworkContentTypes.EpochAccumulator,
           toHexString(epochKey),
           fromHexString(serialized)
@@ -424,7 +407,7 @@ tape('History Protocol Integration Tests', (t) => {
               'EpochAccumulator has valid hash for block 1000'
             )
             st.equal(content, epochData.serialized, 'EpochAccumulator matches test Data')
-            const contentId = getHistoryNetworkContentId(1, 3, blockHash)
+            const contentId = getHistoryNetworkContentId(3, blockHash)
             const stored = await portal2.db.get(contentId)
             st.equal(stored, epochData.serialized, 'EpochAccumulator stored in db')
             end(child, [portal1, portal2], st)
