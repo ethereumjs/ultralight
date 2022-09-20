@@ -4,6 +4,7 @@ import tape from 'tape'
 import {
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentTypes,
   reassembleBlock,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
@@ -16,7 +17,7 @@ tape('utility functions', (t) => {
     value: { blockHash: fromHexString(block1Hash) },
   })
   t.equal(
-    getHistoryNetworkContentId(0, block1Hash),
+    getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, block1Hash),
     serializedContentKeyToContentId(block1headerContentKey),
     'produced same content id'
   )

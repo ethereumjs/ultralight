@@ -143,7 +143,12 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
         RLP.encode(bufArrToArr(headerValues))
       )
       try {
-        await protocol.client.db.get(getHistoryNetworkContentId(0, toHexString(header.hash())))
+        await protocol.client.db.get(
+          getHistoryNetworkContentId(
+            HistoryNetworkContentTypes.BlockHeader,
+            toHexString(header.hash())
+          )
+        )
         st.fail('should not find header')
       } catch (err: any) {
         st.equal(

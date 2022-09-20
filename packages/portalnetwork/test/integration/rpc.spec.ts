@@ -110,11 +110,15 @@ tape('getBlockByHash', (t) => {
         testBlock.header.hash(),
         'eth_getBlockByHash test passed'
       )
-      const _h = await portal2.db.get(getHistoryNetworkContentId(0, testHash))
+      const _h = await portal2.db.get(
+        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, testHash)
+      )
       st.equal(_h, toHexString(testHeader), 'eth_getBlockByHash returned a Block Header')
 
       try {
-        await portal2.db.get(getHistoryNetworkContentId(1, testHash))
+        await portal2.db.get(
+          getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, testHash)
+        )
         st.fail('should not find block body')
       } catch (e: any) {
         st.equal(
@@ -147,8 +151,14 @@ tape('getBlockByNumber', (t) => {
 
       const block8200Hash = testBlockData[0].blockHash
       const block8200Rlp = testBlockData[0].rlp
-      const headerKey = getHistoryNetworkContentId(0, block8200Hash)
-      const blockKey = getHistoryNetworkContentId(1, block8200Hash)
+      const headerKey = getHistoryNetworkContentId(
+        HistoryNetworkContentTypes.BlockHeader,
+        block8200Hash
+      )
+      const blockKey = getHistoryNetworkContentId(
+        HistoryNetworkContentTypes.BlockBody,
+        block8200Hash
+      )
       const testBlock = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(block8200Rlp)), {
         hardforkByBlockNumber: true,
       })

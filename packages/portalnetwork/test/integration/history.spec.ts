@@ -39,7 +39,10 @@ tape('History Protocol Integration Tests', (t) => {
       const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       for (const block of blocks) {
-        portal1.db.put(getHistoryNetworkContentId(0, block.hash), block.rawHeader)
+        portal1.db.put(
+          getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, block.hash),
+          block.rawHeader
+        )
       }
       portal1.db.put(getHistoryNetworkContentId(3, epoch.hash), epoch.serialized)
       const testAccumulator = require('./testAccumulator.json')

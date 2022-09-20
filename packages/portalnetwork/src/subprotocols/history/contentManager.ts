@@ -198,8 +198,8 @@ export class ContentManager {
       return record.blockHash
     })
     for (const hash in _epoch) {
-      const headerKey = getHistoryNetworkContentId(0, hash)
-      const bodyKey = getHistoryNetworkContentId(1, hash)
+      const headerKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, hash)
+      const bodyKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, hash)
       const headerDistance = distance(this.history.client.discv5.enr.nodeId, headerKey)
       const bodyDistance = distance(this.history.client.discv5.enr.nodeId, bodyKey)
       if (headerDistance <= this.radius) {

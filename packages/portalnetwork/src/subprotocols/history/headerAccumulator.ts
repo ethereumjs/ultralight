@@ -156,7 +156,11 @@ export class AccumulatorManager {
   public verifyInclusionProof = async (proof: any, blockHash: string) => {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
-        fromHexString(await this._history.client.db.get(getHistoryNetworkContentId(0, blockHash)))
+        fromHexString(
+          await this._history.client.db.get(
+            getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+          )
+        )
       ),
       { hardforkByBlockNumber: true }
     )
@@ -218,7 +222,11 @@ export class AccumulatorManager {
   public async getHeaderRecordFromBlockhash(blockHash: string) {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
-        fromHexString(await this._history.client.db.get(getHistoryNetworkContentId(0, blockHash)))
+        fromHexString(
+          await this._history.client.db.get(
+            getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+          )
+        )
       ),
       { hardforkByBlockNumber: true }
     )
