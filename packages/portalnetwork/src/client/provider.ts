@@ -14,6 +14,14 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
     | ethers.providers.JsonRpcProvider
   public portal: PortalNetwork
   public historyProtocol: HistoryProtocol
+  public static create = async (
+    fallbackProviderUrl: string | ethers.providers.JsonRpcProvider,
+    network = 1,
+    opts: Partial<PortalNetworkOpts>
+  ) => {
+    const portal = await PortalNetwork.create(opts)
+    return new UltralightProvider(fallbackProviderUrl, network, portal)
+  }
   constructor(
     fallbackProvider: string | ethers.providers.JsonRpcProvider,
     network = 1,
@@ -29,15 +37,6 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
         : fallbackProvider
     this.portal = portal
     this.historyProtocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  }
-
-  public static create = async (
-    fallbackProviderUrl: string | ethers.providers.JsonRpcProvider,
-    network = 1,
-    opts: Partial<PortalNetworkOpts>
-  ) => {
-    const portal = await PortalNetwork.create(opts)
-    return new UltralightProvider(fallbackProviderUrl, network, portal)
   }
 
   getBlock = async (blockTag: ethers.providers.BlockTag) => {
