@@ -5,7 +5,6 @@ import {
   ListCompositeType,
   NoneType,
   UintBigintType,
-  UintNumberType,
   UnionType,
 } from '@chainsafe/ssz'
 
