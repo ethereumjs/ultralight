@@ -16,6 +16,7 @@ import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import DisplayTx from './DisplayTx'
 import React from 'react'
 import { AppContext, StateChange } from '../globalReducer'
+import { TransactionResponse } from '@ethersproject/abstract-provider'
 
 export default function SelectTx() {
   const { state, dispatch } = useContext(AppContext)
@@ -24,7 +25,9 @@ export default function SelectTx() {
   }, [])
   const [txIdx, setTxIdx] = useState(0)
   const length = state!.block!.transactions.length
-  const txString: string[] = state!.block!.transactions.map((tx) => tx)
+  const txString: string[] = state!.block!.transactions.map(
+    (tx) => (tx as TransactionResponse).hash
+  )
 
   return (
     <VStack>

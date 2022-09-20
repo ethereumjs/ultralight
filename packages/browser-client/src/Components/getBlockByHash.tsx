@@ -8,8 +8,8 @@ export default function GetBlockByHash() {
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {
       const block = includeTransactions
-        ? await state!.provider!.getBlock(blockHash)
-        : await state!.provider!.getBlockWithTransactions(blockHash)
+        ? await state!.provider!.getBlockWithTransactions(blockHash)
+        : await state!.provider!.getBlock(blockHash)
       dispatch!({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'

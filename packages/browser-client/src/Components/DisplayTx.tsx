@@ -25,12 +25,33 @@ interface DisplayTxProps {
 
 export default function DisplayTx(props: DisplayTxProps) {
   const { state } = useContext(AppContext)
-  const rec = state!.receipts[props.txIdx]
-  const trans = Object.entries(
+  //const rec = state!.receipts[props.txIdx]
+  const rec = undefined
+  const tx = Object.entries(
     (state!.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
   )
+  const txData = []
+  const validKeys = [
+    'hash',
+    'type',
+    'blockHash',
+    'blockNumber',
+    'from',
+    'gasPrice',
+    'gasLimit',
+    'to',
+    'value',
+    'nonce',
+    'maxFeePerGas',
+    'maxPriorityFeePerGas',
+  ]
+  for (const entry of tx) {
+    if (validKeys.indexOf(entry[0]) >= 0) {
+      txData.push(entry)
+    }
+  }
   /* const data = {
-    baseFee: `0x${state!.block!.transactions[props.txIdx].baseFee}`,
+    baseFee: `0x${trans.baseFee}`,
     dataFee: `0x${state!.block!.transactions[props.txIdx].getDataFee()}`,
     message_to_sign: toHexString(state!.block!.transactions[props.txIdx].getMessageToSign()),
     message_to_verify_signature: toHexString(
@@ -57,7 +78,7 @@ export default function DisplayTx(props: DisplayTxProps) {
           <TabPanel>
             <Table size={'sm'}>
               <Tbody>
-                {trans.map(([k, v], idx) => {
+                {txData.map(([k, v], idx) => {
                   return (
                     k !== 'data' && (
                       <Tr key={idx}>
@@ -65,7 +86,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                           {k.replace(/_/g, ' ')}
                         </Td>
                         <Td width={'75%'} paddingBottom={'0'} wordBreak={'break-all'}>
-                          {v}
+                          {v.toString()}
                         </Td>
                       </Tr>
                     )
@@ -87,7 +108,7 @@ export default function DisplayTx(props: DisplayTxProps) {
             </Table>
           </TabPanel>
           <TabPanel>
-            {rec && (
+            {/*rec && (
               <Table>
                 <Thead>
                   <Tr>
@@ -112,7 +133,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                     </Th>
                     <Td>
                       <Text>
-                        {/*state!.receipts[props.txIdx].cumulativeBlockGasUsed.toString()*/}
+                        {/*state!.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}
                       </Text>
                     </Td>
                   </Tr>
@@ -153,7 +174,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                   </Tr>
                 </Thead>
               </Table>
-            )}
+                        )*/}
           </TabPanel>
         </TabPanels>
       </Tabs>

@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { BlockWithTransactions } from '@ethersproject/abstract-provider'
 import { Block as ethJsBlock } from '@ethereumjs/block'
 import { toHexString } from './index.js'
+import { FeeMarketEIP1559Transaction, Transaction } from '@ethereumjs/tx'
 import debug from 'debug'
 
 /**
@@ -53,6 +54,10 @@ export const ethJsBlockToEthersBlockWithTxs = (block: ethJsBlock): BlockWithTran
       gasLimit: tx.gasLimit.toString(),
       data: toHexString(tx.data),
       value: ethers.BigNumber.from(tx.value),
+      gasPrice: tx.type === 0 ? (tx as Transaction).gasPrice : undefined,
+      maxFeePerGas: tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxFeePerGas : undefined,
+      maxPriorityFeePerGas:
+        tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxPriorityFeePerGas : undefined,
     }
     txns.push(normedTx)
   }
