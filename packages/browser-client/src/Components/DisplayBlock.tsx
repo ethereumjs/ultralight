@@ -17,10 +17,14 @@ import {
   HStack,
   VStack,
 } from '@chakra-ui/react'
-import { fromHexString, HistoryNetworkContentKeyUnionType, TxReceiptWithType } from 'portalnetwork'
+import {
+  fromHexString,
+  HistoryNetworkContentKeyUnionType,
+  toHexString,
+  TxReceiptWithType,
+} from 'portalnetwork'
 import SelectTx from './SelectTx'
 import React, { useContext, useEffect, useState } from 'react'
-import { toHexString } from './DisplayTx'
 import GetHeaderProofByHash from './GetHeaderProofByHash'
 import { AppContext, StateChange } from '../globalReducer'
 import TxReceipt from './TxReceipt'
@@ -38,7 +42,7 @@ const DisplayBlock = () => {
 
   const findParent = async () => {
     dispatch!({ type: StateChange.TOGGLELOADING })
-    const block = await state!.provider!.getBlock(state!.block!.parentHash)
+    const block = await state!.provider!.getBlockWithTransactions(state!.block!.parentHash)
     if (block) {
       dispatch!({ type: StateChange.SETBLOCK, payload: block })
     }
@@ -97,7 +101,7 @@ const DisplayBlock = () => {
 
   useEffect(() => {
     if (state!.block!.transactions.length > 0) {
-      init()
+      //  init()
     }
   }, [state!.block])
 

@@ -9,7 +9,6 @@ import {
   Heading,
   Box,
   HStack,
-  useConst,
 } from '@chakra-ui/react'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { useContext, useEffect, useState } from 'react'
@@ -25,9 +24,7 @@ export default function SelectTx() {
   }, [])
   const [txIdx, setTxIdx] = useState(0)
   const length = state!.block!.transactions.length
-  const txString: string[] = state!.block!.transactions.map(
-    (tx) => '0x' + tx.hash().toString('hex')
-  )
+  const txString: string[] = state!.block!.transactions.map((tx) => tx)
 
   return (
     <VStack>

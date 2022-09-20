@@ -15,6 +15,7 @@ import {
   Tr,
   VStack,
 } from '@chakra-ui/react'
+import { BlockWithTransactions, TransactionResponse } from '@ethersproject/abstract-provider'
 import { Log } from 'portalnetwork'
 import React, { useContext } from 'react'
 import { AppContext } from '../globalReducer'
@@ -22,24 +23,14 @@ interface DisplayTxProps {
   txIdx: number
 }
 
-export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
-  const hexByByte: string[] = []
-  let hex = '0x'
-  for (const byte of bytes) {
-    if (!hexByByte[byte]) {
-      hexByByte[byte] = byte < 16 ? '0' + byte.toString(16) : byte.toString(16)
-    }
-    hex += hexByByte[byte]
-  }
-  return hex
-}
-
 export default function DisplayTx(props: DisplayTxProps) {
   const { state } = useContext(AppContext)
   const rec = state!.receipts[props.txIdx]
-  const trans = Object.entries(state!.block!.transactions[props.txIdx].toJSON())
-  const data = {
-    baseFee: `0x${state!.block!.transactions[props.txIdx].getBaseFee()}`,
+  const trans = Object.entries(
+    (state!.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
+  )
+  /* const data = {
+    baseFee: `0x${state!.block!.transactions[props.txIdx].baseFee}`,
     dataFee: `0x${state!.block!.transactions[props.txIdx].getDataFee()}`,
     message_to_sign: toHexString(state!.block!.transactions[props.txIdx].getMessageToSign()),
     message_to_verify_signature: toHexString(
@@ -53,7 +44,7 @@ export default function DisplayTx(props: DisplayTxProps) {
     to_creation_address: state!.block!.transactions[props.txIdx].toCreationAddress().toString(),
     validate: state!.block!.transactions[props.txIdx].validate().toString(),
     verify_signature: state!.block!.transactions[props.txIdx].verifySignature().toString(),
-  }
+  }*/
 
   return (
     <Box width="100%">
@@ -80,7 +71,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                     )
                   )
                 })}
-                {Object.entries(data).map(([k, v], idx) => {
+                {/*Object.entries(data).map(([k, v], idx) => {
                   return (
                     <Tr key={idx}>
                       <Td width={'25%'} paddingBottom={'0'} wordBreak={'break-word'}>
@@ -91,7 +82,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                       </Td>
                     </Tr>
                   )
-                })}
+                })*/}
               </Tbody>
             </Table>
           </TabPanel>
@@ -112,9 +103,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                       <Text>Transaction Hash</Text>
                     </Th>
                     <Td>
-                      <Text wordBreak={'break-all'}>
-                        {toHexString(state!.block!.transactions[props.txIdx].hash())}
-                      </Text>
+                      <Text wordBreak={'break-all'}>{trans}</Text>
                     </Td>
                   </Tr>
                   <Tr>
@@ -122,7 +111,9 @@ export default function DisplayTx(props: DisplayTxProps) {
                       <Text>Cumulative Block Gas Used:</Text>
                     </Th>
                     <Td>
-                      <Text>{state!.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}</Text>
+                      <Text>
+                        {/*state!.receipts[props.txIdx].cumulativeBlockGasUsed.toString()*/}
+                      </Text>
                     </Td>
                   </Tr>
                   <Tr>

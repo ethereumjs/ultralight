@@ -1,4 +1,5 @@
 import type { ethers } from 'ethers'
+import type { BlockWithTransactions } from '@ethersproject/abstract-provider'
 import { TypedTransaction } from '@ethereumjs/tx'
 import { BrowserLevel } from 'browser-level'
 import {
@@ -27,7 +28,7 @@ export type AppState = {
   isLoading: boolean
   hover: number | undefined
   //
-  block: ethers.providers.Block | undefined
+  block: ethers.providers.Block | BlockWithTransactions | undefined
   receipts: TxReceiptWithType[]
   transaction: TypedTransaction | undefined
 }

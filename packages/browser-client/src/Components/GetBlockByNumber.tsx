@@ -11,10 +11,9 @@ export default function GetBlockByNumber() {
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
-      const block = await state!.provider!.historyProtocol!.ETH.getBlockByNumber(
-        parseInt(blockNumber),
-        includeTransactions
-      )
+      const block = includeTransactions
+        ? await state!.provider!.getBlock(parseInt(blockNumber))
+        : await state!.provider!.getBlockWithTransactions(parseInt(blockNumber))
       dispatch!({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'
