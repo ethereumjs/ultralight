@@ -21,13 +21,13 @@ export class ETH {
   ): Promise<Block | undefined> => {
     const headerContentKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 0,
-      value: { chainId: 1, blockHash: fromHexString(blockHash) },
+      value: { blockHash: fromHexString(blockHash) },
     })
 
     const bodyContentKey = includeTransactions
       ? HistoryNetworkContentKeyUnionType.serialize({
           selector: 1,
-          value: { chainId: 1, blockHash: fromHexString(blockHash) },
+          value: { blockHash: fromHexString(blockHash) },
         })
       : undefined
     let header: any
@@ -95,7 +95,7 @@ export class ETH {
       }
       const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 3,
-        value: { chainId: 1, blockHash: epochRootHash },
+        value: { blockHash: epochRootHash },
       })
 
       const lookup = new ContentLookup(this.protocol, lookupKey)
