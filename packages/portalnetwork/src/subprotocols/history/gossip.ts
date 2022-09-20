@@ -58,11 +58,10 @@ export class GossipManager {
    * @param contentType
    */
   public add(hash: string, contentType: HistoryNetworkContentTypes): void {
-    const id = getHistoryNetworkContentId(1, contentType, hash)
+    const id = getHistoryNetworkContentId(contentType, hash)
     const key = HistoryNetworkContentKeyUnionType.serialize({
       selector: contentType,
       value: {
-        chainId: 1,
         blockHash: fromHexString(hash),
       },
     })
