@@ -18,46 +18,54 @@ export class PeerActions {
     this.historyProtocol = protocol
   }
 
-  addToOffer = (type: string): Uint8Array[] => {
+  addToOffer = (type: string): void => {
     switch (type) {
       case 'header':
-        return [
-          HistoryNetworkContentKeyUnionType.serialize({
+        this.dispatch({
+          type: PeerStateChange.ADDTOOFFER,
+          payload: HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockHeader,
             value: {
               chainId: 1,
               blockHash: fromHexString(this.state.blockHash),
             },
           }),
-        ]
+        })
+        break
       case 'body':
-        return [
-          HistoryNetworkContentKeyUnionType.serialize({
+        this.dispatch({
+          type: PeerStateChange.ADDTOOFFER,
+          payload: HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockBody,
             value: {
               chainId: 1,
               blockHash: fromHexString(this.state.blockHash),
             },
           }),
-        ]
-
+        })
+        break
       case 'block':
-        return [
-          HistoryNetworkContentKeyUnionType.serialize({
+        this.dispatch({
+          type: PeerStateChange.ADDTOOFFER,
+          payload: HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockHeader,
             value: {
               chainId: 1,
               blockHash: fromHexString(this.state.blockHash),
             },
           }),
-          HistoryNetworkContentKeyUnionType.serialize({
+        })
+        this.dispatch({
+          type: PeerStateChange.ADDTOOFFER,
+          payload: HistoryNetworkContentKeyUnionType.serialize({
             selector: HistoryNetworkContentTypes.BlockBody,
             value: {
               chainId: 1,
               blockHash: fromHexString(this.state.blockHash),
             },
           }),
-        ]
+        })
+        break
       default:
         throw new Error()
     }
@@ -93,9 +101,10 @@ export class PeerActions {
     this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, accumulatorKey)
   }
 
-  handleOffer = (enr: string) => {
-    this.historyProtocol!.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
+  handleOffer = async (enr: string) => {
+    await this.historyProtocol!.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
   }
+
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerKey = HistoryNetworkContentKeyUnionType.serialize({

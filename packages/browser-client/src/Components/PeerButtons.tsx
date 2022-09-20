@@ -17,7 +17,7 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { ENR, shortId } from 'portalnetwork'
-import React, { useContext, useEffect, useReducer } from 'react'
+import React, { useContext, useEffect, useReducer, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
@@ -59,11 +59,14 @@ export default function PeerButtons() {
           <VStack>
             <HStack>
               <VStack>
-                <HStack>
+                <VStack>
                   <Heading size={'md'}>
                     Peer {peerIdx + 1} / {state!.peers.length}
                   </Heading>
-                </HStack>
+                  <Text size={'sm'} color={'gray.500'}>
+                    {state!.selectedPeer.slice(0, 20)}...
+                  </Text>
+                </VStack>
                 <Table size="xs">
                   {state?.sortedPeers[peerIdx] && (
                     <Tbody>
