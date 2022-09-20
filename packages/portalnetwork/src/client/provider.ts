@@ -1,6 +1,10 @@
 import { ethers } from 'ethers'
 import { HistoryProtocol, ProtocolId } from '../subprotocols/index.js'
-import { ethJsBlockToEthersBlock, ethJsBlockToEthersBlockWithTxs } from '../util/helpers.js'
+import {
+  ethJsBlockToEthersBlock,
+  ethJsBlockToEthersBlockWithTxs,
+  blockFromRpc,
+} from '../util/helpers.js'
 import { PortalNetwork } from './client.js'
 import { PortalNetworkOpts } from './types.js'
 
@@ -56,7 +60,9 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
 
   getBlockWithTransactions = async (blockTag: ethers.providers.BlockTag) => {
     let block
-    if (typeof blockTag === 'string' && blockTag.length === 66) {
+    const isBlockHash =
+      ethers.utils.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
+    if (isBlockHash) {
       block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, true)
       if (block !== undefined) {
         return ethJsBlockToEthersBlockWithTxs(block)
@@ -69,6 +75,20 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
       }
     }
     // TODO: Add block to history network if retrieved from provider
-    return this.fallbackProvider.getBlockWithTransactions(blockTag)
+
+    if (isBlockHash) {
+      block = await this.fallbackProvider.send('eth_getBlockByHash', [blockTag, true])
+    } else {
+      const blockNum =
+        typeof blockTag === 'number'
+          ? blockTag
+          : blockTag !== 'latest'
+          ? parseInt(blockTag)
+          : blockTag
+      block = await this.fallbackProvider.send('eth_getBlockByNumber', [blockNum, true])
+    }
+
+    const ethJSBlock = blockFromRpc(block)
+    return block
   }
 }

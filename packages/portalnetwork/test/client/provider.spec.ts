@@ -1,4 +1,5 @@
 import tape from 'tape'
+import { ethers } from 'ethers'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { ENR, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
@@ -35,5 +36,25 @@ tape('Test provider functionality', async (t) => {
   await (provider as any).portal.stop()
 
   t.equal(1, (await provider.detectNetwork()).chainId, 'parent class methods work as expected')
+  t.end()
+})
+
+tape.only('Test block storage', async (t) => {
+  const ma = new Multiaddr('/ip4/0.0.0.0/udp/1500')
+  const peerId = await createSecp256k1PeerId()
+  const enr = ENR.createFromPeerId(peerId)
+  enr.setLocationMultiaddr(ma)
+  const provider = await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+    bindAddress: '0.0.0.0',
+    transport: TransportLayer.NODE,
+    config: {
+      multiaddr: ma,
+      enr: enr,
+      peerId: peerId,
+    },
+  })
+
+  const block = await provider.getBlockWithTransactions('latest')
+  console.log(block)
   t.end()
 })
