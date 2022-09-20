@@ -20,15 +20,15 @@ import { ENR, shortId } from 'portalnetwork'
 import React, { useContext, useEffect, useReducer } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
-import { peerInitialState, peerReducer, PeerStateChange } from '../peerReducer'
+import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
 export default function PeerButtons() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
-  const [_state, _dispatch] = useReducer(peerReducer, peerInitialState)
+  const { peerState, peerDispatch } = useContext(PeerContext as React.Context<PeerContextType>)
   const peerActions = new PeerActions(
     {
-      state: _state,
-      dispatch: _dispatch,
+      peerState,
+      peerDispatch,
     },
     state!.historyProtocol!
   )
@@ -46,7 +46,7 @@ export default function PeerButtons() {
     .indexOf(state.selectedPeer)
 
   const sendFindContent = async (type: string) => {
-    const block = await peerActions.sendFindContent(type)
+    const block = await peerActions.sendFindContent(type, state!.selectedPeer)
     if (block) {
       dispatch!({ type: StateChange.SETBLOCK, payload: block })
     }
@@ -94,11 +94,18 @@ export default function PeerButtons() {
                   )}
                 </Table>
               </VStack>
-              <Button size="lg" onClick={() => peerActions.handlePing()} bgColor={_state.ping[0]}>
-                {_state.ping[1]}
+              <Button
+                size="lg"
+                onClick={() => peerActions.handlePing(state!.selectedPeer)}
+                bgColor={peerState.ping[0]}
+              >
+                {peerState.ping[1]}
               </Button>
             </HStack>
-            <Button width="100%" onClick={() => peerActions.handleRequestSnapshot()}>
+            <Button
+              width="100%"
+              onClick={() => peerActions.handleRequestSnapshot(state!.selectedPeer)}
+            >
               Request Accumulator Snapshot
             </Button>
             <Divider />
@@ -117,7 +124,7 @@ export default function PeerButtons() {
                 width={'30%'}
                 placeholder={'Epoch'}
                 onChange={(evt) => {
-                  _dispatch({
+                  peerDispatch({
                     type: PeerStateChange.SETEPOCH,
                     payload: parseInt(evt.target.value),
                   })
@@ -140,7 +147,7 @@ export default function PeerButtons() {
                 width={'30%'}
                 placeholder={`BlockNumber (Max: ${state!.historyProtocol!.accumulator.currentHeight()})`}
                 onChange={(evt) => {
-                  _dispatch({
+                  peerDispatch({
                     type: PeerStateChange.SETEPOCH,
                     payload: Math.floor(parseInt(evt.target.value) / 8192),
                   })
@@ -160,7 +167,7 @@ export default function PeerButtons() {
                   width={'30%'}
                   placeholder={'Distance'}
                   onChange={(evt) => {
-                    _dispatch({
+                    peerDispatch({
                       type: PeerStateChange.SETDISTANCE,
                       payload: evt.target.value,
                     })
@@ -170,10 +177,10 @@ export default function PeerButtons() {
             )}
             <Divider />
             <Input
-              value={_state.blockHash}
+              value={peerState.blockHash}
               placeholder="BlockHash"
               onChange={(evt) =>
-                _dispatch({ type: PeerStateChange.SETBLOCKHASH, payload: evt.target.value })
+                peerDispatch({ type: PeerStateChange.SETBLOCKHASH, payload: evt.target.value })
               }
             />
             <HStack width={'100%'}>
@@ -235,9 +242,9 @@ export default function PeerButtons() {
               </Button>
             </HStack>
             <Box width={'90%'} border={'1px'}>
-              <Text textAlign={'center'}>OFFER: {_state.offer.length} / 26</Text>
+              <Text textAlign={'center'}>OFFER: {peerState.offer.length} / 26</Text>
             </Box>
-            <Button width={'100%'} onClick={() => peerActions.handleOffer()}>
+            <Button width={'100%'} onClick={() => peerActions.handleOffer(state.selectedPeer)}>
               Send Offer
             </Button>
           </VStack>

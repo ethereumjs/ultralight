@@ -6,7 +6,6 @@ export interface PeerState {
   ping: [string, string]
   distance: string
   blockHash: string
-  selectedPeer: string
 }
 
 export const peerInitialState = {
@@ -15,7 +14,6 @@ export const peerInitialState = {
   ping: ['blue.100', 'PING'] as [string, string],
   distance: '',
   blockHash: '',
-  selectedPeer: '',
 }
 
 export interface PeerStateAction {
@@ -32,7 +30,6 @@ export enum PeerStateChange {
   SETDISTANCE = 'SETDISTANCE',
   SETBLOCKHASH = 'SETBLOCKHASH',
   SETPEERIDX = 'SETPEERIDX',
-  SETSELECTEDPEER = 'SETSELECTEDPEER',
 }
 
 export const peerReducer = (state: PeerState, action: PeerStateAction) => {
@@ -51,8 +48,6 @@ export const peerReducer = (state: PeerState, action: PeerStateAction) => {
       return state
     case PeerStateChange.SETBLOCKHASH:
       return { ...state, blockHash: payload }
-    case PeerStateChange.SETSELECTEDPEER:
-      return { ...state, selectedPeer: payload }
     default:
       throw new Error()
   }
@@ -62,8 +57,8 @@ export type PeerDispatch = React.Dispatch<PeerStateAction>
 export type PeerReducerType = { dispatch: PeerDispatch }
 
 export type PeerContextType = {
-  state?: PeerState
-  dispatch?: PeerDispatch
+  peerState: PeerState
+  peerDispatch: PeerDispatch
 }
 
-export const PeerContext = React.createContext<PeerContextType>({})
+export const PeerContext = React.createContext<PeerContextType | undefined>(undefined)

@@ -13,8 +13,8 @@ export class PeerActions {
   dispatch: PeerDispatch
   historyProtocol: HistoryProtocol
   constructor(peerContext: PeerContextType, protocol: HistoryProtocol) {
-    this.state = peerContext.state!
-    this.dispatch = peerContext.dispatch!
+    this.state = peerContext.peerState
+    this.dispatch = peerContext.peerDispatch
     this.historyProtocol = protocol
   }
 
@@ -63,10 +63,10 @@ export class PeerActions {
     }
   }
 
-  handlePing = async () => {
+  handlePing = async (enr: string) => {
     this.dispatch({ type: PeerStateChange.PING, payload: ['yellow.200', 'PINGING'] })
     setTimeout(async () => {
-      const pong = await this.historyProtocol.sendPing(ENR.decodeTxt(this.state.selectedPeer))
+      const pong = await this.historyProtocol.sendPing(ENR.decodeTxt(enr))
       if (pong) {
         this.dispatch({ type: PeerStateChange.PING, payload: ['green.200', 'PONG RECEIVED!'] })
         setTimeout(() => {
@@ -85,21 +85,18 @@ export class PeerActions {
     this.historyProtocol!.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
   }
 
-  handleRequestSnapshot = () => {
+  handleRequestSnapshot = (enr: string) => {
     const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 4,
       value: { selector: 0, value: null },
     })
-    this.historyProtocol!.sendFindContent(
-      ENR.decodeTxt(this.state.selectedPeer).nodeId,
-      accumulatorKey
-    )
+    this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, accumulatorKey)
   }
 
-  handleOffer = () => {
-    this.historyProtocol!.sendOffer(ENR.decodeTxt(this.state.selectedPeer).nodeId, this.state.offer)
+  handleOffer = (enr: string) => {
+    this.historyProtocol!.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
   }
-  sendFindContent = async (type: string) => {
+  sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 0,
@@ -109,7 +106,7 @@ export class PeerActions {
         },
       })
       const header = await this.historyProtocol!.sendFindContent(
-        ENR.decodeTxt(this.state.selectedPeer).nodeId,
+        ENR.decodeTxt(enr).nodeId,
         headerKey
       )
       const block = reassembleBlock(header!.value as Uint8Array, undefined)
@@ -122,10 +119,7 @@ export class PeerActions {
           blockHash: fromHexString(this.state.blockHash),
         },
       })
-      this.historyProtocol!.sendFindContent(
-        ENR.decodeTxt(this.state.selectedPeer).nodeId,
-        headerKey
-      )
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerKey)
       const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 1,
         value: {
@@ -133,7 +127,7 @@ export class PeerActions {
           blockHash: fromHexString(this.state.blockHash),
         },
       })
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(this.state.selectedPeer).nodeId, bodyKey)
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyKey)
     } else if (type === 'block') {
       const headerKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 0,
@@ -151,13 +145,10 @@ export class PeerActions {
       })
       try {
         const header = (
-          await this.historyProtocol!.sendFindContent(
-            ENR.decodeTxt(this.state.selectedPeer).nodeId,
-            headerKey
-          )
+          await this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerKey)
         )?.value as Uint8Array
         const _body = await this.historyProtocol!.sendFindContent(
-          ENR.decodeTxt(this.state.selectedPeer).nodeId,
+          ENR.decodeTxt(enr).nodeId,
           bodyKey
         )
         const body: Uint8Array | undefined =
