@@ -1,20 +1,20 @@
 import { Button, FormControl, HStack, Input, useToast } from '@chakra-ui/react'
 import React, { useContext, useState } from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function GetBlockByNumber() {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [searchNumber, setSearchNumber] = useState(
-    state!.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight().toString()
+    state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight().toString()
   )
   const toast = useToast()
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
       const block = includeTransactions
-        ? await state!.provider!.getBlock(parseInt(blockNumber))
-        : await state!.provider!.getBlockWithTransactions(parseInt(blockNumber))
-      dispatch!({ type: StateChange.SETBLOCK, payload: block })
+        ? await state.provider!.getBlock(parseInt(blockNumber))
+        : await state.provider!.getBlockWithTransactions(parseInt(blockNumber))
+      dispatch({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'
     }
@@ -23,7 +23,7 @@ export default function GetBlockByNumber() {
   async function handleClick() {
     if (
       parseInt(searchNumber) >
-      state!.provider!.historyProtocol!.accumulator!.masterAccumulator().currentHeight()
+      state.provider!.historyProtocol!.accumulator!.masterAccumulator().currentHeight()
     ) {
       toast({
         title: 'Invalid Block Number',
@@ -35,16 +35,16 @@ export default function GetBlockByNumber() {
       setSearchNumber('')
       return
     }
-    dispatch!({ type: StateChange.TOGGLELOADING })
+    dispatch({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByNumber(searchNumber, true)
-    dispatch!({ type: StateChange.TOGGLELOADING })
+    dispatch({ type: StateChange.TOGGLELOADING })
   }
 
   return (
     <HStack marginY={1}>
       <Button
         disabled={
-          state!.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
+          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
         }
         width={'40%'}
         onClick={handleClick}
@@ -54,7 +54,7 @@ export default function GetBlockByNumber() {
       <FormControl isInvalid={parseInt(searchNumber) < 0}>
         <Input
           bg="whiteAlpha.800"
-          placeholder={`BlockNumber (Max: ${state!
+          placeholder={`BlockNumber (Max: ${state
             .provider!.historyProtocol!.accumulator.masterAccumulator()
             .currentHeight()})`}
           type={'number'}

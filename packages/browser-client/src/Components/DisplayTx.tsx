@@ -18,17 +18,17 @@ import {
 import { BlockWithTransactions, TransactionResponse } from '@ethersproject/abstract-provider'
 import { Log } from 'portalnetwork'
 import React, { useContext } from 'react'
-import { AppContext } from '../globalReducer'
+import { AppContext, AppContextType } from '../globalReducer'
 interface DisplayTxProps {
   txIdx: number
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const { state } = useContext(AppContext)
-  //const rec = state!.receipts[props.txIdx]
+  const { state } = useContext(AppContext as React.Context<AppContextType>)
+  //const rec = state.receipts[props.txIdx]
   const rec = undefined
   const tx = Object.entries(
-    (state!.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
+    (state.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
   )
   const txData = []
   const validKeys = [
@@ -52,19 +52,19 @@ export default function DisplayTx(props: DisplayTxProps) {
   }
   /* const data = {
     baseFee: `0x${trans.baseFee}`,
-    dataFee: `0x${state!.block!.transactions[props.txIdx].getDataFee()}`,
-    message_to_sign: toHexString(state!.block!.transactions[props.txIdx].getMessageToSign()),
+    dataFee: `0x${state.block!.transactions[props.txIdx].getDataFee()}`,
+    message_to_sign: toHexString(state.block!.transactions[props.txIdx].getMessageToSign()),
     message_to_verify_signature: toHexString(
-      state!.block!.transactions[props.txIdx].getMessageToVerifySignature()
+      state.block!.transactions[props.txIdx].getMessageToVerifySignature()
     ),
-    sender_address: state!.block!.transactions[props.txIdx].getSenderAddress().toString(),
-    sender_public_key: toHexString(state!.block!.transactions[props.txIdx].getSenderPublicKey()),
-    up_front_cost: `0x${state!.block!.transactions[props.txIdx].getUpfrontCost()}`,
-    hash: toHexString(state!.block!.transactions[props.txIdx].hash()),
-    isSigned: state!.block!.transactions[props.txIdx].isSigned().toString(),
-    to_creation_address: state!.block!.transactions[props.txIdx].toCreationAddress().toString(),
-    validate: state!.block!.transactions[props.txIdx].validate().toString(),
-    verify_signature: state!.block!.transactions[props.txIdx].verifySignature().toString(),
+    sender_address: state.block!.transactions[props.txIdx].getSenderAddress().toString(),
+    sender_public_key: toHexString(state.block!.transactions[props.txIdx].getSenderPublicKey()),
+    up_front_cost: `0x${state.block!.transactions[props.txIdx].getUpfrontCost()}`,
+    hash: toHexString(state.block!.transactions[props.txIdx].hash()),
+    isSigned: state.block!.transactions[props.txIdx].isSigned().toString(),
+    to_creation_address: state.block!.transactions[props.txIdx].toCreationAddress().toString(),
+    validate: state.block!.transactions[props.txIdx].validate().toString(),
+    verify_signature: state.block!.transactions[props.txIdx].verifySignature().toString(),
   }*/
 
   return (
@@ -133,7 +133,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                     </Th>
                     <Td>
                       <Text>
-                        {/*state!.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}
+                        {/*state.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}
                       </Text>
                     </Td>
                   </Tr>

@@ -1,13 +1,13 @@
 import { Button, useToast } from '@chakra-ui/react'
 import React, { useContext } from 'react'
-import { AppContext } from '../globalReducer'
+import { AppContext, AppContextType } from '../globalReducer'
 
 export default function ValidateAccumulator() {
-  const { state } = useContext(AppContext)
+  const { state } = useContext(AppContext as React.Context<AppContextType>)
   const toast = useToast()
 
   const handleClick = async () => {
-    const history = state!.provider!.historyProtocol!
+    const history = state.provider!.historyProtocol!
     if (history.accumulator) {
       const valid = await history.accumulator.verifySnapshot(
         history.accumulator.masterAccumulator()

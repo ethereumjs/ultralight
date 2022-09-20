@@ -26,27 +26,27 @@ import {
 import SelectTx from './SelectTx'
 import React, { useContext, useEffect, useState } from 'react'
 import GetHeaderProofByHash from './GetHeaderProofByHash'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import TxReceipt from './TxReceipt'
 
 const DisplayBlock = () => {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [validated, setValidated] = useState(false)
   const [receipts, setReceipts] = useState<TxReceiptWithType[]>([])
 
   useEffect(() => {
-    state?.provider?.portal?.on('Verified', (key, verified) => {
+    state.provider!.portal.on('Verified', (key, verified) => {
       setValidated(verified)
     })
   }, [])
 
   const findParent = async () => {
-    dispatch!({ type: StateChange.TOGGLELOADING })
-    const block = await state!.provider!.getBlockWithTransactions(state!.block!.parentHash)
+    dispatch({ type: StateChange.TOGGLELOADING })
+    const block = await state.provider!.getBlockWithTransactions(state.block!.parentHash)
     if (block) {
-      dispatch!({ type: StateChange.SETBLOCK, payload: block })
+      dispatch({ type: StateChange.SETBLOCK, payload: block })
     }
-    dispatch!({ type: StateChange.TOGGLELOADING })
+    dispatch({ type: StateChange.TOGGLELOADING })
   }
   function GridRow(props: any) {
     return (
@@ -67,7 +67,7 @@ const DisplayBlock = () => {
       </>
     )
   }
-  const block = state!.block!
+  const block = state.block!
   const header = Object.entries(block)
     .map((entry) => {
       let val
@@ -88,7 +88,7 @@ const DisplayBlock = () => {
 
   async function init() {
     try {
-      const receipts = await state!.provider!.historyProtocol?.receiptManager.getReceipts(
+      const receipts = await state.provider!.historyProtocol?.receiptManager.getReceipts(
         Buffer.from(block.hash.slice(2))
       )
       if (receipts) {
@@ -100,10 +100,10 @@ const DisplayBlock = () => {
   }
 
   useEffect(() => {
-    if (state!.block!.transactions.length > 0) {
+    if (state.block!.transactions.length > 0) {
       //  init()
     }
-  }, [state!.block])
+  }, [state.block])
 
   const headerlookupKey = toHexString(
     HistoryNetworkContentKeyUnionType.serialize({
@@ -130,7 +130,7 @@ const DisplayBlock = () => {
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
         <HStack justifyContent={'center'}>
           <span>Block #</span>
-          <Skeleton isLoaded={!state!.isLoading}>{block.number}</Skeleton>
+          <Skeleton isLoaded={!state.isLoading}>{block.number}</Skeleton>
           {validated && <CheckCircleIcon />}
         </HStack>
       </Heading>
@@ -148,7 +148,7 @@ const DisplayBlock = () => {
           />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Skeleton isLoaded={!state!.isLoading}>
+          <Skeleton isLoaded={!state.isLoading}>
             <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
               {headerlookupKey}
             </Text>
@@ -167,7 +167,7 @@ const DisplayBlock = () => {
           />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Skeleton isLoaded={!state!.isLoading}>
+          <Skeleton isLoaded={!state.isLoading}>
             <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
               {bodylookupKey}
             </Text>
@@ -195,20 +195,27 @@ const DisplayBlock = () => {
               </Grid>
             </VStack>
           </TabPanel>
-          <TabPanel>{state!.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
+          <TabPanel>{state.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
           <TabPanel>
             <Box>
               <Accordion allowToggle>
-                {state!.block!.transactions.length > 0 &&
+                {state.block &&
+                  state.block.transactions.length > 0 &&
                   receipts.length > 0 &&
                   receipts.map((rec, idx) => {
-                    return <TxReceipt rec={rec} idx={idx} hash={state!.block!.transactions[idx]} />
+                    return (
+                      <TxReceipt
+                        rec={rec}
+                        idx={idx}
+                        hash={state.block?.transactions[idx] as string}
+                      />
+                    )
                   })}
               </Accordion>
             </Box>
           </TabPanel>
           <TabPanel>
-            <Skeleton isLoaded={!state!.isLoading}>
+            <Skeleton isLoaded={!state.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block)}</Text>
             </Skeleton>
           </TabPanel>

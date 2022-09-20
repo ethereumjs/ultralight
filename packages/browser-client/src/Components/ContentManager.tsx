@@ -2,10 +2,10 @@ import { Button } from '@chakra-ui/react'
 import { Block } from '@ethereumjs/block'
 import { addRLPSerializedBlock, fromHexString } from 'portalnetwork'
 import React, { useContext } from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function ContentManager() {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
 
   interface jsonblock {
     blockHash: string
@@ -24,10 +24,10 @@ export default function ContentManager() {
             await addRLPSerializedBlock(
               block.rlp,
               block.blockHash,
-              state!.provider?.historyProtocol!
+              state.provider?.historyProtocol!
             )
           }
-          dispatch!({
+          dispatch({
             type: StateChange.SETBLOCK,
             payload: Block.fromRLPSerializedBlock(
               Buffer.from(fromHexString(blocks[blocks.length - 1].rlp)),

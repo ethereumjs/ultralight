@@ -13,12 +13,12 @@ import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
 import ContentManager from './ContentManager'
 import ValidateAccumulator from './ValidateAccumulator'
-import { AppContext } from '../globalReducer'
+import { AppContext, AppContextType } from '../globalReducer'
 
 export default function Header() {
-  const { state } = useContext(AppContext)
-  const enr = state!.provider!.portal!.discv5.enr.encodeTxt(
-    state!.provider!.portal!.discv5.keypair.privateKey
+  const { state } = useContext(AppContext as React.Context<AppContextType>)
+  const enr = state.provider!.portal!.discv5.enr.encodeTxt(
+    state.provider!.portal!.discv5.keypair.privateKey
   )
   const { onCopy } = useClipboard(enr)
   const toast = useToast()

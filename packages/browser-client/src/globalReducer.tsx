@@ -184,8 +184,8 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
 }
 
 export type AppContextType = {
-  state?: AppState
-  dispatch?: React.Dispatch<AppStateAction | AsyncAction>
+  state: AppState
+  dispatch: React.Dispatch<AppStateAction | AsyncAction>
 }
 
-export const AppContext = React.createContext<AppContextType>({})
+export const AppContext = React.createContext<AppContextType | undefined>(undefined)

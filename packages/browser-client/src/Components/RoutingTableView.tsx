@@ -14,19 +14,19 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react'
 import PeerButtons from './PeerButtons'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function RoutingTableView() {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
 
   return (
     <Center>
       <SimpleGrid width={'100%'} columns={[1, 1, 1, 2]}>
-        {state!.peers.length > 0 && <PeerButtons />}
+        {state.peers.length > 0 && <PeerButtons />}
         <GridItem>
           <Center>
             <Table size="xs">
-              <TableCaption>Peers: {state!.peers.length}</TableCaption>
+              <TableCaption>Peers: {state.peers.length}</TableCaption>
               <Thead>
                 <Tr>
                   <Th>ENR</Th>
@@ -37,25 +37,25 @@ export default function RoutingTableView() {
                 </Tr>
               </Thead>
               <Tbody>
-                {state!.sortedPeers.length > 0 &&
-                  state!.sortedPeers.map((peer, idx) => {
+                {state.sortedPeers.length > 0 &&
+                  state.sortedPeers.map((peer, idx) => {
                     return (
                       <Tr
                         key={peer[1][2]}
-                        onMouseEnter={() => dispatch!({ type: StateChange.SETHOVER, payload: idx })}
+                        onMouseEnter={() => dispatch({ type: StateChange.SETHOVER, payload: idx })}
                         onMouseLeave={() => {
-                          dispatch!({ type: StateChange.SETHOVER, payload: undefined })
+                          dispatch({ type: StateChange.SETHOVER, payload: undefined })
                         }}
                         onClick={() => {
-                          dispatch!({
+                          dispatch({
                             type: StateChange.SETSELECTEDPEER,
                             payload: { idx: idx },
                           })
                         }}
                         backgroundColor={
-                          idx === state!.hover
+                          idx === state.hover
                             ? 'blue.100'
-                            : state!.peerIdx === idx
+                            : state.peerIdx === idx
                             ? 'red.100'
                             : 'whiteAlpha.100'
                         }

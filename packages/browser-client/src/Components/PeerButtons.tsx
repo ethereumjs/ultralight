@@ -25,7 +25,7 @@ import {
   shortId,
 } from 'portalnetwork'
 import React, { useContext, useEffect, useReducer } from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 interface PeerButtonsState {
   epoch: number
@@ -79,20 +79,20 @@ const reducer = (state: PeerButtonsState, action: AppStateAction) => {
 }
 
 export default function PeerButtons() {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [_state, _dispatch] = useReducer(reducer, peerButtonsInitialState)
 
   useEffect(() => {
-    if (!state!.selectedPeer) {
-      dispatch!({ type: StateChange.SETSELECTEDPEER, payload: { idx: 0 } })
+    if (!state.selectedPeer) {
+      dispatch({ type: StateChange.SETSELECTEDPEER, payload: { idx: 0 } })
     }
   }, [])
 
-  const peerIdx = state!.sortedPeers
+  const peerIdx = state.sortedPeers
     .map((peer) => {
       return peer[1][3]
     })
-    .indexOf(state!.selectedPeer)
+    .indexOf(state.selectedPeer)
 
   const addToOffer = (type: string): Uint8Array[] => {
     switch (type) {
@@ -141,7 +141,9 @@ export default function PeerButtons() {
   const handlePing = async () => {
     _dispatch({ type: PeerButtonsStateChange.PING, payload: ['yellow.200', 'PINGING'] })
     setTimeout(async () => {
-      const pong = await state!.provider!.historyProtocol!.sendPing(ENR.decodeTxt(state!.selectedPeer))
+      const pong = await state.provider!.historyProtocol!.sendPing(
+        ENR.decodeTxt(state.selectedPeer)
+      )
       if (pong) {
         _dispatch({ type: PeerButtonsStateChange.PING, payload: ['green.200', 'PONG RECEIVED!'] })
         setTimeout(() => {
@@ -156,21 +158,24 @@ export default function PeerButtons() {
     }, 500)
   }
   const handleFindNodes = (peer: ENR) => {
-    state!.provider!.historyProtocol!.sendFindNodes(peer.nodeId, [parseInt(_state.distance)])
+    state.provider!.historyProtocol!.sendFindNodes(peer.nodeId, [parseInt(_state.distance)])
   }
   const handleRequestSnapshot = () => {
     const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: 4,
       value: { selector: 0, value: null },
     })
-    state!.provider!.historyProtocol!.sendFindContent(
-      ENR.decodeTxt(state!.selectedPeer).nodeId,
+    state.provider!.historyProtocol!.sendFindContent(
+      ENR.decodeTxt(state.selectedPeer).nodeId,
       accumulatorKey
     )
   }
 
   const handleOffer = () => {
-    state!.provider!.historyProtocol!.sendOffer(ENR.decodeTxt(state!.selectedPeer).nodeId, _state.offer)
+    state.provider!.historyProtocol!.sendOffer(
+      ENR.decodeTxt(state.selectedPeer).nodeId,
+      _state.offer
+    )
   }
   const sendFindContent = async (type: string) => {
     if (type === 'header') {
@@ -181,12 +186,12 @@ export default function PeerButtons() {
           blockHash: fromHexString(_state.blockHash),
         },
       })
-      const header = await state!.provider!.historyProtocol!.sendFindContent(
-        ENR.decodeTxt(state!.selectedPeer).nodeId,
+      const header = await state.provider!.historyProtocol!.sendFindContent(
+        ENR.decodeTxt(state.selectedPeer).nodeId,
         headerKey
       )
       const block = reassembleBlock(header!.value as Uint8Array, undefined)
-      dispatch!({ type: StateChange.SETBLOCK, payload: block })
+      dispatch({ type: StateChange.SETBLOCK, payload: block })
     } else if (type === 'body') {
       const headerKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 0,
@@ -195,7 +200,10 @@ export default function PeerButtons() {
           blockHash: fromHexString(_state.blockHash),
         },
       })
-      state!.provider!.historyProtocol!.sendFindContent(ENR.decodeTxt(state!.selectedPeer).nodeId, headerKey)
+      state.provider!.historyProtocol!.sendFindContent(
+        ENR.decodeTxt(state.selectedPeer).nodeId,
+        headerKey
+      )
       const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 1,
         value: {
@@ -203,7 +211,10 @@ export default function PeerButtons() {
           blockHash: fromHexString(_state.blockHash),
         },
       })
-      state!.provider!.historyProtocol!.sendFindContent(ENR.decodeTxt(state!.selectedPeer).nodeId, bodyKey)
+      state.provider!.historyProtocol!.sendFindContent(
+        ENR.decodeTxt(state.selectedPeer).nodeId,
+        bodyKey
+      )
     } else if (type === 'block') {
       const headerKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 0,
@@ -221,221 +232,219 @@ export default function PeerButtons() {
       })
       try {
         const header = (
-          await state!.provider!.historyProtocol!.sendFindContent(
-            ENR.decodeTxt(state!.selectedPeer).nodeId,
+          await state.provider!.historyProtocol!.sendFindContent(
+            ENR.decodeTxt(state.selectedPeer).nodeId,
             headerKey
           )
         )?.value as Uint8Array
-        const _body = await state!.provider!.historyProtocol!.sendFindContent(
-          ENR.decodeTxt(state!.selectedPeer).nodeId,
+        const _body = await state.provider!.historyProtocol!.sendFindContent(
+          ENR.decodeTxt(state.selectedPeer).nodeId,
           bodyKey
         )
         const body: Uint8Array | undefined =
           _body !== undefined ? (_body.value as Uint8Array) : undefined
         const block = reassembleBlock(header, body)
-        dispatch!({ type: StateChange.SETBLOCK, payload: block })
+        dispatch({ type: StateChange.SETBLOCK, payload: block })
       } catch {}
     } else if (type === 'epoch') {
       const _epochKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 3,
         value: {
           chainId: 1,
-          blockHash: state!.provider!.historyProtocol!.accumulator.historicalEpochs()[_state.epoch],
+          blockHash: state.provider!.historyProtocol!.accumulator.historicalEpochs()[_state.epoch],
         },
       })
     }
   }
   return (
     <GridItem>
-      {state && dispatch && (
-        <Box border={'1px'}>
-          <VStack>
-            <HStack>
-              <VStack>
-                <HStack>
-                  <Heading size={'md'}>
-                    Peer {peerIdx + 1} / {state!.peers.length}
-                  </Heading>
-                </HStack>
-                <Table size="xs">
-                  {state?.sortedPeers[peerIdx] && (
-                    <Tbody>
-                      <Tr>
-                        <Td>ENR:</Td>
-                        <Th>
-                          <Tooltip label={state!.sortedPeers[peerIdx][1][3]}>
-                            <CopyIcon
-                              cursor={'pointer'}
-                              onClick={() =>
-                                navigator.clipboard.writeText(state!.sortedPeers[peerIdx][1][3])
-                              }
-                            />
-                          </Tooltip>
-                        </Th>
-                      </Tr>
-                      <Tr>
-                        <Td>Addr: </Td>
-                        <Td>
-                          {state!.sortedPeers[peerIdx][1][0]}: {state!.sortedPeers[peerIdx][1][1]}
-                        </Td>
-                      </Tr>
-                      <Tr>
-                        <Td>NodeId: </Td>
-                        <Td>{shortId(ENR.decodeTxt(state!.selectedPeer).nodeId)}</Td>
-                      </Tr>
-                    </Tbody>
-                  )}
-                </Table>
-              </VStack>
-              <Button size="lg" onClick={() => handlePing()} bgColor={_state.ping[0]}>
-                {_state.ping[1]}
-              </Button>
-            </HStack>
-            <Button width="100%" onClick={() => handleRequestSnapshot()}>
-              Request Accumulator Snapshot
-            </Button>
-            <Divider />
-            <HStack width={'100%'}>
-              <Button
-                isDisabled={state!.provider!.historyProtocol!.accumulator.historicalEpochs.length < 1}
-                width="70%"
-                onClick={() => sendFindContent('epoch')}
-              >
-                Request Epoch Accumulator by Epoch
-              </Button>
-              <Input
-                type={'number'}
-                min={1}
-                max={state!.provider!.historyProtocol!.accumulator.historicalEpochs.length}
-                width={'30%'}
-                placeholder={'Epoch'}
-                onChange={(evt) => {
-                  _dispatch({
-                    type: PeerButtonsStateChange.SETEPOCH,
-                    payload: parseInt(evt.target.value),
-                  })
-                }}
-              />
-            </HStack>
-            <Divider />
-            <HStack width={'100%'}>
-              <Button
-                isDisabled={state!.provider!.historyProtocol!.accumulator.historicalEpochs.length < 1}
-                width="70%"
-                onClick={() => sendFindContent('epoch')}
-              >
-                Request Epoch Accumulator by BlockNumber
-              </Button>
-              <Input
-                type={'number'}
-                min={1}
-                max={state!.provider!.historyProtocol!.accumulator.currentHeight()}
-                width={'30%'}
-                placeholder={`BlockNumber (Max: ${state!.provider!.historyProtocol!.accumulator.currentHeight()})`}
-                onChange={(evt) => {
-                  _dispatch({
-                    type: PeerButtonsStateChange.SETEPOCH,
-                    payload: Math.floor(parseInt(evt.target.value) / 8192),
-                  })
-                }}
-              />
-            </HStack>
-            <Divider />
-            {state.selectedPeer && (
-              <HStack width={'100%'}>
-                <Button
-                  width="70%"
-                  onClick={() => handleFindNodes(ENR.decodeTxt(state!.selectedPeer))}
-                >
-                  FindNodes
-                </Button>
-                <Input
-                  width={'30%'}
-                  placeholder={'Distance'}
-                  onChange={(evt) => {
-                    _dispatch({
-                      type: PeerButtonsStateChange.SETDISTANCE,
-                      payload: evt.target.value,
-                    })
-                  }}
-                />
+      <Box border={'1px'}>
+        <VStack>
+          <HStack>
+            <VStack>
+              <HStack>
+                <Heading size={'md'}>
+                  Peer {peerIdx + 1} / {state.peers.length}
+                </Heading>
               </HStack>
-            )}
-            <Divider />
-            <Input
-              value={_state.blockHash}
-              placeholder="BlockHash"
-              onChange={(evt) =>
-                _dispatch({ type: PeerButtonsStateChange.SETBLOCKHASH, payload: evt.target.value })
-              }
-            />
-            <HStack width={'100%'}>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  sendFindContent('header')
-                }}
-              >
-                Find Header
-              </Button>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  sendFindContent('body')
-                }}
-              >
-                Find Body
-              </Button>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  sendFindContent('block')
-                }}
-              >
-                Find Block
-              </Button>
-            </HStack>
-            <HStack width={'100%'}>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  addToOffer('header')
-                }}
-              >
-                Offer Header
-              </Button>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  addToOffer('body')
-                }}
-              >
-                Offer Body
-              </Button>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  addToOffer('block')
-                }}
-              >
-                Offer Block
-              </Button>
-            </HStack>
-            <Box width={'90%'} border={'1px'}>
-              <Text textAlign={'center'}>OFFER: {_state.offer.length} / 26</Text>
-            </Box>
-            <Button width={'100%'} onClick={() => handleOffer()}>
-              Send Offer
+              <Table size="xs">
+                {state?.sortedPeers[peerIdx] && (
+                  <Tbody>
+                    <Tr>
+                      <Td>ENR:</Td>
+                      <Th>
+                        <Tooltip label={state.sortedPeers[peerIdx][1][3]}>
+                          <CopyIcon
+                            cursor={'pointer'}
+                            onClick={() =>
+                              navigator.clipboard.writeText(state.sortedPeers[peerIdx][1][3])
+                            }
+                          />
+                        </Tooltip>
+                      </Th>
+                    </Tr>
+                    <Tr>
+                      <Td>Addr: </Td>
+                      <Td>
+                        {state.sortedPeers[peerIdx][1][0]}: {state.sortedPeers[peerIdx][1][1]}
+                      </Td>
+                    </Tr>
+                    <Tr>
+                      <Td>NodeId: </Td>
+                      <Td>{shortId(ENR.decodeTxt(state.selectedPeer).nodeId)}</Td>
+                    </Tr>
+                  </Tbody>
+                )}
+              </Table>
+            </VStack>
+            <Button size="lg" onClick={() => handlePing()} bgColor={_state.ping[0]}>
+              {_state.ping[1]}
             </Button>
-          </VStack>
-        </Box>
-      )}
+          </HStack>
+          <Button width="100%" onClick={() => handleRequestSnapshot()}>
+            Request Accumulator Snapshot
+          </Button>
+          <Divider />
+          <HStack width={'100%'}>
+            <Button
+              isDisabled={state.provider!.historyProtocol!.accumulator.historicalEpochs.length < 1}
+              width="70%"
+              onClick={() => sendFindContent('epoch')}
+            >
+              Request Epoch Accumulator by Epoch
+            </Button>
+            <Input
+              type={'number'}
+              min={1}
+              max={state.provider!.historyProtocol!.accumulator.historicalEpochs.length}
+              width={'30%'}
+              placeholder={'Epoch'}
+              onChange={(evt) => {
+                _dispatch({
+                  type: PeerButtonsStateChange.SETEPOCH,
+                  payload: parseInt(evt.target.value),
+                })
+              }}
+            />
+          </HStack>
+          <Divider />
+          <HStack width={'100%'}>
+            <Button
+              isDisabled={state.provider!.historyProtocol!.accumulator.historicalEpochs.length < 1}
+              width="70%"
+              onClick={() => sendFindContent('epoch')}
+            >
+              Request Epoch Accumulator by BlockNumber
+            </Button>
+            <Input
+              type={'number'}
+              min={1}
+              max={state.provider!.historyProtocol!.accumulator.currentHeight()}
+              width={'30%'}
+              placeholder={`BlockNumber (Max: ${state.provider!.historyProtocol!.accumulator.currentHeight()})`}
+              onChange={(evt) => {
+                _dispatch({
+                  type: PeerButtonsStateChange.SETEPOCH,
+                  payload: Math.floor(parseInt(evt.target.value) / 8192),
+                })
+              }}
+            />
+          </HStack>
+          <Divider />
+          {state.selectedPeer && (
+            <HStack width={'100%'}>
+              <Button
+                width="70%"
+                onClick={() => handleFindNodes(ENR.decodeTxt(state.selectedPeer))}
+              >
+                FindNodes
+              </Button>
+              <Input
+                width={'30%'}
+                placeholder={'Distance'}
+                onChange={(evt) => {
+                  _dispatch({
+                    type: PeerButtonsStateChange.SETDISTANCE,
+                    payload: evt.target.value,
+                  })
+                }}
+              />
+            </HStack>
+          )}
+          <Divider />
+          <Input
+            value={_state.blockHash}
+            placeholder="BlockHash"
+            onChange={(evt) =>
+              _dispatch({ type: PeerButtonsStateChange.SETBLOCKHASH, payload: evt.target.value })
+            }
+          />
+          <HStack width={'100%'}>
+            <Button
+              width={'33%'}
+              title="Add content to offer"
+              onClick={() => {
+                sendFindContent('header')
+              }}
+            >
+              Find Header
+            </Button>
+            <Button
+              width={'33%'}
+              title="Add content to offer"
+              onClick={() => {
+                sendFindContent('body')
+              }}
+            >
+              Find Body
+            </Button>
+            <Button
+              width={'33%'}
+              title="Add content to offer"
+              onClick={() => {
+                sendFindContent('block')
+              }}
+            >
+              Find Block
+            </Button>
+          </HStack>
+          <HStack width={'100%'}>
+            <Button
+              width={'33%'}
+              title="Add content to offer"
+              onClick={() => {
+                addToOffer('header')
+              }}
+            >
+              Offer Header
+            </Button>
+            <Button
+              width={'33%'}
+              title="Add content to offer"
+              onClick={() => {
+                addToOffer('body')
+              }}
+            >
+              Offer Body
+            </Button>
+            <Button
+              width={'33%'}
+              title="Add content to offer"
+              onClick={() => {
+                addToOffer('block')
+              }}
+            >
+              Offer Block
+            </Button>
+          </HStack>
+          <Box width={'90%'} border={'1px'}>
+            <Text textAlign={'center'}>OFFER: {_state.offer.length} / 26</Text>
+          </Box>
+          <Button width={'100%'} onClick={() => handleOffer()}>
+            Send Offer
+          </Button>
+        </VStack>
+      </Box>
     </GridItem>
   )
 }
