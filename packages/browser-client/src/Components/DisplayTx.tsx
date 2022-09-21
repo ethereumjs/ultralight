@@ -86,7 +86,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                           {k.replace(/_/g, ' ')}
                         </Td>
                         <Td width={'75%'} paddingBottom={'0'} wordBreak={'break-all'}>
-                          {v.toString()}
+                          {v?.toString()}
                         </Td>
                       </Tr>
                     )

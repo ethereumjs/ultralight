@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core'
+import { ethers } from 'ethers'
 import {
   ENR,
   log2Distance,
@@ -64,48 +65,36 @@ export const startUp = async (provider: UltralightProvider) => {
 }
 export async function createNodeFromScratch(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? await UltralightProvider.create(
-        'https://mainnet.infura.io/v3/c41bd90629a342a8b0b32504d23b2e70',
-        1,
-        {
-          bootnodes: bns,
-          db: state.LDB as any,
-          transport: TransportLayer.MOBILE,
-        }
-      )
-    : await UltralightProvider.create(
-        'https://mainnet.infura.io/v3/c41bd90629a342a8b0b32504d23b2e70',
-        1,
-        {
-          proxyAddress: state.proxy,
-          bootnodes: bns,
-          db: state.LDB as any,
-          transport: TransportLayer.WEB,
-        }
-      )
+    ? await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+        bootnodes: bns,
+        db: state.LDB as any,
+        transport: TransportLayer.MOBILE,
+      })
+    : await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+        proxyAddress: state.proxy,
+        bootnodes: bns,
+        db: state.LDB as any,
+        transport: TransportLayer.WEB,
+      })
   await startUp(provider)
   return provider
 }
 
 export async function createNodeFromStorage(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? await UltralightProvider.create('', 1, {
+    ? await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
         bootnodes: bns,
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.MOBILE,
       })
-    : await UltralightProvider.create(
-        'https://mainnet.infura.io/v3/c41bd90629a342a8b0b32504d23b2e70',
-        1,
-        {
-          proxyAddress: state.proxy,
-          bootnodes: bns,
-          db: state.LDB as any,
-          rebuildFromMemory: true,
-          transport: TransportLayer.WEB,
-        }
-      )
+    : await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+        proxyAddress: state.proxy,
+        bootnodes: bns,
+        db: state.LDB as any,
+        rebuildFromMemory: true,
+        transport: TransportLayer.WEB,
+      })
   await startUp(provider)
   return provider
 }

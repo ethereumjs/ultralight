@@ -59,13 +59,16 @@ export const ethJsBlockToEthersBlockWithTxs = (block: ethJsBlock): BlockWithTran
       wait: () => Promise<any>,
       nonce: Number(tx.nonce),
       chainId: 1,
-      gasLimit: tx.gasLimit.toString(),
+      gasLimit: tx.gasLimit?.toString(),
       data: toHexString(tx.data),
       value: ethers.BigNumber.from(tx.value),
-      gasPrice: tx.type === 0 ? (tx as Transaction).gasPrice : undefined,
-      maxFeePerGas: tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxFeePerGas : undefined,
+      gasPrice: tx.type === 0 ? (tx as Transaction).gasPrice?.toString() : undefined,
+      maxFeePerGas:
+        tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxFeePerGas?.toString() : undefined,
       maxPriorityFeePerGas:
-        tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxPriorityFeePerGas : undefined,
+        tx.type === 2
+          ? (tx as FeeMarketEIP1559Transaction).maxPriorityFeePerGas?.toString()
+          : undefined,
     }
     txns.push(normedTx)
   }

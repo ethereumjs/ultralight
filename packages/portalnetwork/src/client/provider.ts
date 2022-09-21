@@ -1,5 +1,7 @@
-import { ethers } from 'ethers'
-import { HistoryProtocol, ProtocolId } from '../subprotocols/index.js'
+import { BlockWithTransactions } from '@ethersproject/abstract-provider'
+import { ethers, providers } from 'ethers'
+import { addRLPSerializedBlock, HistoryProtocol, ProtocolId } from '../subprotocols/index.js'
+import { toHexString } from '../util/discv5.js'
 import {
   ethJsBlockToEthersBlock,
   ethJsBlockToEthersBlockWithTxs,
@@ -88,6 +90,8 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
     }
 
     const ethJSBlock = blockFromRpc(block)
-    return block
+    addRLPSerializedBlock(toHexString(ethJSBlock.serialize()), block.hash, this.historyProtocol)
+    const ethersBlock = ethJsBlockToEthersBlockWithTxs(ethJSBlock)
+    return ethersBlock
   }
 }

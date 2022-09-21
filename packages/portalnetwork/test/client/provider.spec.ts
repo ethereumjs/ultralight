@@ -55,6 +55,5 @@ tape.only('Test block storage', async (t) => {
   })
 
   const block = await provider.getBlockWithTransactions('latest')
-  console.log(block)
   t.end()
 })

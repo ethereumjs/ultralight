@@ -76,7 +76,7 @@ const DisplayBlock = () => {
           val = entry[1]
           break
         case 'object':
-          val = entry[1].toString(10)
+          val = entry[1].toString()
           break
         case 'number':
           val = entry[1].toString()

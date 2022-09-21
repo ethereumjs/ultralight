@@ -1,4 +1,4 @@
-import type { ethers } from 'ethers'
+import { ethers } from 'ethers'
 import type { BlockWithTransactions } from '@ethersproject/abstract-provider'
 import { TypedTransaction } from '@ethereumjs/tx'
 import { BrowserLevel } from 'browser-level'
@@ -145,19 +145,23 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
   CREATENODEFROMBINDADDRESS:
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
-      const provider = await UltralightProvider.create('', 1, {
-        supportedProtocols: [ProtocolId.HistoryNetwork],
-        proxyAddress: action.payload.state.proxy,
-        db: action.payload.state.LDB as any,
-        transport: TransportLayer.WEB,
-        //@ts-ignore
-        config: {
+      const provider = await UltralightProvider.create(
+        new ethers.providers.CloudflareProvider(),
+        1,
+        {
+          supportedProtocols: [ProtocolId.HistoryNetwork],
+          proxyAddress: action.payload.state.proxy,
+          db: action.payload.state.LDB as any,
+          transport: TransportLayer.WEB,
+          //@ts-ignore
           config: {
-            enrUpdate: true,
-            addrVotesToUpdateEnr: 1,
+            config: {
+              enrUpdate: true,
+              addrVotesToUpdateEnr: 1,
+            },
           },
-        },
-      })
+        }
+      )
       await startUp(provider)
       dispatch({ type: StateChange.SETPORTAL, payload: provider })
     },

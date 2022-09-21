@@ -39,6 +39,7 @@ export const App = () => {
       navigator.storage.persist()
     }
     if (process.env.BINDADDRESS) {
+      console.log('found a bind address!')
       dispatch({
         type: StateChange.CREATENODEFROMBINDADDRESS,
         payload: { state: state },
