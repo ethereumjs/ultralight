@@ -41,7 +41,7 @@ export class ContentLookup {
       const res = await this.protocol.client.db.get(this.contentId)
       return fromHexString(res)
     } catch (err: any) {
-      this.logger(err.message)
+      this.logger(`content key not in db ${err.message}`)
     }
     this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer: any) => {
       try {

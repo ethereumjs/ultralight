@@ -181,7 +181,7 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
     async (action: AsyncAction) => {
       const receipts =
         await action.payload.state.provider?.historyProtocol.receiptManager.getReceipts(
-          Buffer.from(action.payload.state.block!.hash.slice(2))
+          Buffer.from(action.payload.state.block!.hash.slice(2), 'hex')
         )
       dispatch({ type: StateChange.SETRECEIPTS, payload: receipts })
     },

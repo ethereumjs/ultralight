@@ -1,5 +1,4 @@
-import { BlockWithTransactions } from '@ethersproject/abstract-provider'
-import { ethers, providers } from 'ethers'
+import { ethers } from 'ethers'
 import { addRLPSerializedBlock, HistoryProtocol, ProtocolId } from '../subprotocols/index.js'
 import { toHexString } from '../util/discv5.js'
 import {
@@ -75,7 +74,6 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
         return ethJsBlockToEthersBlockWithTxs(block)
       }
     }
-    // TODO: Add block to history network if retrieved from provider
 
     if (isBlockHash) {
       block = await this.fallbackProvider.send('eth_getBlockByHash', [blockTag, true])

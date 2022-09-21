@@ -45,7 +45,7 @@ export const ethJsBlockToEthersBlock = (block: ethJsBlock): ethers.providers.Blo
  */
 export const ethJsBlockToEthersBlockWithTxs = (block: ethJsBlock): BlockWithTransactions => {
   debug.enable('ethJsBlockToEthersBlock')
-  debug('ethJsBlockToEthersBlock')('found a block')
+  debug('ethJsBlockToEthersBlockWithTxns')('found a block')
 
   const txns = []
   for (const tx of block.transactions) {

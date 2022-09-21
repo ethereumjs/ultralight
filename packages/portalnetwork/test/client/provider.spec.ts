@@ -38,22 +38,3 @@ tape('Test provider functionality', async (t) => {
   t.equal(1, (await provider.detectNetwork()).chainId, 'parent class methods work as expected')
   t.end()
 })
-
-tape.only('Test block storage', async (t) => {
-  const ma = new Multiaddr('/ip4/0.0.0.0/udp/1500')
-  const peerId = await createSecp256k1PeerId()
-  const enr = ENR.createFromPeerId(peerId)
-  enr.setLocationMultiaddr(ma)
-  const provider = await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
-    bindAddress: '0.0.0.0',
-    transport: TransportLayer.NODE,
-    config: {
-      multiaddr: ma,
-      enr: enr,
-      peerId: peerId,
-    },
-  })
-
-  const block = await provider.getBlockWithTransactions('latest')
-  t.end()
-})

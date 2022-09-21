@@ -25,8 +25,7 @@ interface DisplayTxProps {
 
 export default function DisplayTx(props: DisplayTxProps) {
   const { state } = useContext(AppContext as React.Context<AppContextType>)
-  //const rec = state.receipts[props.txIdx]
-  const rec = undefined
+  const rec = state.receipts[props.txIdx]
   const tx = Object.entries(
     (state.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
   )
@@ -50,22 +49,6 @@ export default function DisplayTx(props: DisplayTxProps) {
       txData.push(entry)
     }
   }
-  /* const data = {
-    baseFee: `0x${trans.baseFee}`,
-    dataFee: `0x${state.block!.transactions[props.txIdx].getDataFee()}`,
-    message_to_sign: toHexString(state.block!.transactions[props.txIdx].getMessageToSign()),
-    message_to_verify_signature: toHexString(
-      state.block!.transactions[props.txIdx].getMessageToVerifySignature()
-    ),
-    sender_address: state.block!.transactions[props.txIdx].getSenderAddress().toString(),
-    sender_public_key: toHexString(state.block!.transactions[props.txIdx].getSenderPublicKey()),
-    up_front_cost: `0x${state.block!.transactions[props.txIdx].getUpfrontCost()}`,
-    hash: toHexString(state.block!.transactions[props.txIdx].hash()),
-    isSigned: state.block!.transactions[props.txIdx].isSigned().toString(),
-    to_creation_address: state.block!.transactions[props.txIdx].toCreationAddress().toString(),
-    validate: state.block!.transactions[props.txIdx].validate().toString(),
-    verify_signature: state.block!.transactions[props.txIdx].verifySignature().toString(),
-  }*/
 
   return (
     <Box width="100%">
@@ -92,23 +75,11 @@ export default function DisplayTx(props: DisplayTxProps) {
                     )
                   )
                 })}
-                {/*Object.entries(data).map(([k, v], idx) => {
-                  return (
-                    <Tr key={idx}>
-                      <Td width={'25%'} paddingBottom={'0'} wordBreak={'break-word'}>
-                        {k.replace(/_/g, ' ')}
-                      </Td>
-                      <Td width={'75%'} paddingBottom={'0'} wordBreak={'break-all'}>
-                        {v}
-                      </Td>
-                    </Tr>
-                  )
-                })*/}
               </Tbody>
             </Table>
           </TabPanel>
           <TabPanel>
-            {/*rec && (
+            {rec && (
               <Table>
                 <Thead>
                   <Tr>
@@ -124,7 +95,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                       <Text>Transaction Hash</Text>
                     </Th>
                     <Td>
-                      <Text wordBreak={'break-all'}>{trans}</Text>
+                      <Text wordBreak={'break-all'}>{txData[0][1]}</Text>
                     </Td>
                   </Tr>
                   <Tr>
@@ -132,9 +103,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                       <Text>Cumulative Block Gas Used:</Text>
                     </Th>
                     <Td>
-                      <Text>
-                        {/*state.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}
-                      </Text>
+                      <Text>{state.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}</Text>
                     </Td>
                   </Tr>
                   <Tr>
@@ -174,7 +143,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                   </Tr>
                 </Thead>
               </Table>
-                        )*/}
+            )}
           </TabPanel>
         </TabPanels>
       </Tabs>

@@ -1,20 +1,19 @@
 import { CheckCircleIcon, CopyIcon } from '@chakra-ui/icons'
 import {
   Box,
-  TabPanels,
-  TabPanel,
-  Tab,
-  TabList,
-  Tabs,
-  Text,
-  Heading,
+  Center,
   Grid,
   GridItem,
-  Accordion,
-  Link,
-  Center,
-  Skeleton,
+  Heading,
   HStack,
+  Link,
+  Skeleton,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
   VStack,
 } from '@chakra-ui/react'
 import {
@@ -23,16 +22,15 @@ import {
   toHexString,
   TxReceiptWithType,
 } from 'portalnetwork'
-import SelectTx from './SelectTx'
 import React, { useContext, useEffect, useState } from 'react'
-import GetHeaderProofByHash from './GetHeaderProofByHash'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
-import TxReceipt from './TxReceipt'
+import GetHeaderProofByHash from './GetHeaderProofByHash'
+import SelectTx from './SelectTx'
 
 const DisplayBlock = () => {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [validated, setValidated] = useState(false)
-  const [receipts, setReceipts] = useState<TxReceiptWithType[]>([])
+  const [_receipts, setReceipts] = useState<TxReceiptWithType[]>([])
 
   useEffect(() => {
     state.provider!.portal.on('Verified', (key, verified) => {
@@ -89,7 +87,7 @@ const DisplayBlock = () => {
   async function init() {
     try {
       const receipts = await state.provider!.historyProtocol?.receiptManager.getReceipts(
-        Buffer.from(block.hash.slice(2))
+        Buffer.from(block.hash.slice(2), 'hex')
       )
       if (receipts) {
         setReceipts(receipts)
@@ -101,7 +99,7 @@ const DisplayBlock = () => {
 
   useEffect(() => {
     if (state.block!.transactions.length > 0) {
-      //  init()
+      init()
     }
   }, [state.block])
 
@@ -179,7 +177,6 @@ const DisplayBlock = () => {
           <TabList>
             <Tab>Header</Tab>
             <Tab>Transactions</Tab>
-            <Tab>Receipts</Tab>
             <Tab>JSON</Tab>
           </TabList>
         </Center>
@@ -196,24 +193,6 @@ const DisplayBlock = () => {
             </VStack>
           </TabPanel>
           <TabPanel>{state.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
-          <TabPanel>
-            <Box>
-              <Accordion allowToggle>
-                {state.block &&
-                  state.block.transactions.length > 0 &&
-                  receipts.length > 0 &&
-                  receipts.map((rec, idx) => {
-                    return (
-                      <TxReceipt
-                        rec={rec}
-                        idx={idx}
-                        hash={state.block?.transactions[idx] as string}
-                      />
-                    )
-                  })}
-              </Accordion>
-            </Box>
-          </TabPanel>
           <TabPanel>
             <Skeleton isLoaded={!state.isLoading}>
               <Text wordBreak={'break-all'}>{JSON.stringify(block)}</Text>
