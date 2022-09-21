@@ -55,7 +55,7 @@ const DisplayBlock = () => {
           {props.k[0]}
         </GridItem>
         <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-          {props.idx === 0 ? (
+          {props.k[0] === 'parentHash' ? (
             <Link color={'blue'} onClick={async () => await findParent()}>
               {props.k[1]}
             </Link>
