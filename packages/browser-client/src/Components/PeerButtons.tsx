@@ -189,7 +189,10 @@ export default function PeerButtons() {
             <HStack width={'100%'}>
               <Button
                 width={'50%'}
-                title="Add content to offer"
+                title={`Send FINDCONTENT to peer for BlockHeader: ${peerState.blockHash.slice(
+                  0,
+                  8
+                )}...`}
                 onClick={() => {
                   sendFindContent('header')
                 }}
@@ -198,7 +201,10 @@ export default function PeerButtons() {
               </Button>
               <Button
                 width={'50%'}
-                title="Add content to offer"
+                title={`Send FINDCONTENT to peer for BlockBody: ${peerState.blockHash.slice(
+                  0,
+                  8
+                )}...`}
                 onClick={() => {
                   sendFindContent('body')
                 }}
@@ -229,7 +235,11 @@ export default function PeerButtons() {
             <Box width={'90%'} border={'1px'}>
               <Text textAlign={'center'}>OFFER: {peerState.offer.length} / 26</Text>
             </Box>
-            <Button width={'100%'} onClick={() => peerActions.handleOffer(state.selectedPeer)}>
+            <Button
+              width={'100%'}
+              title={`Send OFFER to peer with ${peerState.offer.length} pieces of content`}
+              onClick={() => peerActions.handleOffer(state.selectedPeer)}
+            >
               Send Offer
             </Button>
           </VStack>
