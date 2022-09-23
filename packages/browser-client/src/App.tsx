@@ -28,7 +28,7 @@ export const App = () => {
 
   async function connectToPeer() {
     try {
-      await state.historyProtocol?.addBootNode(state.searchEnr)
+      await state.provider?.historyProtocol.addBootNode(state.searchEnr)
       dispatch({ type: StateChange.SETSEARCHENR, payload: '' })
       dispatch({ type: StateChange.REFRESHPEERS })
     } catch (err) {}
@@ -50,11 +50,12 @@ export const App = () => {
 
   React.useEffect(() => {
     init()
+    state.provider?.portal.enableLog('*Portal*')
   }, [])
 
   return (
     <ChakraProvider theme={theme}>
-      {state && dispatch && state.portal && state.historyProtocol && (
+      {state && dispatch && state.provider && state.provider.historyProtocol && (
         <AppContext.Provider value={{ state, dispatch }}>
           <Header />
           <HStack border={'1px'} width={'100%'} paddingY={1}>

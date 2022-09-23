@@ -116,7 +116,6 @@ export class ContentManager {
           )
 
           const hexHeader = await this.history.client.db.get(headerContentId)
-
           // Verify we can construct a valid block from the header and body provided
           block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
@@ -127,10 +126,11 @@ export class ContentManager {
           const retrievedHeader = await this.history.ETH.getBlockByHash(hashKey, false)
           try {
             if (retrievedHeader instanceof Block) validBlock = true
-          } catch {}
+          } catch (err) {
+            console.log('couldnt find a block')
+          }
         }
         if (validBlock) {
-          this.logger('found valid block')
           this.history.client.db.put(contentId, toHexString(value))
           await this.history.receiptManager.saveReceipts(block!)
         } else {

@@ -9,25 +9,23 @@ import {
   Heading,
   Box,
   HStack,
-  useConst,
 } from '@chakra-ui/react'
 // eslint-disable-next-line implicit-dependencies/no-implicit
 import { useContext, useEffect, useState } from 'react'
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import DisplayTx from './DisplayTx'
 import React from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
+import { TransactionResponse } from '@ethersproject/abstract-provider'
 
 export default function SelectTx() {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   useEffect(() => {
-    dispatch!({ type: StateChange.GETRECEIPTS, payload: { state: state } })
+    dispatch({ type: StateChange.GETRECEIPTS, payload: { state: state } })
   }, [])
   const [txIdx, setTxIdx] = useState(0)
-  const length = state!.block!.transactions.length
-  const txString: string[] = state!.block!.transactions.map(
-    (tx) => '0x' + tx.hash().toString('hex')
-  )
+  const length = state.block!.transactions.length
+  const txString: string[] = state.block!.transactions.map((tx) => (tx as TransactionResponse).hash)
 
   return (
     <VStack>

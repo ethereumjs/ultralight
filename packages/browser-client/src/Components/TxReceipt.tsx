@@ -13,17 +13,18 @@ import {
   Tr,
   VStack,
 } from '@chakra-ui/react'
+import { TransactionResponse } from '@ethersproject/abstract-provider'
 import { Log, TxReceiptWithType } from 'portalnetwork'
 import React from 'react'
 
 interface TxReceiptProps {
   rec: TxReceiptWithType
   idx: number
-  hash: string
+  tx: TransactionResponse
 }
 
 export default function TxReceipt(props: TxReceiptProps) {
-  const { rec, idx, hash } = props
+  const { rec, idx, tx } = props
   return (
     <AccordionItem>
       <h2>
@@ -50,7 +51,7 @@ export default function TxReceipt(props: TxReceiptProps) {
                 <Text>Transaction Hash</Text>
               </Th>
               <Td>
-                <Text wordBreak={'break-all'}>{hash}</Text>
+                <Text wordBreak={'break-all'}>{tx.hash}</Text>
               </Td>
             </Tr>
             <Tr>

@@ -1,13 +1,13 @@
-import { Block } from '@ethereumjs/block'
+import { ethers } from 'ethers'
+import type { BlockWithTransactions } from '@ethersproject/abstract-provider'
 import { TypedTransaction } from '@ethereumjs/tx'
 import { BrowserLevel } from 'browser-level'
 import {
   ENR,
-  HistoryProtocol,
-  PortalNetwork,
   ProtocolId,
   TransportLayer,
   TxReceiptWithType,
+  UltralightProvider,
 } from 'portalnetwork'
 import React from 'react'
 import { AsyncActionHandlers } from 'use-reducer-async'
@@ -15,8 +15,7 @@ import { createNodeFromScratch, createNodeFromStorage, refresh, startUp } from '
 
 export type AppState = {
   proxy: string
-  portal: PortalNetwork | undefined
-  historyProtocol: HistoryProtocol | undefined
+  provider: UltralightProvider | undefined
   LDB: BrowserLevel
   //
   searchEnr: string
@@ -29,7 +28,7 @@ export type AppState = {
   isLoading: boolean
   hover: number | undefined
   //
-  block: Block | undefined
+  block: ethers.providers.Block | BlockWithTransactions | undefined
   receipts: TxReceiptWithType[]
   transaction: TypedTransaction | undefined
 }
@@ -38,8 +37,7 @@ export type AppReducer = React.Reducer<AppState, AppStateAction | AsyncAction>
 export type ReducerState = React.ReducerState<AppReducer>
 export const initialState: ReducerState = {
   proxy: 'ws://127.0.0.1:5050',
-  portal: undefined,
-  historyProtocol: undefined,
+  provider: undefined,
   LDB: new BrowserLevel('ultralight_history', { prefix: '', version: 1 }),
   searchEnr:
     'enr:-IS4QB-D7CEwWs-spOmhgmVJEfLmB9lkGEkTVpFI8U2mvTYfZLnrqYK8hfJvNZrPHYL0C3PUi83eJQZj0eAkJSGMU5oDgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQMdt_9PTSG9rirm8pq9jNR46jPsf2xbcvHBwQ10kgikXoN1ZHCCE4g',
@@ -89,8 +87,7 @@ export const reducer: React.Reducer<AppState, AppStateAction | AsyncAction> = (
       _state.proxy = payload
       return { ..._state }
     case StateChange.SETPORTAL:
-      _state.portal = payload
-      _state.historyProtocol = payload.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      _state.provider = payload
       // _state.block = _state.historyProtocol.accumulator.genesisBlock
       return { ..._state }
     case StateChange.REFRESHPEERS:
@@ -148,21 +145,25 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
   CREATENODEFROMBINDADDRESS:
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
-      const portal = await PortalNetwork.create({
-        supportedProtocols: [ProtocolId.HistoryNetwork],
-        proxyAddress: action.payload.state.proxy,
-        db: action.payload.state.LDB as any,
-        transport: TransportLayer.WEB,
-        //@ts-ignore
-        config: {
+      const provider = await UltralightProvider.create(
+        new ethers.providers.CloudflareProvider(),
+        1,
+        {
+          supportedProtocols: [ProtocolId.HistoryNetwork],
+          proxyAddress: action.payload.state.proxy,
+          db: action.payload.state.LDB as any,
+          transport: TransportLayer.WEB,
+          //@ts-ignore
           config: {
-            enrUpdate: true,
-            addrVotesToUpdateEnr: 1,
+            config: {
+              enrUpdate: true,
+              addrVotesToUpdateEnr: 1,
+            },
           },
-        },
-      })
-      await startUp(portal)
-      dispatch({ type: StateChange.SETPORTAL, payload: portal })
+        }
+      )
+      await startUp(provider)
+      dispatch({ type: StateChange.SETPORTAL, payload: provider })
     },
   CREATENODE:
     ({ dispatch }: reducerType) =>
@@ -178,16 +179,17 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
   GETRECEIPTS:
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
-      const receipts = await action.payload.state.historyProtocol?.receiptManager.getReceipts(
-        action.payload.state.block!.hash()
-      )
+      const receipts =
+        await action.payload.state.provider?.historyProtocol.receiptManager.getReceipts(
+          Buffer.from(action.payload.state.block!.hash.slice(2), 'hex')
+        )
       dispatch({ type: StateChange.SETRECEIPTS, payload: receipts })
     },
 }
 
 export type AppContextType = {
-  state?: AppState
-  dispatch?: React.Dispatch<AppStateAction | AsyncAction>
+  state: AppState
+  dispatch: React.Dispatch<AppStateAction | AsyncAction>
 }
 
-export const AppContext = React.createContext<AppContextType>({})
+export const AppContext = React.createContext<AppContextType | undefined>(undefined)

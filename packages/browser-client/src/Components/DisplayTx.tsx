@@ -15,44 +15,39 @@ import {
   Tr,
   VStack,
 } from '@chakra-ui/react'
+import { BlockWithTransactions, TransactionResponse } from '@ethersproject/abstract-provider'
 import { Log } from 'portalnetwork'
-import React, { useContext, useEffect } from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import React, { useContext } from 'react'
+import { AppContext, AppContextType } from '../globalReducer'
 interface DisplayTxProps {
   txIdx: number
 }
 
-export function toHexString(bytes: Uint8Array = new Uint8Array()): string {
-  const hexByByte: string[] = []
-  let hex = '0x'
-  for (const byte of bytes) {
-    if (!hexByByte[byte]) {
-      hexByByte[byte] = byte < 16 ? '0' + byte.toString(16) : byte.toString(16)
-    }
-    hex += hexByByte[byte]
-  }
-  return hex
-}
-
 export default function DisplayTx(props: DisplayTxProps) {
-  const { state, dispatch } = useContext(AppContext)
-  const rec = state!.receipts[props.txIdx]
-  const trans = Object.entries(state!.block!.transactions[props.txIdx].toJSON())
-  const data = {
-    baseFee: `0x${state!.block!.transactions[props.txIdx].getBaseFee()}`,
-    dataFee: `0x${state!.block!.transactions[props.txIdx].getDataFee()}`,
-    message_to_sign: toHexString(state!.block!.transactions[props.txIdx].getMessageToSign()),
-    message_to_verify_signature: toHexString(
-      state!.block!.transactions[props.txIdx].getMessageToVerifySignature()
-    ),
-    sender_address: state!.block!.transactions[props.txIdx].getSenderAddress().toString(),
-    sender_public_key: toHexString(state!.block!.transactions[props.txIdx].getSenderPublicKey()),
-    up_front_cost: `0x${state!.block!.transactions[props.txIdx].getUpfrontCost()}`,
-    hash: toHexString(state!.block!.transactions[props.txIdx].hash()),
-    isSigned: state!.block!.transactions[props.txIdx].isSigned().toString(),
-    to_creation_address: state!.block!.transactions[props.txIdx].toCreationAddress().toString(),
-    validate: state!.block!.transactions[props.txIdx].validate().toString(),
-    verify_signature: state!.block!.transactions[props.txIdx].verifySignature().toString(),
+  const { state } = useContext(AppContext as React.Context<AppContextType>)
+  const rec = state.receipts[props.txIdx]
+  const tx = Object.entries(
+    (state.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
+  )
+  const txData = []
+  const validKeys = [
+    'hash',
+    'type',
+    'blockHash',
+    'blockNumber',
+    'from',
+    'gasPrice',
+    'gasLimit',
+    'to',
+    'value',
+    'nonce',
+    'maxFeePerGas',
+    'maxPriorityFeePerGas',
+  ]
+  for (const entry of tx) {
+    if (validKeys.indexOf(entry[0]) >= 0) {
+      txData.push(entry)
+    }
   }
 
   return (
@@ -66,7 +61,7 @@ export default function DisplayTx(props: DisplayTxProps) {
           <TabPanel>
             <Table size={'sm'}>
               <Tbody>
-                {trans.map(([k, v], idx) => {
+                {txData.map(([k, v], idx) => {
                   return (
                     k !== 'data' && (
                       <Tr key={idx}>
@@ -74,22 +69,10 @@ export default function DisplayTx(props: DisplayTxProps) {
                           {k.replace(/_/g, ' ')}
                         </Td>
                         <Td width={'75%'} paddingBottom={'0'} wordBreak={'break-all'}>
-                          {v}
+                          {v?.toString()}
                         </Td>
                       </Tr>
                     )
-                  )
-                })}
-                {Object.entries(data).map(([k, v], idx) => {
-                  return (
-                    <Tr key={idx}>
-                      <Td width={'25%'} paddingBottom={'0'} wordBreak={'break-word'}>
-                        {k.replace(/_/g, ' ')}
-                      </Td>
-                      <Td width={'75%'} paddingBottom={'0'} wordBreak={'break-all'}>
-                        {v}
-                      </Td>
-                    </Tr>
                   )
                 })}
               </Tbody>
@@ -112,9 +95,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                       <Text>Transaction Hash</Text>
                     </Th>
                     <Td>
-                      <Text wordBreak={'break-all'}>
-                        {toHexString(state!.block!.transactions[props.txIdx].hash())}
-                      </Text>
+                      <Text wordBreak={'break-all'}>{txData[0][1]}</Text>
                     </Td>
                   </Tr>
                   <Tr>
@@ -122,7 +103,7 @@ export default function DisplayTx(props: DisplayTxProps) {
                       <Text>Cumulative Block Gas Used:</Text>
                     </Th>
                     <Td>
-                      <Text>{state!.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}</Text>
+                      <Text>{state.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}</Text>
                     </Td>
                   </Tr>
                   <Tr>

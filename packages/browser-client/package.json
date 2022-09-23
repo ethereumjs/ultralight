@@ -61,9 +61,12 @@
     "@emotion/react": "11.9.0",
     "@emotion/styled": "^11.8.1",
     "@ethereumjs/block": "^4.0.0",
-    "@ethereumjs/tx": "^4.0.0",
     "@ethereumjs/common": "^3.0.0",
+    "@ethereumjs/rlp": "^4.0.0",
+    "@ethereumjs/tx": "^4.0.0",
     "@ethereumjs/util": "^8.0.0",
+    "ethers": "^5.7.0",
+    "@ethersproject/abstract-provider": "^5.7.0",
     "@frontall/capacitor-udp": "^0.3.4",
     "@libp2p/interface-peer-id": "^1.0.2",
     "@libp2p/peer-id": "^1.1.13",
@@ -74,7 +77,6 @@
     "react": "18.1.0",
     "react-dom": "18.1.0",
     "react-icons": "^3.0.0",
-    "@ethereumjs/rlp": "^4.0.0",
     "url": "^0.11.0"
   }
 }

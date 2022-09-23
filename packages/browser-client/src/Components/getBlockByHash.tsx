@@ -1,23 +1,25 @@
 import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
 import React, { useContext, useState } from 'react'
-import { AppContext, StateChange } from '../globalReducer'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function GetBlockByHash() {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [blockHash, setBlockhash] = useState('')
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {
-      const block = await state!.historyProtocol!.ETH.getBlockByHash(blockHash, includeTransactions)
-      dispatch!({ type: StateChange.SETBLOCK, payload: block })
+      const block = includeTransactions
+        ? await state.provider!.getBlockWithTransactions(blockHash)
+        : await state.provider!.getBlock(blockHash)
+      dispatch({ type: StateChange.SETBLOCK, payload: block })
     } catch {
       return 'Block not found'
     }
   }
 
   async function handleClick() {
-    dispatch!({ type: StateChange.TOGGLELOADING })
+    dispatch({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByHash(blockHash, true)
-    dispatch!({ type: StateChange.TOGGLELOADING })
+    dispatch({ type: StateChange.TOGGLELOADING })
   }
 
   return (

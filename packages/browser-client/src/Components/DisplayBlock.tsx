@@ -1,51 +1,50 @@
 import { CheckCircleIcon, CopyIcon } from '@chakra-ui/icons'
 import {
   Box,
-  TabPanels,
-  TabPanel,
-  Tab,
-  TabList,
-  Tabs,
-  Text,
-  Heading,
+  Center,
   Grid,
   GridItem,
-  Accordion,
-  Link,
-  Center,
-  Skeleton,
+  Heading,
   HStack,
+  Link,
+  Skeleton,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
   VStack,
 } from '@chakra-ui/react'
-import { HistoryNetworkContentKeyUnionType, TxReceiptWithType } from 'portalnetwork'
-import SelectTx from './SelectTx'
+import {
+  fromHexString,
+  HistoryNetworkContentKeyUnionType,
+  toHexString,
+  TxReceiptWithType,
+} from 'portalnetwork'
 import React, { useContext, useEffect, useState } from 'react'
-import { toHexString } from './DisplayTx'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import GetHeaderProofByHash from './GetHeaderProofByHash'
-import { AppContext, StateChange } from '../globalReducer'
-import TxReceipt from './TxReceipt'
+import SelectTx from './SelectTx'
 
 const DisplayBlock = () => {
-  const { state, dispatch } = useContext(AppContext)
+  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [validated, setValidated] = useState(false)
-  const [receipts, setReceipts] = useState<TxReceiptWithType[]>([])
+  const [_receipts, setReceipts] = useState<TxReceiptWithType[]>([])
 
   useEffect(() => {
-    state?.portal?.on('Verified', (key, verified) => {
+    state.provider!.portal.on('Verified', (key, verified) => {
       setValidated(verified)
     })
   }, [])
 
   const findParent = async () => {
-    dispatch!({ type: StateChange.TOGGLELOADING })
-    const block = await state!.historyProtocol!.ETH.getBlockByHash(
-      toHexString(state!.block!.header.parentHash),
-      true
-    )
+    dispatch({ type: StateChange.TOGGLELOADING })
+    const block = await state.provider!.getBlockWithTransactions(state.block!.parentHash)
     if (block) {
-      dispatch!({ type: StateChange.SETBLOCK, payload: block })
+      dispatch({ type: StateChange.SETBLOCK, payload: block })
     }
-    dispatch!({ type: StateChange.TOGGLELOADING })
+    dispatch({ type: StateChange.TOGGLELOADING })
   }
   function GridRow(props: any) {
     return (
@@ -54,7 +53,7 @@ const DisplayBlock = () => {
           {props.k[0]}
         </GridItem>
         <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-          {props.idx === 0 ? (
+          {props.k[0] === 'parentHash' ? (
             <Link color={'blue'} onClick={async () => await findParent()}>
               {props.k[1]}
             </Link>
@@ -66,12 +65,30 @@ const DisplayBlock = () => {
       </>
     )
   }
-  const block = state!.block!
-  const header = Object.entries(block.header.toJSON())
+  const block = state.block!
+  const header = Object.entries(block)
+    .map((entry) => {
+      let val
+      switch (typeof entry[1]) {
+        case 'string':
+          val = entry[1]
+          break
+        case 'object':
+          val = entry[1].toString()
+          break
+        case 'number':
+          val = entry[1].toString()
+          break
+      }
+      return [entry[0], val]
+    })
+    .filter((entry) => entry[0].slice(0, 1) !== '_')
 
   async function init() {
     try {
-      const receipts = await state!.historyProtocol?.receiptManager.getReceipts(block.hash())
+      const receipts = await state.provider!.historyProtocol?.receiptManager.getReceipts(
+        Buffer.from(block.hash.slice(2), 'hex')
+      )
       if (receipts) {
         setReceipts(receipts)
       }
@@ -81,17 +98,17 @@ const DisplayBlock = () => {
   }
 
   useEffect(() => {
-    if (state!.block!.transactions.length > 0) {
+    if (state.block!.transactions.length > 0) {
       init()
     }
-  }, [state!.block])
+  }, [state.block])
 
   const headerlookupKey = toHexString(
     HistoryNetworkContentKeyUnionType.serialize({
       selector: 0,
       value: {
         chainId: 1,
-        blockHash: block.header.hash(),
+        blockHash: fromHexString(block.hash),
       },
     })
   )
@@ -101,7 +118,7 @@ const DisplayBlock = () => {
       selector: 1,
       value: {
         chainId: 1,
-        blockHash: block.header.hash(),
+        blockHash: fromHexString(block.hash),
       },
     })
   )
@@ -111,7 +128,7 @@ const DisplayBlock = () => {
       <Heading paddingBottom={4} size="sm" textAlign={'center'}>
         <HStack justifyContent={'center'}>
           <span>Block #</span>
-          <Skeleton isLoaded={!state!.isLoading}>{Number(block.header.number)}</Skeleton>
+          <Skeleton isLoaded={!state.isLoading}>{block.number}</Skeleton>
           {validated && <CheckCircleIcon />}
         </HStack>
       </Heading>
@@ -129,7 +146,7 @@ const DisplayBlock = () => {
           />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Skeleton isLoaded={!state!.isLoading}>
+          <Skeleton isLoaded={!state.isLoading}>
             <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
               {headerlookupKey}
             </Text>
@@ -148,7 +165,7 @@ const DisplayBlock = () => {
           />
         </GridItem>
         <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
-          <Skeleton isLoaded={!state!.isLoading}>
+          <Skeleton isLoaded={!state.isLoading}>
             <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
               {bodylookupKey}
             </Text>
@@ -160,7 +177,6 @@ const DisplayBlock = () => {
           <TabList>
             <Tab>Header</Tab>
             <Tab>Transactions</Tab>
-            <Tab>Receipts</Tab>
             <Tab>JSON</Tab>
           </TabList>
         </Center>
@@ -176,27 +192,10 @@ const DisplayBlock = () => {
               </Grid>
             </VStack>
           </TabPanel>
-          <TabPanel>{state!.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
+          <TabPanel>{state.block!.transactions.length > 0 && <SelectTx />}</TabPanel>
           <TabPanel>
-            <Box>
-              <Accordion allowToggle>
-                {state!.block!.transactions.length > 0 &&
-                  receipts.length > 0 &&
-                  receipts.map((rec, idx) => {
-                    return (
-                      <TxReceipt
-                        rec={rec}
-                        idx={idx}
-                        hash={toHexString(state!.block!.transactions[idx].hash())}
-                      />
-                    )
-                  })}
-              </Accordion>
-            </Box>
-          </TabPanel>
-          <TabPanel>
-            <Skeleton isLoaded={!state!.isLoading}>
-              <Text wordBreak={'break-all'}>{JSON.stringify(block.header.toJSON())}</Text>
+            <Skeleton isLoaded={!state.isLoading}>
+              <Text wordBreak={'break-all'}>{JSON.stringify(block)}</Text>
             </Skeleton>
           </TabPanel>
         </TabPanels>

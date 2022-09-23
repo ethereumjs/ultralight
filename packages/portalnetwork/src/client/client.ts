@@ -147,7 +147,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.uTP = new PortalNetworkUTP(this.logger)
     this.refreshListeners = new Map()
     this.db = new DBManager(this.logger, opts.dbSize, opts.db) as DBManager
-
+    opts.supportedProtocols = opts.supportedProtocols ?? []
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
         case ProtocolId.HistoryNetwork:

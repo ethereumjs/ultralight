@@ -1,4 +1,5 @@
 import tape from 'tape'
+import { ethers } from 'ethers'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { ENR, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
@@ -11,7 +12,7 @@ tape('Test provider functionality', async (t) => {
   const peerId = await createSecp256k1PeerId()
   const enr = ENR.createFromPeerId(peerId)
   enr.setLocationMultiaddr(ma)
-  const provider = new UltralightProvider(new MockProvider(), 1, {
+  const provider = await UltralightProvider.create(new MockProvider(), 1, {
     bindAddress: '0.0.0.0',
     transport: TransportLayer.NODE,
     config: {
@@ -21,13 +22,11 @@ tape('Test provider functionality', async (t) => {
     },
   })
 
-  await provider.init()
-
   const block = await provider.getBlock(5000)
   t.ok(block.number === 5000, 'retrieved block from fallback provider')
 
   // Stub getBlockByHash for unit testing
-  ;(provider as any).history.ETH.getBlockByHash = (_hash: string) => {
+  provider.historyProtocol.ETH.getBlockByHash = async (_hash: string) => {
     return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
   }
   const block2 = await provider.getBlock(
