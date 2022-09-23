@@ -115,34 +115,6 @@ export class PeerActions {
         },
       })
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyKey)
-    } else if (type === 'block') {
-      const headerKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 0,
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(this.state.blockHash),
-        },
-      })
-      const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 1,
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(this.state.blockHash),
-        },
-      })
-      try {
-        const header = (
-          await this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerKey)
-        )?.value as Uint8Array
-        const _body = await this.historyProtocol!.sendFindContent(
-          ENR.decodeTxt(enr).nodeId,
-          bodyKey
-        )
-        const body: Uint8Array | undefined =
-          _body !== undefined ? (_body.value as Uint8Array) : undefined
-        const block = reassembleBlock(header, body)
-        return block // this.dispatch({ type: StateChange.SETBLOCK, payload: block })
-      } catch {}
     } else if (type === 'epoch') {
       const _epochKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: 3,
