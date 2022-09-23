@@ -68,7 +68,7 @@ export class PeerActions {
   }
 
   handleFindNodes = (peer: ENR) => {
-    this.historyProtocol!.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
+    this.historyProtocol.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
   }
 
   handleRequestSnapshot = (enr: string) => {
@@ -76,11 +76,11 @@ export class PeerActions {
       selector: 4,
       value: { selector: 0, value: null },
     })
-    this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, accumulatorKey)
+    this.historyProtocol.sendFindContent(ENR.decodeTxt(enr).nodeId, accumulatorKey)
   }
 
   handleOffer = async (enr: string) => {
-    await this.historyProtocol!.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
+    await this.historyProtocol.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
   }
 
   sendFindContent = async (type: string, enr: string) => {
@@ -92,7 +92,7 @@ export class PeerActions {
           blockHash: fromHexString(this.state.blockHash),
         },
       })
-      const header = await this.historyProtocol!.sendFindContent(
+      const header = await this.historyProtocol.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
         headerKey
       )
@@ -120,7 +120,7 @@ export class PeerActions {
         selector: 3,
         value: {
           chainId: 1,
-          blockHash: this.historyProtocol!.accumulator.historicalEpochs()[this.state.epoch],
+          blockHash: this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch],
         },
       })
     }
