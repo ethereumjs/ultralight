@@ -30,7 +30,7 @@ export default function PeerButtons() {
       peerState,
       peerDispatch,
     },
-    state!.historyProtocol!
+    state.provider!.historyProtocol
   )
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function PeerButtons() {
 
   return (
     <GridItem>
-      {state && dispatch && (
+      {state && state.provider && (
         <Box border={'1px'}>
           <VStack>
             <HStack>
@@ -64,20 +64,20 @@ export default function PeerButtons() {
                     Peer {peerIdx + 1} / {state!.peers.length}
                   </Heading>
                   <Text size={'sm'} color={'gray.500'}>
-                    {state!.selectedPeer.slice(0, 20)}...
+                    {state.selectedPeer.slice(0, 20)}...
                   </Text>
                 </VStack>
                 <Table size="xs">
-                  {state?.sortedPeers[peerIdx] && (
+                  {state.sortedPeers[peerIdx] && (
                     <Tbody>
                       <Tr>
                         <Td>ENR:</Td>
                         <Th>
-                          <Tooltip label={state!.sortedPeers[peerIdx][1][3]}>
+                          <Tooltip label={state.sortedPeers[peerIdx][1][3]}>
                             <CopyIcon
                               cursor={'pointer'}
                               onClick={() =>
-                                navigator.clipboard.writeText(state!.sortedPeers[peerIdx][1][3])
+                                navigator.clipboard.writeText(state.sortedPeers[peerIdx][1][3])
                               }
                             />
                           </Tooltip>
@@ -86,12 +86,12 @@ export default function PeerButtons() {
                       <Tr>
                         <Td>Addr: </Td>
                         <Td>
-                          {state!.sortedPeers[peerIdx][1][0]}: {state!.sortedPeers[peerIdx][1][1]}
+                          {state.sortedPeers[peerIdx][1][0]}: {state.sortedPeers[peerIdx][1][1]}
                         </Td>
                       </Tr>
                       <Tr>
                         <Td>NodeId: </Td>
-                        <Td>{shortId(ENR.decodeTxt(state!.selectedPeer).nodeId)}</Td>
+                        <Td>{shortId(ENR.decodeTxt(state.selectedPeer).nodeId)}</Td>
                       </Tr>
                     </Tbody>
                   )}
@@ -99,7 +99,7 @@ export default function PeerButtons() {
               </VStack>
               <Button
                 size="lg"
-                onClick={() => peerActions.handlePing(state!.selectedPeer)}
+                onClick={() => peerActions.handlePing(state.selectedPeer)}
                 bgColor={peerState.ping[0]}
               >
                 {peerState.ping[1]}
@@ -114,7 +114,7 @@ export default function PeerButtons() {
             <Divider />
             <HStack width={'100%'}>
               <Button
-                isDisabled={state!.historyProtocol!.accumulator.historicalEpochs.length < 1}
+                isDisabled={state.provider.historyProtocol.accumulator.historicalEpochs.length < 1}
                 width="70%"
                 onClick={() => sendFindContent('epoch')}
               >
@@ -123,7 +123,7 @@ export default function PeerButtons() {
               <Input
                 type={'number'}
                 min={1}
-                max={state!.historyProtocol!.accumulator.historicalEpochs.length}
+                max={state.provider.historyProtocol.accumulator.historicalEpochs.length}
                 width={'30%'}
                 placeholder={'Epoch'}
                 onChange={(evt) => {
@@ -137,7 +137,7 @@ export default function PeerButtons() {
             <Divider />
             <HStack width={'100%'}>
               <Button
-                isDisabled={state!.historyProtocol!.accumulator.historicalEpochs.length < 1}
+                isDisabled={state.provider.historyProtocol.accumulator.historicalEpochs.length < 1}
                 width="70%"
                 onClick={() => sendFindContent('epoch')}
               >
@@ -146,9 +146,9 @@ export default function PeerButtons() {
               <Input
                 type={'number'}
                 min={1}
-                max={state!.historyProtocol!.accumulator.currentHeight()}
+                max={state.provider.historyProtocol.accumulator.currentHeight()}
                 width={'30%'}
-                placeholder={`BlockNumber (Max: ${state!.historyProtocol!.accumulator.currentHeight()})`}
+                placeholder={`BlockNumber (Max: ${state.provider.historyProtocol.accumulator.currentHeight()})`}
                 onChange={(evt) => {
                   peerDispatch({
                     type: PeerStateChange.SETEPOCH,
