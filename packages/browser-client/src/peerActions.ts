@@ -18,35 +18,17 @@ export class PeerActions {
     this.historyProtocol = protocol
   }
 
-  addToOffer = (type: string): void => {
-    switch (type) {
-      case 'header':
-        this.dispatch({
-          type: PeerStateChange.ADDTOOFFER,
-          payload: HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.BlockHeader,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(this.state.blockHash),
-            },
-          }),
-        })
-        break
-      case 'body':
-        this.dispatch({
-          type: PeerStateChange.ADDTOOFFER,
-          payload: HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.BlockBody,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(this.state.blockHash),
-            },
-          }),
-        })
-        break
-      default:
-        throw new Error()
-    }
+  addToOffer = (type: HistoryNetworkContentTypes): void => {
+    this.dispatch({
+      type: PeerStateChange.ADDTOOFFER,
+      payload: HistoryNetworkContentKeyUnionType.serialize({
+        selector: type,
+        value: {
+          chainId: 1,
+          blockHash: fromHexString(this.state.blockHash),
+        },
+      }),
+    })
   }
 
   handlePing = async (enr: string) => {

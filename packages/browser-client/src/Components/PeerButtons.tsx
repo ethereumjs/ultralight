@@ -16,7 +16,7 @@ import {
   Tr,
   VStack,
 } from '@chakra-ui/react'
-import { ENR, shortId } from 'portalnetwork'
+import { ENR, HistoryNetworkContentTypes, shortId } from 'portalnetwork'
 import React, { useContext, useEffect, useReducer, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
@@ -188,7 +188,7 @@ export default function PeerButtons() {
             />
             <HStack width={'100%'}>
               <Button
-                width={'33%'}
+                width={'50%'}
                 title="Add content to offer"
                 onClick={() => {
                   sendFindContent('header')
@@ -197,7 +197,7 @@ export default function PeerButtons() {
                 Find Header
               </Button>
               <Button
-                width={'33%'}
+                width={'50%'}
                 title="Add content to offer"
                 onClick={() => {
                   sendFindContent('body')
@@ -205,43 +205,25 @@ export default function PeerButtons() {
               >
                 Find Body
               </Button>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  sendFindContent('block')
-                }}
-              >
-                Find Block
-              </Button>
             </HStack>
             <HStack width={'100%'}>
               <Button
-                width={'33%'}
+                width={'50%'}
                 title="Add content to offer"
                 onClick={() => {
-                  peerActions.addToOffer('header')
+                  peerActions.addToOffer(HistoryNetworkContentTypes.BlockHeader)
                 }}
               >
                 Offer Header
               </Button>
               <Button
-                width={'33%'}
+                width={'50%'}
                 title="Add content to offer"
                 onClick={() => {
-                  peerActions.addToOffer('body')
+                  peerActions.addToOffer(HistoryNetworkContentTypes.BlockBody)
                 }}
               >
                 Offer Body
-              </Button>
-              <Button
-                width={'33%'}
-                title="Add content to offer"
-                onClick={() => {
-                  peerActions.addToOffer('block')
-                }}
-              >
-                Offer Block
               </Button>
             </HStack>
             <Box width={'90%'} border={'1px'}>
