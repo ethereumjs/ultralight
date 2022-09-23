@@ -44,28 +44,6 @@ export class PeerActions {
           }),
         })
         break
-      case 'block':
-        this.dispatch({
-          type: PeerStateChange.ADDTOOFFER,
-          payload: HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.BlockHeader,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(this.state.blockHash),
-            },
-          }),
-        })
-        this.dispatch({
-          type: PeerStateChange.ADDTOOFFER,
-          payload: HistoryNetworkContentKeyUnionType.serialize({
-            selector: HistoryNetworkContentTypes.BlockBody,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(this.state.blockHash),
-            },
-          }),
-        })
-        break
       default:
         throw new Error()
     }
