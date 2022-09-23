@@ -1,10 +1,12 @@
 import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function GetBlockByHash() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
-  const [blockHash, setBlockhash] = useState('')
+  const [blockHash, setBlockhash] = useState(
+    '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9'
+  )
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {
       const block = includeTransactions
@@ -21,6 +23,14 @@ export default function GetBlockByHash() {
     await eth_getBlockByHash(blockHash, true)
     dispatch({ type: StateChange.TOGGLELOADING })
   }
+
+  async function getInitialBlock() {
+    await eth_getBlockByHash(blockHash, true)
+  }
+
+  useEffect(() => {
+    getInitialBlock()
+  }, [])
 
   return (
     <HStack marginY={1}>
