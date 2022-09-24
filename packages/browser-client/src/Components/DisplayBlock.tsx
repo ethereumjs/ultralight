@@ -65,7 +65,7 @@ const DisplayBlock = () => {
               {v}
             </Link>
           ) : (
-            <>{typeof v === 'string' ? v : typeof v}</>
+            <>{typeof v === 'object' ? v._hex : v}</>
           )}
         </GridItem>
         <GridItem colSpan={1}> </GridItem>
