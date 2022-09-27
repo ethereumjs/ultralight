@@ -20,22 +20,18 @@ export default function ContentManager() {
       reader.onload = async function () {
         if (reader.result) {
           const blocks = JSON.parse(reader.result as string) as jsonblock[]
+          let last: jsonblock | undefined = undefined
           for (const block of blocks) {
-            await addRLPSerializedBlock(
-              block.rlp,
-              block.blockHash,
-              state.provider?.historyProtocol!
-            )
+            await addRLPSerializedBlock(block.rlp, block.blockHash, state.provider!.historyProtocol)
+            last = block
           }
-          dispatch({
-            type: StateChange.SETBLOCK,
-            payload: Block.fromRLPSerializedBlock(
-              Buffer.from(fromHexString(blocks[blocks.length - 1].rlp)),
-              {
+          last &&
+            dispatch({
+              type: StateChange.SETBLOCK,
+              payload: Block.fromRLPSerializedBlock(Buffer.from(fromHexString(last.rlp)), {
                 hardforkByBlockNumber: true,
-              }
-            ),
-          })
+              }),
+            })
         }
       }
       reader.readAsText(files[0])
