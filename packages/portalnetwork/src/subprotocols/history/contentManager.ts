@@ -15,6 +15,17 @@ import {
 import { ContentLookup } from '../index.js'
 import { shortId } from '../../index.js'
 import { distance } from '@chainsafe/discv5'
+import { Common } from '@ethereumjs/common'
+import fs from 'fs-extra'
+const genesisJson = await fs.readJSON(
+  '/home/jim/development/ethjs/packages/client/test/sim/configs/geth-genesis.json'
+)
+
+const common = Common.fromGethGenesis(genesisJson, {
+  genesisHash: Buffer.from('51c7fe41be669f69c45c33a56982cbde405313342d9e2b00d7c91a7b284dd4f8'),
+  chain: 'geth-genesis',
+})
+common.setHardfork('merge')
 
 export class ContentManager {
   history: HistoryProtocol
@@ -46,6 +57,7 @@ export class ContentManager {
       case HistoryNetworkContentTypes.BlockHeader: {
         try {
           const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value), {
+            common,
             hardforkByBlockNumber: true,
           })
           if (toHexString(header.hash()) !== hashKey) {
@@ -99,6 +111,8 @@ export class ContentManager {
             )
           }
           this.history.client.db.put(contentId, toHexString(value))
+          this.logger(`just put ${contentId}`)
+          this.logger(await this.history.client.db.get(contentId))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return

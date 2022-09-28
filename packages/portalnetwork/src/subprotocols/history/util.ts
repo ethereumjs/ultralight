@@ -17,7 +17,18 @@ import {
   UncleHeadersBuffer,
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
+import fs from 'fs-extra'
+import { Common } from '@ethereumjs/common'
 
+const genesisJson = await fs.readJSON(
+  '/home/jim/development/ethjs/packages/client/test/sim/configs/geth-genesis.json'
+)
+
+const common = Common.fromGethGenesis(genesisJson, {
+  genesisHash: Buffer.from('51c7fe41be669f69c45c33a56982cbde405313342d9e2b00d7c91a7b284dd4f8'),
+  chain: 'geth-genesis',
+})
+common.setHardfork('merge')
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
  * @param contentKey an object containing the `chainId` and `blockHash` used to generate the content Key
@@ -102,7 +113,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
         decodedBody.txsRlp as TransactionsBuffer,
         rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBuffer,
       ] as BlockBuffer,
-      { hardforkByBlockNumber: true }
+      { common, hardforkByBlockNumber: true }
     )
     return block
   } else {
@@ -111,7 +122,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
       rlp.decode(Buffer.from(Uint8Array.from([]))) as never as TransactionsBuffer,
       rlp.decode(Buffer.from(Uint8Array.from([]))) as never as UncleHeadersBuffer,
     ] as BlockBuffer
-    const block = Block.fromValuesArray(blockBuffer, { hardforkByBlockNumber: true })
+    const block = Block.fromValuesArray(blockBuffer, { common, hardforkByBlockNumber: true })
     return block
   }
 }
@@ -127,6 +138,15 @@ export const addRLPSerializedBlock = async (
   blockHash: string,
   protocol: HistoryProtocol
 ) => {
+  const genesisJson = await fs.readJSON(
+    '/home/jim/development/ethjs/packages/client/test/sim/configs/geth-genesis.json'
+  )
+
+  const common = Common.fromGethGenesis(genesisJson, {
+    genesisHash: Buffer.from('51c7fe41be669f69c45c33a56982cbde405313342d9e2b00d7c91a7b284dd4f8'),
+    chain: 'geth-genesis',
+  })
+  common.setHardfork('merge')
   const decodedBlock = rlp.decode(fromHexString(rlpHex))
   await protocol.addContentToHistory(
     1,
@@ -134,13 +154,14 @@ export const addRLPSerializedBlock = async (
     blockHash,
     rlp.encode((decodedBlock as Buffer[])[0])
   )
+
   await protocol.addContentToHistory(
     1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
     sszEncodeBlockBody(
       Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
-        hardforkByBlockNumber: true,
+        common,
       })
     )
   )

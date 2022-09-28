@@ -34,6 +34,7 @@ export class ETH {
     let body: any
     let block
     try {
+      this.protocol.logger(`looking up ${blockHash} - ${toHexString(headerContentKey)}`)
       let lookup = new ContentLookup(this.protocol, headerContentKey)
       header = await lookup.startLookup()
       if (!header) {

@@ -106,9 +106,12 @@ export class eth {
       const protocol = this._client.protocols.get(
         ProtocolId.HistoryNetwork
       ) as never as HistoryProtocol
+      this._client.logger(`getting ${blockHash}`)
       const block = await protocol.ETH.getBlockByHash(blockHash, includeTransactions)
+      this._client.logger(`${block?.hash().toString('hex')}`)
       return block ?? 'Block not found'
-    } catch {
+    } catch (err: any) {
+      this.logger(err.message)
       return 'Block not found'
     }
   }

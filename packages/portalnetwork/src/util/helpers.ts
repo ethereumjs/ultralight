@@ -134,6 +134,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
     nonce,
     baseFeePerGas,
   } = blockParams
+  console.log(blockParams)
 
   const blockHeader = BlockHeader.fromHeaderData(
     {
