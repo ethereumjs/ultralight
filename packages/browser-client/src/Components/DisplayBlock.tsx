@@ -65,102 +65,27 @@ const DisplayBlock = () => {
       })
     }
     return (
-      <GridItem
-        onMouseEnter={() => setHovered(k)}
-        onMouseLeave={() => setHovered(null)}
-        colSpan={10}
-      >
-        <Box bg={k === hovered ? 'yellow.300' : idx % 2 === 0 ? 'gray.100' : 'gray.200'}>
-          <Grid templateColumns={'repeat(10, 1fr)'}>
-            <>
-              <GridItem fontSize={'xs'} fontWeight="bold" colSpan={3}>
-                {k}
-              </GridItem>
-              <GridItem paddingBottom={0} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                {k === 'parentHash' ? (
-                  <GridItem paddingBottom={0} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                    <Link color={'blue'} onClick={async () => await findParent()}>
-                      {typeof v === 'number' ? v.toString(16) : toHexString(v)}
-                    </Link>
-                  </GridItem>
-                ) : k === 'transactions' ? (
-                  <>
+      v && (
+        <GridItem
+          onMouseEnter={() => setHovered(k)}
+          onMouseLeave={() => setHovered(null)}
+          colSpan={10}
+        >
+          <Box bg={k === hovered ? 'yellow.300' : idx % 2 === 0 ? 'gray.100' : 'gray.200'}>
+            <Grid templateColumns={'repeat(10, 1fr)'}>
+              <>
+                <GridItem fontSize={'xs'} fontWeight="bold" colSpan={3}>
+                  {k}
+                </GridItem>
+                <GridItem paddingBottom={0} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
+                  {k === 'parentHash' ? (
                     <GridItem paddingBottom={0} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      {v ? v.length : '[NONE]'}
-                    </GridItem>{' '}
-                  </>
-                ) : typeof v === 'bigint' ? (
-                  <>
-                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      <Grid templateColumns={'repeat(6, 1fr)'}>
-                        <GridItem
-                          paddingBottom={3}
-                          fontSize={'xs'}
-                          wordBreak={'break-all'}
-                          colSpan={3}
-                        >
-                          {`${v.toString()}`}
-                        </GridItem>
-                        <GridItem colSpan={3}>{'0x' + v.toString(16)}</GridItem>
-                      </Grid>
+                      <Link color={'blue'} onClick={async () => await findParent()}>
+                        {v}
+                      </Link>
                     </GridItem>
-                  </>
-                ) : k === 'nonce' ? (
-                  <>
-                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      <Grid templateColumns={'repeat(6, 1fr)'}>
-                        <GridItem
-                          paddingBottom={3}
-                          fontSize={'xs'}
-                          wordBreak={'break-all'}
-                          colSpan={3}
-                        >
-                          {parseInt(toHexString(Uint8Array.from(v)), 16)}
-                        </GridItem>
-                        <GridItem colSpan={3}>{toHexString(Uint8Array.from(v))}</GridItem>
-                      </Grid>
-                    </GridItem>
-                  </>
-                ) : k === 'extraData' ? (
-                  <>
-                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      <Grid templateColumns={'repeat(6, 1fr)'}>
-                        <GridItem colSpan={3}>{Buffer.from(fromHexString(v)).toString()}</GridItem>
-                        <GridItem
-                          paddingBottom={3}
-                          fontSize={'xs'}
-                          wordBreak={'break-all'}
-                          colSpan={3}
-                        >
-                          {v}
-                        </GridItem>
-                      </Grid>
-                    </GridItem>
-                  </>
-                ) : k === 'gasUsed' ? (
-                  <>
-                    {(state.block as any).header ? (
-                      <GridItem
-                        paddingBottom={3}
-                        fontSize={'xs'}
-                        wordBreak={'break-all'}
-                        colSpan={6}
-                      >
-                        <Grid templateColumns={'repeat(6, 1fr)'}>
-                          <GridItem
-                            paddingBottom={3}
-                            fontSize={'xs'}
-                            wordBreak={'break-all'}
-                            colSpan={3}
-                          >
-                            {v}
-                          </GridItem>
-                          <GridItem colSpan={3}>
-                            {'0x' + (state.block as any).header.gasUsed.toString(16)}
-                          </GridItem>
-                        </Grid>
-                      </GridItem>
-                    ) : (
+                  ) : typeof v === 'bigint' ? (
+                    <>
                       <GridItem
                         paddingBottom={3}
                         fontSize={'xs'}
@@ -179,26 +104,65 @@ const DisplayBlock = () => {
                           <GridItem colSpan={3}>{'0x' + v.toString(16)}</GridItem>
                         </Grid>
                       </GridItem>
-                    )}
-                  </>
-                ) : (
-                  <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                    <>
-                      {typeof v === 'string'
-                        ? v
-                        : typeof v === 'number'
-                        ? v.toString(16)
-                        : typeof v === 'object'
-                        ? toHexString(Uint8Array.from(v as number[]))
-                        : typeof v}
                     </>
-                  </GridItem>
-                )}
-              </GridItem>
-            </>
-          </Grid>
-        </Box>
-      </GridItem>
+                  ) : k === 'extraData' ? (
+                    <>
+                      <GridItem
+                        paddingBottom={3}
+                        fontSize={'xs'}
+                        wordBreak={'break-all'}
+                        colSpan={6}
+                      >
+                        <Grid templateColumns={'repeat(6, 1fr)'}>
+                          <GridItem colSpan={3}>
+                            {Buffer.from(fromHexString(v)).toString()}
+                          </GridItem>
+                          <GridItem
+                            paddingBottom={3}
+                            fontSize={'xs'}
+                            wordBreak={'break-all'}
+                            colSpan={3}
+                          >
+                            {v}
+                          </GridItem>
+                        </Grid>
+                      </GridItem>
+                    </>
+                  ) : k === 'gasUsed' ? (
+                    <>
+                      <GridItem
+                        paddingBottom={3}
+                        fontSize={'xs'}
+                        wordBreak={'break-all'}
+                        colSpan={6}
+                      >
+                        <Grid templateColumns={'repeat(6, 1fr)'}>
+                          <GridItem colSpan={3}>{v}</GridItem>
+                          <GridItem
+                            paddingBottom={3}
+                            fontSize={'xs'}
+                            wordBreak={'break-all'}
+                            colSpan={3}
+                          >
+                            {((100 * Number(v)) / Number(state.block!.gasLimit))
+                              .toString()
+                              .slice(0, 4)}
+                            %
+                          </GridItem>
+                        </Grid>
+                      </GridItem>
+                    </>
+                  ) : (
+                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
+                      <>{typeof v === 'string' ? v : typeof v === 'number' ? v : typeof v}</>
+                    </GridItem>
+                  )}
+                </GridItem>
+              </>
+            </Grid>
+          </Box>
+        </GridItem>
+      )
     )
   }
   function BlockHeader() {
@@ -262,7 +226,7 @@ const DisplayBlock = () => {
         </Grid>
       )
     } else {
-      const header = state.block as _Block
+      const header = state.block!
       return (
         <Grid templateColumns={'repeat(10, 1fr)'}>
           {Object.entries(header).map(([key, value], idx) => {
@@ -278,37 +242,7 @@ const DisplayBlock = () => {
       )
     }
   }
-  // const block = state.block!
-  // const header = (block: Block | BlockWithTransactions) => {
-  //   Object.entries(block)
-  //     .map((entry) => {
-  //       let val
-  //       switch (typeof entry[1]) {
-  //         case 'string':
-  //           val = entry[1]
-  //           break
-  //         case 'object':
-  //           val = entry[1].toString()
-  //           break
-  //         case 'number':
-  //           val = entry[1].toString()
-  //           break
-  //       }
-  //       return [entry[0], val]
-  //     })
-  //     .filter((entry) => entry[0].slice(0, 1) !== '_')
-  // }
-  async function init(hash: string) {
-    try {
-      const receipts = await state.provider!.historyProtocol?.receiptManager.getReceipts(
-        Buffer.from(hash.slice(2), 'hex')
-      )
-      if (receipts) {
-        setReceipts(receipts)
-      }
-    } catch (err) {
-      console.log((err as any).message)
-    }
+  async function init() {
     try {
       setContentKeys({
         header: toHexString(
@@ -335,11 +269,7 @@ const DisplayBlock = () => {
 
   useEffect(() => {
     if (state.block) {
-      if (typeof state.block.hash === 'string') {
-        init(state.block.hash)
-      } else if (typeof (state.block as any).header.hash === 'string') {
-        init((state.block as any).header.hash)
-      }
+      init()
     }
   }, [state.block])
 
@@ -350,11 +280,7 @@ const DisplayBlock = () => {
           <Heading paddingBottom={4} size="sm" textAlign={'center'}>
             <HStack justifyContent={'center'}>
               <span>Block #</span>
-              <Skeleton isLoaded={!state.isLoading}>
-                {(state.block as any).header
-                  ? (state.block as any).header.number.toString()
-                  : state.block.number}
-              </Skeleton>
+              <Skeleton isLoaded={!state.isLoading}>{state.block.number}</Skeleton>
               {validated && <CheckCircleIcon />}
             </HStack>
           </Heading>
