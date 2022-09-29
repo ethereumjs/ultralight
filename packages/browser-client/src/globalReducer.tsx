@@ -1,14 +1,8 @@
 import { ethers } from 'ethers'
-import type { BlockWithTransactions, _Block } from '@ethersproject/abstract-provider'
+import type { Block, BlockWithTransactions, _Block } from '@ethersproject/abstract-provider'
 import { TypedTransaction } from '@ethereumjs/tx'
 import { BrowserLevel } from 'browser-level'
-import {
-  ENR,
-  ProtocolId,
-  TransportLayer,
-  TxReceiptWithType,
-  UltralightProvider,
-} from 'portalnetwork'
+import { ENR, ProtocolId, TransportLayer, UltralightProvider } from 'portalnetwork'
 import React from 'react'
 import { AsyncActionHandlers } from 'use-reducer-async'
 import { createNodeFromScratch, createNodeFromStorage, refresh, startUp } from './portalClient'
@@ -28,8 +22,7 @@ export type AppState = {
   isLoading: boolean
   hover: number | undefined
   //
-  block: _Block | BlockWithTransactions | undefined
-  receipts: TxReceiptWithType[]
+  block: Block | BlockWithTransactions | undefined
   transaction: TypedTransaction | undefined
 }
 
@@ -49,7 +42,6 @@ export const initialState: ReducerState = {
   isLoading: false,
   hover: undefined,
   block: undefined,
-  receipts: [],
   transaction: undefined,
 }
 
@@ -67,8 +59,6 @@ export enum StateChange {
   TOGGLELOADING = 'TOGGLELOADING',
   SETHOVER = 'SETHOVER',
   SETBLOCK = 'SETBLOCK',
-  GETRECEIPTS = 'GETRECEIPTS',
-  SETRECEIPTS = 'SETRECEIPTS',
 }
 
 export interface AppStateAction {
@@ -124,11 +114,6 @@ export const reducer: React.Reducer<AppState, AppStateAction | AsyncAction> = (
         block: payload,
         tabIndex: 1,
       }
-    case StateChange.SETRECEIPTS:
-      return {
-        ...state,
-        receipts: payload,
-      }
     default:
       throw new Error('State Change Not Possible')
   }
@@ -175,15 +160,6 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
         const portal = await createNodeFromScratch(action.payload.state)
         dispatch({ type: StateChange.SETPORTAL, payload: portal })
       }
-    },
-  GETRECEIPTS:
-    ({ dispatch }: reducerType) =>
-    async (action: AsyncAction) => {
-      const receipts =
-        await action.payload.state.provider?.historyProtocol.receiptManager.getReceipts(
-          Buffer.from(action.payload.state.block!.hash.slice(2), 'hex')
-        )
-      dispatch({ type: StateChange.SETRECEIPTS, payload: receipts })
     },
 }
 
