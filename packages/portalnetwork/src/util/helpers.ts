@@ -12,6 +12,32 @@ import { TypeOutput, setLengthLeft, toBuffer, toType } from '@ethereumjs/util'
 import { Block, BlockOptions, JsonRpcBlock } from '@ethereumjs/block'
 
 import type { TxData, TypedTransaction } from '@ethereumjs/tx'
+export interface ExtendedEthersBlock extends ethers.providers.Block {
+  blockReward?: BigNumber
+  unclesReward?: BigNumber
+  feeReward?: BigNumber
+  size?: number
+  sha3Uncles: string
+  uncleHeaders: string[]
+  stateRoot: string
+  totalDifficulty?: BigNumber
+  transactionCount: number
+}
+export interface ExtendedEthersBlockWithTransactions extends BlockWithTransactions {
+  blockReward?: BigNumber
+  unclesReward?: BigNumber
+  feeReward?: BigNumber
+  size?: number
+  sha3Uncles: string
+  uncleHeaders: string[]
+  stateRoot: string
+  totalDifficulty?: BigNumber
+  transactionCount: number
+}
+
+export interface ExtendedTxReceipt extends TransactionReceipt {
+  bitvector: string
+}
 
 /**
  *
