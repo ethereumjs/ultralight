@@ -9,23 +9,41 @@ import {
   Heading,
   Box,
   HStack,
+  Input,
 } from '@chakra-ui/react'
 // eslint-disable-next-line implicit-dependencies/no-implicit
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import DisplayTx from './DisplayTx'
 import React from 'react'
-import { AppContext, AppContextType, StateChange } from '../globalReducer'
-import { TransactionResponse } from '@ethersproject/abstract-provider'
+import { AppContext, AppContextType } from '../globalReducer'
+import {
+  ExtendedEthersBlockWithTransactions,
+  fromHexString,
+  TxReceiptWithType,
+} from 'portalnetwork'
 
 export default function SelectTx() {
-  const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
+  const { state } = useContext(AppContext as React.Context<AppContextType>)
+  const [receipts, setReceipts] = useState<TxReceiptWithType[]>([])
+  const [search, setSearch] = useState('0x')
+  const init = async () => {
+    const _receipts = await state.provider!.historyProtocol.receiptManager.getReceipts(
+      Buffer.from(fromHexString(state.block!.hash))
+    )
+    setReceipts(_receipts)
+  }
+
   useEffect(() => {
-    dispatch({ type: StateChange.GETRECEIPTS, payload: { state: state } })
+    init()
   }, [])
+
+  const transactions = useMemo(() => {
+    const b = state.block as ExtendedEthersBlockWithTransactions
+    return b.transactions
+  }, [state.block])
+
   const [txIdx, setTxIdx] = useState(0)
-  const length = state.block!.transactions.length
-  const txString: string[] = state.block!.transactions.map((tx) => (tx as TransactionResponse).hash)
 
   return (
     <VStack>
@@ -35,21 +53,23 @@ export default function SelectTx() {
         </Button>
         <Menu>
           <MenuButton as={Button} rightIcon={<FaChevronDown />}>
-            Transaction {txIdx + 1}/{length}
+            Transaction {txIdx + 1}/{transactions.length}
           </MenuButton>
           <MenuList>
             <MenuOptionGroup onChange={(v) => setTxIdx(parseInt(v as string))}>
-              {txString.map((t, idx) => {
-                return (
-                  <MenuItemOption value={idx.toString()} key={idx} wordBreak={'break-all'}>
-                    {t}
-                  </MenuItemOption>
-                )
-              })}
+              {transactions
+                .filter((t) => t.hash.includes(search))
+                .map((t, idx) => {
+                  return (
+                    <MenuItemOption value={idx.toString()} key={idx} wordBreak={'break-all'}>
+                      {t.hash}
+                    </MenuItemOption>
+                  )
+                })}
             </MenuOptionGroup>
           </MenuList>
         </Menu>
-        <Button onClick={() => setTxIdx(txIdx + 1)} disabled={txIdx === txString.length - 1}>
+        <Button onClick={() => setTxIdx(txIdx + 1)} disabled={txIdx === transactions.length - 1}>
           <FaChevronRight />
         </Button>
       </HStack>
@@ -61,10 +81,18 @@ export default function SelectTx() {
           size={'xs'}
           wordBreak={'break-all'}
         >
-          {txString[txIdx]}
+          {txIdx}
         </Heading>
       </Box>
-      <DisplayTx txIdx={txIdx} />
+      <Box>
+        <Input
+          type={'text'}
+          placeholder={transactions[0].hash}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </Box>
+      {<DisplayTx txIdx={txIdx} />}
     </VStack>
   )
 }

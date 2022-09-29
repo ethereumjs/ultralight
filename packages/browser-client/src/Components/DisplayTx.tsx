@@ -15,9 +15,8 @@ import {
   Tr,
   VStack,
 } from '@chakra-ui/react'
-import { BlockWithTransactions, TransactionResponse } from '@ethersproject/abstract-provider'
-import { Log } from 'portalnetwork'
-import React, { useContext } from 'react'
+import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
+import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { AppContext, AppContextType } from '../globalReducer'
 interface DisplayTxProps {
   txIdx: number
@@ -25,31 +24,20 @@ interface DisplayTxProps {
 
 export default function DisplayTx(props: DisplayTxProps) {
   const { state } = useContext(AppContext as React.Context<AppContextType>)
-  const rec = state.receipts[props.txIdx]
-  const tx = Object.entries(
-    (state.block! as BlockWithTransactions).transactions[props.txIdx] as TransactionResponse
-  )
-  const txData = []
-  const validKeys = [
-    'hash',
-    'type',
-    'blockHash',
-    'blockNumber',
-    'from',
-    'gasPrice',
-    'gasLimit',
-    'to',
-    'value',
-    'nonce',
-    'maxFeePerGas',
-    'maxPriorityFeePerGas',
-  ]
-  for (const entry of tx) {
-    if (validKeys.indexOf(entry[0]) >= 0) {
-      txData.push(entry)
-    }
+  const [receipt, setReceipt] = useState<TransactionReceipt>()
+  const tx = useMemo(() => {
+    return state.block!.transactions[props.txIdx]
+  }, [props.txIdx, state.block])
+
+  async function _setReceipt(tx: TransactionResponse) {
+    setReceipt(await tx.wait())
   }
 
+  useEffect(() => {
+    try {
+      _setReceipt(tx as TransactionResponse)
+    } catch {}
+  }, [tx])
   return (
     <Box width="100%">
       <Tabs>
@@ -61,7 +49,7 @@ export default function DisplayTx(props: DisplayTxProps) {
           <TabPanel>
             <Table size={'sm'}>
               <Tbody>
-                {txData.map(([k, v], idx) => {
+                {Object.entries(tx).map(([k, v], idx) => {
                   return (
                     k !== 'data' && (
                       <Tr key={idx}>
@@ -79,55 +67,34 @@ export default function DisplayTx(props: DisplayTxProps) {
             </Table>
           </TabPanel>
           <TabPanel>
-            {rec && (
+            {receipt && (
               <Table>
                 <Thead>
-                  <Tr>
-                    <Th>
-                      <Text>Transaction Index </Text>
-                    </Th>
-                    <Td>
-                      <Text>{props.txIdx} </Text>
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Th>
-                      <Text>Transaction Hash</Text>
-                    </Th>
-                    <Td>
-                      <Text wordBreak={'break-all'}>{txData[0][1]}</Text>
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Th>
-                      <Text>Cumulative Block Gas Used:</Text>
-                    </Th>
-                    <Td>
-                      <Text>{state.receipts[props.txIdx].cumulativeBlockGasUsed.toString()}</Text>
-                    </Td>
-                  </Tr>
-                  <Tr>
-                    <Th>
-                      <Text>Bit Vector: </Text>
-                    </Th>
-                    <Td>{rec.bitvector && <Text>{Uint8Array.from(rec.bitvector)}</Text>}</Td>
-                  </Tr>
+                  {Object.entries(receipt).map(([k, v]) => {
+                    return (
+                      <Tr key={k}>
+                        <Th>{k}</Th>
+                        <Td>{v && <Text>{v._hex ?? v}</Text>}</Td>
+                      </Tr>
+                    )
+                  })}
+
                   <Tr>
                     <Th>
                       <Text>Logs: </Text>
                     </Th>
                     <Td>
                       <HStack>
-                        {rec.logs.length > 0 ? (
+                        {receipt.logs.length > 0 ? (
                           <VStack>
-                            {rec.logs.map((log: Log) => {
+                            {receipt.logs.map((log) => {
                               return (
                                 <VStack border={'1px'}>
-                                  {log.map((v, idx) => {
+                                  {Object.entries(log).map(([k, v], idx) => {
                                     return (
                                       <Text>
                                         {idx}
-                                        {v}
+                                        {/* {v} */}
                                       </Text>
                                     )
                                   })}
