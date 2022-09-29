@@ -1,14 +1,13 @@
 import tape from 'tape'
-import { ethers } from 'ethers'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { ENR, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { multiaddr } from '@multiformats/multiaddr'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 
 tape('Test provider functionality', async (t) => {
-  const ma = new Multiaddr('/ip4/0.0.0.0/udp/1500')
+  const ma = multiaddr('/ip4/0.0.0.0/udp/1500')
   const peerId = await createSecp256k1PeerId()
   const enr = ENR.createFromPeerId(peerId)
   enr.setLocationMultiaddr(ma)

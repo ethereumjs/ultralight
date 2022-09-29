@@ -35,7 +35,7 @@
     "@frontall/capacitor-udp": "^0.3.4",
     "@libp2p/peer-id": "^1.1.13",
     "@libp2p/peer-id-factory": "^1.0.15",
-    "@multiformats/multiaddr": "^10.2.1",
+    "@multiformats/multiaddr": "^11.0.0",
     "@thi.ng/leb128": "^2.1.11",
     "abstract-level": "^1.0.3",
     "bigint-buffer": "^1.1.5",
