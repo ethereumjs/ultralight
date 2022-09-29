@@ -1,6 +1,6 @@
 import debug from 'debug'
 import { EventEmitter } from 'events'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
 import {
   IRemoteInfo,
@@ -56,7 +56,7 @@ export class WebSocketTransportService
       if (data.length === 6) {
         const address = `${data[0].toString()}.${data[1].toString()}.${data[2].toString()}.${data[3].toString()}`
         const port = data.readUIntBE(4, 2)
-        this.multiaddr = new Multiaddr(`/ip4/${address}/udp/${port}`)
+        this.multiaddr = ma(`/ip4/${address}/udp/${port}`)
 
         this.emit('multiAddr', this.multiaddr)
       } else {
@@ -89,7 +89,7 @@ export class WebSocketTransportService
     const rinfo = JSON.parse(
       new TextDecoder().decode(data.slice(2, rinfoLength + 2))
     ) as IRemoteInfo
-    const multiaddr = new Multiaddr(
+    const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
     )
     const packetBuf = Buffer.from(data.slice(2 + rinfoLength))

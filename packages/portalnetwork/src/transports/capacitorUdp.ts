@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { UDP } from '@frontall/capacitor-udp'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
 import { IRemoteInfo, ITransportService, TransportEventEmitter } from '@chainsafe/discv5/transport'
@@ -61,7 +61,7 @@ export class CapacitorUDPTransportService
   }
 
   public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
-    const multiaddr = new Multiaddr(
+    const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
     )
     try {

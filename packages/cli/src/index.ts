@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { PortalNetwork, ProtocolId, ENR, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
 // eslint-disable-next-line node/file-extension-in-import
 import { hideBin } from 'yargs/helpers'
@@ -86,10 +86,10 @@ const main = async () => {
   let initMa: Multiaddr
   if (args.bindAddress) {
     const addrOpts = args.bindAddress.split(':')
-    initMa = new Multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
+    initMa = multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
     enr.setLocationMultiaddr(initMa)
   } else {
-    initMa = new Multiaddr()
+    initMa = multiaddr()
   }
 
   const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
