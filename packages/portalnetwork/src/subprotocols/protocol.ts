@@ -187,7 +187,6 @@ export abstract class BaseProtocol {
       this.logger.extend(`FINDNODES`)(`Sending to ${shortId(dstId)}`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) {
-        this.logger(`Invalid node ID provided. FINDNODES aborted`)
         return
       }
       const res = await this.client.sendPortalNetworkMessage(
@@ -539,7 +538,7 @@ export abstract class BaseProtocol {
       if (enr) {
         // Only add node to the routing table if we have an ENR
         this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
-        this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
+        add && this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
       }
       if (customPayload) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
