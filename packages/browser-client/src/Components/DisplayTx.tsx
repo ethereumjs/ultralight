@@ -16,18 +16,14 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
-import React, { useContext, useEffect, useMemo, useState } from 'react'
-import { AppContext, AppContextType } from '../globalReducer'
+import React, { useEffect, useState } from 'react'
 interface DisplayTxProps {
-  txIdx: number
+  tx: TransactionResponse
 }
 
 export default function DisplayTx(props: DisplayTxProps) {
-  const { state } = useContext(AppContext as React.Context<AppContextType>)
   const [receipt, setReceipt] = useState<TransactionReceipt>()
-  const tx = useMemo(() => {
-    return state.block!.transactions[props.txIdx]
-  }, [props.txIdx, state.block])
+  const tx = props.tx
 
   async function _setReceipt(tx: TransactionResponse) {
     setReceipt(await tx.wait())
@@ -51,11 +47,12 @@ export default function DisplayTx(props: DisplayTxProps) {
               <Tbody>
                 {Object.entries(tx).map(([k, v], idx) => {
                   return (
-                    k !== 'data' && (
+                    k !== 'data' &&
+                    k !== 'wait' && (
                       <Tr key={idx}>
-                        <Td width={'25%'} paddingBottom={'0'} wordBreak={'break-word'}>
+                        <Th width={'25%'} paddingBottom={'0'} wordBreak={'break-word'}>
                           {k.replace(/_/g, ' ')}
-                        </Td>
+                        </Th>
                         <Td width={'75%'} paddingBottom={'0'} wordBreak={'break-all'}>
                           {v?.toString()}
                         </Td>
@@ -68,7 +65,7 @@ export default function DisplayTx(props: DisplayTxProps) {
           </TabPanel>
           <TabPanel>
             {receipt && (
-              <Table>
+              <Table size="sm">
                 <Thead>
                   {Object.entries(receipt).map(([k, v]) => {
                     return (
