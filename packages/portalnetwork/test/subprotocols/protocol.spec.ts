@@ -1,5 +1,5 @@
 import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { multiaddr } from '@multiformats/multiaddr'
 import tape from 'tape'
 import * as td from 'testdouble'
 import {
@@ -124,26 +124,26 @@ tape('protocol wire message tests', async (t) => {
     node.discv5.enr.encode = td.func<any>()
     td.when(
       node.sendPortalNetworkResponse(
-        { socketAddr: new Multiaddr(), nodeId: 'abc' },
+        { socketAddr: multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length > 3)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with ENRs'))
     td.when(
       node.sendPortalNetworkResponse(
-        { socketAddr: new Multiaddr(), nodeId: 'abc' },
+        { socketAddr: multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with no ENRs'))
     td.when(node.discv5.enr.encode()).thenReturn(Buffer.from([0, 1, 2]))
     protocol.handleFindNodes(
-      { socketAddr: new Multiaddr(), nodeId: 'abc' },
+      { socketAddr: multiaddr(), nodeId: 'abc' },
       1n,
       findNodesMessageWithDistance
     )
     protocol.handleFindNodes(
-      { socketAddr: new Multiaddr(), nodeId: 'abc' },
+      { socketAddr: multiaddr(), nodeId: 'abc' },
       1n,
       findNodesMessageWithoutDistance
     )
@@ -222,13 +222,13 @@ tape('handleFindNodes message handler tests', async (t) => {
     protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
   }
   const newNode = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 0)
-  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
     distances: [239],
   })
 
   td.verify(
     node.sendPortalNetworkResponse(
-      { socketAddr: new Multiaddr(), nodeId: newNode },
+      { socketAddr: multiaddr(), nodeId: newNode },
       1n,
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
@@ -241,13 +241,13 @@ tape('handleFindNodes message handler tests', async (t) => {
   td.reset()
 
   node.sendPortalNetworkResponse = td.func<sendResponse>()
-  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
     distances: [255, 256],
   })
 
   td.verify(
     node.sendPortalNetworkResponse(
-      { socketAddr: new Multiaddr(), nodeId: newNode },
+      { socketAddr: multiaddr(), nodeId: newNode },
       1n,
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
@@ -266,13 +266,13 @@ tape('handleFindNodes message handler tests', async (t) => {
   ;(enr as any)._nodeId = id
   protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
 
-  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
     distances: [255, 256],
   })
 
   td.verify(
     node.sendPortalNetworkResponse(
-      { socketAddr: new Multiaddr(), nodeId: newNode },
+      { socketAddr: multiaddr(), nodeId: newNode },
       1n,
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
@@ -282,13 +282,13 @@ tape('handleFindNodes message handler tests', async (t) => {
   )
   t.pass('Nodes response contained 3 ENRs since one more ENR added to bucket 256')
 
-  await (protocol as any).handleFindNodes({ socketAddr: new Multiaddr(), nodeId: newNode }, 1n, {
+  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
     distances: [239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 255, 256],
   })
 
   td.verify(
     node.sendPortalNetworkResponse(
-      { socketAddr: new Multiaddr(), nodeId: newNode },
+      { socketAddr: multiaddr(), nodeId: newNode },
       1n,
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage

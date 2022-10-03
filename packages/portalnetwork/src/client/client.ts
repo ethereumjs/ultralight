@@ -25,7 +25,7 @@ import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
@@ -48,7 +48,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const defaultConfig: IDiscv5CreateOptions = {
       enr: {} as ENR,
       peerId: {} as Secp256k1PeerId,
-      multiaddr: new Multiaddr(),
+      multiaddr: multiaddr(),
       config: {
         addrVotesToUpdateEnr: 5,
         enrUpdate: true,
@@ -77,10 +77,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     let ma
     if (opts.bindAddress) {
-      ma = new Multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
+      ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
       config.enr.setLocationMultiaddr(ma)
     } else {
-      ma = new Multiaddr()
+      ma = multiaddr()
     }
 
     // Configure db size calculation
@@ -176,7 +176,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const peerId = await createPeerIdFromKeypair(enr.keypair)
         this.unverifiedSessionCache.set(
           enr.nodeId,
-          new Multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
+          multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
         )
         this.logger(this.unverifiedSessionCache.get(enr.nodeId))
       }

@@ -1,6 +1,6 @@
 import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { Multiaddr } from '@multiformats/multiaddr'
+import { multiaddr } from '@multiformats/multiaddr'
 import { PortalNetwork, ProtocolId } from '../../src/index.js'
 import { TransportLayer } from '../../src/client/types.js'
 import { createRequire } from 'module'
@@ -77,10 +77,10 @@ export function connectAndTest(
     } else if (data.toString().includes('UDP proxy listening on')) {
       const port = parseInt(data.toString().split('UDP proxy listening on  127.0.0.1')[1])
       if (!portal2.discv5.isStarted()) {
-        portal1.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        portal1.discv5.enr.setLocationMultiaddr(multiaddr(`/ip4/127.0.0.1/udp/${port}`))
         await portal2.start()
       } else if (portal2.discv5.isStarted()) {
-        portal2.discv5.enr.setLocationMultiaddr(new Multiaddr(`/ip4/127.0.0.1/udp/${port}`))
+        portal2.discv5.enr.setLocationMultiaddr(multiaddr(`/ip4/127.0.0.1/udp/${port}`))
         await testFunction(portal1, portal2, child)
         if (!ends) {
           await end(child, [portal1, portal2], st)

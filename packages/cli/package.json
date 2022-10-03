@@ -25,7 +25,7 @@
     "@libp2p/interface-peer-id": "^1.0.2",
     "@libp2p/peer-id": "^1.1.13",
     "@libp2p/peer-id-factory": "^1.0.15",
-    "@multiformats/multiaddr": "^10.2.1",
+    "@multiformats/multiaddr": "11.0.0",
     "debug": "^4.3.3",
     "jayson": "^4.0.0",
     "level": "^8.0.0",
