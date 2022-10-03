@@ -135,13 +135,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // eslint-disable-next-line constructor-super
     super()
 
-    this.discv5 = Discv5.create(opts.config)
+    this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
-    this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId).privateKey)
+    this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId as PeerId).privateKey)
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.protocols = new Map()
     this.bootnodes = opts.bootnodes ?? []
-    this.peerId = opts.config.peerId
+    this.peerId = opts.config.peerId as PeerId
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRU({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)

@@ -28,7 +28,7 @@ export interface PortalNetworkOpts {
   transport?: TransportLayer
   proxyAddress?: string
   rebuildFromMemory?: boolean
-  config: IDiscv5CreateOptions
+  config: Partial<IDiscv5CreateOptions>
   dataDir?: string
   dbSize(): Promise<number>
 }
