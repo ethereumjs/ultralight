@@ -80,7 +80,9 @@ export async function getBlockReceipts(block: Block): Promise<TransactionReceipt
       from: block.transactions[idx].getSenderAddress().toString(),
       contractAddress: block.transactions[idx].getSenderAddress().toString(),
       transactionIndex: idx,
-      root: toHexString((r as PreByzantiumTxReceipt).stateRoot) ?? undefined,
+      root: (r as PreByzantiumTxReceipt).stateRoot
+        ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
+        : undefined,
       gasUsed: BigNumber.from(block.header.gasUsed),
       logsBloom: toHexString(block.header.logsBloom),
       blockHash: toHexString(block.hash()),
