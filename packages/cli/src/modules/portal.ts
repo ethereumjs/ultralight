@@ -46,9 +46,6 @@ export class portal {
       [validators.enr],
       [validators.hex],
     ])
-    this.history_getSnapshot = middleware(this.history_getSnapshot.bind(this), 1, [
-      [validators.enr],
-    ])
     this.history_offer = middleware(this.history_offer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.blockHash)],
@@ -151,20 +148,6 @@ export class portal {
     }
     const res = await protocol.sendFindContent(enr, contentKey)
     return res
-  }
-  async history_getSnapshot(params: [string]) {
-    const [enr] = params
-    const nodeId = ENR.decodeTxt(enr).nodeId
-    const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    if (!protocol) {
-      return `History Protocol not supported`
-    }
-    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 4,
-      value: { selector: 0, value: null },
-    })
-    await protocol.sendFindContent(nodeId, accumulatorKey)
-    return `Received Accumulator Snapshot`
   }
   async history_offer(params: [string, string[], number[]]) {
     const [dstId, blockHashes, contentTypes] = params
