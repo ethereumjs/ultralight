@@ -100,7 +100,6 @@ export class AccumulatorManager {
     this._history = opts.history
     this._verifiers = {}
     this.headerAccumulator = new HeaderAccumulator(opts)
-    this.init()
   }
 
   public updateAccumulator(newHeader: BlockHeader) {
@@ -124,26 +123,6 @@ export class AccumulatorManager {
   }
   public replaceAccumulator = (accumulator: HeaderAccumulator) => {
     this.headerAccumulator = accumulator
-  }
-  async init() {
-    let storedAccumulator
-    try {
-      storedAccumulator = await this._history.client.db.get(
-        getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator)
-      )
-    } catch {}
-
-    if (storedAccumulator) {
-      const accumulator = HeaderAccumulatorType.deserialize(fromHexString(storedAccumulator))
-      return new HeaderAccumulator({
-        storedAccumulator: {
-          historicalEpochs: accumulator.historicalEpochs,
-          currentEpoch: accumulator.currentEpoch,
-        },
-      })
-    } else {
-      return new HeaderAccumulator({ initFromGenesis: true })
-    }
   }
 
   /**
