@@ -12,67 +12,59 @@ import { bufArrToArr } from '@ethereumjs/util'
 
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
-    let chainId = 15
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: HistoryNetworkContentTypes.BlockHeader,
-      value: { chainId: chainId, blockHash: fromHexString(blockHash) },
+      value: { blockHash: fromHexString(blockHash) },
     })
-    let contentId = getHistoryNetworkContentId(
-      chainId,
-      HistoryNetworkContentTypes.BlockHeader,
-      blockHash
-    )
+    let contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
     st.equals(
       toHexString(encodedKey),
-      '0x000f00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
+      '0x00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'blockheader content key equals expected output'
     )
     st.equals(
       contentId,
-      '0x2137f185b713a60dd1190e650d01227b4f94ecddc9c95478e2c591c40557da99',
+      '0x3e86b3767b57402ea72e369ae0496ce47cc15be685bec3b4726b9f316e3895fe',
       'block header content ID matches'
     )
-    chainId = 20
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: HistoryNetworkContentTypes.BlockBody,
-      value: { chainId, blockHash: fromHexString(blockHash) },
+      value: { blockHash: fromHexString(blockHash) },
     })
-    contentId = getHistoryNetworkContentId(chainId, HistoryNetworkContentTypes.BlockBody, blockHash)
+    contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
     st.equals(
       toHexString(encodedKey),
-      '0x011400d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
+      '0x01d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'blockbody content key equals expected output'
     )
     st.equals(
       contentId,
-      '0x1c6046475f0772132774ab549173ca8487bea031ce539cad8e990c08df5802ca',
+      '0xebe414854629d60c58ddd5bf60fd72e41760a5f7a463fdcb169f13ee4a26786b',
       'block body content ID matches'
     )
-    chainId = 4
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: HistoryNetworkContentTypes.Receipt,
-      value: { chainId, blockHash: fromHexString(blockHash) },
+      value: { blockHash: fromHexString(blockHash) },
     })
-    contentId = getHistoryNetworkContentId(chainId, HistoryNetworkContentTypes.Receipt, blockHash)
+    contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.Receipt, blockHash)
     st.equals(
       toHexString(encodedKey),
-      '0x020400d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
+      '0x02d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'receipt content key equals expected output'
     )
     st.equals(
       contentId,
-      '0xaa39e1423e92f5a667ace5b79c2c98adbfd79c055d891d0b9c49c40f816563b2',
+      '0xa888f4aafe9109d495ac4d4774a6277c1ada42035e3da5e10a04cc93247c04a4',
       'receipt content ID matches'
     )
-    chainId = 1
     encodedKey = HistoryNetworkContentKeyUnionType.serialize({
       selector: HistoryNetworkContentTypes.HeaderAccumulator,
       value: { selector: 0, value: null },
     })
-    contentId = getHistoryNetworkContentId(chainId, HistoryNetworkContentTypes.HeaderAccumulator)
+    contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator)
     st.equals(contentId, '0xc0ba8a33ac67f44abff5984dfbb6f56c46b880ac2b86e1f23e7fa9c402c53ae7')
     st.end()
   })

@@ -244,34 +244,38 @@ const DisplayBlock = () => {
   }
   async function init() {
     try {
-      setContentKeys({
-        header: toHexString(
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 0,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(state.block!.hash),
-            },
-          })
-        ),
-        body: toHexString(
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 1,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(state.block!.hash),
-            },
-          })
-        ),
-      })
-    } catch {}
+      const receipts = await state!.historyProtocol?.receiptManager.getReceipts(block.hash())
+      if (receipts) {
+        setReceipts(receipts)
+      }
+    } catch (err) {
+      console.log((err as any).message)
+    }
   }
 
   useEffect(() => {
-    if (state.block) {
+    if (state!.block!.transactions.length > 0) {
       init()
     }
-  }, [state.block])
+  }, [state!.block])
+
+  const headerlookupKey = toHexString(
+    HistoryNetworkContentKeyUnionType.serialize({
+      selector: 0,
+      value: {
+        blockHash: block.header.hash(),
+      },
+    })
+  )
+
+  const bodylookupKey = toHexString(
+    HistoryNetworkContentKeyUnionType.serialize({
+      selector: 1,
+      value: {
+        blockHash: block.header.hash(),
+      },
+    })
+  )
 
   return (
     <Box>

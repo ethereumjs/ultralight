@@ -409,7 +409,6 @@ export class PortalNetworkUTP extends BasicUtp {
         // EpochAccumulator requests...
         this.emit(
           'Stream',
-          1,
           contentKey.selector,
           contentKey.selector > 2
             ? toHexString(Uint8Array.from([]))

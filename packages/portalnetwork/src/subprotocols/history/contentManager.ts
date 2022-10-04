@@ -28,19 +28,17 @@ export class ContentManager {
 
   /**
    * Convenience method to add content for the History Network to the DB
-   * @param chainId - decimal number representing chain Id
    * @param contentType - content type of the data item being stored
    * @param hashKey - hex string representation of blockHash or epochHash
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
   public addContentToHistory = async (
-    chainId: number,
     contentType: HistoryNetworkContentTypes,
     hashKey: string,
     value: Uint8Array
   ) => {
-    const contentId = getHistoryNetworkContentId(chainId, contentType, hashKey)
+    const contentId = getHistoryNetworkContentId(contentType, hashKey)
 
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
@@ -78,7 +76,6 @@ export class ContentManager {
                 EpochAccumulator.hashTreeRoot(this.history.accumulator.currentEpoch())
               )
               this.addContentToHistory(
-                chainId,
                 HistoryNetworkContentTypes.EpochAccumulator,
                 currentEpochHash,
                 currentEpoch
@@ -92,7 +89,7 @@ export class ContentManager {
               }/${EPOCH_SIZE} of current Epoch`
             )
             this.history.client.db.put(
-              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
+              getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator),
               toHexString(
                 HeaderAccumulatorType.serialize(this.history.accumulator.masterAccumulator())
               )
@@ -110,7 +107,6 @@ export class ContentManager {
         let block: Block
         try {
           const headerContentId = getHistoryNetworkContentId(
-            1,
             HistoryNetworkContentTypes.BlockHeader,
             hashKey
           )
@@ -142,13 +138,13 @@ export class ContentManager {
       }
       case HistoryNetworkContentTypes.Receipt:
         this.history.client.db.put(
-          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.Receipt, hashKey),
+          getHistoryNetworkContentId(HistoryNetworkContentTypes.Receipt, hashKey),
           toHexString(value)
         )
         break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.history.client.db.put(
-          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.EpochAccumulator, hashKey),
+          getHistoryNetworkContentId(HistoryNetworkContentTypes.EpochAccumulator, hashKey),
           toHexString(value)
         )
         break
@@ -193,7 +189,7 @@ export class ContentManager {
     const lookup = new ContentLookup(this.history, key)
     try {
       const content = await lookup.startLookup()
-      this.addContentToHistory(1, type, hash, content as Uint8Array)
+      this.addContentToHistory(type, hash, content as Uint8Array)
     } catch {}
   }
 
@@ -202,8 +198,8 @@ export class ContentManager {
       return record.blockHash
     })
     for (const hash in _epoch) {
-      const headerKey = getHistoryNetworkContentId(1, 0, hash)
-      const bodyKey = getHistoryNetworkContentId(1, 1, hash)
+      const headerKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, hash)
+      const bodyKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, hash)
       const headerDistance = distance(this.history.client.discv5.enr.nodeId, headerKey)
       const bodyDistance = distance(this.history.client.discv5.enr.nodeId, bodyKey)
       if (headerDistance <= this.radius) {
@@ -213,7 +209,6 @@ export class ContentManager {
           const key = HistoryNetworkContentKeyUnionType.serialize({
             selector: 0,
             value: {
-              chainId: 1,
               blockHash: fromHexString(hash),
             },
           })
@@ -227,7 +222,6 @@ export class ContentManager {
           const key = HistoryNetworkContentKeyUnionType.serialize({
             selector: 1,
             value: {
-              chainId: 1,
               blockHash: fromHexString(hash),
             },
           })

@@ -112,7 +112,6 @@ export class ReceiptsManager {
     this.protocol.logger.extend('RECEIPT_MANAGER')(`Encoding ${receipts.length} receipts for db`)
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
     await this.protocol.addContentToHistory(
-      1,
       HistoryNetworkContentTypes.Receipt,
       toHexString(block.hash()),
       encoded
@@ -140,9 +139,7 @@ export class ReceiptsManager {
     calcBloom = false,
     includeTxType = false
   ): Promise<TxReceipt[] | TxReceiptWithType[]> {
-    const encoded = await this.db.get(
-      getHistoryNetworkContentId(1, HistoryNetworkContentTypes.Receipt, toHexString(blockHash))
-    )
+    const encoded = await this.db.get(getHistoryNetworkContentId(2, toHexString(blockHash)))
     if (!encoded) return []
     let receipts = this.rlp(
       RlpConvert.Decode,

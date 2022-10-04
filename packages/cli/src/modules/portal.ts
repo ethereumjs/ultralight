@@ -93,7 +93,6 @@ export class portal {
     try {
       const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       protocol.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         blockHash,
         fromHexString(rlpHex)
@@ -182,7 +181,6 @@ export class portal {
       return HistoryNetworkContentKeyUnionType.serialize({
         selector: contentTypes[idx],
         value: {
-          chainId: 1,
           blockHash: fromHexString(blockHash),
         },
       })

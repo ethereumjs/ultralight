@@ -5,7 +5,6 @@ import {
   ListCompositeType,
   NoneType,
   UintBigintType,
-  UintNumberType,
   UnionType,
 } from '@chainsafe/ssz'
 
@@ -24,17 +23,14 @@ export const MAX_ENCODED_UNCLES_LENGTH = MAX_HEADER_LENGTH * 2 ** 4
 
 /* ----------------- Types ----------- */
 /**
- * @property chainId - integer representing the chain ID (e.g. Ethereum Mainnet is 1)
  * @property blockHash - byte representation of the hex encoded block hash
  *
  */
 export type HistoryNetworkContentKey = {
-  chainId: number
   blockHash: Uint8Array
 }
 
 export const BlockHeaderType = new ContainerType({
-  chainId: new UintNumberType(2),
   blockHash: new ByteVectorType(32),
 })
 

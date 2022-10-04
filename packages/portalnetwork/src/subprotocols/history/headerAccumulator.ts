@@ -129,7 +129,7 @@ export class AccumulatorManager {
     let storedAccumulator
     try {
       storedAccumulator = await this._history.client.db.get(
-        getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator)
+        getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator)
       )
     } catch {}
 
@@ -157,7 +157,9 @@ export class AccumulatorManager {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
         fromHexString(
-          await this._history.client.db.get(getHistoryNetworkContentId(1, 0, blockHash))
+          await this._history.client.db.get(
+            getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+          )
         )
       ),
       { hardforkByBlockNumber: true }
@@ -178,7 +180,7 @@ export class AccumulatorManager {
   }
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.client.db.get(
-      getHistoryNetworkContentId(1, HistoryNetworkContentTypes.BlockHeader, blockHash)
+      getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
     )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
@@ -199,7 +201,6 @@ export class AccumulatorManager {
         : fromHexString(
             await this._history.client.db.get(
               getHistoryNetworkContentId(
-                1,
                 HistoryNetworkContentTypes.EpochAccumulator,
                 toHexString(this.headerAccumulator.historicalEpochs[epochIdx - 1])
               )
@@ -222,7 +223,9 @@ export class AccumulatorManager {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
         fromHexString(
-          await this._history.client.db.get(getHistoryNetworkContentId(1, 0, blockHash))
+          await this._history.client.db.get(
+            getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+          )
         )
       ),
       { hardforkByBlockNumber: true }
@@ -236,7 +239,6 @@ export class AccumulatorManager {
         fromHexString(
           await this._history.client.db.get(
             getHistoryNetworkContentId(
-              1,
               3,
               toHexString(this.headerAccumulator.historicalEpochs[epochIndex - 1])
             )
@@ -256,7 +258,6 @@ export class AccumulatorManager {
       const proofLookupKey = HistoryNetworkContentKeyUnionType.serialize({
         selector: HistoryNetworkContentTypes.HeaderProof,
         value: {
-          chainId: 1,
           blockHash: blockHash,
         },
       })
@@ -315,7 +316,7 @@ export class AccumulatorManager {
           'with Accumulator of height',
           newAccumulator.currentHeight()
         )
-        this._history.client.db.put(getHistoryNetworkContentId(1, 4), toHexString(decoded))
+        this._history.client.db.put(getHistoryNetworkContentId(4), toHexString(decoded))
         this.replaceAccumulator(newAccumulator)
       }
     } catch (err: any) {

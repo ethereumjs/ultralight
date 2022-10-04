@@ -89,7 +89,6 @@ const offerKeys = offerHashes.map((hash) => {
   return HistoryNetworkContentKeyUnionType.serialize({
     selector: 1,
     value: {
-      chainId: 1,
       blockHash: hash,
     },
   })
@@ -174,7 +173,6 @@ tape('uTP Reader/Writer tests', (t) => {
 
     const offerContentIds = offerContentHashes.map((hash) => {
       const contentKey: HistoryNetworkContentKey = {
-        chainId: 1,
         blockHash: fromHexString(hash),
       }
       return HistoryNetworkContentKeyUnionType.serialize({
