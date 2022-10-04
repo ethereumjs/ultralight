@@ -3,7 +3,6 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
-  NoneType,
   UintBigintType,
   UnionType,
 } from '@chainsafe/ssz'
@@ -45,7 +44,6 @@ export enum HistoryNetworkContentTypes {
   BlockBody = 1,
   Receipt = 2,
   EpochAccumulator = 3,
-  HeaderAccumulator = 4,
   HeaderProof = 5,
 }
 
@@ -82,14 +80,11 @@ export type HeaderProofInterface = {
   witnesses: Uint8Array[]
 }
 
-export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
-
 export const HistoryNetworkContentKeyUnionType = new UnionType([
   BlockHeaderType,
   BlockBodyType,
   ReceiptType,
   new ByteVectorType(32),
-  MasterAccumulatorType,
   ProofType,
 ])
 
