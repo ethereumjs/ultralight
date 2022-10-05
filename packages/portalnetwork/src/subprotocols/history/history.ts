@@ -161,14 +161,6 @@ export class HistoryProtocol extends BaseProtocol {
                     }
                   }
                   break
-                case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  this.addContentToHistory(
-                    decodedKey.selector,
-                    getHistoryNetworkContentId(4),
-                    decoded.value as Uint8Array
-                  )
-                  break
-                }
               }
             }
             break
