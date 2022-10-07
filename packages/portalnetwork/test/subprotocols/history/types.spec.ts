@@ -60,12 +60,6 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       '0xa888f4aafe9109d495ac4d4774a6277c1ada42035e3da5e10a04cc93247c04a4',
       'receipt content ID matches'
     )
-    encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: HistoryNetworkContentTypes.HeaderAccumulator,
-      value: { selector: 0, value: null },
-    })
-    contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator)
-    st.equals(contentId, '0xc0ba8a33ac67f44abff5984dfbb6f56c46b880ac2b86e1f23e7fa9c402c53ae7')
     st.end()
   })
   t.test('Receipt encoding decoding', (st) => {
