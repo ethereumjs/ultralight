@@ -41,6 +41,11 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
   node.sendPortalNetworkResponse = td.func<any>()
 
   const protocol = new HistoryProtocol(node, 2n)
+  t.equal(
+    protocol.accumulator.currentHeight(),
+    500000,
+    'Master Accumulator initialized from storage'
+  )
   const remoteEnr =
     'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
   const decodedEnr = ENR.decodeTxt(remoteEnr)
@@ -164,11 +169,11 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
 
 tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
   const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
-  const protocol = new HistoryProtocol(node, 2n) as any
+  const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp)) //@ts-ignore
   const block = Block.fromValuesArray(arrToBufArr(blockRlp), { hardforkByBlockNumber: true })
-  protocol.addContentToHistory(
+  await protocol.addContentToHistory(
     HistoryNetworkContentTypes.BlockHeader,
     serializedBlock.blockHash,
     RLP.encode(blockRlp[0])
@@ -226,44 +231,10 @@ tape('Header Proof Tests', async (t) => {
     history: protocol,
     storedAccumulator: accumulator,
   })
-  t.test('Header Accumulator can create and validate proofs for CurrentEpoch.', async (st) => {
-    const _headerRecord = {
-      blockHash: fromHexString(_block8199.hash),
-      totalDifficulty: 1348252821321668n,
-    }
-    await protocol.addContentToHistory(
-      HistoryNetworkContentTypes.BlockHeader,
-      _block8199.hash,
-      fromHexString(_block8199.rawHeader)
-    )
-    const proof = await protocol.generateInclusionProof(_block8199.hash)
-    st.equal(
-      toHexString(proof.epochRoot),
-      toHexString(EpochAccumulator.hashTreeRoot(protocol.accumulator.currentEpoch().slice(0, 8))),
-      'Hisotry Protocol generated inclusion proof'
-    )
-    st.equal(proof.gindex, blockNumberToGindex(BigInt(8199)), 'Proof created for correct Header')
-    st.equal(proof.witnesses.length, 14, 'Proof has correct size')
-    st.ok(
-      protocol.accumulator.verifyInclusionProof(proof, _block8199.hash),
-      'History Protocol verified an inclusion proof.'
-    )
-    st.end()
-  })
   t.test(
-    'HistoryProtocol can create and verify proofs for a HeaderRecord from a HistoricalEpoch',
+    'HistoryProtocol can create and verify proofs for a HeaderRecord from an EpochAccumulator',
     async (st) => {
       const _block1000 = require('../../integration/testBlock1000.json')
-      const _header1000 = BlockHeader.fromRLPSerializedHeader(
-        Buffer.from(fromHexString(_block1000.rawHeader)),
-        {
-          hardforkByBlockNumber: true,
-        }
-      )
-      const _headerRecord = {
-        blockHash: fromHexString(_block1000.hash),
-        totalDifficulty: 22019797038325n,
-      }
       await protocol.addContentToHistory(
         HistoryNetworkContentTypes.EpochAccumulator,
         _epoch1.hash,
