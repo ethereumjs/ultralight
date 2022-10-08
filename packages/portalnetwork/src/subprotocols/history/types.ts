@@ -44,7 +44,7 @@ export enum HistoryNetworkContentTypes {
   BlockBody = 1,
   Receipt = 2,
   EpochAccumulator = 3,
-  HeaderProof = 5,
+  HeaderProof = 4,
 }
 
 export const HashRoot = new ByteVectorType(32)
