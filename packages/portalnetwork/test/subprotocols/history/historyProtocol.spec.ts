@@ -1,5 +1,5 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { Block, BlockBuffer, BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
 import tape from 'tape'
 import * as td from 'testdouble'
@@ -171,46 +171,22 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
   const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
   const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
   const serializedBlock = testBlocks.block207686
-  const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp)) //@ts-ignore
-  const block = Block.fromValuesArray(arrToBufArr(blockRlp), { hardforkByBlockNumber: true })
+  const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp))
+  const block = Block.fromValuesArray(blockRlp as BlockBuffer, { hardforkByBlockNumber: true })
   await protocol.addContentToHistory(
     HistoryNetworkContentTypes.BlockHeader,
     serializedBlock.blockHash,
-    RLP.encode(blockRlp[0])
+    block.header.serialize()
   )
-
   await protocol.addContentToHistory(
     HistoryNetworkContentTypes.BlockBody,
     serializedBlock.blockHash,
     sszEncodeBlockBody(block)
   )
-  const headerId = getHistoryNetworkContentId(
-    HistoryNetworkContentTypes.BlockHeader,
-    serializedBlock.blockHash
-  )
-
-  const bodyId = getHistoryNetworkContentId(
-    HistoryNetworkContentTypes.BlockBody,
-    serializedBlock.blockHash
-  )
-  const header = await protocol.client.db.get(headerId)
-  const body = await protocol.client.db.get(bodyId)
-  const newBlock = reassembleBlock(fromHexString(header), fromHexString(body))
-  t.equal(newBlock.header.number, block.header.number, 'reassembled block from components in DB')
-
-  // const receiptKey = getHistoryNetworkContentId(
-  //   1,
-  //   HistoryNetworkContentTypes.Receipt,
-  //   serializedBlock.blockHash
-  // )
-
-  // const receipt = await node.db.get(receiptKey)
-  // const decodedReceipt = protocol.receiptManager.rlp(
-  //   RlpConvert.Decode,
-  //   RlpType.Receipts,
-  //   Buffer.from(fromHexString(receipt))
-  // )
-  // t.equal(decodedReceipt[0].cumulativeBlockGasUsed, 43608n, 'retrieved receipt from db')
+  const rebuilt = await protocol.ETH.getBlockByHash(serializedBlock.blockHash, true)
+  t.equal(rebuilt?.header.number, block.header.number, 'reassembled block from components in DB')
+  const receipt = await protocol.receiptManager.saveReceipts(block)
+  t.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
   t.end()
 })
 

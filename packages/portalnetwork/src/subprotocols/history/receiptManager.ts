@@ -93,7 +93,7 @@ export class ReceiptsManager {
    * @param block the block to save receipts for
    * @param receipts the receipts to save
    */
-  async saveReceipts(block: Block) {
+  async saveReceipts(block: Block): Promise<TxReceiptType[]> {
     const vm = await VM.create({
       common: block._common,
       hardforkByBlockNumber: true,
@@ -116,6 +116,7 @@ export class ReceiptsManager {
       toHexString(block.hash()),
       encoded
     )
+    return receipts
   }
 
   /**
@@ -125,21 +126,21 @@ export class ReceiptsManager {
    * @param includeTxType whether to include the tx type for each receipt (default: false)
    */
   async getReceipts(
-    blockHash: Buffer,
+    blockHash: string,
     calcBloom?: boolean,
     includeTxType?: true
   ): Promise<TxReceiptWithType[]>
   async getReceipts(
-    blockHash: Buffer,
+    blockHash: string,
     calcBloom?: boolean,
     includeTxType?: false
   ): Promise<TxReceipt[]>
   async getReceipts(
-    blockHash: Buffer,
+    blockHash: string,
     calcBloom = false,
     includeTxType = false
   ): Promise<TxReceipt[] | TxReceiptWithType[]> {
-    const encoded = await this.db.get(getHistoryNetworkContentId(2, toHexString(blockHash)))
+    const encoded = await this.db.get(getHistoryNetworkContentId(2, blockHash))
     if (!encoded) return []
     let receipts = this.rlp(
       RlpConvert.Decode,
@@ -153,7 +154,7 @@ export class ReceiptsManager {
       })
     }
     if (includeTxType) {
-      const block = (await this.protocol.ETH.getBlockByHash(toHexString(blockHash), true)) as Block
+      const block = (await this.protocol.ETH.getBlockByHash(blockHash, true)) as Block
       receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
         r.txType = block.transactions[i].type
         return r
@@ -175,7 +176,7 @@ export class ReceiptsManager {
     let returnedLogsSize = 0
     for (let i = Number(from.header.number); i <= Number(to.header.number); i++) {
       const block = await this.protocol.ETH.getBlockByNumber(i, true)
-      const receipts = await this.getReceipts(block!.hash())
+      const receipts = await this.getReceipts(toHexString(block!.hash()))
       if (receipts.length === 0) continue
       let logs: GetLogsReturn = []
       let logIndex = 0
