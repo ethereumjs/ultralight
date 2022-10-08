@@ -15,6 +15,7 @@ import {
   HistoryProtocol,
   SszProof,
 } from '../index.js'
+import mastAcc from './partialAccumulator.js'
 
 export interface AccumulatorOpts {
   initFromGenesis?: boolean
@@ -99,7 +100,9 @@ export class AccumulatorManager {
   constructor(opts: AccumulatorManagerOpts) {
     this._history = opts.history
     this._verifiers = {}
-    this.headerAccumulator = new HeaderAccumulator(opts)
+    this.headerAccumulator = new HeaderAccumulator({
+      storedAccumulator: HeaderAccumulatorType.deserialize(fromHexString(mastAcc)),
+    })
   }
 
   public updateAccumulator(newHeader: BlockHeader) {
