@@ -21,7 +21,6 @@ import {
   ContentManager,
   ETH,
   GossipManager,
-  getHistoryNetworkContentId,
   SszProof,
   serializedContentKeyToContentId,
 } from '../../index.js'
@@ -40,7 +39,7 @@ export class HistoryProtocol extends BaseProtocol {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.logger = client.logger.extend('HistoryNetwork')
-    this.accumulator = new AccumulatorManager({ history: this, initFromGenesis: true })
+    this.accumulator = new AccumulatorManager({ history: this })
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
@@ -161,14 +160,6 @@ export class HistoryProtocol extends BaseProtocol {
                     }
                   }
                   break
-                case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  this.addContentToHistory(
-                    decodedKey.selector,
-                    getHistoryNetworkContentId(4),
-                    decoded.value as Uint8Array
-                  )
-                  break
-                }
               }
             }
             break

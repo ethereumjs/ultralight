@@ -15,6 +15,7 @@ import {
   HistoryProtocol,
   SszProof,
 } from '../index.js'
+import mastAcc from './partialAccumulator.js'
 
 export interface AccumulatorOpts {
   initFromGenesis?: boolean
@@ -99,8 +100,9 @@ export class AccumulatorManager {
   constructor(opts: AccumulatorManagerOpts) {
     this._history = opts.history
     this._verifiers = {}
-    this.headerAccumulator = new HeaderAccumulator(opts)
-    this.init()
+    this.headerAccumulator = new HeaderAccumulator({
+      storedAccumulator: HeaderAccumulatorType.deserialize(fromHexString(mastAcc)),
+    })
   }
 
   public updateAccumulator(newHeader: BlockHeader) {
@@ -124,26 +126,6 @@ export class AccumulatorManager {
   }
   public replaceAccumulator = (accumulator: HeaderAccumulator) => {
     this.headerAccumulator = accumulator
-  }
-  async init() {
-    let storedAccumulator
-    try {
-      storedAccumulator = await this._history.client.db.get(
-        getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator)
-      )
-    } catch {}
-
-    if (storedAccumulator) {
-      const accumulator = HeaderAccumulatorType.deserialize(fromHexString(storedAccumulator))
-      return new HeaderAccumulator({
-        storedAccumulator: {
-          historicalEpochs: accumulator.historicalEpochs,
-          currentEpoch: accumulator.currentEpoch,
-        },
-      })
-    } else {
-      return new HeaderAccumulator({ initFromGenesis: true })
-    }
   }
 
   /**

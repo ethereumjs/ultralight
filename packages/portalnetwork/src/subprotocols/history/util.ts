@@ -21,7 +21,7 @@ import { HistoryProtocol } from './history.js'
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
  * @param contentKey an object containing the and `blockHash` used to generate the content Key
- * @param contentType a number identifying the type of content (block header, block body, receipt, epochAccumulator, headerAccumulator)
+ * @param contentType a number identifying the type of content (block header, block body, receipt, epochAccumulator)
  * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
@@ -41,13 +41,6 @@ export const getHistoryNetworkContentId = (
         value: {
           blockHash: fromHexString(hash),
         },
-      })
-      break
-    }
-    case HistoryNetworkContentTypes.HeaderAccumulator: {
-      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: { selector: 0, value: null },
       })
       break
     }

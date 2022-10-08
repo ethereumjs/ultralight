@@ -88,12 +88,6 @@ export class ContentManager {
                 this.history.accumulator.currentEpoch().length
               }/${EPOCH_SIZE} of current Epoch`
             )
-            this.history.client.db.put(
-              getHistoryNetworkContentId(HistoryNetworkContentTypes.HeaderAccumulator),
-              toHexString(
-                HeaderAccumulatorType.serialize(this.history.accumulator.masterAccumulator())
-              )
-            )
           }
           this.history.client.db.put(contentId, toHexString(value))
         } catch (err: any) {
@@ -148,9 +142,6 @@ export class ContentManager {
           toHexString(value)
         )
         break
-      case HistoryNetworkContentTypes.HeaderAccumulator:
-        await this.history.accumulator.receiveSnapshot(value)
-        break
       case HistoryNetworkContentTypes.HeaderProof: {
         try {
           const proof = SszProof.deserialize(value)
@@ -176,10 +167,7 @@ export class ContentManager {
         } for ${hashKey} to content db`
       )
     }
-    if (
-      contentType !== HistoryNetworkContentTypes.HeaderAccumulator &&
-      this.history.routingTable.values().length > 0
-    ) {
+    if (this.history.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
       this.history.gossipManager.add(hashKey, contentType)
     }
