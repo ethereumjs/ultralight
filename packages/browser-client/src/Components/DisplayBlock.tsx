@@ -20,7 +20,7 @@ import { BigNumber } from 'ethers'
 import { _Block } from '@ethersproject/abstract-provider'
 import {
   fromHexString,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   toHexString,
   TxReceiptWithType,
 } from 'portalnetwork'
@@ -260,7 +260,7 @@ const DisplayBlock = () => {
   }, [state!.block])
 
   const headerlookupKey = toHexString(
-    HistoryNetworkContentKeyUnionType.serialize({
+    HistoryNetworkContentKeyType.serialize({
       selector: 0,
       value: {
         blockHash: block.header.hash(),
@@ -269,7 +269,7 @@ const DisplayBlock = () => {
   )
 
   const bodylookupKey = toHexString(
-    HistoryNetworkContentKeyUnionType.serialize({
+    HistoryNetworkContentKeyType.serialize({
       selector: 1,
       value: {
         blockHash: block.header.hash(),

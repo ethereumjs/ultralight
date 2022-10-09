@@ -2,7 +2,7 @@ import { HStack, Button, useToast } from '@chakra-ui/react'
 import {
   ContentLookup,
   fromHexString,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   SszProof,
 } from 'portalnetwork'
 import React, { useContext } from 'react'
@@ -14,7 +14,7 @@ export default function GetHeaderProofByHash() {
   const toast = useToast()
 
   async function portal_getHeaderProof(blockHash: string) {
-    const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
+    const lookupKey = HistoryNetworkContentKeyType.serialize({
       selector: 5,
       value: {
         blockHash: fromHexString(blockHash),

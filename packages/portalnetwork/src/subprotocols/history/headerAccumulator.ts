@@ -10,7 +10,7 @@ import {
   HeaderAccumulatorType,
   HeaderProofInterface,
   HeaderRecordType,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   SszProof,
@@ -237,12 +237,10 @@ export class AccumulatorManager {
     for (let i = 0; i < Object.entries(this._verifiers).length; i++) {
       const blockHash = Object.values(this._verifiers)[i]
 
-      const proofLookupKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: HistoryNetworkContentTypes.HeaderProof,
-        value: {
-          blockHash: blockHash,
-        },
-      })
+      const proofLookupKey = HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([Uint8Array.from([HistoryNetworkContentTypes.HeaderProof]), blockHash])
+      )
+
       const proofLookup = new ContentLookup(this._history, proofLookupKey)
       const _proof = await proofLookup.startLookup()
       if (_proof) {

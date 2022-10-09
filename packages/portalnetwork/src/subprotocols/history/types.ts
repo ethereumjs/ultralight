@@ -80,13 +80,7 @@ export type HeaderProofInterface = {
   witnesses: Uint8Array[]
 }
 
-export const HistoryNetworkContentKeyUnionType = new UnionType([
-  BlockHeaderType,
-  BlockBodyType,
-  ReceiptType,
-  new ByteVectorType(32),
-  ProofType,
-])
+export const HistoryNetworkContentKeyType = new ByteVectorType(33)
 
 export const sszTransaction = new ByteListType(MAX_TRANSACTION_LENGTH)
 export const allTransactions = new ListCompositeType(sszTransaction, MAX_TRANSACTION_COUNT)

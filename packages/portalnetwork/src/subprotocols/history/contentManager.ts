@@ -5,12 +5,11 @@ import {
   EpochAccumulator,
   EPOCH_SIZE,
   getHistoryNetworkContentId,
-  HeaderAccumulatorType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
   SszProof,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 import { shortId } from '../../index.js'
@@ -194,12 +193,9 @@ export class ContentManager {
         try {
           this.history.client.db.get(headerKey)
         } catch {
-          const key = HistoryNetworkContentKeyUnionType.serialize({
-            selector: 0,
-            value: {
-              blockHash: fromHexString(hash),
-            },
-          })
+          const key = HistoryNetworkContentKeyType.serialize(
+            Buffer.concat([Uint8Array.from([0]), fromHexString(hash)])
+          )
           this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockHeader)
         }
       }
@@ -207,12 +203,9 @@ export class ContentManager {
         try {
           this.history.client.db.get(bodyKey)
         } catch {
-          const key = HistoryNetworkContentKeyUnionType.serialize({
-            selector: 1,
-            value: {
-              blockHash: fromHexString(hash),
-            },
-          })
+          const key = HistoryNetworkContentKeyType.serialize(
+            Buffer.concat([Uint8Array.from([1]), fromHexString(hash)])
+          )
           this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockBody)
         }
       }

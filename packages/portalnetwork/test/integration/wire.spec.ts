@@ -8,7 +8,7 @@ import {
   HistoryNetworkContentTypes,
   HeaderAccumulatorType,
   getHistoryNetworkContentId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryProtocol,
   EpochAccumulator,
   reassembleBlock,
@@ -70,14 +70,12 @@ tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
         testBlockBody
       )
       testBlockKeys.push(
-        HistoryNetworkContentKeyUnionType.serialize({
-          selector: HistoryNetworkContentTypes.BlockHeader,
-          value: { blockHash: fromHexString(testHash) },
-        }),
-        HistoryNetworkContentKeyUnionType.serialize({
-          selector: HistoryNetworkContentTypes.BlockBody,
-          value: { blockHash: fromHexString(testHash) },
-        })
+        HistoryNetworkContentKeyType.serialize(
+          Buffer.concat([Uint8Array.from([0]), fromHexString(testHash)])
+        ),
+        HistoryNetworkContentKeyType.serialize(
+          Buffer.concat([Uint8Array.from([1]), fromHexString(testHash)])
+        )
       )
       let header: Uint8Array
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
@@ -166,14 +164,12 @@ tape('OFFER/ACCEPT', (t) => {
           sszEncodeBlockBody(testBlock)
         )
         testBlockKeys.push(
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 0,
-            value: { blockHash: Uint8Array.from(testBlock.header.hash()) },
-          }),
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 1,
-            value: { blockHash: Uint8Array.from(testBlock.header.hash()) },
-          })
+          HistoryNetworkContentKeyType.serialize(
+            Buffer.concat([Uint8Array.from([0]), testBlock.header.hash()])
+          ),
+          HistoryNetworkContentKeyType.serialize(
+            Buffer.concat([Uint8Array.from([1]), testBlock.header.hash()])
+          )
         )
       }
       let i = 0

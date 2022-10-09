@@ -13,7 +13,7 @@ import {
   ProtocolId,
   PortalNetworkMetrics,
   HistoryNetworkContentTypes,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryNetworkContentKey,
   EpochAccumulator,
   HeaderProofInterface,
@@ -54,16 +54,12 @@ export class HistoryProtocol extends BaseProtocol {
   public findContentLocally = async (decodedContentMessage: FindContentMessage) => {
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
-    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
-      decodedContentMessage.contentKey
-    )
-    if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+    const contentKey = HistoryNetworkContentKeyType.deserialize(decodedContentMessage.contentKey)
+    if (contentKey[0] === HistoryNetworkContentTypes.HeaderProof) {
       try {
         // Create Header Proof
-        this.logger(`Creating proof for ${toHexString((contentKey.value as any).blockHash)}`)
-        const proof = await this.generateInclusionProof(
-          toHexString((contentKey.value as any).blockHash)
-        )
+        this.logger(`Creating proof for ${toHexString(contentKey.subarray(1))}`)
+        const proof = await this.generateInclusionProof(toHexString(contentKey.subarray(1)))
         // this.logger(proof)
         value = SszProof.serialize({
           leaf: proof.leaf,
@@ -123,7 +119,7 @@ export class HistoryProtocol extends BaseProtocol {
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
         const decoded = ContentMessageType.deserialize(res.subarray(1))
-        const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+        const decodedKey = HistoryNetworkContentKeyType.deserialize(key)
         switch (decoded.selector) {
           case 0: {
             const id = connectionIdType.deserialize(decoded.value as Uint8Array)
@@ -140,18 +136,20 @@ export class HistoryProtocol extends BaseProtocol {
           case 1:
             {
               // Store content in local DB
-              switch (decodedKey.selector) {
+              switch (decodedKey[0]) {
                 case HistoryNetworkContentTypes.BlockHeader:
                 case HistoryNetworkContentTypes.BlockBody:
                 case HistoryNetworkContentTypes.Receipt:
                 case HistoryNetworkContentTypes.EpochAccumulator:
                 case HistoryNetworkContentTypes.HeaderProof:
                   {
-                    const content = decodedKey.value as HistoryNetworkContentKey
+                    const content = {
+                      blockHash: decodedKey.subarray(1),
+                    } as HistoryNetworkContentKey
                     this.logger(`received content corresponding to ${content!.blockHash}`)
                     try {
                       this.addContentToHistory(
-                        decodedKey.selector,
+                        decodedKey[0],
                         toHexString(Buffer.from(content.blockHash!)),
                         decoded.value as Uint8Array
                       )

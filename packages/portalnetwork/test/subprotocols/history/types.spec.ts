@@ -3,7 +3,7 @@ import tape from 'tape'
 import { randomBytes } from 'crypto'
 import {
   getHistoryNetworkContentId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   Receipt,
   TxReceiptType,
 } from '../../../src/subprotocols/history/index.js'
@@ -13,10 +13,9 @@ import { bufArrToArr } from '@ethereumjs/util'
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
-    let encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: HistoryNetworkContentTypes.BlockHeader,
-      value: { blockHash: fromHexString(blockHash) },
-    })
+    let encodedKey = HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([Uint8Array.from([0]), fromHexString(blockHash)])
+    )
     let contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
     st.equals(
       toHexString(encodedKey),
@@ -29,10 +28,9 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       'block header content ID matches'
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
-    encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: HistoryNetworkContentTypes.BlockBody,
-      value: { blockHash: fromHexString(blockHash) },
-    })
+    encodedKey = HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([Uint8Array.from([1]), fromHexString(blockHash)])
+    )
     contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
     st.equals(
       toHexString(encodedKey),
@@ -45,10 +43,12 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       'block body content ID matches'
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
-    encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: HistoryNetworkContentTypes.Receipt,
-      value: { blockHash: fromHexString(blockHash) },
-    })
+    encodedKey = HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.Receipt]),
+        fromHexString(blockHash),
+      ])
+    )
     contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.Receipt, blockHash)
     st.equals(
       toHexString(encodedKey),

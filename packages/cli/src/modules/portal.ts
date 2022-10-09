@@ -6,7 +6,7 @@ import {
   HistoryNetworkContentTypes,
   fromHexString,
   shortId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   toHexString,
   HeaderAccumulatorType,
   HistoryProtocol,
@@ -161,12 +161,9 @@ export class portal {
       }
     })
     const contentKeys = blockHashes.map((blockHash, idx) => {
-      return HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentTypes[idx],
-        value: {
-          blockHash: fromHexString(blockHash),
-        },
-      })
+      return HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([Uint8Array.from([contentTypes[idx]]), fromHexString(blockHash)])
+      )
     })
     const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     const res = await protocol.sendOffer(dstId, contentKeys)

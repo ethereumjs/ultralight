@@ -1,7 +1,7 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import {
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   EpochAccumulator,
   EPOCH_SIZE,
   reassembleBlock,
@@ -19,16 +19,14 @@ export class ETH {
     blockHash: string,
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
-    const headerContentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 0,
-      value: { blockHash: fromHexString(blockHash) },
-    })
+    const headerContentKey = HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([Uint8Array.from([0]), fromHexString(blockHash)])
+    )
 
     const bodyContentKey = includeTransactions
-      ? HistoryNetworkContentKeyUnionType.serialize({
-          selector: 1,
-          value: { blockHash: fromHexString(blockHash) },
-        })
+      ? HistoryNetworkContentKeyType.serialize(
+          Buffer.concat([Uint8Array.from([1]), fromHexString(blockHash)])
+        )
       : undefined
     let header: any
     let body: any
@@ -93,10 +91,9 @@ export class ETH {
         this.protocol.logger('Error with epoch root lookup')
         return
       }
-      const lookupKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 3,
-        value: { blockHash: epochRootHash },
-      })
+      const lookupKey = HistoryNetworkContentKeyType.serialize(
+        HistoryNetworkContentKeyType.serialize(Buffer.concat([Uint8Array.from([3]), epochRootHash]))
+      )
 
       const lookup = new ContentLookup(this.protocol, lookupKey)
       const result = await lookup.startLookup()

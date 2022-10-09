@@ -1,7 +1,7 @@
 import {
   ENR,
   fromHexString,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
@@ -21,7 +21,7 @@ export class PeerActions {
   addToOffer = (type: HistoryNetworkContentTypes): void => {
     this.dispatch({
       type: PeerStateChange.ADDTOOFFER,
-      payload: HistoryNetworkContentKeyUnionType.serialize({
+      payload: HistoryNetworkContentKeyType.serialize({
         selector: type,
         value: {
           chainId: 1,
@@ -54,7 +54,7 @@ export class PeerActions {
   }
 
   handleRequestSnapshot = (enr: string) => {
-    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
+    const accumulatorKey = HistoryNetworkContentKeyType.serialize({
       selector: 4,
       value: { selector: 0, value: null },
     })
@@ -67,7 +67,7 @@ export class PeerActions {
 
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
-      const headerKey = HistoryNetworkContentKeyUnionType.serialize({
+      const headerKey = HistoryNetworkContentKeyType.serialize({
         selector: 0,
         value: {
           chainId: 1,
@@ -81,7 +81,7 @@ export class PeerActions {
       const block = reassembleBlock(header!.value as Uint8Array, undefined)
       return block //
     } else if (type === 'body') {
-      const headerKey = HistoryNetworkContentKeyUnionType.serialize({
+      const headerKey = HistoryNetworkContentKeyType.serialize({
         selector: 0,
         value: {
           chainId: 1,
@@ -89,7 +89,7 @@ export class PeerActions {
         },
       })
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerKey)
-      const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
+      const bodyKey = HistoryNetworkContentKeyType.serialize({
         selector: 1,
         value: {
           chainId: 1,
@@ -98,7 +98,7 @@ export class PeerActions {
       })
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyKey)
     } else if (type === 'epoch') {
-      const _epochKey = HistoryNetworkContentKeyUnionType.serialize({
+      const _epochKey = HistoryNetworkContentKeyType.serialize({
         selector: 3,
         value: {
           chainId: 1,

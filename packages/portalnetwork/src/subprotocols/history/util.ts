@@ -1,6 +1,6 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from './index.js'
+import { HistoryNetworkContentKeyType } from './index.js'
 import {
   BlockBodyContent,
   BlockBodyContentType,
@@ -34,24 +34,12 @@ export const getHistoryNetworkContentId = (
     case HistoryNetworkContentTypes.BlockHeader:
     case HistoryNetworkContentTypes.BlockBody:
     case HistoryNetworkContentTypes.Receipt:
-    case HistoryNetworkContentTypes.HeaderProof: {
-      if (!hash) throw new Error('block hash is required to generate contentId')
-      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: {
-          blockHash: fromHexString(hash),
-        },
-      })
-      break
-    }
+    case HistoryNetworkContentTypes.HeaderProof:
     case HistoryNetworkContentTypes.EpochAccumulator: {
-      if (!hash) throw new Error('accumulator root hash is required to generate contentId')
-      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: {
-          blockHash: fromHexString(hash),
-        },
-      })
+      if (!hash) throw new Error('block hash is required to generate contentId')
+      encodedKey = HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([Uint8Array.from([contentType]), fromHexString(hash)])
+      )
       break
     }
     default:

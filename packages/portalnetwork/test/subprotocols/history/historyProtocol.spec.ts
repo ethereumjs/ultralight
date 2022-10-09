@@ -12,7 +12,7 @@ import {
   sszEncodeBlockBody,
   reassembleBlock,
   AccumulatorManager,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   EpochAccumulator,
   getHistoryNetworkContentId,
@@ -20,6 +20,7 @@ import {
   blockNumberToGindex,
   TransportLayer,
   HistoryProtocol,
+  HeaderAccumulator,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import RLP from '@ethereumjs/rlp'
@@ -50,14 +51,14 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
     'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
   const decodedEnr = ENR.decodeTxt(remoteEnr)
   protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-  const key = HistoryNetworkContentKeyUnionType.serialize({
-    selector: 1,
-    value: {
-      blockHash: fromHexString(
-        '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-      ),
-    },
-  })
+  const key = HistoryNetworkContentKeyType.serialize(
+    HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([
+        Uint8Array.from([1]),
+        fromHexString('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'),
+      ])
+    )
+  )
   const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
   protocol.addContentToHistory = td.func<any>()
   td.when(
@@ -79,12 +80,9 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
     block1Hash,
     fromHexString(block1Rlp)
   )
-  const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-    selector: HistoryNetworkContentTypes.BlockHeader,
-    value: {
-      blockHash: fromHexString(block1Hash),
-    },
-  })
+  const contentKey = HistoryNetworkContentKeyType.serialize(
+    Buffer.concat([Uint8Array.from([0]), fromHexString(block1Hash)])
+  )
   const header = await protocol.sendFindContent('0xabcd', contentKey)
   t.equal(header, undefined, 'received undefined for unknown peer')
 })
@@ -102,12 +100,9 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
       block1Hash,
       fromHexString(block1Rlp)
     )
-    const contentKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: HistoryNetworkContentTypes.BlockHeader,
-      value: {
-        blockHash: fromHexString(block1Hash),
-      },
-    })
+    const contentKey = HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([Uint8Array.from([0]), fromHexString(block1Hash)])
+    )
 
     const val = await node.db.get(serializedContentKeyToContentId(contentKey))
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)), {
@@ -192,21 +187,13 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
 
 tape('Header Proof Tests', async (t) => {
   const _accumulator = require('../../integration/testAccumulator.json')
-  const _block8199 = require('../../integration/testBlock8199.json')
   const _epoch1 = require('../../integration/testEpoch.json')
-  const _header8199 = BlockHeader.fromRLPSerializedHeader(
-    Buffer.from(fromHexString(_block8199.rawHeader)),
-    {
-      hardforkByBlockNumber: true,
-    }
-  )
-  const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
+  const accumulator = new HeaderAccumulator({
+    storedAccumulator: HeaderAccumulatorType.deserialize(fromHexString(_accumulator)),
+  })
   const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
   const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
-  protocol.accumulator = new AccumulatorManager({
-    history: protocol,
-    storedAccumulator: accumulator,
-  })
+  protocol.accumulator.replaceAccumulator(accumulator)
   t.test(
     'HistoryProtocol can create and verify proofs for a HeaderRecord from an EpochAccumulator',
     async (st) => {
@@ -225,7 +212,7 @@ tape('Header Proof Tests', async (t) => {
       st.equal(
         toHexString(proof.epochRoot),
         _epoch1.hash,
-        'Hisotry Protocol generated inclusion proof'
+        'History Protocol generated inclusion proof'
       )
       st.equal(proof.gindex, blockNumberToGindex(BigInt(1000)), 'Proof created for correct Header')
       st.equal(proof.witnesses.length, 14, 'Proof has correct size')

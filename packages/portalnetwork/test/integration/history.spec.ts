@@ -7,10 +7,11 @@ import {
   HistoryNetworkContentTypes,
   HeaderAccumulatorType,
   getHistoryNetworkContentId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryProtocol,
   reassembleBlock,
   AccumulatorManager,
+  HeaderAccumulator,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
@@ -46,10 +47,11 @@ tape('History Protocol Integration Tests', (t) => {
         }
       )
       const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
-      protocol1.accumulator = new AccumulatorManager({
-        history: protocol1,
-        storedAccumulator: accumulator,
-      })
+      protocol1.accumulator.replaceAccumulator(
+        new HeaderAccumulator({
+          storedAccumulator: accumulator,
+        })
+      )
       await protocol1.addContentToHistory(
         HistoryNetworkContentTypes.EpochAccumulator,
         _epoch1.hash,
@@ -93,18 +95,18 @@ tape('History Protocol Integration Tests', (t) => {
           }
         }
       })
-      const proofKey1000 = HistoryNetworkContentKeyUnionType.serialize({
-        selector: HistoryNetworkContentTypes.HeaderProof,
-        value: {
-          blockHash: header1000.hash(),
-        },
-      })
-      const proofKey8199 = HistoryNetworkContentKeyUnionType.serialize({
-        selector: HistoryNetworkContentTypes.HeaderProof,
-        value: {
-          blockHash: header8199.hash(),
-        },
-      })
+      const proofKey1000 = HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([
+          Uint8Array.from([HistoryNetworkContentTypes.HeaderProof]),
+          header1000.hash(),
+        ])
+      )
+      const proofKey8199 = HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([
+          Uint8Array.from([HistoryNetworkContentTypes.HeaderProof]),
+          header8199.hash(),
+        ])
+      )
 
       await protocol1.sendPing(portal2.discv5.enr)
       await protocol2.sendFindContent(portal1.discv5.enr.nodeId, proofKey1000)
