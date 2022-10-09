@@ -6,7 +6,7 @@ import {
   HistoryNetworkContentTypes,
   fromHexString,
   shortId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   toHexString,
   HeaderAccumulatorType,
   HistoryProtocol,
@@ -161,7 +161,7 @@ export class portal {
       }
     })
     const contentKeys = blockHashes.map((blockHash, idx) => {
-      return HistoryNetworkContentKeyUnionType.serialize({
+      return HistoryNetworkContentKeyType.serialize({
         selector: contentTypes[idx],
         value: {
           blockHash: fromHexString(blockHash),
