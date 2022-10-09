@@ -5,7 +5,7 @@ import debug from 'debug'
 import tape from 'tape'
 import {
   HistoryNetworkContentKey,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   ProtocolId,
   BUFFER_SIZE,
@@ -79,12 +79,9 @@ const offerHashes = Object.keys(blocks).map((key) => {
 })
 
 const offerKeys = offerHashes.map((hash) => {
-  return HistoryNetworkContentKeyUnionType.serialize({
-    selector: 1,
-    value: {
-      blockHash: hash,
-    },
-  })
+  return HistoryNetworkContentKeyType.serialize(
+    Buffer.concat([Uint8Array.from([HistoryNetworkContentTypes.BlockBody]), hash])
+  )
 })
 
 tape('uTP Reader/Writer tests', (t) => {
@@ -169,10 +166,12 @@ tape('uTP Reader/Writer tests', (t) => {
       const contentKey: HistoryNetworkContentKey = {
         blockHash: fromHexString(hash),
       }
-      return HistoryNetworkContentKeyUnionType.serialize({
-        selector: 1,
-        value: contentKey,
-      })
+      return HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([
+          Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+          fromHexString(hash),
+        ])
+      )
     })
 
     const _socket2 = uTP.createPortalNetworkUTPSocket(

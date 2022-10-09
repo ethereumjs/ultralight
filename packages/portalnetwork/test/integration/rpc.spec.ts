@@ -5,11 +5,12 @@ import {
   ProtocolId,
   sszEncodeBlockBody,
   getHistoryNetworkContentId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryProtocol,
   reassembleBlock,
   HistoryNetworkContentTypes,
   HeaderAccumulatorType,
+  HeaderAccumulator,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
@@ -134,16 +135,19 @@ tape('getBlockByHash', (t) => {
 
 tape('getBlockByNumber', (t) => {
   t.test('eth_getBlockByNumber', (st) => {
+    const _accumulator = require('./testAccumulator.json')
+    const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
+
     const epochData = require('./testEpoch.json')
     const block1000 = require('./testBlock1000.json')
     const epochHash = epochData.hash
     const serialized = epochData.serialized
-    const epochKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 3,
-      value: {
-        blockHash: fromHexString(epochHash),
-      },
-    })
+    const epochKey = HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.EpochAccumulator]),
+        fromHexString(epochHash),
+      ])
+    )
     const blockRlp = block1000.raw
     const rebuiltBlock = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(blockRlp)), {
       hardforkByBlockNumber: true,
@@ -161,7 +165,7 @@ tape('getBlockByNumber', (t) => {
       const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       await protocol1.addContentToHistory(
         HistoryNetworkContentTypes.EpochAccumulator,
-        toHexString(epochKey),
+        epochHash,
         fromHexString(serialized)
       )
       await protocol1.addContentToHistory(
@@ -170,42 +174,36 @@ tape('getBlockByNumber', (t) => {
         _header
       )
       await protocol1.addContentToHistory(HistoryNetworkContentTypes.BlockBody, blockHash, body)
-      let header: Uint8Array
-      portal2.on('ContentAdded', async (blockHash, contentType, content) => {
-        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-          st.equal(
-            contentType,
-            HistoryNetworkContentTypes.BlockHeader,
-            'eth_getBlockByNumber returned a block header'
-          )
-          header = fromHexString(content)
-        }
-        if (contentType === HistoryNetworkContentTypes.BlockBody) {
-          st.equal(
-            contentType,
-            HistoryNetworkContentTypes.BlockBody,
-            'eth_getBlockByNumber returned a block body'
-          )
-          const body = fromHexString(content)
-          const block = reassembleBlock(header, body)
-          st.equal(block.header.number, 1000n, 'eth_getBlockByNumber returned block 1000')
-          st.deepEqual(
-            block.header,
-            rebuiltBlock.header,
-            'eth_getBlockByNumber retrieved block 1000'
-          )
-          st.deepEqual(
-            block.serialize(),
-            rebuiltBlock.serialize(),
-            'eth_getBlockByNumber retrieved block 1000'
-          )
-          st.pass('eth_getBlockByNumber test passed')
-          end(child, [portal1, portal2], st)
-        }
-      })
+      protocol1.accumulator.replaceAccumulator(
+        new HeaderAccumulator({
+          storedAccumulator: accumulator,
+        })
+      )
+      protocol2.accumulator.replaceAccumulator(
+        new HeaderAccumulator({
+          storedAccumulator: accumulator,
+        })
+      )
 
       await protocol1.sendPing(portal2.discv5.enr)
-      protocol2.ETH.getBlockByNumber(1000, true)
+      try {
+        const returned = await protocol2.ETH.getBlockByNumber(1000, true)
+        st.equal(returned!.header.number, 1000n, 'eth_getBlockByNumber returned block 1000')
+        st.deepEqual(
+          returned!.header,
+          rebuiltBlock.header,
+          'eth_getBlockByNumber retrieved block 1000'
+        )
+        st.deepEqual(
+          returned!.serialize(),
+          rebuiltBlock.serialize(),
+          'eth_getBlockByNumber retrieved block 1000'
+        )
+        st.pass('eth_getBlockByNumber test passed')
+      } catch (e) {
+        st.fail(`eth_getBlockByNumber test failed: ${(e as any).message}`)
+      }
+      end(child, [portal1, portal2], st)
     }
     connectAndTest(t, st, findEpoch, true)
   })
