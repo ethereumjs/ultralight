@@ -55,6 +55,14 @@ export const getHistoryNetworkContentId = (
 
   return toHexString(digest(encodedKey))
 }
+export const decodeHistoryNetworkContentKey = (contentKey: string) => {
+  const contentType = parseInt(contentKey.slice(0, 4))
+  const blockHash = '0x' + contentKey.slice(4)
+  return {
+    contentType,
+    blockHash,
+  }
+}
 
 export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
   const body = BlockBodyContentType.deserialize(sszBody)
