@@ -82,6 +82,27 @@ export class HeaderAccumulator {
     }
     return this._currentEpoch.push(headerRecord) - 1
   }
+  /**
+   * Adds a new block header to the `currentEpoch` in the header accumulator
+   */
+  public updateAccumulatorFromEthers = (newHeader: { hash: string; difficulty: number }) => {
+    const lastTd =
+      this._currentEpoch.length === 0
+        ? 0n
+        : this._currentEpoch[this._currentEpoch.length - 1].totalDifficulty
+
+    if (this._currentEpoch.length === EPOCH_SIZE) {
+      const currentEpochHash = EpochAccumulator.hashTreeRoot(this._currentEpoch)
+      this._historicalEpochs.push(currentEpochHash)
+      this._currentEpoch = []
+    }
+
+    const headerRecord = {
+      blockHash: fromHexString(newHeader.hash),
+      totalDifficulty: lastTd + BigInt(newHeader.difficulty.toString(10)),
+    }
+    return this._currentEpoch.push(headerRecord) - 1
+  }
 
   /**
    * Returns the current height of the chain contained in the accumulator.  Assumes first block is genesis
