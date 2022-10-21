@@ -15,7 +15,11 @@ import {
   HistoryProtocol,
   SszProof,
 } from '../index.js'
-import mastAcc from './partialAccumulator.js'
+import accumulator from './data/master.json'
+
+const historicalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
+  return fromHexString(hash)
+})
 
 export interface AccumulatorOpts {
   initFromGenesis?: boolean
@@ -101,7 +105,11 @@ export class AccumulatorManager {
     this._history = opts.history
     this._verifiers = {}
     this.headerAccumulator = new HeaderAccumulator({
-      storedAccumulator: HeaderAccumulatorType.deserialize(fromHexString(mastAcc)),
+      storedAccumulator: {
+        // TODO: Hardcode "current" epoch
+        currentEpoch: [],
+        historicalEpochs,
+      },
     })
   }
 
