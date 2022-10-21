@@ -7,6 +7,7 @@ import {
   reassembleBlock,
   HistoryProtocol,
   BlockBodyContentType,
+  HistoryNetworkContentTypes,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 
@@ -20,12 +21,18 @@ export class ETH {
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
     const headerContentKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([0]), fromHexString(blockHash)])
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+        fromHexString(blockHash),
+      ])
     )
 
     const bodyContentKey = includeTransactions
       ? HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([Uint8Array.from([1]), fromHexString(blockHash)])
+          Buffer.concat([
+            Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+            fromHexString(blockHash),
+          ])
         )
       : undefined
     let header: any
@@ -92,7 +99,12 @@ export class ETH {
         return
       }
       const lookupKey = HistoryNetworkContentKeyType.serialize(
-        HistoryNetworkContentKeyType.serialize(Buffer.concat([Uint8Array.from([3]), epochRootHash]))
+        HistoryNetworkContentKeyType.serialize(
+          Buffer.concat([
+            Uint8Array.from([HistoryNetworkContentTypes.EpochAccumulator]),
+            epochRootHash,
+          ])
+        )
       )
 
       const lookup = new ContentLookup(this.protocol, lookupKey)

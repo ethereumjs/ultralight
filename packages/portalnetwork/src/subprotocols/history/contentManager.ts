@@ -194,7 +194,10 @@ export class ContentManager {
           this.history.client.db.get(headerKey)
         } catch {
           const key = HistoryNetworkContentKeyType.serialize(
-            Buffer.concat([Uint8Array.from([0]), fromHexString(hash)])
+            Buffer.concat([
+              Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+              fromHexString(hash),
+            ])
           )
           this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockHeader)
         }
@@ -204,7 +207,10 @@ export class ContentManager {
           this.history.client.db.get(bodyKey)
         } catch {
           const key = HistoryNetworkContentKeyType.serialize(
-            Buffer.concat([Uint8Array.from([1]), fromHexString(hash)])
+            Buffer.concat([
+              Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+              fromHexString(hash),
+            ])
           )
           this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockBody)
         }
