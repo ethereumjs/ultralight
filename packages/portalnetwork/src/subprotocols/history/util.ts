@@ -1,6 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyType } from './index.js'
 import {
   BlockBodyContent,
   BlockBodyContentType,
@@ -25,11 +24,12 @@ import { HistoryProtocol } from './history.js'
  * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getHistoryNetworkContentId = (
+export const getHistoryNetworkContentKey = (
   contentType: HistoryNetworkContentTypes,
-  hash?: string
-) => {
+  hash: Buffer
+): string => {
   let encodedKey
+  const prefix = Buffer.alloc(1, contentType)
   switch (contentType) {
     case HistoryNetworkContentTypes.BlockHeader:
     case HistoryNetworkContentTypes.BlockBody:
@@ -37,14 +37,21 @@ export const getHistoryNetworkContentId = (
     case HistoryNetworkContentTypes.HeaderProof:
     case HistoryNetworkContentTypes.EpochAccumulator: {
       if (!hash) throw new Error('block hash is required to generate contentId')
-      encodedKey = HistoryNetworkContentKeyType.serialize(
-        Buffer.concat([Uint8Array.from([contentType]), fromHexString(hash)])
-      )
+      encodedKey = toHexString(prefix) + hash.toString('hex')
       break
     }
     default:
       throw new Error('unsupported content type')
   }
+  return encodedKey
+}
+export const getHistoryNetworkContentId = (
+  contentType: HistoryNetworkContentTypes,
+  hash: string
+) => {
+  const encodedKey = fromHexString(
+    getHistoryNetworkContentKey(contentType, Buffer.from(fromHexString(hash)))
+  )
 
   return toHexString(digest(encodedKey))
 }
