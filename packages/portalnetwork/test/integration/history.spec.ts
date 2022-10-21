@@ -10,7 +10,6 @@ import {
   HistoryNetworkContentKeyType,
   HistoryProtocol,
   reassembleBlock,
-  AccumulatorManager,
   HeaderAccumulator,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'

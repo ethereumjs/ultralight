@@ -14,7 +14,10 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([0]), fromHexString(blockHash)])
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+        fromHexString(blockHash),
+      ])
     )
     let contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
     st.equals(
@@ -29,7 +32,10 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([1]), fromHexString(blockHash)])
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+        fromHexString(blockHash),
+      ])
     )
     contentId = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
     st.equals(

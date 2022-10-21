@@ -10,8 +10,6 @@ import {
   ProtocolId,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
-  reassembleBlock,
-  AccumulatorManager,
   HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   EpochAccumulator,
@@ -54,7 +52,7 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
   const key = HistoryNetworkContentKeyType.serialize(
     HistoryNetworkContentKeyType.serialize(
       Buffer.concat([
-        Uint8Array.from([1]),
+        Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
         fromHexString('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'),
       ])
     )
@@ -81,7 +79,10 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
     fromHexString(block1Rlp)
   )
   const contentKey = HistoryNetworkContentKeyType.serialize(
-    Buffer.concat([Uint8Array.from([0]), fromHexString(block1Hash)])
+    Buffer.concat([
+      Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+      fromHexString(block1Hash),
+    ])
   )
   const header = await protocol.sendFindContent('0xabcd', contentKey)
   t.equal(header, undefined, 'received undefined for unknown peer')
@@ -101,7 +102,10 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
       fromHexString(block1Rlp)
     )
     const contentKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([0]), fromHexString(block1Hash)])
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+        fromHexString(block1Hash),
+      ])
     )
 
     const val = await node.db.get(serializedContentKeyToContentId(contentKey))
@@ -118,7 +122,10 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
     const epochAccumulator = require('../../integration/testEpoch.json')
     const rebuilt = EpochAccumulator.deserialize(fromHexString(epochAccumulator.serialized))
     const hashRoot = EpochAccumulator.hashTreeRoot(rebuilt)
-    const contentId = getHistoryNetworkContentId(3, toHexString(hashRoot))
+    const contentId = getHistoryNetworkContentId(
+      HistoryNetworkContentTypes.EpochAccumulator,
+      toHexString(hashRoot)
+    )
     await protocol.addContentToHistory(
       HistoryNetworkContentTypes.EpochAccumulator,
       toHexString(hashRoot),

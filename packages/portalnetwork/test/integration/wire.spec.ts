@@ -6,11 +6,9 @@ import {
   ProtocolId,
   sszEncodeBlockBody,
   HistoryNetworkContentTypes,
-  HeaderAccumulatorType,
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyType,
   HistoryProtocol,
-  EpochAccumulator,
   reassembleBlock,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
@@ -71,10 +69,16 @@ tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
       )
       testBlockKeys.push(
         HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([Uint8Array.from([0]), fromHexString(testHash)])
+          Buffer.concat([
+            Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+            fromHexString(testHash),
+          ])
         ),
         HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([Uint8Array.from([1]), fromHexString(testHash)])
+          Buffer.concat([
+            Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+            fromHexString(testHash),
+          ])
         )
       )
       let header: Uint8Array
@@ -165,10 +169,16 @@ tape('OFFER/ACCEPT', (t) => {
         )
         testBlockKeys.push(
           HistoryNetworkContentKeyType.serialize(
-            Buffer.concat([Uint8Array.from([0]), testBlock.header.hash()])
+            Buffer.concat([
+              Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+              testBlock.header.hash(),
+            ])
           ),
           HistoryNetworkContentKeyType.serialize(
-            Buffer.concat([Uint8Array.from([1]), testBlock.header.hash()])
+            Buffer.concat([
+              Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+              testBlock.header.hash(),
+            ])
           )
         )
       }
