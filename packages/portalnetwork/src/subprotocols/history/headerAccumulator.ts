@@ -11,7 +11,7 @@ import {
   HistoryNetworkContentTypes,
   HistoryProtocol,
 } from '../index.js'
-import accumulator from './data/master.json'
+import accumulator from './data/master.js'
 
 const historicalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
   return fromHexString(hash)
