@@ -80,8 +80,6 @@ export class ContentManager {
                 currentEpoch
               )
             }
-            // Update the header accumulator if the block header is the next in the chain
-            this.history.accumulator.updateAccumulator(header)
             this.logger(
               `Updated header accumulator at slot ${
                 this.history.accumulator.currentEpoch().length

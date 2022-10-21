@@ -3,17 +3,13 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import {
   blockNumberToGindex,
-  ContentLookup,
   EpochAccumulator,
   EPOCH_SIZE,
   getHistoryNetworkContentId,
-  HeaderAccumulatorType,
   HeaderProofInterface,
   HeaderRecordType,
-  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
-  SszProof,
 } from '../index.js'
 import accumulator from './data/master.json'
 
@@ -22,8 +18,7 @@ const historicalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
 })
 
 export interface AccumulatorOpts {
-  initFromGenesis?: boolean
-  storedAccumulator?: {
+  storedAccumulator: {
     historicalEpochs: Uint8Array[]
     currentEpoch: HeaderRecordType[]
   }
@@ -39,18 +34,8 @@ export class HeaderAccumulator {
   constructor(opts: AccumulatorOpts) {
     this._currentEpoch = []
     this._historicalEpochs = []
-    if (opts.initFromGenesis) {
-      const genesisHeaderRlp =
-        '0xf90214a00000000000000000000000000000000000000000000000000000000000000000a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347940000000000000000000000000000000000000000a0d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000850400000000808213888080a011bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82faa00000000000000000000000000000000000000000000000000000000000000000880000000000000042'
-      const genesisHeader = BlockHeader.fromRLPSerializedHeader(
-        Buffer.from(fromHexString(genesisHeaderRlp)),
-        { hardforkByBlockNumber: true }
-      )
-      this.updateAccumulator(genesisHeader)
-    } else if (opts.storedAccumulator) {
-      this._currentEpoch = opts.storedAccumulator.currentEpoch
-      this._historicalEpochs = opts.storedAccumulator.historicalEpochs
-    }
+    this._currentEpoch = opts.storedAccumulator.currentEpoch
+    this._historicalEpochs = opts.storedAccumulator.historicalEpochs
   }
 
   public get currentEpoch() {
@@ -62,49 +47,6 @@ export class HeaderAccumulator {
   }
 
   /**
-   * Adds a new block header to the `currentEpoch` in the header accumulator
-   */
-  public updateAccumulator = (newHeader: BlockHeader) => {
-    const lastTd =
-      this._currentEpoch.length === 0
-        ? 0n
-        : this._currentEpoch[this._currentEpoch.length - 1].totalDifficulty
-
-    if (this._currentEpoch.length === EPOCH_SIZE) {
-      const currentEpochHash = EpochAccumulator.hashTreeRoot(this._currentEpoch)
-      this._historicalEpochs.push(currentEpochHash)
-      this._currentEpoch = []
-    }
-
-    const headerRecord = {
-      blockHash: newHeader.hash(),
-      totalDifficulty: lastTd + BigInt(newHeader.difficulty.toString(10)),
-    }
-    return this._currentEpoch.push(headerRecord) - 1
-  }
-  /**
-   * Adds a new block header to the `currentEpoch` in the header accumulator
-   */
-  public updateAccumulatorFromEthers = (newHeader: { hash: string; difficulty: number }) => {
-    const lastTd =
-      this._currentEpoch.length === 0
-        ? 0n
-        : this._currentEpoch[this._currentEpoch.length - 1].totalDifficulty
-
-    if (this._currentEpoch.length === EPOCH_SIZE) {
-      const currentEpochHash = EpochAccumulator.hashTreeRoot(this._currentEpoch)
-      this._historicalEpochs.push(currentEpochHash)
-      this._currentEpoch = []
-    }
-
-    const headerRecord = {
-      blockHash: fromHexString(newHeader.hash),
-      totalDifficulty: lastTd + BigInt(newHeader.difficulty.toString(10)),
-    }
-    return this._currentEpoch.push(headerRecord) - 1
-  }
-
-  /**
    * Returns the current height of the chain contained in the accumulator.  Assumes first block is genesis
    * so subtracts one from chain height since genesis block height is technically 0.
    */
@@ -113,7 +55,7 @@ export class HeaderAccumulator {
   }
 }
 
-interface AccumulatorManagerOpts extends AccumulatorOpts {
+interface AccumulatorManagerOpts {
   history: HistoryProtocol
 }
 
@@ -132,10 +74,6 @@ export class AccumulatorManager {
         historicalEpochs,
       },
     })
-  }
-
-  public updateAccumulator(newHeader: BlockHeader) {
-    this.headerAccumulator.updateAccumulator(newHeader)
   }
 
   public currentHeight = () => {
@@ -257,79 +195,6 @@ export class AccumulatorManager {
         )
       )
       return epoch[listIndex]
-    }
-  }
-  public verifySnapshot = async (snapshot: HeaderAccumulator) => {
-    const threshold = snapshot.historicalEpochs.length < 3 ? snapshot.historicalEpochs.length : 3
-    this._history.logger(`Need ${threshold} votes to validate`)
-    let votes = 0
-    for (let i = 0; i < Object.entries(this._verifiers).length; i++) {
-      const blockHash = Object.values(this._verifiers)[i]
-
-      const proofLookupKey = HistoryNetworkContentKeyType.serialize(
-        Buffer.concat([Uint8Array.from([HistoryNetworkContentTypes.HeaderProof]), blockHash])
-      )
-
-      const proofLookup = new ContentLookup(this._history, proofLookupKey)
-      const _proof = await proofLookup.startLookup()
-      if (_proof) {
-        const proof = SszProof.deserialize(_proof as Uint8Array)
-        if (!(await this.verifyInclusionProof(proof, toHexString(blockHash)))) {
-          this._history.logger('HeaderRecord not Verified')
-          return false
-        } else {
-          votes++
-          this._history.logger('HeaderRecord Verified')
-        }
-      } else {
-        return false
-      }
-    }
-    if (votes >= threshold) {
-      this._history.client.emit('Verified', '', true)
-      return true
-    } else {
-      this._history.client.emit('Verified', '', false)
-      return false
-    }
-  }
-  public receiveSnapshot = async (decoded: Uint8Array) => {
-    try {
-      const receivedAccumulator = HeaderAccumulatorType.deserialize(decoded)
-      const newAccumulator = new HeaderAccumulator({
-        initFromGenesis: false,
-        storedAccumulator: {
-          historicalEpochs: receivedAccumulator.historicalEpochs,
-          currentEpoch: receivedAccumulator.currentEpoch,
-        },
-      })
-      this._history.logger(
-        `Received an accumulator snapshot with ${receivedAccumulator.currentEpoch.length} headers in the current epoch`
-      )
-      if (this.headerAccumulator.currentHeight() < newAccumulator.currentHeight()) {
-        // If we don't have an accumulator, adopt the snapshot received
-        // TODO: Decide how to verify if this snapshot is trustworthy
-        try {
-          this._history.logger('Verifying HeaderAccumulator snapshot')
-          const verified = await this.verifySnapshot(newAccumulator)
-          verified
-            ? this._history.logger('Header Snapshot validated')
-            : this._history.logger('Snapshot not verified -- Saving an unverified accumulator')
-        } catch {
-          throw new Error('Verify Snapshot failed')
-        }
-        //
-        this._history.logger(
-          'Replacing Accumulator of height',
-          this.headerAccumulator.currentHeight(),
-          'with Accumulator of height',
-          newAccumulator.currentHeight()
-        )
-        // this._history.client.db.put(getHistoryNetworkContentId(4), toHexString(decoded))
-        this.replaceAccumulator(newAccumulator)
-      }
-    } catch (err: any) {
-      this._history.logger(`Error parsing accumulator snapshot: ${err.message}`)
     }
   }
 }
