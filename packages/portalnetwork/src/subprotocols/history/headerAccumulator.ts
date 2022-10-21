@@ -296,7 +296,7 @@ export class AccumulatorManager {
           'with Accumulator of height',
           newAccumulator.currentHeight()
         )
-        this._history.client.db.put(getHistoryNetworkContentId(4), toHexString(decoded))
+        // this._history.client.db.put(getHistoryNetworkContentId(4), toHexString(decoded))
         this.replaceAccumulator(newAccumulator)
       }
     } catch (err: any) {
