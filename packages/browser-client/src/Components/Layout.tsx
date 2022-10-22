@@ -16,6 +16,7 @@ import GetBlockByNumber from './GetBlockByNumber'
 import RoutingTableView from './RoutingTableView'
 import DisplayBlock from './DisplayBlock'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
+import GetEpoch from './GetEpoch'
 
 export default function Layout() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
@@ -36,6 +37,7 @@ export default function Layout() {
       <Box width={'95%'}>
         <GetBlockByHash />
         <GetBlockByNumber />
+        <GetEpoch />
         <Tabs index={state.tabIndex} onChange={handleTabsChange}>
           <TabList>
             <IconButton

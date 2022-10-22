@@ -1,28 +1,32 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
+import { logger } from 'ethers'
 import {
   AccumulatorManager,
   connectionIdType,
-  ContentMessageType,
-  FindContentMessage,
-  MessageCodes,
-  PortalWireMessageType,
-  shortId,
-  PortalNetwork,
-  RequestCode,
-  ProtocolId,
-  PortalNetworkMetrics,
-  HistoryNetworkContentTypes,
-  HistoryNetworkContentKeyType,
-  HistoryNetworkContentKey,
-  EpochAccumulator,
-  HeaderProofInterface,
-  ReceiptsManager,
+  ContentLookup,
   ContentManager,
+  ContentMessageType,
+  EpochAccumulator,
   ETH,
+  FindContentMessage,
+  getHistoryNetworkContentId,
+  getHistoryNetworkContentKey,
   GossipManager,
-  SszProof,
+  HeaderProofInterface,
+  HistoryNetworkContentKey,
+  HistoryNetworkContentKeyType,
+  HistoryNetworkContentTypes,
+  MessageCodes,
+  PortalNetwork,
+  PortalNetworkMetrics,
+  PortalWireMessageType,
+  ProtocolId,
+  ReceiptsManager,
+  RequestCode,
   serializedContentKeyToContentId,
+  shortId,
+  SszProof,
 } from '../../index.js'
 
 import { BaseProtocol } from '../protocol.js'
@@ -44,6 +48,29 @@ export class HistoryProtocol extends BaseProtocol {
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
     this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
+  }
+
+  public getEpochByIndex = async (
+    index: number
+  ): Promise<Uint8Array | Uint8Array[] | undefined> => {
+    const log = this.logger.extend('portal_getEpoch')
+    log(`Searching for epoch: ${index}`)
+    const epochHash = toHexString(this.accumulator.historicalEpochs()[index])
+    log(`Searching for epoch with root: ${epochHash}`)
+    const contentKey = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.EpochAccumulator,
+      Buffer.from(fromHexString(epochHash))
+    )
+    log(`Searching for epoch with contentKey: ${contentKey}`)
+    const contentId = getHistoryNetworkContentId(
+      HistoryNetworkContentTypes.EpochAccumulator,
+      epochHash
+    )
+    log(`Searching for epoch with contentId: ${contentId}`)
+    const lookup = new ContentLookup(this, fromHexString(contentKey))
+    const epoch = await lookup.startLookup()
+    log(`Epoch search returned: ${epoch}`)
+    return epoch
   }
 
   /**
