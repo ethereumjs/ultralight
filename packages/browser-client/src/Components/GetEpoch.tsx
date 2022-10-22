@@ -1,4 +1,5 @@
-import { HStack, Button, Input, useToast } from '@chakra-ui/react'
+import { SearchIcon } from '@chakra-ui/icons'
+import { HStack, Button, Input, useToast, IconButton } from '@chakra-ui/react'
 import { EpochAccumulator, toHexString } from 'portalnetwork'
 import React, { useContext, useState } from 'react'
 import { AppContext, AppContextType } from '../globalReducer'
@@ -27,17 +28,25 @@ export default function GetEpoch() {
 
   return (
     <HStack marginY={1}>
-      <Button width="40%" onClick={sendFindEpoch}>
-        Request Epoch Accumulator by index
-      </Button>
       <Input
         type={'number'}
         min={1}
         max={state.provider!.historyProtocol.accumulator.historicalEpochs.length}
-        placeholder={'Epoch'}
+        placeholder={'0'}
         onChange={(evt) => {
           setEpochIndex(parseInt(evt.target.value))
         }}
+        onKeyUp={(e) => e.key === 'Enter' && sendFindEpoch()}
+      />
+      <IconButton
+        aria-label="submit"
+        size="sm"
+        disabled={
+          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
+        }
+        width={'20%'}
+        onClick={sendFindEpoch}
+        icon={<SearchIcon />}
       />
     </HStack>
   )

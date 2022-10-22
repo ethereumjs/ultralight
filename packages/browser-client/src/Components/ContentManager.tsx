@@ -54,7 +54,9 @@ export default function ContentManager() {
 
   return (
     <Button wordBreak={'break-word'} width={'100%'} onClick={handleClick}>
-      Upload Content
+      Upload
+      <br />
+      Content
     </Button>
   )
 }

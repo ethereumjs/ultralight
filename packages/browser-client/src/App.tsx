@@ -55,28 +55,13 @@ export const App = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      {state && dispatch && state.provider && state.provider.historyProtocol && (
+      {state && state.provider && state.provider.historyProtocol && (
         <AppContext.Provider value={{ state, dispatch }}>
           <Header />
-          <HStack border={'1px'} width={'100%'} paddingY={1}>
-            <Button width={'25%'} bgColor={'blue.100'} size={'xs'} onClick={connectToPeer}>
-              Connect to new peer
-            </Button>
-            <Input
-              width={'75%'}
-              size={'xs'}
-              type="text"
-              placeholder={'enr: IS...'}
-              value={state.searchEnr}
-              onChange={(e) => {
-                dispatch({ type: StateChange.SETSEARCHENR, payload: e.target.value })
-              }}
-            />
-          </HStack>
           <Divider />
 
           <Box>{<Layout />}</Box>
-          <Box width={'100%'} pos={'fixed'} bottom={'0'}>
+          <Box width={'100%'} pos={'fixed'} bottom={'0'} bg="whiteAlpha.200" opacity={1}>
             <Center>
               <Footer />
             </Center>

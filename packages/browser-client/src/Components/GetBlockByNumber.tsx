@@ -1,4 +1,5 @@
-import { Button, FormControl, HStack, Input, useToast } from '@chakra-ui/react'
+import { SearchIcon } from '@chakra-ui/icons'
+import { Button, FormControl, HStack, IconButton, Input, useToast } from '@chakra-ui/react'
 import React, { useContext, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
@@ -41,16 +42,7 @@ export default function GetBlockByNumber() {
   }
 
   return (
-    <HStack marginY={1}>
-      <Button
-        disabled={
-          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
-        }
-        width={'40%'}
-        onClick={handleClick}
-      >
-        Get Block by Number
-      </Button>
+    <HStack width={'50%'} marginY={1}>
       <FormControl isInvalid={parseInt(searchNumber) < 0}>
         <Input
           bg="whiteAlpha.800"
@@ -59,8 +51,19 @@ export default function GetBlockByNumber() {
             .currentHeight()})`}
           type={'number'}
           onChange={(e) => setSearchNumber(e.target.value)}
+          onKeyUp={(e) => e.key === 'Enter' && handleClick()}
         />
       </FormControl>
+      <IconButton
+        aria-label="submit"
+        size="sm"
+        disabled={
+          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
+        }
+        width={'20%'}
+        onClick={handleClick}
+        icon={<SearchIcon />}
+      />
     </HStack>
   )
 }

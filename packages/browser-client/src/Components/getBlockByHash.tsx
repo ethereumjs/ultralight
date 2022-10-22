@@ -1,4 +1,5 @@
-import { Button, FormControl, HStack, Input } from '@chakra-ui/react'
+import { SearchIcon } from '@chakra-ui/icons'
+import { Button, FormControl, HStack, IconButton, Input } from '@chakra-ui/react'
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
@@ -34,17 +35,25 @@ export default function GetBlockByHash() {
 
   return (
     <HStack marginY={1}>
-      <Button width={'40%'} onClick={handleClick}>
-        Get Block by Hash
-      </Button>
       <FormControl isInvalid={!blockHash.startsWith('0x')}>
         <Input
           bg="whiteAlpha.800"
           placeholder={`BlockHash`}
           type={'string'}
           onChange={(e) => setBlockhash(e.target.value)}
+          onKeyUp={(e) => e.key === 'Enter' && handleClick()}
         />
       </FormControl>
+      <IconButton
+        aria-label="submit"
+        size="sm"
+        disabled={
+          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
+        }
+        width={'20%'}
+        onClick={handleClick}
+        icon={<SearchIcon />}
+      />
     </HStack>
   )
 }
