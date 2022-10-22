@@ -42,7 +42,7 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
   const protocol = new HistoryProtocol(node, 2n)
   t.equal(
     protocol.accumulator.currentHeight(),
-    500000,
+    15540223,
     'Master Accumulator initialized from storage'
   )
   const remoteEnr =
