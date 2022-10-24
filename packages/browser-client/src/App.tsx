@@ -50,8 +50,10 @@ export const App = () => {
 
   React.useEffect(() => {
     init()
-    state.provider?.portal.enableLog('*Portal*')
   }, [])
+  React.useEffect(() => {
+    state.provider?.portal.enableLog('*Portal:*')
+  }, [state.provider])
 
   return (
     <ChakraProvider theme={theme}>
