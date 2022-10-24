@@ -25,7 +25,7 @@ export type ReducerState = React.ReducerState<PeerReducer>
 
 export enum PeerStateChange {
   SETEPOCH = 'SETEPOCH',
-  ADDTOOFFER = 'ADDTOOFFER',
+  SETOFFER = 'SETOFFER',
   PING = 'PING',
   SETDISTANCE = 'SETDISTANCE',
   SETBLOCKHASH = 'SETBLOCKHASH',
@@ -37,10 +37,10 @@ export const peerReducer = (state: PeerState, action: PeerStateAction) => {
   switch (type) {
     case PeerStateChange.SETEPOCH:
       return state
-    case PeerStateChange.ADDTOOFFER:
+    case PeerStateChange.SETOFFER:
       return {
         ...state,
-        offer: [...state.offer, payload],
+        offer: payload,
       }
     case PeerStateChange.PING:
       return { ...state, ping: payload }

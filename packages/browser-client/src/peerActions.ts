@@ -2,10 +2,10 @@ import {
   ENR,
   fromHexString,
   getHistoryNetworkContentId,
+  getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
-  toHexString,
 } from 'portalnetwork'
 import { PeerContextType, PeerDispatch, PeerState, PeerStateChange } from './peerReducer'
 
@@ -21,8 +21,8 @@ export class PeerActions {
 
   addToOffer = (type: HistoryNetworkContentTypes): void => {
     this.dispatch({
-      type: PeerStateChange.ADDTOOFFER,
-      payload: getHistoryNetworkContentId(type, this.state.blockHash),
+      type: PeerStateChange.SETOFFER,
+      payload: [...this.state.offer, getHistoryNetworkContentId(type, this.state.blockHash)],
     })
   }
 
@@ -44,12 +44,12 @@ export class PeerActions {
     }, 500)
   }
 
-  handleFindNodes = (peer: ENR) => {
-    this.historyProtocol.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
+  handleFindNodes = async (peer: ENR) => {
+    return await this.historyProtocol.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
   }
 
   handleOffer = async (enr: string) => {
-    await this.historyProtocol.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
+    return await this.historyProtocol.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
   }
 
   sendFindContent = async (type: string, enr: string) => {
