@@ -64,22 +64,28 @@ export class PeerActions {
       const block = reassembleBlock(header!.value as Uint8Array, undefined)
       return block //
     } else if (type === 'body') {
-      const headerContentId = fromHexString(
-        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, this.state.blockHash)
-      )
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentId)
-      const bodyContentId = fromHexString(
-        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, this.state.blockHash)
-      )
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentId)
-    } else if (type === 'epoch') {
-      const epochContentId = fromHexString(
-        getHistoryNetworkContentId(
-          HistoryNetworkContentTypes.EpochAccumulator,
-          toHexString(this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch])
+      const headerContentKey = fromHexString(
+        getHistoryNetworkContentKey(
+          HistoryNetworkContentTypes.BlockHeader,
+          Buffer.from(fromHexString(this.state.blockHash))
         )
       )
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentId)
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
+      const bodyContentKey = fromHexString(
+        getHistoryNetworkContentKey(
+          HistoryNetworkContentTypes.BlockBody,
+          Buffer.from(fromHexString(this.state.blockHash))
+        )
+      )
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
+    } else if (type === 'epoch') {
+      const epochContentKey = fromHexString(
+        getHistoryNetworkContentKey(
+          HistoryNetworkContentTypes.EpochAccumulator,
+          Buffer.from(this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch])
+        )
+      )
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)
     }
   }
 }
