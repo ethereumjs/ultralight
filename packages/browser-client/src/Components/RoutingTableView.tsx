@@ -22,6 +22,13 @@ export default function RoutingTableView() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [_state, _dispatch] = useReducer(peerReducer, peerInitialState)
 
+  async function connectToPeer() {
+    try {
+      await state.provider?.historyProtocol.addBootNode(state.searchEnr)
+      dispatch({ type: StateChange.SETSEARCHENR, payload: '' })
+      dispatch({ type: StateChange.REFRESHPEERS })
+    } catch (err) {}
+  }
   return (
     <PeerContext.Provider value={{ peerState: _state, peerDispatch: _dispatch }}>
       <VStack spacing={0} height="100%" width={'100%'}>
@@ -94,7 +101,7 @@ export default function RoutingTableView() {
               bgColor={'blue.100'}
               size={'xs'}
               marginBottom={'2px'}
-              // onClick={connectToPeer}
+              onClick={connectToPeer}
             >
               Connect to new peer
             </Button>
