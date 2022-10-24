@@ -22,7 +22,6 @@ import {
   ExtendedEthersBlockWithTransactions,
   fromHexString,
   getHistoryNetworkContentKey,
-  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   toHexString,
   TxReceiptWithType,
@@ -206,7 +205,7 @@ const DisplayBlock = () => {
                 ? value === null
                   ? 'null'
                   : value && (value as any as BigNumber)._hex === 'string'
-                  ? (value as any as BigNumber)._hex
+                  ? value !== undefined && (value as any as BigNumber)._hex
                   : value === undefined
                   ? 'Undefineded for unknown reasons'
                   : typeof value
@@ -234,7 +233,7 @@ const DisplayBlock = () => {
           {Object.entries(header).map(([key, value], idx) => {
             const v =
               typeof value === 'object'
-                ? value._hex
+                ? value !== null && value._hex
                 : key === 'nonce'
                 ? BigInt(parseInt(value, 16))
                 : value
@@ -336,7 +335,7 @@ const DisplayBlock = () => {
               <TabPanel>
                 <VStack>
                   {validated || <GetHeaderProofByHash />}
-                  <BlockHeader />
+                  {state.block !== undefined && <BlockHeader />}
                 </VStack>
               </TabPanel>
               <TabPanel>

@@ -1,5 +1,5 @@
 import { SearchIcon } from '@chakra-ui/icons'
-import { Button, FormControl, HStack, IconButton, Input, useToast } from '@chakra-ui/react'
+import { FormControl, HStack, IconButton, Input, useToast } from '@chakra-ui/react'
 import React, { useContext, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 

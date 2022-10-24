@@ -1,10 +1,5 @@
 import { HStack, Button, useToast } from '@chakra-ui/react'
-import {
-  ContentLookup,
-  fromHexString,
-  HistoryNetworkContentKeyType,
-  SszProof,
-} from 'portalnetwork'
+import { ContentLookup, fromHexString, HistoryNetworkContentKeyType, SszProof } from 'portalnetwork'
 import React, { useContext } from 'react'
 import { AppContext, AppContextType } from '../globalReducer'
 
@@ -14,12 +9,7 @@ export default function GetHeaderProofByHash() {
   const toast = useToast()
 
   async function portal_getHeaderProof(blockHash: string) {
-    const lookupKey = HistoryNetworkContentKeyType.serialize({
-      selector: 5,
-      value: {
-        blockHash: fromHexString(blockHash),
-      },
-    })
+    const lookupKey = HistoryNetworkContentKeyType.serialize(fromHexString(blockHash))
     const lookup = new ContentLookup(state.provider!.historyProtocol!, lookupKey)
     const proof = await lookup.startLookup()
     const valid = await state.provider!.historyProtocol!.accumulator.verifyInclusionProof(
