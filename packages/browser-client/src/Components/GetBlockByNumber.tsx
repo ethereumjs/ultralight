@@ -42,9 +42,11 @@ export default function GetBlockByNumber() {
   }
 
   return (
-    <HStack width={'50%'} marginY={1}>
+    <HStack width={'50%'} paddingY={0}>
       <FormControl isInvalid={parseInt(searchNumber) < 0}>
         <Input
+          rounded="md"
+          size={'xs'}
           bg="whiteAlpha.800"
           placeholder={`BlockNumber (Max: ${state
             .provider!.historyProtocol!.accumulator.masterAccumulator()
@@ -56,7 +58,7 @@ export default function GetBlockByNumber() {
       </FormControl>
       <IconButton
         aria-label="submit"
-        size="sm"
+        size="xs"
         disabled={
           state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
         }
