@@ -7,6 +7,7 @@ import {
   reassembleBlock,
   HistoryProtocol,
   BlockBodyContentType,
+  getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
 } from './index.js'
 import { ContentLookup } from '../index.js'
@@ -20,19 +21,19 @@ export class ETH {
     blockHash: string,
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
-    const headerContentKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
-        fromHexString(blockHash),
-      ])
+    const headerContentKey = fromHexString(
+      getHistoryNetworkContentKey(
+        HistoryNetworkContentTypes.BlockHeader,
+        Buffer.from(fromHexString(blockHash))
+      )
     )
 
     const bodyContentKey = includeTransactions
-      ? HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([
-            Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
-            fromHexString(blockHash),
-          ])
+      ? fromHexString(
+          getHistoryNetworkContentKey(
+            HistoryNetworkContentTypes.BlockBody,
+            Buffer.from(fromHexString(blockHash))
+          )
         )
       : undefined
     let header: any
@@ -98,16 +99,12 @@ export class ETH {
         this.protocol.logger('Error with epoch root lookup')
         return
       }
-      const lookupKey = HistoryNetworkContentKeyType.serialize(
-        HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([
-            Uint8Array.from([HistoryNetworkContentTypes.EpochAccumulator]),
-            epochRootHash,
-          ])
-        )
+      const lookupKey = getHistoryNetworkContentKey(
+        HistoryNetworkContentTypes.EpochAccumulator,
+        Buffer.from(epochRootHash)
       )
 
-      const lookup = new ContentLookup(this.protocol, lookupKey)
+      const lookup = new ContentLookup(this.protocol, fromHexString(lookupKey))
       const result = await lookup.startLookup()
       if (result === undefined || !(result instanceof Uint8Array)) {
         this.protocol.logger('eth_getBlockByNumber failed to retrieve historical epoch accumulator')
