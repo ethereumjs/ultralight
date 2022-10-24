@@ -8,12 +8,14 @@ import {
   HStack,
   Box,
   Center,
+  IconButton,
 } from '@chakra-ui/react'
 import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
 import ContentManager from './ContentManager'
 import ValidateAccumulator from './ValidateAccumulator'
 import { AppContext, AppContextType } from '../globalReducer'
+import { FaCopy, FaEye, FaShare } from 'react-icons/fa'
 
 export default function Header() {
   const { state } = useContext(AppContext as React.Context<AppContextType>)
@@ -45,37 +47,36 @@ export default function Header() {
   }
   return (
     <Center bg={'gray.200'}>
-      <HStack width={'90%'}>
-        {Capacitor.isNativePlatform() ? (
-          <Button width={`25%`} onClick={share}>
-            SHARE ENR
-          </Button>
-        ) : (
-          <Button width={'25%'} onClick={async () => handleCopy()}>
-            COPY ENR
-          </Button>
-        )}
-        <Button
-          width={'12.5%'}
-          onClick={() => {
-            toast({ title: enr })
-          }}
-        >
-          SHOW ENR
-        </Button>
+      <HStack width={'100%'}>
+        <VStack width={'25%'} padding={2}>
+          {Capacitor.isNativePlatform() ? (
+            <Button width="100%" rightIcon={<FaShare />} onClick={share}>
+              ENR
+            </Button>
+          ) : (
+            <Button width="100%" rightIcon={<FaCopy />} onClick={async () => handleCopy()}>
+              ENR
+            </Button>
+          )}
+          <IconButton
+            aria-label="show"
+            width="100%"
+            onClick={() => {
+              toast({ title: enr })
+            }}
+            icon={<FaEye />}
+          />
+        </VStack>
         <VStack width={'50%'}>
-          <Heading size={'2xl'} textAlign="start">
+          <Heading size={'2xl'} textAlign="center">
             Ultralight
           </Heading>
-          <Heading size={'l'} textAlign="start">
+          <Heading size={'l'} textAlign="center">
             Portal Network Explorer
           </Heading>
         </VStack>
-        <Box width={'12.5%'}>
+        <Box width={'25%'}>
           <ContentManager />
-        </Box>
-        <Box width={'12.5%'}>
-          <ValidateAccumulator />
         </Box>
       </HStack>
     </Center>

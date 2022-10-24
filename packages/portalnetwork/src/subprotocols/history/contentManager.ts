@@ -5,12 +5,11 @@ import {
   EpochAccumulator,
   EPOCH_SIZE,
   getHistoryNetworkContentId,
-  HeaderAccumulatorType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
   SszProof,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 import { shortId } from '../../index.js'
@@ -28,19 +27,17 @@ export class ContentManager {
 
   /**
    * Convenience method to add content for the History Network to the DB
-   * @param chainId - decimal number representing chain Id
    * @param contentType - content type of the data item being stored
    * @param hashKey - hex string representation of blockHash or epochHash
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
   public addContentToHistory = async (
-    chainId: number,
     contentType: HistoryNetworkContentTypes,
     hashKey: string,
     value: Uint8Array
   ) => {
-    const contentId = getHistoryNetworkContentId(chainId, contentType, hashKey)
+    const contentId = getHistoryNetworkContentId(contentType, hashKey)
 
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
@@ -78,24 +75,15 @@ export class ContentManager {
                 EpochAccumulator.hashTreeRoot(this.history.accumulator.currentEpoch())
               )
               this.addContentToHistory(
-                chainId,
                 HistoryNetworkContentTypes.EpochAccumulator,
                 currentEpochHash,
                 currentEpoch
               )
             }
-            // Update the header accumulator if the block header is the next in the chain
-            this.history.accumulator.updateAccumulator(header)
             this.logger(
               `Updated header accumulator at slot ${
                 this.history.accumulator.currentEpoch().length
               }/${EPOCH_SIZE} of current Epoch`
-            )
-            this.history.client.db.put(
-              getHistoryNetworkContentId(1, HistoryNetworkContentTypes.HeaderAccumulator),
-              toHexString(
-                HeaderAccumulatorType.serialize(this.history.accumulator.masterAccumulator())
-              )
             )
           }
           this.history.client.db.put(contentId, toHexString(value))
@@ -110,7 +98,6 @@ export class ContentManager {
         let block: Block
         try {
           const headerContentId = getHistoryNetworkContentId(
-            1,
             HistoryNetworkContentTypes.BlockHeader,
             hashKey
           )
@@ -142,18 +129,15 @@ export class ContentManager {
       }
       case HistoryNetworkContentTypes.Receipt:
         this.history.client.db.put(
-          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.Receipt, hashKey),
+          getHistoryNetworkContentId(HistoryNetworkContentTypes.Receipt, hashKey),
           toHexString(value)
         )
         break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.history.client.db.put(
-          getHistoryNetworkContentId(1, HistoryNetworkContentTypes.EpochAccumulator, hashKey),
+          getHistoryNetworkContentId(HistoryNetworkContentTypes.EpochAccumulator, hashKey),
           toHexString(value)
         )
-        break
-      case HistoryNetworkContentTypes.HeaderAccumulator:
-        await this.history.accumulator.receiveSnapshot(value)
         break
       case HistoryNetworkContentTypes.HeaderProof: {
         try {
@@ -180,10 +164,7 @@ export class ContentManager {
         } for ${hashKey} to content db`
       )
     }
-    if (
-      contentType !== HistoryNetworkContentTypes.HeaderAccumulator &&
-      this.history.routingTable.values().length > 0
-    ) {
+    if (this.history.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
       this.history.gossipManager.add(hashKey, contentType)
     }
@@ -193,7 +174,7 @@ export class ContentManager {
     const lookup = new ContentLookup(this.history, key)
     try {
       const content = await lookup.startLookup()
-      this.addContentToHistory(1, type, hash, content as Uint8Array)
+      this.addContentToHistory(type, hash, content as Uint8Array)
     } catch {}
   }
 
@@ -202,21 +183,20 @@ export class ContentManager {
       return record.blockHash
     })
     for (const hash in _epoch) {
-      const headerKey = getHistoryNetworkContentId(1, 0, hash)
-      const bodyKey = getHistoryNetworkContentId(1, 1, hash)
+      const headerKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, hash)
+      const bodyKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, hash)
       const headerDistance = distance(this.history.client.discv5.enr.nodeId, headerKey)
       const bodyDistance = distance(this.history.client.discv5.enr.nodeId, bodyKey)
       if (headerDistance <= this.radius) {
         try {
           this.history.client.db.get(headerKey)
         } catch {
-          const key = HistoryNetworkContentKeyUnionType.serialize({
-            selector: 0,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(hash),
-            },
-          })
+          const key = HistoryNetworkContentKeyType.serialize(
+            Buffer.concat([
+              Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+              fromHexString(hash),
+            ])
+          )
           this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockHeader)
         }
       }
@@ -224,13 +204,12 @@ export class ContentManager {
         try {
           this.history.client.db.get(bodyKey)
         } catch {
-          const key = HistoryNetworkContentKeyUnionType.serialize({
-            selector: 1,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(hash),
-            },
-          })
+          const key = HistoryNetworkContentKeyType.serialize(
+            Buffer.concat([
+              Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
+              fromHexString(hash),
+            ])
+          )
           this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockBody)
         }
       }

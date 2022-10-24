@@ -105,20 +105,10 @@ export default function PeerButtons() {
                 {peerState.ping[1]}
               </Button>
             </HStack>
-            <Button
-              width="100%"
-              onClick={() => peerActions.handleRequestSnapshot(state!.selectedPeer)}
-            >
-              Request Accumulator Snapshot
-            </Button>
             <Divider />
             <HStack width={'100%'}>
-              <Button
-                isDisabled={state.provider.historyProtocol.accumulator.historicalEpochs.length < 1}
-                width="70%"
-                onClick={() => sendFindContent('epoch')}
-              >
-                Request Epoch Accumulator by Epoch
+              <Button width="70%" onClick={() => sendFindContent('epoch')}>
+                Request Epoch Accumulator by index
               </Button>
               <Input
                 type={'number'}
@@ -136,11 +126,7 @@ export default function PeerButtons() {
             </HStack>
             <Divider />
             <HStack width={'100%'}>
-              <Button
-                isDisabled={state.provider.historyProtocol.accumulator.historicalEpochs.length < 1}
-                width="70%"
-                onClick={() => sendFindContent('epoch')}
-              >
+              <Button width="70%" onClick={() => sendFindContent('epoch')}>
                 Request Epoch Accumulator by BlockNumber
               </Button>
               <Input

@@ -1,10 +1,11 @@
 import {
   ENR,
   fromHexString,
-  HistoryNetworkContentKeyUnionType,
+  getHistoryNetworkContentId,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
+  toHexString,
 } from 'portalnetwork'
 import { PeerContextType, PeerDispatch, PeerState, PeerStateChange } from './peerReducer'
 
@@ -21,13 +22,7 @@ export class PeerActions {
   addToOffer = (type: HistoryNetworkContentTypes): void => {
     this.dispatch({
       type: PeerStateChange.ADDTOOFFER,
-      payload: HistoryNetworkContentKeyUnionType.serialize({
-        selector: type,
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(this.state.blockHash),
-        },
-      }),
+      payload: getHistoryNetworkContentId(type, this.state.blockHash),
     })
   }
 
@@ -53,58 +48,38 @@ export class PeerActions {
     this.historyProtocol.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
   }
 
-  handleRequestSnapshot = (enr: string) => {
-    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 4,
-      value: { selector: 0, value: null },
-    })
-    this.historyProtocol.sendFindContent(ENR.decodeTxt(enr).nodeId, accumulatorKey)
-  }
-
   handleOffer = async (enr: string) => {
     await this.historyProtocol.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
   }
 
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
-      const headerKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 0,
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(this.state.blockHash),
-        },
-      })
+      const headerContentId = fromHexString(
+        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, this.state.blockHash)
+      )
       const header = await this.historyProtocol.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
-        headerKey
+        headerContentId
       )
       const block = reassembleBlock(header!.value as Uint8Array, undefined)
       return block //
     } else if (type === 'body') {
-      const headerKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 0,
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(this.state.blockHash),
-        },
-      })
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerKey)
-      const bodyKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 1,
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(this.state.blockHash),
-        },
-      })
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyKey)
+      const headerContentId = fromHexString(
+        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, this.state.blockHash)
+      )
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentId)
+      const bodyContentId = fromHexString(
+        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, this.state.blockHash)
+      )
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentId)
     } else if (type === 'epoch') {
-      const _epochKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: 3,
-        value: {
-          chainId: 1,
-          blockHash: this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch],
-        },
-      })
+      const epochContentId = fromHexString(
+        getHistoryNetworkContentId(
+          HistoryNetworkContentTypes.EpochAccumulator,
+          toHexString(this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch])
+        )
+      )
+      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentId)
     }
   }
 }

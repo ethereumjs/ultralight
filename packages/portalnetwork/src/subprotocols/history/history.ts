@@ -1,29 +1,32 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
+import { logger } from 'ethers'
 import {
   AccumulatorManager,
   connectionIdType,
-  ContentMessageType,
-  FindContentMessage,
-  MessageCodes,
-  PortalWireMessageType,
-  shortId,
-  PortalNetwork,
-  RequestCode,
-  ProtocolId,
-  PortalNetworkMetrics,
-  HistoryNetworkContentTypes,
-  HistoryNetworkContentKeyUnionType,
-  HistoryNetworkContentKey,
-  EpochAccumulator,
-  HeaderProofInterface,
-  ReceiptsManager,
+  ContentLookup,
   ContentManager,
+  ContentMessageType,
+  EpochAccumulator,
   ETH,
-  GossipManager,
+  FindContentMessage,
   getHistoryNetworkContentId,
-  SszProof,
+  getHistoryNetworkContentKey,
+  GossipManager,
+  HeaderProofInterface,
+  HistoryNetworkContentKey,
+  HistoryNetworkContentKeyType,
+  HistoryNetworkContentTypes,
+  MessageCodes,
+  PortalNetwork,
+  PortalNetworkMetrics,
+  PortalWireMessageType,
+  ProtocolId,
+  ReceiptsManager,
+  RequestCode,
   serializedContentKeyToContentId,
+  shortId,
+  SszProof,
 } from '../../index.js'
 
 import { BaseProtocol } from '../protocol.js'
@@ -40,11 +43,34 @@ export class HistoryProtocol extends BaseProtocol {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.logger = client.logger.extend('HistoryNetwork')
-    this.accumulator = new AccumulatorManager({ history: this, initFromGenesis: true })
+    this.accumulator = new AccumulatorManager({ history: this })
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
     this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
+  }
+
+  public getEpochByIndex = async (
+    index: number
+  ): Promise<Uint8Array | Uint8Array[] | undefined> => {
+    const log = this.logger.extend('portal_getEpoch')
+    log(`Searching for epoch: ${index}`)
+    const epochHash = toHexString(this.accumulator.historicalEpochs()[index])
+    log(`Searching for epoch with root: ${epochHash}`)
+    const contentKey = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.EpochAccumulator,
+      Buffer.from(fromHexString(epochHash))
+    )
+    log(`Searching for epoch with contentKey: ${contentKey}`)
+    const contentId = getHistoryNetworkContentId(
+      HistoryNetworkContentTypes.EpochAccumulator,
+      epochHash
+    )
+    log(`Searching for epoch with contentId: ${contentId}`)
+    const lookup = new ContentLookup(this, fromHexString(contentKey))
+    const epoch = await lookup.startLookup()
+    log(`Epoch search returned: ${epoch}`)
+    return epoch
   }
 
   /**
@@ -55,16 +81,12 @@ export class HistoryProtocol extends BaseProtocol {
   public findContentLocally = async (decodedContentMessage: FindContentMessage) => {
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     let value = Uint8Array.from([])
-    const contentKey = HistoryNetworkContentKeyUnionType.deserialize(
-      decodedContentMessage.contentKey
-    )
-    if (contentKey.selector === HistoryNetworkContentTypes.HeaderProof) {
+    const contentKey = HistoryNetworkContentKeyType.deserialize(decodedContentMessage.contentKey)
+    if (contentKey[0] === HistoryNetworkContentTypes.HeaderProof) {
       try {
         // Create Header Proof
-        this.logger(`Creating proof for ${toHexString((contentKey.value as any).blockHash)}`)
-        const proof = await this.generateInclusionProof(
-          toHexString((contentKey.value as any).blockHash)
-        )
+        this.logger(`Creating proof for ${toHexString(contentKey.subarray(1))}`)
+        const proof = await this.generateInclusionProof(toHexString(contentKey.subarray(1)))
         // this.logger(proof)
         value = SszProof.serialize({
           leaf: proof.leaf,
@@ -82,13 +104,13 @@ export class HistoryProtocol extends BaseProtocol {
     return value
   }
   public init = async () => {
-    this.client.uTP.on('Stream', async (chainId, selector, blockHash, content) => {
+    this.client.uTP.on('Stream', async (selector, blockHash, content) => {
       if (selector === HistoryNetworkContentTypes.EpochAccumulator) {
         blockHash = toHexString(
           EpochAccumulator.hashTreeRoot(EpochAccumulator.deserialize(content))
         )
       }
-      await this.addContentToHistory(chainId, selector, blockHash, content)
+      await this.addContentToHistory(selector, blockHash, content)
     })
   }
 
@@ -124,7 +146,7 @@ export class HistoryProtocol extends BaseProtocol {
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         // TODO: Switch this to use PortalWireMessageType.deserialize if type inference can be worked out
         const decoded = ContentMessageType.deserialize(res.subarray(1))
-        const decodedKey = HistoryNetworkContentKeyUnionType.deserialize(key)
+        const decodedKey = HistoryNetworkContentKeyType.deserialize(key)
         switch (decoded.selector) {
           case 0: {
             const id = connectionIdType.deserialize(decoded.value as Uint8Array)
@@ -141,19 +163,20 @@ export class HistoryProtocol extends BaseProtocol {
           case 1:
             {
               // Store content in local DB
-              switch (decodedKey.selector) {
+              switch (decodedKey[0]) {
                 case HistoryNetworkContentTypes.BlockHeader:
                 case HistoryNetworkContentTypes.BlockBody:
                 case HistoryNetworkContentTypes.Receipt:
                 case HistoryNetworkContentTypes.EpochAccumulator:
                 case HistoryNetworkContentTypes.HeaderProof:
                   {
-                    const content = decodedKey.value as HistoryNetworkContentKey
+                    const content = {
+                      blockHash: decodedKey.subarray(1),
+                    } as HistoryNetworkContentKey
                     this.logger(`received content corresponding to ${content!.blockHash}`)
                     try {
                       this.addContentToHistory(
-                        content.chainId,
-                        decodedKey.selector,
+                        decodedKey[0],
                         toHexString(Buffer.from(content.blockHash!)),
                         decoded.value as Uint8Array
                       )
@@ -162,15 +185,6 @@ export class HistoryProtocol extends BaseProtocol {
                     }
                   }
                   break
-                case HistoryNetworkContentTypes.HeaderAccumulator: {
-                  this.addContentToHistory(
-                    1,
-                    decodedKey.selector,
-                    getHistoryNetworkContentId(1, 4),
-                    decoded.value as Uint8Array
-                  )
-                  break
-                }
               }
             }
             break
@@ -188,19 +202,17 @@ export class HistoryProtocol extends BaseProtocol {
 
   /**
    * Convenience method to add content for the History Network to the DB
-   * @param chainId - decimal number representing chain Id
    * @param contentType - content type of the data item being stored
    * @param hashKey - hex string representation of blockHash or epochHash
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
   public addContentToHistory = async (
-    chainId: number,
     contentType: HistoryNetworkContentTypes,
     hashKey: string,
     value: Uint8Array
   ): Promise<void> => {
-    this.contentManager.addContentToHistory(chainId, contentType, hashKey, value)
+    this.contentManager.addContentToHistory(contentType, hashKey, value)
   }
 
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {

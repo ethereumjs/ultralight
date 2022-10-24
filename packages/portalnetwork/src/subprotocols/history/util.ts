@@ -1,6 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { HistoryNetworkContentKeyUnionType } from './index.js'
 import {
   BlockBodyContent,
   BlockBodyContentType,
@@ -20,55 +19,49 @@ import { HistoryProtocol } from './history.js'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
- * @param contentKey an object containing the `chainId` and `blockHash` used to generate the content Key
- * @param contentType a number identifying the type of content (block header, block body, receipt, epochAccumulator, headerAccumulator)
+ * @param contentKey an object containing the and `blockHash` used to generate the content Key
+ * @param contentType a number identifying the type of content (block header, block body, receipt, epochAccumulator)
  * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getHistoryNetworkContentId = (
-  chainId: number,
+export const getHistoryNetworkContentKey = (
   contentType: HistoryNetworkContentTypes,
-  hash?: string
-) => {
+  hash: Buffer
+): string => {
   let encodedKey
+  const prefix = Buffer.alloc(1, contentType)
   switch (contentType) {
     case HistoryNetworkContentTypes.BlockHeader:
     case HistoryNetworkContentTypes.BlockBody:
     case HistoryNetworkContentTypes.Receipt:
-    case HistoryNetworkContentTypes.HeaderProof: {
-      if (!hash) throw new Error('block hash is required to generate contentId')
-      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: {
-          chainId: chainId,
-          blockHash: fromHexString(hash),
-        },
-      })
-      break
-    }
-    case HistoryNetworkContentTypes.HeaderAccumulator: {
-      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: { selector: 0, value: null },
-      })
-      break
-    }
+    case HistoryNetworkContentTypes.HeaderProof:
     case HistoryNetworkContentTypes.EpochAccumulator: {
-      if (!hash) throw new Error('accumulator root hash is required to generate contentId')
-      encodedKey = HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentType,
-        value: {
-          chainId: chainId,
-          blockHash: fromHexString(hash),
-        },
-      })
+      if (!hash) throw new Error('block hash is required to generate contentId')
+      encodedKey = toHexString(prefix) + hash.toString('hex')
       break
     }
     default:
       throw new Error('unsupported content type')
   }
+  return encodedKey
+}
+export const getHistoryNetworkContentId = (
+  contentType: HistoryNetworkContentTypes,
+  hash: string
+) => {
+  const encodedKey = fromHexString(
+    getHistoryNetworkContentKey(contentType, Buffer.from(fromHexString(hash)))
+  )
 
   return toHexString(digest(encodedKey))
+}
+export const decodeHistoryNetworkContentKey = (contentKey: string) => {
+  const contentType = parseInt(contentKey.slice(0, 4))
+  const blockHash = '0x' + contentKey.slice(4)
+  return {
+    contentType,
+    blockHash,
+  }
 }
 
 export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
@@ -129,13 +122,11 @@ export const addRLPSerializedBlock = async (
 ) => {
   const decodedBlock = rlp.decode(fromHexString(rlpHex))
   await protocol.addContentToHistory(
-    1,
     HistoryNetworkContentTypes.BlockHeader,
     blockHash,
     rlp.encode((decodedBlock as Buffer[])[0])
   )
   await protocol.addContentToHistory(
-    1,
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
     sszEncodeBlockBody(

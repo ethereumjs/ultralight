@@ -3,9 +3,7 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
-  NoneType,
   UintBigintType,
-  UintNumberType,
   UnionType,
 } from '@chainsafe/ssz'
 
@@ -24,17 +22,14 @@ export const MAX_ENCODED_UNCLES_LENGTH = MAX_HEADER_LENGTH * 2 ** 4
 
 /* ----------------- Types ----------- */
 /**
- * @property chainId - integer representing the chain ID (e.g. Ethereum Mainnet is 1)
  * @property blockHash - byte representation of the hex encoded block hash
  *
  */
 export type HistoryNetworkContentKey = {
-  chainId: number
   blockHash: Uint8Array
 }
 
 export const BlockHeaderType = new ContainerType({
-  chainId: new UintNumberType(2),
   blockHash: new ByteVectorType(32),
 })
 
@@ -49,8 +44,7 @@ export enum HistoryNetworkContentTypes {
   BlockBody = 1,
   Receipt = 2,
   EpochAccumulator = 3,
-  HeaderAccumulator = 4,
-  HeaderProof = 5,
+  HeaderProof = 4,
 }
 
 export const HashRoot = new ByteVectorType(32)
@@ -86,16 +80,7 @@ export type HeaderProofInterface = {
   witnesses: Uint8Array[]
 }
 
-export const MasterAccumulatorType = new UnionType([new NoneType(), new ByteVectorType(32)])
-
-export const HistoryNetworkContentKeyUnionType = new UnionType([
-  BlockHeaderType,
-  BlockBodyType,
-  ReceiptType,
-  new ByteVectorType(32),
-  MasterAccumulatorType,
-  ProofType,
-])
+export const HistoryNetworkContentKeyType = new ByteVectorType(33)
 
 export const sszTransaction = new ByteListType(MAX_TRANSACTION_LENGTH)
 export const allTransactions = new ListCompositeType(sszTransaction, MAX_TRANSACTION_COUNT)

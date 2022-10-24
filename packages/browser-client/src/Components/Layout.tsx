@@ -16,6 +16,8 @@ import GetBlockByNumber from './GetBlockByNumber'
 import RoutingTableView from './RoutingTableView'
 import DisplayBlock from './DisplayBlock'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
+import GetEpoch from './GetEpoch'
+import GetByButtons from './GetByButton'
 
 export default function Layout() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
@@ -34,15 +36,9 @@ export default function Layout() {
   return (
     <VStack width={'100%'} spacing={4} divider={<StackDivider borderColor={'gray.200'} />}>
       <Box width={'95%'}>
-        <GetBlockByHash />
-        <GetBlockByNumber />
+        <GetByButtons />
         <Tabs index={state.tabIndex} onChange={handleTabsChange}>
-          <TabList>
-            <IconButton
-              onClick={() => dispatch({ type: StateChange.REFRESHPEERS })}
-              aria-label="refresh routing table"
-              icon={<RepeatIcon />}
-            />
+          <TabList width="100%" justifyContent={'space-around'}>
             <Tab>{`Network`} </Tab>
             <Tab>Block Explorer</Tab>
           </TabList>

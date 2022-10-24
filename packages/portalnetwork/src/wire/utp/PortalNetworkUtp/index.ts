@@ -4,7 +4,7 @@ import { ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '../i
 import { ProtocolId } from '../../../index.js'
 import {
   HistoryNetworkContentKey,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
 } from '../../../subprotocols/history/index.js'
 import { sendFinPacket } from '../Packets/PacketSenders.js'
@@ -384,8 +384,8 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     const keys = request.contentKeys
     const streamer = async (content: Uint8Array) => {
-      let contentKey = HistoryNetworkContentKeyUnionType.deserialize(keys[0])
-      let decodedContentKey = contentKey.value as HistoryNetworkContentKey
+      let contentKey = HistoryNetworkContentKeyType.deserialize(keys[0])
+      let decodedContentKey = { blockHash: contentKey.subarray(1) } as HistoryNetworkContentKey
       let contents: Uint8Array[]
       if (keys.length > 1) {
         this.logger(`Decompressing stream into ${keys.length} pieces of content`)
@@ -397,21 +397,20 @@ export class PortalNetworkUTP extends BasicUtp {
         throw new Error('Missing content keys')
       }
       keys.forEach((k, idx) => {
-        contentKey = HistoryNetworkContentKeyUnionType.deserialize(k)
-        decodedContentKey = contentKey.value as HistoryNetworkContentKey
+        contentKey = HistoryNetworkContentKeyType.deserialize(k)
+        decodedContentKey = { blockHash: contentKey.subarray(1) } as HistoryNetworkContentKey
         const _content = contents[idx]
         this.logger.extend(`FINISHED`)(
           `${idx + 1}/${keys.length} -- sending ${
-            HistoryNetworkContentTypes[contentKey.selector]
+            HistoryNetworkContentTypes[contentKey[0]]
           } to database`
         )
         // Hack -- decodedContentKey.blockHash is undefined for
         // EpochAccumulator requests...
         this.emit(
           'Stream',
-          1,
-          contentKey.selector,
-          contentKey.selector > 2
+          contentKey[0],
+          contentKey[0] > 2
             ? toHexString(Uint8Array.from([]))
             : toHexString(decodedContentKey.blockHash),
           _content

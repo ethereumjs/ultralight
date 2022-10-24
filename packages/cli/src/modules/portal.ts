@@ -6,7 +6,7 @@ import {
   HistoryNetworkContentTypes,
   fromHexString,
   shortId,
-  HistoryNetworkContentKeyUnionType,
+  HistoryNetworkContentKeyType,
   toHexString,
   HeaderAccumulatorType,
   HistoryProtocol,
@@ -45,9 +45,6 @@ export class portal {
     this.history_findContent = middleware(this.history_findContent.bind(this), 2, [
       [validators.enr],
       [validators.hex],
-    ])
-    this.history_getSnapshot = middleware(this.history_getSnapshot.bind(this), 1, [
-      [validators.enr],
     ])
     this.history_offer = middleware(this.history_offer.bind(this), 2, [
       [validators.dstId],
@@ -93,7 +90,6 @@ export class portal {
     try {
       const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       protocol.addContentToHistory(
-        1,
         HistoryNetworkContentTypes.BlockHeader,
         blockHash,
         fromHexString(rlpHex)
@@ -153,20 +149,6 @@ export class portal {
     const res = await protocol.sendFindContent(enr, contentKey)
     return res
   }
-  async history_getSnapshot(params: [string]) {
-    const [enr] = params
-    const nodeId = ENR.decodeTxt(enr).nodeId
-    const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    if (!protocol) {
-      return `History Protocol not supported`
-    }
-    const accumulatorKey = HistoryNetworkContentKeyUnionType.serialize({
-      selector: 4,
-      value: { selector: 0, value: null },
-    })
-    await protocol.sendFindContent(nodeId, accumulatorKey)
-    return `Received Accumulator Snapshot`
-  }
   async history_offer(params: [string, string[], number[]]) {
     const [dstId, blockHashes, contentTypes] = params
     contentTypes.forEach((contentType) => {
@@ -179,13 +161,9 @@ export class portal {
       }
     })
     const contentKeys = blockHashes.map((blockHash, idx) => {
-      return HistoryNetworkContentKeyUnionType.serialize({
-        selector: contentTypes[idx],
-        value: {
-          chainId: 1,
-          blockHash: fromHexString(blockHash),
-        },
-      })
+      return HistoryNetworkContentKeyType.serialize(
+        Buffer.concat([Uint8Array.from([contentTypes[idx]]), fromHexString(blockHash)])
+      )
     })
     const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     const res = await protocol.sendOffer(dstId, contentKeys)

@@ -19,8 +19,10 @@ import {
 import { BigNumber } from 'ethers'
 import { _Block } from '@ethersproject/abstract-provider'
 import {
+  ExtendedEthersBlockWithTransactions,
   fromHexString,
-  HistoryNetworkContentKeyUnionType,
+  getHistoryNetworkContentKey,
+  HistoryNetworkContentTypes,
   toHexString,
   TxReceiptWithType,
 } from 'portalnetwork'
@@ -33,7 +35,6 @@ const DisplayBlock = () => {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [validated, setValidated] = useState(false)
   const [_receipts, setReceipts] = useState<TxReceiptWithType[]>([])
-  const [contentKeys, setContentKeys] = useState({ header: '', body: '' })
   const [hovered, setHovered] = useState<string | null>(null)
 
   useEffect(() => {
@@ -204,7 +205,7 @@ const DisplayBlock = () => {
                 ? value === null
                   ? 'null'
                   : value && (value as any as BigNumber)._hex === 'string'
-                  ? (value as any as BigNumber)._hex
+                  ? value !== undefined && (value as any as BigNumber)._hex
                   : value === undefined
                   ? 'Undefineded for unknown reasons'
                   : typeof value
@@ -232,7 +233,7 @@ const DisplayBlock = () => {
           {Object.entries(header).map(([key, value], idx) => {
             const v =
               typeof value === 'object'
-                ? value._hex
+                ? value !== null && value._hex
                 : key === 'nonce'
                 ? BigInt(parseInt(value, 16))
                 : value
@@ -244,34 +245,32 @@ const DisplayBlock = () => {
   }
   async function init() {
     try {
-      setContentKeys({
-        header: toHexString(
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 0,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(state.block!.hash),
-            },
-          })
-        ),
-        body: toHexString(
-          HistoryNetworkContentKeyUnionType.serialize({
-            selector: 1,
-            value: {
-              chainId: 1,
-              blockHash: fromHexString(state.block!.hash),
-            },
-          })
-        ),
-      })
-    } catch {}
+      const receipts = await state.provider!.historyProtocol.receiptManager.getReceipts(
+        state.block!.hash
+      )
+      if (receipts) {
+        setReceipts(receipts)
+      }
+    } catch (err) {
+      console.log('Receipts Error: ', (err as any).message)
+    }
   }
 
   useEffect(() => {
-    if (state.block) {
+    if (state!.block!.transactions.length > 0) {
       init()
     }
-  }, [state.block])
+  }, [state!.block])
+
+  const headerlookupKey = getHistoryNetworkContentKey(
+    HistoryNetworkContentTypes.BlockHeader,
+    Buffer.from(fromHexString(state!.block!.hash))
+  )
+
+  const bodylookupKey = getHistoryNetworkContentKey(
+    HistoryNetworkContentTypes.BlockBody,
+    Buffer.from(fromHexString(state!.block!.hash))
+  )
 
   return (
     <Box>
@@ -294,13 +293,13 @@ const DisplayBlock = () => {
               <CopyIcon
                 marginEnd={2}
                 cursor="pointer"
-                onClick={() => navigator.clipboard.writeText(contentKeys.header)}
+                onClick={() => navigator.clipboard.writeText(headerlookupKey)}
               />
             </GridItem>
             <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
               <Skeleton isLoaded={!state.isLoading}>
                 <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
-                  {contentKeys.header}
+                  {headerlookupKey}
                 </Text>
               </Skeleton>
             </GridItem>
@@ -313,13 +312,13 @@ const DisplayBlock = () => {
               <CopyIcon
                 marginEnd={2}
                 cursor="pointer"
-                onClick={() => navigator.clipboard.writeText(contentKeys.body)}
+                onClick={() => navigator.clipboard.writeText(bodylookupKey)}
               />
             </GridItem>
             <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
               <Skeleton isLoaded={!state.isLoading}>
                 <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
-                  {contentKeys.body}
+                  {bodylookupKey}
                 </Text>
               </Skeleton>
             </GridItem>
@@ -336,13 +335,18 @@ const DisplayBlock = () => {
               <TabPanel>
                 <VStack>
                   {validated || <GetHeaderProofByHash />}
-                  <BlockHeader />
+                  {state.block !== undefined && <BlockHeader />}
                 </VStack>
               </TabPanel>
               <TabPanel>
-                {(state.block as any).transactions &&
-                (state.block as any).transactions.length > 0 ? (
-                  <SelectTx />
+                {state.block.transactions && state.block.transactions.length > 0 ? (
+                  <>
+                    {(state.block as ExtendedEthersBlockWithTransactions).transactions[0].hash ? (
+                      <SelectTx />
+                    ) : (
+                      <Heading>Missing Block Body</Heading>
+                    )}
+                  </>
                 ) : (
                   <Heading>This Block contains no transactions</Heading>
                 )}
