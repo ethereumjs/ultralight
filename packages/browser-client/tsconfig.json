@@ -24,7 +24,8 @@
   },
   "include": [
     "src",
-    "src/bootnodes.json"
+    "src/bootnodes.json",
+    "src/bigblock.json"
   ],
   "exclude": [
     "dist"
