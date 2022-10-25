@@ -1,7 +1,6 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import {
-  HistoryNetworkContentKeyType,
   EpochAccumulator,
   EPOCH_SIZE,
   reassembleBlock,
@@ -22,17 +21,14 @@ export class ETH {
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
     const headerContentKey = fromHexString(
-      getHistoryNetworkContentKey(
-        HistoryNetworkContentTypes.BlockHeader,
-        Buffer.from(fromHexString(blockHash))
-      )
+      getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, fromHexString(blockHash))
     )
 
     const bodyContentKey = includeTransactions
       ? fromHexString(
           getHistoryNetworkContentKey(
             HistoryNetworkContentTypes.BlockBody,
-            Buffer.from(fromHexString(blockHash))
+            fromHexString(blockHash)
           )
         )
       : undefined

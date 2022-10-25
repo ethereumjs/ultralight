@@ -26,7 +26,7 @@ import { HistoryProtocol } from './history.js'
  */
 export const getHistoryNetworkContentKey = (
   contentType: HistoryNetworkContentTypes,
-  hash: Buffer
+  hash: Uint8Array
 ): string => {
   let encodedKey
   const prefix = Buffer.alloc(1, contentType)
@@ -37,7 +37,7 @@ export const getHistoryNetworkContentKey = (
     case HistoryNetworkContentTypes.HeaderProof:
     case HistoryNetworkContentTypes.EpochAccumulator: {
       if (!hash) throw new Error('block hash is required to generate contentId')
-      encodedKey = toHexString(prefix) + hash.toString('hex')
+      encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
       break
     }
     default:
