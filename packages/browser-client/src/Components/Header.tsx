@@ -62,7 +62,7 @@ export default function Header() {
             aria-label="show"
             width="100%"
             onClick={() => {
-              toast({ title: enr })
+              toast({ title: enr, duration: 5000, isClosable: true })
             }}
             icon={<FaEye />}
           />

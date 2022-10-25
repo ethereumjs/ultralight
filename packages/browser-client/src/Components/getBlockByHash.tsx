@@ -37,6 +37,7 @@ export default function GetBlockByHash() {
     <HStack marginY={1}>
       <FormControl isInvalid={!blockHash.startsWith('0x')}>
         <Input
+          size="xs"
           bg="whiteAlpha.800"
           placeholder={`BlockHash`}
           type={'string'}
@@ -46,7 +47,7 @@ export default function GetBlockByHash() {
       </FormControl>
       <IconButton
         aria-label="submit"
-        size="sm"
+        size="xs"
         disabled={
           state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
         }

@@ -1,15 +1,6 @@
 import * as React from 'react'
 import { useReducerAsync } from 'use-reducer-async'
-import {
-  theme,
-  Button,
-  Box,
-  Center,
-  Divider,
-  ChakraProvider,
-  HStack,
-  Input,
-} from '@chakra-ui/react'
+import { theme, Box, Divider, ChakraProvider, VStack } from '@chakra-ui/react'
 import Layout from './Components/Layout'
 import Footer from './Components/Footer'
 import Header from './Components/Header'
@@ -50,24 +41,30 @@ export const App = () => {
 
   React.useEffect(() => {
     init()
-    state.provider?.portal.enableLog('*Portal*')
   }, [])
+  React.useEffect(() => {
+    state.provider?.portal.enableLog('*Portal:*')
+  }, [state.provider])
 
   return (
-    <ChakraProvider theme={theme}>
-      {state && state.provider && state.provider.historyProtocol && (
-        <AppContext.Provider value={{ state, dispatch }}>
-          <Header />
-          <Divider />
+    <VStack spacing={0} overflow="hidden" height="99vh" width="100%">
+      <ChakraProvider theme={theme}>
+        {state && state.provider && state.provider.historyProtocol && (
+          <AppContext.Provider value={{ state, dispatch }}>
+            <Box height="10%" width="100%">
+              <Header />
+            </Box>
 
-          <Box>{<Layout />}</Box>
-          <Box width={'100%'} pos={'fixed'} bottom={'0'} bg="whiteAlpha.200" opacity={1}>
-            <Center>
+            <Divider />
+            <Box width={'100%'} height="86%" bg="whiteAlpha.200" opacity={1}>
+              <Layout />
+            </Box>
+            <Box bg="gray.500" padding={0} width={'100%'} height="3%" opacity={1}>
               <Footer />
-            </Center>
-          </Box>
-        </AppContext.Provider>
-      )}
-    </ChakraProvider>
+            </Box>
+          </AppContext.Provider>
+        )}
+      </ChakraProvider>
+    </VStack>
   )
 }

@@ -22,7 +22,12 @@ export default function GetByButtons() {
   return (
     <HStack width="100%">
       <Menu>
-        <MenuButton width={['50%', '50%', '40%']} as={Button} rightIcon={<ChevronDownIcon />}>
+        <MenuButton
+          height="10%"
+          width={['50%', '50%', '40%']}
+          as={Button}
+          rightIcon={<ChevronDownIcon />}
+        >
           {GetBy[button]}
         </MenuButton>
         <MenuList>
