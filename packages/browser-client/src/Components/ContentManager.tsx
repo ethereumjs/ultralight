@@ -7,28 +7,22 @@ import { AppContext, AppContextType, StateChange } from '../globalReducer'
 export default function ContentManager() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
 
-  interface jsonblock {
-    blockHash: string
-    rlp: string
-    number?: number
-  }
-
   const handleUpload = async (evt: React.ChangeEvent<HTMLInputElement>) => {
     const files = evt.target.files
     const reader = new FileReader()
     if (files && files.length > 0) {
       reader.onload = async function () {
         if (reader.result) {
-          const blocks = JSON.parse(reader.result as string) as jsonblock[]
-          let last: jsonblock | undefined = blocks[0]
+          const blocks = Object.entries(JSON.parse(reader.result as string)) as any
+          let last = blocks[0]
           for (const block of blocks) {
-            await addRLPSerializedBlock(block.rlp, block.blockHash, state.provider!.historyProtocol)
+            await addRLPSerializedBlock(block[1].rlp, block[0], state.provider!.historyProtocol)
             last = block
           }
           dispatch({
             type: StateChange.SETBLOCK,
             payload: await ethJsBlockToEthersBlockWithTxs(
-              Block.fromRLPSerializedBlock(Buffer.from(fromHexString(last.rlp)), {
+              Block.fromRLPSerializedBlock(Buffer.from(fromHexString(last[1].rlp)), {
                 hardforkByBlockNumber: true,
               })
             ),

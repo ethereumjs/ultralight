@@ -55,7 +55,10 @@ export class PeerActions {
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerContentId = fromHexString(
-        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, this.state.blockHash)
+        getHistoryNetworkContentKey(
+          HistoryNetworkContentTypes.BlockHeader,
+          Buffer.from(fromHexString(this.state.blockHash))
+        )
       )
       const header = await this.historyProtocol.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
