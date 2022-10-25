@@ -1,29 +1,23 @@
 import {
+  Box,
+  HStack,
   Tab,
   TabList,
   TabPanel,
   TabPanels,
   Tabs,
-  VStack,
-  StackDivider,
-  Box,
-  IconButton,
   Text,
   useBreakpointValue,
-  HStack,
+  VStack,
 } from '@chakra-ui/react'
-import React, { useContext, useEffect } from 'react'
-import { RepeatIcon } from '@chakra-ui/icons'
-import GetBlockByHash from './getBlockByHash'
-import GetBlockByNumber from './GetBlockByNumber'
-import RoutingTableView from './RoutingTableView'
-import DisplayBlock from './DisplayBlock'
-import { AppContext, AppContextType, StateChange } from '../globalReducer'
-import GetEpoch from './GetEpoch'
-import GetByButtons from './GetByButton'
-import { ethJsBlockToEthersBlockWithTxs, fromHexString } from 'portalnetwork'
 import { Block } from '@ethereumjs/block'
+import { ethJsBlockToEthersBlockWithTxs, fromHexString } from 'portalnetwork'
+import React, { useContext, useEffect } from 'react'
 import bigblock from '../bigblock.json'
+import { AppContext, AppContextType, StateChange } from '../globalReducer'
+import DisplayBlock from './DisplayBlock'
+import GetByButtons from './GetByButton'
+import RoutingTableView from './RoutingTableView'
 export default function Layout() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   function handleTabsChange(index: number) {

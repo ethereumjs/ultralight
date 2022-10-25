@@ -1,6 +1,6 @@
 import { CopyIcon } from '@chakra-ui/icons'
-import { VStack, Heading, Table, Tbody, Tr, Td, Th, Tooltip, Text } from '@chakra-ui/react'
-import { shortId, ENR } from 'portalnetwork'
+import { Table, Tbody, Td, Th, Tooltip, Tr, VStack } from '@chakra-ui/react'
+import { ENR, shortId } from 'portalnetwork'
 import React, { useContext } from 'react'
 import { AppContext, AppContextType } from '../globalReducer'
 
