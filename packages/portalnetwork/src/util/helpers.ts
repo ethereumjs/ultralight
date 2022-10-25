@@ -265,7 +265,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
       nonce,
       baseFeePerGas,
     },
-    options
+    { ...options, hardforkByBlockNumber: true }
   )
 
   return blockHeader
@@ -286,7 +286,7 @@ export function blockFromRpc(
   const header = blockHeaderFromRpc(blockParams, options)
 
   const transactions: TypedTransaction[] = []
-  const opts = { common: header._common }
+  const opts = { common: header._common, hardforkByBlockNumber: true }
   for (const _txParams of blockParams.transactions ?? []) {
     const txParams = normalizeTxParams(_txParams)
     const tx = TransactionFactory.fromTxData(txParams as TxData, opts)
@@ -295,5 +295,8 @@ export function blockFromRpc(
 
   const uncleHeaders = uncles.map((uh) => blockHeaderFromRpc(uh, options))
 
-  return Block.fromBlockData({ header, transactions, uncleHeaders }, options)
+  return Block.fromBlockData(
+    { header, transactions, uncleHeaders },
+    { ...options, hardforkByBlockNumber: true }
+  )
 }
