@@ -60,7 +60,12 @@ export function PortalButton(props: IPortalButton) {
     state.provider!.historyProtocol
   )
   const [offer, setOffer] = useState<string[]>([])
-  const [blockHash, setBlockhash] = useState<string>('')
+  const [blockHash, setBlockhash] = useState<string>(
+    '0x2d33dc73755afbbbeb6ec4885f2923398901bf1ad94beb325a4c4ecad5bf0f1c'
+  )
+  useEffect(() => {
+    setInput(blockHash)
+  }, [])
 
   const addToOffer = async (type: HistoryNetworkContentTypes) => {
     const contentKey = getHistoryNetworkContentKey(type, Buffer.from(fromHexString(blockHash)))
@@ -78,12 +83,14 @@ export function PortalButton(props: IPortalButton) {
   }, [offer])
   const portal_doThing = {
     0: async () => {
+      peerDispatch({ type: PeerStateChange.SETBLOCKHASH, payload: blockHash })
       const block = await peerActions.sendFindContent('header', state.selectedPeer)
       if (block) {
         dispatch!({ type: StateChange.SETBLOCK, payload: block })
       }
     },
     1: async () => {
+      peerDispatch({ type: PeerStateChange.SETBLOCKHASH, payload: blockHash })
       const block = await peerActions.sendFindContent('body', state.selectedPeer)
       if (block) {
         dispatch!({ type: StateChange.SETBLOCK, payload: block })
@@ -114,6 +121,7 @@ export function PortalButton(props: IPortalButton) {
       }
     },
     4: async () => {
+      peerDispatch({ type: PeerStateChange.SETBLOCKHASH, payload: blockHash })
       const epoch = await peerActions.sendFindContent('epoch', state.selectedPeer)
       if (epoch) {
         toast({
@@ -185,9 +193,10 @@ export function PortalButton(props: IPortalButton) {
                 width={'100%'}
                 size={'sm'}
                 bg="whiteAlpha.800"
+                value={blockHash}
                 placeholder={placeholder[props.inputType]}
                 type={type[props.inputType]}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => setBlockhash(e.target.value)}
                 onKeyUp={(e) => e.key === 'Enter' && handleClick()}
               />
             </FormControl>

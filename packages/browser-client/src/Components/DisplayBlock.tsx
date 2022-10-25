@@ -33,6 +33,7 @@ import SelectTx from './SelectTx'
 
 const DisplayBlock = () => {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
+  const [keys, setKeys] = useState({ header: '', body: '' })
   const [validated, setValidated] = useState(false)
   const [_receipts, setReceipts] = useState<TxReceiptWithType[]>([])
   const [hovered, setHovered] = useState<string | null>(null)
@@ -67,95 +68,73 @@ const DisplayBlock = () => {
     }
     return (
       v && (
-        <GridItem
+        <Box
           onMouseEnter={() => setHovered(k)}
           onMouseLeave={() => setHovered(null)}
-          colSpan={10}
+          width="100%"
+          height={k === 'json' ? '30%' : k === 'logsBloom' ? '22%' : '4%'}
+          paddingY="0"
+          marginY={0}
+          textAlign={'start'}
+          bg={k === hovered ? 'yellow.300' : idx % 2 === 0 ? 'gray.100' : 'gray.200'}
         >
-          <Box bg={k === hovered ? 'yellow.300' : idx % 2 === 0 ? 'gray.100' : 'gray.200'}>
-            <Grid templateColumns={'repeat(10, 1fr)'}>
-              <>
-                <GridItem fontSize={'xs'} fontWeight="bold" colSpan={3}>
-                  {k}
-                </GridItem>
-                {k === 'parentHash' ? (
-                  <GridItem paddingBottom={0} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                    <Link color={'blue'} onClick={async () => await findParent()}>
-                      {v}
-                    </Link>
-                  </GridItem>
-                ) : typeof v === 'bigint' ? (
-                  <>
-                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      <Grid templateColumns={'repeat(6, 1fr)'}>
-                        <GridItem
-                          paddingBottom={3}
-                          fontSize={'xs'}
-                          wordBreak={'break-all'}
-                          colSpan={3}
-                        >
-                          {`${v.toString()}`}
-                        </GridItem>
-                        <GridItem colSpan={3}>{'0x' + v.toString(16)}</GridItem>
-                      </Grid>
-                    </GridItem>
-                  </>
-                ) : k === 'extraData' ? (
-                  <>
-                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      <Grid templateColumns={'repeat(6, 1fr)'}>
-                        <GridItem colSpan={3}>{Buffer.from(fromHexString(v)).toString()}</GridItem>
-                        <GridItem
-                          paddingBottom={3}
-                          fontSize={'xs'}
-                          wordBreak={'break-all'}
-                          colSpan={3}
-                        >
-                          {v}
-                        </GridItem>
-                      </Grid>
-                    </GridItem>
-                  </>
-                ) : k === 'gasUsed' ? (
-                  <>
-                    <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                      <Grid templateColumns={'repeat(6, 1fr)'}>
-                        <GridItem colSpan={3}>{v}</GridItem>
-                        <GridItem
-                          paddingBottom={3}
-                          fontSize={'xs'}
-                          wordBreak={'break-all'}
-                          colSpan={3}
-                        >
-                          {((100 * Number(v)) / Number(state.block!.gasLimit))
-                            .toString()
-                            .slice(0, 4)}
-                          %
-                        </GridItem>
-                      </Grid>
-                    </GridItem>
-                  </>
-                ) : k === 'json' ? (
-                  <GridItem paddingBottom={3} fontSize={'xs'} wordBreak={'break-all'} colSpan={6}>
-                    <Text height={['5%', '8%', '10%', '12%']} overflowY="scroll">
-                      {v}
-                    </Text>
-                  </GridItem>
-                ) : (
-                  <GridItem
-                    paddingBottom={3}
-                    fontSize={'xs'}
-                    wordBreak={'break-all'}
-                    colSpan={6}
-                    rowSpan={1}
-                  >
-                    <>{typeof v === 'string' ? v : typeof v === 'number' ? v : typeof v}</>
-                  </GridItem>
-                )}
-              </>
-            </Grid>
-          </Box>
-        </GridItem>
+          <HStack width="100%" marginY={0} paddingY={0} height="100%">
+            <Box height="100%" width="18%" marginY={0} fontSize={'x-small'} fontWeight="bold">
+              {k}
+            </Box>
+            <Box fontSize={'x-small'} width="82%" height="100%">
+              {k === 'parentHash' ? (
+                <Link fontSize={'x-small'} color={'blue'} onClick={async () => await findParent()}>
+                  {v}
+                </Link>
+              ) : k === 'logsBloom' ? (
+                <Text height="100%" overflowX="scroll">
+                  {v}
+                </Text>
+              ) : typeof v === 'bigint' ? (
+                <HStack width="100%">
+                  <Box paddingY={0} wordBreak={'break-all'} width="50%">
+                    {`${v.toString()}`}
+                  </Box>
+                  <Box paddingY={0}>{'0x' + v.toString(16)}</Box>
+                </HStack>
+              ) : k === 'extraData' ? (
+                <HStack width="100%">
+                  <Text paddingY={0} fontSize={'x-small'} width="50%">
+                    {Buffer.from(fromHexString(v)).toString()}
+                  </Text>
+                  <Text paddingY={0} fontSize={'x-small'}>
+                    {v}
+                  </Text>
+                </HStack>
+              ) : k === 'gasUsed' ? (
+                <HStack width="100%">
+                  <Box paddingY={0} fontSize={'x-small'} wordBreak={'break-all'} width="50%">
+                    {v}
+                  </Box>
+                  <Box marginY={0} paddingBottom={0} fontSize={'x-small'} wordBreak={'break-all'}>
+                    {((100 * Number(v)) / Number(state.block!.gasLimit)).toString().slice(0, 4)}%
+                  </Box>
+                </HStack>
+              ) : k === 'json' ? (
+                <Text
+                  paddingBottom={1}
+                  marginY={0}
+                  fontSize={'x-small'}
+                  wordBreak={'break-all'}
+                  height="90%"
+                  overflowY="scroll"
+                >
+                  {v}
+                </Text>
+              ) : (
+                <Text padding={0} margin={0} fontSize={'x-small'} wordBreak={'break-all'}>
+                  {typeof v === 'string' ? v : typeof v === 'number' ? v : typeof v}
+                </Text>
+              )}
+            </Box>
+          </HStack>
+        </Box>
       )
     )
   }
@@ -163,76 +142,70 @@ const DisplayBlock = () => {
     if ((state.block as any).header) {
       const header = (state.block as any).header
       return (
-        <Grid
-          height="100%"
-          templateRows={'repeat(30, 1fr)'}
-          padding={0}
-          width="100%"
-          templateColumns={'repeat(10, 1fr)'}
-        >
+        <VStack width="100%" height="100%" fontSize="x-small">
           {typeof (state.block as any).hash === 'function' && (
-            <>
-              <GridItem bg={'gray.100'} fontSize={'xs'} fontWeight="bold" colSpan={3}>
-                hash{' '}
-              </GridItem>
-              <GridItem bg={'gray.100'} colSpan={7} fontSize={'xs'}>
-                0x{(state.block as any).hash().toString('hex')}
-              </GridItem>
-            </>
+            <GridRow
+              key={'hash'}
+              k={'hash'}
+              v={`0x${(state.block as any).hash().toString('hex')}`}
+              idx={0}
+            />
           )}
-          {Object.entries(header).map(([key, value], idx) => {
-            const v =
-              key === 'parentHash'
-                ? Buffer.from(Uint8Array.from(value as number[]))
-                : key === 'difficulty'
-                ? (value as bigint)
-                : key === '_common'
-                ? 'common'
-                : key === 'extraData'
-                ? typeof value === 'string'
-                  ? value
-                  : toHexString(Uint8Array.from(value as number[]))
-                : key === 'gasUsed'
-                ? `${parseInt(header.gasUsed)} (${(
-                    (parseInt(header.gasUsed, 16) / parseInt(header.gasLimit as any, 16)) *
-                    100
-                  )
-                    .toString()
-                    .slice(0, 4)}%)`
-                : key === 'baseFeePerGas'
-                ? value === null
-                  ? 'null'
-                  : value && (value as any as BigNumber)._hex === 'string'
-                  ? value !== undefined && (value as any as BigNumber)._hex
-                  : value === undefined
-                  ? 'Undefineded for unknown reasons'
-                  : typeof value
-                : key === 'coinbase'
-                ? toHexString((value as any).buf as Buffer)
-                : typeof value === 'string'
-                ? value
-                : typeof value === 'object'
-                ? Object.values(value!)
-                : typeof value === 'bigint'
-                ? value
-                : typeof value
-            return key === 'cache' ? (
-              <Box key={key}></Box>
-            ) : (
-              <GridRow key={key} k={key} v={v} idx={idx} />
-            )
-          })}
-          <GridItem rowSpan={2}>
-            <Skeleton isLoaded={!state.isLoading}>
-              <Text wordBreak={'break-all'}>{JSON.stringify(state.block)}</Text>
-            </Skeleton>
-          </GridItem>
-        </Grid>
+          <Box width="100%" height="96%">
+            {Object.entries(header)
+              .filter(([_key, _value]) => _key !== '_common')
+              .map(([key, value], idx) => {
+                const v =
+                  key === 'difficulty'
+                    ? (value as bigint)
+                    : key === 'parentHash'
+                    ? toHexString(Uint8Array.from(Object.values(value as any)))
+                    : key === 'logsBloom'
+                    ? toHexString(Uint8Array.from(Object.values(value as any)))
+                    : key === '_common'
+                    ? 'common'
+                    : key === 'extraData'
+                    ? typeof value === 'string'
+                      ? value
+                      : toHexString(Uint8Array.from(value as number[]))
+                    : key === 'gasUsed'
+                    ? `${parseInt(header.gasUsed)} (${(
+                        (parseInt(header.gasUsed, 16) / parseInt(header.gasLimit as any, 16)) *
+                        100
+                      )
+                        .toString()
+                        .slice(0, 4)}%)`
+                    : key === 'baseFeePerGas'
+                    ? value === null
+                      ? 'null'
+                      : value && (value as any as BigNumber)._hex === 'string'
+                      ? value !== undefined && (value as any as BigNumber)._hex
+                      : value === undefined
+                      ? 'Undefineded for unknown reasons'
+                      : typeof value
+                    : key === 'coinbase'
+                    ? toHexString((value as any).buf as Buffer)
+                    : typeof value === 'string'
+                    ? value
+                    : typeof value === 'bigint'
+                    ? value
+                    : key === 'nonce'
+                    ? BigInt('0x' + (value as Buffer).toString('hex'))
+                    : '0x' + (value as any).toString('hex')
+                return key === 'cache' ? (
+                  <Box key={key}></Box>
+                ) : (
+                  <GridRow key={key} k={key} v={v} idx={idx} />
+                )
+              })}
+          </Box>
+          <GridRow idx={16} key={'json'} k={'json'} v={JSON.stringify(state.block)} />
+        </VStack>
       )
     } else {
       const header = state.block!
       return (
-        <Grid templateColumns={'repeat(10, 1fr)'}>
+        <VStack height="100%">
           {Object.entries(header).map(([key, value], idx) => {
             const v =
               typeof value === 'object'
@@ -243,7 +216,7 @@ const DisplayBlock = () => {
             return <GridRow key={key} k={key} v={v} idx={idx} />
           })}
           <GridRow idx={16} key={'json'} k={'json'} v={JSON.stringify(state.block)} />
-        </Grid>
+        </VStack>
       )
     }
   }
@@ -264,101 +237,113 @@ const DisplayBlock = () => {
     if (state!.block!.transactions.length > 0) {
       init()
     }
+    const hash =
+      typeof (state.block as any).hash === 'string'
+        ? (state.block as any).hash
+        : toHexString((state.block as any).hash())
+    const header = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.BlockHeader,
+      Buffer.from(fromHexString(hash))
+    )
+
+    const body = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.BlockBody,
+      Buffer.from(fromHexString(hash))
+    )
+    setKeys({
+      header,
+      body,
+    })
   }, [state!.block])
-
-  const headerlookupKey = getHistoryNetworkContentKey(
-    HistoryNetworkContentTypes.BlockHeader,
-    Buffer.from(fromHexString(state!.block!.hash))
-  )
-
-  const bodylookupKey = getHistoryNetworkContentKey(
-    HistoryNetworkContentTypes.BlockBody,
-    Buffer.from(fromHexString(state!.block!.hash))
-  )
 
   return (
     <Box width="100%" height="100%" bg="gray.300">
       {state.block && (
-        <>
-          <Heading bg="gray.200" paddingBottom={4} size="sm" textAlign={'center'}>
-            <HStack justifyContent={'center'}>
-              <span>Block #</span>
-              <Skeleton isLoaded={!state.isLoading}>{state.block.number}</Skeleton>
-              {validated && <CheckCircleIcon />}
-            </HStack>
-            {<Text>hash: 0x{(state.block as any).hash}</Text>}
-          </Heading>
-          <Grid templateColumns={'repeat(16, 1fr'} columnGap={1}>
-            <GridItem colSpan={4}>
-              <Text fontSize="xs" textAlign={'start'}>
+        <VStack height="100%" boxShadow={'outline'}>
+          <Box width="100%" height="5%">
+            <Text bg="gray.200" paddingBottom={2} fontSize="md" textAlign={'center'}>
+              <HStack justifyContent={'center'}>
+                <span>Block #</span>
+                <Skeleton isLoaded={!state.isLoading}>
+                  {state.block.number ?? (state.block as any).header.number.toString()}
+                </Skeleton>
+                {validated && <CheckCircleIcon />}
+              </HStack>
+              {
+                <Text fontSize={'x-small'}>
+                  hash:
+                  {typeof (state.block as any).hash === 'string'
+                    ? (state.block as any).hash
+                    : toHexString((state.block as any).hash())}
+                </Text>
+              }
+            </Text>
+          </Box>
+          <VStack width="100%" height="5%">
+            <HStack width="100%">
+              <Text fontSize="x-small" textAlign={'start'}>
                 <span style={{ fontWeight: 'bold' }}>Header Key: </span>
               </Text>
-            </GridItem>
-            <GridItem colStart={5} colSpan={1}>
               <CopyIcon
                 marginEnd={2}
                 cursor="pointer"
-                onClick={() => navigator.clipboard.writeText(headerlookupKey)}
+                onClick={() => navigator.clipboard.writeText(keys.header)}
               />
-            </GridItem>
-            <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
               <Skeleton isLoaded={!state.isLoading}>
-                <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
-                  {headerlookupKey}
+                <Text wordBreak={'break-all'} fontSize="x-small" textAlign={'start'}>
+                  {keys.header}
                 </Text>
               </Skeleton>
-            </GridItem>
-            <GridItem colSpan={4}>
-              <Text fontSize="xs" textAlign={'start'}>
+            </HStack>
+            <HStack width="100%">
+              <Text fontSize="x-small" textAlign={'start'}>
                 <span style={{ fontWeight: 'bold' }}>Body Key: </span>
               </Text>
-            </GridItem>
-            <GridItem colStart={5} colSpan={1}>
               <CopyIcon
                 marginEnd={2}
                 cursor="pointer"
-                onClick={() => navigator.clipboard.writeText(bodylookupKey)}
+                onClick={() => navigator.clipboard.writeText(keys.body)}
               />
-            </GridItem>
-            <GridItem wordBreak={'break-all'} colSpan={10} colStart={6}>
               <Skeleton isLoaded={!state.isLoading}>
-                <Text wordBreak={'break-all'} fontSize="xs" textAlign={'start'}>
-                  {bodylookupKey}
+                <Text wordBreak={'break-all'} fontSize="x-small" textAlign={'start'}>
+                  {keys.body}
                 </Text>
               </Skeleton>
-            </GridItem>
-          </Grid>
-          <Tabs
-            height="100%"
-            onChange={(index) => setTabIndex(index)}
-            bg="gray.200"
-            padding={0}
-            width="100%"
-          >
-            <TabList>
-              <Tab bg={tabIndex === 0 ? 'gray.100' : 'gray.200'}>Header</Tab>
-              <Tab bg={tabIndex === 1 ? 'gray.100' : 'gray.200'}>Transactions</Tab>
-            </TabList>
-            <TabPanels height="100%" padding={0} width="100%">
-              <TabPanel padding={0} height="100%" width="100%">
-                <BlockHeader />
-              </TabPanel>
-              <TabPanel padding={0}>
-                {state.block.transactions && state.block.transactions.length > 0 ? (
-                  <>
-                    {(state.block as ExtendedEthersBlockWithTransactions).transactions[0].hash ? (
-                      <SelectTx />
-                    ) : (
-                      <Heading>Missing Block Body</Heading>
-                    )}
-                  </>
-                ) : (
-                  <Heading>This Block contains no transactions</Heading>
-                )}
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </>
+            </HStack>
+          </VStack>
+          <Box width="100%" height="90%">
+            <Tabs
+              height="100%"
+              onChange={(index) => setTabIndex(index)}
+              bg="gray.200"
+              padding={0}
+              width="100%"
+            >
+              <TabList height="5%">
+                <Tab bg={tabIndex === 0 ? 'gray.100' : 'gray.200'}>Header</Tab>
+                <Tab bg={tabIndex === 1 ? 'gray.100' : 'gray.200'}>Transactions</Tab>
+              </TabList>
+              <TabPanels height="95%" overflow="hidden" padding={0} width="100%">
+                <TabPanel padding={0} height="100%" width="100%">
+                  <BlockHeader />
+                </TabPanel>
+                <TabPanel padding={0}>
+                  {state.block.transactions && state.block.transactions.length > 0 ? (
+                    <>
+                      {(state.block as ExtendedEthersBlockWithTransactions).transactions[0].hash ? (
+                        <SelectTx />
+                      ) : (
+                        <Heading>Missing Block Body</Heading>
+                      )}
+                    </>
+                  ) : (
+                    <Heading>This Block contains no transactions</Heading>
+                  )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </Box>
+        </VStack>
       )}
     </Box>
   )
