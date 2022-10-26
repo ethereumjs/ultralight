@@ -9,7 +9,7 @@ export type uint = string
 
 export type Bucket = bytes32[]
 export type DataRadius = number
-export type Enr = string[]
+export type Enr = string
 export type EnrSeq = number
 export type ipAddr = string
 export type kBuckets = Bucket[]
