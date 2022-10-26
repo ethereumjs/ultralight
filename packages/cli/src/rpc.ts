@@ -29,7 +29,7 @@ export class RPCManager {
    */
   private methods() {
     const methods: { [key: string]: Function } = {}
-    const mods = ['eth', 'portal']
+    const mods = ['eth', 'portal', 'discv5']
     for (const modName of mods) {
       const mod = new (modules as any)[modName](this._client, this.logger)
       const rpcMethods = RPCManager.getMethodNames((modules as any)[modName])
