@@ -56,62 +56,54 @@ export class discv5 {
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
     this.logger = logger
-    this.discv5_nodeInfo = middleware(this.discv5_nodeInfo.bind(this), 0, [])
-    this.discv5_updateNodeInfo = middleware(this.discv5_updateNodeInfo.bind(this), 0, [
+    this.nodeInfo = middleware(this.nodeInfo.bind(this), 0, [])
+    this.updateNodeInfo = middleware(this.updateNodeInfo.bind(this), 0, [
       [schema.portal.socketAddr],
       [schema.schema.optional(validators.bool)],
     ])
-    this.discv5_routingTableInfo = middleware(this.discv5_routingTableInfo.bind(this), 1, [
-      [schema.portal.Enr],
-    ])
-    this.discv5_addEnr = middleware(this.discv5_addEnr.bind(this), 1, [[schema.content_params.Enr]])
-    this.discv5_getEnr = middleware(this.discv5_getEnr.bind(this), 1, [
-      [schema.content_params.NodeId],
-    ])
-    this.discv5_deleteEnr = middleware(this.discv5_deleteEnr.bind(this), 1, [
-      [schema.content_params.NodeId],
-    ])
-    this.discv5_lookupEnr = middleware(this.discv5_lookupEnr.bind(this), 2, [
+    this.routingTableInfo = middleware(this.routingTableInfo.bind(this), 1, [[schema.portal.Enr]])
+    this.addEnr = middleware(this.addEnr.bind(this), 1, [[schema.content_params.Enr]])
+    this.getEnr = middleware(this.getEnr.bind(this), 1, [[schema.content_params.NodeId]])
+    this.deleteEnr = middleware(this.deleteEnr.bind(this), 1, [[schema.content_params.NodeId]])
+    this.lookupEnr = middleware(this.lookupEnr.bind(this), 2, [
       [schema.content_params.NodeId],
       [schema.content_params.RequestId],
     ])
-    this.discv5_sendPing = middleware(this.discv5_sendPing.bind(this), 1, [
-      [schema.content_params.EnrSeq],
-    ])
-    this.discv5_sendPong = middleware(this.discv5_sendPong.bind(this), 2, [
+    this.sendPing = middleware(this.sendPing.bind(this), 1, [[schema.content_params.EnrSeq]])
+    this.sendPong = middleware(this.sendPong.bind(this), 2, [
       [schema.content_params.Enr],
       [schema.content_params.RequestId],
     ])
-    this.discv5_sendFindNode = middleware(this.discv5_sendFindNode.bind(this), 2, [
+    this.sendFindNode = middleware(this.sendFindNode.bind(this), 2, [
       [schema.content_params.Enr],
       [schema.content_params.Distances],
     ])
-    this.discv5_sendNodes = middleware(this.discv5_sendNodes.bind(this), 3, [
+    this.sendNodes = middleware(this.sendNodes.bind(this), 3, [
       [schema.content_params.Enr],
       [schema.content_params.Nodes],
       [schema.content_params.RequestId],
     ])
-    this.discv5_sendTalkRequest = middleware(this.discv5_sendTalkRequest.bind(this), 3, [
+    this.sendTalkRequest = middleware(this.sendTalkRequest.bind(this), 3, [
       [schema.content_params.Enr],
       [schema.content_params.ProtocolId],
       [schema.content_params.Discv5Payload],
     ])
-    this.discv5_sendTalkResponse = middleware(this.discv5_sendTalkResponse.bind(this), 3, [
+    this.sendTalkResponse = middleware(this.sendTalkResponse.bind(this), 3, [
       [schema.content_params.Enr],
       [schema.content_params.Discv5Payload],
       [schema.content_params.RequestId],
     ])
-    this.discv5_ping = middleware(this.discv5_ping.bind(this), 1, [[schema.content_params.Enr]])
-    this.discv5_findNode = middleware(this.discv5_findNode.bind(this), 2, [
+    this.ping = middleware(this.ping.bind(this), 1, [[schema.content_params.Enr]])
+    this.findNode = middleware(this.findNode.bind(this), 2, [
       [schema.content_params.Enr],
       [schema.content_params.Distances],
     ])
-    this.discv5_talkReq = middleware(this.discv5_talkReq.bind(this), 3, [
+    this.talkReq = middleware(this.talkReq.bind(this), 3, [
       [schema.content_params.Enr],
       [schema.content_params.Enr],
       [schema.content_params.Discv5Payload],
     ])
-    this.discv5_recursiveFindNode = middleware(this.discv5_recursiveFindNode.bind(this), 1, [
+    this.recursiveFindNode = middleware(this.recursiveFindNode.bind(this), 1, [
       [schema.content_params.NodeId],
     ])
   }
@@ -119,7 +111,7 @@ export class discv5 {
    * Returns ENR and nodeId information of the local discv5 node.
    * @param params an empty array
    */
-  async discv5_nodeInfo(params: []): Promise<NodeInfoResult> {
+  async nodeInfo(params: []): Promise<NodeInfoResult> {
     return {
       enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
       nodeId: this._client.discv5.enr.nodeId,
@@ -132,6 +124,7 @@ export class discv5 {
    *  1. socketAddr: ENR socket address
    *  2. *optional* isTcp: TCP or UDP socket
    */
+  async updateNodeInfo(params: [socketAddr, isTcp]): Promise<NodeInfoResult> {
   async discv5_updateNodeInfo(params: [socketAddr, isTcp]): Promise<NodeInfoResult> {
     return {
       enr: '',
@@ -143,7 +136,7 @@ export class discv5 {
    * Returns meta information about discv5 routing table.
    * @param params an empty array
    */
-  async discv5_routingTableInfo(params: []): Promise<RoutingTableInfoResult> {
+  async routingTableInfo(params: []): Promise<RoutingTableInfoResult> {
     return {
       localNodeId: Number.prototype as number,
       buckets: [],
@@ -154,7 +147,7 @@ export class discv5 {
    * Write an ethereum node record to the routing table.
    * @param params ENR string
    */
-  async discv5_addEnr(params: [Enr]): Promise<AddEnrResult> {
+  async addEnr(params: [Enr]): Promise<AddEnrResult> {
     return true
   }
 
@@ -162,7 +155,7 @@ export class discv5 {
    * Fetch the latest ENR associated with the given node ID
    * @param params NodeId string
    */
-  async discv5_getEnr(params: [NodeId]): Promise<GetEnrResult> {
+  async getEnr(params: [NodeId]): Promise<GetEnrResult> {
     return ''
   }
 
@@ -170,7 +163,7 @@ export class discv5 {
    * Delete a Node ID from the routing table
    * @param params NodeId string
    */
-  async discv5_deleteEnr(params: [NodeId]): Promise<DeleteEnrResult> {
+  async deleteEnr(params: [NodeId]): Promise<DeleteEnrResult> {
     return true
   }
 
@@ -180,7 +173,7 @@ export class discv5 {
    * 1. NodeId string
    * 2. ENR Seq number
    */
-  async discv5_lookupEnr(params: [NodeId, EnrSeq]): Promise<LookupEnrResult> {
+  async lookupEnr(params: [NodeId, EnrSeq]): Promise<LookupEnrResult> {
     return ''
   }
 
@@ -188,7 +181,7 @@ export class discv5 {
    * Send a PING message to the designated node and wait for a PONG response.
    * @param params ENR string
    */
-  async discv5_ping(params: [Enr]): Promise<PingResult> {
+  async ping(params: [Enr]): Promise<PingResult> {
     return {
       enrSeq: 0,
       dataRadius: 0,
@@ -200,7 +193,7 @@ export class discv5 {
    * @param params An array of two parameters
    * 1. ENR string
    */
-  async discv5_sendPing(params: [Enr]): Promise<SendPingResult> {
+  async sendPing(params: [Enr]): Promise<SendPingResult> {
     return {
       requestId: 0,
     }
@@ -212,7 +205,7 @@ export class discv5 {
    * 1. ENR string
    * 2. RequestId: number
    */
-  async discv5_sendPong(params: [Enr, RequestId]): Promise<SendPongResult> {
+  async sendPong(params: [Enr, RequestId]): Promise<SendPongResult> {
     return true
   }
 
@@ -222,7 +215,7 @@ export class discv5 {
    * 1. ENR string
    * 2. Distances: Array of distances to search
    */
-  async discv5_findNode(params: [Enr, Distances]): Promise<FindNodeResult> {
+  async findNode(params: [Enr, Distances]): Promise<FindNodeResult> {
     return []
   }
 
@@ -230,7 +223,7 @@ export class discv5 {
    * Lookup a target node within in the network
    * @param params NodeId string
    */
-  async discv5_recursiveFindNode(params: [NodeId]): Promise<RecursiveFindNodeResult> {
+  async recursiveFindNode(params: [NodeId]): Promise<RecursiveFindNodeResult> {
     return []
   }
 
@@ -240,7 +233,7 @@ export class discv5 {
    * 1. ENR string
    * 2. Array of distances
    */
-  async discv5_sendFindNode(params: [Enr, Distances]): Promise<SendFindNodeResult> {
+  async sendFindNode(params: [Enr, Distances]): Promise<SendFindNodeResult> {
     return 0
   }
 
@@ -251,7 +244,7 @@ export class discv5 {
    * 2. Array of Nodes
    * 3. RequestId
    */
-  async discv5_sendNodes(params: [string, string[], number]): Promise<SendNodesResult> {
+  async sendNodes(params: [string, string[], number]): Promise<SendNodesResult> {
     return 0
   }
 
@@ -262,9 +255,7 @@ export class discv5 {
    * 2. ProtocolId
    * 3. Discv5Payload
    */
-  async discv5_sendTalkRequest(
-    params: [Enr, ProtocolId, Discv5Payload]
-  ): Promise<SendTalkRequestResult> {
+  async sendTalkRequest(params: [Enr, ProtocolId, Discv5Payload]): Promise<SendTalkRequestResult> {
     return 0
   }
 
@@ -275,9 +266,7 @@ export class discv5 {
    * 2. Discv5Payload
    * 3. RequestId
    */
-  async discv5_sendTalkResponse(
-    params: [Enr, Discv5Payload, RequestId]
-  ): Promise<SendTalkResponseResult> {
+  async sendTalkResponse(params: [Enr, Discv5Payload, RequestId]): Promise<SendTalkResponseResult> {
     return true
   }
 
@@ -288,7 +277,7 @@ export class discv5 {
    * 2. ENR string
    * 3. Discv5Payload
    */
-  async discv5_talkReq(params: [Enr, Enr, Discv5Payload]): Promise<TalkResult> {
+  async talkReq(params: [Enr, Enr, Discv5Payload]): Promise<TalkResult> {
     return ''
   }
 }
