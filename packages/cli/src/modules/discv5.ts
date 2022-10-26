@@ -28,6 +28,7 @@ import {
   Discv5Payload,
   socketAddr,
 } from '../schema/types.js'
+import { multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
   'discv5_nodeInfo',
@@ -125,10 +126,11 @@ export class discv5 {
    *  2. *optional* isTcp: TCP or UDP socket
    */
   async updateNodeInfo(params: [socketAddr, isTcp]): Promise<NodeInfoResult> {
-  async discv5_updateNodeInfo(params: [socketAddr, isTcp]): Promise<NodeInfoResult> {
+    const [socketAddr, isTcp] = params
+    this._client.discv5.enr.setLocationMultiaddr(multiaddr(socketAddr))
     return {
-      enr: '',
-      nodeId: '',
+      enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
+      nodeId: '0x' + this._client.discv5.enr.nodeId,
     }
   }
 
