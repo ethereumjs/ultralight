@@ -114,7 +114,7 @@ export class discv5 {
   async nodeInfo(params: []): Promise<NodeInfoResult> {
     return {
       enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
-      nodeId: this._client.discv5.enr.nodeId,
+      nodeId: '0x' + this._client.discv5.enr.nodeId,
     }
   }
 
