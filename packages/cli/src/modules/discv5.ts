@@ -153,7 +153,13 @@ export class discv5 {
    * @param params ENR string
    */
   async addEnr(params: [Enr]): Promise<AddEnrResult> {
+    const [enr] = params
+    try {
+      this._client.discv5.addEnr(enr)
       return true
+    } catch {
+      return false
+    }
   }
 
   /**
@@ -161,7 +167,8 @@ export class discv5 {
    * @param params NodeId string
    */
   async getEnr(params: [NodeId]): Promise<GetEnrResult> {
-    return ''
+    const [nodeId] = params
+    return this._client.discv5.findEnr(nodeId)?.encodeTxt() ?? ''
   }
 
   /**
@@ -169,7 +176,13 @@ export class discv5 {
    * @param params NodeId string
    */
   async deleteEnr(params: [NodeId]): Promise<DeleteEnrResult> {
-    return true
+    const [nodeId] = params
+    const buckets = (this._client.discv5 as any).kbuckets.buckets
+    for (let i = 255; i > -1; i--) {
+      ;(buckets[i] as any).removeById(nodeId)
+    }
+    const removed = this._client.discv5.findEnr(nodeId)
+    return removed === undefined ? true : false
   }
 
   /**
