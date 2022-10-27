@@ -22,8 +22,6 @@ const methods = [
   'portal_historyLocalContent',
   'portal_historyFindContent',
   'portal_historyOffer',
-  'portal_history',
-  'portal_history',
 ]
 
 export class portal {
@@ -35,6 +33,7 @@ export class portal {
     this._client = client
     this._history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     this.logger = logger
+    this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
@@ -59,6 +58,9 @@ export class portal {
       [validators.array(validators.blockHash)],
       [validators.array(validators.history_contentType)],
     ])
+  }
+  async methods() {
+    return methods
   }
   async historyNodeInfo() {
     this.logger(`historyNodeInfo request received`)
