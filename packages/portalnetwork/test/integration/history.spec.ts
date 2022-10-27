@@ -11,6 +11,7 @@ import {
   HistoryProtocol,
   reassembleBlock,
   HeaderAccumulator,
+  getHistoryNetworkContentKey,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
@@ -20,99 +21,6 @@ import { connectAndTest, end } from './integrationTest.js'
 const require = createRequire(import.meta.url)
 
 tape('History Protocol Integration Tests', (t) => {
-  t.test('Protocol should respond to request for HeaderRecord Proof', (st) => {
-    const getProof = async (
-      portal1: PortalNetwork,
-      portal2: PortalNetwork,
-      child: ChildProcessWithoutNullStreams
-    ) => {
-      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      if (!protocol2 || !protocol1) throw new Error('should have History Protocol')
-      const _accumulator = require('./testAccumulator.json')
-      const _epoch1 = require('./testEpoch.json')
-      const _block1000 = require('./testBlock1000.json')
-      const _block8199 = require('./testBlock8199.json')
-      const header1000 = BlockHeader.fromRLPSerializedHeader(
-        Buffer.from(fromHexString(_block1000.rawHeader)),
-        {
-          hardforkByBlockNumber: true,
-        }
-      )
-      const header8199 = BlockHeader.fromRLPSerializedHeader(
-        Buffer.from(fromHexString(_block8199.rawHeader)),
-        {
-          hardforkByBlockNumber: true,
-        }
-      )
-      const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
-      protocol1.accumulator.replaceAccumulator(
-        new HeaderAccumulator({
-          storedAccumulator: accumulator,
-        })
-      )
-      await protocol1.addContentToHistory(
-        HistoryNetworkContentTypes.EpochAccumulator,
-        _epoch1.hash,
-        fromHexString(_epoch1.serialized)
-      )
-      await protocol2.addContentToHistory(
-        HistoryNetworkContentTypes.EpochAccumulator,
-        _epoch1.hash,
-        fromHexString(_epoch1.serialized)
-      )
-      await protocol1.addContentToHistory(
-        HistoryNetworkContentTypes.BlockHeader,
-        toHexString(header1000.hash()),
-        header1000.serialize()
-      )
-      await protocol1.addContentToHistory(
-        HistoryNetworkContentTypes.BlockHeader,
-        toHexString(header8199.hash()),
-        header8199.serialize()
-      )
-      await protocol2.addContentToHistory(
-        HistoryNetworkContentTypes.BlockHeader,
-        toHexString(header1000.hash()),
-        header1000.serialize()
-      )
-      await protocol2.addContentToHistory(
-        HistoryNetworkContentTypes.BlockHeader,
-        toHexString(header8199.hash()),
-        header8199.serialize()
-      )
-
-      portal2.on('Verified', async (blockHash, verified) => {
-        st.equal(verified, true, 'Validated HeaderRecord from received Proof')
-        if (blockHash === _block8199.hash) {
-          if (verified) {
-            st.pass('Header Record Validation test passed')
-            end(child, [portal1, portal2], st)
-          } else {
-            st.fail('Header validation test failed')
-            end(child, [portal1, portal2], st)
-          }
-        }
-      })
-      const proofKey1000 = HistoryNetworkContentKeyType.serialize(
-        Buffer.concat([
-          Uint8Array.from([HistoryNetworkContentTypes.HeaderProof]),
-          header1000.hash(),
-        ])
-      )
-      const proofKey8199 = HistoryNetworkContentKeyType.serialize(
-        Buffer.concat([
-          Uint8Array.from([HistoryNetworkContentTypes.HeaderProof]),
-          header8199.hash(),
-        ])
-      )
-
-      await protocol1.sendPing(portal2.discv5.enr)
-      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, proofKey1000)
-      await protocol2.sendFindContent(portal1.discv5.enr.nodeId, proofKey8199)
-    }
-    connectAndTest(t, st, getProof, true)
-  })
   t.test('Node should gossip new content to peer', (st) => {
     const gossip = async (
       portal1: PortalNetwork,
