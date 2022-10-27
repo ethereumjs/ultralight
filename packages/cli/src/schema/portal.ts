@@ -57,7 +57,7 @@ export const portal = {
           message: `invalid argument ${index}: argument is not a string`,
         }
       }
-      if (pattern.test(params[index])) {
+      if (!pattern.test(params[index])) {
         return {
           code: INVALID_PARAMS,
           message: `invalid argument ${index}: argument is not a valid enr`,
