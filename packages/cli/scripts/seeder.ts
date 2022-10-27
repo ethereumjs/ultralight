@@ -44,15 +44,15 @@ const main = async () => {
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
 
-  const bootNodeEnr = await bootNode.request('portal_nodeEnr', [])
+  const bootNodeEnr = await bootNode.request('discv5_nodeInfo', [])
   for (let x = 1; x < args.numNodes; x++) {
     const client = Client.http({ port: args.rpcPort + x })
-    await client.request('portal_addBootNode', [bootNodeEnr.result])
+    await client.request('portal_historyAddBootNode', [bootNodeEnr.result])
   }
 
   for (let x = 1; x < args.numNodes; x++) {
     const _client = Client.http({ port: args.rpcPort + x })
-    const res = await _client.request('portal_ping', [bootNodeEnr.result, ProtocolId.HistoryNetwork])
+    const res = await _client.request('portal_historyPing', [bootNodeEnr.result.enr, ProtocolId.HistoryNetwork])
     console.log(res)
     if (res.error) {
       throw new Error('should not error here')
@@ -61,11 +61,11 @@ const main = async () => {
 
   if (args.numBlocks) {
     for (let x = 0; x < args.numBlocks; x++) {
-      await bootNode.request('portal_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
+      await bootNode.request('ultralight_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
     }
   }
   if (args.sourceFile && args.addBlockByHash) {
-    await bootNode.request('portal_addBlockToHistory', [args.addBlockByHash, blockData[args.addBlockByHash].rlp])
+    await bootNode.request('ultralight_addBlockToHistory', [args.addBlockByHash, blockData[args.addBlockByHash].rlp])
   }
   if (args.requestblockHash) {
     const _client = Client.http({ port: args.rpcPort + 1 })
