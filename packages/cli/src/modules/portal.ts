@@ -2,15 +2,11 @@ import { Debugger } from 'debug'
 import {
   ENR,
   ProtocolId,
-  addRLPSerializedBlock,
-  HistoryNetworkContentTypes,
   fromHexString,
   shortId,
   HistoryNetworkContentKeyType,
   toHexString,
-  HeaderAccumulatorType,
   HistoryProtocol,
-  NodeLookup,
   PortalNetwork,
 } from 'portalnetwork'
 import { isValidId } from '../util.js'
@@ -18,138 +14,130 @@ import { middleware, validators } from '../validators.js'
 
 export class portal {
   private _client: PortalNetwork
+  private _history: HistoryProtocol
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
+    this._history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     this.logger = logger
-
-    this.addBlockHeaderToHistory = middleware(this.addBlockHeaderToHistory.bind(this), 2, [
-      [validators.blockHash],
-      [validators.hex],
+    this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
+    this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
+    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
+    this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
+      [validators.array(validators.enr)],
     ])
-    this.addBlockToHistory = middleware(this.addBlockToHistory.bind(this), 2, [
-      [validators.blockHash],
-      [validators.hex],
-    ])
-    this.addBootNode = middleware(this.addBootNode.bind(this), 2, [
-      [validators.enr],
-      [validators.protocolId],
-    ])
-    this.findNodes = middleware(this.findNodes.bind(this), 3, [
+    this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
+    this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.distance)],
-      [validators.protocolId],
     ])
-    this.headerAccumulatorRoot = middleware(this.headerAccumulatorRoot.bind(this), 0, [])
-    this.history_findContent = middleware(this.history_findContent.bind(this), 2, [
-      [validators.enr],
+    this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
       [validators.hex],
     ])
-    this.history_offer = middleware(this.history_offer.bind(this), 2, [
+    this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
+      [validators.dstId],
+      [validators.hex],
+    ])
+    this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.blockHash)],
       [validators.array(validators.history_contentType)],
     ])
-    this.nodeEnr = middleware(this.nodeEnr.bind(this), 0, [])
-    this.nodeLookup = middleware(this.nodeLookup.bind(this), 2, [
-      [validators.protocolId],
-      [validators.enr],
-    ])
-    this.ping = middleware(this.ping.bind(this), 2, [[validators.enr], [validators.protocolId]])
   }
-  async addBootNode(params: [string, string]) {
-    const [enr, protocolId] = params
-    const encodedENR = ENR.decodeTxt(enr)
-    this.logger(
-      `portal_addBootNode request received for NodeID: ${encodedENR.nodeId.slice(0, 15)}...`
-    )
-    const protocol = this._client.protocols.get(protocolId as ProtocolId)
-    if (protocol) {
-      await protocol.addBootNode(enr)
-      return `Bootnode added for ${encodedENR.nodeId.slice(0, 15)}...`
-    } else {
-      return `ProtocolID ${protocolId} not supported`
-    }
-  }
-  async addBlockToHistory(params: [string, string]) {
-    const [blockHash, rlpHex] = params
-    const protocol = this._client.protocols.get(
-      ProtocolId.HistoryNetwork
-    ) as never as HistoryProtocol
-    try {
-      addRLPSerializedBlock(rlpHex, blockHash, protocol)
-      return `blockheader for ${blockHash} added to content DB`
-    } catch (err: any) {
-      this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
-      return `internal error`
-    }
-  }
-  async addBlockHeaderToHistory(params: [string, string]) {
-    const [blockHash, rlpHex] = params
-    try {
-      const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      protocol.addContentToHistory(
-        HistoryNetworkContentTypes.BlockHeader,
-        blockHash,
-        fromHexString(rlpHex)
-      )
-      return `blockheader for ${blockHash} added to content DB`
-    } catch (err: any) {
-      this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
-      return `Error trying to load block to DB. ${err.message.toString()}`
-    }
-  }
-  async nodeEnr() {
-    this.logger(`nodeEnr request received`)
+  async historyNodeInfo() {
+    this.logger(`historyNodeInfo request received`)
     try {
       const enr = this._client.discv5.enr.encodeTxt()
-      return enr
+      const nodeId = this._client.discv5.enr.nodeId
+      return { enr, nodeId }
     } catch (err) {
       return 'Unable to generate ENR'
     }
   }
-  async findNodes(params: [string, number[], string]) {
-    const [dstId, distances, protocolId] = params
-    if (!isValidId(dstId)) {
-      return 'invalid node id'
-    }
-    const protocol = this._client.protocols.get(protocolId as ProtocolId)
-    if (!protocol) {
-      return `ProtocolID ${protocolId} not supported`
-    }
-    this.logger(`findNodes request received with these distances ${distances.toString()}`)
-    const res = await protocol.sendFindNodes(dstId, distances)
-    this.logger(`response received to findNodes ${res?.toString()}`)
-    return `${res?.total ?? 0} nodes returned`
-  }
-  async ping(params: [string, string]) {
-    const [enr, protocolId] = params
-    const protocol = this._client.protocols.get(protocolId as ProtocolId)
-    if (!protocol) {
-      return `ProtocolID ${protocolId} not supported`
-    }
-    const encodedENR = ENR.decodeTxt(enr)
-    this.logger(
-      `PING request received on ${protocol.protocolName} for ${shortId(encodedENR.nodeId)}`
+  async historyAddEnrs(params: [string[]]): Promise<boolean> {
+    const [enrs] = params
+    const encodedENRs = enrs.map((enr) => ENR.decodeTxt(enr))
+    const shortEnrs = Object.fromEntries(
+      encodedENRs.map((enr, idx) => [idx, enr.nodeId.slice(0, 15) + '...'])
     )
-    const pong = await protocol.sendPing(enr)
+    this.logger(`portal_historyAddEnrs request received for ${shortEnrs}`)
+    const added: number[] = []
+
+    try {
+      for (const [idx, enr] of encodedENRs.entries()) {
+        await this._history.addBootNode(enr.encodeTxt())
+        added.push(idx)
+      }
+    } catch {
+      return false
+    }
+    return true
+  }
+  async historyRoutingTableInfo(params: []): Promise<any> {
+    this.logger(`portal_historyRoutingTableInfo request received.`)
+    let localNodeId = ''
+    let buckets: string[][] = []
+    const table = this._history.routingTable
+    try {
+      localNodeId = table.localId
+      buckets = table.buckets
+        .map((bucket) => bucket.values().map((value) => value.nodeId))
+        .reverse()
+    } catch (err) {
+      localNodeId = (err as any).message
+    }
+    return {
+      localNodeId: localNodeId,
+      buckets: buckets,
+    }
+  }
+  async historyLookupEnr(params: [string]) {
+    const [nodeId] = params
+    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
+    const enr = this._history.routingTable.getValue(nodeId)?.encodeTxt()
+    this.logger(`Found: ${enr}`)
+    return enr
+  }
+  async historyPing(params: [string]) {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
+    const pong = await this._history.sendPing(enr)
     if (pong) {
       return `PING/PONG successful with ${encodedENR.nodeId}`
     } else {
       return `PING/PONG with ${encodedENR.nodeId} was unsuccessful`
     }
   }
-  async history_findContent(params: [string, Uint8Array]) {
-    const [enr, contentKey] = params
-    const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    if (!protocol) {
-      return `History Protocol not supported`
+  async historyFindNodes(params: [string, number[]]) {
+    const [dstId, distances] = params
+    this.logger(`findNodes request received with these distances ${distances.toString()}`)
+    if (!isValidId(dstId)) {
+      return 'invalid node id'
     }
-    const res = await protocol.sendFindContent(enr, contentKey)
+    const res = await this._history.sendFindNodes(dstId, distances)
+    this.logger(`findNodes request returned ${res?.total} enrs`)
+    return res?.enrs.map((v) => toHexString(v))
+  }
+  async historyLocalContent(params: [string]) {
+    const [contentKey] = params
+    this.logger(`Received historyLocalContent request for ${contentKey}`)
+    let res
+    try {
+      res = await this._history.findContentLocally(fromHexString(contentKey))
+    } catch (err) {
+      res = (err as any).message
+    }
+    console.log(res)
     return res
   }
-  async history_offer(params: [string, string[], number[]]) {
+  async historyFindContent(params: [string, string]) {
+    const [nodeId, contentKey] = params
+    const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
+    return res
+  }
+  async historyOffer(params: [string, string[], number[]]) {
     const [dstId, blockHashes, contentTypes] = params
     contentTypes.forEach((contentType) => {
       try {
@@ -168,22 +156,5 @@ export class portal {
     const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     const res = await protocol.sendOffer(dstId, contentKeys)
     return res
-  }
-  async headerAccumulatorRoot() {
-    this.logger(`Received request for current header accumulator root hash`)
-    const protocol = this._client.protocols.get(
-      ProtocolId.HistoryNetwork
-    ) as never as HistoryProtocol
-    return toHexString(HeaderAccumulatorType.hashTreeRoot(protocol.accumulator.masterAccumulator()))
-  }
-  async nodeLookup(params: [ProtocolId, string]) {
-    const [protocolId, nodeSought] = params
-    const enr = ENR.decodeTxt(nodeSought)
-    const id = enr.nodeId
-    const protocol = this._client.protocols.get(protocolId)
-    const lookup = new NodeLookup(protocol!, id)
-    const look = await lookup.startLookup()
-    console.log(look)
-    return `Node Lookup Successful for ${shortId(nodeSought)}`
   }
 }
