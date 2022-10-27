@@ -9,7 +9,7 @@ import jayson from 'jayson/promise/index.js'
 import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
-import { RPCManager } from './rpc.js'
+import { RPCManager } from './rpc/rpc.js'
 import { setupMetrics } from './metrics.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
@@ -118,7 +118,7 @@ const main = async () => {
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
-  portal.enableLog('*ultralight*, *Portal*, *uTP*')
+  portal.enableLog('*ultralight*, *Portal*, *uTP*, -*:NODES, -*:FINDNODES')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {

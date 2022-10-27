@@ -3,7 +3,7 @@ import { intToHex, toBuffer } from '@ethereumjs/util'
 import { Debugger } from 'debug'
 import { ProtocolId, ReceiptsManager, HistoryProtocol, PortalNetwork } from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
-import { GetLogsParams, jsonRpcLog } from '../types.js'
+import { GetLogsParams, jsonRpcLog } from '../../types.js'
 import { validators, middleware, isTruthy } from '../validators.js'
 
 /**
