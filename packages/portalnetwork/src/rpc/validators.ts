@@ -1,11 +1,11 @@
-import { HistoryNetworkContentTypes, ProtocolId } from 'portalnetwork'
+import { HistoryNetworkContentTypes, ProtocolId } from '../index.js'
 import { isValidId } from './util.js'
 
 const INVALID_PARAMS = -32602
 
 type Falsy = false | '' | 0 | null | undefined | 0n
 
-export function isFalsy(value: unknown): value is Falsy {
+function isFalsy(value: unknown): value is Falsy {
   return !!(
     value === false ||
     value === '' ||
@@ -24,7 +24,7 @@ export function isFalsy(value: unknown): value is Falsy {
  *
  * @deprecated This helper function should only be used temporarily until the monorepo types are explicit enough
  */
-export function isTruthy<T>(value: T | Falsy): value is T {
+function isTruthy<T>(value: T | Falsy): value is T {
   return !isFalsy(value)
 }
 

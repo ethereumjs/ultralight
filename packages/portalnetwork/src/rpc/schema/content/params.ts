@@ -1,6 +1,6 @@
 import { INVALID_PARAMS } from '../../error-code.js'
 import { baseTypes } from '../baseTypes.js'
-import { portal } from '../portal.js'
+import { portalSchema as portal } from '../portal.js'
 
 export const content_params = {
   get ConnectionId() {

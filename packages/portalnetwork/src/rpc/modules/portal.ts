@@ -8,7 +8,7 @@ import {
   toHexString,
   HistoryProtocol,
   PortalNetwork,
-} from 'portalnetwork'
+} from '../../index.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 

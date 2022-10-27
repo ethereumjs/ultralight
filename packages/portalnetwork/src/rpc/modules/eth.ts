@@ -1,10 +1,10 @@
 import { Block } from '@ethereumjs/block'
 import { intToHex, toBuffer } from '@ethereumjs/util'
 import { Debugger } from 'debug'
-import { ProtocolId, ReceiptsManager, HistoryProtocol, PortalNetwork } from 'portalnetwork'
+import { ProtocolId, ReceiptsManager, HistoryProtocol, PortalNetwork } from '../../index.js'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
-import { GetLogsParams, jsonRpcLog } from '../../types.js'
-import { validators, middleware, isTruthy } from '../validators.js'
+import { GetLogsParams, jsonRpcLog } from '../types.js'
+import { validators, middleware } from '../validators.js'
 
 /**
  * eth_* RPC module
@@ -204,7 +204,7 @@ export class eth {
       }
     }
     let from: Block, to: Block
-    if (isTruthy(blockHash)) {
+    if (blockHash) {
       try {
         from = to = (await this.getBlockByHash([blockHash, true])) as Block
       } catch (error: any) {
@@ -268,7 +268,7 @@ export class eth {
         }
       })
       let addrs
-      if (isTruthy(address)) {
+      if (address) {
         if (Array.isArray(address)) {
           addrs = address.map((a) => toBuffer(a))
         } else {

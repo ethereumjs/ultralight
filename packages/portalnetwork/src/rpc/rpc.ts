@@ -1,5 +1,5 @@
 import debug, { Debugger } from 'debug'
-import { PortalNetwork } from 'portalnetwork'
+import { PortalNetwork } from '../index.js'
 import * as modules from './modules/index.js'
 import { INTERNAL_ERROR } from './error-code.js'
 

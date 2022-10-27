@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { PortalNetwork } from 'portalnetwork'
+import { PortalNetwork } from '../../index.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 

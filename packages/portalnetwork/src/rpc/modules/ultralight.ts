@@ -7,7 +7,7 @@ import {
   fromHexString,
   HistoryProtocol,
   PortalNetwork,
-} from 'portalnetwork'
+} from '../../index.js'
 import { middleware, validators } from '../validators.js'
 
 export class ultralight {

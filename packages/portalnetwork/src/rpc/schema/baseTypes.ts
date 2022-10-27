@@ -27,40 +27,6 @@ export function isTruthy<T>(value: T | Falsy): value is T {
   return !isFalsy(value)
 }
 
-/**
- * middleware for parameters validation
- * @memberof module:rpc
- * @param method function to add middleware
- * @param requiredParamsCount required parameters count
- * @param validators array of validators
- */
-export function middleware(method: any, requiredParamsCount: number, validators: any[] = []): any {
-  return function (params: any[] = []) {
-    return new Promise((resolve, reject) => {
-      if (params.length < requiredParamsCount) {
-        const error = {
-          code: INVALID_PARAMS,
-          message: `missing value for required argument ${params.length}`,
-        }
-        return reject(error)
-      }
-
-      for (let i = 0; i < validators.length; i++) {
-        if (isTruthy(validators[i])) {
-          for (let j = 0; j < validators[i].length; j++) {
-            const error = validators[i][j](params, i)
-            if (isTruthy(error)) {
-              return reject(error)
-            }
-          }
-        }
-      }
-
-      resolve(method(params))
-    })
-  }
-}
-
 export function validateByteString(param: any, index: number, length?: number) {
   if (typeof param !== 'string') {
     return {

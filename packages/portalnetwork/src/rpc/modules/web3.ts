@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { PortalNetwork } from 'portalnetwork'
+import { PortalNetwork } from '../../index.js'
 import { middleware } from '../validators.js'
 
 const methods = ['web3_clientVersion']

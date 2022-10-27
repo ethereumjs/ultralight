@@ -6,7 +6,7 @@ import { baseTypes } from './baseTypes.js'
 /**
  * @memberof module:portal
  */
-export const portal = {
+export const portalSchema = {
   /**
    * bucket validator to ensure has array of up to 16 bytes32
    * @param params parameters of method
@@ -93,7 +93,7 @@ export const portal = {
         }
       }
       for (const value of params[index]) {
-        const result = portal.Bucket([value], 0)
+        const result = portalSchema.Bucket([value], 0)
         if (result !== undefined) return result
       }
     }

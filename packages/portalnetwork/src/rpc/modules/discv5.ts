@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { NodeId, PortalNetwork } from 'portalnetwork'
+import { NodeId, PortalNetwork } from '../../index.js'
 import { middleware, validators } from '../validators.js'
 import * as schema from '../schema/index.js'
 import {
@@ -36,7 +36,7 @@ export class discv5 {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.nodeInfo = middleware(this.nodeInfo.bind(this), 0, [])
     this.updateNodeInfo = middleware(this.updateNodeInfo.bind(this), 0, [
-      [schema.portal.socketAddr],
+      [schema.portalSchema.socketAddr],
       [schema.schema.optional(validators.bool)],
     ])
     this.routingTableInfo = middleware(this.routingTableInfo.bind(this), 0, [])
