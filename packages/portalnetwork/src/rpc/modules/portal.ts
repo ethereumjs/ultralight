@@ -13,6 +13,7 @@ import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 const methods = [
+  'portal_historyAddBootnode',
   'portal_historyNodeInfo',
   'portal_historyRoutingTableInfo',
   'portal_historyLookupEnr',
@@ -37,6 +38,9 @@ export class portal {
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
+    this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [
+      [validators.array(validators.enr)],
+    ])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
@@ -71,6 +75,16 @@ export class portal {
     } catch (err) {
       return 'Unable to generate ENR'
     }
+  }
+  async historyAddBootNode(params: [string]): Promise<boolean> {
+    const [enr] = params
+    this.logger(`portal_historyAddEnrs request received for ${enr.slice(0, 10)}...`)
+    try {
+      await this._history.addBootNode(enr)
+    } catch {
+      return false
+    }
+    return true
   }
   async historyAddEnrs(params: [string[]]): Promise<boolean> {
     const [enrs] = params
