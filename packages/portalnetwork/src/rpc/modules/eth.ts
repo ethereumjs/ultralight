@@ -12,6 +12,7 @@ import { validators, middleware } from '../validators.js'
  */
 export class eth {
   private _client: PortalNetwork
+  private _history: HistoryProtocol
   private logger: Debugger
   private receiptsManager: ReceiptsManager
   /**
@@ -20,6 +21,7 @@ export class eth {
    */
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
+    this._history = client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     this.logger = logger.extend('eth')
     this.receiptsManager = (
       this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
@@ -78,8 +80,7 @@ export class eth {
    * @param params An empty array
    */
   async blockNumber(_params = []) {
-    const history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    return history.accumulator.currentHeight()
+    return this._history.accumulator.currentHeight()
   }
 
   /**
@@ -103,10 +104,7 @@ export class eth {
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
     )
     try {
-      const protocol = this._client.protocols.get(
-        ProtocolId.HistoryNetwork
-      ) as never as HistoryProtocol
-      const block = await protocol.ETH.getBlockByHash(blockHash, includeTransactions)
+      const block = await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
       return block ?? 'Block not found'
     } catch {
       return 'Block not found'
@@ -125,10 +123,10 @@ export class eth {
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
     )
     try {
-      const history = this._client.protocols.get(
-        ProtocolId.HistoryNetwork
-      ) as never as HistoryProtocol
-      const block = await history.ETH.getBlockByNumber(parseInt(blockNumber), includeTransactions)
+      const block = await this._history.ETH.getBlockByNumber(
+        parseInt(blockNumber),
+        includeTransactions
+      )
       this.logger(block)
       return block ?? 'Block not found'
     } catch {
@@ -220,12 +218,7 @@ export class eth {
         from = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
       } else {
         const blockNum = BigInt(fromBlock)
-        if (
-          blockNum >
-          (
-            this._client.protocols.get(ProtocolId.HeaderGossipNetwork) as HistoryProtocol
-          ).accumulator.currentHeight()
-        ) {
+        if (blockNum > this._history.accumulator.currentHeight()) {
           throw {
             code: INVALID_PARAMS,
             message: 'specified `fromBlock` greater than current height',
