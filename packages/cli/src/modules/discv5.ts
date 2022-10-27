@@ -62,7 +62,7 @@ export class discv5 {
       [schema.portal.socketAddr],
       [schema.schema.optional(validators.bool)],
     ])
-    this.routingTableInfo = middleware(this.routingTableInfo.bind(this), 1, [[schema.portal.Enr]])
+    this.routingTableInfo = middleware(this.routingTableInfo.bind(this), 0, [])
     this.addEnr = middleware(this.addEnr.bind(this), 1, [[schema.content_params.Enr]])
     this.getEnr = middleware(this.getEnr.bind(this), 1, [[schema.content_params.NodeId]])
     this.deleteEnr = middleware(this.deleteEnr.bind(this), 1, [[schema.content_params.NodeId]])
@@ -139,9 +139,12 @@ export class discv5 {
    * @param params an empty array
    */
   async routingTableInfo(params: []): Promise<RoutingTableInfoResult> {
+    const buckets = (this._client.discv5 as any).kbuckets.buckets as unknown[]
+    const lowToHi = buckets.map((kb: any) => kb.nodes.map((node: any) => '0x' + node.value._nodeId))
+    const hiToLow = lowToHi.reverse()
     return {
-      localNodeId: Number.prototype as number,
-      buckets: [],
+      localNodeId: '0x' + this._client.discv5.enr.nodeId,
+      buckets: hiToLow,
     }
   }
 
@@ -150,7 +153,7 @@ export class discv5 {
    * @param params ENR string
    */
   async addEnr(params: [Enr]): Promise<AddEnrResult> {
-    return true
+      return true
   }
 
   /**
