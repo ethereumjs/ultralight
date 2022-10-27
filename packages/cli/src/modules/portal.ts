@@ -12,6 +12,20 @@ import {
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
+const methods = [
+  'portal_historyNodeInfo',
+  'portal_historyRoutingTableInfo',
+  'portal_historyLookupEnr',
+  'portal_historyAddEnrs',
+  'portal_historyPing',
+  'portal_historyFindNodes',
+  'portal_historyLocalContent',
+  'portal_historyFindContent',
+  'portal_historyOffer',
+  'portal_history',
+  'portal_history',
+]
+
 export class portal {
   private _client: PortalNetwork
   private _history: HistoryProtocol
@@ -27,6 +41,7 @@ export class portal {
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
+    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [validators.dstId])
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.dstId],
@@ -72,6 +87,11 @@ export class portal {
     } catch {
       return false
     }
+    return true
+  }
+  async historyDeleteEnr(params: [string]): Promise<boolean> {
+    const [nodeId] = params
+    this._history.routingTable.evictNode(nodeId)
     return true
   }
   async historyRoutingTableInfo(params: []): Promise<any> {
