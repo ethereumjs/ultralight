@@ -51,6 +51,7 @@ tape('protocol wire message tests', async (t) => {
 
     const remoteEnr =
       'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
+    const decodedEnr = ENR.decodeTxt(remoteEnr)
     const pongResponse = Buffer.from([
       1, 5, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -66,7 +67,7 @@ tape('protocol wire message tests', async (t) => {
 
     let res = await protocol.sendPing('abc')
     st.ok(res === undefined, 'received undefined when called with invalid ENR/nodeId')
-    res = await protocol.sendPing(remoteEnr)
+    res = await protocol.sendPing(decodedEnr)
     st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
     const payload = PingPongCustomDataType.serialize({ radius: BigInt(1) })
     const msg = {
@@ -76,7 +77,6 @@ tape('protocol wire message tests', async (t) => {
         customPayload: payload,
       },
     }
-    const decodedEnr = ENR.decodeTxt(remoteEnr)
     const nodeAddr = {
       socketAddr: decodedEnr.getLocationMultiaddr('udp'),
       nodeId: decodedEnr.nodeId,
