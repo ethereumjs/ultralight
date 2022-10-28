@@ -1,3 +1,4 @@
+import { isPeerId } from '@libp2p/interface-peer-id'
 import { HistoryNetworkContentTypes, ProtocolId } from '../index.js'
 import { isValidId } from './util.js'
 
@@ -110,10 +111,10 @@ export const validators = {
           message: `invalid argument ${index}: argument must be a string`,
         }
       }
-      if (!isValidId(params[index])) {
+      if (params[index].startsWith('0x')) {
         return {
           code: INVALID_PARAMS,
-          message: `invlaid argument ${index}: invalid Node ID`,
+          message: `invalid argument ${index}: NodeId should be without 0x prefix`,
         }
       }
     }
