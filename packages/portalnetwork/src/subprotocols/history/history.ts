@@ -78,10 +78,9 @@ export class HistoryProtocol extends BaseProtocol {
    * @param decodedContentMessage content key to be found
    * @returns content if available locally
    */
-  public findContentLocally = async (decodedContentMessage: FindContentMessage) => {
-    const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
+  public findContentLocally = async (contentKey: Uint8Array) => {
+    const lookupKey = serializedContentKeyToContentId(contentKey)
     let value = Uint8Array.from([])
-    const contentKey = HistoryNetworkContentKeyType.deserialize(decodedContentMessage.contentKey)
     if (contentKey[0] === HistoryNetworkContentTypes.HeaderProof) {
       try {
         // Create Header Proof
