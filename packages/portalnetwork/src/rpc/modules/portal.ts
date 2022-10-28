@@ -136,7 +136,7 @@ export class portal {
     const [enr] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._history.sendPing(enr)
+    const pong = await this._history.sendPing(encodedENR)
     if (pong) {
       return `PING/PONG successful with ${encodedENR.nodeId}`
     } else {

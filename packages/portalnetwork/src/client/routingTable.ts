@@ -1,12 +1,33 @@
 import { KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
-
+import { Debugger } from 'debug'
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
+  public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>
   private gossipMap: Map<NodeId, Set<string>>
+  private strikes: Map<NodeId, number>
   constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
     this.gossipMap = new Map()
+    this.strikes = new Map()
+  }
+
+  public setLogger(logger: Debugger) {
+    this.logger = logger.extend('RoutingTable')
+  }
+
+  public strike = (nodeId: NodeId) => {
+    this.logger?.extend('STRIKE')(nodeId)
+    const strikes = this.strikes.get(nodeId) ?? 0
+    if (strikes > 1) {
+      this.evictNode(nodeId)
+      this.strikes.delete(nodeId)
+    }
+    this.strikes.set(nodeId, strikes + 1)
+  }
+
+  public clearStrikes = (nodeId: NodeId) => {
+    this.strikes.set(nodeId, 0)
   }
 
   /**
@@ -58,8 +79,12 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
    * @param nodeId nodeId of peer to be evicted
    */
   public evictNode = (nodeId: NodeId) => {
+    this.logger?.extend('EVICT')(nodeId)
+    const enr = this.getValue(nodeId)
     this.radiusMap.delete(nodeId)
     this.gossipMap.delete(nodeId)
-    this.removeById(nodeId)
+    if (enr) {
+      this.remove(enr)
+    }
   }
 }

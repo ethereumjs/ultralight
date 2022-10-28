@@ -35,12 +35,14 @@ export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint
+  private checkIndex: number
   protected abstract logger: Debugger
   abstract protocolId: ProtocolId
   abstract protocolName: string
   public client: PortalNetwork
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     this.client = client
+    this.checkIndex = 0
     this.nodeRadius = nodeRadius ?? 2n ** 256n - 1n
     this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
     this.metrics = metrics
@@ -100,53 +102,52 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol ID
    * @returns the PING payload specified by the subprotocol or undefined
    */
-  public sendPing = async (nodeId: string | ENR) => {
-    let enr: ENR | undefined = undefined
-    if (nodeId instanceof ENR) {
-      enr = nodeId
-    } else if (typeof nodeId === 'string' && nodeId.startsWith('enr')) {
-      enr = ENR.decodeTxt(nodeId)
-    }
-    if (!enr) {
-      this.logger(`Invalid node ID provided. PING aborted`)
+  public sendPing = async (enr: ENR) => {
+    // 3000ms tolerance for ping timeout
+    setTimeout(() => {
+      return undefined
+    }, 3000)
+    if (!enr.nodeId) {
+      this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
-    const pingMsg = PortalWireMessageType.serialize({
-      selector: MessageCodes.PING,
-      value: {
-        enrSeq: this.client.discv5.enr.seq,
-        customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
-      },
-    })
     try {
+      const pingMsg = PortalWireMessageType.serialize({
+        selector: MessageCodes.PING,
+        value: {
+          enrSeq: this.client.discv5.enr.seq,
+          customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
+        },
+      })
       this.logger.extend(`PING`)(`Sent to ${shortId(enr.nodeId)}`)
       const res = await this.client.sendPortalNetworkMessage(
         enr,
         Buffer.from(pingMsg),
         this.protocolId
       )
-      if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
+      if (parseInt(res.subarray(0, 1).toString('hex')) === MessageCodes.PONG) {
         this.logger.extend('PONG')(`Received from ${shortId(enr.nodeId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
-        this.updateRoutingTable(enr, true, pongMessage.customPayload)
+        this.routingTable.clearStrikes(enr.nodeId)
+        this.updateRoutingTable(enr, pongMessage.customPayload)
         return pongMessage
       } else {
-        this.updateRoutingTable(enr.nodeId, false)
+        this.routingTable.strike(enr.nodeId)
       }
     } catch (err: any) {
-      this.logger(`Error during PING request to ${shortId(enr.nodeId)}: ${err.toString()}`)
-      if (this.routingTable.getValue(enr.nodeId)) {
-        this.updateRoutingTable(enr, false)
-      }
+      this.logger(`Error during PING request: ${err.toString()}`)
+      enr.nodeId && this.routingTable.strike(enr.nodeId)
+      return
     }
   }
 
   private handlePing = (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
-      this.updateRoutingTable(src.nodeId, true, pingMessage.customPayload)
+      const enr = this.client.discv5.getKadValue(src.nodeId)
+      this.updateRoutingTable(enr!, pingMessage.customPayload)
     } else {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
       this.routingTable.updateRadius(src.nodeId, radius)
@@ -184,7 +185,6 @@ export abstract class BaseProtocol {
     })
 
     try {
-      this.logger.extend(`FINDNODES`)(`Sending to ${shortId(dstId)}`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) {
         return
@@ -209,11 +209,13 @@ export abstract class BaseProtocol {
               counter++
             }
           })
-          this.logger.extend(`NODES`)(
-            `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
-              decoded.enrs.length - counter
-            } unknown.`
-          )
+          if (decoded.total > 0) {
+            this.logger.extend(`NODES`)(
+              `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
+                decoded.enrs.length - counter
+              } unknown.`
+            )
+          }
 
           return decoded
         }
@@ -254,12 +256,14 @@ export abstract class BaseProtocol {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this.logger.extend(`NODES`)(
-        `Sending`,
-        nodesPayload.enrs.length.toString(),
-        `ENRs to `,
-        shortId(src.nodeId)
-      )
+      if (nodesPayload.enrs.length > 0) {
+        this.logger.extend(`NODES`)(
+          `Sending`,
+          nodesPayload.enrs.length.toString(),
+          `ENRs to `,
+          shortId(src.nodeId)
+        )
+      }
       this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
@@ -522,24 +526,13 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol Id of routing table being updated
    * @param customPayload payload of the PING/PONG message being decoded
    */
-  private updateRoutingTable = (srcId: NodeId | ENR, add = false, customPayload?: any) => {
-    const nodeId = typeof srcId === 'string' ? srcId : srcId.nodeId
-    let enr = typeof srcId === 'string' ? this.routingTable.getValue(srcId) : srcId
-    if (!add) {
-      this.routingTable.evictNode(nodeId)
-      this.logger.extend('Evict')(`removed ${nodeId} from ${this.protocolName} Routing Table`)
-      return
-    }
+  private updateRoutingTable = (enr: ENR, customPayload?: any) => {
+    const nodeId = enr.nodeId
     try {
-      if (!enr) {
-        // See if Discv5 has an ENR for this node if not provided
-        enr = this.client.discv5.getKadValue(nodeId)
-      }
-      if (enr) {
-        // Only add node to the routing table if we have an ENR
-        this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
-        add && this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
-      }
+      // Only add node to the routing table if we have an ENR
+      this.routingTable.getValue(enr.nodeId) === undefined &&
+        this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
+      this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
       if (customPayload) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
@@ -562,22 +555,23 @@ export abstract class BaseProtocol {
    * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
    * evict nodes that do not respond
    */
-  private livenessCheck = async (protocolId: ProtocolId) => {
-    const peers: ENR[] = this.routingTable.values()
-    this.logger.extend('livenessCheck')(`Checking ${peers!.length} peers for liveness`)
-    const deadPeers = (
-      await Promise.all(
-        peers.map((peer: ENR) => {
-          return new Promise((resolve) => {
-            const result = this.sendPing(peer.nodeId)
-            resolve(result)
-          })
-        })
-      )
-    ).filter((res) => !res)
-    this.logger.extend('livenessCheck')(
-      `Removed ${deadPeers.length} peers from ${protocolId} routing table`
-    )
+  private livenessCheck = async () => {
+    let peers: ENR[] = this.routingTable.values()
+    const sample = Math.ceil(peers.length / 5)
+    peers = peers.slice(this.checkIndex, this.checkIndex + sample)
+    this.checkIndex = (this.checkIndex + sample) % peers.length
+    const flagged = []
+    for (const peer of peers) {
+      const res = await this.sendPing(peer)
+      if (res === undefined) {
+        flagged.push(peer.nodeId)
+      }
+    }
+    if (flagged.length > 0) {
+      this.logger.extend('livenessCheck')(`Flagged ${flagged.length} peers from routing table`)
+    } else {
+      this.logger.extend('livenessCheck')(`${peers.length} peers passed liveness check`)
+    }
   }
 
   /**
@@ -589,11 +583,14 @@ export abstract class BaseProtocol {
    * Do the random lookup on this node-id.
    */
   public bucketRefresh = async () => {
+    await this.livenessCheck()
     const notFullBuckets = this.routingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
-      .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
+      .filter((pair) => pair.bucket.size() < 16)
+      .reverse()
+      .slice(0, 4)
     const size = this.routingTable.size
     let bucketsToRefresh
     if (size > 48) {
