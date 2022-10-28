@@ -61,7 +61,7 @@ export class NodeLookup {
               // `nodeSought` was found -- add to table and terminate lookup
               finished = true
               this.protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              this.protocol.sendPing(decodedEnr.nodeId)
+              this.protocol.sendPing(decodedEnr)
             } else if (
               distance(decodedEnr.nodeId, this.nodeSought) < distanceFromSoughtNodeToQueriedNode
             ) {

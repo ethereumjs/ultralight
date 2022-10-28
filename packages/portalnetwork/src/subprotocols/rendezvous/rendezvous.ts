@@ -96,7 +96,7 @@ export class Rendezvous extends BaseProtocol {
         }
         // Destination node is known, send ENR to requestor
         this.logger(`found ENR for ${shortId(dstId)} - ${enr.encodeTxt()}`)
-        const pingRes = await protocol.sendPing(enr.nodeId)
+        const pingRes = await protocol.sendPing(enr)
         // Ping target node to verify it is reachable from rendezvous node
         if (!pingRes) {
           // If the target node isn't reachable, send null response
