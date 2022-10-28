@@ -13,7 +13,7 @@ import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 const methods = [
-  'portal_historyAddBootnode',
+  'portal_historyAddBootNode',
   'portal_historyNodeInfo',
   'portal_historyRoutingTableInfo',
   'portal_historyLookupEnr',
@@ -38,9 +38,7 @@ export class portal {
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
-    this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [
-      [validators.array(validators.enr)],
-    ])
+    this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
@@ -59,8 +57,7 @@ export class portal {
     ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.dstId],
-      [validators.array(validators.blockHash)],
-      [validators.array(validators.history_contentType)],
+      [validators.array(validators.hex)],
     ])
   }
   async methods() {
@@ -173,24 +170,10 @@ export class portal {
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
     return res
   }
-  async historyOffer(params: [string, string[], number[]]) {
-    const [dstId, blockHashes, contentTypes] = params
-    contentTypes.forEach((contentType) => {
-      try {
-        isValidId(dstId)
-        contentType > 0
-        contentType < 2
-      } catch {
-        throw new Error('invalid parameters')
-      }
-    })
-    const contentKeys = blockHashes.map((blockHash, idx) => {
-      return HistoryNetworkContentKeyType.serialize(
-        Buffer.concat([Uint8Array.from([contentTypes[idx]]), fromHexString(blockHash)])
-      )
-    })
-    const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    const res = await protocol.sendOffer(dstId, contentKeys)
+  async historyOffer(params: [string, string[]]) {
+    const [dstId, contentKeys] = params
+    const keys = contentKeys.map((key) => fromHexString(key))
+    const res = await this._history.sendOffer(dstId, keys)
     return res
   }
 }
