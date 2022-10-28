@@ -209,11 +209,11 @@ export abstract class BaseProtocol {
             }
           })
           if (decoded.total > 0) {
-          this.logger.extend(`NODES`)(
-            `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
-              decoded.enrs.length - counter
-            } unknown.`
-          )
+            this.logger.extend(`NODES`)(
+              `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
+                decoded.enrs.length - counter
+              } unknown.`
+            )
           }
 
           return decoded
@@ -256,12 +256,12 @@ export abstract class BaseProtocol {
         value: nodesPayload,
       })
       if (nodesPayload.enrs.length > 0) {
-      this.logger.extend(`NODES`)(
-        `Sending`,
-        nodesPayload.enrs.length.toString(),
-        `ENRs to `,
-        shortId(src.nodeId)
-      )
+        this.logger.extend(`NODES`)(
+          `Sending`,
+          nodesPayload.enrs.length.toString(),
+          `ENRs to `,
+          shortId(src.nodeId)
+        )
       }
       this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
@@ -528,7 +528,7 @@ export abstract class BaseProtocol {
   private updateRoutingTable = (enr: ENR, customPayload?: any) => {
     const nodeId = enr.nodeId
     try {
-        // Only add node to the routing table if we have an ENR
+      // Only add node to the routing table if we have an ENR
       this.routingTable.getValue(enr.nodeId) === undefined &&
         this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
       this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)

@@ -48,6 +48,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
     this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
+    this.routingTable.setLogger(this.logger)
   }
 
   public getEpochByIndex = async (
