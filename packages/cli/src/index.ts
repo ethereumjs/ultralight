@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR, fromHexString } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR, fromHexString, RPCManager } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -9,7 +9,6 @@ import jayson from 'jayson/promise/index.js'
 import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
-import { RPCManager } from './rpc.js'
 import { setupMetrics } from './metrics.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
@@ -118,7 +117,7 @@ const main = async () => {
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
-  portal.enableLog('*ultralight*, *Portal*, *uTP*')
+  portal.enableLog('*ultralight*, *Portal*, *uTP*, -*:NODES, -*:FINDNODES')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
