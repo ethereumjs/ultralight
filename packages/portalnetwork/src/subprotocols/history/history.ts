@@ -81,11 +81,25 @@ export class HistoryProtocol extends BaseProtocol {
   public findContentLocally = async (contentKey: Uint8Array) => {
     const lookupKey = serializedContentKeyToContentId(contentKey)
     let value = Uint8Array.from([])
-    try {
-      //Check to see if value in content db
-      value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
-    } catch {}
-
+    if (contentKey[0] === HistoryNetworkContentTypes.HeaderProof) {
+      try {
+        // Create Header Proof
+        this.logger(`Creating proof for ${toHexString(contentKey.subarray(1))}`)
+        const proof = await this.generateInclusionProof(toHexString(contentKey.subarray(1)))
+        // this.logger(proof)
+        value = SszProof.serialize({
+          leaf: proof.leaf,
+          witnesses: proof.witnesses,
+        })
+      } catch (err) {
+        this.logger(`Unable to generate Proof: ${(err as any).message}`)
+      }
+    } else {
+      try {
+        //Check to see if value in content db
+        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+      } catch {}
+    }
     return value
   }
   public init = async () => {
