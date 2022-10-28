@@ -10,18 +10,20 @@ import {
 } from '../../index.js'
 import { middleware, validators } from '../validators.js'
 
-const methods = ['ultralight_addBlockHeaderToHistory', 'ultralight_addBlockToHistory']
+const methods = ['ultralight_addContentToHistory', 'ultralight_addBlockToHistory']
 
 export class ultralight {
   private _client: PortalNetwork
+  private _history: HistoryProtocol
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
+    this._history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
-    this.addBlockHeaderToHistory = middleware(this.addBlockHeaderToHistory.bind(this), 2, [
-      [validators.blockHash],
+    this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
+      [validators.hex],
       [validators.hex],
     ])
     this.addBlockToHistory = middleware(this.addBlockToHistory.bind(this), 2, [
@@ -33,31 +35,35 @@ export class ultralight {
     return methods
   }
   async addBlockToHistory(params: [string, string]) {
+    this.logger(`ultralight_addBlockToHistory request received`)
+
     const [blockHash, rlpHex] = params
     const protocol = this._client.protocols.get(
       ProtocolId.HistoryNetwork
     ) as never as HistoryProtocol
     try {
       addRLPSerializedBlock(rlpHex, blockHash, protocol)
+      this.logger(`blockheader for ${blockHash} added to content DB`)
       return `blockheader for ${blockHash} added to content DB`
     } catch (err: any) {
       this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
       return `internal error`
     }
   }
-  async addBlockHeaderToHistory(params: [string, string]) {
-    const [blockHash, rlpHex] = params
+  async addContentToDB(params: [string, string]) {
+    const [contentKey, value] = params
+
+    const type: number = parseInt(contentKey.slice(0, 4))
+    this.logger(
+      `ultralight_addContentToDB request received for ${HistoryNetworkContentTypes[type]} ${contentKey}`
+    )
     try {
-      const protocol = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      protocol.addContentToHistory(
-        HistoryNetworkContentTypes.BlockHeader,
-        blockHash,
-        fromHexString(rlpHex)
-      )
-      return `blockheader for ${blockHash} added to content DB`
+      this._history.addContentToHistory(type, '0x' + contentKey.slice(4), fromHexString(value))
+      this.logger(`${type} value for 0x${contentKey.slice(4)} added to content DB`)
+      return `${type} value for ${contentKey} added to content DB`
     } catch (err: any) {
-      this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
-      return `Error trying to load block to DB. ${err.message.toString()}`
+      this.logger(`Error trying to load content to DB. ${err.message.toString()}`)
+      return `Error trying to load content to DB. ${err.message.toString()}`
     }
   }
 }
