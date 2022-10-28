@@ -148,7 +148,8 @@ export abstract class BaseProtocol {
   private handlePing = (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
-      this.updateRoutingTable(src.nodeId, true, pingMessage.customPayload)
+      const enr = this.client.discv5.getKadValue(src.nodeId)
+      this.updateRoutingTable(enr!, pingMessage.customPayload)
     } else {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
       this.routingTable.updateRadius(src.nodeId, radius)
