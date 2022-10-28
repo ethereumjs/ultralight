@@ -586,7 +586,9 @@ export abstract class BaseProtocol {
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
       })
-      .filter((pair) => pair.distance > 239 && pair.bucket.size() < 16)
+      .filter((pair) => pair.bucket.size() < 16)
+      .reverse()
+      .slice(0, 4)
     const size = this.routingTable.size
     let bucketsToRefresh
     if (size > 48) {
