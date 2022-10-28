@@ -107,18 +107,18 @@ export abstract class BaseProtocol {
     setTimeout(() => {
       return undefined
     }, 3000)
-    if (!enr) {
-      this.logger(`Invalid node ID provided. PING aborted`)
+    if (!enr.nodeId) {
+      this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
-    const pingMsg = PortalWireMessageType.serialize({
-      selector: MessageCodes.PING,
-      value: {
-        enrSeq: this.client.discv5.enr.seq,
-        customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
-      },
-    })
     try {
+      const pingMsg = PortalWireMessageType.serialize({
+        selector: MessageCodes.PING,
+        value: {
+          enrSeq: this.client.discv5.enr.seq,
+          customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
+        },
+      })
       this.logger.extend(`PING`)(`Sent to ${shortId(enr.nodeId)}`)
       const res = await this.client.sendPortalNetworkMessage(
         enr,
@@ -137,8 +137,9 @@ export abstract class BaseProtocol {
         this.routingTable.strike(enr.nodeId)
       }
     } catch (err: any) {
-      this.logger(`Error during PING request to ${shortId(enr.nodeId)}: ${err.toString()}`)
-      this.routingTable.strike(enr.nodeId)
+      this.logger(`Error during PING request: ${err.toString()}`)
+      enr.nodeId && this.routingTable.strike(enr.nodeId)
+      return
     }
   }
 
