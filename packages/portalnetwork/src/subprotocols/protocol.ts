@@ -102,13 +102,11 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol ID
    * @returns the PING payload specified by the subprotocol or undefined
    */
-  public sendPing = async (nodeId: string | ENR) => {
-    let enr: ENR | undefined = undefined
-    if (nodeId instanceof ENR) {
-      enr = nodeId
-    } else if (typeof nodeId === 'string' && nodeId.startsWith('enr')) {
-      enr = ENR.decodeTxt(nodeId)
-    }
+  public sendPing = async (enr: ENR) => {
+    // 3000ms tolerance for ping timeout
+    setTimeout(() => {
+      return undefined
+    }, 3000)
     if (!enr) {
       this.logger(`Invalid node ID provided. PING aborted`)
       return
