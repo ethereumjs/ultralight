@@ -186,7 +186,6 @@ export abstract class BaseProtocol {
     })
 
     try {
-      this.logger.extend(`FINDNODES`)(`Sending to ${shortId(dstId)}`)
       const enr = this.routingTable.getValue(dstId)
       if (!enr) {
         return
@@ -211,11 +210,13 @@ export abstract class BaseProtocol {
               counter++
             }
           })
+          if (decoded.total > 0) {
           this.logger.extend(`NODES`)(
             `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
               decoded.enrs.length - counter
             } unknown.`
           )
+          }
 
           return decoded
         }
@@ -256,12 +257,14 @@ export abstract class BaseProtocol {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
+      if (nodesPayload.enrs.length > 0) {
       this.logger.extend(`NODES`)(
         `Sending`,
         nodesPayload.enrs.length.toString(),
         `ENRs to `,
         shortId(src.nodeId)
       )
+      }
       this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
