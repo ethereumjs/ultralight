@@ -1,76 +1,181 @@
-import jayson from 'jayson/promise/index.js'
+import jayson, { HttpClient } from 'jayson/promise/index.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { ProtocolId } from 'portalnetwork'
+import {
+  fromHexString,
+  getHistoryNetworkContentKey,
+  HistoryNetworkContentTypes,
+  ProtocolId,
+} from 'portalnetwork'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 const { Client } = jayson
 
 const args: any = yargs(hideBin(process.argv))
-    .option('sourceFile', {
-        describe: 'JSON file containing block data to feed into network',
-        string: true,
-        optional: true
-    })
-    .option('addBlockByHash', {
-      describe: 'specify a specific blockhash to add to the local node DB',
-      string: true,
-      optional: true
-    })
-    .option('rpcPort', {
-        describe: 'RPC port of node',
-        number: true,
-        demandOption: true
-    })
-    .option('numBlocks', {
-        describe: 'number of blocks to seed on node',
-        number: true,
-    })
-    .option('numNodes', {
-        describe: 'number of nodes in devnet',
-        number: true,
-        demandOption: true
-    })
-    .option('requestblockHash', {
-      describe: 'specify a block hash to request from other nodes',
-      string: true,
-      optional: true
-    }).argv
+  .option('sourceFile', {
+    describe: 'JSON file containing block data to feed into network',
+    string: true,
+    optional: true,
+  })
+  .option('addBlockByHash', {
+    describe: 'specify a specific blockhash to add to the local node DB',
+    string: true,
+    optional: true,
+  })
+  .option('rpcPort', {
+    describe: 'RPC port of node',
+    number: true,
+    demandOption: true,
+  })
+  .option('numBlocks', {
+    describe: 'number of blocks to seed on node',
+    number: true,
+  })
+  .option('numNodes', {
+    describe: 'number of nodes in devnet',
+    number: true,
+    demandOption: true,
+  })
+  .option('requestblockHash', {
+    describe: 'specify a block hash to request from other nodes',
+    string: true,
+    optional: true,
+  }).argv
 
+enum Clients {
+  ultralight = 'ultralight',
+  peer1 = 'peer1',
+  peer2 = 'peer2',
+  peer3 = 'peer3',
+}
+type TestClient = {
+  client: HttpClient
+  enr: string
+  nodeId: string
+}
+
+const numBlocks = 4
 
 const main = async () => {
-  let bootNode = Client.http({ port: args.rpcPort })
+  const ultralight = Client.http({ port: args.rpcPort })
+  const peer1 = Client.http({ port: args.rpcPort + 1 })
+  const peer2 = Client.http({ port: args.rpcPort + 2 })
+  const peer3 = Client.http({ port: args.rpcPort + 3 })
+  const clients = [ultralight, peer1, peer2, peer3]
+  const clientInfo: Record<Clients, TestClient> = {
+    ultralight: { client: ultralight, enr: '', nodeId: '' },
+    peer1: { client: peer1, enr: '', nodeId: '' },
+    peer2: { client: peer2, enr: '', nodeId: '' },
+    peer3: { client: peer3, enr: '', nodeId: '' },
+  }
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
+  const epoch = require('./testEpoch.json')
 
-  const bootNodeEnr = await bootNode.request('discv5_nodeInfo', [])
-  for (let x = 1; x < args.numNodes; x++) {
-    const client = Client.http({ port: args.rpcPort + x })
-    await client.request('portal_historyAddBootNode', [bootNodeEnr.result])
+  async function testRes(clients: HttpClient[], method: string, params: any[][]) {
+    for (const [i, client] of clients.entries()) {
+      const info = await client.request(method, params[i])
+      if (info.error) {
+        throw new Error(`${method} error: ${info.error.message}`)
+      }
+    }
+    console.log(`ok ${method} test`)
   }
-
-  for (let x = 1; x < args.numNodes; x++) {
-    const _client = Client.http({ port: args.rpcPort + x })
-    const res = await _client.request('portal_historyPing', [bootNodeEnr.result.enr, ProtocolId.HistoryNetwork])
-    console.log(res)
+  const epochKey = getHistoryNetworkContentKey(
+    HistoryNetworkContentTypes.EpochAccumulator,
+    fromHexString(epoch.hash)
+  )
+  let res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
+    epochKey,
+    epoch.serialized,
+  ])
+  if (res.error) {
+    throw new Error(`ultralight_addContentToDB error`)
+  }
+  console.log('ok ultralight_addContentToDB')
+  for (let x = 0; x < numBlocks; x++) {
+    res = await clientInfo.ultralight.client.request('ultralight_addBlockToHistory', [
+      blocks[x][0],
+      (blocks[x][1] as any).rlp,
+    ])
     if (res.error) {
-      throw new Error('should not error here')
+      throw new Error(`ultralight_addBlockToHistory error`)
     }
+  }
+  console.log('ok ultralight_addBlockToHistory')
+
+  const ultralightInfo = await ultralight.request('discv5_nodeInfo', [])
+  const peer1Info = await peer1.request('discv5_nodeInfo', [])
+  const peer2Info = await peer2.request('discv5_nodeInfo', [])
+  const peer3Info = await peer3.request('discv5_nodeInfo', [])
+  if (ultralightInfo.error) {
+    throw new Error('ultralight discv5_nodeInfo error')
+  } else if (peer1Info.error) {
+    throw new Error('peer1 discv5_nodeInfo error')
+  } else if (peer2Info.error) {
+    throw new Error('peer2 discv5_nodeInfo error')
+  } else if (peer3Info.error) {
+    throw new Error('peer2 discv5_nodeInfo error')
+  } else {
+    console.log('ok discv5_nodeInfo test')
   }
 
-  if (args.numBlocks) {
-    for (let x = 0; x < args.numBlocks; x++) {
-      await bootNode.request('ultralight_addBlockToHistory', [blocks[x][0], (blocks[x][1] as any).rlp])
-    }
-  }
-  if (args.sourceFile && args.addBlockByHash) {
-    await bootNode.request('ultralight_addBlockToHistory', [args.addBlockByHash, blockData[args.addBlockByHash].rlp])
-  }
-  if (args.requestblockHash) {
-    const _client = Client.http({ port: args.rpcPort + 1 })
-    await _client.request('eth_getBlockByHash', [args.requestblockHash, true])
-  }
+  clientInfo.ultralight.enr = ultralightInfo.result.enr
+  clientInfo.ultralight.nodeId = ultralightInfo.result.nodeId
+  clientInfo.peer1.enr = peer1Info.result.enr
+  clientInfo.peer1.nodeId = peer1Info.result.nodeId
+  clientInfo.peer2.enr = peer2Info.result.enr
+  clientInfo.peer2.nodeId = peer2Info.result.nodeId
+  clientInfo.peer3.enr = peer3Info.result.enr
+  clientInfo.peer3.nodeId = peer3Info.result.nodeId
+
+  // portal_historyAddBootNode
+  await testRes(
+    [clientInfo.ultralight.client, clientInfo.ultralight.client, clientInfo.ultralight.client],
+    'portal_historyAddBootNode',
+    [[clientInfo.peer1.enr], [clientInfo.peer2.enr], [clientInfo.peer3.enr]]
+  )
+  // portal_historyRoutingTableInfo
+  await testRes(clients, 'portal_historyRoutingTableInfo', [[], [], [], []])
+  // portal_historyLookupEnr
+  await testRes([clients[0]], 'portal_historyLookupEnr', [[clientInfo.peer1.enr]])
+  // portal_historyPing
+  await testRes(clients.slice(1), 'portal_historyPing', [
+    [clientInfo.ultralight.enr],
+    [clientInfo.ultralight.enr],
+    [clientInfo.ultralight.enr],
+  ])
+  // portal_historyFindNodes
+  await testRes([clients[1]], 'portal_historyFindNodes', [
+    [clientInfo.ultralight.nodeId.slice(2), [255]],
+  ])
+  // portal_historyFindContent
+  await testRes([clients[1]], 'portal_historyFindContent', [
+    [clientInfo.ultralight.nodeId.slice(2), blocks[1][0]],
+  ])
+  // portal_historyLocalContent
+  await testRes([clients[0]], 'portal_historyLocalContent', [[epochKey]])
+  // portal_historyOffer
+  await testRes([clients[0]], 'portal_historyOffer', [
+    [
+      clientInfo.peer1.nodeId.slice(2),
+      [
+        getHistoryNetworkContentKey(
+          HistoryNetworkContentTypes.BlockHeader,
+          fromHexString(blocks[3][0])
+        ),
+        getHistoryNetworkContentKey(
+          HistoryNetworkContentTypes.BlockBody,
+          fromHexString(blocks[3][0])
+        ),
+      ],
+    ],
+  ])
+  // eth_getBlockByHash
+  await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
+  // eth_getBlockByNumber
+  await testRes([clients[3]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
 
 main()
