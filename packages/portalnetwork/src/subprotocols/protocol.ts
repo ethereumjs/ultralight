@@ -581,6 +581,7 @@ export abstract class BaseProtocol {
    * Do the random lookup on this node-id.
    */
   public bucketRefresh = async () => {
+    await this.livenessCheck()
     const notFullBuckets = this.routingTable.buckets
       .map((bucket, idx) => {
         return { bucket: bucket, distance: idx }
