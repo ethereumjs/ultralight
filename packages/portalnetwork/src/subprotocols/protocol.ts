@@ -522,24 +522,13 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol Id of routing table being updated
    * @param customPayload payload of the PING/PONG message being decoded
    */
-  private updateRoutingTable = (srcId: NodeId | ENR, add = false, customPayload?: any) => {
-    const nodeId = typeof srcId === 'string' ? srcId : srcId.nodeId
-    let enr = typeof srcId === 'string' ? this.routingTable.getValue(srcId) : srcId
-    if (!add) {
-      this.routingTable.evictNode(nodeId)
-      this.logger.extend('Evict')(`removed ${nodeId} from ${this.protocolName} Routing Table`)
-      return
-    }
+  private updateRoutingTable = (enr: ENR, customPayload?: any) => {
+    const nodeId = enr.nodeId
     try {
-      if (!enr) {
-        // See if Discv5 has an ENR for this node if not provided
-        enr = this.client.discv5.getKadValue(nodeId)
-      }
-      if (enr) {
         // Only add node to the routing table if we have an ENR
-        this.routingTable.insertOrUpdate(enr!, EntryStatus.Connected)
-        add && this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
-      }
+      this.routingTable.getValue(enr.nodeId) === undefined &&
+        this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
+      this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
       if (customPayload) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
