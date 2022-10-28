@@ -127,21 +127,20 @@ export abstract class BaseProtocol {
         Buffer.from(pingMsg),
         this.protocolId
       )
-      if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.PONG) {
+      if (parseInt(res.subarray(0, 1).toString('hex')) === MessageCodes.PONG) {
         this.logger.extend('PONG')(`Received from ${shortId(enr.nodeId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
-        this.updateRoutingTable(enr, true, pongMessage.customPayload)
+        this.routingTable.clearStrikes(enr.nodeId)
+        this.updateRoutingTable(enr, pongMessage.customPayload)
         return pongMessage
       } else {
-        this.updateRoutingTable(enr.nodeId, false)
+        this.routingTable.strike(enr.nodeId)
       }
     } catch (err: any) {
       this.logger(`Error during PING request to ${shortId(enr.nodeId)}: ${err.toString()}`)
-      if (this.routingTable.getValue(enr.nodeId)) {
-        this.updateRoutingTable(enr, false)
-      }
+      this.routingTable.strike(enr.nodeId)
     }
   }
 
