@@ -35,12 +35,14 @@ export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint
+  private checkIndex: number
   protected abstract logger: Debugger
   abstract protocolId: ProtocolId
   abstract protocolName: string
   public client: PortalNetwork
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     this.client = client
+    this.checkIndex = 0
     this.nodeRadius = nodeRadius ?? 2n ** 256n - 1n
     this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
     this.metrics = metrics
@@ -551,22 +553,23 @@ export abstract class BaseProtocol {
    * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
    * evict nodes that do not respond
    */
-  private livenessCheck = async (protocolId: ProtocolId) => {
-    const peers: ENR[] = this.routingTable.values()
-    this.logger.extend('livenessCheck')(`Checking ${peers!.length} peers for liveness`)
-    const deadPeers = (
-      await Promise.all(
-        peers.map((peer: ENR) => {
-          return new Promise((resolve) => {
-            const result = this.sendPing(peer.nodeId)
-            resolve(result)
-          })
-        })
-      )
-    ).filter((res) => !res)
-    this.logger.extend('livenessCheck')(
-      `Removed ${deadPeers.length} peers from ${protocolId} routing table`
-    )
+  private livenessCheck = async () => {
+    let peers: ENR[] = this.routingTable.values()
+    const sample = Math.ceil(peers.length / 5)
+    peers = peers.slice(this.checkIndex, this.checkIndex + sample)
+    this.checkIndex = (this.checkIndex + sample) % peers.length
+    const flagged = []
+    for (const peer of peers) {
+      const res = await this.sendPing(peer)
+      if (res === undefined) {
+        flagged.push(peer.nodeId)
+      }
+    }
+    if (flagged.length > 0) {
+      this.logger.extend('livenessCheck')(`Flagged ${flagged.length} peers from routing table`)
+    } else {
+      this.logger.extend('livenessCheck')(`${peers.length} peers passed liveness check`)
+    }
   }
 
   /**
