@@ -14,7 +14,7 @@ type lookupPeer = {
 export class ContentLookup {
   private protocol: BaseProtocol
   private lookupPeers: lookupPeer[]
-  private contacted: lookupPeer[]
+  private contacted: NodeId[]
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
