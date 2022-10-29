@@ -37,11 +37,9 @@ export class ContentLookup {
     // Don't support content lookups for protocols that don't implement it (i.e. Canonical Indices)
     if (!this.protocol.sendFindContent) return
     this.protocol.client.metrics?.totalContentLookups.inc()
-    try {
-      const res = await this.protocol.client.db.get(this.contentId)
-      return fromHexString(res)
-    } catch (err: any) {
-      this.logger(`content key not in db ${err.message}`)
+    const res = await this.protocol.findContentLocally(this.contentKey)
+    if (res) {
+      return res
     }
     this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer: any) => {
       try {
