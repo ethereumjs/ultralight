@@ -196,7 +196,8 @@ export abstract class BaseProtocol {
       )
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         this.metrics?.nodesMessagesReceived.inc()
-        const enrs = (PortalWireMessageType.deserialize(res).value as NodesMessage).enrs ?? []
+        const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
+        const enrs = decoded.enrs ?? []
         const notIgnored = enrs.filter(
           (enr) => !this.routingTable.isIgnored(ENR.decode(Buffer.from(enr)).nodeId)
         )
@@ -222,7 +223,7 @@ export abstract class BaseProtocol {
           )
         }
 
-        return enrs
+        return decoded
       }
     } catch (err: any) {
       this.logger(`Error sending FINDNODES to ${shortId(dstId)} - ${err}`)
