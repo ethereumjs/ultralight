@@ -209,6 +209,7 @@ export abstract class BaseProtocol {
           const ping = await this.sendPing(decodedEnr)
           if (ping === undefined) {
             this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)
+            this.routingTable.evictNode(decodedEnr.nodeId)
           } else {
             this.logger(`New connection with:  ${shortId(decodedEnr.nodeId)}`)
           }
