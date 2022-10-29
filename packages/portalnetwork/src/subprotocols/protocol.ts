@@ -196,29 +196,32 @@ export abstract class BaseProtocol {
       )
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         this.metrics?.nodesMessagesReceived.inc()
-        const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
-        if (decoded) {
-          let counter = 0
-          decoded.enrs.forEach((enr) => {
-            const decodedEnr = ENR.decode(Buffer.from(enr))
-            if (!this.routingTable.getValue(decodedEnr.nodeId)) {
-              // Ping node if not currently in subprotocol routing table
-              this.logger(`Discovered an unknown node: `, shortId(decodedEnr.nodeId))
-              this.sendPing(decodedEnr)
-            } else {
-              counter++
-            }
-          })
-          if (decoded.total > 0) {
-            this.logger.extend(`NODES`)(
-              `Received ${decoded.total} ENRs from ${shortId(dstId)} with ${
-                decoded.enrs.length - counter
-              } unknown.`
-            )
+        const enrs = (PortalWireMessageType.deserialize(res).value as NodesMessage).enrs ?? []
+        const notIgnored = enrs.filter(
+          (enr) => !this.routingTable.isIgnored(ENR.decode(Buffer.from(enr)).nodeId)
+        )
+        const unknown = notIgnored.filter(
+          (enr) => !this.routingTable.getValue(ENR.decode(Buffer.from(enr)).nodeId)
+        )
+        // Ping node if not currently in subprotocol routing table
+        for (const enr of unknown) {
+          const decodedEnr = ENR.decode(Buffer.from(enr))
+          const ping = await this.sendPing(decodedEnr)
+          if (ping === undefined) {
+            this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)
+          } else {
+            this.logger(`New connection with:  ${shortId(decodedEnr.nodeId)}`)
           }
-
-          return decoded
         }
+        if (enrs.length > 0) {
+          this.logger.extend(`NODES`)(
+            `Received ${enrs.length} ENRs from ${shortId(dstId)} with ${
+              enrs.length - notIgnored.length
+            } ignored PeerIds and ${unknown.length} unknown.`
+          )
+        }
+
+        return enrs
       }
     } catch (err: any) {
       this.logger(`Error sending FINDNODES to ${shortId(dstId)} - ${err}`)
