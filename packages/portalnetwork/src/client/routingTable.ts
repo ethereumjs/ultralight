@@ -19,13 +19,15 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   }
 
   public strike = (nodeId: NodeId) => {
-    this.logger?.extend('STRIKE')(nodeId)
-    const strikes = this.strikes.get(nodeId) ?? 0
-    if (strikes > 1) {
+    let strikes = this.strikes.get(nodeId) ?? 0
+    strikes++
+    this.logger?.extend('STRIKE').extend(strikes.toString())(nodeId)
+    if (strikes > 2) {
       this.evictNode(nodeId)
-      this.strikes.delete(nodeId)
+      return
     }
-    this.strikes.set(nodeId, strikes + 1)
+    this.strikes.set(nodeId, strikes)
+    return strikes
   }
 
   public clearStrikes = (nodeId: NodeId) => {
