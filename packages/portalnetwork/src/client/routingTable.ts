@@ -105,4 +105,13 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
       this.ignored.delete(nodeId)
     }, 120000)
   }
+
+  // Method for Protocol to check if Peer should be ignored.
+  // Mainly prevents self from continuing to PING dead enrs that we receive
+
+  public isIgnored = (nodeId: string) => {
+    if ([...this.ignored].includes(nodeId)) {
+      return true
+    }
+  }
 }
