@@ -81,7 +81,7 @@ export class HistoryProtocol extends BaseProtocol {
    */
   public findContentLocally = async (contentKey: Uint8Array) => {
     const lookupKey = serializedContentKeyToContentId(contentKey)
-    let value = Uint8Array.from([])
+    let value
     if (contentKey[0] === HistoryNetworkContentTypes.HeaderProof) {
       try {
         // Create Header Proof
@@ -98,7 +98,7 @@ export class HistoryProtocol extends BaseProtocol {
     } else {
       try {
         //Check to see if value in content db
-        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+        value = fromHexString(await this.client.db.get(lookupKey))
       } catch {}
     }
     return value
