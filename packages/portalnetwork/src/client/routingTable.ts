@@ -4,7 +4,7 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>
   private gossipMap: Map<NodeId, Set<string>>
-  private strikes: Map<NodeId, number>
+  public strikes: Map<NodeId, number>
   private ignored: Set<NodeId>
   constructor(nodeId: NodeId) {
     super(nodeId)
