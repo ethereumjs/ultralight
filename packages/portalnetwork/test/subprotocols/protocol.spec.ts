@@ -46,7 +46,7 @@ tape('protocol wire message tests', async (t) => {
   })
 
   t.test('PING/PONG message handlers', async (st) => {
-    st.plan(3)
+    st.plan(2)
     const protocol = new FakeProtocol(node, 2n) as any
 
     const remoteEnr =
