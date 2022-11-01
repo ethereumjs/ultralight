@@ -5,13 +5,13 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   private radiusMap: Map<NodeId, bigint>
   private gossipMap: Map<NodeId, Set<string>>
   public strikes: Map<NodeId, number>
-  private ignored: Set<NodeId>
+  private ignored: Map<number, NodeId>
   constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
     this.gossipMap = new Map()
     this.strikes = new Map()
-    this.ignored = new Set()
+    this.ignored = new Map()
   }
 
   public setLogger(logger: Debugger) {
@@ -100,17 +100,14 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   // Add node to ignored list for 2 minutes and then delete from ignored list
 
   private ignoreNode = (nodeId: NodeId) => {
-    this.ignored.add(nodeId)
-    setTimeout(() => {
-      this.ignored.delete(nodeId)
-    }, 120000)
+    this.ignored.set(Date.now(), nodeId)
   }
 
   // Method for Protocol to check if Peer should be ignored.
   // Mainly prevents self from continuing to PING dead enrs that we receive
 
   public isIgnored = (nodeId: string) => {
-    if ([...this.ignored].includes(nodeId)) {
+    if ([...this.ignored.values()].includes(nodeId)) {
       return true
     }
   }
