@@ -14,7 +14,7 @@ import { DBManager } from '../../client/dbManager.js'
 import {
   Bloom,
   HistoryProtocol,
-  getHistoryNetworkContentId,
+  getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   Log,
   PostByzantiumTxReceipt,
@@ -140,7 +140,7 @@ export class ReceiptsManager {
     calcBloom = false,
     includeTxType = false
   ): Promise<TxReceipt[] | TxReceiptWithType[]> {
-    const encoded = await this.db.get(getHistoryNetworkContentId(2, blockHash))
+    const encoded = await this.db.get(getHistoryNetworkContentKey(2, fromHexString(blockHash)))
     if (!encoded) return []
     let receipts = this.rlp(
       RlpConvert.Decode,

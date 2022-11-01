@@ -97,12 +97,12 @@ export class ContentManager {
         let validBlock = false
         let block: Block
         try {
-          const headerContentId = getHistoryNetworkContentKey(
+          const headerContentKey = getHistoryNetworkContentKey(
             HistoryNetworkContentTypes.BlockHeader,
             fromHexString(hashKey)
           )
 
-          const hexHeader = await this.history.client.db.get(headerContentId)
+          const hexHeader = await this.history.client.db.get(headerContentKey)
           // Verify we can construct a valid block from the header and body provided
           block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true

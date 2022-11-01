@@ -321,9 +321,8 @@ export abstract class BaseProtocol {
             await Promise.all(
               requestedKeys.map(async (key) => {
                 let value = Uint8Array.from([])
-                const lookupKey = serializedContentKeyToContentId(key)
                 try {
-                  value = fromHexString(await this.client.db.get(lookupKey))
+                  value = fromHexString(await this.client.db.get(toHexString(key)))
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -361,7 +360,7 @@ export abstract class BaseProtocol {
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
-              await this.client.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
+              await this.client.db.get(toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true

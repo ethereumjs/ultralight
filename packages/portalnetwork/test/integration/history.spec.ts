@@ -63,12 +63,18 @@ tape('History Protocol Integration Tests', (t) => {
             )
             const header = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+                getHistoryNetworkContentKey(
+                  HistoryNetworkContentTypes.BlockHeader,
+                  fromHexString(blockHash)
+                )
               )
             )
             const body = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
+                getHistoryNetworkContentKey(
+                  HistoryNetworkContentTypes.BlockBody,
+                  fromHexString(blockHash)
+                )
               )
             )
             const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]

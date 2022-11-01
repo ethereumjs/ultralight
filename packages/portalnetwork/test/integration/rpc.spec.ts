@@ -11,6 +11,7 @@ import {
   HistoryNetworkContentTypes,
   HeaderAccumulatorType,
   HeaderAccumulator,
+  getHistoryNetworkContentKey,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
@@ -50,12 +51,18 @@ tape('getBlockByHash', (t) => {
           st.equal(testHashStrings[idx], blockHash, `eth_getBlockByHash retrieved a block body`)
           const header = fromHexString(
             await portal2.db.get(
-              getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+              getHistoryNetworkContentKey(
+                HistoryNetworkContentTypes.BlockHeader,
+                fromHexString(blockHash)
+              )
             )
           )
           const body = fromHexString(
             await portal2.db.get(
-              getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
+              getHistoryNetworkContentKey(
+                HistoryNetworkContentTypes.BlockBody,
+                fromHexString(blockHash)
+              )
             )
           )
           const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
@@ -112,13 +119,13 @@ tape('getBlockByHash', (t) => {
         'eth_getBlockByHash test passed'
       )
       const _h = await portal2.db.get(
-        getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, testHash)
+        getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, fromHexString(testHash))
       )
       st.equal(_h, toHexString(testHeader), 'eth_getBlockByHash returned a Block Header')
 
       try {
         await portal2.db.get(
-          getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, testHash)
+          getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockBody, fromHexString(testHash))
         )
         st.fail('should not find block body')
       } catch (e: any) {

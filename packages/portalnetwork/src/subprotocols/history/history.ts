@@ -98,7 +98,7 @@ export class HistoryProtocol extends BaseProtocol {
     } else {
       try {
         //Check to see if value in content db
-        value = Buffer.from(fromHexString(await this.client.db.get(lookupKey)))
+        value = Buffer.from(fromHexString(await this.client.db.get(toHexString(contentKey))))
       } catch {}
     }
     return value
