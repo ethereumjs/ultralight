@@ -111,4 +111,13 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
       return true
     }
   }
+
+  public clearIgnored() {
+    let dif = 0
+    for (const ignored of this.ignored.keys()) {
+      Date.now() - ignored > 120000 && this.ignored.delete(ignored)
+      dif++
+    }
+    dif > 0 && this.logger!(`${dif} nodeId's are no longer ignored`)
+  }
 }
