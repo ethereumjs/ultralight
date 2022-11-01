@@ -28,22 +28,55 @@ export class DBManager {
   }
 
   get(key: string) {
-    return this.db.get(key)
+    let db = this.db
+    switch (key.slice(0, 4)) {
+      case '0x00':
+      case '0x01':
+      case '0x02':
+      case '0x03':
+      case '0x04':
+      case '0x05': {
+        db = this.sublevels.get(ProtocolId.HistoryNetwork)!
+      }
+    }
+    return db.get(key)
   }
 
   put(key: string, val: string) {
-    return this.db.put(key, val, (err: any) => {
+    let db = this.db
+    switch (key.slice(0, 4)) {
+      case '0x00':
+      case '0x01':
+      case '0x02':
+      case '0x03':
+      case '0x04':
+      case '0x05': {
+        db = this.sublevels.get(ProtocolId.HistoryNetwork)!
+      }
+    }
+    return db.put(key, val, (err: any) => {
       if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
   }
 
-  batch(ops: AbstractBatchOperation<string, string, string>[]) {
-    //@ts-ignore Because level doesn't know how to get along with itself
-    return this.db.batch(ops)
+  batch(ops: AbstractBatchOperation<string, string, string>[], sublevel?: ProtocolId) {
+    const db = sublevel ? this.sublevels.get(sublevel) ?? this.db : this.db
+    return (db as any).batch(ops)
   }
 
   del(key: string) {
-    return this.db.del(key)
+    let db = this.db
+    switch (key.slice(0, 4)) {
+      case '0x00':
+      case '0x01':
+      case '0x02':
+      case '0x03':
+      case '0x04':
+      case '0x05': {
+        db = this.sublevels.get(ProtocolId.HistoryNetwork)!
+      }
+    }
+    return db.del(key)
   }
 
   async close() {
