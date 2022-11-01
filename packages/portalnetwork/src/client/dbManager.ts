@@ -1,17 +1,30 @@
 import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
+import { ProtocolId } from '../subprotocols/index.js'
 
 export class DBManager {
   db: AbstractLevel<string, string>
   logger: Debugger
   currentSize: () => Promise<number>
+  sublevels: Map<ProtocolId, AbstractLevel<string, string>>
 
-  constructor(logger: Debugger, currentSize: () => Promise<number>, db?: AbstractLevel<string>) {
+  constructor(
+    logger: Debugger,
+    currentSize: () => Promise<number>,
+    sublevels: ProtocolId[] = [],
+    db?: AbstractLevel<string>
+  ) {
     //@ts-ignore Because level doesn't know how to get along with itself
     this.db = db ?? new MemoryLevel()
     this.logger = logger.extend('DB')
     this.currentSize = currentSize
+    this.sublevels = new Map()
+    for (const protocol of sublevels) {
+      const sub = this.db.sublevel(protocol)
+      sub.open()
+      this.sublevels.set(protocol, sub)
+    }
   }
 
   get(key: string) {
