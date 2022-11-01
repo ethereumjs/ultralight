@@ -557,8 +557,8 @@ export abstract class BaseProtocol {
   ) => Promise<Union<Uint8Array | Uint8Array[]> | undefined>
 
   /**
-   * Pings each node in the specified routing table to check for liveness.  Uses the existing PING/PONG liveness logic to
-   * evict nodes that do not respond
+   * Pings each node in a 20% sample of the routing table.
+   * Uses the existing PING/PONG liveness logic to evict nodes that do not respond.
    */
   private livenessCheck = async () => {
     let peers: ENR[] = this.routingTable.values()
@@ -577,6 +577,7 @@ export abstract class BaseProtocol {
     } else {
       this.logger.extend('livenessCheck')(`${peers.length} peers passed liveness check`)
     }
+    this.routingTable.clearIgnored()
   }
 
   /**
