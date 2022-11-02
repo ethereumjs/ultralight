@@ -29,7 +29,6 @@ export class DBManager {
     this.sublevels = new Map()
     for (const protocol of sublevels) {
       const sub = this.db.sublevel(protocol)
-      sub.open()
       this.sublevels.set(protocol, sub)
     }
   }
@@ -78,11 +77,20 @@ export class DBManager {
     }
     return db
   }
-    return db.del(key)
+
+  async open() {
+    await this.db.open()
+    for (const sublevel of this.sublevels.values()) {
+      await sublevel.open()
+    }
   }
 
   async close() {
     await this.db.removeAllListeners()
     await this.db.close()
+  }
+
+  async closeAll() {
+    await this.close()
   }
 }
