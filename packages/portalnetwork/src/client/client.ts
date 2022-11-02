@@ -203,6 +203,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public start = async () => {
     await this.discv5.start()
+    await this.db.open()
     for (const protocol of this.protocols.values()) {
       await protocol.init()
       // Start kbucket refresh on 30 second interval
