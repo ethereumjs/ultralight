@@ -1,15 +1,19 @@
+import { NodeId, distance } from '@chainsafe/discv5'
+import { fromHexString } from '@chainsafe/ssz'
 import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
 import { ProtocolId } from '../subprotocols/index.js'
 
 export class DBManager {
+  nodeId: string
   db: AbstractLevel<string, string>
   logger: Debugger
   currentSize: () => Promise<number>
   sublevels: Map<ProtocolId, AbstractLevel<string, string>>
 
   constructor(
+    nodeId: NodeId,
     logger: Debugger,
     currentSize: () => Promise<number>,
     sublevels: ProtocolId[] = [],
@@ -17,6 +21,7 @@ export class DBManager {
   ) {
     //@ts-ignore Because level doesn't know how to get along with itself
     this.db = db ?? new MemoryLevel()
+    this.nodeId = nodeId.startsWith('0x') ? nodeId.slice(2) : nodeId
     this.logger = logger.extend('DB')
     this.currentSize = currentSize
     this.sublevels = new Map()
