@@ -31,6 +31,7 @@ import {
   NodeLookup,
   StateNetworkRoutingTable,
 } from '../index.js'
+import { bigIntToHex } from '@ethereumjs/util'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
@@ -630,5 +631,16 @@ export abstract class BaseProtocol {
         this.sendFindNodes(enr.nodeId, [x])
       }
     }
+  }
+
+  private db() {
+    return this.client.db.sublevels.get(this.protocolId)
+  }
+
+  public async prune(radius: bigint) {
+    for await (const key of this.db()!.keys({ gte: bigIntToHex(radius) })) {
+      this.db()!.del(key)
+    }
+    this.nodeRadius = radius
   }
 }
