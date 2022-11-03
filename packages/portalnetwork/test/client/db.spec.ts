@@ -28,7 +28,7 @@ tape('DBManager unit tests', async (t) => {
   t.equal(db.db.status, 'open', 'Main database is open')
   t.equal(sublevel.status, 'open', 'History Sublevel open')
   t.equal(state, undefined, 'Unsupported Network not open')
-  t.equal(db.nodeId, self, 'db nodeId set correctly')
+  t.equal(db.nodeId, self.slice(2), 'db nodeId set correctly')
 
   const testHash = randomBytes(32)
   const testVal = randomBytes(48)
