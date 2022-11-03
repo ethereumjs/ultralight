@@ -11,7 +11,7 @@ tape('Client unit tests', async (t) => {
   })
 
   t.test('node initialization/startup', async (st) => {
-    st.plan(2)
+    st.plan(4)
     st.equal(
       node.discv5.enr.getLocationMultiaddr('udp')!.toOptions().host,
       '192.168.0.1',
@@ -19,15 +19,15 @@ tape('Client unit tests', async (t) => {
     )
 
     node.discv5.start = td.func<any>()
+    node.start = td.func<any>()
+    node.stop = td.func<any>()
     td.when(node.discv5.start()).thenResolve(st.pass('discv5 client started'))
-    await node.start()
-  })
-
-  t.test('test cleanup', (st) => {
-    td.reset()
-    node.stop()
+    td.when(node.start()).thenResolve(st.pass('portal client started'))
+    td.when(node.stop()).thenResolve(st.pass('portal client stopped'))
     st.end()
   })
+
+  td.reset()
 
   t.end()
 })
