@@ -198,24 +198,24 @@ export abstract class BaseProtocol {
         this.metrics?.nodesMessagesReceived.inc()
         const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
         const enrs = decoded.enrs ?? []
-        const notIgnored = enrs.filter(
-          (enr) => !this.routingTable.isIgnored(ENR.decode(Buffer.from(enr)).nodeId)
-        )
-        const unknown = notIgnored.filter(
-          (enr) => !this.routingTable.getValue(ENR.decode(Buffer.from(enr)).nodeId)
-        )
-        // Ping node if not currently in subprotocol routing table
-        for (const enr of unknown) {
-          const decodedEnr = ENR.decode(Buffer.from(enr))
-          const ping = await this.sendPing(decodedEnr)
-          if (ping === undefined) {
-            this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)
-            this.routingTable.evictNode(decodedEnr.nodeId)
-          } else {
-            this.logger(`New connection with:  ${shortId(decodedEnr.nodeId)}`)
-          }
-        }
         if (enrs.length > 0) {
+          const notIgnored = enrs.filter(
+            (enr) => !this.routingTable.isIgnored(ENR.decode(Buffer.from(enr)).nodeId)
+          )
+          const unknown = notIgnored.filter(
+            (enr) => !this.routingTable.getValue(ENR.decode(Buffer.from(enr)).nodeId)
+          )
+          // Ping node if not currently in subprotocol routing table
+          for (const enr of unknown) {
+            const decodedEnr = ENR.decode(Buffer.from(enr))
+            const ping = await this.sendPing(decodedEnr)
+            if (ping === undefined) {
+              this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)
+              this.routingTable.evictNode(decodedEnr.nodeId)
+            } else {
+              this.logger(`New connection with:  ${shortId(decodedEnr.nodeId)}`)
+            }
+          }
           this.logger.extend(`NODES`)(
             `Received ${enrs.length} ENRs from ${shortId(dstId)} with ${
               enrs.length - notIgnored.length
