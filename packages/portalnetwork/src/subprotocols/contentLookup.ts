@@ -120,6 +120,7 @@ export class ContentLookup {
               if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
                 const ping = await this.protocol.sendPing(decodedEnr)
                 if (!ping) {
+                  this.protocol.routingTable.evictNode(decodedEnr.nodeId)
                   continue
                 }
               }
