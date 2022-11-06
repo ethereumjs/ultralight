@@ -4,34 +4,16 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>
   private gossipMap: Map<NodeId, Set<string>>
-  public strikes: Map<NodeId, number>
   private ignored: [number, NodeId][]
   constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
     this.gossipMap = new Map()
-    this.strikes = new Map()
     this.ignored = []
   }
 
   public setLogger(logger: Debugger) {
     this.logger = logger.extend('RoutingTable')
-  }
-
-  public strike = (nodeId: NodeId) => {
-    let strikes = this.strikes.get(nodeId) ?? 0
-    strikes++
-    this.logger?.extend('STRIKE').extend(strikes.toString())(nodeId)
-    if (strikes > 2) {
-      this.evictNode(nodeId)
-      return
-    }
-    this.strikes.set(nodeId, strikes)
-    return strikes
-  }
-
-  public clearStrikes = (nodeId: NodeId) => {
-    this.strikes.set(nodeId, 0)
   }
 
   /**
@@ -94,7 +76,6 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
     }
     this.radiusMap.delete(nodeId)
     this.gossipMap.delete(nodeId)
-    this.strikes.delete(nodeId)
   }
 
   // Add node to ignored list for 2 minutes and then delete from ignored list

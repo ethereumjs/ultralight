@@ -130,15 +130,12 @@ export abstract class BaseProtocol {
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
-        this.routingTable.clearStrikes(enr.nodeId)
         this.updateRoutingTable(enr, pongMessage.customPayload)
         return pongMessage
       } else {
-        this.routingTable.strike(enr.nodeId)
       }
     } catch (err: any) {
       this.logger(`Error during PING request: ${err.toString()}`)
-      enr.nodeId && this.routingTable.strike(enr.nodeId)
       return
     }
   }

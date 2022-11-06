@@ -62,7 +62,6 @@ export class ContentLookup {
       const res = await this.protocol.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
         // Node didn't respond
-        this.protocol.routingTable.strike(nearestPeer.nodeId)
         this.contacted.push(nearestPeer.nodeId)
         continue
       }
