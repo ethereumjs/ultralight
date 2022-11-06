@@ -32,7 +32,7 @@ tape('Integration Tests -- PING/PONG', (t) => {
     }
     connectAndTest(t, st, ping)
   })
-  t.test('client should ignore unresponsive peer after 3 PING/PONG failures', (st) => {
+  t.test('client should ignore unresponsive peer after PING/PONG failure', (st) => {
     const ignore = async (portal1: PortalNetwork, portal2: PortalNetwork) => {
       const protocol2 = portal2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const enr1 = portal1.discv5.enr
@@ -43,21 +43,9 @@ tape('Integration Tests -- PING/PONG', (t) => {
       res = await protocol2.sendPing(enr1)
       st.equals(res, undefined, 'sendPing with no response returned undefined')
       st.equals(
-        protocol2.routingTable.strikes.get(nodeId1),
-        1,
-        'Strike 1 applied after failed PING/PONG'
-      )
-      res = await protocol2.sendPing(enr1)
-      st.equals(
-        protocol2.routingTable.strikes.get(nodeId1),
-        2,
-        'Strike 1 applied after failed PING/PONG'
-      )
-      res = await protocol2.sendPing(enr1)
-      st.equals(
         protocol2.routingTable.isIgnored(nodeId1),
         true,
-        'Node added to ignore list after 3 failed PING/PONG attempts'
+        'Node added to ignore list after failed PING/PONG attempt'
       )
     }
     connectAndTest(t, st, ignore)
