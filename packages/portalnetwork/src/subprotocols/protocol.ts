@@ -133,9 +133,11 @@ export abstract class BaseProtocol {
         this.updateRoutingTable(enr, pongMessage.customPayload)
         return pongMessage
       } else {
+        this.routingTable.evictNode(enr.nodeId)
       }
     } catch (err: any) {
       this.logger(`Error during PING request: ${err.toString()}`)
+      enr.nodeId && this.routingTable.evictNode(enr.nodeId)
       return
     }
   }

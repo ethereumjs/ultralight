@@ -61,7 +61,8 @@ export class ContentLookup {
       this.logger(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.protocol.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
-        // Node didn't respond
+        // Node didn't respond, send a Ping to test connection.
+        this.protocol.sendPing(this.protocol.routingTable.getValue(nearestPeer.nodeId)!)
         this.contacted.push(nearestPeer.nodeId)
         continue
       }
