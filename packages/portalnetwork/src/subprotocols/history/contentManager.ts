@@ -94,6 +94,10 @@ export class ContentManager {
         break
       }
       case HistoryNetworkContentTypes.BlockBody: {
+        if (value.length === 0) {
+          // Occurs when `getBlockByHash` called `includeTransactions` === false
+          return
+        }
         let validBlock = false
         let block: Block
         try {
