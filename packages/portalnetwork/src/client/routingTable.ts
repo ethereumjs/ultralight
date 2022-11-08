@@ -1,33 +1,19 @@
-import { KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
+import { ENR, KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
 import { Debugger } from 'debug'
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>
   private gossipMap: Map<NodeId, Set<string>>
-  private strikes: Map<NodeId, number>
+  private ignored: [number, NodeId][]
   constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
     this.gossipMap = new Map()
-    this.strikes = new Map()
+    this.ignored = []
   }
 
   public setLogger(logger: Debugger) {
     this.logger = logger.extend('RoutingTable')
-  }
-
-  public strike = (nodeId: NodeId) => {
-    this.logger?.extend('STRIKE')(nodeId)
-    const strikes = this.strikes.get(nodeId) ?? 0
-    if (strikes > 1) {
-      this.evictNode(nodeId)
-      this.strikes.delete(nodeId)
-    }
-    this.strikes.set(nodeId, strikes + 1)
-  }
-
-  public clearStrikes = (nodeId: NodeId) => {
-    this.strikes.set(nodeId, 0)
   }
 
   /**
@@ -75,16 +61,43 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   }
 
   /**
-   * Remove a node from the routing table
+   * Evict a node from the routing table and ignore
    * @param nodeId nodeId of peer to be evicted
    */
   public evictNode = (nodeId: NodeId) => {
     this.logger?.extend('EVICT')(nodeId)
-    const enr = this.getValue(nodeId)
+    let enr: ENR | undefined = this.getValue(nodeId)
+    this.ignoreNode(nodeId)
+    if (enr) {
+      enr = this.removeById(nodeId)?.value
+    }
+    if (enr) {
+      enr = this.remove(enr)?.value
+    }
     this.radiusMap.delete(nodeId)
     this.gossipMap.delete(nodeId)
-    if (enr) {
-      this.remove(enr)
+  }
+
+  // Add node to ignored list for 2 minutes and then delete from ignored list
+
+  private ignoreNode = (nodeId: NodeId) => {
+    this.ignored.push([Date.now(), nodeId])
+  }
+
+  // Method for Protocol to check if Peer should be ignored.
+  // Mainly prevents self from continuing to PING dead enrs that we receive
+
+  public isIgnored = (nodeId: string) => {
+    if (this.ignored.find(([t, n]) => n === nodeId)) {
+      return true
     }
+  }
+
+  public clearIgnored() {
+    const before = this.ignored.length
+    const splitIndex = this.ignored.findIndex((entry) => entry[0] > Date.now() - 120000)
+    this.ignored = this.ignored.slice(splitIndex)
+    before - this.ignored.length > 0 &&
+      this.logger!(`${before - this.ignored.length} nodeId's are no longer ignored`)
   }
 }

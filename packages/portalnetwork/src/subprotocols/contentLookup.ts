@@ -14,7 +14,7 @@ type lookupPeer = {
 export class ContentLookup {
   private protocol: BaseProtocol
   private lookupPeers: lookupPeer[]
-  private contacted: lookupPeer[]
+  private contacted: NodeId[]
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
@@ -26,7 +26,7 @@ export class ContentLookup {
     this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
-    this.logger = this.protocol.client.logger.extend('lookup', ':')
+    this.logger = this.protocol.client.logger.extend('lookup')
   }
 
   /**
@@ -43,15 +43,7 @@ export class ContentLookup {
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
-    this.protocol.routingTable.nearest(this.contentId, 5).forEach((peer: any) => {
-      try {
-        const dist = distance(peer.nodeId, this.contentId)
-        this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
-      } catch {}
-    })
-
     let finished = false
-    const nodesAlreadyAsked = new Set()
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
@@ -63,16 +55,12 @@ export class ContentLookup {
       if (!nearestPeer) {
         return
       }
-      if (nodesAlreadyAsked.has(nearestPeer.nodeId)) {
-        continue
-      } else {
-        nodesAlreadyAsked.add(nearestPeer.nodeId)
-      }
-
       this.logger(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
       const res = await this.protocol.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
-        // Node didn't respond
+        // Node didn't respond, send a Ping to test connection.
+        this.protocol.sendPing(this.protocol.routingTable.getValue(nearestPeer.nodeId)!)
+        this.contacted.push(nearestPeer.nodeId)
         continue
       }
       switch (res.selector) {
@@ -101,55 +89,49 @@ export class ContentLookup {
           nearestPeer.hasContent = true
           this.protocol.client.metrics?.successfulContentLookups.inc()
           // POKE -- Offer content to neighbors who should have had content but don't if we receive content directly
-          this.contacted.forEach((peer) => {
-            if (!peer.hasContent) {
-              if (
-                !this.protocol.routingTable.contentKeyKnownToPeer(
-                  peer.nodeId,
-                  toHexString(this.contentKey)
-                )
-              ) {
-                // Only offer content if not already offered to this peer
-                this.protocol.sendOffer(peer.nodeId, [this.contentKey])
-              }
+          for (const peer of this.contacted) {
+            if (
+              !this.protocol.routingTable.contentKeyKnownToPeer(peer, toHexString(this.contentKey))
+            ) {
+              // Only offer content if not already offered to this peer
+              this.protocol.sendOffer(peer, [this.contentKey])
             }
-          })
+          }
           return res.value
         }
         case 2: {
           // findContent request returned ENRs of nodes closer to content
           this.logger(`received ${res.value.length} ENRs for closer nodes`)
-          res.value.forEach((enr) => {
+          for (const enr of res.value) {
             if (!finished) {
               const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
-              if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
-                return
+              // Disregard if nodes have been previously contacted during this lookup,
+              // Or if nodes are currently being ignored for unresponsiveness.
+              if (
+                this.contacted.includes(decodedEnr.nodeId) ||
+                this.protocol.routingTable.isIgnored(decodedEnr.nodeId)
+              ) {
+                continue
               }
-              const dist = distance(decodedEnr.nodeId, this.contentId)
-              if (this.lookupPeers.length === 0) {
-                // if no peers currently in lookup table, add to beginning of list
-                this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
-              } else {
-                const index = this.lookupPeers.findIndex((peer) => peer.distance > dist)
-                if (index > -1) {
-                  // add peer to lookupPeer list if distance from content is less than at least one current lookupPeer
-                  this.lookupPeers.splice(index - 1, 0, {
-                    nodeId: decodedEnr.nodeId,
-                    distance: dist,
-                  })
-                } else {
-                  // if distance to content is greater than all other peers, add to end of lookupPeer list
-                  this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
+              // Send a PING request to check liveness of any unknown nodes
+              if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
+                const ping = await this.protocol.sendPing(decodedEnr)
+                if (!ping) {
+                  this.protocol.routingTable.evictNode(decodedEnr.nodeId)
+                  continue
                 }
               }
-              if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
-                this.protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              }
+              // Calculate distance and add to list of lookup peers
+              // Sort list by distance to keep closest node first
+              const dist = distance(decodedEnr.nodeId, this.contentId)
+              this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
+              this.lookupPeers = this.lookupPeers.sort(
+                (a, b) => Number(a.distance) - Number(b.distance)
+              )
             }
-          })
+          }
         }
       }
-      this.contacted.push(nearestPeer!)
     }
   }
 }
