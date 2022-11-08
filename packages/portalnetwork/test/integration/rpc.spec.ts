@@ -4,8 +4,6 @@ import {
   PortalNetwork,
   ProtocolId,
   sszEncodeBlockBody,
-  getHistoryNetworkContentId,
-  HistoryNetworkContentKeyType,
   HistoryProtocol,
   reassembleBlock,
   HistoryNetworkContentTypes,
@@ -149,12 +147,7 @@ tape('getBlockByNumber', (t) => {
     const block1000 = require('./testBlock1000.json')
     const epochHash = epochData.hash
     const serialized = epochData.serialized
-    const epochKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([HistoryNetworkContentTypes.EpochAccumulator]),
-        fromHexString(epochHash),
-      ])
-    )
+
     const blockRlp = block1000.raw
     const rebuiltBlock = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(blockRlp)), {
       hardforkByBlockNumber: true,

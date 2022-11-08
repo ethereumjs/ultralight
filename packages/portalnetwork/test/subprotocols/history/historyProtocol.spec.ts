@@ -8,23 +8,20 @@ import {
   PortalNetwork,
   toHexString,
   ProtocolId,
-  serializedContentKeyToContentId,
   sszEncodeBlockBody,
   HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   EpochAccumulator,
   getHistoryNetworkContentId,
-  HeaderAccumulatorType,
   blockNumberToGindex,
   TransportLayer,
   HistoryProtocol,
-  HeaderAccumulator,
   getHistoryNetworkContentKey,
   reassembleBlock,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import RLP from '@ethereumjs/rlp'
-import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
+import { bufArrToArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('./testdata/testBlocks.json')

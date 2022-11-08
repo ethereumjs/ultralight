@@ -1,4 +1,4 @@
-import { distance, ENR, EntryStatus, NodeId } from '@chainsafe/discv5'
+import { distance, ENR, EntryStatus } from '@chainsafe/discv5'
 import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'

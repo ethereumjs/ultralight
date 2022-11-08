@@ -1,6 +1,6 @@
 import { NodeId, distance } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { bigIntToHex, bufferToBigInt } from '@ethereumjs/util'
+import { bigIntToHex } from '@ethereumjs/util'
 import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'

@@ -23,10 +23,10 @@ tape('DBManager unit tests', async (t) => {
   const log = debug('db test')
   const db = new DBManager(self.slice(2), log, size, [ProtocolId.HistoryNetwork])
   await db.open()
-  const sublevel = db.sublevels.get(ProtocolId.HistoryNetwork)!
+  const historyDb = db.sublevels.get(ProtocolId.HistoryNetwork)!
   const state = db.sublevels.get(ProtocolId.StateNetwork)
   t.equal(db.db.status, 'open', 'Main database is open')
-  t.equal(sublevel.status, 'open', 'History Sublevel open')
+  t.equal(historyDb.status, 'open', 'History Sublevel open')
   t.equal(state, undefined, 'Unsupported Network not open')
   t.equal(db.nodeId, self.slice(2), 'db nodeId set correctly')
 
@@ -65,7 +65,7 @@ tape('DBManager unit tests', async (t) => {
     BigInt.asUintN(32, BigInt(testId)),
     'XOR formula works'
   )
-  const val = await sublevel.get(lookupKey)
+  const val = await historyDb.get(lookupKey)
   t.equal(
     val,
     toHexString(testVal),
@@ -90,14 +90,14 @@ tape('DBManager unit tests', async (t) => {
   }
 
   t.equal((await db.db.keys().all()).length, 20000, '20000 total keys')
-  t.equal((await sublevel.keys().all())?.length, 10000, '10000 history sublevel keys')
+  t.equal((await historyDb.keys().all())?.length, 10000, '10000 history sublevel keys')
 
   const oldRadius = 2n ** 256n
   const newRadius = oldRadius / 2n
-  for await (const key of sublevel!.keys({ gte: bigIntToHex(newRadius) })) {
-    sublevel!.del(key)
+  for await (const key of historyDb!.keys({ gte: bigIntToHex(newRadius) })) {
+    historyDb!.del(key)
   }
-  const rest = (await sublevel?.keys().all())!.length
+  const rest = (await historyDb?.keys().all())!.length
   t.ok(
     rest < 10000,
     `pruning by 50% removed ${((10000 - rest) * 100) / 10000}% of sublevel content`

@@ -6,7 +6,6 @@ import {
   ProtocolId,
   sszEncodeBlockBody,
   HistoryNetworkContentTypes,
-  getHistoryNetworkContentId,
   HistoryNetworkContentKeyType,
   HistoryProtocol,
   reassembleBlock,

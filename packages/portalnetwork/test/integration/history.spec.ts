@@ -1,21 +1,17 @@
-import tape from 'tape'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Block } from '@ethereumjs/block'
 import { ChildProcessWithoutNullStreams } from 'child_process'
+import { createRequire } from 'module'
+import tape from 'tape'
 import {
+  getHistoryNetworkContentKey,
+  HistoryNetworkContentTypes,
+  HistoryProtocol,
   PortalNetwork,
   ProtocolId,
-  sszEncodeBlockBody,
-  HistoryNetworkContentTypes,
-  HeaderAccumulatorType,
-  getHistoryNetworkContentId,
-  HistoryNetworkContentKeyType,
-  HistoryProtocol,
   reassembleBlock,
-  HeaderAccumulator,
-  getHistoryNetworkContentKey,
+  sszEncodeBlockBody,
 } from '../../src/index.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block, BlockHeader } from '@ethereumjs/block'
-import { createRequire } from 'module'
 import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)

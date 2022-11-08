@@ -1,6 +1,5 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { logger } from 'ethers'
 import {
   AccumulatorManager,
   connectionIdType,
@@ -24,7 +23,6 @@ import {
   ProtocolId,
   ReceiptsManager,
   RequestCode,
-  serializedContentKeyToContentId,
   shortId,
   SszProof,
 } from '../../index.js'
@@ -80,7 +78,6 @@ export class HistoryProtocol extends BaseProtocol {
    * @returns content if available locally
    */
   public findContentLocally = async (contentKey: Uint8Array) => {
-    const lookupKey = serializedContentKeyToContentId(contentKey)
     let value = Uint8Array.from([])
     if (contentKey[0] === HistoryNetworkContentTypes.HeaderProof) {
       try {
