@@ -43,6 +43,11 @@ export class ContentLookup {
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
+    const nearest = this.protocol.routingTable.nearest(this.contentId, 5)
+    for (const peer of nearest) {
+      const dist = distance(peer.nodeId, this.contentId)
+      this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
+    }
     let finished = false
     while (!finished) {
       if (this.lookupPeers.length === 0) {
