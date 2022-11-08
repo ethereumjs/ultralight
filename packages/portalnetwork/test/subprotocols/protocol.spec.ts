@@ -46,7 +46,7 @@ tape('protocol wire message tests', async (t) => {
   })
 
   t.test('PING/PONG message handlers', async (st) => {
-    st.plan(3)
+    st.plan(2)
     const protocol = new FakeProtocol(node, 2n) as any
 
     const remoteEnr =
@@ -64,10 +64,7 @@ tape('protocol wire message tests', async (t) => {
         td.matchers.anything()
       )
     ).thenResolve(pongResponse)
-
-    let res = await protocol.sendPing('abc')
-    st.ok(res === undefined, 'received undefined when called with invalid ENR/nodeId')
-    res = await protocol.sendPing(decodedEnr)
+    const res = await protocol.sendPing(decodedEnr)
     st.ok(res.enrSeq === 5n && res.customPayload[0] === 1, 'received expected PONG response')
     const payload = PingPongCustomDataType.serialize({ radius: BigInt(1) })
     const msg = {
