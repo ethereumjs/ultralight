@@ -54,14 +54,13 @@ export class ETH {
         lookup = new ContentLookup(this.protocol, bodyContentKey!)
         body = await lookup.startLookup()
         return new Promise((resolve) => {
-          if (body) {
-            // Try assembling block
-            try {
-              block = reassembleBlock(header, body)
-              resolve(block)
-            } catch {}
-          }
-          block = reassembleBlock(header, body)
+          // Try assembling block
+          try {
+            block = reassembleBlock(header, body)
+            resolve(block)
+          } catch {}
+
+          block = reassembleBlock(header)
           resolve(block)
         })
       }

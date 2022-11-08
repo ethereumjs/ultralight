@@ -6,10 +6,10 @@ import {
   ProtocolId,
   sszEncodeBlockBody,
   HistoryNetworkContentTypes,
-  getHistoryNetworkContentId,
   HistoryNetworkContentKeyType,
   HistoryProtocol,
   reassembleBlock,
+  getHistoryNetworkContentKey,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
@@ -86,24 +86,21 @@ tape('Integration -- FINDCONTENT/FOUNDCONTENT', (t) => {
         testBlockBody
       )
       testBlockKeys.push(
-        HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([
-            Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
-            fromHexString(testHash),
-          ])
+        fromHexString(
+          getHistoryNetworkContentKey(
+            HistoryNetworkContentTypes.BlockHeader,
+            fromHexString(testHash)
+          )
         ),
-        HistoryNetworkContentKeyType.serialize(
-          Buffer.concat([
-            Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
-            fromHexString(testHash),
-          ])
+        fromHexString(
+          getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockBody, fromHexString(testHash))
         )
       )
       let header: Uint8Array
       portal2.on('ContentAdded', async (blockHash, contentType, content) => {
         st.equal(
-          await portal1.db.get(getHistoryNetworkContentId(contentType, testHash)),
-          await portal2.db.get(getHistoryNetworkContentId(contentType, testHash)),
+          await portal1.db.get(getHistoryNetworkContentKey(contentType, fromHexString(testHash))),
+          await portal2.db.get(getHistoryNetworkContentKey(contentType, fromHexString(testHash))),
           `${HistoryNetworkContentTypes[contentType]} successfully stored in database`
         )
         if (contentType === HistoryNetworkContentTypes.BlockHeader) {
@@ -206,7 +203,10 @@ tape('OFFER/ACCEPT', (t) => {
       portal1.on('ContentAdded', async (blockHash, contentType, content) => {
         st.equal(
           await portal1.db.get(
-            getHistoryNetworkContentId(contentType, testHashes[testHashes.indexOf(blockHash)])
+            getHistoryNetworkContentKey(
+              contentType,
+              fromHexString(testHashes[testHashes.indexOf(blockHash)])
+            )
           ),
           content,
           `${HistoryNetworkContentTypes[contentType]} successfully stored in db`
@@ -293,12 +293,18 @@ tape('OFFER/ACCEPT', (t) => {
             )
             const header = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+                getHistoryNetworkContentKey(
+                  HistoryNetworkContentTypes.BlockHeader,
+                  fromHexString(blockHash)
+                )
               )
             )
             const body = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
+                getHistoryNetworkContentKey(
+                  HistoryNetworkContentTypes.BlockBody,
+                  fromHexString(blockHash)
+                )
               )
             )
             const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]

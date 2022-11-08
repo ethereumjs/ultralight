@@ -4,7 +4,7 @@ import { Debugger } from 'debug'
 import {
   EpochAccumulator,
   EPOCH_SIZE,
-  getHistoryNetworkContentId,
+  getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
@@ -37,7 +37,7 @@ export class ContentManager {
     hashKey: string,
     value: Uint8Array
   ) => {
-    const contentId = getHistoryNetworkContentId(contentType, hashKey)
+    const contentKey = getHistoryNetworkContentKey(contentType, fromHexString(hashKey))
 
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
@@ -86,7 +86,7 @@ export class ContentManager {
               }/${EPOCH_SIZE} of current Epoch`
             )
           }
-          this.history.client.db.put(contentId, toHexString(value))
+          this.history.client.db.put(contentKey, toHexString(value))
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return
@@ -94,15 +94,19 @@ export class ContentManager {
         break
       }
       case HistoryNetworkContentTypes.BlockBody: {
+        if (value.length === 0) {
+          // Occurs when `getBlockByHash` called `includeTransactions` === false
+          return
+        }
         let validBlock = false
         let block: Block
         try {
-          const headerContentId = getHistoryNetworkContentId(
+          const headerContentKey = getHistoryNetworkContentKey(
             HistoryNetworkContentTypes.BlockHeader,
-            hashKey
+            fromHexString(hashKey)
           )
 
-          const hexHeader = await this.history.client.db.get(headerContentId)
+          const hexHeader = await this.history.client.db.get(headerContentKey)
           // Verify we can construct a valid block from the header and body provided
           block = reassembleBlock(fromHexString(hexHeader), value)
           validBlock = true
@@ -118,7 +122,7 @@ export class ContentManager {
           }
         }
         if (validBlock) {
-          this.history.client.db.put(contentId, toHexString(value))
+          this.history.client.db.put(contentKey, toHexString(value))
           await this.history.receiptManager.saveReceipts(block!)
         } else {
           this.logger(`Could not verify block content`)
@@ -129,13 +133,16 @@ export class ContentManager {
       }
       case HistoryNetworkContentTypes.Receipt:
         this.history.client.db.put(
-          getHistoryNetworkContentId(HistoryNetworkContentTypes.Receipt, hashKey),
+          getHistoryNetworkContentKey(HistoryNetworkContentTypes.Receipt, fromHexString(hashKey)),
           toHexString(value)
         )
         break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.history.client.db.put(
-          getHistoryNetworkContentId(HistoryNetworkContentTypes.EpochAccumulator, hashKey),
+          getHistoryNetworkContentKey(
+            HistoryNetworkContentTypes.EpochAccumulator,
+            fromHexString(hashKey)
+          ),
           toHexString(value)
         )
         break
@@ -183,8 +190,14 @@ export class ContentManager {
       return record.blockHash
     })
     for (const hash in _epoch) {
-      const headerKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, hash)
-      const bodyKey = getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, hash)
+      const headerKey = getHistoryNetworkContentKey(
+        HistoryNetworkContentTypes.BlockHeader,
+        fromHexString(hash)
+      )
+      const bodyKey = getHistoryNetworkContentKey(
+        HistoryNetworkContentTypes.BlockBody,
+        fromHexString(hash)
+      )
       const headerDistance = distance(this.history.client.discv5.enr.nodeId, headerKey)
       const bodyDistance = distance(this.history.client.discv5.enr.nodeId, bodyKey)
       if (headerDistance <= this.radius) {

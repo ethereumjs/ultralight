@@ -146,7 +146,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.unverifiedSessionCache = new LRU({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
     this.refreshListeners = new Map()
-    this.db = new DBManager(this.logger, opts.dbSize, opts.db) as DBManager
+    this.db = new DBManager(
+      this.discv5.enr.nodeId,
+      this.logger,
+      opts.dbSize,
+      opts.supportedProtocols,
+      opts.db
+    ) as DBManager
     opts.supportedProtocols = opts.supportedProtocols ?? []
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
@@ -197,6 +203,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public start = async () => {
     await this.discv5.start()
+    await this.db.open()
     for (const protocol of this.protocols.values()) {
       await protocol.init()
       // Start kbucket refresh on 30 second interval

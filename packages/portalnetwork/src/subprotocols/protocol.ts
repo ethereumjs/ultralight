@@ -1,4 +1,4 @@
-import { distance, ENR, EntryStatus, NodeId } from '@chainsafe/discv5'
+import { distance, ENR, EntryStatus } from '@chainsafe/discv5'
 import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'
@@ -31,6 +31,7 @@ import {
   NodeLookup,
   StateNetworkRoutingTable,
 } from '../index.js'
+import { bigIntToHex } from '@ethereumjs/util'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
@@ -325,9 +326,8 @@ export abstract class BaseProtocol {
             await Promise.all(
               requestedKeys.map(async (key) => {
                 let value = Uint8Array.from([])
-                const lookupKey = serializedContentKeyToContentId(key)
                 try {
-                  value = fromHexString(await this.client.db.get(lookupKey))
+                  value = fromHexString(await this.client.db.get(toHexString(key)))
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -365,7 +365,7 @@ export abstract class BaseProtocol {
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
-              await this.client.db.get(serializedContentKeyToContentId(msg.contentKeys[x]))
+              await this.client.db.get(toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
@@ -636,5 +636,16 @@ export abstract class BaseProtocol {
         this.sendFindNodes(enr.nodeId, [x])
       }
     }
+  }
+
+  private db() {
+    return this.client.db.sublevels.get(this.protocolId)
+  }
+
+  public async prune(radius: bigint) {
+    for await (const key of this.db()!.keys({ gte: bigIntToHex(radius) })) {
+      this.db()!.del(key)
+    }
+    this.nodeRadius = radius
   }
 }

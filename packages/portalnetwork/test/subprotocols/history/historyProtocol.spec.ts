@@ -8,21 +8,20 @@ import {
   PortalNetwork,
   toHexString,
   ProtocolId,
-  serializedContentKeyToContentId,
   sszEncodeBlockBody,
   HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   EpochAccumulator,
   getHistoryNetworkContentId,
-  HeaderAccumulatorType,
   blockNumberToGindex,
   TransportLayer,
   HistoryProtocol,
-  HeaderAccumulator,
+  getHistoryNetworkContentKey,
+  reassembleBlock,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import RLP from '@ethereumjs/rlp'
-import { bufArrToArr, arrToBufArr } from '@ethereumjs/util'
+import { bufArrToArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('./testdata/testBlocks.json')
@@ -101,14 +100,12 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
       block1Hash,
       fromHexString(block1Rlp)
     )
-    const contentKey = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
-        fromHexString(block1Hash),
-      ])
+    const contentKey = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.BlockHeader,
+      fromHexString(block1Hash)
     )
 
-    const val = await node.db.get(serializedContentKeyToContentId(contentKey))
+    const val = await node.db.get(contentKey)
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(val)), {
       hardforkByBlockNumber: true,
     })
@@ -122,16 +119,16 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
     const epochAccumulator = require('../../integration/testEpoch.json')
     const rebuilt = EpochAccumulator.deserialize(fromHexString(epochAccumulator.serialized))
     const hashRoot = EpochAccumulator.hashTreeRoot(rebuilt)
-    const contentId = getHistoryNetworkContentId(
+    const contentKey = getHistoryNetworkContentKey(
       HistoryNetworkContentTypes.EpochAccumulator,
-      toHexString(hashRoot)
+      hashRoot
     )
     await protocol.addContentToHistory(
       HistoryNetworkContentTypes.EpochAccumulator,
       toHexString(hashRoot),
       fromHexString(epochAccumulator.serialized)
     )
-    const fromDB = await node.db.get(contentId)
+    const fromDB = await node.db.get(contentKey)
     st.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
   })
 
@@ -185,22 +182,30 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
     serializedBlock.blockHash,
     sszEncodeBlockBody(block)
   )
-  const rebuilt = await protocol.ETH.getBlockByHash(serializedBlock.blockHash, true)
-  t.equal(rebuilt?.header.number, block.header.number, 'reassembled block from components in DB')
+  const header = await node.db.get(
+    getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.BlockHeader,
+      fromHexString(serializedBlock.blockHash)
+    )
+  )
+  const body = await node.db.get(
+    getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.BlockBody,
+      fromHexString(serializedBlock.blockHash)
+    )
+  )
+  const rebuilt = reassembleBlock(fromHexString(header), fromHexString(body))
+  t.equal(rebuilt.header.number, block.header.number, 'reassembled block from components in DB')
   const receipt = await protocol.receiptManager.saveReceipts(block)
   t.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
   t.end()
 })
 
 tape('Header Proof Tests', async (t) => {
-  const _accumulator = require('../../integration/testAccumulator.json')
   const _epoch1 = require('../../integration/testEpoch.json')
-  const accumulator = new HeaderAccumulator({
-    storedAccumulator: HeaderAccumulatorType.deserialize(fromHexString(_accumulator)),
-  })
   const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
   const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
-  protocol.accumulator.replaceAccumulator(accumulator)
+  // protocol.accumulator.replaceAccumulator(accumulator)
   t.test(
     'HistoryProtocol can create and verify proofs for a HeaderRecord from an EpochAccumulator',
     async (st) => {

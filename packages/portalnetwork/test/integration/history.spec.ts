@@ -1,21 +1,17 @@
-import tape from 'tape'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Block } from '@ethereumjs/block'
 import { ChildProcessWithoutNullStreams } from 'child_process'
+import { createRequire } from 'module'
+import tape from 'tape'
 import {
+  getHistoryNetworkContentKey,
+  HistoryNetworkContentTypes,
+  HistoryProtocol,
   PortalNetwork,
   ProtocolId,
-  sszEncodeBlockBody,
-  HistoryNetworkContentTypes,
-  HeaderAccumulatorType,
-  getHistoryNetworkContentId,
-  HistoryNetworkContentKeyType,
-  HistoryProtocol,
   reassembleBlock,
-  HeaderAccumulator,
-  getHistoryNetworkContentKey,
+  sszEncodeBlockBody,
 } from '../../src/index.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block, BlockHeader } from '@ethereumjs/block'
-import { createRequire } from 'module'
 import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)
@@ -63,12 +59,18 @@ tape('History Protocol Integration Tests', (t) => {
             )
             const header = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, blockHash)
+                getHistoryNetworkContentKey(
+                  HistoryNetworkContentTypes.BlockHeader,
+                  fromHexString(blockHash)
+                )
               )
             )
             const body = fromHexString(
               await portal2.db.get(
-                getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockBody, blockHash)
+                getHistoryNetworkContentKey(
+                  HistoryNetworkContentTypes.BlockBody,
+                  fromHexString(blockHash)
+                )
               )
             )
             const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
