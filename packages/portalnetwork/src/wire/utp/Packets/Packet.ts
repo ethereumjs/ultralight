@@ -39,8 +39,8 @@ export class Packet {
             version: 1,
             extension: buffer.readUInt8(1),
             connectionId: buffer.readUInt16BE(2),
-            timestamp: buffer.readUInt32BE(4),
-            timestampDiff: buffer.readUInt32BE(8),
+            timestampMicroseconds: buffer.readUInt32BE(4),
+            timestampDifferenceMicroseconds: buffer.readUInt32BE(8),
             wndSize: buffer.readUInt32BE(12),
             seqNr: buffer.readUInt16BE(16),
             ackNr: buffer.readUInt16BE(18),
@@ -57,8 +57,8 @@ export class Packet {
           version: 1,
           extension: 0,
           connectionId: buffer.readUInt16BE(2),
-          timestamp: buffer.readUInt32BE(4),
-          timestampDiff: buffer.readUInt32BE(8),
+          timestampMicroseconds: buffer.readUInt32BE(4),
+          timestampDifferenceMicroseconds: buffer.readUInt32BE(8),
           wndSize: buffer.readUInt32BE(12),
           seqNr: buffer.readUInt16BE(16),
           ackNr: buffer.readUInt16BE(18),
@@ -80,7 +80,7 @@ export class Packet {
         packet = createSynPacket(opts as createSynOpts)
         break
       case PacketType.ST_STATE:
-        if (selectiveAck) {
+        if (selectiveAck === true) {
           packet = createSelectiveAckPacket(opts as createSelectiveAckOpts)
         } else {
           packet = createAckPacket(opts as createAckOpts)
@@ -119,8 +119,8 @@ export class Packet {
     buffer.writeUInt8(typeAndVer, 0)
     buffer.writeUInt8(this.header.extension, 1)
     buffer.writeUInt16BE(this.header.connectionId, 2)
-    buffer.writeUInt32BE(this.header.timestamp, 4)
-    buffer.writeUInt32BE(this.header.timestampDiff, 8)
+    buffer.writeUInt32BE(this.header.timestampMicroseconds, 4)
+    buffer.writeUInt32BE(this.header.timestampDifferenceMicroseconds, 8)
     buffer.writeUInt32BE(this.header.wndSize, 12)
     buffer.writeUInt16BE(this.header.seqNr, 16)
     buffer.writeUInt16BE(this.header.ackNr, 18)
