@@ -7,7 +7,7 @@ import {
   EPOCH_SIZE,
   getHistoryNetworkContentKey,
   HeaderProofInterface,
-  HeaderRecordType,
+  HeaderRecord,
   HistoryNetworkContentTypes,
   HistoryProtocol,
 } from '../index.js'
@@ -20,11 +20,11 @@ const historicalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
 export interface AccumulatorOpts {
   storedAccumulator: {
     historicalEpochs: Uint8Array[]
-    currentEpoch: HeaderRecordType[]
+    currentEpoch: HeaderRecord[]
   }
 }
 export class HeaderAccumulator {
-  private _currentEpoch: HeaderRecordType[]
+  private _currentEpoch: HeaderRecord[]
   private _historicalEpochs: Uint8Array[]
 
   /**

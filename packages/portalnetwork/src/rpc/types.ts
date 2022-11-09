@@ -1,7 +1,8 @@
 import { Block } from '@ethereumjs/block'
 import { JsonTx, TypedTransaction } from '@ethereumjs/tx'
 import { Address, bigIntToHex, bufferToHex, intToHex } from '@ethereumjs/util'
-import { Log, PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '../subprotocols'
+import { Log } from '../subprotocols'
+import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
 export type GetLogsParams = {
   fromBlock?: string // QUANTITY, block number or "earliest" or "latest" (default: "latest")

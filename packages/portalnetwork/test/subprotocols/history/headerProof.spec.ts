@@ -4,7 +4,7 @@ import {
   blockNumberToGindex,
   EpochAccumulator,
   HeaderAccumulatorType,
-  HeaderRecord,
+  HeaderRecordType,
 } from '../../../src/index.js'
 import {
   ByteVectorType,
@@ -89,7 +89,7 @@ tape('Header Record Proof tests', (t) => {
     }) as SingleProof
     st.equal(
       toHexString(proof.leaf),
-      toHexString(HeaderRecord.hashTreeRoot(headerRecord)),
+      toHexString(HeaderRecordType.hashTreeRoot(headerRecord)),
       'Successfully created a Proof for Header Record'
     )
     st.equal(proof.witnesses.length, 14, 'proof is correct size')
@@ -116,7 +116,7 @@ tape('Header Record Proof tests', (t) => {
         st.pass('SSZ Tree has a leaf at the expected index')
         st.equal(
           toHexString(leaf.hashTreeRoot()),
-          toHexString(HeaderRecord.hashTreeRoot(headerRecord)),
+          toHexString(HeaderRecordType.hashTreeRoot(headerRecord)),
           'Leaf contains correct Header Record'
         )
       } catch {
