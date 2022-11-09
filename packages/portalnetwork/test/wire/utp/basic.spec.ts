@@ -56,7 +56,7 @@ tape('Basic uTP Tests', async (t) => {
       seqNr: 1,
       connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr,
-      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampMicroseconds: syn.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: socket.rtt_var,
       wndSize: socket.cur_window,
     })

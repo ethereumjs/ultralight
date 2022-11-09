@@ -166,9 +166,6 @@ tape('uTP Reader/Writer tests', (t) => {
     })
 
     const offerContentIds = offerContentHashes.map((hash) => {
-      const contentKey: HistoryNetworkContentKey = {
-        blockHash: fromHexString(hash),
-      }
       return HistoryNetworkContentKeyType.serialize(
         Buffer.concat([
           Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),

@@ -266,7 +266,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       seqNr: acceptSocket.seqNr,
       connectionId: acceptSocket.sndConnectionId,
       ackNr: 1,
-      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampMicroseconds: synAck.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: acceptSocket.rtt_var,
       wndSize: acceptSocket.cur_window,
     })
