@@ -1,6 +1,6 @@
 import tape from 'tape'
 import { UltralightProvider } from '../../src/client/provider.js'
-import { ENR, TransportLayer } from '../../src/index.js'
+import { ENR, fromHexString, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -20,6 +20,18 @@ tape('Test provider functionality', async (t) => {
       peerId: peerId,
     },
   })
+
+  const unsupportedTalkRequest = {
+    type: 5,
+    id: 1,
+    protocol: fromHexString('0xbeef'),
+    request: Buffer.from([]),
+  }
+  const handled = await (provider.portal as any).onTalkReq(
+    { socketAddr: ma, nodeId: enr.nodeId },
+    unsupportedTalkRequest
+  )
+  t.equal(handled, false, 'Node should ignore TalkRequest on unsupported protocol')
 
   const block = await provider.getBlock(5000)
   t.ok(block.number === 5000, 'retrieved block from fallback provider')
