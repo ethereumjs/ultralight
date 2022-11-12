@@ -171,7 +171,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
-      await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+      enr && (await this.sendPortalNetworkMessage(enr, msg, protocolId, true))
     })
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       if (!verified || !enr.getLocationMultiaddr('udp')) {
@@ -309,7 +309,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @returns response from `dstId` as `Buffer` or null `Buffer`
    */
   public sendPortalNetworkMessage = async (
-    enr: ENR | string,
+    enr: ENR,
     payload: Buffer,
     protocolId: ProtocolId,
     utpMessage?: boolean
@@ -317,26 +317,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      let nodeAddr
-      if (typeof enr === 'string') {
-        // If ENR is not provided, look up ENR in protocol routing table by nodeId
-        const protocol = this.protocols.get(protocolId)
-        if (protocol) {
-          nodeAddr = protocol.routingTable.getValue(enr)
-          if (!nodeAddr) {
-            // Check in unverified sessions cache if no ENR found in routing table
-            nodeAddr = this.unverifiedSessionCache.get(enr)
-          }
-        }
-      } else {
-        // Assume enr is of type ENR and send request as is
-        nodeAddr = enr
-      }
-      if (!nodeAddr) {
-        this.logger(`${enr} has no reachable address.  Aborting request`)
-        return Buffer.from([])
-      }
-      const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
+      const res = await this.discv5.sendTalkReq(enr, payload, fromHexString(messageProtocol))
       return res
     } catch (err: any) {
       this.logger(`Error sending TALKREQ message: ${err}`)

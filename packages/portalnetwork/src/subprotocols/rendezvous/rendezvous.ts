@@ -124,7 +124,7 @@ export class Rendezvous extends BaseProtocol {
         this.logger(
           `Forwarding Rendezvous SYNC from requestor ${shortId(srcId)} to target ${shortId(dstId)}`
         )
-        this.client.sendPortalNetworkMessage(dstId, payload, ProtocolId.Rendezvous)
+        srcEnr && this.client.sendPortalNetworkMessage(srcEnr, payload, ProtocolId.Rendezvous)
         break
       }
       case 2: {
