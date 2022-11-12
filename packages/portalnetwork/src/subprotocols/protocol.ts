@@ -323,8 +323,7 @@ export abstract class BaseProtocol {
             }
 
             const requestedData: Uint8Array[] = []
-            await Promise.all(
-              requestedKeys.map(async (key) => {
+            for await (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
                   value = fromHexString(await this.client.db.get(toHexString(key)))
@@ -333,8 +332,7 @@ export abstract class BaseProtocol {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
                   requestedData.push(value)
                 }
-              })
-            )
+            }
 
             await this.client.uTP.handleNewRequest({
               contentKeys: requestedKeys,
