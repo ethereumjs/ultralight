@@ -389,8 +389,6 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     const keys = request.contentKeys
     const streamer = async (content: Uint8Array) => {
-      let contentKey = HistoryNetworkContentKeyType.deserialize(keys[0])
-      let decodedContentKey = { blockHash: contentKey.subarray(1) } as HistoryNetworkContentKey
       let contents: Uint8Array[]
       if (keys.length > 1) {
         this.logger(`Decompressing stream into ${keys.length} pieces of content`)
@@ -402,24 +400,17 @@ export class PortalNetworkUTP extends BasicUtp {
         throw new Error('Missing content keys')
       }
       keys.forEach((k, idx) => {
-        contentKey = HistoryNetworkContentKeyType.deserialize(k)
-        decodedContentKey = { blockHash: contentKey.subarray(1) } as HistoryNetworkContentKey
+        const decodedContentKey = {
+          selector: k[0],
+          blockHash: k.subarray(1),
+        } as HistoryNetworkContentKey
         const _content = contents[idx]
         this.logger.extend(`FINISHED`)(
-          `${idx + 1}/${keys.length} -- sending ${
-            HistoryNetworkContentTypes[contentKey[0]]
-          } to database`
+          `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
         )
         // Hack -- decodedContentKey.blockHash is undefined for
         // EpochAccumulator requests...
-        this.emit(
-          'Stream',
-          contentKey[0],
-          contentKey[0] > 2
-            ? toHexString(Uint8Array.from([]))
-            : toHexString(decodedContentKey.blockHash),
-          _content
-        )
+        this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
       })
     }
 
