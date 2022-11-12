@@ -249,10 +249,17 @@ export class PortalNetworkUTP extends BasicUtp {
         requestKey && (await this._handleDataPacket(request, packet))
         break
       case PacketType.ST_STATE:
+        if (packet.header.extension === 1) {
         this.logger(
-          `STATE Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
+            `STATE (SelectiveAck) Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
         )
-        requestKey && (await this._handleStatePacket(request, packet))
+          await this._handleSelectiveAckPacket(request, packet)
+        } else {
+          this.logger(
+            `STATE (Ack) Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
+          )
+          await this._handleStatePacket(request, packet)
+        }
         break
       case PacketType.ST_RESET:
         this.logger(
@@ -366,6 +373,26 @@ export class PortalNetworkUTP extends BasicUtp {
       return bitmap[index] + ackNr
     })
     return ackNrs
+  }
+  async _handleSelectiveAckPacket(request: ContentRequest, packet: Packet): Promise<void> {
+    const ackNrs = PortalNetworkUTP.bitmaskToAckNrs(
+      (packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask,
+      packet.header.ackNr
+    )
+    request.socket.logger('SELECTIVE_ACK Packet Received.')
+    request.socket.logger(`bitmask references ackNrs: ${ackNrs}`)
+    const requestCode = request.requestCode
+    switch (requestCode) {
+      case RequestCode.FOUNDCONTENT_WRITE:
+      case RequestCode.OFFER_WRITE:
+        request.socket.ackNrs.includes(packet.header.ackNr) ||
+          request.socket.ackNrs.push(packet.header.ackNr)
+        await this.handleStatePacket(request.socket, packet)
+        return
+      case RequestCode.FINDCONTENT_READ:
+      case RequestCode.ACCEPT_READ:
+        throw new Error('Why did I get a SELECTIVE ACK packet?')
+    }
   }
   async _handleDataPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
