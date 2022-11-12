@@ -160,6 +160,17 @@ export class UtpSocket extends EventEmitter {
     }
   }
 
+  generateSelectiveAckBitMask(): Uint8Array {
+    const window = new Array(32).fill(false)
+    for (let i = 0; i < 32; i++) {
+      if (this.ackNrs.includes(this.ackNr + 1 + i)) {
+        window[bitmap[i] - 1] = true
+      }
+    }
+    const bitMask = new BitVectorType(32).serialize(BitArray.fromBoolArray(window))
+    return bitMask
+  }
+
   async handleDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
     if (this.nextSeq !== packet.header.seqNr || this.nextAck !== packet.header.ackNr) {

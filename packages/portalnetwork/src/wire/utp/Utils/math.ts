@@ -26,3 +26,8 @@ export function bitLength(n: number): number {
 export function nextPowerOf2(n: number): number {
   return n <= 0 ? 1 : Math.pow(2, bitLength(n - 1))
 }
+
+export const bitmap = [
+  8, 7, 6, 5, 4, 3, 2, 1, 16, 15, 14, 13, 12, 11, 10, 9, 25, 24, 23, 22, 21, 20, 19, 18, 17, 32, 31,
+  30, 29, 28, 27, 26,
+]

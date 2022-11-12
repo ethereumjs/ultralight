@@ -360,6 +360,13 @@ export class PortalNetworkUTP extends BasicUtp {
         throw new Error('Why did I get a STATE packet?')
     }
   }
+  public static bitmaskToAckNrs(bitmask: Uint8Array, ackNr: number): number[] {
+    const bitArray = new BitVectorType(32).deserialize(bitmask)
+    const ackNrs = bitArray.getTrueBitIndexes().map((index) => {
+      return bitmap[index] + ackNr
+    })
+    return ackNrs
+  }
   async _handleDataPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
     let ack: Packet
