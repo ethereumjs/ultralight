@@ -178,23 +178,20 @@ export class UtpSocket extends EventEmitter {
         `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
       )
     }
-    const expected = this.nextSeq === packet.header.seqNr
-    this.nextSeq = packet.header.seqNr + 1
+    const expected = this.ackNr + 1 === packet.header.seqNr
     this.seqNr = this.seqNr + 1
-    this.ackNr = packet.header.seqNr
     if (!this.reader) {
       this.reader = new ContentReader(this, packet.header.seqNr)
     }
+    this.ackNrs.push(packet.header.seqNr)
     await this.reader.addPacket(packet)
     if (expected) {
-      this.ackNrs.push(this.ackNr)
+      this.ackNr = Math.max(...this.ackNrs)
       return await this.utp.sendStatePacket(this)
     } else {
       this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
-      this.ackNrs.push(this.ackNr)
-      return await this.utp.sendSelectiveAckPacket(this, this.ackNrs)
-
-      // await this.utp.sendStatePacket(this)
+      const bitmask = this.generateSelectiveAckBitMask()
+      return await this.utp.sendSelectiveAckPacket(this, bitmask)
     }
   }
 
