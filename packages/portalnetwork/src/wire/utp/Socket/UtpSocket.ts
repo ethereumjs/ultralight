@@ -147,9 +147,14 @@ export class UtpSocket extends EventEmitter {
       if (packet.header.ackNr > 1 && !this.ackNrs.includes(packet.header.ackNr)) {
         this.ackNrs.push(packet.header.ackNr)
       }
+      if (this.writer) {
+        const inFlight = this.writer.sentChunks.filter((n) => !this.ackNrs.includes(n)).length
+        this.cur_window = inFlight * DEFAULT_WINDOW_SIZE
+        this.logger(`cur_window: ${this.cur_window} bytes in flight`)
       this.logger(
         `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
       )
+      }
       if (this.compare()) {
         this.logger(`all data packets acked`)
         return true
