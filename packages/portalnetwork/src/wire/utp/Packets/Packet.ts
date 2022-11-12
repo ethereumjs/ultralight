@@ -45,6 +45,7 @@ export class Packet {
           },
           bitmask
         ),
+        payload: Uint8Array.from([]),
       })
       return packet
     } else {
