@@ -23,10 +23,10 @@ import ContentReader from '../Protocol/read/ContentReader.js'
 type UtpSocketKey = string
 
 export enum RequestCode {
-  FOUNDCONTENT_WRITE = 0,
-  FINDCONTENT_READ = 1,
-  OFFER_WRITE = 2,
-  ACCEPT_READ = 3,
+  'FOUNDCONTENT_WRITE' = 0,
+  'FINDCONTENT_READ' = 1,
+  'OFFER_WRITE' = 2,
+  'ACCEPT_READ' = 3,
 }
 
 export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
@@ -219,6 +219,7 @@ export class PortalNetworkUTP extends BasicUtp {
     const request = this.openContentRequest[requestKey]
     const packet = Packet.bufferToPacket(packetBuffer)
     request.socket.reply_micro = Math.abs(timeReceived - packet.header.timestampMicroseconds)
+    let _packet: Packet = packet
 
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
@@ -231,13 +232,13 @@ export class PortalNetworkUTP extends BasicUtp {
         this.logger(
           `DATA Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
         )
-        requestKey && (await this._handleDataPacket(request, packet))
+        _packet = (requestKey && (await this._handleDataPacket(request, packet))) as Packet
         break
       case PacketType.ST_STATE:
         if (packet.header.extension === 1) {
-        this.logger(
+          this.logger(
             `STATE (SelectiveAck) Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-        )
+          )
           await this._handleSelectiveAckPacket(request, packet)
         } else {
           this.logger(
@@ -261,7 +262,7 @@ export class PortalNetworkUTP extends BasicUtp {
       default:
         throw new Error(`Unknown Packet Type ${packet.header.pType}`)
     }
-    return { request, packet }
+    return { request, packet: _packet }
   }
 
   async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {

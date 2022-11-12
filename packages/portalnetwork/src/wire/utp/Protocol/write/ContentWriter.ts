@@ -1,7 +1,6 @@
-import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { UtpSocket } from '../../index.js'
-import { sendDataPacket } from '../../Packets/PacketSenders.js'
+import { UtpSocket, DEFAULT_WINDOW_SIZE } from '../../index.js'
+import { sendDataPacket, sendFinPacket } from '../../Packets/PacketSenders.js'
 import { BUFFER_SIZE } from '../../Packets/PacketTyping.js'
 import { BasicUtp } from '../BasicUtp.js'
 
@@ -34,34 +33,29 @@ export default class ContentWriter {
     if (this.sentChunks.length < chunks) {
       if (this.socket.cur_window + DEFAULT_WINDOW_SIZE <= this.socket.max_window) {
         this.socket.logger(`sending ${this.sentChunks.length + 1} / ${chunks} DATA Packets`)
-      bytes = this.dataChunks[this.seqNr] ?? []
-      this.sentChunks.push(this.seqNr)
-      this.socket.logger(
-        `Sending ST-DATA ${this.sentChunks.length}/${chunks} -- SeqNr: ${this.socket.seqNr}  AckNr: ${this.socket.ackNr}`
-      )
-      await sendDataPacket(this.socket, bytes)
-      this.seqNr++
+        bytes = this.dataChunks[this.seqNr] ?? []
+        this.sentChunks.push(this.seqNr)
+        this.socket.logger(
+          `Sending ST-DATA ${this.sentChunks.length}/${chunks} -- SeqNr: ${this.socket.seqNr}  AckNr: ${this.socket.ackNr}`
+        )
+        await sendDataPacket(this.socket, bytes)
+        this.seqNr++
       } else {
         this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
         return
-    }
+      }
     } else {
       this.writing = false
       await sendFinPacket(this.socket)
-    return
+      return
     }
     this.start()
   }
 
   chunk(): Record<number, Uint8Array> {
     let arrayMod = this.content
-    this.logger(
-      `Preparing ${toHexString(this.content).slice(
-        0,
-        20
-      )} For transfer as ${BUFFER_SIZE} byte chunks.`
-    )
     const total = Math.ceil(this.content.length / BUFFER_SIZE)
+    this.logger(`Preparing content for transfer as ${total} ${BUFFER_SIZE} byte chunks.`)
     const dataChunks: Record<number, Uint8Array> = {}
     for (let i = 0; i < total; i++) {
       const start = 0

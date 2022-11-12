@@ -75,11 +75,6 @@ export class UtpSocket extends EventEmitter {
     this.logger = logger.extend(this.remoteAddress.slice(0, 3)).extend(type)
   }
 
-  // async updateSocketFromPacketHeader(packet: Packet) {
-  //   this.updateRTT(packet.header.timestampDiff)
-  //   this.cur_window = packet.header.wndSize
-  // }
-
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encode()
     type !== PacketType.ST_DATA &&
@@ -98,7 +93,6 @@ export class UtpSocket extends EventEmitter {
 
   async sendSynAckPacket(packet: Packet): Promise<void> {
     await this.sendPacket(packet, PacketType.ST_STATE)
-    this.ackNr++
   }
 
   async sendDataPacket(packet: Packet): Promise<Packet> {
@@ -151,15 +145,16 @@ export class UtpSocket extends EventEmitter {
         const inFlight = this.writer.sentChunks.filter((n) => !this.ackNrs.includes(n)).length
         this.cur_window = inFlight * DEFAULT_WINDOW_SIZE
         this.logger(`cur_window: ${this.cur_window} bytes in flight`)
-      this.logger(
-        `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
-      )
+        this.logger(
+          `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
+        )
       }
       if (this.compare()) {
         this.logger(`all data packets acked`)
         return true
       } else {
         this.logger(`Still waiting for ${this.dataNrs.length - this.ackNrs.length} STATE packets.`)
+        this.writer?.writing && this.writer?.start()
       }
     }
   }
