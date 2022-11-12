@@ -1,5 +1,5 @@
 import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '../index.js'
-import { VERSION, DEFAULT_WINDOW_SIZE } from '../Utils/constants.js'
+import { VERSION } from '../Utils/constants.js'
 import { SelectiveAckHeaderExtension } from './Extentions.js'
 import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping.js'
 export class PacketHeader {
@@ -33,7 +33,7 @@ export class SelectiveAckHeader extends PacketHeader {
   constructor(options: IPacketHeader, bitmask: Uint8Array) {
     super(options)
     this.extension = 1
-    this.selectiveAckExtension = new SelectiveAckHeaderExtension(bitmask)
+    this.selectiveAckExtension = SelectiveAckHeaderExtension.create(bitmask)
     this.length = this.encodeHeaderStream().length
   }
 

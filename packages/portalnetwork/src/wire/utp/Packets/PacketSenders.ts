@@ -79,20 +79,18 @@ export async function sendFinPacket(socket: UtpSocket): Promise<Packet> {
   await socket.sendFinPacket(packet)
   return packet
 }
-export async function sendSelectiveAckPacket(socket: UtpSocket, ackNrs: number[]) {
-  const _packet = Packet.create(
-    PacketType.ST_STATE,
-    {
+export async function sendSelectiveAckPacket(socket: UtpSocket, bitmask: Uint8Array) {
+  const _packet = Packet.create(PacketType.ST_STATE, {
+    header: {
       seqNr: socket.seqNr,
       connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
-      ackNrs: ackNrs,
     },
-    true
-  )
+    bitmask,
+  })
   await socket.sendStatePacket(_packet)
   return _packet
 }

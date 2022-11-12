@@ -25,15 +25,17 @@ export type createAckOpts = {
   timestampDifferenceMicroseconds?: number
 }
 export type createSelectiveAckOpts = {
-  extension?: Uint8
-  version?: Uint8
-  connectionId: Uint16
-  seqNr: Uint16
-  ackNr: Uint16
-  wndSize: number
-  ackNrs: number[]
-  timestampDifferenceMicroseconds?: number
-  timestampMicroseconds?: number
+  header: {
+    extension?: Uint8
+    version?: Uint8
+    connectionId: Uint16
+    seqNr: Uint16
+    ackNr: Uint16
+    wndSize: number
+    timestampDifferenceMicroseconds?: number
+    timestampMicroseconds?: number
+  }
+  bitmask: Uint8Array
 }
 export type createDataOpts = {
   extension?: Uint8
@@ -97,9 +99,9 @@ export function createSelectiveAckPacket(opts: createSelectiveAckOpts): Packet {
   const h: SelectiveAckHeader = new SelectiveAckHeader(
     {
       pType: PacketType.ST_STATE,
-      ...opts,
+      ...opts.header,
     },
-    Uint8Array.from(opts.ackNrs)
+    opts.bitmask
   )
 
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array([]) })

@@ -63,8 +63,8 @@ export class BasicUtp extends EventEmitter {
   async sendStatePacket(socket: UtpSocket): Promise<Packet> {
     return await sendAckPacket(socket)
   }
-  async sendSelectiveAckPacket(socket: UtpSocket, ackNrs: number[]): Promise<Packet> {
-    return await sendSelectiveAckPacket(socket, ackNrs)
+  async sendSelectiveAckPacket(socket: UtpSocket, bitmask: Uint8Array): Promise<Packet> {
+    return await sendSelectiveAckPacket(socket, bitmask)
   }
   async sendDataPacket(socket: UtpSocket, payload: Uint8Array): Promise<Packet> {
     const packet = await sendDataPacket(socket, payload)

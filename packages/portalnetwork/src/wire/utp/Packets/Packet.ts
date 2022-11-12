@@ -25,13 +25,11 @@ export class Packet {
   extensions: any[]
 
   public static bufferToPacket(buffer: Buffer): Packet {
-    const ptandver = buffer[0].toString(16)
-    const ver = ptandver[1]
-    const _version = parseInt(ver, 16)
     const extension = buffer.readUInt8(1)
     let packet: Packet
     if (extension === 1) {
       const size = buffer.readUInt8(21)
+      const bitmask = buffer.subarray(22, 22 + size)
       packet = new Packet({
         header: new SelectiveAckHeader(
           {
@@ -45,9 +43,8 @@ export class Packet {
             seqNr: buffer.readUInt16BE(16),
             ackNr: buffer.readUInt16BE(18),
           },
-          buffer.subarray(22, 22 + size)
+          bitmask
         ),
-        payload: buffer.subarray(22 + size),
       })
       return packet
     } else {
@@ -69,18 +66,14 @@ export class Packet {
     }
   }
 
-  public static create = (
-    type: PacketType,
-    opts: createPacketOpts,
-    selectiveAck?: boolean
-  ): Packet => {
+  public static create = (type: PacketType, opts: createPacketOpts): Packet => {
     let packet: Packet
     switch (type) {
       case PacketType.ST_SYN:
         packet = createSynPacket(opts as createSynOpts)
         break
       case PacketType.ST_STATE:
-        if (selectiveAck === true) {
+        if ((opts as createSelectiveAckOpts).bitmask instanceof Uint8Array) {
           packet = createSelectiveAckPacket(opts as createSelectiveAckOpts)
         } else {
           packet = createAckPacket(opts as createAckOpts)
@@ -103,7 +96,7 @@ export class Packet {
 
   constructor(options: IPacketOptions) {
     this.header = options.header
-    this.payload = options.payload
+    this.payload = options.payload ?? Uint8Array.from([])
     this.sent = 0
     // this.size = this.header.length + this.payload.length
     this.extensions = []
