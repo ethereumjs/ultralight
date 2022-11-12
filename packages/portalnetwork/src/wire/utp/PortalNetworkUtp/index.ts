@@ -283,11 +283,10 @@ export class PortalNetworkUTP extends BasicUtp {
     this.emit('Send', peerId, msg, protocolId, true)
   }
 
-  async _handleSynPacket(request: ContentRequest, packet: Packet): Promise<Packet | ContentReader> {
+  async _handleSynPacket(request: ContentRequest, packet: Packet): Promise<void | ContentReader> {
     const requestCode = request.requestCode
     let writer
 
-    let r: Packet | ContentReader
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
         this.logger(`SYN received to initiate stream for FINDCONTENT request`)
@@ -296,24 +295,17 @@ export class PortalNetworkUTP extends BasicUtp {
         await this.sendSynAckPacket(request.socket)
         writer = await this.createNewWriter(request.socket, request.socket.seqNr++)
         request.socket.writer = writer
-        request.socket.nextSeq = request.socket.seqNr + 1
-        request.socket.nextAck = packet.header.ackNr + 1
         await request.socket.writer?.start()
-        r = await sendFinPacket(request.socket)
         break
       case RequestCode.ACCEPT_READ:
         this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
         request.socket.ackNr = packet.header.seqNr
-        request.socket.nextSeq = 2
-        request.socket.nextAck = packet.header.ackNr + 1
-        r = await this.createNewReader(request.socket, 2)
-        request.socket.reader = r
+        request.socket.reader = await this.createNewReader(request.socket, 2)
         await this.sendSynAckPacket(request.socket)
-        break
+        return request.socket.reader
       default:
         throw new Error('I send SYNs, I do not handle them.')
     }
-    return r
   }
   async _handleStatePacket(request: ContentRequest, packet: Packet): Promise<void> {
     const requestCode = request.requestCode
@@ -332,8 +324,6 @@ export class PortalNetworkUTP extends BasicUtp {
           const startingSeqNr = request.socket.seqNr + 1
           request.socket.ackNr = packet.header.seqNr
           request.socket.seqNr = 2
-          request.socket.nextSeq = packet.header.seqNr + 1
-          request.socket.nextAck = packet.header.ackNr + 1
           const reader = await this.createNewReader(request.socket, startingSeqNr)
           request.socket.reader = reader
           await this.sendStatePacket(request.socket)
@@ -346,20 +336,15 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.state = ConnectionState.Connected
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = 2
-          request.socket.nextSeq = packet.header.seqNr + 1
-          request.socket.nextAck = 2
           request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
           await request.socket.writer?.start()
           await this.sendFinPacket(request.socket)
         } else if (packet.header.ackNr === request.socket.finNr) {
           request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
         } else {
-          request.socket.logger('Ack Packet Received.')
-          request.socket.logger(`Expected... ${request.socket.nextSeq} - ${request.socket.nextAck}`)
-          request.socket.logger(`Got........ ${packet.header.seqNr} - ${packet.header.ackNr}`)
-          //  request.socket.seqNr = request.socket.seqNr + 1
-          request.socket.nextSeq = packet.header.seqNr + 1
-          request.socket.nextAck = packet.header.ackNr + 1
+          request.socket.logger(
+            `Ack Packet Received.  SeqNr: ${packet.header.seqNr}, AckNr: ${packet.header.ackNr}`
+          )
           await this.handleStatePacket(request.socket, packet)
         }
         break

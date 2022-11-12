@@ -25,25 +25,11 @@ export class BasicUtp extends EventEmitter {
     rcvId: number,
     seqNr: number,
     ackNr: number,
-    nextSeq: number | undefined,
-    nextAck: number | undefined,
     type: 'write' | 'read',
     logger: Debugger,
     content?: Uint8Array
   ) {
-    return new UtpSocket(
-      this,
-      remoteAddr,
-      sndId,
-      rcvId,
-      seqNr,
-      ackNr,
-      nextSeq,
-      nextAck,
-      type,
-      logger,
-      content
-    )
+    return new UtpSocket(this, remoteAddr, sndId, rcvId, seqNr, ackNr, type, logger, content)
   }
 
   async createNewReader(socket: UtpSocket, startingDataNr: number) {

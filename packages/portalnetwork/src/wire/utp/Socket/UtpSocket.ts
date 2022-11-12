@@ -34,8 +34,6 @@ export class UtpSocket extends EventEmitter {
   ackNrs: number[]
   received: number[]
   expected: number[]
-  nextSeq: number | undefined
-  nextAck: number | undefined
   logger: Debugger
   constructor(
     utp: BasicUtp,
@@ -44,8 +42,6 @@ export class UtpSocket extends EventEmitter {
     rcvId: number,
     seqNr: number,
     ackNr: number,
-    nextSeq: number | undefined,
-    nextAck: number | undefined,
     type: 'read' | 'write',
     logger: Debugger,
     content?: Uint8Array
@@ -75,8 +71,6 @@ export class UtpSocket extends EventEmitter {
     this.ackNrs = []
     this.received = []
     this.expected = []
-    this.nextSeq = nextSeq
-    this.nextAck = nextAck
     this.logger = logger.extend(this.remoteAddress.slice(0, 3)).extend(type)
   }
 
@@ -173,11 +167,6 @@ export class UtpSocket extends EventEmitter {
 
   async handleDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
-    if (this.nextSeq !== packet.header.seqNr || this.nextAck !== packet.header.ackNr) {
-      this.logger(
-        `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
-      )
-    }
     const expected = this.ackNr + 1 === packet.header.seqNr
     this.seqNr = this.seqNr + 1
     if (!this.reader) {
@@ -196,9 +185,6 @@ export class UtpSocket extends EventEmitter {
   }
 
   async handleFinPacket(packet: Packet): Promise<Uint8Array | undefined> {
-    this.logger(
-      `expecting ${this.nextSeq}-${this.nextAck}.  got ${packet.header.seqNr}-${packet.header.ackNr}`
-    )
     this.logger(`Connection State: GotFin`)
     this.state = ConnectionState.GotFin
     this.readerContent = await this.reader!.run()
