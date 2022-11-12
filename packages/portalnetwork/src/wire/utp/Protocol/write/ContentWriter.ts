@@ -29,20 +29,28 @@ export default class ContentWriter {
 
   async start(): Promise<void> {
     const chunks = Object.keys(this.dataChunks).length
-    this.socket.logger(`starting to send ${chunks} DATA Packets`)
     this.writing = true
     let bytes: Uint8Array
-    while (this.writing) {
+    if (this.sentChunks.length < chunks) {
+      if (this.socket.cur_window + DEFAULT_WINDOW_SIZE <= this.socket.max_window) {
+        this.socket.logger(`sending ${this.sentChunks.length + 1} / ${chunks} DATA Packets`)
       bytes = this.dataChunks[this.seqNr] ?? []
       this.sentChunks.push(this.seqNr)
       this.socket.logger(
         `Sending ST-DATA ${this.sentChunks.length}/${chunks} -- SeqNr: ${this.socket.seqNr}  AckNr: ${this.socket.ackNr}`
       )
       await sendDataPacket(this.socket, bytes)
-      this.writing = chunks !== this.sentChunks.length
       this.seqNr++
+      } else {
+        this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
+        return
     }
+    } else {
+      this.writing = false
+      await sendFinPacket(this.socket)
     return
+    }
+    this.start()
   }
 
   chunk(): Record<number, Uint8Array> {
