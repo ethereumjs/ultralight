@@ -1,11 +1,12 @@
 import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE, ConnectionState } from '../index.js'
 import EventEmitter from 'events'
-import { ProtocolId } from '../../../index.js'
+import { ProtocolId, bitmap } from '../../../index.js'
 import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter.js'
 import ContentReader from '../Protocol/read/ContentReader.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders.js'
+import { BitArray, BitVectorType } from '@chainsafe/ssz'
 
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'

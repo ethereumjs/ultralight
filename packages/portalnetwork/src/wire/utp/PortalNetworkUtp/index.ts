@@ -1,13 +1,20 @@
-import { toHexString } from '@chainsafe/ssz'
+import { BitVectorType, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
-import { ConnectionState, Packet, PacketType, randUint16, UtpSocket } from '../index.js'
+import {
+  ConnectionState,
+  Packet,
+  PacketType,
+  randUint16,
+  UtpSocket,
+  bitmap,
+  SelectiveAckHeader,
+  Bytes32TimeStamp,
+} from '../index.js'
 import { ProtocolId } from '../../../index.js'
 import {
   HistoryNetworkContentKey,
-  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
 } from '../../../subprotocols/history/index.js'
-import { sendFinPacket } from '../Packets/PacketSenders.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { ContentRequest } from './ContentRequest.js'
 import { dropPrefixes, encodeWithVariantPrefix } from '../Utils/variantPrefix.js'
@@ -79,25 +86,13 @@ export class PortalNetworkUTP extends BasicUtp {
           rcvId,
           randUint16(),
           0,
-          1,
-          undefined,
           'write',
           this.logger,
           content
         )
         return socket
       case RequestCode.FINDCONTENT_READ:
-        socket = this.createNewSocket(
-          peerId,
-          sndId,
-          rcvId,
-          0,
-          randUint16(),
-          undefined,
-          1,
-          'read',
-          this.logger
-        )
+        socket = this.createNewSocket(peerId, sndId, rcvId, 0, randUint16(), 'read', this.logger)
         return socket
       case RequestCode.OFFER_WRITE:
         socket = this.createNewSocket(
@@ -106,25 +101,13 @@ export class PortalNetworkUTP extends BasicUtp {
           rcvId,
           1,
           randUint16(),
-          undefined,
-          1,
           'write',
           this.logger,
           content
         )
         return socket
       case RequestCode.ACCEPT_READ:
-        socket = this.createNewSocket(
-          peerId,
-          sndId,
-          rcvId,
-          randUint16(),
-          0,
-          1,
-          undefined,
-          'read',
-          this.logger
-        )
+        socket = this.createNewSocket(peerId, sndId, rcvId, randUint16(), 0, 'read', this.logger)
         return socket
     }
   }
