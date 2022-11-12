@@ -19,6 +19,7 @@ import {
   RequestCode,
   ContentRequest,
   Bytes32TimeStamp,
+  SelectiveAckHeader,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Protocol/read/ContentReader.js'
 import { Packets } from '../packets.js'
@@ -124,7 +125,7 @@ tape('uTP Reader/Writer tests', (t) => {
         ackNr: socket.ackNr + idx,
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: socket.rtt_var,
+        timestampDifferenceMicroseconds: socket.reply_micro,
         wndSize: socket.cur_window,
       })
       return packet
@@ -134,7 +135,7 @@ tape('uTP Reader/Writer tests', (t) => {
       connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
     })
     socket.reader = await socket.utp.createNewReader(_socket, 2)
@@ -303,7 +304,7 @@ tape('PortalNetworkUTP tests', (t) => {
   requests.forEach(async (req) => {
     const { request, utp, type, mode, rcvId, sndId, params } = await req
     const testPacketList = Packets(
-      type,
+      params.requestCode,
       request.socket.rcvConnectionId,
       request.socket.sndConnectionId
     )
@@ -373,12 +374,12 @@ tape('PortalNetworkUTP tests', (t) => {
           st.deepEqual(p.request, request, `found request from Packet Buffer`)
           st.deepEqual(p.packet.header, syn.header, `handled encoded SYN Packet`)
           if (request.requestCode === RequestCode.FOUNDCONTENT_WRITE) {
-            const fin = (await utp._handleSynPacket(p.request, p.packet)) as Packet
-            st.equal(
-              fin.header.pType,
-              PacketType.ST_FIN,
-              'SYN Packet handler initiated Data stream'
-            )
+            try {
+              await utp._handleSynPacket(p.request, p.packet)
+              st.pass('Syn Packet Handler Initiated Data Stream')
+            } catch (e: any) {
+              st.fail('SYN Packet Hanldling failed: ' + e.message)
+            }
           } else {
             const r = (await utp._handleSynPacket(p.request, p.packet)) as ContentReader
             st.deepEqual(
@@ -396,7 +397,7 @@ tape('PortalNetworkUTP tests', (t) => {
             seqNr: 1,
             ackNr: 1,
             timestampMicroseconds: Bytes32TimeStamp(),
-            timestampDifferenceMicroseconds: 0,
+            timestampDifferenceMicroseconds: 1,
             wndSize: 1048576,
           })
           t.test('syn wrong', async (st) => {
@@ -417,16 +418,38 @@ tape('PortalNetworkUTP tests', (t) => {
           request.socket.reader = await utp.createNewReader(request.socket, 2)
           const data = testPacketList.rec.data as Packet[]
           const p = await utp.handleUtpPacket(data[0].encode(), params.peerId)
+          st.equal(p.packet.header.ackNr, data[0].header.seqNr, 'Handled Data Packet')
+          let outoforder = await utp.handleUtpPacket(data[2].encode(), params.peerId)
           st.equal(
-            (await utp._handleDataPacket(p.request, p.packet)).header.ackNr,
-            p.packet.header.seqNr,
-            'Handled Data Packet'
+            data[0].header.seqNr,
+            outoforder.packet.header.ackNr,
+            'Handled Out of Order Data Packet by sending SELECTIVE ACK with last in-order ackNr: ' +
+              outoforder.packet.header.ackNr
           )
-          const outoforder = await utp.handleUtpPacket(data[2].encode(), params.peerId)
+          st.deepEqual(
+            PortalNetworkUTP.bitmaskToAckNrs(
+              (outoforder.packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask,
+              request.socket.ackNr
+            ),
+            [4],
+            `Sent a SelectiveAck packet for packet: ${
+              data[2].header.seqNr
+            }, with a bitmask referencing packets: [${PortalNetworkUTP.bitmaskToAckNrs(
+              (outoforder.packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask,
+              request.socket.ackNr
+            )}] `
+          )
+          outoforder = await utp.handleUtpPacket(data[1].encode(), params.peerId)
           st.equal(
-            (await utp._handleDataPacket(outoforder.request, outoforder.packet)).header.ackNr,
-            outoforder.packet.header.seqNr,
-            'Handled Out of Order Data Packet'
+            outoforder.packet.header.extension,
+            0,
+            'Handled missing packed with regular ACK packet'
+          )
+
+          st.equal(
+            data[2].header.seqNr,
+            outoforder.packet.header.ackNr,
+            'ACKed packet with highest in_order seqNr received'
           )
 
           const r = await utp.handleUtpPacket(

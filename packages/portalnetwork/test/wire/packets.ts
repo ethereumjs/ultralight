@@ -4,6 +4,7 @@ import {
   encodeWithVariantPrefix,
   Packet,
   PacketType,
+  RequestCode,
 } from '../../src/wire/utp/index.js'
 import { fromHexString } from '@chainsafe/ssz'
 
@@ -57,14 +58,14 @@ for (let i = 0; i < compressed.length / BUFFER_SIZE; i++) {
 }
 
 export function Packets(
-  type: string,
+  type: RequestCode,
   rcvId: number,
   sndId: number
 ): {
   send: Record<string, Packet | Packet[]>
   rec: Record<string, Packet | Packet[]>
 } {
-  if (type === 'FINDCONTENT_READ') {
+  if (type === RequestCode.FINDCONTENT_READ) {
     const dataPackets = dataChunks.map((chunk, i) => {
       const p = Packet.create(PacketType.ST_DATA, {
         connectionId: rcvId,
@@ -137,7 +138,7 @@ export function Packets(
       },
     }
     return testPackets
-  } else if (type === 'FOUNDCONTENT_WRITE') {
+  } else if (type === RequestCode.FOUNDCONTENT_WRITE) {
     const dataPackets = dataChunks.map((chunk, i) => {
       const p = Packet.create(PacketType.ST_DATA, {
         connectionId: sndId,
@@ -209,7 +210,7 @@ export function Packets(
       },
     }
     return testPackets
-  } else if (type === 'OFFER_WRITE') {
+  } else if (type === RequestCode.OFFER_WRITE) {
     const dataPackets = offerChunks.map((chunk, i) => {
       return Packet.create(PacketType.ST_DATA, {
         connectionId: sndId,
@@ -271,7 +272,7 @@ export function Packets(
       },
     }
     return testPackets
-  } else if (type === 'ACCEPT_READ') {
+  } else if (type === RequestCode.ACCEPT_READ) {
     const dataPackets = offerChunks.map((chunk, i) => {
       return Packet.create(PacketType.ST_DATA, {
         connectionId: rcvId,

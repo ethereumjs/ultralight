@@ -25,7 +25,7 @@ tape('History Protocol Integration Tests', (t) => {
     ) => {
       const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
       const testBlockData = require('./testBlocks.json')
-      const testBlocks: Block[] = testBlockData.map((testBlock: any) => {
+      const testBlocks: Block[] = testBlockData.slice(0, 13).map((testBlock: any) => {
         return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
           hardforkByBlockNumber: true,
         })
@@ -92,7 +92,7 @@ tape('History Protocol Integration Tests', (t) => {
         }
       })
       await protocol1.sendPing(portal2.discv5.enr)
-      testBlocks.forEach(async (testBlock: Block, idx: number) => {
+      for await (const [idx, testBlock] of testBlocks.entries()) {
         await protocol1.addContentToHistory(
           HistoryNetworkContentTypes.BlockHeader,
           testHashStrings[idx],
@@ -103,7 +103,7 @@ tape('History Protocol Integration Tests', (t) => {
           testHashStrings[idx],
           sszEncodeBlockBody(testBlock)
         )
-      })
+      }
     }
     connectAndTest(t, st, gossip, true)
   })

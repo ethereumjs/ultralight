@@ -45,7 +45,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: _socket.ackNr + idx,
       payload: chunk,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
     })
     return packet
@@ -57,7 +57,7 @@ tape('Basic uTP Tests', async (t) => {
       connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr,
       timestampMicroseconds: syn.header.timestampMicroseconds,
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
     })
     st.deepEqual(syn, synPacket, 'Basic Sends Syn Packet successfully')
@@ -66,7 +66,7 @@ tape('Basic uTP Tests', async (t) => {
       connectionId: _socket.sndConnectionId,
       ackNr: _socket.ackNr,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
     })
     const synack = await basic.handleSynPacket(_socket, synPacket)
@@ -110,7 +110,7 @@ tape('Basic uTP Tests', async (t) => {
       connectionId: _socket.sndConnectionId,
       ackNr: 100,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
     })
     socket.seqNr = 100
@@ -121,8 +121,8 @@ tape('Basic uTP Tests', async (t) => {
       seqNr: 100,
       connectionId: socket.sndConnectionId,
       ackNr: 98,
-      timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampMicroseconds: finReturn.header.timestampMicroseconds,
+      timestampDifferenceMicroseconds: finReturn.header.timestampDifferenceMicroseconds,
       wndSize: socket.cur_window,
     })
     st.deepEqual(finReturn.header, finPacket.header, `Basic successfully sent Fin Packet`)
