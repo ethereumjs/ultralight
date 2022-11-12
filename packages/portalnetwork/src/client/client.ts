@@ -167,7 +167,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     // Event handling
     // TODO: Decide whether to put everything on a centralized event bus
-    this.discv5.on('talkReqReceived', this.onTalkReq)
+    this.discv5.on('talkReqReceived', (...params) => this.onTalkReq(params[0], params[2]))
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
@@ -264,7 +264,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
+  private onTalkReq = async (
+    src: INodeAddress,
+    message: ITalkReqMessage
+  ): Promise<boolean | void> => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
     if (toHexString(message.protocol) === ProtocolId.UTPNetwork) {
       this.handleUTP(src, src.nodeId, message, message.request)
@@ -275,7 +278,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger(
         `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`
       )
-      return
+      return false
     }
 
     protocol.handle(message, src)
