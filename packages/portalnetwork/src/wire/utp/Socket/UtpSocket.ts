@@ -56,8 +56,8 @@ export class UtpSocket extends EventEmitter {
     this.seqNr = seqNr
     this.ackNr = ackNr
     this.finNr = undefined
-    this.max_window = DEFAULT_WINDOW_SIZE
-    this.cur_window = this.max_window
+    this.max_window = DEFAULT_WINDOW_SIZE * 3
+    this.cur_window = 0
     this.reply_micro = 0
     this.state = null
     this.rtt = 0
