@@ -280,7 +280,7 @@ export class PortalNetworkUTP extends BasicUtp {
         await this.sendSynAckPacket(request.socket)
         writer = await this.createNewWriter(request.socket, request.socket.seqNr++)
         request.socket.writer = writer
-        await request.socket.writer?.start()
+        request.socket.writer?.start()
         break
       case RequestCode.ACCEPT_READ:
         this.logger('SYN received to initiate stream for OFFER/ACCEPT request')
@@ -298,6 +298,8 @@ export class PortalNetworkUTP extends BasicUtp {
       case RequestCode.FOUNDCONTENT_WRITE:
         request.socket.ackNrs.includes(packet.header.ackNr) ||
           request.socket.ackNrs.push(packet.header.ackNr)
+        await this.handleStatePacket(request.socket, packet)
+
         break
       case RequestCode.FINDCONTENT_READ:
         if (packet.header.ackNr === 1) {
@@ -322,8 +324,7 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = 2
           request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
-          await request.socket.writer?.start()
-          await this.sendFinPacket(request.socket)
+          request.socket.writer?.start()
         } else if (packet.header.ackNr === request.socket.finNr) {
           request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
         } else {
