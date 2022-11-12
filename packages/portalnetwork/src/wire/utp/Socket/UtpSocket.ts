@@ -104,6 +104,10 @@ export class UtpSocket extends EventEmitter {
   async sendDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
     await this.sendPacket(packet, PacketType.ST_DATA)
+    this.logger(
+      `cur_window increasing from ${this.cur_window} to ${this.cur_window + DEFAULT_WINDOW_SIZE}`
+    )
+    this.cur_window = this.cur_window + DEFAULT_WINDOW_SIZE
     this.seqNr++
     return packet
   }
