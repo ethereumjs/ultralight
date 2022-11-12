@@ -214,9 +214,11 @@ export class PortalNetworkUTP extends BasicUtp {
     packetBuffer: Buffer,
     srcId: string
   ): Promise<{ request: ContentRequest; packet: Packet }> {
+    const timeReceived = Bytes32TimeStamp()
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
     const request = this.openContentRequest[requestKey]
     const packet = Packet.bufferToPacket(packetBuffer)
+    request.socket.reply_micro = Math.abs(timeReceived - packet.header.timestampMicroseconds)
 
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
