@@ -4,8 +4,8 @@ import {
   BlockBodyContent,
   BlockBodyContentType,
   HistoryNetworkContentTypes,
-  sszTransaction,
-  sszUncles,
+  sszTransactionType,
+  sszUnclesType,
 } from './types.js'
 import rlp from '@ethereumjs/rlp'
 import {
@@ -66,17 +66,19 @@ export const decodeHistoryNetworkContentKey = (contentKey: string) => {
 
 export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
   const body = BlockBodyContentType.deserialize(sszBody)
-  const txsRlp = body.allTransactions.map((sszTx) => Buffer.from(sszTransaction.deserialize(sszTx)))
-  const unclesRlp = sszUncles.deserialize(body.sszUncles)
+  const txsRlp = body.allTransactions.map((sszTx) =>
+    Buffer.from(sszTransactionType.deserialize(sszTx))
+  )
+  const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
   return { txsRlp, unclesRlp }
 }
 
 export const sszEncodeBlockBody = (block: Block) => {
-  const encodedSSZTxs = block.transactions.map((tx) => sszTransaction.serialize(tx.serialize()))
+  const encodedSSZTxs = block.transactions.map((tx) => sszTransactionType.serialize(tx.serialize()))
   const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
   return BlockBodyContentType.serialize({
     allTransactions: encodedSSZTxs,
-    sszUncles: sszUncles.serialize(encodedUncles),
+    sszUncles: sszUnclesType.serialize(encodedUncles),
   })
 }
 

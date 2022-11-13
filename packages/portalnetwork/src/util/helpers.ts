@@ -16,8 +16,8 @@ import { TypeOutput, setLengthLeft, toBuffer, toType } from '@ethereumjs/util'
 import { Block, BlockOptions, JsonRpcBlock } from '@ethereumjs/block'
 
 import type { TxData, TypedTransaction } from '@ethereumjs/tx'
-import { Log, TxReceiptType } from '../subprotocols/index.js'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
+import { Log, TxReceiptType } from '../subprotocols/index.js'
 export interface ExtendedEthersBlock extends ethers.providers.Block {
   blockReward?: BigNumber
   unclesReward?: BigNumber

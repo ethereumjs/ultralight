@@ -18,6 +18,7 @@ import {
   PortalNetworkUTP,
   RequestCode,
   ContentRequest,
+  Bytes32TimeStamp,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Protocol/read/ContentReader.js'
 import { Packets } from '../packets.js'
@@ -119,20 +120,22 @@ tape('uTP Reader/Writer tests', (t) => {
     const packets = Object.values(chunks).map((chunk, idx) => {
       const packet = Packet.create(PacketType.ST_DATA, {
         seqNr: 2 + idx,
-        sndConnectionId: socket.sndConnectionId,
+        connectionId: socket.sndConnectionId,
         ackNr: socket.ackNr + idx,
-        wndSize: socket.max_window,
         payload: chunk,
-        rtt_var: socket.rtt_var,
+        timestampMicroseconds: Bytes32TimeStamp(),
+        timestampDifferenceMicroseconds: socket.rtt_var,
+        wndSize: socket.cur_window,
       })
       return packet
     })
     const finPacket = Packet.create(PacketType.ST_FIN, {
       seqNr: 100,
-      sndConnectionId: socket.sndConnectionId,
+      connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr + 98,
-      wndSize: socket.max_window,
-      rtt_var: 0,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: socket.rtt_var,
+      wndSize: socket.cur_window,
     })
     socket.reader = await socket.utp.createNewReader(_socket, 2)
     packets.forEach((packet) => {
@@ -163,9 +166,6 @@ tape('uTP Reader/Writer tests', (t) => {
     })
 
     const offerContentIds = offerContentHashes.map((hash) => {
-      const contentKey: HistoryNetworkContentKey = {
-        blockHash: fromHexString(hash),
-      }
       return HistoryNetworkContentKeyType.serialize(
         Buffer.concat([
           Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
@@ -313,9 +313,12 @@ tape('PortalNetworkUTP tests', (t) => {
       request.socket.rcvConnectionId
     )
     const samplePacketBuffer = Packet.create(PacketType.ST_STATE, {
-      sndConnectionId: request.socket.rcvConnectionId,
+      connectionId: request.socket.rcvConnectionId,
       seqNr: DEFAULT_RAND_SEQNR,
       ackNr: DEFAULT_RAND_ACKNR,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: 0,
+      wndSize: 1048576,
     }).encode()
 
     if (type === 'FINDCONTENT_READ-Block') {
@@ -389,9 +392,12 @@ tape('PortalNetworkUTP tests', (t) => {
           }, 'SYN Packet passed to handler')
         } else {
           const badsyn = Packet.create(PacketType.ST_SYN, {
-            sndConnectionId: request.socket.rcvConnectionId,
+            connectionId: request.socket.rcvConnectionId,
             seqNr: 1,
             ackNr: 1,
+            timestampMicroseconds: Bytes32TimeStamp(),
+            timestampDifferenceMicroseconds: 0,
+            wndSize: 1048576,
           })
           t.test('syn wrong', async (st) => {
             try {
@@ -445,9 +451,12 @@ tape('PortalNetworkUTP tests', (t) => {
             `${type} Only stored data packet numbers`
           )
           const badFin = Packet.create(PacketType.ST_FIN, {
-            sndConnectionId: request.socket.rcvConnectionId,
+            connectionId: request.socket.rcvConnectionId,
             seqNr: 432,
             ackNr: 234,
+            timestampMicroseconds: Bytes32TimeStamp(),
+            timestampDifferenceMicroseconds: 0,
+            wndSize: 1048576,
           })
           st.notok(await utp._handleFinPacket(request, badFin), 'Write socket doesnt handle FIN')
           request.socket.finNr = (testPacketList.send.fin as Packet).header.seqNr
@@ -458,16 +467,22 @@ tape('PortalNetworkUTP tests', (t) => {
         }
 
         const bogusPacket = Packet.create(PacketType.ST_SYN, {
-          sndConnectionId: request.socket.rcvConnectionId,
+          connectionId: request.socket.rcvConnectionId,
           seqNr: 789,
           ackNr: 987,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         })
         bogusPacket.header.pType = 9
 
         const resetPacket = Packet.create(PacketType.ST_RESET, {
-          sndConnectionId: request.socket.rcvConnectionId,
+          connectionId: request.socket.rcvConnectionId,
           seqNr: 789,
           ackNr: 987,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         })
 
         t.test('Packet Rejectors', async (st) => {

@@ -24,7 +24,7 @@ import {
   ReceiptsManager,
   RequestCode,
   shortId,
-  SszProof,
+  SszProofType,
 } from '../../index.js'
 
 import { BaseProtocol } from '../protocol.js'
@@ -85,7 +85,7 @@ export class HistoryProtocol extends BaseProtocol {
         this.logger(`Creating proof for ${toHexString(contentKey.subarray(1))}`)
         const proof = await this.generateInclusionProof(toHexString(contentKey.subarray(1)))
         // this.logger(proof)
-        value = SszProof.serialize({
+        value = SszProofType.serialize({
           leaf: proof.leaf,
           witnesses: proof.witnesses,
         })

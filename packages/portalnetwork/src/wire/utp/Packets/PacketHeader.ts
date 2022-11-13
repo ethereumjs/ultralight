@@ -7,8 +7,8 @@ export class PacketHeader {
   version: Uint8
   extension: Uint8
   connectionId: Uint16
-  timestamp: MicroSeconds
-  timestampDiff: MicroSeconds
+  timestampMicroseconds: MicroSeconds
+  timestampDifferenceMicroseconds: MicroSeconds
   wndSize: Uint32
   seqNr: Uint16
   ackNr: Uint16
@@ -19,9 +19,9 @@ export class PacketHeader {
     this.version = options.version ?? VERSION
     this.extension = options.extension ?? 0
     this.connectionId = options.connectionId
-    this.timestamp = options.timestamp ?? Bytes32TimeStamp()
-    this.timestampDiff = options.timestampDiff ?? 0
-    this.wndSize = options.wndSize ?? DEFAULT_WINDOW_SIZE
+    this.timestampMicroseconds = options.timestampMicroseconds ?? Bytes32TimeStamp()
+    this.timestampDifferenceMicroseconds = options.timestampDifferenceMicroseconds ?? 0
+    this.wndSize = options.wndSize
     this.seqNr = options.seqNr
     this.ackNr = options.ackNr
     this.length = 20
@@ -42,8 +42,8 @@ export class SelectiveAckHeader extends PacketHeader {
     buffer[0] = 1
     buffer[1] = 0
     buffer.writeUInt16BE(this.connectionId, 2)
-    buffer.writeUInt32BE(this.timestamp, 4)
-    buffer.writeUInt32BE(this.timestampDiff as number, 8)
+    buffer.writeUInt32BE(this.timestampMicroseconds, 4)
+    buffer.writeUInt32BE(this.timestampDifferenceMicroseconds as number, 8)
     buffer.writeUInt32BE(this.wndSize as number, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
     buffer.writeUInt16BE(this.ackNr, 18)

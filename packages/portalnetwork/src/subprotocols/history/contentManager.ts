@@ -8,7 +8,7 @@ import {
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
-  SszProof,
+  SszProofType,
   HistoryNetworkContentKeyType,
 } from './index.js'
 import { ContentLookup } from '../index.js'
@@ -148,7 +148,7 @@ export class ContentManager {
         break
       case HistoryNetworkContentTypes.HeaderProof: {
         try {
-          const proof = SszProof.deserialize(value)
+          const proof = SszProofType.deserialize(value)
           const verified = await this.history.accumulator.verifyInclusionProof(proof, hashKey)
           this.history.client.emit('Verified', hashKey, verified)
           break

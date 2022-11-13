@@ -17,14 +17,11 @@ import {
   getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   Log,
-  PostByzantiumTxReceipt,
-  PreByzantiumTxReceipt,
-  TxReceipt,
   TxReceiptType,
   TxReceiptWithType,
 } from '../index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { VM } from '@ethereumjs/vm'
+import { TxReceipt, PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
 
 type _GetReceiptByTxHashReturn = [
   receipt: TxReceipt,
