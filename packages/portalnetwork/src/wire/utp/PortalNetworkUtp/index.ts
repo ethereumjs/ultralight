@@ -355,10 +355,21 @@ export class PortalNetworkUTP extends BasicUtp {
   async _handleSelectiveAckPacket(request: ContentRequest, packet: Packet): Promise<void> {
     const ackNrs = PortalNetworkUTP.bitmaskToAckNrs(
       (packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask,
-      packet.header.ackNr
+      request.socket.ackNr
     )
-    request.socket.logger('SELECTIVE_ACK Packet Received.')
-    request.socket.logger(`bitmask references ackNrs: ${ackNrs}`)
+    const acked = ackNrs.find((a) => !request.socket.ackNrs.includes(a))
+    request.socket.logger(
+      `SELECTIVE_ACK received with ackNr: ${
+      packet.header.ackNr
+      }, and a bitmask referencing ackNrs: ${ackNrs}.  Packet acks DATA packet seqNr: ${acked}.  Receive socket still waits for seqNr: ${
+        packet.header.ackNr + 1
+      }`
+    )
+    if (acked) {
+      request.socket.rtt = request.socket.reply_micro - request.socket.outBuffer.get(acked)!
+      request.socket.outBuffer.delete(acked)
+      request.socket.ackNrs.push(acked)
+    }
     const requestCode = request.requestCode
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
