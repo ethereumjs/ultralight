@@ -15,7 +15,6 @@ const Bytes4 = new ByteVectorType(4)
 const Bytes32 = new ByteVectorType(32)
 const Bytes48 = new ByteVectorType(48)
 const Bytes96 = new ByteVectorType(96)
-
 /* ----------------- Types ----------------- */
 
 const Slot = new UintBigintType(64)
