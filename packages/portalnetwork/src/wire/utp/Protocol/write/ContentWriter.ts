@@ -32,11 +32,12 @@ export default class ContentWriter {
     let bytes: Uint8Array
     if (this.sentChunks.length < chunks) {
       if (this.socket.cur_window + DEFAULT_WINDOW_SIZE <= this.socket.max_window) {
-        this.socket.logger(`sending ${this.sentChunks.length + 1} / ${chunks} DATA Packets`)
         bytes = this.dataChunks[this.seqNr] ?? []
         this.sentChunks.push(this.seqNr)
         this.socket.logger(
-          `Sending ST-DATA ${this.sentChunks.length}/${chunks} -- SeqNr: ${this.socket.seqNr}  AckNr: ${this.socket.ackNr}`
+          `Sending ST-DATA ${this.seqNr - this.startingSeqNr + 1}/${chunks} -- SeqNr: ${
+            this.socket.seqNr
+          }`
         )
         await sendDataPacket(this.socket, bytes)
         this.seqNr++

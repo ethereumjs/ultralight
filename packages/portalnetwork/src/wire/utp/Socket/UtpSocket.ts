@@ -141,22 +141,31 @@ export class UtpSocket extends EventEmitter {
       return await sendAckPacket(this)
     } else {
       this.state = ConnectionState.Connected
-      if (packet.header.ackNr > 1 && !this.ackNrs.includes(packet.header.ackNr)) {
-        this.ackNrs.push(packet.header.ackNr)
-      }
       if (this.writer) {
         const inFlight = this.outBuffer.size
         this.cur_window = inFlight * DEFAULT_WINDOW_SIZE
+        const needed = this.dataNrs.filter((n) => !this.ackNrs.includes(n))
         this.logger(`cur_window: ${this.cur_window} bytes in flight`)
         this.logger(
-          `AckNr's needed: ${this.dataNrs.toString()} \n AckNr's received: ${this.ackNrs.toString()}`
+          `AckNr's received (${this.ackNrs.length}/${
+            Object.keys(this.writer.dataChunks).length
+          }): ${this.ackNrs[0]?.toString()}...${
+            this.ackNrs.slice(1).length > 3
+              ? this.ackNrs.slice(this.ackNrs.length - 3)?.toString()
+              : this.ackNrs.slice(1)?.toString()
+          }`
         )
+        this.logger(`AckNr's needed (${needed.length}/${
+          Object.keys(this.writer.dataChunks).length
+        }): ${needed.slice(0, 3)?.toString()}${
+          needed.slice(3)?.length > 0 ? '...' + needed[needed.length - 1] : ''
+        }
+          `)
       }
       if (this.compare()) {
         this.logger(`all data packets acked`)
         return true
       } else {
-        this.logger(`Still waiting for ${this.dataNrs.length - this.ackNrs.length} STATE packets.`)
         this.writer?.writing && this.writer?.start()
       }
     }
