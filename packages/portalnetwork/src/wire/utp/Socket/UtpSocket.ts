@@ -36,6 +36,7 @@ export class UtpSocket extends EventEmitter {
   received: number[]
   expected: number[]
   logger: Debugger
+  outBuffer: Map<number, number>
   constructor(
     utp: BasicUtp,
     remoteAddress: string,
@@ -73,6 +74,7 @@ export class UtpSocket extends EventEmitter {
     this.received = []
     this.expected = []
     this.logger = logger.extend(this.remoteAddress.slice(0, 3)).extend(type)
+    this.outBuffer = new Map()
   }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
@@ -97,6 +99,7 @@ export class UtpSocket extends EventEmitter {
 
   async sendDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
+    this.outBuffer.set(packet.header.seqNr, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_DATA)
     this.logger(
       `cur_window increasing from ${this.cur_window} to ${this.cur_window + DEFAULT_WINDOW_SIZE}`
@@ -142,7 +145,7 @@ export class UtpSocket extends EventEmitter {
         this.ackNrs.push(packet.header.ackNr)
       }
       if (this.writer) {
-        const inFlight = this.writer.sentChunks.filter((n) => !this.ackNrs.includes(n)).length
+        const inFlight = this.outBuffer.size
         this.cur_window = inFlight * DEFAULT_WINDOW_SIZE
         this.logger(`cur_window: ${this.cur_window} bytes in flight`)
         this.logger(

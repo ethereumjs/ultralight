@@ -297,8 +297,10 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
-        request.socket.ackNrs.includes(packet.header.ackNr) ||
-          request.socket.ackNrs.push(packet.header.ackNr)
+        request.socket.updateRTT(
+          request.socket.reply_micro - request.socket.outBuffer.get(packet.header.ackNr)!
+        )
+        request.socket.outBuffer.delete(packet.header.ackNr)
         await this.handleStatePacket(request.socket, packet)
 
         break
@@ -332,6 +334,10 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.logger(
             `Ack Packet Received.  SeqNr: ${packet.header.seqNr}, AckNr: ${packet.header.ackNr}`
           )
+          request.socket.updateRTT(
+            request.socket.reply_micro - request.socket.outBuffer.get(packet.header.ackNr)!
+          )
+          request.socket.outBuffer.delete(packet.header.ackNr)
           await this.handleStatePacket(request.socket, packet)
         }
         break
