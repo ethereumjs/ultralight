@@ -380,8 +380,10 @@ export class PortalNetworkUTP extends BasicUtp {
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
       case RequestCode.OFFER_WRITE:
-        request.socket.ackNrs.includes(packet.header.ackNr) ||
-          request.socket.ackNrs.push(packet.header.ackNr)
+        if (ackNrs.length >= 3) {
+          // If packet is more than 3 behind, assume it to be lost and resend.
+          request.socket.writer!.seqNr = packet.header.ackNr + 1
+        }
         await this.handleStatePacket(request.socket, packet)
         return
       case RequestCode.FINDCONTENT_READ:
