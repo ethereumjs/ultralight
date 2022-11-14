@@ -297,6 +297,9 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
+        request.socket.ackNrs = Object.keys(request.socket.writer!.dataChunks)
+          .filter((n) => parseInt(n) <= packet.header.ackNr)
+          .map((n) => parseInt(n))
         request.socket.updateRTT(
           request.socket.reply_micro - request.socket.outBuffer.get(packet.header.ackNr)!
         )
@@ -331,6 +334,9 @@ export class PortalNetworkUTP extends BasicUtp {
         } else if (packet.header.ackNr === request.socket.finNr) {
           request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
         } else {
+          request.socket.ackNrs = Object.keys(request.socket.writer!.dataChunks)
+            .filter((n) => parseInt(n) <= packet.header.ackNr)
+            .map((n) => parseInt(n))
           request.socket.logger(
             `Ack Packet Received.  SeqNr: ${packet.header.seqNr}, AckNr: ${packet.header.ackNr}`
           )
