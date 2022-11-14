@@ -180,7 +180,9 @@ export class UtpSocket extends EventEmitter {
     this.ackNrs.push(packet.header.seqNr)
     await this.reader.addPacket(packet)
     if (expected) {
-      this.ackNr = Math.max(...this.ackNrs)
+      this.ackNr =
+        this.ackNrs.sort((a, b) => a - b).find((n, i) => this.ackNrs[i + 1] !== n + 1) ??
+        Math.max(...this.ackNrs)
       return await this.utp.sendStatePacket(this)
     } else {
       this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
