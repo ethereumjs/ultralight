@@ -400,7 +400,7 @@ export class PortalNetworkUTP extends BasicUtp {
       if (keys.length < 1) {
         throw new Error('Missing content keys')
       }
-      keys.forEach((k, idx) => {
+      for (const [idx, k] of keys.entries()) {
         const decodedContentKey = {
           selector: k[0],
           blockHash: k.subarray(1),
@@ -412,7 +412,7 @@ export class PortalNetworkUTP extends BasicUtp {
         // Hack -- decodedContentKey.blockHash is undefined for
         // EpochAccumulator requests...
         this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
-      })
+      }
     }
 
     let content
