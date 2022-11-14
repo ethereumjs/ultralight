@@ -40,7 +40,7 @@ export default class ContentWriter {
           }`
         )
         await sendDataPacket(this.socket, bytes)
-        this.seqNr++
+        this.seqNr = Math.max(...this.sentChunks) + 1
       } else {
         this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
         return

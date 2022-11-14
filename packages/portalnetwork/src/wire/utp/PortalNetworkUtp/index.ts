@@ -366,7 +366,7 @@ export class PortalNetworkUTP extends BasicUtp {
     const acked = ackNrs.find((a) => !request.socket.ackNrs.includes(a))
     request.socket.logger(
       `SELECTIVE_ACK received with ackNr: ${
-      packet.header.ackNr
+        packet.header.ackNr
       }, and a bitmask referencing ackNrs: ${ackNrs}.  Packet acks DATA packet seqNr: ${acked}.  Receive socket still waits for seqNr: ${
         packet.header.ackNr + 1
       }`
