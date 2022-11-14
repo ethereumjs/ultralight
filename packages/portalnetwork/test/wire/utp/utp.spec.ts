@@ -447,8 +447,8 @@ tape('PortalNetworkUTP tests', (t) => {
           )
 
           st.equal(
-            data[2].header.seqNr,
             outoforder.packet.header.ackNr,
+            data[2].header.seqNr,
             'ACKed packet with highest in_order seqNr received'
           )
 
