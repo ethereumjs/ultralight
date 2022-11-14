@@ -130,7 +130,6 @@ tape('FIND/FOUND Socket Tests', (t) => {
     st.equal(findSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Socket Handles Data Packet by creating Ack')
     await foundSocket.handleStatePacket(ack)
-    st.equal(foundSocket.ackNrs.length, 1)
     const dataNrs = packets.map((pack) => {
       return pack.header.seqNr
     })
@@ -154,16 +153,16 @@ tape('FIND/FOUND Socket Tests', (t) => {
       connectionId: foundSocket.sndConnectionId,
       ackNr: foundSocket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: foundSocket.reply_micro,
-      wndSize: foundSocket.cur_window,
+      timestampDifferenceMicroseconds: 1000,
+      wndSize: 1200,
     })
     const finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: finPacket.header.ackNr + 1,
       connectionId: findSocket.sndConnectionId,
       ackNr: 100,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: findSocket.reply_micro,
-      wndSize: findSocket.cur_window,
+      timestampDifferenceMicroseconds: 1000,
+      wndSize: 1200,
     })
     const encoded = await foundSocket.sendFinPacket(finPacket)
     st.deepEqual(
@@ -276,11 +275,6 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
     st.equal(acceptSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Socket Handles Data Packet by creating Ack')
     await offerSocket.handleStatePacket(ack)
-    st.equal(
-      offerSocket.ackNrs.length,
-      1,
-      `OFFER Socket added first data ack to list ${offerSocket.ackNrs}`
-    )
     const dataNrs = packets.map((pack) => {
       return pack.header.seqNr
     })

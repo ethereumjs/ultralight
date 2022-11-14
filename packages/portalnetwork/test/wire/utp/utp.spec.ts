@@ -468,11 +468,6 @@ tape('PortalNetworkUTP tests', (t) => {
           st.doesNotThrow(async () => {
             await utp._handleStatePacket(ack.request, ack.packet)
           }, `Handled Ack Packet`)
-          st.deepEqual(
-            request.socket.ackNrs,
-            [data.header.seqNr],
-            `${type} Only stored data packet numbers`
-          )
           const badFin = Packet.create(PacketType.ST_FIN, {
             connectionId: request.socket.rcvConnectionId,
             seqNr: 432,
