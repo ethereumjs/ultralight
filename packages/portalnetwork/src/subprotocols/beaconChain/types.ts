@@ -55,12 +55,12 @@ const DomainType = Bytes32
 
 /* ----------------- Constants ----------------- */
 
-const ALTAIR_FORK_EPOCH = Epoch
-const ALTAIR_FORK_VERSION = Version
+const ALTAIR_FORK_EPOCH = EpochType
+const ALTAIR_FORK_VERSION = VersionType
 const DOMAIN_SYNC_COMMITTEE = DomainType
 const EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256 //  2**8
-const GENESIS_FORK_VERSION = Version
-const GENESIS_SLOT = Slot
+const GENESIS_FORK_VERSION = VersionType
+const GENESIS_SLOT = SlotType
 const MIN_GENESIS_TIME = new UintBigintType(8)
 const MIN_SYNC_COMMITTEE_PARTICIPANTS = 1
 const CURRENT_SYNC_COMMITTEE_INDEX = 54
@@ -137,3 +137,7 @@ interface ILightClientBootstrap {
   currentSyncCommittee: Uint8Array
   currentSyncCommitteeBranch: Uint8Array
 }
+
+const LightClientUpdate = new ContainerType({
+  attesterHeader: IBeaconBlockHeader,
+})
