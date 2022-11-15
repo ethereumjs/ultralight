@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { UtpSocket, DEFAULT_WINDOW_SIZE } from '../../index.js'
+import { UtpSocket, DEFAULT_PACKET_SIZE } from '../../index.js'
 import { sendDataPacket, sendFinPacket } from '../../Packets/PacketSenders.js'
 import { BUFFER_SIZE } from '../../Packets/PacketTyping.js'
 import { BasicUtp } from '../BasicUtp.js'
@@ -31,7 +31,7 @@ export default class ContentWriter {
     this.writing = true
     let bytes: Uint8Array
     if (this.sentChunks.length < chunks) {
-      if (this.socket.cur_window + DEFAULT_WINDOW_SIZE <= this.socket.max_window) {
+      if (this.socket.cur_window + DEFAULT_PACKET_SIZE <= this.socket.max_window) {
         bytes = this.dataChunks[this.seqNr] ?? []
         this.sentChunks.push(this.seqNr)
         this.socket.logger(
@@ -41,7 +41,9 @@ export default class ContentWriter {
         )
         await sendDataPacket(this.socket, bytes)
         this.seqNr = Math.max(...this.sentChunks) + 1
+        this.start()
       } else {
+        this.logger(` cur_window: ${this.socket.cur_window} - max_window ${this.socket.max_window}`)
         this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
         return
       }
@@ -50,7 +52,6 @@ export default class ContentWriter {
       await sendFinPacket(this.socket)
       return
     }
-    this.start()
   }
 
   chunk(): Record<number, Uint8Array> {
