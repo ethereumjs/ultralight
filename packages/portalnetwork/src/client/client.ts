@@ -171,7 +171,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
-      await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+      try {
+        await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+      } catch {
+        this.uTP.closeRequest(peerId)
+      }
     })
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       if (!verified || !enr.getLocationMultiaddr('udp')) {
@@ -339,8 +343,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
       return res
     } catch (err: any) {
-      this.logger(`Error sending TALKREQ message: ${err}`)
-      return Buffer.from([])
+      throw new Error(`Error sending TALKREQ message: ${err}`)
     }
   }
 
