@@ -119,15 +119,22 @@ interface ISyncAggregate {
   syncCommitteeSignature: BLSSignature
 }
 
-// const SyncCommittee = new ContainerType({
-//     pubkeys: // idk
-// })
+// currently outlining these types / containers for now
+
+const SyncCommittee = new ContainerType({
+  pubkeys: Uint8Array,
+  aggregatePubkey: BLSPubKeyType,
+})
+
+interface ISyncCommittee {
+  pubkeys: IBeaconBlockHeader
+  aggregatePubkey: BLSPubKey
+}
 
 const LightClientBootstrap = new ContainerType({
   // The requested beacon block header
   header: BeaconBlockHeader,
   // Current sync committee corresponding to `header`
-  // TODO: implement SyncCommittee type first
   currentSyncCommittee: SyncCommittee,
   currentSyncCommitteeBranch: new ByteVectorType(CURRENT_SYNC_COMMITTEE_INDEX),
 })
@@ -138,6 +145,8 @@ interface ILightClientBootstrap {
   currentSyncCommitteeBranch: Uint8Array
 }
 
-const LightClientUpdate = new ContainerType({
-  attesterHeader: IBeaconBlockHeader,
-})
+// const LightClientUpdate = new ContainerType({
+//   attesterHeader: BeaconBlockHeader,
+//   nextSyncCommittee: SyncCommittee,
+
+// })
