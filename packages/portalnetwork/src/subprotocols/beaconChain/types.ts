@@ -122,7 +122,7 @@ interface ISyncAggregate {
 // currently outlining these types / containers for now
 
 const SyncCommittee = new ContainerType({
-  pubkeys: Uint8Array,
+  pubkeys: new BitVectorType(SYNC_COMMITTEE_SIZE),
   aggregatePubkey: BLSPubKeyType,
 })
 
