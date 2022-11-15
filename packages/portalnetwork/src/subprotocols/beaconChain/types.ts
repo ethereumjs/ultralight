@@ -18,44 +18,40 @@ const Bytes96 = new ByteVectorType(96)
 /* ----------------- Types ----------------- */
 
 type Slot = bigint
-const Slot = new UintBigintType(8)
+const SlotType = new UintBigintType(8)
 
 type Epoch = bigint
-const Epoch = new UintBigintType(8)
+const EpochType = new UintBigintType(8)
 
-type CommitteeIndex = bigint 
-const CommitteeIndex = new UintBigintType(8)
+type CommitteeIndex = bigint
+const CommitteeIndexType = new UintBigintType(8)
 
-type ValidatorIndex = bigint 
-const ValidatorIndex = new UintBigintType(8)
+type ValidatorIndex = bigint
+const ValidatorIndexType = new UintBigintType(8)
 
 type Gwei = bigint
-const Gwei = new UintBigintType(8)
+const GweiType = new UintBigintType(8)
 
 type GeneralizedIndex = bigint
-const GeneralizedIndex = new UintBigintType(8)
+const GeneralizedIndexType = new UintBigintType(8)
 
 type Root = Uint8Array
-const Root = Bytes32
+const RootType = Bytes32
 
 type Hash32 = Uint8Array
-const Hash32 = Bytes32
+const Hash32Type = Bytes32
 
 type Version = Uint8Array
-const Version = Bytes4
+const VersionType = Bytes4
 
 type BLSPubKey = Uint8Array
-const BLSPubKey = Bytes48
+const BLSPubKeyType = Bytes48
 
 type BLSSignature = Uint8Array
-const BLSSignature = Bytes96
-
-type DomainType = Uint8Array
-const DomainType = Bytes4
+const BLSSignatureType = Bytes96
 
 type Domain = Uint8Array
-const Domain = Bytes32
-// const SSZObject = new ContainerType()
+const DomainType = Bytes32
 
 /* ----------------- Constants ----------------- */
 
@@ -77,29 +73,29 @@ const SLOTS_PER_SYNC_PERIOD = SLOTS_PER_EPOCH * EPOCHS_PER_SYNC_COMMITTEE_PERIOD
 const UPDATE_TIMEOUT = SLOTS_PER_SYNC_PERIOD
 
 const BeaconBlockHeader = new ContainerType({
-  slot: Slot,
-  proposerIndex: ValidatorIndex,
-  parentRoot: Root,
-  stateRoot: Root,
-  bodyRoot: Root,
+  slot: SlotType,
+  proposerIndex: ValidatorIndexType,
+  parentRoot: RootType,
+  stateRoot: RootType,
+  bodyRoot: RootType,
 })
 
 interface IBeaconBlockHeader {
-  slot: bigint,
-  proposerIndex: bigint,
-  parentRoot: Uint8Array,
-  stateRoot: Uint8Array,
-  bodyRoot: Uint8Array,
+  slot: bigint
+  proposerIndex: bigint
+  parentRoot: Uint8Array
+  stateRoot: Uint8Array
+  bodyRoot: Uint8Array
 }
 
 const ForkData = new ContainerType({
-  currentVersion: Version,
-  genesisValidatorsRoot: Root,
+  currentVersion: VersionType,
+  genesisValidatorsRoot: RootType,
 })
 
 interface IForkData {
-  currentVersion: Uint8Array,
-  genesisValidatorsRoot: Uint8Array,
+  currentVersion: Uint8Array
+  genesisValidatorsRoot: Uint8Array
 }
 
 const SigningData = new ContainerType({
@@ -107,9 +103,9 @@ const SigningData = new ContainerType({
   domain: Domain,
 })
 
-interface SigningData {
-  objectRoot: Uint8Array,
-  domain: Uint8Array,
+interface ISigningData {
+  objectRoot: Uint8Array
+  domain: Uint8Array
 }
 
 // what is correct value for syncCommitteeBits?
@@ -118,17 +114,26 @@ const SyncAggregate = new ContainerType({
   syncCommitteeSignature: BLSSignature,
 })
 
-interface SyncAggregate {
-
+interface ISyncAggregate {
+  syncCommitteeBits: Uint8Array
+  syncCommitteeSignature: BLSSignature
 }
 
 // const SyncCommittee = new ContainerType({
 //     pubkeys: // idk
 // })
 
-// const LightClientBootstrap = new ContainerType({
-//   // The requested beacon block header
-//   header: BeaconBlockHeader,
-//   // Current sync committee corresponding to `header`
-//   current_sync_committee: SyncCommittee,
-// })
+const LightClientBootstrap = new ContainerType({
+  // The requested beacon block header
+  header: BeaconBlockHeader,
+  // Current sync committee corresponding to `header`
+  // TODO: implement SyncCommittee type first
+  currentSyncCommittee: SyncCommittee,
+  currentSyncCommitteeBranch: new ByteVectorType(CURRENT_SYNC_COMMITTEE_INDEX),
+})
+
+interface ILightClientBootstrap {
+  header: IBeaconBlockHeader
+  currentSyncCommittee: Uint8Array
+  currentSyncCommitteeBranch: Uint8Array
+}
