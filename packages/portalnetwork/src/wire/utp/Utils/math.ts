@@ -1,11 +1,11 @@
 import { BigNumber } from 'ethers'
 import { Uint16 } from '../index.js'
 
-export function MicrosecondTimeStamp(): number {
+export function MicrosecondTimeStamp(): bigint {
   // this is only a millisecond timestamp
   // process.hrtime.bigint() doesn't seem to work in the browser?
-  const time = Date.now()
-  return time * 1000
+  const time = (Date.now() % 2 ** 32) - 1
+  return BigInt(time)
 }
 
 export function Bytes32TimeStamp(): BigNumber {
