@@ -8,8 +8,6 @@ import {
   BitVectorType,
 } from '@chainsafe/ssz'
 
-// todo: export
-
 /* ----------------- Alliases ----------------- */
 const Bytes4 = new ByteVectorType(4)
 const Bytes32 = new ByteVectorType(32)
