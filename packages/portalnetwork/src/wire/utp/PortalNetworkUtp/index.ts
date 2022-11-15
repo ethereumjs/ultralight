@@ -51,6 +51,16 @@ export class PortalNetworkUTP extends BasicUtp {
     this.working = false
   }
 
+  closeRequest(nodeId: string) {
+    this.logger.extend('CLOSING')(`Closing uTP request with ${nodeId} due to failed connection`)
+    const key = Object.keys(this.openContentRequest).find(
+      (k) => k.slice(0, 5) === nodeId.slice(0, 5)
+    )
+    !key && this.logger.extend('CLOSING')('Cannot find request')
+    key && this.openContentRequest.get(key)?.close()
+    key && this.openContentRequest.delete(key)
+  }
+
   getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
     const packet = Packet.bufferToPacket(packetBuffer)
     const connId = packet.header.connectionId
@@ -216,45 +226,45 @@ export class PortalNetworkUTP extends BasicUtp {
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       request.socket.timeoutCounter?.refresh()
-    const packet = Packet.bufferToPacket(packetBuffer)
+      const packet = Packet.bufferToPacket(packetBuffer)
       request.socket.updateDelay(packet.header.timestampMicroseconds, timeReceived)
 
-    switch (packet.header.pType) {
-      case PacketType.ST_SYN:
-        this.logger(
-          `SYN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-        )
-        requestKey && (await this._handleSynPacket(request, packet))
-        break
-      case PacketType.ST_DATA:
-        this.logger(
-          `DATA Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-        )
+      switch (packet.header.pType) {
+        case PacketType.ST_SYN:
+          this.logger(
+            `SYN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
+          )
+          requestKey && (await this._handleSynPacket(request, packet))
+          break
+        case PacketType.ST_DATA:
+          this.logger(
+            `DATA Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
+          )
           requestKey && (await this._handleDataPacket(request, packet))
-        break
-      case PacketType.ST_STATE:
-        if (packet.header.extension === 1) {
-          await this._handleSelectiveAckPacket(request, packet)
-        } else {
-          await this._handleStatePacket(request, packet)
-        }
-        break
-      case PacketType.ST_RESET:
-        this.logger(
-          `RESET Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-        )
-        requestKey && (await this._handleResetPacket(request))
+          break
+        case PacketType.ST_STATE:
+          if (packet.header.extension === 1) {
+            await this._handleSelectiveAckPacket(request, packet)
+          } else {
+            await this._handleStatePacket(request, packet)
+          }
+          break
+        case PacketType.ST_RESET:
+          this.logger(
+            `RESET Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
+          )
+          requestKey && (await this._handleResetPacket(request))
           this.openContentRequest.delete(requestKey)
-        break
-      case PacketType.ST_FIN:
-        this.logger(
-          `FIN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-        )
-        requestKey && (await this._handleFinPacket(request, packet))
-        break
-      default:
-        throw new Error(`Unknown Packet Type ${packet.header.pType}`)
-    }
+          break
+        case PacketType.ST_FIN:
+          this.logger(
+            `FIN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
+          )
+          requestKey && (await this._handleFinPacket(request, packet))
+          break
+        default:
+          throw new Error(`Unknown Packet Type ${packet.header.pType}`)
+      }
     }
   }
 
@@ -292,14 +302,14 @@ export class PortalNetworkUTP extends BasicUtp {
     switch (requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
         if (packet.header.ackNr > request.socket.writer!.startingSeqNr) {
-        request.socket.ackNrs = Object.keys(request.socket.writer!.dataChunks)
-          .filter((n) => parseInt(n) <= packet.header.ackNr)
-          .map((n) => parseInt(n))
+          request.socket.ackNrs = Object.keys(request.socket.writer!.dataChunks)
+            .filter((n) => parseInt(n) <= packet.header.ackNr)
+            .map((n) => parseInt(n))
         }
         if (sentTime != undefined) {
           const rtt = packet.header.timestampMicroseconds.sub(sentTime)
           request.socket.updateRTT(rtt)
-        request.socket.outBuffer.delete(packet.header.ackNr)
+          request.socket.outBuffer.delete(packet.header.ackNr)
         }
         await this.handleStatePacket(request.socket, packet)
 
@@ -341,7 +351,7 @@ export class PortalNetworkUTP extends BasicUtp {
           if (sentTime != undefined) {
             const rtt = packet.header.timestampMicroseconds.sub(sentTime)
             request.socket.updateRTT(rtt)
-          request.socket.outBuffer.delete(packet.header.ackNr)
+            request.socket.outBuffer.delete(packet.header.ackNr)
           }
           await this.handleStatePacket(request.socket, packet)
         }

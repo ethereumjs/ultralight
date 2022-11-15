@@ -238,4 +238,10 @@ export class UtpSocket extends EventEmitter {
     const equal = sent === received
     return equal
   }
+
+  close(): void {
+    clearInterval(this.timeoutCounter)
+    this.logger.destroy()
+    this.removeAllListeners()
+  }
 }

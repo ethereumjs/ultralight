@@ -47,4 +47,9 @@ export class ContentRequest {
     }
     return this.requestCode
   }
+
+  close(): void {
+    this.content = Uint8Array.from([])
+    this.socket.close()
+  }
 }
