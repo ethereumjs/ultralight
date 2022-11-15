@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers'
 import { Uint16 } from '../index.js'
 
 export function MicrosecondTimeStamp(): number {
@@ -7,8 +8,9 @@ export function MicrosecondTimeStamp(): number {
   return time * 1000
 }
 
-export function Bytes32TimeStamp(): number {
-  return MicrosecondTimeStamp() & 0xffff
+export function Bytes32TimeStamp(): BigNumber {
+  const timestamp = MicrosecondTimeStamp()
+  return BigNumber.from(timestamp)
 }
 
 export function randUint16(): Uint16 {

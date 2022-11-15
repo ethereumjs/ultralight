@@ -7,6 +7,7 @@ import ContentReader from '../Protocol/read/ContentReader.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
+import { BigNumber } from 'ethers'
 
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'
@@ -21,13 +22,14 @@ export class UtpSocket extends EventEmitter {
   state: ConnectionState | null
   max_window: number
   cur_window: number
-  reply_micro: number
-  rtt: number
-  rtt_var: number
-  baseDelay: number
-  ourDelay: number
+  reply_micro: BigNumber
+  rtt: BigNumber
+  rtt_var: BigNumber
+  timeout: BigNumber
+  timeoutCounter?: NodeJS.Timeout
+  baseDelay: { delay: BigNumber; timestamp: BigNumber }
+  ourDelay: BigNumber
   sendRate: number
-  CCONTROL_TARGET: number
   writer: ContentWriter | undefined
   reader: ContentReader | undefined
   readerContent: Uint8Array | undefined
@@ -36,7 +38,7 @@ export class UtpSocket extends EventEmitter {
   received: number[]
   expected: number[]
   logger: Debugger
-  outBuffer: Map<number, number>
+  outBuffer: Map<number, BigNumber>
   constructor(
     utp: BasicUtp,
     remoteAddress: string,
@@ -57,16 +59,16 @@ export class UtpSocket extends EventEmitter {
     this.seqNr = seqNr
     this.ackNr = ackNr
     this.finNr = undefined
-    this.max_window = DEFAULT_WINDOW_SIZE * 3
+    this.max_window = DEFAULT_PACKET_SIZE * 3
     this.cur_window = 0
-    this.reply_micro = 0
+    this.reply_micro = BigNumber.from(0)
     this.state = null
-    this.rtt = 0
-    this.rtt_var = 0
-    this.baseDelay = 0
-    this.ourDelay = 0
+    this.rtt = BigNumber.from(1000)
+    this.rtt_var = BigNumber.from(0)
+    this.timeout = BigNumber.from(1000)
+    this.baseDelay = { delay: BigNumber.from(0), timestamp: BigNumber.from(0) }
+    this.ourDelay = BigNumber.from(0)
     this.sendRate = 0
-    this.CCONTROL_TARGET = DELAY_TARGET
     this.readerContent = new Uint8Array()
     this.type = type
     this.dataNrs = []

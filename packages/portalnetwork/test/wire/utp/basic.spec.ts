@@ -1,6 +1,7 @@
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
+import { BigNumber } from 'ethers'
 import tape from 'tape'
 import {
   PortalNetworkUTP,
@@ -46,7 +47,7 @@ tape('Basic uTP Tests', async (t) => {
       payload: chunk,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: BigNumber.from(socket.cur_window),
     })
     return packet
   })
@@ -58,7 +59,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: socket.ackNr,
       timestampMicroseconds: syn.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: BigNumber.from(socket.cur_window),
     })
     st.deepEqual(syn, synPacket, 'Basic Sends Syn Packet successfully')
     const _synAck = Packet.create(PacketType.ST_STATE, {
@@ -67,7 +68,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: _socket.ackNr,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: BigNumber.from(socket.cur_window),
     })
     const synack = await basic.handleSynPacket(_socket, synPacket)
     ;(_synAck.header.timestampMicroseconds = synack.header.timestampMicroseconds),
@@ -111,7 +112,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: 100,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: BigNumber.from(socket.cur_window),
     })
     socket.seqNr = 100
     socket.ackNr = 98
@@ -123,7 +124,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: 98,
       timestampMicroseconds: finReturn.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: finReturn.header.timestampDifferenceMicroseconds,
-      wndSize: socket.cur_window,
+      wndSize: BigNumber.from(socket.cur_window),
     })
     st.deepEqual(finReturn.header, finPacket.header, `Basic successfully sent Fin Packet`)
     const _compiled = await basic.handleFinPacket(_socket, finPacket)

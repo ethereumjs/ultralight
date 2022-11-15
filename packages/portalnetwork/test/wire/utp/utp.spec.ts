@@ -2,6 +2,7 @@ import { fromHexString } from '@chainsafe/ssz'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
+import { BigNumber } from 'ethers'
 import tape from 'tape'
 import {
   HistoryNetworkContentKey,
@@ -126,7 +127,7 @@ tape('uTP Reader/Writer tests', (t) => {
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: socket.reply_micro,
-        wndSize: socket.cur_window,
+        wndSize: BigNumber.from(socket.cur_window),
       })
       return packet
     })
@@ -136,7 +137,7 @@ tape('uTP Reader/Writer tests', (t) => {
       ackNr: socket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: BigNumber.from(socket.cur_window),
     })
     socket.reader = await socket.utp.createNewReader(_socket, 2)
     packets.forEach((packet) => {
@@ -318,8 +319,8 @@ tape('PortalNetworkUTP tests', (t) => {
       seqNr: DEFAULT_RAND_SEQNR,
       ackNr: DEFAULT_RAND_ACKNR,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: 0,
-      wndSize: 1048576,
+      timestampDifferenceMicroseconds: BigNumber.from(0),
+      wndSize: BigNumber.from(1048576),
     }).encode()
 
     if (type === 'FINDCONTENT_READ-Block') {

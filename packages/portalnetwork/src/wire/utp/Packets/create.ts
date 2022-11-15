@@ -1,4 +1,4 @@
-import { DEFAULT_WINDOW_SIZE } from '../Utils/constants.js'
+import { BigNumber } from 'ethers'
 import { Packet } from './Packet.js'
 import { PacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import { PacketType, Uint16, Uint32, protocolVersion, Uint8 } from './PacketTyping.js'
@@ -8,10 +8,10 @@ export type createSynOpts = {
   connectionId: Uint16
   seqNr: Uint16
   ackNr: number
-  timestampMicrosecondsMicroseconds?: number
-  wndSize: number
-  timestampMicroseconds?: number
-  timestampDifferenceMicroseconds?: number
+  timestampMicrosecondsMicroseconds?: BigNumber
+  wndSize: BigNumber
+  timestampMicroseconds: BigNumber
+  timestampDifferenceMicroseconds?: BigNumber
 }
 
 export type createAckOpts = {
@@ -20,9 +20,9 @@ export type createAckOpts = {
   connectionId: Uint16
   seqNr: Uint16
   ackNr: Uint16
-  wndSize: number
-  timestampMicroseconds?: number
-  timestampDifferenceMicroseconds?: number
+  wndSize: BigNumber
+  timestampMicroseconds: BigNumber
+  timestampDifferenceMicroseconds?: BigNumber
 }
 export type createSelectiveAckOpts = {
   header: {
@@ -31,9 +31,9 @@ export type createSelectiveAckOpts = {
     connectionId: Uint16
     seqNr: Uint16
     ackNr: Uint16
-    wndSize: number
-    timestampDifferenceMicroseconds?: number
-    timestampMicroseconds?: number
+    wndSize: BigNumber
+    timestampDifferenceMicroseconds?: BigNumber
+    timestampMicroseconds: BigNumber
   }
   bitmask: Uint8Array
 }
@@ -44,8 +44,8 @@ export type createDataOpts = {
   seqNr: Uint16
   ackNr: Uint16
   wndSize: Uint32
-  timestampMicroseconds?: number
-  timestampDifferenceMicroseconds?: number
+  timestampMicroseconds: BigNumber
+  timestampDifferenceMicroseconds?: BigNumber
   payload: Uint8Array
 }
 export type createResetOpts = {
@@ -55,8 +55,8 @@ export type createResetOpts = {
   seqNr: Uint16
   ackNr: Uint16
   wndSize: Uint32
-  timestampMicroseconds?: number
-  timestampDifferenceMicroseconds?: number
+  timestampMicroseconds: BigNumber
+  timestampDifferenceMicroseconds?: BigNumber
 }
 export type createFinOpts = {
   extension?: Uint8
@@ -64,9 +64,9 @@ export type createFinOpts = {
   connectionId: Uint16
   seqNr: number
   ackNr: number
-  wndSize: number
-  timestampMicroseconds?: number
-  timestampDifferenceMicroseconds?: number
+  wndSize: Uint32
+  timestampMicroseconds: BigNumber
+  timestampDifferenceMicroseconds?: BigNumber
 }
 
 export type createPacketOpts =
