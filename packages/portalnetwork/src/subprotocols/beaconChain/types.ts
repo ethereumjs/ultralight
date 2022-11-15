@@ -145,8 +145,20 @@ interface ILightClientBootstrap {
   currentSyncCommitteeBranch: Uint8Array
 }
 
-// const LightClientUpdate = new ContainerType({
-//   attesterHeader: BeaconBlockHeader,
-//   nextSyncCommittee: SyncCommittee,
+const LightClientUpdate = new ContainerType({
+  attesterHeader: BeaconBlockHeader,
+  nextSyncCommittee: SyncCommittee,
+  nextSyncCommitteeBranch: new ByteVectorType(NEXT_SYNC_COMMITTEE_INDEX),
+  finalizedHeader: BeaconBlockHeader,
+  finalityBranch: new ByteVectorType(FINALIZED_ROOT_INDEX),
+  syncAggregate: SyncAggregate,
+})
 
-// })
+interface ILightClientUpdate {
+  attesterHeader: IBeaconBlockHeader
+  nextSyncCommittee: ISyncCommittee
+  nextSyncCommitteeBranch: Uint8Array
+  finalizedHeader: IBeaconBlockHeader
+  finalityBranch: Uint8Array
+  syncAggregate: ISyncAggregate
+}
