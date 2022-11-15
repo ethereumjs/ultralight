@@ -17,18 +17,43 @@ const Bytes48 = new ByteVectorType(48)
 const Bytes96 = new ByteVectorType(96)
 /* ----------------- Types ----------------- */
 
-const Slot = new UintBigintType(64)
-const Epoch = new UintBigintType(64)
-const CommitteeIndex = new UintBigintType(64)
-const ValidatorIndex = new UintBigintType(64)
-const Gwei = new UintBigintType(64)
-const GeneralizedIndex = new UintBigintType(64)
+type Slot = bigint
+const Slot = new UintBigintType(8)
+
+type Epoch = bigint
+const Epoch = new UintBigintType(8)
+
+type CommitteeIndex = bigint 
+const CommitteeIndex = new UintBigintType(8)
+
+type ValidatorIndex = bigint 
+const ValidatorIndex = new UintBigintType(8)
+
+type Gwei = bigint
+const Gwei = new UintBigintType(8)
+
+type GeneralizedIndex = bigint
+const GeneralizedIndex = new UintBigintType(8)
+
+type Root = Uint8Array
 const Root = Bytes32
+
+type Hash32 = Uint8Array
 const Hash32 = Bytes32
+
+type Version = Uint8Array
 const Version = Bytes4
+
+type BLSPubKey = Uint8Array
 const BLSPubKey = Bytes48
+
+type BLSSignature = Uint8Array
 const BLSSignature = Bytes96
+
+type DomainType = Uint8Array
 const DomainType = Bytes4
+
+type Domain = Uint8Array
 const Domain = Bytes32
 // const SSZObject = new ContainerType()
 
@@ -40,7 +65,7 @@ const DOMAIN_SYNC_COMMITTEE = DomainType
 const EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256 //  2**8
 const GENESIS_FORK_VERSION = Version
 const GENESIS_SLOT = Slot
-const MIN_GENESIS_TIME = new UintBigintType(64)
+const MIN_GENESIS_TIME = new UintBigintType(8)
 const MIN_SYNC_COMMITTEE_PARTICIPANTS = 1
 const CURRENT_SYNC_COMMITTEE_INDEX = 54
 const NEXT_SYNC_COMMITTEE_INDEX = 55
@@ -53,26 +78,49 @@ const UPDATE_TIMEOUT = SLOTS_PER_SYNC_PERIOD
 
 const BeaconBlockHeader = new ContainerType({
   slot: Slot,
-  proposer_index: ValidatorIndex,
-  parent_root: Root,
-  state_root: Root,
-  body_root: Root,
+  proposerIndex: ValidatorIndex,
+  parentRoot: Root,
+  stateRoot: Root,
+  bodyRoot: Root,
 })
+
+interface IBeaconBlockHeader {
+  slot: bigint,
+  proposerIndex: bigint,
+  parentRoot: Uint8Array,
+  stateRoot: Uint8Array,
+  bodyRoot: Uint8Array,
+}
 
 const ForkData = new ContainerType({
-  current_version: Version,
-  genesis_validators_root: Root,
+  currentVersion: Version,
+  genesisValidatorsRoot: Root,
 })
 
+interface IForkData {
+  currentVersion: Uint8Array,
+  genesisValidatorsRoot: Uint8Array,
+}
+
 const SigningData = new ContainerType({
-  object_root: Root,
+  objectRoot: Root,
   domain: Domain,
 })
 
+interface SigningData {
+  objectRoot: Uint8Array,
+  domain: Uint8Array,
+}
+
+// what is correct value for syncCommitteeBits?
 const SyncAggregate = new ContainerType({
-  sync_committee_bits: new BitVectorType(SYNC_COMMITTEE_SIZE),
-  sync_committee_signature: BLSSignature,
+  syncCommitteeBits: new BitVectorType(SYNC_COMMITTEE_SIZE),
+  syncCommitteeSignature: BLSSignature,
 })
+
+interface SyncAggregate {
+
+}
 
 // const SyncCommittee = new ContainerType({
 //     pubkeys: // idk
