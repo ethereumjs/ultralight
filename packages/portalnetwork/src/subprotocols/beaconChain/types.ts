@@ -162,3 +162,18 @@ interface ILightClientUpdate {
   finalityBranch: Uint8Array
   syncAggregate: ISyncAggregate
 }
+
+const LightClientFinalityUpdate = new ContainerType({
+  attestedHeader: BeaconBlockHeader,
+  finalizedHeader: BeaconBlockHeader,
+  finalityBranch: new ByteVectorType(FINALIZED_ROOT_INDEX),
+  syncAggregate: SyncAggregate,
+})
+
+interface ILightClientUpdate {
+  attestedHeader: IBeaconBlockHeader
+  finalizedHeader: IBeaconBlockHeader
+  finalityBranch: Uint8Array
+  syncAggregate: ISyncAggregate
+}
+
