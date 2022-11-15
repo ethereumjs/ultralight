@@ -334,7 +334,7 @@ tape('PortalNetworkUTP tests', (t) => {
     } else {
       t.test(`handleNewRequest  - ${(await req).type}`, async (st) => {
         st.deepEqual(
-          utp.openContentRequest[socketKey],
+          utp.openContentRequest.get(socketKey),
           request,
           `${type} request added to openContentRequests`
         )
@@ -349,17 +349,17 @@ tape('PortalNetworkUTP tests', (t) => {
           `getRequestKey should fail with incorrect PeerId`
         )
         st.equal(
-          utp.openContentRequest[socketKey].socket.type,
+          utp.openContentRequest.get(socketKey)?.socket.type,
           mode,
           `${mode} socket opened for ${type} request`
         )
         st.equal(
-          utp.openContentRequest[socketKey].socket.rcvConnectionId,
+          utp.openContentRequest.get(socketKey)?.socket.rcvConnectionId,
           rcvId,
           `rcvConnectionID set by ${type} request creation`
         )
         st.equal(
-          utp.openContentRequest[socketKey].socket.sndConnectionId,
+          utp.openContentRequest.get(socketKey)?.socket.sndConnectionId,
           sndId,
           `sndConnectionID set by ${type} request creation`
         )
