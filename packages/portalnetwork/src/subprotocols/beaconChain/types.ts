@@ -99,8 +99,8 @@ interface IForkData {
 }
 
 const SigningData = new ContainerType({
-  objectRoot: Root,
-  domain: Domain,
+  objectRoot: RootType,
+  domain: DomainType,
 })
 
 interface ISigningData {
@@ -111,7 +111,7 @@ interface ISigningData {
 // what is correct value for syncCommitteeBits?
 const SyncAggregate = new ContainerType({
   syncCommitteeBits: new BitVectorType(SYNC_COMMITTEE_SIZE),
-  syncCommitteeSignature: BLSSignature,
+  syncCommitteeSignature: BLSSignatureType,
 })
 
 interface ISyncAggregate {
