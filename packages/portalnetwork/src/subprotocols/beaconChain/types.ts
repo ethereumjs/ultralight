@@ -170,10 +170,19 @@ const LightClientFinalityUpdate = new ContainerType({
   syncAggregate: SyncAggregate,
 })
 
-interface ILightClientUpdate {
+interface ILightClientFinalityUpdate {
   attestedHeader: IBeaconBlockHeader
   finalizedHeader: IBeaconBlockHeader
   finalityBranch: Uint8Array
   syncAggregate: ISyncAggregate
 }
 
+const LightClientOptimisticUpdate = new ContainerType({
+  attestedHeader: BeaconBlockHeader,
+  syncAggregate: SyncAggregate,
+})
+
+interface ILightClientOptimisticUpdate {
+  attestedHeader: IBeaconBlockHeader
+  syncAggregate: ISyncAggregate
+}
