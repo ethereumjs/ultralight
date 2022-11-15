@@ -1,6 +1,6 @@
-import { DELAY_TARGET, Packet, PacketType, DEFAULT_WINDOW_SIZE, ConnectionState } from '../index.js'
+import { Packet, PacketType, DEFAULT_PACKET_SIZE, ConnectionState } from '../index.js'
 import EventEmitter from 'events'
-import { ProtocolId, bitmap } from '../../../index.js'
+import { ProtocolId, bitmap, MAX_CWND_INCREASE_PACKETS_PER_RTT } from '../../../index.js'
 import { Debugger } from 'debug'
 import ContentWriter from '../Protocol/write/ContentWriter.js'
 import ContentReader from '../Protocol/read/ContentReader.js'
@@ -80,6 +80,7 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
+    this.timeoutCounter?.refresh()
     const msg = packet.encode()
     type !== PacketType.ST_DATA &&
       this.logger(
@@ -90,23 +91,26 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendSynPacket(packet: Packet): Promise<ConnectionState> {
+    this.outBuffer.set(0, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_SYN)
     this.state = ConnectionState.SynSent
     return this.state
   }
 
   async sendSynAckPacket(packet: Packet): Promise<void> {
+    this.outBuffer.set(0, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_STATE)
+    this.seqNr = this.seqNr + 1
   }
 
   async sendDataPacket(packet: Packet): Promise<Packet> {
     this.state = ConnectionState.Connected
     this.outBuffer.set(packet.header.seqNr, packet.header.timestampMicroseconds)
+    this.cur_window = this.outBuffer.size * DEFAULT_PACKET_SIZE
     await this.sendPacket(packet, PacketType.ST_DATA)
     this.logger(
-      `cur_window increasing from ${this.cur_window} to ${this.cur_window + DEFAULT_WINDOW_SIZE}`
+      `cur_window increasing from ${this.cur_window - DEFAULT_PACKET_SIZE} to ${this.cur_window}`
     )
-    this.cur_window = this.cur_window + DEFAULT_WINDOW_SIZE
     this.seqNr++
     return packet
   }
@@ -135,6 +139,7 @@ export class UtpSocket extends EventEmitter {
     if (packet.header.ackNr === this.finNr) {
       this.logger(`FIN packet acked`)
       this.logger(`Closing Socket.  Goodnight.`)
+      clearTimeout(this.timeoutCounter)
       this.state = ConnectionState.Closed
       return true
     }
@@ -145,12 +150,12 @@ export class UtpSocket extends EventEmitter {
       this.state = ConnectionState.Connected
       if (this.writer) {
         const inFlight = this.outBuffer.size
-        this.cur_window = inFlight * DEFAULT_WINDOW_SIZE
+        this.cur_window = inFlight * DEFAULT_PACKET_SIZE
         const needed = this.dataNrs.filter((n) => !this.ackNrs.includes(n))
         this.logger(`cur_window: ${this.cur_window} bytes in flight`)
         this.logger(
           `AckNr's received (${this.ackNrs.length}/${
-            Object.keys(this.writer.dataChunks).length
+            this.writer.sentChunks.length
           }): ${this.ackNrs[0]?.toString()}...${
             this.ackNrs.slice(1).length > 3
               ? this.ackNrs.slice(this.ackNrs.length - 3)?.toString()
@@ -214,14 +219,99 @@ export class UtpSocket extends EventEmitter {
     this.seqNr = this.seqNr + 1
     this.ackNr = packet.header.seqNr
     await this.utp.sendStatePacket(this)
+    clearTimeout(this.timeoutCounter)
     return this.readerContent
   }
 
-  updateRTT(packetRTT: number): number {
+  updateRTT(packetRTT: BigNumber): void {
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
-    this.rtt_var += Math.abs(this.rtt - packetRTT - this.rtt_var) / 4
-    this.rtt += (packetRTT - this.rtt) / 8
-    return this.rtt
+    const delta = this.rtt.sub(packetRTT)
+    this.logger.extend('RTT')(`
+    socket.rtt: ${this.rtt}
+    packetRTT: ${packetRTT}
+    delta: ${delta}
+    `)
+    this.logger.extend('RTT')(`
+    Updating socket.rtt_var and socket.rtt:
+    socket.rtt_var: ${this.rtt_var} += abs(delta: ${delta}) - socket.rtt_var: ${
+      this.rtt_var
+    } / 4 = ${this.rtt_var.add(delta.abs().sub(this.rtt_var).div(4))}
+    socket.rtt: ${this.rtt} += (packetRTT: ${packetRTT} - socket.rtt: ${
+      this.rtt
+    }) / 8 = ${this.rtt.add(packetRTT.sub(this.rtt).div(8))}
+    `)
+    this.rtt_var = this.rtt_var.add(delta.abs().sub(this.rtt_var).div(4))
+    this.rtt = this.rtt.add(packetRTT.sub(this.rtt).div(8))
+    this.logger.extend('RTT')(
+      `Updating Timeout:
+     socket.timeout = this.rtt: ${this.rtt} + this.rtt_var: ${this.rtt_var} * 4 = ${this.rtt.add(
+        this.rtt_var.mul(4)
+      )}`
+    )
+    this.timeout = this.rtt.add(this.rtt_var.mul(4)).gt(500)
+      ? this.rtt.add(this.rtt_var.mul(4))
+      : BigNumber.from(500)
+    this.logger.extend('TIMEOUT')(`Timeout reset to: ${this.timeout}`)
+    clearTimeout(this.timeoutCounter)
+    this.timeoutCounter = setTimeout(() => {
+      this.throttle()
+    }, this.timeout.toNumber())
+  }
+
+  throttle() {
+    this.max_window = DEFAULT_PACKET_SIZE
+    this.logger.extend('TIMEOUT')(`THROTTLE TRIGGERED after ${this.timeout}ms TIMEOUT`)
+    clearTimeout(this.timeoutCounter)
+    this.timeout = this.timeout.mul(2)
+    if (this.writer?.writing) {
+      this.writer?.start()
+    } else {
+      return
+    }
+    this.timeoutCounter = setTimeout(() => {
+      this.throttle()
+    }, this.timeout.toNumber())
+  }
+
+  updateDelay(timestamp: BigNumber, timeReceived: BigNumber) {
+    const delay = timeReceived.sub(timestamp)
+    this.reply_micro = delay
+    this.logger.extend('DELAY')(
+      `timeReceived: ${timeReceived} - timestamp: ${timestamp} = delay: ${delay}`
+    )
+    this.ourDelay = delay.sub(this.baseDelay.delay)
+    if (timeReceived.sub(this.baseDelay.timestamp).gt(120000)) {
+      this.baseDelay = { delay: delay, timestamp: timeReceived }
+      this.logger.extend('DELAY')(`baseDelay reset to ${this.baseDelay.delay}`)
+    } else if (delay < this.baseDelay.delay) {
+      this.baseDelay = { delay: delay, timestamp: timeReceived }
+      this.logger.extend('DELAY')(`baseDelay set to ${this.baseDelay.delay}`)
+    }
+    // if (this.CCONTROL_TARGET.eq(0)) {
+    //   this.CCONTROL_TARGET = delay
+    // }
+    const offTarget = this.baseDelay.delay.sub(this.ourDelay)
+    const delayFactor = offTarget.toNumber() / this.baseDelay.delay.toNumber()
+    const windowFactor = this.cur_window / this.max_window
+    const scaledGain = MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor
+    const new_max = this.max_window + scaledGain > 0 ? this.max_window + scaledGain : 0
+    this.max_window = new_max
+    this.logger.extend('DELAY')(`
+    ourDelay: ${this.ourDelay}
+    offTarget: ${offTarget}
+    delayFactor: ${delayFactor}
+    windowFactor: ${windowFactor}
+    scaledGain: ${scaledGain}
+    max_window ${
+      new_max === 0
+        ? 'Set to 0'
+        : scaledGain > 0
+        ? `increasing to ${new_max}`
+        : scaledGain < 0
+        ? `decreasing to ${new_max}`
+        : `remaining at ${new_max}`
+    }
+    `)
   }
 
   compare(): boolean {
