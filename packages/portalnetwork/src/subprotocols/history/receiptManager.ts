@@ -104,9 +104,11 @@ export class ReceiptsManager {
         skipNonce: true,
       })
       receipts.push(txResult.receipt)
-      this.protocol.logger.extend('RECEIPT_MANAGER')(txResult.receipt)
     }
-    this.protocol.logger.extend('RECEIPT_MANAGER')(`Encoding ${receipts.length} receipts for db`)
+    receipts.length > 0 &&
+      this.protocol.logger.extend('RECEIPT_MANAGER')(
+        `Encoding ${receipts.length} receipts from Block: ${block.header.number}`
+      )
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
     await this.protocol.addContentToHistory(
       HistoryNetworkContentTypes.Receipt,
