@@ -204,9 +204,9 @@ export const LightClientStore = new ContainerType({
   bestValidUpdate: LightClientUpdate,
   // Most recent available reasonably-safe header
   optimisticHeader: BeaconBlockHeader,
-  previousMaxActiveParticipants: UintBigintType,
+  previousMaxActiveParticipants: new UintBigintType(8),
   // Max number of active participants in a sync committee (used to calculate safety threshold)
-  currentMaxActiveParticipants: UintBigintType,
+  currentMaxActiveParticipants: new UintBigintType(8),
 })
 
 export interface ILightClientStore {
