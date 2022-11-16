@@ -343,7 +343,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
       return res
     } catch (err: any) {
-      throw new Error(`Error sending TALKREQ message: ${err}`)
+      if (protocolId === ProtocolId.UTPNetwork) {
+        throw new Error(`Error sending TALKREQ message: ${err}`)
+      } else {
+        return Buffer.from([])
+      }
     }
   }
 
