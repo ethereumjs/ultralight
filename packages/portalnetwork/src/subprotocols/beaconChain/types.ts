@@ -193,3 +193,28 @@ export interface ILightClientOptimisticUpdate {
   attestedHeader: IBeaconBlockHeader
   syncAggregate: ISyncAggregate
 }
+
+const LightClientStore = new ContainerType({
+  // Header that is finalized
+  finalized: BeaconBlockHeader,
+  // Sync committees corresponding to the finalized header
+  currentSyncCommittee: SyncCommittee,
+  nextSyncCommittee: SyncCommittee,
+  // Best available header to switch finalized head to if we see nothing else
+  bestValidUpdate: LightClientUpdate,
+  // Most recent available reasonably-safe header
+  optimisticHeader: BeaconBlockHeader,
+  previousMaxActiveParticipants: UintBigintType,
+  // Max number of active participants in a sync committee (used to calculate safety threshold)
+  currentMaxActiveParticipants: UintBigintType,
+})
+
+interface ILightClientStore {
+  finalized: IBeaconBlockHeader
+  currentSyncCommittee: ISyncCommittee
+  nextSyncCommittee: ISyncCommittee
+  bestValidUpdate: ILightClientUpdate
+  optimisticHeader: IBeaconBlockHeader
+  previousMaxActiveParticipants: UintBigintType
+  currentMaxActiveParticipants: UintBigintType
+}
