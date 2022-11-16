@@ -194,7 +194,7 @@ export interface ILightClientOptimisticUpdate {
   syncAggregate: ISyncAggregate
 }
 
-const LightClientStore = new ContainerType({
+export const LightClientStore = new ContainerType({
   // Header that is finalized
   finalized: BeaconBlockHeader,
   // Sync committees corresponding to the finalized header
@@ -209,7 +209,7 @@ const LightClientStore = new ContainerType({
   currentMaxActiveParticipants: UintBigintType,
 })
 
-interface ILightClientStore {
+export interface ILightClientStore {
   finalized: IBeaconBlockHeader
   currentSyncCommittee: ISyncCommittee
   nextSyncCommittee: ISyncCommittee
