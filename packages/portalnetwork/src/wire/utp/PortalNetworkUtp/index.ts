@@ -225,7 +225,10 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
-      request.socket.timeoutCounter?.refresh()
+      clearTimeout(request.socket.timeoutCounter)
+      request.socket.timeoutCounter = setTimeout(() => {
+        request.socket.throttle()
+      }, request.socket.timeout.toNumber())
       const packet = Packet.bufferToPacket(packetBuffer)
       request.socket.updateDelay(packet.header.timestampMicroseconds, timeReceived)
 

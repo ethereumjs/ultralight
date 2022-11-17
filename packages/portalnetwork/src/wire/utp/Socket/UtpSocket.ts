@@ -80,7 +80,6 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
-    this.timeoutCounter?.refresh()
     const msg = packet.encode()
     type !== PacketType.ST_DATA &&
       this.logger(

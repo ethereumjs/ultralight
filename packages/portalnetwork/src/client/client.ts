@@ -245,6 +245,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Store node details in DB for node restart
    */
   public storeNodeDetails = async () => {
+    const peers: string[] = []
+    for (const protocol of this.protocols) {
+      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
+        peers.push(enr.encodeTxt())
+      })
+    }
     try {
       await this.db.batch([
         {
@@ -257,15 +263,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           key: 'peerid',
           value: this.peerId.toString(),
         },
+        {
+          type: 'put',
+          key: 'peers',
+          value: JSON.stringify(peers),
+        },
       ])
     } catch (err) {}
-    const peers: string[] = []
-    for (const protocol of this.protocols) {
-      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
-        peers.push(enr.encodeTxt())
-      })
-      await this.db.put('peers', JSON.stringify(peers))
-    }
   }
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
