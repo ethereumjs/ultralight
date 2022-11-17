@@ -228,7 +228,7 @@ export class PortalNetworkUTP extends BasicUtp {
       clearTimeout(request.socket.timeoutCounter)
       request.socket.timeoutCounter = setTimeout(() => {
         request.socket.throttle()
-      }, request.socket.timeout.toNumber())
+      }, request.socket.timeout)
       const packet = Packet.bufferToPacket(packetBuffer)
       request.socket.updateDelay(packet.header.timestampMicroseconds, timeReceived)
 
@@ -310,7 +310,7 @@ export class PortalNetworkUTP extends BasicUtp {
             .map((n) => parseInt(n))
         }
         if (sentTime != undefined) {
-          const rtt = packet.header.timestampMicroseconds.sub(sentTime)
+          const rtt = packet.header.timestampMicroseconds - sentTime
           request.socket.updateRTT(rtt)
           request.socket.outBuffer.delete(packet.header.ackNr)
         }
@@ -352,7 +352,7 @@ export class PortalNetworkUTP extends BasicUtp {
             `ST_STATE (Ack) Packet Received.  SeqNr: ${packet.header.seqNr}, AckNr: ${packet.header.ackNr}`
           )
           if (sentTime != undefined) {
-            const rtt = packet.header.timestampMicroseconds.sub(sentTime)
+            const rtt = packet.header.timestampMicroseconds - sentTime
             request.socket.updateRTT(rtt)
             request.socket.outBuffer.delete(packet.header.ackNr)
           }

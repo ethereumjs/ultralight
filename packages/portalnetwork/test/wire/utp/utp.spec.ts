@@ -2,7 +2,6 @@ import { fromHexString } from '@chainsafe/ssz'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
-import { BigNumber } from 'ethers'
 import tape from 'tape'
 import {
   HistoryNetworkContentKey,
@@ -127,7 +126,7 @@ tape('uTP Reader/Writer tests', (t) => {
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: socket.reply_micro,
-        wndSize: BigNumber.from(socket.cur_window),
+        wndSize: socket.cur_window,
       })
       return packet
     })
@@ -137,7 +136,7 @@ tape('uTP Reader/Writer tests', (t) => {
       ackNr: socket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: BigNumber.from(socket.cur_window),
+      wndSize: socket.cur_window,
     })
     socket.reader = await socket.utp.createNewReader(_socket, 2)
     packets.forEach((packet) => {
@@ -319,8 +318,8 @@ tape('PortalNetworkUTP tests', (t) => {
       seqNr: DEFAULT_RAND_SEQNR,
       ackNr: DEFAULT_RAND_ACKNR,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: BigNumber.from(0),
-      wndSize: BigNumber.from(1048576),
+      timestampDifferenceMicroseconds: 20,
+      wndSize: 1048576,
     }).encode()
 
     if (type === 'FINDCONTENT_READ-Block') {
@@ -376,8 +375,8 @@ tape('PortalNetworkUTP tests', (t) => {
             seqNr: 1,
             ackNr: 1,
             timestampMicroseconds: Bytes32TimeStamp(),
-            timestampDifferenceMicroseconds: BigNumber.from(1),
-            wndSize: BigNumber.from(1048576),
+            timestampDifferenceMicroseconds: 1,
+            wndSize: 1048576,
           })
           try {
             await utp._handleSynPacket(request, badsyn)
@@ -392,8 +391,8 @@ tape('PortalNetworkUTP tests', (t) => {
             seqNr: 432,
             ackNr: 234,
             timestampMicroseconds: Bytes32TimeStamp(),
-            timestampDifferenceMicroseconds: BigNumber.from(0),
-            wndSize: BigNumber.from(1048576),
+            timestampDifferenceMicroseconds: 20,
+            wndSize: 1048576,
           })
           st.notok(await utp._handleFinPacket(request, badFin), 'Write socket doesnt handle FIN')
           request.socket.finNr = (testPacketList.send.fin as Packet).header.seqNr
@@ -408,8 +407,8 @@ tape('PortalNetworkUTP tests', (t) => {
           seqNr: 789,
           ackNr: 987,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         })
         bogusPacket.header.pType = 9
 

@@ -7,7 +7,6 @@ import {
   RequestCode,
 } from '../../src/wire/utp/index.js'
 import { fromHexString } from '@chainsafe/ssz'
-import { BigNumber } from 'ethers'
 
 const DEFAULT_RAND_SEQNR = 5555
 const DEFAULT_RAND_ACKNR = 4444
@@ -74,8 +73,8 @@ export function Packets(
         ackNr: 2 + i,
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
       return p
     })
@@ -85,8 +84,8 @@ export function Packets(
         seqNr: 3 + i,
         ackNr: p.header.seqNr,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
     })
 
@@ -97,16 +96,16 @@ export function Packets(
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         synackack: Packet.create(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: 2,
           ackNr: DEFAULT_RAND_SEQNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         dataAcks: dataAcks,
         finack: Packet.create(PacketType.ST_STATE, {
@@ -114,8 +113,8 @@ export function Packets(
           seqNr: 2 + dataAcks.length,
           ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
       rec: {
@@ -124,8 +123,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         data: dataPackets,
         fin: Packet.create(PacketType.ST_FIN, {
@@ -133,8 +132,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           ackNr: 2 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
     }
@@ -147,8 +146,8 @@ export function Packets(
         ackNr: 2 + i,
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
       return p
     })
@@ -158,8 +157,8 @@ export function Packets(
         seqNr: 3 + i,
         ackNr: p.header.seqNr,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
     })
     const testPackets = {
@@ -169,8 +168,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         data: dataPackets,
         fin: Packet.create(PacketType.ST_FIN, {
@@ -178,8 +177,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           ackNr: 2 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
       rec: {
@@ -188,16 +187,16 @@ export function Packets(
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         synackack: Packet.create(PacketType.ST_STATE, {
           connectionId: rcvId,
           seqNr: 2,
           ackNr: DEFAULT_RAND_SEQNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         acks: dataAcks,
         finack: Packet.create(PacketType.ST_STATE, {
@@ -205,8 +204,8 @@ export function Packets(
           seqNr: 3 + dataAcks.length,
           ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
     }
@@ -218,8 +217,8 @@ export function Packets(
         seqNr: 2 + i,
         ackNr: DEFAULT_RAND_ACKNR + 1 + i,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 100,
+        wndSize: 1048576,
       })
     })
     const dataAcks = dataPackets.map((p, i) => {
@@ -227,9 +226,9 @@ export function Packets(
         connectionId: rcvId,
         seqNr: DEFAULT_RAND_ACKNR + 2 + i,
         ackNr: 2 + i,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampMicroseconds: Bytes32TimeStamp() + 2000,
+        timestampDifferenceMicroseconds: 100,
+        wndSize: 1048576,
       })
     })
     const testPackets = {
@@ -238,18 +237,18 @@ export function Packets(
           connectionId: sndId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampMicroseconds: Bytes32TimeStamp() + 4000,
+          timestampDifferenceMicroseconds: 100,
+          wndSize: 1048576,
         }),
         data: dataPackets,
         fin: Packet.create(PacketType.ST_FIN, {
           connectionId: sndId,
           seqNr: 2 + dataPackets.length,
           ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampMicroseconds: Bytes32TimeStamp() + 6000,
+          timestampDifferenceMicroseconds: 100,
+          wndSize: 1048576,
         }),
       },
       rec: {
@@ -257,18 +256,18 @@ export function Packets(
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampMicroseconds: Bytes32TimeStamp() + 8000,
+          timestampDifferenceMicroseconds: 100,
+          wndSize: 1048576,
         }),
         acks: dataAcks,
         finack: Packet.create(PacketType.ST_FIN, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
           ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampMicroseconds: Bytes32TimeStamp() + 10000,
+          timestampDifferenceMicroseconds: 100,
+          wndSize: 1048576,
         }),
       },
     }
@@ -281,8 +280,8 @@ export function Packets(
         ackNr: DEFAULT_RAND_ACKNR + 1 + i,
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
     })
     const dataAcks = dataPackets.map((p, i) => {
@@ -291,8 +290,8 @@ export function Packets(
         seqNr: DEFAULT_RAND_ACKNR + 2 + i,
         ackNr: 2 + i,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
     })
     const testPackets = {
@@ -302,8 +301,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         acks: dataAcks,
         finack: Packet.create(PacketType.ST_FIN, {
@@ -311,8 +310,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
           ackNr: 2 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
       rec: {
@@ -321,8 +320,8 @@ export function Packets(
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         data: dataPackets,
         fin: Packet.create(PacketType.ST_FIN, {
@@ -330,8 +329,8 @@ export function Packets(
           seqNr: 2 + dataPackets.length,
           ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
     }
@@ -344,8 +343,8 @@ export function Packets(
         ackNr: 2 + i,
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
       return p
     })
@@ -355,8 +354,8 @@ export function Packets(
         seqNr: 3 + i,
         ackNr: p.header.seqNr,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: BigNumber.from(0),
-        wndSize: BigNumber.from(1048576),
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 1048576,
       })
     })
 
@@ -367,16 +366,16 @@ export function Packets(
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         synackack: Packet.create(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: 2,
           ackNr: DEFAULT_RAND_SEQNR,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         dataAcks: dataAcks,
         finack: Packet.create(PacketType.ST_STATE, {
@@ -384,8 +383,8 @@ export function Packets(
           seqNr: 2 + dataAcks.length,
           ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
       rec: {
@@ -394,8 +393,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
         data: dataPackets,
         fin: Packet.create(PacketType.ST_FIN, {
@@ -403,8 +402,8 @@ export function Packets(
           seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           ackNr: 2 + dataPackets.length,
           timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: BigNumber.from(0),
-          wndSize: BigNumber.from(1048576),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
         }),
       },
     }

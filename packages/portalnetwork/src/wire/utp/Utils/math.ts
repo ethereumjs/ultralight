@@ -1,16 +1,25 @@
-import { BigNumber } from 'ethers'
 import { Uint16 } from '../index.js'
 
-export function MicrosecondTimeStamp(): bigint {
-  // this is only a millisecond timestamp
-  // process.hrtime.bigint() doesn't seem to work in the browser?
-  const time = (Date.now() % 2 ** 32) - 1
-  return BigInt(time)
+// 10**9	Nanosecond  ns - one billionth of a second
+// 10**6	Microsecond	µs - one millionth of a second  <------- uTP timestamp
+// 10**3	Millisecond	ms - one thousandth of a second
+
+// Node:         process.hrtime.bigint()                       - Nanosecond
+// Browser/Node: performance.timeOrigin + performance.now()    - Millisecond, accurate to 5µs = 1/2 * 1000 Microseconds
+// Browser:      Date.now()                                    - Millisecond
+
+// performance.timeOrigin + performance.now() roughly equals Date.now(), with more accuracy
+
+export function MicrosecondTimeStamp(): number {
+  const now = Date.now() % 2 ** 32
+  const milli = performance.timeOrigin + performance.now()
+  const micro = Math.round(milli * 1000)
+  return now
 }
 
-export function Bytes32TimeStamp(): BigNumber {
+export function Bytes32TimeStamp(): number {
   const timestamp = MicrosecondTimeStamp()
-  return BigNumber.from(timestamp)
+  return timestamp
 }
 
 export function randUint16(): Uint16 {

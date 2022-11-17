@@ -7,7 +7,6 @@ import ContentReader from '../Protocol/read/ContentReader.js'
 import { BasicUtp } from '../Protocol/BasicUtp.js'
 import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
-import { BigNumber } from 'ethers'
 
 export class UtpSocket extends EventEmitter {
   type: 'read' | 'write'
@@ -22,13 +21,13 @@ export class UtpSocket extends EventEmitter {
   state: ConnectionState | null
   max_window: number
   cur_window: number
-  reply_micro: BigNumber
-  rtt: BigNumber
-  rtt_var: BigNumber
-  timeout: BigNumber
+  reply_micro: number
+  rtt: number
+  rtt_var: number
+  timeout: number
   timeoutCounter?: NodeJS.Timeout
-  baseDelay: { delay: BigNumber; timestamp: BigNumber }
-  ourDelay: BigNumber
+  baseDelay: { delay: number; timestamp: number }
+  ourDelay: number
   sendRate: number
   writer: ContentWriter | undefined
   reader: ContentReader | undefined
@@ -38,7 +37,7 @@ export class UtpSocket extends EventEmitter {
   received: number[]
   expected: number[]
   logger: Debugger
-  outBuffer: Map<number, BigNumber>
+  outBuffer: Map<number, number>
   constructor(
     utp: BasicUtp,
     remoteAddress: string,
@@ -61,13 +60,13 @@ export class UtpSocket extends EventEmitter {
     this.finNr = undefined
     this.max_window = DEFAULT_PACKET_SIZE * 3
     this.cur_window = 0
-    this.reply_micro = BigNumber.from(0)
+    this.reply_micro = 0
     this.state = null
-    this.rtt = BigNumber.from(1000)
-    this.rtt_var = BigNumber.from(0)
-    this.timeout = BigNumber.from(1000)
-    this.baseDelay = { delay: BigNumber.from(0), timestamp: BigNumber.from(0) }
-    this.ourDelay = BigNumber.from(0)
+    this.rtt = 1000
+    this.rtt_var = 0
+    this.timeout = 1000
+    this.baseDelay = { delay: 0, timestamp: 0 }
+    this.ourDelay = 0
     this.sendRate = 0
     this.readerContent = new Uint8Array()
     this.type = type
@@ -222,9 +221,9 @@ export class UtpSocket extends EventEmitter {
     return this.readerContent
   }
 
-  updateRTT(packetRTT: BigNumber): void {
+  updateRTT(packetRTT: number): void {
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
-    const delta = this.rtt.sub(packetRTT)
+    const delta = this.rtt - packetRTT
     this.logger.extend('RTT')(`
     socket.rtt: ${this.rtt}
     packetRTT: ${packetRTT}
@@ -234,34 +233,32 @@ export class UtpSocket extends EventEmitter {
     Updating socket.rtt_var and socket.rtt:
     socket.rtt_var: ${this.rtt_var} += abs(delta: ${delta}) - socket.rtt_var: ${
       this.rtt_var
-    } / 4 = ${this.rtt_var.add(delta.abs().sub(this.rtt_var).div(4))}
-    socket.rtt: ${this.rtt} += (packetRTT: ${packetRTT} - socket.rtt: ${
-      this.rtt
-    }) / 8 = ${this.rtt.add(packetRTT.sub(this.rtt).div(8))}
+    } / 4 = ${this.rtt_var + Math.abs(delta) - this.rtt_var / 4}
+    socket.rtt: ${this.rtt} += (packetRTT: ${packetRTT} - socket.rtt: ${this.rtt}) / 8 = ${
+      this.rtt + packetRTT - this.rtt / 8
+    }
     `)
-    this.rtt_var = this.rtt_var.add(delta.abs().sub(this.rtt_var).div(4))
-    this.rtt = this.rtt.add(packetRTT.sub(this.rtt).div(8))
+    this.rtt_var = this.rtt_var + (Math.abs(delta) - this.rtt_var) / 4
+    this.rtt = Math.floor(this.rtt + (packetRTT - this.rtt) / 8)
     this.logger.extend('RTT')(
       `Updating Timeout:
-     socket.timeout = this.rtt: ${this.rtt} + this.rtt_var: ${this.rtt_var} * 4 = ${this.rtt.add(
-        this.rtt_var.mul(4)
-      )}`
+     socket.timeout = this.rtt: ${this.rtt} + this.rtt_var: ${this.rtt_var} * 4 = ${
+        this.rtt + this.rtt_var * 4
+      }`
     )
-    this.timeout = this.rtt.add(this.rtt_var.mul(4)).gt(500)
-      ? this.rtt.add(this.rtt_var.mul(4))
-      : BigNumber.from(500)
+    this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
     this.logger.extend('TIMEOUT')(`Timeout reset to: ${this.timeout}`)
     clearTimeout(this.timeoutCounter)
     this.timeoutCounter = setTimeout(() => {
       this.throttle()
-    }, this.timeout.toNumber())
+    }, this.timeout)
   }
 
   throttle() {
     this.max_window = DEFAULT_PACKET_SIZE
     this.logger.extend('TIMEOUT')(`THROTTLE TRIGGERED after ${this.timeout}ms TIMEOUT`)
     clearTimeout(this.timeoutCounter)
-    this.timeout = this.timeout.mul(2)
+    this.timeout = this.timeout * 2
     if (this.writer?.writing) {
       this.writer?.start()
     } else {
@@ -269,28 +266,25 @@ export class UtpSocket extends EventEmitter {
     }
     this.timeoutCounter = setTimeout(() => {
       this.throttle()
-    }, this.timeout.toNumber())
+    }, this.timeout)
   }
 
-  updateDelay(timestamp: BigNumber, timeReceived: BigNumber) {
-    const delay = timeReceived.sub(timestamp)
+  updateDelay(timestamp: number, timeReceived: number) {
+    const delay = timeReceived - timestamp
     this.reply_micro = delay
     this.logger.extend('DELAY')(
       `timeReceived: ${timeReceived} - timestamp: ${timestamp} = delay: ${delay}`
     )
-    this.ourDelay = delay.sub(this.baseDelay.delay)
-    if (timeReceived.sub(this.baseDelay.timestamp).gt(120000)) {
+    this.ourDelay = delay - this.baseDelay.delay
+    if (timeReceived - this.baseDelay.timestamp > 120000) {
       this.baseDelay = { delay: delay, timestamp: timeReceived }
       this.logger.extend('DELAY')(`baseDelay reset to ${this.baseDelay.delay}`)
     } else if (delay < this.baseDelay.delay) {
       this.baseDelay = { delay: delay, timestamp: timeReceived }
       this.logger.extend('DELAY')(`baseDelay set to ${this.baseDelay.delay}`)
     }
-    // if (this.CCONTROL_TARGET.eq(0)) {
-    //   this.CCONTROL_TARGET = delay
-    // }
-    const offTarget = this.baseDelay.delay.sub(this.ourDelay)
-    const delayFactor = offTarget.toNumber() / this.baseDelay.delay.toNumber()
+    const offTarget = this.baseDelay.delay / this.ourDelay
+    const delayFactor = offTarget / this.baseDelay.delay
     const windowFactor = this.cur_window / this.max_window
     const scaledGain = MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor
     const new_max = this.max_window + scaledGain > 0 ? this.max_window + scaledGain : 0

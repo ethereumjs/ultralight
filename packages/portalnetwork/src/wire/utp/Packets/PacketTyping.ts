@@ -1,5 +1,4 @@
 import { Multiaddr } from '@multiformats/multiaddr'
-import { BigNumber } from 'ethers'
 import { PacketHeader } from './PacketHeader.js'
 
 export const minimalHeaderSize = 20
@@ -24,7 +23,7 @@ export const BUFFER_SIZE = 512
 
 export type Uint8 = number
 export type Uint16 = number
-export type Uint32 = BigNumber
+export type Uint32 = number
 export type MicroSeconds = Uint32
 
 export interface connectionType {

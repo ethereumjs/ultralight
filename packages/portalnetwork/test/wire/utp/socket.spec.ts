@@ -1,7 +1,6 @@
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
-import { BigNumber } from 'ethers'
 import tape from 'tape'
 import {
   ConnectionState,
@@ -37,18 +36,18 @@ tape('uTP Socket Tests', (t) => {
     st.end()
   })
   t.test('socket.updateRtt()', (st) => {
-    const delay = BigNumber.from(100)
-    s.rtt = BigNumber.from(delay)
-    s.rtt_var = BigNumber.from(0)
+    const delay = 100
+    s.rtt = delay
+    s.rtt_var = 0
     s.updateRTT(delay)
     st.deepEqual(s.rtt, delay, 'socket.rtt should not change if packet rtt_var remains 0.')
-    s.updateRTT(delay.sub(8))
-    st.deepEqual(s.rtt, delay.sub(1), 'should correctly update RTT with from packet rtt value')
-    s.updateRTT(delay.add(9))
+    s.updateRTT(delay - 8)
+    st.deepEqual(s.rtt, delay - 1, 'should correctly update RTT with from packet rtt value')
+    s.updateRTT(delay + 9)
     st.deepEqual(s.rtt, delay, 'should correctly update RTT with from packet rtt value')
-    s.updateRTT(delay.add(8))
-    st.deepEqual(s.rtt, delay.add(1), 'should correctly update RTT with from packet rtt value')
-    s.updateRTT(delay.sub(7))
+    s.updateRTT(delay + 8)
+    st.deepEqual(s.rtt, delay + 1, 'should correctly update RTT with from packet rtt value')
+    s.updateRTT(delay - 7)
     st.deepEqual(s.rtt, delay, 'should correctly update RTT with from packet rtt value')
     st.end()
   })
@@ -75,7 +74,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
     ackNr: DEFAULT_RAND_ACKNR,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: findSocket.reply_micro,
-    wndSize: BigNumber.from(findSocket.cur_window),
+    wndSize: findSocket.cur_window,
   })
 
   t.test('Packet Sending/Handling', async (st) => {
@@ -93,7 +92,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
       ackNr: synPacket.header.seqNr,
       timestampMicroseconds: synAck.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: foundSocket.reply_micro,
-      wndSize: BigNumber.from(foundSocket.cur_window),
+      wndSize: foundSocket.cur_window,
     })
     st.deepEqual(synAck, _synAck, `Socket correctly hanldes SYN packet with STATE (Syn-Ack) packet`)
     st.equal(
@@ -117,7 +116,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: foundSocket.reply_micro,
-        wndSize: BigNumber.from(foundSocket.cur_window),
+        wndSize: foundSocket.cur_window,
       })
       return packet
     })
@@ -156,16 +155,16 @@ tape('FIND/FOUND Socket Tests', (t) => {
       connectionId: foundSocket.sndConnectionId,
       ackNr: foundSocket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: BigNumber.from(0),
-      wndSize: BigNumber.from(1024),
+      timestampDifferenceMicroseconds: 0,
+      wndSize: 1024,
     })
     const finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: finPacket.header.ackNr + 1,
       connectionId: findSocket.sndConnectionId,
       ackNr: 100,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: BigNumber.from(0),
-      wndSize: BigNumber.from(1024),
+      timestampDifferenceMicroseconds: 0,
+      wndSize: 1024,
     })
     const encoded = await foundSocket.sendFinPacket(finPacket)
     st.deepEqual(
@@ -192,7 +191,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
         ackNr: DEFAULT_RAND_ACKNR,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: findSocket.reply_micro,
-        wndSize: BigNumber.from(findSocket.cur_window),
+        wndSize: findSocket.cur_window,
       })
       await findSocket.sendResetPacket(reset)
       st.equal(
@@ -228,7 +227,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
     ackNr: DEFAULT_RAND_ACKNR,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: offerSocket.reply_micro,
-    wndSize: BigNumber.from(offerSocket.cur_window),
+    wndSize: offerSocket.cur_window,
   })
 
   t.test('Packet Sending/Handling', async (st) => {
@@ -242,7 +241,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: offerSocket.reply_micro,
-        wndSize: BigNumber.from(offerSocket.cur_window),
+        wndSize: offerSocket.cur_window,
       })
       return packet
     })
@@ -267,7 +266,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: 1,
       timestampMicroseconds: synAck.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: acceptSocket.reply_micro,
-      wndSize: BigNumber.from(acceptSocket.cur_window),
+      wndSize: acceptSocket.cur_window,
     })
     st.deepEqual(synAck, _synAck, `Socket correctly hanldes SYN packet with STATE (Syn-Ack) packet`)
     await offerSocket.handleStatePacket(synAck)
@@ -304,7 +303,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: offerSocket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: offerSocket.reply_micro,
-      wndSize: BigNumber.from(offerSocket.cur_window),
+      wndSize: offerSocket.cur_window,
     })
     const finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: finPacket.header.ackNr + 1,
@@ -312,7 +311,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: 100,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: offerSocket.reply_micro,
-      wndSize: BigNumber.from(offerSocket.cur_window),
+      wndSize: offerSocket.cur_window,
     })
     const encoded = await offerSocket.sendFinPacket(finPacket)
     st.deepEqual(
@@ -340,7 +339,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: DEFAULT_RAND_ACKNR,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: offerSocket.reply_micro,
-      wndSize: BigNumber.from(offerSocket.cur_window),
+      wndSize: offerSocket.cur_window,
     })
     await offerSocket.sendResetPacket(reset)
     st.equal(

@@ -16,7 +16,6 @@ import {
   createSynOpts,
   createSynPacket,
 } from './create.js'
-import { BigNumber } from 'ethers'
 
 export class Packet {
   header: PacketHeader | SelectiveAckHeader
@@ -38,9 +37,9 @@ export class Packet {
             version: 1,
             extension: buffer.readUInt8(1),
             connectionId: buffer.readUInt16BE(2),
-            timestampMicroseconds: BigNumber.from(buffer.subarray(4, 8)),
-            timestampDifferenceMicroseconds: BigNumber.from(buffer.subarray(8, 12)),
-            wndSize: BigNumber.from(buffer.readUInt32BE(12)),
+            timestampMicroseconds: buffer.readUint32BE(4),
+            timestampDifferenceMicroseconds: buffer.readUint32BE(8),
+            wndSize: buffer.readUInt32BE(12),
             seqNr: buffer.readUInt16BE(16),
             ackNr: buffer.readUInt16BE(18),
           },
@@ -56,9 +55,9 @@ export class Packet {
           version: 1,
           extension: 0,
           connectionId: buffer.readUInt16BE(2),
-          timestampMicroseconds: BigNumber.from(buffer.readUint32BE(4)),
-          timestampDifferenceMicroseconds: BigNumber.from(buffer.readUint32BE(8)),
-          wndSize: BigNumber.from(buffer.readUInt32BE(12)),
+          timestampMicroseconds: buffer.readUint32BE(4),
+          timestampDifferenceMicroseconds: buffer.readUint32BE(8),
+          wndSize: buffer.readUInt32BE(12),
           seqNr: buffer.readUInt16BE(16),
           ackNr: buffer.readUInt16BE(18),
         }),
@@ -113,9 +112,9 @@ export class Packet {
     buffer.writeUInt8(typeAndVer, 0)
     buffer.writeUInt8(this.header.extension, 1)
     buffer.writeUInt16BE(this.header.connectionId, 2)
-    buffer.writeUint32BE(this.header.timestampMicroseconds.toNumber(), 4)
-    buffer.write(this.header.timestampDifferenceMicroseconds.toHexString().slice(2), 8, 4, 'hex')
-    buffer.writeUInt32BE(this.header.wndSize.toNumber(), 12)
+    buffer.writeUint32BE(this.header.timestampMicroseconds, 4)
+    buffer.writeUint32BE(this.header.timestampDifferenceMicroseconds, 8)
+    buffer.writeUInt32BE(this.header.wndSize, 12)
     buffer.writeUInt16BE(this.header.seqNr, 16)
     buffer.writeUInt16BE(this.header.ackNr, 18)
     if (this.header.extension === 1) {
