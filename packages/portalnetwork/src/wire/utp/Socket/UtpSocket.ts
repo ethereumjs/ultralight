@@ -33,7 +33,7 @@ export class UtpSocket extends EventEmitter {
   reader: ContentReader | undefined
   readerContent: Uint8Array | undefined
   dataNrs: number[]
-  ackNrs: number[]
+  ackNrs: (number | undefined)[]
   received: number[]
   expected: number[]
   logger: Debugger
@@ -194,14 +194,22 @@ export class UtpSocket extends EventEmitter {
     if (!this.reader) {
       this.reader = new ContentReader(this, packet.header.seqNr)
     }
-    this.ackNrs.push(packet.header.seqNr)
+    // Add the packet.seqNr to this.ackNrs at the relative index, regardless of order received.
+    if (this.ackNrs[0] === undefined) {
+      this.ackNrs[0] = packet.header.seqNr
+    } else {
+      this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
+    }
     await this.reader.addPacket(packet)
     if (expected) {
-      this.ackNr =
-        this.ackNrs.sort((a, b) => a - b).find((n, i) => this.ackNrs[i + 1] !== n + 1) ??
-        Math.max(...this.ackNrs)
+      // Update this.ackNr to last in-order seqNr received.
+      const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0])
+      this.ackNr = future.slice(future.findIndex((n, i, ackNrs) => ackNrs[i + 1] === undefined))[0]!
+      // Send "Regular" ACK with the new this.ackNr
       return await this.utp.sendStatePacket(this)
     } else {
+      // Do not increment this.ackNr
+      // Send SELECTIVE_ACK with bitmask of received seqNrs > this.ackNr
       this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
       const bitmask = this.generateSelectiveAckBitMask()
       return await this.utp.sendSelectiveAckPacket(this, bitmask)
@@ -308,6 +316,9 @@ export class UtpSocket extends EventEmitter {
   }
 
   compare(): boolean {
+    if (this.ackNrs.includes(undefined)) {
+      return false
+    }
     const sent = JSON.stringify(
       this.dataNrs.sort((a, b) => {
         return a - b
@@ -315,7 +326,7 @@ export class UtpSocket extends EventEmitter {
     )
     const received = JSON.stringify(
       this.ackNrs.sort((a, b) => {
-        return a - b
+        return a! - b!
       })
     )
     const equal = sent === received
