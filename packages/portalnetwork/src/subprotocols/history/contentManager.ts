@@ -50,43 +50,8 @@ export class ContentManager {
             this.logger(`Block header content doesn't match header hash ${hashKey}`)
             return
           }
-          // const epochIdx = Math.floor(Number(header.number) / 8192)
-          // if (Object.entries(this.history.accumulator._verifiers).length < 3) {
-          //   this.history.accumulator._verifiers[epochIdx] = header.hash()
-          // }
-          // if (Object.entries(this.history.accumulator._verifiers).length >= 3) {
-          //   if (!Object.keys(this.history.accumulator._verifiers).includes(epochIdx.toString())) {
-          //     this.history.accumulator._verifiers[epochIdx] = header.hash()
-          //   }
-          // }
+          const epochIdx = Math.floor(Number(header.number) / 8192)
 
-          // if (
-          //   Number(header.number) === this.history.accumulator.currentHeight() + 1 &&
-          //   header.parentHash.equals(
-          //     this.history.accumulator.currentEpoch()[this.history.accumulator.currentHeight()]
-          //       .blockHash
-          //   )
-          // ) {
-          //   if (this.history.accumulator.currentEpoch.length === EPOCH_SIZE) {
-          //     const currentEpoch = EpochAccumulator.serialize(
-          //       this.history.accumulator.currentEpoch()
-          //     )
-
-          //     const currentEpochHash = toHexString(
-          //       EpochAccumulator.hashTreeRoot(this.history.accumulator.currentEpoch())
-          //     )
-          //     this.addContentToHistory(
-          //       HistoryNetworkContentTypes.EpochAccumulator,
-          //       currentEpochHash,
-          //       currentEpoch
-          //     )
-          //   }
-          //   this.logger(
-          //     `Updated header accumulator at slot ${
-          //       this.history.accumulator.currentEpoch().length
-          //     }/${EPOCH_SIZE} of current Epoch`
-          //   )
-          // }
           this.history.client.db.put(contentKey, toHexString(value))
           this.logger.extend('HEADER')(`added for block #${header.number}`)
         } catch (err: any) {
