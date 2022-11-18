@@ -136,7 +136,7 @@ export class ContentManager {
           getHistoryNetworkContentKey(HistoryNetworkContentTypes.Receipt, fromHexString(hashKey)),
           toHexString(value)
         )
-        return
+        break
       case HistoryNetworkContentTypes.EpochAccumulator:
         this.history.client.db.put(
           getHistoryNetworkContentKey(
