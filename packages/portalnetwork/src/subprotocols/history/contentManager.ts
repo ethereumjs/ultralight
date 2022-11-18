@@ -120,7 +120,8 @@ export class ContentManager {
           try {
             this.history.client.db.put(contentKey, toHexString(value))
             this.logger.extend('BLOCK_BODY')(`added for block #${block!.header.number}`)
-            await this.history.receiptManager.saveReceipts(block!)
+            block.transactions.length > 0 &&
+              (await this.history.receiptManager.saveReceipts(block!))
           } catch (err) {
             this.logger(`Error: ${(err as any).message}`)
           }
