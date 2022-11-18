@@ -1,4 +1,3 @@
-node_modules
 packages/browser-client
 packages/proxy
 .github

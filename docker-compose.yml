@@ -10,7 +10,7 @@ services:
     environment:
       - rpcPort=8545
       - bindAddress=127.0.0.1:5500
-      - pk=CAISIHaUMq3DquXXVttJtB2KR3XKwxAw8DLwR19g6bDJj+RM
+      - pk=0x0a2700250802122103841051182e4734335781adc7660909a4d0dbcbd1cf3162b13e0f2812fb7cdd5f12250802122103841051182e4734335781adc7660909a4d0dbcbd1cf3162b13e0f2812fb7cdd5f1a24080212206b069f770c8a280c29d7009344ca78c87f819c6c86ad65c44e7e1ebe2127d57f
 
   ultralight2:
     image: acolytec3/ultralight
@@ -22,7 +22,7 @@ services:
     environment:
       - rpcPort=8546
       - bindAddress=127.0.0.1:5502
-      - pk=CAISID95BixNybwj9lkMxCDlwwMbiooV8+e+aeZaJy5rvlzE    
+      - pk=0x0a2700250802122102f77c284f962a99be101023c2e75ffe15b57950fc1763d359c494cb4f4194944d12250802122102f77c284f962a99be101023c2e75ffe15b57950fc1763d359c494cb4f4194944d1a24080212207659da66a62d3ed8077a418bd9498a565d73fd9a3097ac870c9636aa12201f17
 
   ultralight3:
     image: acolytec3/ultralight
@@ -34,7 +34,7 @@ services:
     environment:
       - rpcPort=8547
       - bindAddress=127.0.0.1:5504
-      - pk=CAISIOOnyf3sf+guW+biR3RGwpHKz1cZsBwc85BMzz9Xj7EZ
+      - pk=0x0a270025080212210334197f4c3526ddc8c5a86be7b390c306226a0e562a91c91657addf3c01c9206b1225080212210334197f4c3526ddc8c5a86be7b390c306226a0e562a91c91657addf3c01c9206b1a2408021220060adc85c34d26c97a58d76b351c689411c36ec3ad45c41d4b61d92a8bbd78bd
 
   ultralight4:
     image: acolytec3/ultralight
@@ -46,7 +46,7 @@ services:
     environment:
       - rpcPort=8548
       - bindAddress=127.0.0.1:5506
-      - pk=CAISIDWOjJ9NDdwKXt6gxBhisEA2/A9y6Ahik6AlHH1IWxuo
+      - pk=0x0a27002508021221030b25623dce60ef8fd3eb2dc64983f08decf7eed7a5cdfcf5adf17fa1b571600f122508021221030b25623dce60ef8fd3eb2dc64983f08decf7eed7a5cdfcf5adf17fa1b571600f1a2408021220051044558215834e8ea6672cb6e94eacfa179e90044c3726e65f00a9645abb64
 
   ultralight5:
     image: acolytec3/ultralight
@@ -58,7 +58,7 @@ services:
     environment:
       - rpcPort=8549
       - bindAddress=127.0.0.1:5508
-      - pk=CAISIDcw2YYjUsxbGOx6LM2um/rBk+25zWzxoVzOWec71p4v
+      - pk=0x0a2700250802122103feb3ad6b44712fb44e0b7135920ac9397afe317bf099f907cb44c3fb597e8b0712250802122103feb3ad6b44712fb44e0b7135920ac9397afe317bf099f907cb44c3fb597e8b071a240802122002c466b2c95f0dfe6d4a9d243469fa40cdb59c8808382398e0808fdd4621ccbc
 
   ultralight6:
     image: acolytec3/ultralight
@@ -70,7 +70,7 @@ services:
     environment:
       - rpcPort=8550
       - bindAddress=127.0.0.1:5510
-      - pk=CAISIL0qHWdvpP2xFqKlA7K7KYhP2Y1Q8bjT1vTqfqbyK4up
+      - pk=0x0a2700250802122103ba1664b2af0b5af235d0e4282d5d6474aed2bf58f456cb154727bc88a65ac98a12250802122103ba1664b2af0b5af235d0e4282d5d6474aed2bf58f456cb154727bc88a65ac98a1a2408021220f8438905c954e15b1cb1413485c1d98586bca7470fdf6c9a976ebbbb66b0f995
 
   ultralight7:
     image: acolytec3/ultralight
@@ -82,7 +82,7 @@ services:
     environment:
       - rpcPort=8551
       - bindAddress=127.0.0.1:5512
-      - pk=CAISIGranqypqV6mDk3DCvWFv0k7uqHf8La9SXkdo1Wt8DoX
+      - pk=0x0a2700250802122102568cb8ef26b531a34db525238df2bc26e77a45293ba10a3e3ed7a5a40d366e7f12250802122102568cb8ef26b531a34db525238df2bc26e77a45293ba10a3e3ed7a5a40d366e7f1a240802122055c599f9a7c78aca8cfe8ee14367d871e58c0535441067ea92898e068f44bbbb
 
   ultralight8:
     image: acolytec3/ultralight
@@ -94,7 +94,7 @@ services:
     environment:
       - rpcPort=8552
       - bindAddress=127.0.0.1:5514
-      - pk=CAISIIvMbBpRxAZdYsFnVTeo+iKREcQ9KkKhCR025YM8bupE
+      - pk=0x0a270025080212210327113e2bbc0b2e09161fd8bd2473e06868fc85f0c3c3a8b706c426fbd14cc4681225080212210327113e2bbc0b2e09161fd8bd2473e06868fc85f0c3c3a8b706c426fbd14cc4681a2408021220267a6cf558dfd6b098edd67081298fe304b2a8c71122f308ddfae64cadc2835f
 
   ultralight9:
     image: acolytec3/ultralight
@@ -106,7 +106,7 @@ services:
     environment:
       - rpcPort=8553
       - bindAddress=127.0.0.1:5516
-      - pk=CAISIGtalnQrYP8cv2vjghGfxwb43kAqTXZZRzO8y7P+KhT2
+      - pk=0x0a2700250802122102672564eb9d0614a944f8d2fdd65ee36b6fa3ef8e85b6cd39d236a86e91ab69ed12250802122102672564eb9d0614a944f8d2fdd65ee36b6fa3ef8e85b6cd39d236a86e91ab69ed1a240802122048478e525ff2cc5bafc8b08f59974dcea7f251d6521ce77a4bb4f3a97d462637
 
   ultralight10:
     image: acolytec3/ultralight
@@ -118,4 +118,4 @@ services:
     environment:
       - rpcPort=8554
       - bindAddress=127.0.0.1:5518
-      - pk=CAISII+8Y53XjrVnK7e4VMDZx7TakFlWui3jZq104fbjCtZt
+      - pk=0x0a270025080212210357a276d242f416d8dbb4ff50ada8af0ceeb965c7bd0bf2d61f0680f6f0d245e61225080212210357a276d242f416d8dbb4ff50ada8af0ceeb965c7bd0bf2d61f0680f6f0d245e61a2408021220b1d4e93ce39beccb2512f8a4dba53ed6992041cf64ebe401d0f4ed44e300b3ca
