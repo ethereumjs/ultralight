@@ -51,14 +51,15 @@ export class PortalNetworkUTP extends BasicUtp {
     this.working = false
   }
 
-  closeRequest(nodeId: string) {
-    this.logger.extend('CLOSING')(`Closing uTP request with ${nodeId} due to failed connection`)
-    const key = Object.keys(this.openContentRequest).find(
-      (k) => k.slice(0, 5) === nodeId.slice(0, 5)
-    )
-    !key && this.logger.extend('CLOSING')('Cannot find request')
-    key && this.openContentRequest.get(key)?.close()
-    key && this.openContentRequest.delete(key)
+  closeRequest(packet: Buffer, peerId: string) {
+    const requestKey = this.getRequestKeyFromPortalMessage(packet, peerId)
+    const request = this.openContentRequest.get(requestKey)
+    if (request) {
+      this.sendResetPacket(request.socket)
+      this.logger.extend('CLOSING')(`Closing uTP request with ${peerId} due to failed connection`)
+      request.close()
+      this.openContentRequest.delete(requestKey)
+    }
   }
 
   getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
@@ -384,7 +385,7 @@ export class PortalNetworkUTP extends BasicUtp {
       }`
     )
     if (acked) {
-      // request.socket.rtt = request.socket.reply_micro - request.socket.outBuffer.get(acked)!
+      request.socket.rtt = request.socket.reply_micro - request.socket.outBuffer.get(acked)!
       request.socket.outBuffer.delete(acked)
       request.socket.ackNrs.push(acked)
     }

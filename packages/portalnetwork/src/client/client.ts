@@ -174,7 +174,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       try {
         await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
       } catch {
-        this.uTP.closeRequest(peerId)
+        this.uTP.closeRequest(msg, peerId)
       }
     })
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
