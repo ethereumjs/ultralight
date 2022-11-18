@@ -21,6 +21,10 @@ export class SelectiveAckHeaderExtension extends UtpHeaderExtension {
     super(0, bitmask)
     this.bitmask = bitmask
   }
-
-  public static BITMAP = [1, 2, 4, 8, 16, 32, 64, 128]
+  public static create = (bitmask: Uint8Array) => {
+    if (bitmask.length !== 4) {
+      throw new Error('Bitmask length must be exactly 4 bytes. length:' + bitmask.length)
+    }
+    return new SelectiveAckHeaderExtension(bitmask)
+  }
 }

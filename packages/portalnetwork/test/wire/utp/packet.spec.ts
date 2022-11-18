@@ -1,6 +1,7 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { BitVectorType, fromHexString, toHexString } from '@chainsafe/ssz'
 import tape from 'tape'
 import {
+  Bytes32TimeStamp,
   Packet,
   PacketHeader,
   PacketType,
@@ -16,7 +17,6 @@ export type testParams = {
   type: PacketType
   data: createPacketOpts
   expectedResult: string
-  selective?: boolean
 }
 
 export const packetTestData: Record<string, testParams> = {
@@ -50,17 +50,18 @@ export const packetTestData: Record<string, testParams> = {
   },
   selectiveAck: {
     type: PacketType.ST_STATE,
-    selective: true,
     data: {
-      version: 1,
-      extension: 1,
-      connectionId: 10049,
-      timestampMicroseconds: 6195294,
-      timestampDifferenceMicroseconds: 916973699,
-      wndSize: 1048576,
-      seqNr: 16807,
-      ackNr: 11885,
-      ackNrs: [1, 0, 0, 128],
+      header: {
+        version: 1,
+        extension: 1,
+        connectionId: 10049,
+        timestampMicroseconds: 6195294,
+        timestampDifferenceMicroseconds: 916973699,
+        wndSize: 1048576,
+        seqNr: 16807,
+        ackNr: 11885,
+      },
+      bitmask: Uint8Array.from([1, 0, 0, 128]),
     },
     expectedResult: '0x21012741005e885e36a7e8830010000041a72e6d000401000080',
   },
@@ -122,7 +123,7 @@ export function encodingTest(
   selective?: boolean
 ) {
   t.test(`${PacketType[packetType]} packet encoding test.`, (st) => {
-    const testPacket: Packet = Packet.create(packetType, testData, selective)
+    const testPacket: Packet = Packet.create(packetType, testData)
 
     const encodedPacket = testPacket.encode()
     const testHeader = testPacket.header
@@ -137,8 +138,12 @@ export function encodingTest(
       st.deepEqual(
         Uint8Array.from((decodedHeader as SelectiveAckHeader).selectiveAckExtension.bitmask),
         Uint8Array.from((testHeader as SelectiveAckHeader).selectiveAckExtension.bitmask),
-        `sucessfully encoded and decoded Selecive Ack Bitmask`
+        `sucessfully encoded and decoded Selective Ack Bitmask`
       )
+      const bm = new BitVectorType(32).deserialize(
+        (decodedHeader as SelectiveAckHeader).selectiveAckExtension.bitmask
+      )
+      st.equal(bm.bitLen, 32, 'Bitmask is 32 bits')
     }
     if (packetType === PacketType.ST_DATA) {
       st.equal(
@@ -159,6 +164,7 @@ tape('uTP packet tests', (t) => {
       connectionId: 1,
       seqNr: 1,
       ackNr: 1,
+      timestampMicroseconds: Bytes32TimeStamp(),
       wndSize: 14508,
     })
   }, 'Packet.create should throw on invalid Packet Type')
@@ -168,7 +174,8 @@ tape('uTP packet tests', (t) => {
       packetData.type,
       packetData.data,
       packetData.expectedResult,
-      packetData.selective
+      'bitmask' in packetData.data
     )
   })
+  t.end()
 })

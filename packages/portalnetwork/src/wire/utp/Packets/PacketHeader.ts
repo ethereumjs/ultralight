@@ -1,5 +1,5 @@
-import { Bytes32TimeStamp, Uint16, Uint32, Uint8 } from '../index.js'
-import { VERSION, DEFAULT_WINDOW_SIZE } from '../Utils/constants.js'
+import { Uint16, Uint32, Uint8 } from '../index.js'
+import { VERSION } from '../Utils/constants.js'
 import { SelectiveAckHeaderExtension } from './Extentions.js'
 import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping.js'
 export class PacketHeader {
@@ -19,7 +19,7 @@ export class PacketHeader {
     this.version = options.version ?? VERSION
     this.extension = options.extension ?? 0
     this.connectionId = options.connectionId
-    this.timestampMicroseconds = options.timestampMicroseconds ?? Bytes32TimeStamp()
+    this.timestampMicroseconds = options.timestampMicroseconds
     this.timestampDifferenceMicroseconds = options.timestampDifferenceMicroseconds ?? 0
     this.wndSize = options.wndSize
     this.seqNr = options.seqNr
@@ -33,7 +33,7 @@ export class SelectiveAckHeader extends PacketHeader {
   constructor(options: IPacketHeader, bitmask: Uint8Array) {
     super(options)
     this.extension = 1
-    this.selectiveAckExtension = new SelectiveAckHeaderExtension(bitmask)
+    this.selectiveAckExtension = SelectiveAckHeaderExtension.create(bitmask)
     this.length = this.encodeHeaderStream().length
   }
 
@@ -43,8 +43,8 @@ export class SelectiveAckHeader extends PacketHeader {
     buffer[1] = 0
     buffer.writeUInt16BE(this.connectionId, 2)
     buffer.writeUInt32BE(this.timestampMicroseconds, 4)
-    buffer.writeUInt32BE(this.timestampDifferenceMicroseconds as number, 8)
-    buffer.writeUInt32BE(this.wndSize as number, 12)
+    buffer.writeUInt32BE(this.timestampMicroseconds, 4)
+    buffer.writeUInt32BE(this.wndSize, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
     buffer.writeUInt16BE(this.ackNr, 18)
     buffer.writeUInt8(this.selectiveAckExtension.type, 20)

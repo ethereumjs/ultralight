@@ -171,7 +171,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
-      await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+      try {
+        await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+      } catch {
+        this.uTP.closeRequest(msg, peerId)
+      }
     })
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       if (!verified || !enr.getLocationMultiaddr('udp')) {
@@ -241,6 +245,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Store node details in DB for node restart
    */
   public storeNodeDetails = async () => {
+    const peers: string[] = []
+    for (const protocol of this.protocols) {
+      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
+        peers.push(enr.encodeTxt())
+      })
+    }
     try {
       await this.db.batch([
         {
@@ -253,15 +263,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           key: 'peerid',
           value: this.peerId.toString(),
         },
+        {
+          type: 'put',
+          key: 'peers',
+          value: JSON.stringify(peers),
+        },
       ])
     } catch (err) {}
-    const peers: string[] = []
-    for (const protocol of this.protocols) {
-      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
-        peers.push(enr.encodeTxt())
-      })
-      await this.db.put('peers', JSON.stringify(peers))
-    }
   }
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
@@ -339,8 +347,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
       return res
     } catch (err: any) {
-      this.logger(`Error sending TALKREQ message: ${err}`)
-      return Buffer.from([])
+      if (protocolId === ProtocolId.UTPNetwork) {
+        throw new Error(`Error sending TALKREQ message: ${err}`)
+      } else {
+        return Buffer.from([])
+      }
     }
   }
 

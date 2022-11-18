@@ -107,9 +107,9 @@ export class ETH {
       }
 
       try {
-        const epoch = EpochAccumulator.deserialize(result)
+        const epoch = EpochAccumulator.deserialize(result as Uint8Array)
         this.protocol.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-          `Found EpochAccumulator with blockHash for block ${blockNumber}`
+          `Found EpochAccumulator with header record for block ${blockNumber}: ${epoch[blockIndex]}: result ${result.length}`
         )
         blockHash = toHexString(epoch[blockIndex].blockHash)
 

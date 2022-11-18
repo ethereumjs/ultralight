@@ -12,6 +12,8 @@ export const end = async (
   nodes: PortalNetwork[],
   st: tape.Test
 ) => {
+  nodes[0].removeAllListeners()
+  nodes[1].removeAllListeners()
   child.stdout.removeAllListeners()
   child.kill('SIGINT')
   nodes.forEach(async (node) => await node.stop())

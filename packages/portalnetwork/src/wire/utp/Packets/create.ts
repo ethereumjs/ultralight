@@ -1,4 +1,3 @@
-import { DEFAULT_WINDOW_SIZE } from '../Utils/constants.js'
 import { Packet } from './Packet.js'
 import { PacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import { PacketType, Uint16, Uint32, protocolVersion, Uint8 } from './PacketTyping.js'
@@ -10,7 +9,7 @@ export type createSynOpts = {
   ackNr: number
   timestampMicrosecondsMicroseconds?: number
   wndSize: number
-  timestampMicroseconds?: number
+  timestampMicroseconds: number
   timestampDifferenceMicroseconds?: number
 }
 
@@ -21,19 +20,21 @@ export type createAckOpts = {
   seqNr: Uint16
   ackNr: Uint16
   wndSize: number
-  timestampMicroseconds?: number
+  timestampMicroseconds: number
   timestampDifferenceMicroseconds?: number
 }
 export type createSelectiveAckOpts = {
-  extension?: Uint8
-  version?: Uint8
-  connectionId: Uint16
-  seqNr: Uint16
-  ackNr: Uint16
-  wndSize: number
-  ackNrs: number[]
-  timestampDifferenceMicroseconds?: number
-  timestampMicroseconds?: number
+  header: {
+    extension?: Uint8
+    version?: Uint8
+    connectionId: Uint16
+    seqNr: Uint16
+    ackNr: Uint16
+    wndSize: number
+    timestampDifferenceMicroseconds?: number
+    timestampMicroseconds: number
+  }
+  bitmask: Uint8Array
 }
 export type createDataOpts = {
   extension?: Uint8
@@ -42,7 +43,7 @@ export type createDataOpts = {
   seqNr: Uint16
   ackNr: Uint16
   wndSize: Uint32
-  timestampMicroseconds?: number
+  timestampMicroseconds: number
   timestampDifferenceMicroseconds?: number
   payload: Uint8Array
 }
@@ -53,7 +54,7 @@ export type createResetOpts = {
   seqNr: Uint16
   ackNr: Uint16
   wndSize: Uint32
-  timestampMicroseconds?: number
+  timestampMicroseconds: number
   timestampDifferenceMicroseconds?: number
 }
 export type createFinOpts = {
@@ -62,8 +63,8 @@ export type createFinOpts = {
   connectionId: Uint16
   seqNr: number
   ackNr: number
-  wndSize: number
-  timestampMicroseconds?: number
+  wndSize: Uint32
+  timestampMicroseconds: number
   timestampDifferenceMicroseconds?: number
 }
 
@@ -97,9 +98,9 @@ export function createSelectiveAckPacket(opts: createSelectiveAckOpts): Packet {
   const h: SelectiveAckHeader = new SelectiveAckHeader(
     {
       pType: PacketType.ST_STATE,
-      ...opts,
+      ...opts.header,
     },
-    Uint8Array.from(opts.ackNrs)
+    opts.bitmask
   )
 
   const packet: Packet = new Packet({ header: h, payload: new Uint8Array([]) })

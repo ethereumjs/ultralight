@@ -21,7 +21,7 @@ export class ContentManager {
   radius: bigint
   constructor(history: HistoryProtocol, radius: bigint) {
     this.history = history
-    this.logger = this.history.logger.extend('ADDING')
+    this.logger = this.history.logger.extend('DB')
     this.radius = radius
   }
 
@@ -37,6 +37,7 @@ export class ContentManager {
     hashKey: string,
     value: Uint8Array
   ) => {
+    this.logger.extend(`ADDING ${HistoryNetworkContentTypes[contentType]} to History DB`)
     const contentKey = getHistoryNetworkContentKey(contentType, fromHexString(hashKey))
 
     switch (contentType) {
@@ -50,43 +51,9 @@ export class ContentManager {
             return
           }
           const epochIdx = Math.floor(Number(header.number) / 8192)
-          if (Object.entries(this.history.accumulator._verifiers).length < 3) {
-            this.history.accumulator._verifiers[epochIdx] = header.hash()
-          }
-          if (Object.entries(this.history.accumulator._verifiers).length >= 3) {
-            if (!Object.keys(this.history.accumulator._verifiers).includes(epochIdx.toString())) {
-              this.history.accumulator._verifiers[epochIdx] = header.hash()
-            }
-          }
 
-          if (
-            Number(header.number) === this.history.accumulator.currentHeight() + 1 &&
-            header.parentHash.equals(
-              this.history.accumulator.currentEpoch()[this.history.accumulator.currentHeight()]
-                .blockHash
-            )
-          ) {
-            if (this.history.accumulator.currentEpoch.length === EPOCH_SIZE) {
-              const currentEpoch = EpochAccumulator.serialize(
-                this.history.accumulator.currentEpoch()
-              )
-
-              const currentEpochHash = toHexString(
-                EpochAccumulator.hashTreeRoot(this.history.accumulator.currentEpoch())
-              )
-              this.addContentToHistory(
-                HistoryNetworkContentTypes.EpochAccumulator,
-                currentEpochHash,
-                currentEpoch
-              )
-            }
-            this.logger(
-              `Updated header accumulator at slot ${
-                this.history.accumulator.currentEpoch().length
-              }/${EPOCH_SIZE} of current Epoch`
-            )
-          }
           this.history.client.db.put(contentKey, toHexString(value))
+          this.logger.extend('HEADER')(`added for block #${header.number}`)
         } catch (err: any) {
           this.logger(`Invalid value provided for block header: ${err.toString()}`)
           return
@@ -98,8 +65,7 @@ export class ContentManager {
           // Occurs when `getBlockByHash` called `includeTransactions` === false
           return
         }
-        let validBlock = false
-        let block: Block
+        let block: Block | undefined
         try {
           const headerContentKey = getHistoryNetworkContentKey(
             HistoryNetworkContentTypes.BlockHeader,
@@ -109,21 +75,21 @@ export class ContentManager {
           const hexHeader = await this.history.client.db.get(headerContentKey)
           // Verify we can construct a valid block from the header and body provided
           block = reassembleBlock(fromHexString(hexHeader), value)
-          validBlock = true
         } catch {
           this.logger(
             `Block Header for ${shortId(hashKey)} not found locally.  Querying network...`
           )
-          const retrievedHeader = await this.history.ETH.getBlockByHash(hashKey, false)
-          try {
-            if (retrievedHeader instanceof Block) validBlock = true
-          } catch (err) {
-            console.log('couldnt find a block')
-          }
+          block = await this.history.ETH.getBlockByHash(hashKey, false)
         }
-        if (validBlock) {
-          this.history.client.db.put(contentKey, toHexString(value))
-          await this.history.receiptManager.saveReceipts(block!)
+        if (block instanceof Block) {
+          try {
+            this.history.client.db.put(contentKey, toHexString(value))
+            this.logger.extend('BLOCK_BODY')(`added for block #${block!.header.number}`)
+            block.transactions.length > 0 &&
+              (await this.history.receiptManager.saveReceipts(block!))
+          } catch (err) {
+            this.logger(`Error: ${(err as any).message}`)
+          }
         } else {
           this.logger(`Could not verify block content`)
           // Don't store block body where we can't assemble a valid block
@@ -168,7 +134,7 @@ export class ContentManager {
           Object.keys(HistoryNetworkContentTypes)[
             Object.values(HistoryNetworkContentTypes).indexOf(contentType)
           ]
-        } for ${hashKey} to content db`
+        } for ${hashKey}`
       )
     }
     if (this.history.routingTable.values().length > 0) {

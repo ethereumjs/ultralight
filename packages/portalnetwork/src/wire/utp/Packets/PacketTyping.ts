@@ -52,7 +52,7 @@ export interface IPacketHeader {
   ackNr: Uint16
   version?: Uint8
   extension?: Uint8
-  timestampMicroseconds?: MicroSeconds
+  timestampMicroseconds: MicroSeconds
   timestampDifferenceMicroseconds?: MicroSeconds
   wndSize: Uint32
   extensions?: Uint8Array
@@ -73,7 +73,7 @@ export interface IPacketHeaderOptions {
   version: Uint8
   extension: Uint8
   connectionId: Uint16
-  timestampMicroseconds?: MicroSeconds
+  timestampMicroseconds: MicroSeconds
   timestampDifferenceMicroseconds?: MicroSeconds
   wndSize?: Uint32
   seqNr?: Uint16

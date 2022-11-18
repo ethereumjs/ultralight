@@ -19,6 +19,7 @@ import {
   RequestCode,
   ContentRequest,
   Bytes32TimeStamp,
+  SelectiveAckHeader,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Protocol/read/ContentReader.js'
 import { Packets } from '../packets.js'
@@ -124,7 +125,7 @@ tape('uTP Reader/Writer tests', (t) => {
         ackNr: socket.ackNr + idx,
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: socket.rtt_var,
+        timestampDifferenceMicroseconds: socket.reply_micro,
         wndSize: socket.cur_window,
       })
       return packet
@@ -134,7 +135,7 @@ tape('uTP Reader/Writer tests', (t) => {
       connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: socket.rtt_var,
+      timestampDifferenceMicroseconds: socket.reply_micro,
       wndSize: socket.cur_window,
     })
     socket.reader = await socket.utp.createNewReader(_socket, 2)
@@ -303,7 +304,7 @@ tape('PortalNetworkUTP tests', (t) => {
   requests.forEach(async (req) => {
     const { request, utp, type, mode, rcvId, sndId, params } = await req
     const testPacketList = Packets(
-      type,
+      params.requestCode,
       request.socket.rcvConnectionId,
       request.socket.sndConnectionId
     )
@@ -317,7 +318,7 @@ tape('PortalNetworkUTP tests', (t) => {
       seqNr: DEFAULT_RAND_SEQNR,
       ackNr: DEFAULT_RAND_ACKNR,
       timestampMicroseconds: Bytes32TimeStamp(),
-      timestampDifferenceMicroseconds: 0,
+      timestampDifferenceMicroseconds: 20,
       wndSize: 1048576,
     }).encode()
 
@@ -332,7 +333,7 @@ tape('PortalNetworkUTP tests', (t) => {
     } else {
       t.test(`handleNewRequest  - ${(await req).type}`, async (st) => {
         st.deepEqual(
-          utp.openContentRequest[socketKey],
+          utp.openContentRequest.get(socketKey),
           request,
           `${type} request added to openContentRequests`
         )
@@ -347,115 +348,50 @@ tape('PortalNetworkUTP tests', (t) => {
           `getRequestKey should fail with incorrect PeerId`
         )
         st.equal(
-          utp.openContentRequest[socketKey].socket.type,
+          utp.openContentRequest.get(socketKey)?.socket.type,
           mode,
           `${mode} socket opened for ${type} request`
         )
         st.equal(
-          utp.openContentRequest[socketKey].socket.rcvConnectionId,
+          utp.openContentRequest.get(socketKey)?.socket.rcvConnectionId,
           rcvId,
           `rcvConnectionID set by ${type} request creation`
         )
         st.equal(
-          utp.openContentRequest[socketKey].socket.sndConnectionId,
+          utp.openContentRequest.get(socketKey)?.socket.sndConnectionId,
           sndId,
           `sndConnectionID set by ${type} request creation`
         )
         st.end()
       })
-      t.test('Packet Handlers', async (st) => {
+      t.test('Packet Rejectors', async (st) => {
         if (
           request.requestCode === RequestCode.ACCEPT_READ ||
           request.requestCode === RequestCode.FOUNDCONTENT_WRITE
         ) {
-          const syn = testPacketList.rec.syn as Packet
-          const p = await utp.handleUtpPacket(syn.encode(), params.peerId)
-          st.deepEqual(p.request, request, `found request from Packet Buffer`)
-          st.deepEqual(p.packet.header, syn.header, `handled encoded SYN Packet`)
-          if (request.requestCode === RequestCode.FOUNDCONTENT_WRITE) {
-            const fin = (await utp._handleSynPacket(p.request, p.packet)) as Packet
-            st.equal(
-              fin.header.pType,
-              PacketType.ST_FIN,
-              'SYN Packet handler initiated Data stream'
-            )
-          } else {
-            const r = (await utp._handleSynPacket(p.request, p.packet)) as ContentReader
-            st.deepEqual(
-              r,
-              request.socket.reader,
-              'SYN Packet handler created Reader for ACCEPT_READ socket'
-            )
-          }
-          st.doesNotThrow(async () => {
-            utp._handleSynPacket(p.request, p.packet)
-          }, 'SYN Packet passed to handler')
         } else {
           const badsyn = Packet.create(PacketType.ST_SYN, {
             connectionId: request.socket.rcvConnectionId,
             seqNr: 1,
             ackNr: 1,
             timestampMicroseconds: Bytes32TimeStamp(),
-            timestampDifferenceMicroseconds: 0,
+            timestampDifferenceMicroseconds: 1,
             wndSize: 1048576,
           })
-          t.test('syn wrong', async (st) => {
-            try {
-              await utp._handleSynPacket(request, badsyn)
-              st.fail('should throw')
-            } catch (e: any) {
-              st.equal(e.message, 'I send SYNs, I do not handle them.', 'throws with correct error')
-              st.end()
-            }
-          })
-          const synack = testPacketList.rec.synack as Packet
-          const p = await utp.handleUtpPacket(synack.encode(), params.peerId)
-          st.deepEqual(p.request, request, `handled SYNACK Packet`)
-          st.deepEqual(p.packet.header, synack.header, `handled SYNACK Packet`)
+          try {
+            await utp._handleSynPacket(request, badsyn)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(e.message, 'I send SYNs, I do not handle them.', 'throws with correct error')
+          }
         }
-        if (mode === 'read') {
-          request.socket.reader = await utp.createNewReader(request.socket, 2)
-          const data = testPacketList.rec.data as Packet[]
-          const p = await utp.handleUtpPacket(data[0].encode(), params.peerId)
-          st.equal(
-            (await utp._handleDataPacket(p.request, p.packet)).header.ackNr,
-            p.packet.header.seqNr,
-            'Handled Data Packet'
-          )
-          const outoforder = await utp.handleUtpPacket(data[2].encode(), params.peerId)
-          st.equal(
-            (await utp._handleDataPacket(outoforder.request, outoforder.packet)).header.ackNr,
-            outoforder.packet.header.seqNr,
-            'Handled Out of Order Data Packet'
-          )
-
-          const r = await utp.handleUtpPacket(
-            (testPacketList.rec.fin as Packet).encode(),
-            params.peerId
-          )
-          request.socket.reader!.packets = testPacketList.rec.data as Packet[]
-          st.ok(await utp._handleFinPacket(r.request, r.packet), 'Fin Packet Handled')
-        } else {
-          const datas = testPacketList.send.data as Packet[]
-          const data = datas[0]
-          request.socket.dataNrs.push(data.header.seqNr)
-          const acks = testPacketList.rec.acks as Packet[]
-          const ack = await utp.handleUtpPacket(acks[0].encode(), params.peerId)
-          st.equal(ack.packet.header.pType, PacketType.ST_STATE)
-          st.doesNotThrow(async () => {
-            await utp._handleStatePacket(ack.request, ack.packet)
-          }, `Handled Ack Packet`)
-          st.deepEqual(
-            request.socket.ackNrs,
-            [data.header.seqNr],
-            `${type} Only stored data packet numbers`
-          )
+        if (type === 'write') {
           const badFin = Packet.create(PacketType.ST_FIN, {
             connectionId: request.socket.rcvConnectionId,
             seqNr: 432,
             ackNr: 234,
             timestampMicroseconds: Bytes32TimeStamp(),
-            timestampDifferenceMicroseconds: 0,
+            timestampDifferenceMicroseconds: 20,
             wndSize: 1048576,
           })
           st.notok(await utp._handleFinPacket(request, badFin), 'Write socket doesnt handle FIN')
@@ -476,70 +412,52 @@ tape('PortalNetworkUTP tests', (t) => {
         })
         bogusPacket.header.pType = 9
 
-        const resetPacket = Packet.create(PacketType.ST_RESET, {
-          connectionId: request.socket.rcvConnectionId,
-          seqNr: 789,
-          ackNr: 987,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        })
-
-        t.test('Packet Rejectors', async (st) => {
+        try {
+          await utp.handleUtpPacket(bogusPacket.encode(), params.peerId)
+          st.fail('should throw')
+        } catch (e: any) {
+          st.equal(e.message, 'Unknown Packet Type 9', 'Unknown Packet Type rejected')
+        }
+        if (type === 'ACCEPT_READ') {
+          bogusPacket.header.pType = PacketType.ST_STATE
           try {
-            await utp.handleUtpPacket(bogusPacket.encode(), params.peerId)
+            await utp._handleStatePacket(request, bogusPacket)
             st.fail('should throw')
           } catch (e: any) {
-            st.equal(e.message, 'Unknown Packet Type 9', 'Unknown Packet Type rejected')
+            st.equal(
+              e.message,
+              'Why did I get a STATE packet?',
+              'Accept Request rejects STATE packet'
+            )
           }
-          if (type === 'ACCEPT_READ') {
-            bogusPacket.header.pType = PacketType.ST_STATE
-            try {
-              await utp._handleStatePacket(request, bogusPacket)
-              st.fail('should throw')
-            } catch (e: any) {
-              st.equal(
-                e.message,
-                'Why did I get a STATE packet?',
-                'Accept Request rejects STATE packet'
-              )
-            }
+        }
+        if (mode === 'write') {
+          bogusPacket.header.pType = PacketType.ST_DATA
+          try {
+            await utp._handleDataPacket(request, bogusPacket)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(
+              e.message,
+              'Why did I get a DATA packet?',
+              `${type} request rejects all DATA packets`
+            )
           }
-          if (mode === 'write') {
-            bogusPacket.header.pType = PacketType.ST_DATA
-            try {
-              await utp._handleDataPacket(request, bogusPacket)
-              st.fail('should throw')
-            } catch (e: any) {
-              st.equal(
-                e.message,
-                'Why did I get a DATA packet?',
-                `${type} request rejects all DATA packets`
-              )
-            }
+        }
+        if (type === 'FINDCONTENT_READ') {
+          bogusPacket.header.pType = PacketType.ST_STATE
+          bogusPacket.header.seqNr = 2
+          try {
+            await utp._handleStatePacket(request, bogusPacket)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(
+              e.message,
+              'READ socket should not get acks',
+              'FINDCONTENT rejects STATE packets beyond SYNACK'
+            )
           }
-          if (type === 'FINDCONTENT_READ') {
-            bogusPacket.header.pType = PacketType.ST_STATE
-            bogusPacket.header.seqNr = 2
-            try {
-              await utp._handleStatePacket(request, bogusPacket)
-              st.fail('should throw')
-            } catch (e: any) {
-              st.equal(
-                e.message,
-                'READ socket should not get acks',
-                'FINDCONTENT rejects STATE packets beyond SYNACK'
-              )
-            }
-          }
-          st.end()
-        })
-
-        utp.on('send', (peerId: string) => {
-          st.equal(peerId, params.peerId, 'Sent', {
-            todo: true,
-          })
-        })
+        }
         if (testPacketList.send.syn) {
           await utp.send(
             params.peerId,
@@ -558,13 +476,6 @@ tape('PortalNetworkUTP tests', (t) => {
           )
           await utp.send(params.peerId, packet.encode(), ProtocolId.HistoryNetwork)
         }
-
-        await utp.handleUtpPacket(resetPacket.encode(), params.peerId)
-        st.ok(
-          utp.openContentRequest[request.requestCode] === undefined,
-          'Reset Packet deletes open request'
-        )
-
         st.end()
       })
     }

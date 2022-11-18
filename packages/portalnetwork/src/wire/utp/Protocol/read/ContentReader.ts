@@ -35,12 +35,9 @@ export default class ContentReader {
   }
 
   async compile(precompiled: Uint8Array[]): Promise<Uint8Array> {
-    let compiled = Buffer.from([])
-    precompiled.forEach((p) => {
-      compiled = Buffer.concat([compiled, Buffer.from(p)])
-    })
+    const compiled = Buffer.concat(precompiled.flatMap((v) => Buffer.from(v)))
     this.logger(`${compiled.length} Bytes Received.`)
-    return Uint8Array.from(compiled)
+    return compiled
   }
 
   async run(): Promise<Uint8Array> {

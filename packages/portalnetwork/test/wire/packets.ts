@@ -4,6 +4,7 @@ import {
   encodeWithVariantPrefix,
   Packet,
   PacketType,
+  RequestCode,
 } from '../../src/wire/utp/index.js'
 import { fromHexString } from '@chainsafe/ssz'
 
@@ -57,14 +58,14 @@ for (let i = 0; i < compressed.length / BUFFER_SIZE; i++) {
 }
 
 export function Packets(
-  type: string,
+  type: RequestCode,
   rcvId: number,
   sndId: number
 ): {
   send: Record<string, Packet | Packet[]>
   rec: Record<string, Packet | Packet[]>
 } {
-  if (type === 'FINDCONTENT_READ') {
+  if (type === RequestCode.FINDCONTENT_READ) {
     const dataPackets = dataChunks.map((chunk, i) => {
       const p = Packet.create(PacketType.ST_DATA, {
         connectionId: rcvId,
@@ -137,7 +138,7 @@ export function Packets(
       },
     }
     return testPackets
-  } else if (type === 'FOUNDCONTENT_WRITE') {
+  } else if (type === RequestCode.FOUNDCONTENT_WRITE) {
     const dataPackets = dataChunks.map((chunk, i) => {
       const p = Packet.create(PacketType.ST_DATA, {
         connectionId: sndId,
@@ -209,14 +210,14 @@ export function Packets(
       },
     }
     return testPackets
-  } else if (type === 'OFFER_WRITE') {
+  } else if (type === RequestCode.OFFER_WRITE) {
     const dataPackets = offerChunks.map((chunk, i) => {
       return Packet.create(PacketType.ST_DATA, {
         connectionId: sndId,
         seqNr: 2 + i,
         ackNr: DEFAULT_RAND_ACKNR + 1 + i,
         timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
+        timestampDifferenceMicroseconds: 100,
         wndSize: 1048576,
       })
     })
@@ -225,8 +226,8 @@ export function Packets(
         connectionId: rcvId,
         seqNr: DEFAULT_RAND_ACKNR + 2 + i,
         ackNr: 2 + i,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
+        timestampMicroseconds: Bytes32TimeStamp() + 2000,
+        timestampDifferenceMicroseconds: 100,
         wndSize: 1048576,
       })
     })
@@ -236,8 +237,8 @@ export function Packets(
           connectionId: sndId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
+          timestampMicroseconds: Bytes32TimeStamp() + 4000,
+          timestampDifferenceMicroseconds: 100,
           wndSize: 1048576,
         }),
         data: dataPackets,
@@ -245,8 +246,8 @@ export function Packets(
           connectionId: sndId,
           seqNr: 2 + dataPackets.length,
           ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
+          timestampMicroseconds: Bytes32TimeStamp() + 6000,
+          timestampDifferenceMicroseconds: 100,
           wndSize: 1048576,
         }),
       },
@@ -255,8 +256,8 @@ export function Packets(
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
+          timestampMicroseconds: Bytes32TimeStamp() + 8000,
+          timestampDifferenceMicroseconds: 100,
           wndSize: 1048576,
         }),
         acks: dataAcks,
@@ -264,14 +265,14 @@ export function Packets(
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
           ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
+          timestampMicroseconds: Bytes32TimeStamp() + 10000,
+          timestampDifferenceMicroseconds: 100,
           wndSize: 1048576,
         }),
       },
     }
     return testPackets
-  } else if (type === 'ACCEPT_READ') {
+  } else if (type === RequestCode.ACCEPT_READ) {
     const dataPackets = offerChunks.map((chunk, i) => {
       return Packet.create(PacketType.ST_DATA, {
         connectionId: rcvId,

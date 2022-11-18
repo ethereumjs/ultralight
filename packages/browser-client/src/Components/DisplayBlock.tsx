@@ -261,28 +261,26 @@ const DisplayBlock = () => {
       {state.block && (
         <VStack height="100%" boxShadow={'outline'}>
           <Box width="100%" height="5%">
-            <Text bg="gray.200" paddingBottom={2} fontSize="md" textAlign={'center'}>
-              <HStack justifyContent={'center'}>
-                <span>Block #</span>
-                <Skeleton isLoaded={!state.isLoading}>
-                  {state.block.number ?? (state.block as any).header.number.toString()}
-                </Skeleton>
-                {validated && <CheckCircleIcon />}
-              </HStack>
-              {
-                <Text fontSize={'x-small'}>
-                  hash:
-                  {typeof (state.block as any).hash === 'string'
-                    ? (state.block as any).hash
-                    : toHexString((state.block as any).hash())}
-                </Text>
-              }
-            </Text>
+            <HStack justifyContent={'center'}>
+              <Text>Block #</Text>
+              <Skeleton isLoaded={!state.isLoading}>
+                {state.block.number ?? (state.block as any).header.number.toString()}
+              </Skeleton>
+              {validated && <CheckCircleIcon />}
+            </HStack>
+            {
+              <Text fontSize={'x-small'}>
+                hash:
+                {typeof (state.block as any).hash === 'string'
+                  ? (state.block as any).hash
+                  : toHexString((state.block as any).hash())}
+              </Text>
+            }
           </Box>
           <VStack width="100%" height="5%">
             <HStack width="100%">
-              <Text fontSize="x-small" textAlign={'start'}>
-                <span style={{ fontWeight: 'bold' }}>Header Key: </span>
+              <Text fontWeight={'bold'} fontSize="x-small" textAlign={'start'}>
+                Header Key:
               </Text>
               <CopyIcon
                 marginEnd={2}

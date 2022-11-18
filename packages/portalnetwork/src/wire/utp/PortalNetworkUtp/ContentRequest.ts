@@ -21,7 +21,6 @@ export class ContentRequest {
     this.protocolId = protocolId
     this.contentKeys = contentKeys
     this.requestCode = requestCode
-    // this.contentKey = undefined
     this.content = content
     this.socketKey = socketKey
     this.socket = socket
@@ -47,5 +46,10 @@ export class ContentRequest {
         break
     }
     return this.requestCode
+  }
+
+  close(): void {
+    this.content = Uint8Array.from([])
+    this.socket.close()
   }
 }
