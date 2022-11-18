@@ -243,10 +243,11 @@ tape('OFFER/ACCEPT', (t) => {
               'OFFER/ACCEPT successfully streamed an SSZ encoded block OFFER/ACCEPT'
             )
             st.pass('OFFER/ACCEPT uTP Stream succeeded')
+            end(child, [portal1, portal2], st)
           } catch (err) {
             st.fail('offer accept test failed ' + err)
+            end(child, [portal1, portal2], st)
           }
-          end(child, [portal1, portal2], st)
         }
       })
 
