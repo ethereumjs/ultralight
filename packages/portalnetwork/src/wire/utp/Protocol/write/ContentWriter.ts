@@ -33,14 +33,14 @@ export default class ContentWriter {
     if (this.sentChunks.length < chunks) {
       if (this.socket.cur_window + DEFAULT_PACKET_SIZE <= this.socket.max_window) {
         bytes = this.dataChunks[this.seqNr] ?? []
-        this.sentChunks.push(this.seqNr)
+        !this.sentChunks.includes(this.seqNr) && this.sentChunks.push(this.seqNr)
         this.socket.logger(
           `Sending ST-DATA ${this.seqNr - this.startingSeqNr + 1}/${chunks} -- SeqNr: ${
             this.socket.seqNr
           }`
         )
         await sendDataPacket(this.socket, bytes)
-        this.seqNr = Math.max(...this.sentChunks) + 1
+        this.seqNr = this.sentChunks.slice(-1)[0] + 1
         this.start()
       } else {
         this.logger(` cur_window: ${this.socket.cur_window} - max_window ${this.socket.max_window}`)
