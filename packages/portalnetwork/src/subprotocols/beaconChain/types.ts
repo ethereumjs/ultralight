@@ -215,6 +215,6 @@ export interface ILightClientStore {
   nextSyncCommittee: ISyncCommittee
   bestValidUpdate: ILightClientUpdate
   optimisticHeader: IBeaconBlockHeader
-  previousMaxActiveParticipants: UintBigintType
-  currentMaxActiveParticipants: UintBigintType
+  previousMaxActiveParticipants: bigint
+  currentMaxActiveParticipants: bigint
 }
