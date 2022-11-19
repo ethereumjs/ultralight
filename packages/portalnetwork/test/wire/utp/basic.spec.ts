@@ -2,7 +2,14 @@ import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
 import tape from 'tape'
-import { PortalNetworkUTP, RequestCode, BasicUtp, Packet, PacketType } from '../../../src/index.js'
+import {
+  PortalNetworkUTP,
+  RequestCode,
+  BasicUtp,
+  Packet,
+  PacketType,
+  Bytes32TimeStamp,
+} from '../../../src/index.js'
 
 const sampleSize = 50000
 const peerId = await createSecp256k1PeerId()
@@ -34,11 +41,12 @@ tape('Basic uTP Tests', async (t) => {
   const packets = Object.values(chunks).map((chunk, idx) => {
     const packet = Packet.create(PacketType.ST_DATA, {
       seqNr: 2 + idx,
-      sndConnectionId: _socket.sndConnectionId,
+      connectionId: _socket.sndConnectionId,
       ackNr: _socket.ackNr + idx,
-      wndSize: _socket.max_window,
       payload: chunk,
-      rtt_var: _socket.rtt_var,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: socket.reply_micro,
+      wndSize: socket.cur_window,
     })
     return packet
   })
@@ -46,20 +54,23 @@ tape('Basic uTP Tests', async (t) => {
     const syn = await basic.sendSynPacket(socket)
     const synPacket = Packet.create(PacketType.ST_SYN, {
       seqNr: 1,
-      sndConnectionId: socket.sndConnectionId,
+      connectionId: socket.sndConnectionId,
       ackNr: socket.ackNr,
-      timestamp: syn.header.timestamp,
+      timestampMicroseconds: syn.header.timestampMicroseconds,
+      timestampDifferenceMicroseconds: socket.reply_micro,
+      wndSize: socket.cur_window,
     })
     st.deepEqual(syn, synPacket, 'Basic Sends Syn Packet successfully')
     const _synAck = Packet.create(PacketType.ST_STATE, {
       seqNr: _socket.seqNr,
-      sndConnectionId: _socket.sndConnectionId,
+      connectionId: _socket.sndConnectionId,
       ackNr: _socket.ackNr,
-      rtt_var: _socket.rtt_var,
-      wndSide: _socket.cur_window,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: socket.reply_micro,
+      wndSize: socket.cur_window,
     })
     const synack = await basic.handleSynPacket(_socket, synPacket)
-    ;(_synAck.header.timestamp = synack.header.timestamp),
+    ;(_synAck.header.timestampMicroseconds = synack.header.timestampMicroseconds),
       st.equal(
         (await basic.sendSynAckPacket(_socket)).header.pType,
         PacketType.ST_STATE,
@@ -96,10 +107,11 @@ tape('Basic uTP Tests', async (t) => {
 
     const _finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: 98,
-      sndConnectionId: _socket.sndConnectionId,
+      connectionId: _socket.sndConnectionId,
       ackNr: 100,
-      rtt_var: _socket.rtt_var,
-      wndSize: _socket.cur_window,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: socket.reply_micro,
+      wndSize: socket.cur_window,
     })
     socket.seqNr = 100
     socket.ackNr = 98
@@ -107,11 +119,11 @@ tape('Basic uTP Tests', async (t) => {
     const finReturn = await basic.sendFinPacket(socket)
     const finPacket = Packet.create(PacketType.ST_FIN, {
       seqNr: 100,
-      sndConnectionId: socket.sndConnectionId,
+      connectionId: socket.sndConnectionId,
       ackNr: 98,
-      wndSize: socket.max_window,
-      rtt_var: 0,
-      timestamp: finReturn.header.timestamp,
+      timestampMicroseconds: finReturn.header.timestampMicroseconds,
+      timestampDifferenceMicroseconds: finReturn.header.timestampDifferenceMicroseconds,
+      wndSize: socket.cur_window,
     })
     st.deepEqual(finReturn.header, finPacket.header, `Basic successfully sent Fin Packet`)
     const _compiled = await basic.handleFinPacket(_socket, finPacket)

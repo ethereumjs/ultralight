@@ -19,7 +19,7 @@ export const SKIP_PACKETS_UNTIL_ACK: number = 2
 export const AUTO_ACK_SMALLER_THAN_ACK_NUMBER: boolean = true
 export const MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC: number = 120000000
 
-export const DEFAULT_WINDOW_SIZE = 1200
+export const DEFAULT_PACKET_SIZE = 512
 export const MAX_PACKET_SIZE: number = 900
 export const MIN_PACKET_SIZE: number = 150
 export const MINIMUM_MTU: number = 576

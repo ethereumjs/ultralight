@@ -7,6 +7,7 @@ import {
   BaseProtocol,
   ProtocolId,
   PortalNetwork,
+  Bytes32TimeStamp,
   FindContentMessage,
 } from '../../index.js'
 
@@ -39,7 +40,7 @@ export class Rendezvous extends BaseProtocol {
     this.logger(
       `Sending RENDEZVOUS message to ${shortId(rendezvousNode.nodeId)} for ${shortId(dstId)}`
     )
-    const time = Date.now()
+    const time = Bytes32TimeStamp()
     let res = await this.client.sendPortalNetworkMessage(
       rendezvousNode,
       Buffer.concat([
@@ -51,7 +52,7 @@ export class Rendezvous extends BaseProtocol {
     )
     if (res.length > 0) {
       // Measure roundtrip to `dstId`
-      const roundtrip = Date.now() - time
+      const roundtrip = Bytes32TimeStamp() - time
       const peer = ENR.decode(res)
 
       //protocol.updateRoutingTable(peer, protocolId, true)

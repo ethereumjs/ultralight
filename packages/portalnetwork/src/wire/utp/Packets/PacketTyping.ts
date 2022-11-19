@@ -37,8 +37,8 @@ export type PacketHeaderType = {
   version: Uint8
   extension: Uint8
   connectionId: Uint16
-  timestamp: MicroSeconds
-  timestampDiff: MicroSeconds
+  timestampMicroseconds: MicroSeconds
+  timestampDifferenceMicroseconds: MicroSeconds
   wndSize: Uint32
   seqNr: Uint16
   ackNr: Uint16
@@ -52,9 +52,9 @@ export interface IPacketHeader {
   ackNr: Uint16
   version?: Uint8
   extension?: Uint8
-  timestamp?: MicroSeconds
-  timestampDiff?: MicroSeconds
-  wndSize?: Uint32
+  timestampMicroseconds: MicroSeconds
+  timestampDifferenceMicroseconds?: MicroSeconds
+  wndSize: Uint32
   extensions?: Uint8Array
 }
 
@@ -73,8 +73,8 @@ export interface IPacketHeaderOptions {
   version: Uint8
   extension: Uint8
   connectionId: Uint16
-  timestamp?: MicroSeconds
-  timestampDiff?: MicroSeconds
+  timestampMicroseconds: MicroSeconds
+  timestampDifferenceMicroseconds?: MicroSeconds
   wndSize?: Uint32
   seqNr?: Uint16
   ackNr?: Uint16

@@ -5,11 +5,11 @@ RUN apk add --virtual .build-deps alpine-sdk jq
 
 RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
-RUN rm -rf ./packages/browser-client && rm -rf ./packages/proxy
+# RUN rm -rf ./packages/browser-client && rm -rf ./packages/proxy
 RUN jq -r '.workspaces |= .[0:2]' package.json > package.json
 COPY package*.json ./
 RUN npm ci -ignore-scripts 
-RUN npm prune --production
+RUN npm prune --omit=dev
 COPY . .
 
 FROM node:16-alpine

@@ -25,13 +25,11 @@ export class Packet {
   extensions: any[]
 
   public static bufferToPacket(buffer: Buffer): Packet {
-    const ptandver = buffer[0].toString(16)
-    const ver = ptandver[1]
-    const _version = parseInt(ver, 16)
     const extension = buffer.readUInt8(1)
     let packet: Packet
     if (extension === 1) {
       const size = buffer.readUInt8(21)
+      const bitmask = buffer.subarray(22, 22 + size)
       packet = new Packet({
         header: new SelectiveAckHeader(
           {
@@ -39,15 +37,15 @@ export class Packet {
             version: 1,
             extension: buffer.readUInt8(1),
             connectionId: buffer.readUInt16BE(2),
-            timestamp: buffer.readUInt32BE(4),
-            timestampDiff: buffer.readUInt32BE(8),
+            timestampMicroseconds: buffer.readUint32BE(4),
+            timestampDifferenceMicroseconds: buffer.readUint32BE(8),
             wndSize: buffer.readUInt32BE(12),
             seqNr: buffer.readUInt16BE(16),
             ackNr: buffer.readUInt16BE(18),
           },
-          buffer.subarray(22, 22 + size)
+          bitmask
         ),
-        payload: buffer.subarray(22 + size),
+        payload: Uint8Array.from([]),
       })
       return packet
     } else {
@@ -57,8 +55,8 @@ export class Packet {
           version: 1,
           extension: 0,
           connectionId: buffer.readUInt16BE(2),
-          timestamp: buffer.readUInt32BE(4),
-          timestampDiff: buffer.readUInt32BE(8),
+          timestampMicroseconds: buffer.readUint32BE(4),
+          timestampDifferenceMicroseconds: buffer.readUint32BE(8),
           wndSize: buffer.readUInt32BE(12),
           seqNr: buffer.readUInt16BE(16),
           ackNr: buffer.readUInt16BE(18),
@@ -69,18 +67,14 @@ export class Packet {
     }
   }
 
-  public static create = (
-    type: PacketType,
-    opts: createPacketOpts,
-    selectiveAck?: boolean
-  ): Packet => {
+  public static create = (type: PacketType, opts: createPacketOpts): Packet => {
     let packet: Packet
     switch (type) {
       case PacketType.ST_SYN:
         packet = createSynPacket(opts as createSynOpts)
         break
       case PacketType.ST_STATE:
-        if (selectiveAck) {
+        if ((opts as createSelectiveAckOpts).bitmask instanceof Uint8Array) {
           packet = createSelectiveAckPacket(opts as createSelectiveAckOpts)
         } else {
           packet = createAckPacket(opts as createAckOpts)
@@ -103,7 +97,7 @@ export class Packet {
 
   constructor(options: IPacketOptions) {
     this.header = options.header
-    this.payload = options.payload
+    this.payload = options.payload ?? Uint8Array.from([])
     this.sent = 0
     // this.size = this.header.length + this.payload.length
     this.extensions = []
@@ -115,12 +109,11 @@ export class Packet {
     const v = this.header.version.toString(16)
     const pv = p + v
     const typeAndVer = parseInt(pv, 16)
-
     buffer.writeUInt8(typeAndVer, 0)
     buffer.writeUInt8(this.header.extension, 1)
     buffer.writeUInt16BE(this.header.connectionId, 2)
-    buffer.writeUInt32BE(this.header.timestamp, 4)
-    buffer.writeUInt32BE(this.header.timestampDiff, 8)
+    buffer.writeUint32BE(this.header.timestampMicroseconds, 4)
+    buffer.writeUint32BE(this.header.timestampDifferenceMicroseconds, 8)
     buffer.writeUInt32BE(this.header.wndSize, 12)
     buffer.writeUInt16BE(this.header.seqNr, 16)
     buffer.writeUInt16BE(this.header.ackNr, 18)

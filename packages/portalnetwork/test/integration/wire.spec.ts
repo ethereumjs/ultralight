@@ -197,52 +197,57 @@ tape('OFFER/ACCEPT', (t) => {
           )
         )
       }
-      let i = 0
       const _blocks: string[] = []
+      const _headers: string[] = []
 
       portal1.on('ContentAdded', async (blockHash, contentType, content) => {
-        st.equal(
-          await portal1.db.get(
-            getHistoryNetworkContentKey(
-              contentType,
-              fromHexString(testHashes[testHashes.indexOf(blockHash)])
-            )
-          ),
-          content,
-          `${HistoryNetworkContentTypes[contentType]} successfully stored in db`
-        )
-        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-          i++
+        if (contentType === 0) {
+          _headers.push(blockHash)
         }
-        if (contentType === HistoryNetworkContentTypes.BlockBody) {
-          i++
+        if (contentType === 1) {
           _blocks.push(blockHash)
         }
-        if (i === 26 && contentType === HistoryNetworkContentTypes.BlockBody) {
-          st.equal(i, testBlockKeys.length, 'OFFER/ACCEPT sent all the items')
+        if (_headers.length === 13 && _blocks.length === 13) {
+          st.equal(_headers.length, 13, 'OFFER/ACCEPT sent all the headers')
+          st.equal(_blocks.length, 13, 'OFFER/ACCEPT sent all the blocks')
+          st.equal(
+            testHashes.every((hash) => _blocks.includes(hash)),
+            true,
+            'offer sent all the blocks'
+          )
           try {
-            for (const hash of testHashes) {
-              _blocks.includes(hash)
-            }
-            st.pass('Content ACCEPTED matches content OFFERED')
-          } catch {
-            st.fail('Offer test missed items')
-          }
-          const body = decodeSszBlockBody(fromHexString(content))
-          try {
-            const uncleHeaderHash = toHexString(
-              BlockHeader.fromValuesArray(rlp.decode(body.unclesRlp)[0] as Buffer[], {
-                hardforkByBlockNumber: true,
-              }).hash()
-            )
+            const body = await portal1.protocols
+              .get(ProtocolId.HistoryNetwork)!
+              .findContentLocally(
+                fromHexString(
+                  getHistoryNetworkContentKey(
+                    HistoryNetworkContentTypes.BlockBody,
+                    fromHexString(_blocks[12])
+                  )
+                )
+              )
+            const header = await portal1.protocols
+              .get(ProtocolId.HistoryNetwork)!
+              .findContentLocally(
+                fromHexString(
+                  getHistoryNetworkContentKey(
+                    HistoryNetworkContentTypes.BlockHeader,
+                    fromHexString(_blocks[12])
+                  )
+                )
+              )
+            const block = reassembleBlock(header!, body)
             st.equal(
-              toHexString(testBlocks[testBlocks.length - 1].uncleHeaders[0].hash()),
-              uncleHeaderHash,
+              toHexString(block.serialize()),
+              toHexString(testBlocks[12].serialize()),
               'OFFER/ACCEPT successfully streamed an SSZ encoded block OFFER/ACCEPT'
             )
-          } catch {}
-          st.pass('OFFER/ACCEPT uTP Stream succeeded')
-          end(child, [portal1, portal2], st)
+            st.pass('OFFER/ACCEPT uTP Stream succeeded')
+            end(child, [portal1, portal2], st)
+          } catch (err) {
+            st.fail('offer accept test failed ' + err)
+            end(child, [portal1, portal2], st)
+          }
         }
       })
 
@@ -250,96 +255,5 @@ tape('OFFER/ACCEPT', (t) => {
       await protocol.sendOffer(portal1.discv5.enr.nodeId, testBlockKeys)
     }
     connectAndTest(t, st, offerBlocks, true)
-  })
-  t.test('Node should gossip new content to peer', (st) => {
-    const gossip = async (
-      portal1: PortalNetwork,
-      portal2: PortalNetwork,
-      child: ChildProcessWithoutNullStreams
-    ) => {
-      const protocol1 = portal1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      const testBlockData = require('./testBlocks.json')
-      const testBlocks: Block[] = testBlockData.map((testBlock: any) => {
-        return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
-          hardforkByBlockNumber: true,
-        })
-      })
-
-      const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
-        return testBlock.hash()
-      })
-      const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
-        return toHexString(testHash)
-      })
-
-      const headers: string[] = []
-      const blocks: string[] = []
-      portal2.on('ContentAdded', async (blockHash, contentType, _content) => {
-        if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-          headers.includes(blockHash) || headers.push(blockHash)
-          if (headers.length === testBlocks.length) {
-            st.ok(
-              testHashStrings.includes(blockHash),
-              `Gossip sent ${headers.length} BlockHeaders to peer`
-            )
-          }
-        }
-        if (contentType === HistoryNetworkContentTypes.BlockBody) {
-          blocks.includes(blockHash) || blocks.push(blockHash)
-          if (blocks.length === testBlocks.length) {
-            st.ok(
-              testHashStrings.includes(blockHash),
-              `Gossip sent ${blocks.length} BlockBodies to peer`
-            )
-            const header = fromHexString(
-              await portal2.db.get(
-                getHistoryNetworkContentKey(
-                  HistoryNetworkContentTypes.BlockHeader,
-                  fromHexString(blockHash)
-                )
-              )
-            )
-            const body = fromHexString(
-              await portal2.db.get(
-                getHistoryNetworkContentKey(
-                  HistoryNetworkContentTypes.BlockBody,
-                  fromHexString(blockHash)
-                )
-              )
-            )
-            const testBlock = testBlocks[testHashStrings.indexOf(blockHash)]
-            const block = reassembleBlock(header, body)
-            if (block.serialize().equals(testBlock.serialize())) {
-              st.equal(
-                blocks.length + headers.length,
-                testBlocks.length * 2,
-                `${
-                  blocks.length / 13
-                } batches of content were gossiped via history.gossipHistoryNetworkkContent()`
-              )
-              st.pass(`Gossip test passed`)
-            } else {
-              st.fail('Gossip Test failed')
-            }
-            end(child, [portal1, portal2], st)
-          }
-        }
-      })
-
-      await protocol1.sendPing(portal2.discv5.enr)
-      testBlocks.forEach(async (testBlock: Block, idx: number) => {
-        await protocol1.addContentToHistory(
-          HistoryNetworkContentTypes.BlockHeader,
-          testHashStrings[idx],
-          testBlock.header.serialize()
-        )
-        await protocol1.addContentToHistory(
-          HistoryNetworkContentTypes.BlockBody,
-          testHashStrings[idx],
-          sszEncodeBlockBody(testBlock)
-        )
-      })
-    }
-    connectAndTest(t, st, gossip, true)
   })
 })

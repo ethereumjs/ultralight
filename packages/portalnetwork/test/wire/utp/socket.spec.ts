@@ -9,6 +9,7 @@ import {
   UtpSocket,
   PortalNetworkUTP,
   RequestCode,
+  Bytes32TimeStamp,
 } from '../../../src/index.js'
 
 const sampleSize = 50000
@@ -20,6 +21,7 @@ const DEFAULT_RAND_ACKNR = 4444
 
 tape('uTP Socket Tests', (t) => {
   const s = UtpSocket.prototype
+  s.logger = debug('test')
   t.test('socket.compare()', (st) => {
     s.ackNrs = [0, 1, 2, 3, 4, 5]
     s.dataNrs = [0, 1, 2, 3, 4, 5]
@@ -34,18 +36,19 @@ tape('uTP Socket Tests', (t) => {
     st.end()
   })
   t.test('socket.updateRtt()', (st) => {
-    s.rtt = 100
+    const delay = 100
+    s.rtt = delay
     s.rtt_var = 0
-    s.updateRTT(100)
-    st.equal(s.rtt, 100, 'socket.rtt should not change if packet rtt_var remains 0.')
-    s.updateRTT(92)
-    st.equal(s.rtt, 99, 'should correctly update RTT with from packet rtt value')
-    s.updateRTT(107)
-    st.equal(s.rtt, 100, 'should correctly update RTT with from packet rtt value')
-    s.updateRTT(108)
-    st.equal(s.rtt, 101, 'should correctly update RTT with from packet rtt value')
-    s.updateRTT(93)
-    st.equal(s.rtt, 100, 'should correctly update RTT with from packet rtt value')
+    s.updateRTT(delay)
+    st.deepEqual(s.rtt, delay, 'socket.rtt should not change if packet rtt_var remains 0.')
+    s.updateRTT(delay - 8)
+    st.deepEqual(s.rtt, delay - 1, 'should correctly update RTT with from packet rtt value')
+    s.updateRTT(delay + 9)
+    st.deepEqual(s.rtt, delay, 'should correctly update RTT with from packet rtt value')
+    s.updateRTT(delay + 8)
+    st.deepEqual(s.rtt, delay + 1, 'should correctly update RTT with from packet rtt value')
+    s.updateRTT(delay - 7)
+    st.deepEqual(s.rtt, delay, 'should correctly update RTT with from packet rtt value')
     st.end()
   })
 })
@@ -67,10 +70,11 @@ tape('FIND/FOUND Socket Tests', (t) => {
   )
   const synPacket = Packet.create(PacketType.ST_SYN, {
     seqNr: 1,
-    sndConnectionId: findSocket.sndConnectionId,
+    connectionId: findSocket.sndConnectionId,
     ackNr: DEFAULT_RAND_ACKNR,
-    wndSize: findSocket.max_window,
-    rtt_var: findSocket.rtt_var,
+    timestampMicroseconds: Bytes32TimeStamp(),
+    timestampDifferenceMicroseconds: findSocket.reply_micro,
+    wndSize: findSocket.cur_window,
   })
 
   t.test('Packet Sending/Handling', async (st) => {
@@ -84,11 +88,11 @@ tape('FIND/FOUND Socket Tests', (t) => {
     const synAck = await foundSocket.handleSynPacket()
     const _synAck = Packet.create(PacketType.ST_STATE, {
       seqNr: DEFAULT_RAND_SEQNR,
-      sndConnectionId: foundSocket.sndConnectionId,
+      connectionId: foundSocket.sndConnectionId,
       ackNr: synPacket.header.seqNr,
-      rtt_var: foundSocket.rtt_var,
-      wndSide: foundSocket.cur_window,
-      timestamp: synAck.header.timestamp,
+      timestampMicroseconds: synAck.header.timestampMicroseconds,
+      timestampDifferenceMicroseconds: foundSocket.reply_micro,
+      wndSize: foundSocket.cur_window,
     })
     st.deepEqual(synAck, _synAck, `Socket correctly hanldes SYN packet with STATE (Syn-Ack) packet`)
     st.equal(
@@ -99,8 +103,6 @@ tape('FIND/FOUND Socket Tests', (t) => {
     const startingSeqNr = findSocket.seqNr + 1
     findSocket.ackNr = synAck.header.seqNr
     findSocket.seqNr = 2
-    findSocket.nextSeq = synAck.header.seqNr + 1
-    findSocket.nextAck = synAck.header.ackNr + 1
     const reader = await uTP.createNewReader(findSocket, startingSeqNr)
     findSocket.reader = reader
     await findSocket.handleStatePacket(synAck)
@@ -109,11 +111,12 @@ tape('FIND/FOUND Socket Tests', (t) => {
     const packets = Object.values(chunks).map((chunk, idx) => {
       const packet = Packet.create(PacketType.ST_DATA, {
         seqNr: 2 + idx,
-        sndConnectionId: foundSocket.sndConnectionId,
+        connectionId: foundSocket.sndConnectionId,
         ackNr: foundSocket.ackNr + idx,
-        wndSize: foundSocket.max_window,
         payload: chunk,
-        rtt_var: foundSocket.rtt_var,
+        timestampMicroseconds: Bytes32TimeStamp(),
+        timestampDifferenceMicroseconds: foundSocket.reply_micro,
+        wndSize: foundSocket.cur_window,
       })
       return packet
     })
@@ -129,7 +132,6 @@ tape('FIND/FOUND Socket Tests', (t) => {
     st.equal(findSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Socket Handles Data Packet by creating Ack')
     await foundSocket.handleStatePacket(ack)
-    st.equal(foundSocket.ackNrs.length, 1)
     const dataNrs = packets.map((pack) => {
       return pack.header.seqNr
     })
@@ -150,17 +152,19 @@ tape('FIND/FOUND Socket Tests', (t) => {
 
     const finPacket = Packet.create(PacketType.ST_FIN, {
       seqNr: 100,
-      sndConnectionId: foundSocket.sndConnectionId,
+      connectionId: foundSocket.sndConnectionId,
       ackNr: foundSocket.ackNr + 98,
-      wndSize: foundSocket.max_window,
-      rtt_var: 0,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: 0,
+      wndSize: 1024,
     })
     const finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: finPacket.header.ackNr + 1,
-      sndConnectionId: findSocket.sndConnectionId,
+      connectionId: findSocket.sndConnectionId,
       ackNr: 100,
-      rtt_var: findSocket.rtt_var,
-      wndSize: findSocket.cur_window,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: 0,
+      wndSize: 1024,
     })
     const encoded = await foundSocket.sendFinPacket(finPacket)
     st.deepEqual(
@@ -183,10 +187,11 @@ tape('FIND/FOUND Socket Tests', (t) => {
     t.test('socket.handleResetPacket()', async (st) => {
       const reset = Packet.create(PacketType.ST_RESET, {
         seqNr: 1,
-        sndConnectionId: findSocket.sndConnectionId,
+        connectionId: findSocket.sndConnectionId,
         ackNr: DEFAULT_RAND_ACKNR,
-        wndSize: findSocket.max_window,
-        rtt_var: findSocket.rtt_var,
+        timestampMicroseconds: Bytes32TimeStamp(),
+        timestampDifferenceMicroseconds: findSocket.reply_micro,
+        wndSize: findSocket.cur_window,
       })
       await findSocket.sendResetPacket(reset)
       st.equal(
@@ -218,10 +223,11 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
   )
   const synPacket = Packet.create(PacketType.ST_SYN, {
     seqNr: 1,
-    sndConnectionId: offerSocket.sndConnectionId,
+    connectionId: offerSocket.sndConnectionId,
     ackNr: DEFAULT_RAND_ACKNR,
-    wndSize: offerSocket.max_window,
-    rtt_var: offerSocket.rtt_var,
+    timestampMicroseconds: Bytes32TimeStamp(),
+    timestampDifferenceMicroseconds: offerSocket.reply_micro,
+    wndSize: offerSocket.cur_window,
   })
 
   t.test('Packet Sending/Handling', async (st) => {
@@ -230,11 +236,12 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
     const packets = Object.values(chunks).map((chunk, idx) => {
       const packet = Packet.create(PacketType.ST_DATA, {
         seqNr: 2 + idx,
-        sndConnectionId: offerSocket.sndConnectionId,
+        connectionId: offerSocket.sndConnectionId,
         ackNr: offerSocket.ackNr + idx,
-        wndSize: offerSocket.max_window,
         payload: chunk,
-        rtt_var: offerSocket.rtt_var,
+        timestampMicroseconds: Bytes32TimeStamp(),
+        timestampDifferenceMicroseconds: offerSocket.reply_micro,
+        wndSize: offerSocket.cur_window,
       })
       return packet
     })
@@ -246,7 +253,6 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       'Socket state correctly updated to SynSent'
     )
     acceptSocket.ackNr = synPacket.header.seqNr
-    acceptSocket.nextSeq = 2
     acceptSocket.reader = await uTP.createNewReader(acceptSocket, 2)
     const synAck = await acceptSocket.handleSynPacket()
     st.equal(
@@ -255,12 +261,12 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       `Socket correctly updates state from SYN packet`
     )
     const _synAck = Packet.create(PacketType.ST_STATE, {
-      seqNr: acceptSocket.seqNr,
-      sndConnectionId: acceptSocket.sndConnectionId,
+      seqNr: acceptSocket.seqNr - 1,
+      connectionId: acceptSocket.sndConnectionId,
       ackNr: 1,
-      rtt_var: acceptSocket.rtt_var,
-      wndSide: acceptSocket.cur_window,
-      timestamp: synAck.header.timestamp,
+      timestampMicroseconds: synAck.header.timestampMicroseconds,
+      timestampDifferenceMicroseconds: acceptSocket.reply_micro,
+      wndSize: acceptSocket.cur_window,
     })
     st.deepEqual(synAck, _synAck, `Socket correctly hanldes SYN packet with STATE (Syn-Ack) packet`)
     await offerSocket.handleStatePacket(synAck)
@@ -271,11 +277,6 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
     st.equal(acceptSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Socket Handles Data Packet by creating Ack')
     await offerSocket.handleStatePacket(ack)
-    st.equal(
-      offerSocket.ackNrs.length,
-      1,
-      `OFFER Socket added first data ack to list ${offerSocket.ackNrs}`
-    )
     const dataNrs = packets.map((pack) => {
       return pack.header.seqNr
     })
@@ -298,16 +299,18 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
 
     const finPacket = Packet.create(PacketType.ST_FIN, {
       seqNr: 100,
-      sndConnectionId: offerSocket.sndConnectionId,
+      connectionId: offerSocket.sndConnectionId,
       ackNr: offerSocket.ackNr + 98,
-      wndSize: offerSocket.max_window,
-      rtt_var: 0,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: offerSocket.reply_micro,
+      wndSize: offerSocket.cur_window,
     })
     const finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: finPacket.header.ackNr + 1,
-      sndConnectionId: offerSocket.sndConnectionId,
+      connectionId: offerSocket.sndConnectionId,
       ackNr: 100,
-      rtt_var: offerSocket.rtt_var,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: offerSocket.reply_micro,
       wndSize: offerSocket.cur_window,
     })
     const encoded = await offerSocket.sendFinPacket(finPacket)
@@ -332,10 +335,11 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
   t.test('send reset packet', async (st) => {
     const reset = Packet.create(PacketType.ST_RESET, {
       seqNr: 1,
-      sndConnectionId: offerSocket.sndConnectionId,
+      connectionId: offerSocket.sndConnectionId,
       ackNr: DEFAULT_RAND_ACKNR,
-      wndSize: offerSocket.max_window,
-      rtt_var: offerSocket.rtt_var,
+      timestampMicroseconds: Bytes32TimeStamp(),
+      timestampDifferenceMicroseconds: offerSocket.reply_micro,
+      wndSize: offerSocket.cur_window,
     })
     await offerSocket.sendResetPacket(reset)
     st.equal(
