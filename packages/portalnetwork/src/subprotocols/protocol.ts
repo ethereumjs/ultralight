@@ -449,7 +449,7 @@ export abstract class BaseProtocol {
 
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
-    if (!value) {
+    if (!value || value.length === 0) {
       // Discv5 calls for maximum of 16 nodes per NODES message
       const ENRs = this.routingTable.nearest(lookupKey, 16)
       const encodedEnrs = ENRs.map((enr) => {
