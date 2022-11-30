@@ -187,9 +187,13 @@ export class UtpSocket extends EventEmitter {
     return bitMask
   }
 
-  async handleDataPacket(packet: Packet): Promise<Packet> {
+  async handleDataPacket(packet: Packet): Promise<Packet | undefined> {
+    clearTimeout(this.timeoutCounter)
     this.state = ConnectionState.Connected
-    const expected = this.ackNr + 1 === packet.header.seqNr
+    let expected = true
+    if (this.ackNrs.length > 1) {
+      expected = this.ackNr + 1 === packet.header.seqNr
+    }
     this.seqNr = this.seqNr + 1
     if (!this.reader) {
       this.reader = new ContentReader(this, packet.header.seqNr)

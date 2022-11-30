@@ -103,7 +103,7 @@ export class PortalNetworkUTP extends BasicUtp {
         )
         return socket
       case RequestCode.FINDCONTENT_READ:
-        socket = this.createNewSocket(peerId, sndId, rcvId, 0, randUint16(), 'read', this.logger)
+        socket = this.createNewSocket(peerId, sndId, rcvId, 0, 1, 'read', this.logger)
         return socket
       case RequestCode.OFFER_WRITE:
         socket = this.createNewSocket(
@@ -319,18 +319,12 @@ export class PortalNetworkUTP extends BasicUtp {
 
         break
       case RequestCode.FINDCONTENT_READ:
-        if (packet.header.ackNr === 1) {
-          this.logger(
-            `SYN-ACK received for FINDCONTENT request.  Sending SYN-ACK-ACK.  Waiting for DATA.`
-          )
-          this.logger(`Expecting: RANDOM-1`)
-          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
+        if (packet.header.ackNr === 0) {
+          this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
           const startingSeqNr = request.socket.seqNr + 1
           request.socket.ackNr = packet.header.seqNr
-          request.socket.seqNr = 2
           const reader = await this.createNewReader(request.socket, startingSeqNr)
           request.socket.reader = reader
-          await this.sendStatePacket(request.socket)
         } else {
           throw new Error('READ socket should not get acks')
         }
@@ -406,19 +400,14 @@ export class PortalNetworkUTP extends BasicUtp {
   }
   async _handleDataPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
-    let ack: Packet
     switch (requestCode) {
       case RequestCode.FINDCONTENT_READ:
-        ack = await this.handleDataPacket(request.socket, packet)
-        break
       case RequestCode.ACCEPT_READ:
-        ack = await this.handleDataPacket(request.socket, packet)
-        break
+        return await this.handleDataPacket(request.socket, packet)
+
       default:
         throw new Error('Why did I get a DATA packet?')
     }
-
-    return ack
   }
   async _handleResetPacket(request: ContentRequest) {
     request.socket.close()
