@@ -5,7 +5,7 @@ import { PacketType } from './PacketTyping.js'
 
 export async function sendSynPacket(socket: UtpSocket): Promise<Packet> {
   const packet = Packet.create(PacketType.ST_SYN, {
-    connectionId: socket.sndConnectionId,
+    connectionId: socket.rcvConnectionId,
     seqNr: 1,
     ackNr: socket.ackNr,
     timestampMicroseconds: Bytes32TimeStamp(),

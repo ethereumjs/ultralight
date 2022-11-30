@@ -284,7 +284,7 @@ export class PortalNetworkUTP extends BasicUtp {
       case RequestCode.FOUNDCONTENT_WRITE:
         this.logger(`SYN received to initiate stream for FINDCONTENT request`)
         request.socket.ackNr = packet.header.seqNr
-        request.socket.seqNr = randUint16()
+        request.socket.seqNr = packet.header.seqNr
         await this.sendSynAckPacket(request.socket)
         writer = await this.createNewWriter(request.socket, request.socket.seqNr)
         request.socket.writer = writer
