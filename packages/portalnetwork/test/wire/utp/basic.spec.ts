@@ -35,12 +35,11 @@ tape('Basic uTP Tests', async (t) => {
   )
   const writer = await socket.utp.createNewWriter(socket, 2)
   _socket.reader = await _socket.utp.createNewReader(_socket, 2)
-  socket.seqNr = 2
   socket.ackNr = 1
   const chunks = writer.chunk()
   const packets = Object.values(chunks).map((chunk, idx) => {
     const packet = Packet.create(PacketType.ST_DATA, {
-      seqNr: 2 + idx,
+      seqNr: socket.seqNr + idx,
       connectionId: _socket.sndConnectionId,
       ackNr: _socket.ackNr + idx,
       payload: chunk,
@@ -53,12 +52,12 @@ tape('Basic uTP Tests', async (t) => {
   t.test('senders/handlers', async (st) => {
     const syn = await basic.sendSynPacket(socket)
     const synPacket = Packet.create(PacketType.ST_SYN, {
-      seqNr: 1,
-      connectionId: socket.sndConnectionId,
+      seqNr: socket.seqNr,
+      connectionId: socket.rcvConnectionId,
       ackNr: socket.ackNr,
       timestampMicroseconds: syn.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: (socket.max_window - socket.cur_window) % 2 ** 32,
     })
     st.deepEqual(syn, synPacket, 'Basic Sends Syn Packet successfully')
     const _synAck = Packet.create(PacketType.ST_STATE, {
@@ -67,7 +66,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: _socket.ackNr,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: (socket.max_window - socket.cur_window) % 2 ** 32,
     })
     const synack = await basic.handleSynPacket(_socket, synPacket)
     ;(_synAck.header.timestampMicroseconds = synack.header.timestampMicroseconds),
@@ -87,7 +86,7 @@ tape('Basic uTP Tests', async (t) => {
       packets[0].header.seqNr,
       'Basic successfully sent Data Packet'
     )
-    const ack = await basic.handleDataPacket(_socket, packets[0])
+    const ack = (await basic.handleDataPacket(_socket, packets[0])) as Packet
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Basic Handles Data Packet by creating Ack')
     st.notOk(
       await basic.handleStatePacket(socket, ack),
@@ -101,7 +100,7 @@ tape('Basic uTP Tests', async (t) => {
     })
     socket.dataNrs = dataNrs
     socket.ackNrs = dataNrs
-    const lastAck = await basic.handleDataPacket(_socket, packets[packets.length - 1])
+    const lastAck = (await basic.handleDataPacket(_socket, packets[packets.length - 1])) as Packet
     const handled = await basic.handleStatePacket(socket, lastAck)
     st.ok(handled)
 
@@ -123,7 +122,7 @@ tape('Basic uTP Tests', async (t) => {
       ackNr: 98,
       timestampMicroseconds: finReturn.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: finReturn.header.timestampDifferenceMicroseconds,
-      wndSize: socket.cur_window,
+      wndSize: (socket.max_window - socket.cur_window) % 2 ** 32,
     })
     st.deepEqual(finReturn.header, finPacket.header, `Basic successfully sent Fin Packet`)
     const _compiled = await basic.handleFinPacket(_socket, finPacket)

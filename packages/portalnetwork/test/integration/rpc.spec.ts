@@ -140,9 +140,6 @@ tape('getBlockByHash', (t) => {
 
 tape('getBlockByNumber', (t) => {
   t.test('eth_getBlockByNumber', (st) => {
-    const _accumulator = require('./testAccumulator.json')
-    const accumulator = HeaderAccumulatorType.deserialize(fromHexString(_accumulator))
-
     const epochData = require('./testEpoch.json')
     const block1000 = require('./testBlock1000.json')
     const epochHash = epochData.hash
@@ -174,16 +171,6 @@ tape('getBlockByNumber', (t) => {
         _header
       )
       await protocol1.addContentToHistory(HistoryNetworkContentTypes.BlockBody, blockHash, body)
-      protocol1.accumulator.replaceAccumulator(
-        new HeaderAccumulator({
-          storedAccumulator: accumulator,
-        })
-      )
-      protocol2.accumulator.replaceAccumulator(
-        new HeaderAccumulator({
-          storedAccumulator: accumulator,
-        })
-      )
 
       await protocol1.sendPing(portal2.discv5.enr)
       try {

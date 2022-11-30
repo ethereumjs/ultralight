@@ -74,7 +74,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
     ackNr: DEFAULT_RAND_ACKNR,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: findSocket.reply_micro,
-    wndSize: findSocket.cur_window,
+    wndSize: (findSocket.max_window - findSocket.cur_window) % 2 ** 32,
   })
 
   t.test('Packet Sending/Handling', async (st) => {
@@ -92,7 +92,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
       ackNr: synPacket.header.seqNr,
       timestampMicroseconds: synAck.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: foundSocket.reply_micro,
-      wndSize: foundSocket.cur_window,
+      wndSize: (foundSocket.max_window - foundSocket.cur_window) % 2 ** 32,
     })
     st.deepEqual(synAck, _synAck, `Socket correctly hanldes SYN packet with STATE (Syn-Ack) packet`)
     st.equal(
@@ -116,7 +116,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: foundSocket.reply_micro,
-        wndSize: foundSocket.cur_window,
+        wndSize: (foundSocket.max_window - foundSocket.cur_window) % 2 ** 32,
       })
       return packet
     })
@@ -128,7 +128,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
       packets[0].header.seqNr,
       'Socket successfully sent Data Packet'
     )
-    const ack = await findSocket.handleDataPacket(packets[0])
+    const ack = (await findSocket.handleDataPacket(packets[0])) as Packet
     st.equal(findSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Socket Handles Data Packet by creating Ack')
     await foundSocket.handleStatePacket(ack)
@@ -140,7 +140,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
     })
     foundSocket.dataNrs = dataNrs
     foundSocket.ackNrs = dataNrs
-    const lastAck = await findSocket.handleDataPacket(packets[packets.length - 1])
+    const lastAck = (await findSocket.handleDataPacket(packets[packets.length - 1])) as Packet
     const handled = await foundSocket.handleStatePacket(lastAck)
 
     st.ok(handled)
@@ -191,7 +191,7 @@ tape('FIND/FOUND Socket Tests', (t) => {
         ackNr: DEFAULT_RAND_ACKNR,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: findSocket.reply_micro,
-        wndSize: findSocket.cur_window,
+        wndSize: (findSocket.max_window - findSocket.cur_window) % 2 ** 32,
       })
       await findSocket.sendResetPacket(reset)
       st.equal(
@@ -227,7 +227,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
     ackNr: DEFAULT_RAND_ACKNR,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: offerSocket.reply_micro,
-    wndSize: offerSocket.cur_window,
+    wndSize: (offerSocket.max_window - offerSocket.cur_window) % 2 ** 32,
   })
 
   t.test('Packet Sending/Handling', async (st) => {
@@ -241,7 +241,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
         payload: chunk,
         timestampMicroseconds: Bytes32TimeStamp(),
         timestampDifferenceMicroseconds: offerSocket.reply_micro,
-        wndSize: offerSocket.cur_window,
+        wndSize: (offerSocket.max_window - offerSocket.cur_window) % 2 ** 32,
       })
       return packet
     })
@@ -261,19 +261,19 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       `Socket correctly updates state from SYN packet`
     )
     const _synAck = Packet.create(PacketType.ST_STATE, {
-      seqNr: acceptSocket.seqNr - 1,
+      seqNr: acceptSocket.seqNr,
       connectionId: acceptSocket.sndConnectionId,
       ackNr: 1,
       timestampMicroseconds: synAck.header.timestampMicroseconds,
       timestampDifferenceMicroseconds: acceptSocket.reply_micro,
-      wndSize: acceptSocket.cur_window,
+      wndSize: (acceptSocket.max_window - acceptSocket.cur_window) % 2 ** 32,
     })
     st.deepEqual(synAck, _synAck, `Socket correctly hanldes SYN packet with STATE (Syn-Ack) packet`)
     await offerSocket.handleStatePacket(synAck)
     st.equal(offerSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     const seqNr = await (await offerSocket.sendDataPacket(packets[0])).header.seqNr
     st.equal(seqNr, 2, 'Socket successfully sent Data Packet')
-    const ack = await acceptSocket.handleDataPacket(packets[0])
+    const ack = (await acceptSocket.handleDataPacket(packets[0])) as Packet
     st.equal(acceptSocket.state, ConnectionState.Connected, 'Socket state is Connected')
     st.equal(ack.header.pType, PacketType.ST_STATE, 'Socket Handles Data Packet by creating Ack')
     await offerSocket.handleStatePacket(ack)
@@ -285,7 +285,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
     })
     offerSocket.dataNrs = dataNrs
     offerSocket.ackNrs = dataNrs
-    const lastAck = await acceptSocket.handleDataPacket(packets[packets.length - 1])
+    const lastAck = (await acceptSocket.handleDataPacket(packets[packets.length - 1])) as Packet
     const handled = await offerSocket.handleStatePacket(lastAck)
 
     st.equal(offerSocket.dataNrs, dataNrs)
@@ -303,7 +303,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: offerSocket.ackNr + 98,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: offerSocket.reply_micro,
-      wndSize: offerSocket.cur_window,
+      wndSize: (offerSocket.max_window - offerSocket.cur_window) % 2 ** 32,
     })
     const finAck = Packet.create(PacketType.ST_STATE, {
       seqNr: finPacket.header.ackNr + 1,
@@ -311,7 +311,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: 100,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: offerSocket.reply_micro,
-      wndSize: offerSocket.cur_window,
+      wndSize: (offerSocket.max_window - offerSocket.cur_window) % 2 ** 32,
     })
     const encoded = await offerSocket.sendFinPacket(finPacket)
     st.deepEqual(
@@ -339,7 +339,7 @@ tape('OFFER/ACCEPT Socket Tests', (t) => {
       ackNr: DEFAULT_RAND_ACKNR,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: offerSocket.reply_micro,
-      wndSize: offerSocket.cur_window,
+      wndSize: (offerSocket.max_window - offerSocket.cur_window) % 2 ** 32,
     })
     await offerSocket.sendResetPacket(reset)
     st.equal(
