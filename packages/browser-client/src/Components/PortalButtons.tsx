@@ -65,7 +65,7 @@ export function PortalButton(props: IPortalButton) {
   )
   useEffect(() => {
     setInput(blockHash)
-  }, [])
+  }, [blockHash])
 
   const addToOffer = async (type: HistoryNetworkContentTypes) => {
     const contentKey = getHistoryNetworkContentKey(type, Buffer.from(fromHexString(blockHash)))
@@ -121,7 +121,7 @@ export function PortalButton(props: IPortalButton) {
       }
     },
     4: async () => {
-      peerDispatch({ type: PeerStateChange.SETBLOCKHASH, payload: blockHash })
+      peerDispatch({ type: PeerStateChange.SETEPOCH, payload: parseInt(input) })
       const epoch = await peerActions.sendFindContent('epoch', state.selectedPeer)
       if (epoch) {
         toast({
@@ -134,7 +134,7 @@ export function PortalButton(props: IPortalButton) {
       }
     },
   }
-  const invalid: Record<number, boolean> = {
+  const valid: Record<number, boolean> = {
     0: input.startsWith('0x') && input.length === 66,
     1: input.startsWith('0x') && input.length === 66,
     2: parseInt(input) >= 0 && parseInt(input) < 257,
@@ -165,7 +165,7 @@ export function PortalButton(props: IPortalButton) {
   }
 
   async function handleClick() {
-    if (!invalid[props.inputType]) {
+    if (!valid[props.inputType]) {
       toast({
         title: 'Invalid input',
         status: 'error',
@@ -188,7 +188,7 @@ export function PortalButton(props: IPortalButton) {
           </Box>
         ) : (
           <Box width={'75%'}>
-            <FormControl isInvalid={invalid[props.inputType]}>
+            <FormControl isInvalid={!valid[props.inputType]}>
               <Input
                 width={'100%'}
                 size={'sm'}

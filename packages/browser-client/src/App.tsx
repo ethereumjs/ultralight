@@ -43,7 +43,7 @@ export const App = () => {
     init()
   }, [])
   React.useEffect(() => {
-    state.provider?.portal.enableLog('*Portal:*')
+    state.provider?.portal.enableLog('*Portal*')
   }, [state.provider])
 
   return (
