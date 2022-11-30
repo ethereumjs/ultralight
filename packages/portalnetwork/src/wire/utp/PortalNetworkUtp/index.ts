@@ -175,14 +175,12 @@ export class PortalNetworkUTP extends BasicUtp {
         sndId = connectionId + 1
         rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        if (contents!.length > 1) {
           this.logger(
             `Encoding ${
               contents!.length
             } contents with VarInt prefix for stream as a single bytestring`
           )
           contents = [encodeWithVariantPrefix(contents!)]
-        }
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents![0])!
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
@@ -416,12 +414,10 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     const keys = request.contentKeys
     const streamer = async (content: Uint8Array) => {
-      let contents: Uint8Array[]
-      if (keys.length > 1) {
         this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+      let contents = [content]
+      if (requestCode === RequestCode.ACCEPT_READ) {
         contents = dropPrefixes(content)
-      } else {
-        contents = [content]
       }
       if (keys.length < 1) {
         throw new Error('Missing content keys')
@@ -435,8 +431,6 @@ export class PortalNetworkUTP extends BasicUtp {
         this.logger.extend(`FINISHED`)(
           `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
         )
-        // Hack -- decodedContentKey.blockHash is undefined for
-        // EpochAccumulator requests...
         this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
       }
     }
