@@ -406,12 +406,14 @@ export abstract class BaseProtocol {
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[]
   ) => {
+    const id = randUint16()
     this.logger.extend('ACCEPT')(
-      `Sent to ${shortId(src.nodeId)} for ${desiredContentKeys.length} pieces of content.`
+      `Sent to ${shortId(src.nodeId)} for ${
+        desiredContentKeys.length
+      } pieces of content.  connectionId: ${id}`
     )
 
     this.metrics?.acceptMessagesSent.inc()
-    const id = randUint16()
     await this.client.uTP.handleNewRequest({
       contentKeys: desiredContentKeys,
       peerId: src.nodeId,
@@ -510,7 +512,8 @@ export abstract class BaseProtocol {
         contents: [value],
       })
 
-      const id = connectionIdType.serialize(_id)
+      const id = Buffer.alloc(2)
+      id.writeUInt16BE(_id)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
       this.client.sendPortalNetworkResponse(
