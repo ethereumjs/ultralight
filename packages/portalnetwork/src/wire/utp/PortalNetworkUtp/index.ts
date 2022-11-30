@@ -225,11 +225,8 @@ export class PortalNetworkUTP extends BasicUtp {
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       clearTimeout(request.socket.timeoutCounter)
-      request.socket.timeoutCounter = setTimeout(() => {
-        request.socket.throttle()
-      }, request.socket.timeout)
       const packet = Packet.bufferToPacket(packetBuffer)
-      request.socket.updateDelay(packet.header.timestampMicroseconds, timeReceived)
+      request.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
 
       switch (packet.header.pType) {
         case PacketType.ST_SYN:
@@ -308,7 +305,7 @@ export class PortalNetworkUTP extends BasicUtp {
             .filter((n) => parseInt(n) <= packet.header.ackNr)
             .map((n) => parseInt(n))
         }
-        if (sentTime != undefined) {
+        if (request.socket.type === 'write' && sentTime != undefined) {
           const rtt = packet.header.timestampMicroseconds - sentTime
           request.socket.updateRTT(rtt)
           request.socket.outBuffer.delete(packet.header.ackNr)

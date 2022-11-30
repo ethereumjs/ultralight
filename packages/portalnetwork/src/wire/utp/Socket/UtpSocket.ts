@@ -89,16 +89,13 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendSynPacket(packet: Packet): Promise<ConnectionState> {
-    this.outBuffer.set(0, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_SYN)
     this.state = ConnectionState.SynSent
     return this.state
   }
 
   async sendSynAckPacket(packet: Packet): Promise<void> {
-    this.outBuffer.set(0, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_STATE)
-    this.seqNr = this.seqNr + 1
   }
 
   async sendDataPacket(packet: Packet): Promise<Packet> {
@@ -282,7 +279,7 @@ export class UtpSocket extends EventEmitter {
   }
 
   updateDelay(timestamp: number, timeReceived: number) {
-    const delay = timeReceived - timestamp
+    const delay = Math.abs(timeReceived - timestamp)
     this.reply_micro = delay
     this.logger.extend('DELAY')(
       `timeReceived: ${timeReceived} - timestamp: ${timestamp} = delay: ${delay}`
