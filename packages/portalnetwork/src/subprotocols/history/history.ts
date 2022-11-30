@@ -136,6 +136,9 @@ export class HistoryProtocol extends BaseProtocol {
       Buffer.from(payload),
       this.protocolId
     )
+    if (res.length === 0) {
+      return undefined
+    }
 
     try {
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {

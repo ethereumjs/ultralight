@@ -70,15 +70,15 @@ export class PortalNetworkUTP extends BasicUtp {
     const keyA = createSocketKey(peerId, connId, idA)
     const keyB = createSocketKey(peerId, idA, connId)
     const keyC = createSocketKey(peerId, idB, connId)
-    if (this.openContentRequest.get(keyA) !== undefined) {
-      return keyA
-    } else if (this.openContentRequest.get(keyB) !== undefined) {
-      return keyB
-    } else if (this.openContentRequest.get(keyC) !== undefined) {
-      return keyC
-    } else {
-      throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
+    const keyD = createSocketKey(peerId, connId, idB)
+    for (const key of [keyA, keyB, keyC, keyD]) {
+      if (this.openContentRequest.get(key) !== undefined) {
+        return key
+      }
     }
+    throw new Error(
+      `Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`
+    )
   }
 
   createPortalNetworkUTPSocket(
@@ -175,12 +175,12 @@ export class PortalNetworkUTP extends BasicUtp {
         sndId = connectionId + 1
         rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
-          this.logger(
-            `Encoding ${
-              contents!.length
-            } contents with VarInt prefix for stream as a single bytestring`
-          )
-          contents = [encodeWithVariantPrefix(contents!)]
+        this.logger(
+          `Encoding ${
+            contents!.length
+          } contents with VarInt prefix for stream as a single bytestring`
+        )
+        contents = [encodeWithVariantPrefix(contents!)]
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents![0])!
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
@@ -230,18 +230,15 @@ export class PortalNetworkUTP extends BasicUtp {
 
       switch (packet.header.pType) {
         case PacketType.ST_SYN:
-          this.logger(
-            `SYN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
+          request.socket.logger(`Received ST_SYN   sndId: ${packet.header.connectionId}`)
           requestKey && (await this._handleSynPacket(request, packet))
           break
         case PacketType.ST_DATA:
-          this.logger(
-            `DATA Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
+          request.socket.logger(`Received ST_DATA  seqNr: ${packet.header.seqNr}`)
           requestKey && (await this._handleDataPacket(request, packet))
           break
         case PacketType.ST_STATE:
+          request.socket.logger(`Received ST_STATE ackNr: ${packet.header.ackNr}`)
           if (packet.header.extension === 1) {
             await this._handleSelectiveAckPacket(request, packet)
           } else {
@@ -249,16 +246,10 @@ export class PortalNetworkUTP extends BasicUtp {
           }
           break
         case PacketType.ST_RESET:
-          this.logger(
-            `RESET Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
-          requestKey && (await this._handleResetPacket(request))
-          this.openContentRequest.delete(requestKey)
+          request.socket.logger(`Received ST_RESET`)
           break
         case PacketType.ST_FIN:
-          this.logger(
-            `FIN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
+          request.socket.logger(`Received ST_FIN   seqNr: ${packet.header.seqNr}`)
           requestKey && (await this._handleFinPacket(request, packet))
           break
         default:
@@ -329,7 +320,9 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.state = ConnectionState.Connected
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = 2
-          request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
+          request.socket.logger(
+            `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`
+          )
           request.socket.writer?.start()
         } else if (packet.header.ackNr === request.socket.finNr) {
           request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
@@ -411,7 +404,7 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     const keys = request.contentKeys
     const streamer = async (content: Uint8Array) => {
-        this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+      this.logger(`Decompressing stream into ${keys.length} pieces of content`)
       let contents = [content]
       if (requestCode === RequestCode.ACCEPT_READ) {
         contents = dropPrefixes(content)
