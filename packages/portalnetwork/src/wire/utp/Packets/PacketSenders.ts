@@ -9,8 +9,8 @@ export async function sendSynPacket(socket: UtpSocket): Promise<Packet> {
     seqNr: socket.seqNr,
     ackNr: socket.ackNr,
     timestampMicroseconds: Bytes32TimeStamp(),
-    timestampDifferenceMicroseconds: socket.reply_micro,
-    wndSize: socket.cur_window,
+    timestampDifferenceMicroseconds: 0,
+    wndSize: socket.max_window,
   })
   socket.state = ConnectionState.SynSent
   await socket.sendSynPacket(packet)
@@ -24,7 +24,7 @@ export async function sendSynAckPacket(socket: UtpSocket): Promise<Packet> {
     ackNr: socket.ackNr,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: socket.reply_micro,
-    wndSize: socket.cur_window,
+    wndSize: Math.min(2 ** 32 - 1, socket.max_window - socket.cur_window),
   })
   await socket.sendSynAckPacket(packet)
   return packet
@@ -37,7 +37,7 @@ export async function sendDataPacket(socket: UtpSocket, payload: Uint8Array): Pr
     payload: payload,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: socket.reply_micro,
-    wndSize: socket.cur_window,
+    wndSize: Math.min(2 ** 32 - 1, socket.max_window - socket.cur_window),
   })
   await socket.sendDataPacket(packet)
   return packet
@@ -49,7 +49,7 @@ export async function sendAckPacket(socket: UtpSocket): Promise<Packet> {
     ackNr: socket.ackNr,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: socket.reply_micro,
-    wndSize: socket.cur_window,
+    wndSize: Math.min(2 ** 32 - 1, socket.max_window - socket.cur_window),
   })
   await socket.sendStatePacket(packet)
   return packet
@@ -61,7 +61,7 @@ export async function sendResetPacket(socket: UtpSocket): Promise<Packet> {
     ackNr: socket.ackNr,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: socket.reply_micro,
-    wndSize: socket.cur_window,
+    wndSize: Math.min(2 ** 32 - 1, socket.max_window - socket.cur_window),
   })
   await socket.sendResetPacket(packet)
   return packet
@@ -73,7 +73,7 @@ export async function sendFinPacket(socket: UtpSocket): Promise<Packet> {
     ackNr: socket.ackNr,
     timestampMicroseconds: Bytes32TimeStamp(),
     timestampDifferenceMicroseconds: socket.reply_micro,
-    wndSize: socket.cur_window,
+    wndSize: Math.min(2 ** 32 - 1, socket.max_window - socket.cur_window),
   })
   socket.finNr = packet.header.seqNr
   await socket.sendFinPacket(packet)
@@ -87,7 +87,7 @@ export async function sendSelectiveAckPacket(socket: UtpSocket, bitmask: Uint8Ar
       ackNr: socket.ackNr,
       timestampMicroseconds: Bytes32TimeStamp(),
       timestampDifferenceMicroseconds: socket.reply_micro,
-      wndSize: socket.cur_window,
+      wndSize: Math.min(2 ** 32 - 1, socket.max_window - socket.cur_window),
     },
     bitmask,
   })
