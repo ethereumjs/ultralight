@@ -85,7 +85,7 @@ export class PeerActions {
       const epochContentKey = fromHexString(
         getHistoryNetworkContentKey(
           HistoryNetworkContentTypes.EpochAccumulator,
-          Buffer.from(this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch])
+          this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch]
         )
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)

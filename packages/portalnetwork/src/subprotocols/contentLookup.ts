@@ -60,12 +60,9 @@ export class ContentLookup {
       if (!nearestPeer) {
         return
       }
-      this.logger(`sending FINDCONTENT request to ${shortId(nearestPeer!.nodeId)}`)
+      this.contacted.push(nearestPeer.nodeId)
       const res = await this.protocol.sendFindContent(nearestPeer.nodeId, this.contentKey)
-      if (!res) {
-        // Node didn't respond, send a Ping to test connection.
-        this.protocol.sendPing(this.protocol.routingTable.getValue(nearestPeer.nodeId)!)
-        this.contacted.push(nearestPeer.nodeId)
+      if (!res || res.value.length < 1) {
         continue
       }
       switch (res.selector) {
@@ -107,8 +104,8 @@ export class ContentLookup {
         case 2: {
           // findContent request returned ENRs of nodes closer to content
           this.logger(`received ${res.value.length} ENRs for closer nodes`)
-          for (const enr of res.value) {
-            if (!finished) {
+          if (!finished) {
+            for (const enr of res.value) {
               const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
               // Disregard if nodes have been previously contacted during this lookup,
               // Or if nodes are currently being ignored for unresponsiveness.
@@ -126,10 +123,14 @@ export class ContentLookup {
                   continue
                 }
               }
+              if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
+                continue
+              }
               // Calculate distance and add to list of lookup peers
               // Sort list by distance to keep closest node first
               const dist = distance(decodedEnr.nodeId, this.contentId)
-              this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
+              this.lookupPeers.map((peer) => peer.nodeId).includes(decodedEnr.nodeId) ||
+                this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
               this.lookupPeers = this.lookupPeers.sort(
                 (a, b) => Number(a.distance) - Number(b.distance)
               )

@@ -136,6 +136,9 @@ export class HistoryProtocol extends BaseProtocol {
       Buffer.from(payload),
       this.protocolId
     )
+    if (res.length === 0) {
+      return undefined
+    }
 
     try {
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
@@ -146,7 +149,7 @@ export class HistoryProtocol extends BaseProtocol {
         const decodedKey = HistoryNetworkContentKeyType.deserialize(key)
         switch (decoded.selector) {
           case 0: {
-            const id = connectionIdType.deserialize(decoded.value as Uint8Array)
+            const id = Buffer.from(decoded.value as Uint8Array).readUint16BE()
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             await this.client.uTP.handleNewRequest({
               contentKeys: [key],

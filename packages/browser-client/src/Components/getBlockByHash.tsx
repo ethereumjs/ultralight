@@ -14,7 +14,9 @@ export default function GetBlockByHash() {
         ? await state.provider!.getBlockWithTransactions(blockHash)
         : await state.provider!.getBlock(blockHash)
       dispatch({ type: StateChange.SETBLOCK, payload: block })
+      dispatch({ type: StateChange.TOGGLELOADING })
     } catch {
+      dispatch({ type: StateChange.TOGGLELOADING })
       return 'Block not found'
     }
   }
@@ -22,16 +24,9 @@ export default function GetBlockByHash() {
   async function handleClick() {
     dispatch({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByHash(blockHash, true)
-    dispatch({ type: StateChange.TOGGLELOADING })
   }
 
-  async function getInitialBlock() {
-    await eth_getBlockByHash(blockHash, true)
-  }
-
-  useEffect(() => {
-    getInitialBlock()
-  }, [])
+  useEffect(() => {}, [])
 
   return (
     <HStack marginY={1}>

@@ -70,15 +70,15 @@ export class PortalNetworkUTP extends BasicUtp {
     const keyA = createSocketKey(peerId, connId, idA)
     const keyB = createSocketKey(peerId, idA, connId)
     const keyC = createSocketKey(peerId, idB, connId)
-    if (this.openContentRequest.get(keyA) !== undefined) {
-      return keyA
-    } else if (this.openContentRequest.get(keyB) !== undefined) {
-      return keyB
-    } else if (this.openContentRequest.get(keyC) !== undefined) {
-      return keyC
-    } else {
-      throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
+    const keyD = createSocketKey(peerId, connId, idB)
+    for (const key of [keyA, keyB, keyC, keyD]) {
+      if (this.openContentRequest.get(key) !== undefined) {
+        return key
+      }
     }
+    throw new Error(
+      `Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`
+    )
   }
 
   createPortalNetworkUTPSocket(
@@ -103,7 +103,7 @@ export class PortalNetworkUTP extends BasicUtp {
         )
         return socket
       case RequestCode.FINDCONTENT_READ:
-        socket = this.createNewSocket(peerId, sndId, rcvId, 0, randUint16(), 'read', this.logger)
+        socket = this.createNewSocket(peerId, sndId, rcvId, 0, 1, 'read', this.logger)
         return socket
       case RequestCode.OFFER_WRITE:
         socket = this.createNewSocket(
@@ -175,14 +175,12 @@ export class PortalNetworkUTP extends BasicUtp {
         sndId = connectionId + 1
         rcvId = connectionId
         socketKey = createSocketKey(peerId, sndId, rcvId)
-        if (contents!.length > 1) {
-          this.logger(
-            `Encoding ${
-              contents!.length
-            } contents with VarInt prefix for stream as a single bytestring`
-          )
-          contents = [encodeWithVariantPrefix(contents!)]
-        }
+        this.logger(
+          `Encoding ${
+            contents!.length
+          } contents with VarInt prefix for stream as a single bytestring`
+        )
+        contents = [encodeWithVariantPrefix(contents!)]
         socket = this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, contents![0])!
         newRequest = new ContentRequest(
           ProtocolId.HistoryNetwork,
@@ -227,26 +225,20 @@ export class PortalNetworkUTP extends BasicUtp {
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       clearTimeout(request.socket.timeoutCounter)
-      request.socket.timeoutCounter = setTimeout(() => {
-        request.socket.throttle()
-      }, request.socket.timeout)
       const packet = Packet.bufferToPacket(packetBuffer)
-      request.socket.updateDelay(packet.header.timestampMicroseconds, timeReceived)
+      request.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
 
       switch (packet.header.pType) {
         case PacketType.ST_SYN:
-          this.logger(
-            `SYN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
+          request.socket.logger(`Received ST_SYN   sndId: ${packet.header.connectionId}`)
           requestKey && (await this._handleSynPacket(request, packet))
           break
         case PacketType.ST_DATA:
-          this.logger(
-            `DATA Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
+          request.socket.logger(`Received ST_DATA  seqNr: ${packet.header.seqNr}`)
           requestKey && (await this._handleDataPacket(request, packet))
           break
         case PacketType.ST_STATE:
+          request.socket.logger(`Received ST_STATE ackNr: ${packet.header.ackNr}`)
           if (packet.header.extension === 1) {
             await this._handleSelectiveAckPacket(request, packet)
           } else {
@@ -254,16 +246,10 @@ export class PortalNetworkUTP extends BasicUtp {
           }
           break
         case PacketType.ST_RESET:
-          this.logger(
-            `RESET Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
-          requestKey && (await this._handleResetPacket(request))
-          this.openContentRequest.delete(requestKey)
+          request.socket.logger(`Received ST_RESET`)
           break
         case PacketType.ST_FIN:
-          this.logger(
-            `FIN Packet received seqNr: ${packet.header.seqNr} ackNr: ${packet.header.ackNr}`
-          )
+          request.socket.logger(`Received ST_FIN   seqNr: ${packet.header.seqNr}`)
           requestKey && (await this._handleFinPacket(request, packet))
           break
         default:
@@ -284,7 +270,7 @@ export class PortalNetworkUTP extends BasicUtp {
       case RequestCode.FOUNDCONTENT_WRITE:
         this.logger(`SYN received to initiate stream for FINDCONTENT request`)
         request.socket.ackNr = packet.header.seqNr
-        request.socket.seqNr = randUint16()
+        request.socket.seqNr = packet.header.seqNr
         await this.sendSynAckPacket(request.socket)
         writer = await this.createNewWriter(request.socket, request.socket.seqNr)
         request.socket.writer = writer
@@ -310,7 +296,7 @@ export class PortalNetworkUTP extends BasicUtp {
             .filter((n) => parseInt(n) <= packet.header.ackNr)
             .map((n) => parseInt(n))
         }
-        if (sentTime != undefined) {
+        if (request.socket.type === 'write' && sentTime != undefined) {
           const rtt = packet.header.timestampMicroseconds - sentTime
           request.socket.updateRTT(rtt)
           request.socket.outBuffer.delete(packet.header.ackNr)
@@ -319,18 +305,12 @@ export class PortalNetworkUTP extends BasicUtp {
 
         break
       case RequestCode.FINDCONTENT_READ:
-        if (packet.header.ackNr === 1) {
-          this.logger(
-            `SYN-ACK received for FINDCONTENT request.  Sending SYN-ACK-ACK.  Waiting for DATA.`
-          )
-          this.logger(`Expecting: RANDOM-1`)
-          this.logger(`Received: ${packet.header.seqNr} - ${packet.header.ackNr}`)
+        if (packet.header.ackNr === 0) {
+          this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
           const startingSeqNr = request.socket.seqNr + 1
           request.socket.ackNr = packet.header.seqNr
-          request.socket.seqNr = 2
           const reader = await this.createNewReader(request.socket, startingSeqNr)
           request.socket.reader = reader
-          await this.sendStatePacket(request.socket)
         } else {
           throw new Error('READ socket should not get acks')
         }
@@ -340,7 +320,9 @@ export class PortalNetworkUTP extends BasicUtp {
           request.socket.state = ConnectionState.Connected
           request.socket.ackNr = packet.header.seqNr - 1
           request.socket.seqNr = 2
-          request.socket.logger(`SYN-ACK received for OFFERACCEPT request.  Beginning DATA stream.`)
+          request.socket.logger(
+            `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`
+          )
           request.socket.writer?.start()
         } else if (packet.header.ackNr === request.socket.finNr) {
           request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
@@ -406,19 +388,14 @@ export class PortalNetworkUTP extends BasicUtp {
   }
   async _handleDataPacket(request: ContentRequest, packet: Packet) {
     const requestCode = request.requestCode
-    let ack: Packet
     switch (requestCode) {
       case RequestCode.FINDCONTENT_READ:
-        ack = await this.handleDataPacket(request.socket, packet)
-        break
       case RequestCode.ACCEPT_READ:
-        ack = await this.handleDataPacket(request.socket, packet)
-        break
+        return await this.handleDataPacket(request.socket, packet)
+
       default:
         throw new Error('Why did I get a DATA packet?')
     }
-
-    return ack
   }
   async _handleResetPacket(request: ContentRequest) {
     request.socket.close()
@@ -427,12 +404,10 @@ export class PortalNetworkUTP extends BasicUtp {
     const requestCode = request.requestCode
     const keys = request.contentKeys
     const streamer = async (content: Uint8Array) => {
-      let contents: Uint8Array[]
-      if (keys.length > 1) {
-        this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+      this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+      let contents = [content]
+      if (requestCode === RequestCode.ACCEPT_READ) {
         contents = dropPrefixes(content)
-      } else {
-        contents = [content]
       }
       if (keys.length < 1) {
         throw new Error('Missing content keys')
@@ -446,8 +421,6 @@ export class PortalNetworkUTP extends BasicUtp {
         this.logger.extend(`FINISHED`)(
           `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
         )
-        // Hack -- decodedContentKey.blockHash is undefined for
-        // EpochAccumulator requests...
         this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
       }
     }

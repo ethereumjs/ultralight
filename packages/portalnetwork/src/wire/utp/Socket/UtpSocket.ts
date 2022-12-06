@@ -74,31 +74,32 @@ export class UtpSocket extends EventEmitter {
     this.ackNrs = []
     this.received = []
     this.expected = []
-    this.logger = logger.extend(this.remoteAddress.slice(0, 3)).extend(type)
+    this.logger = logger.extend('Socket').extend(this.rcvConnectionId.toString())
     this.outBuffer = new Map()
   }
 
   async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
     const msg = packet.encode()
-    type !== PacketType.ST_DATA &&
-      this.logger(
-        `${PacketType[type]} packet sent. seqNr: ${packet.header.seqNr}  ackNr: ${packet.header.ackNr}`
-      )
+    const messageData: Record<PacketType, string> = {
+      0: `seqNr: ${packet.header.seqNr}`,
+      1: `seqNr: ${packet.header.seqNr}`,
+      2: `ackNr: ${packet.header.ackNr}`,
+      3: ``,
+      4: `rcvId: ${this.rcvConnectionId}`,
+    }
+    this.logger(`${PacketType[type]}   sent - ${messageData[type]}`)
     this.utp.emit('Send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
     return msg
   }
 
   async sendSynPacket(packet: Packet): Promise<ConnectionState> {
-    this.outBuffer.set(0, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_SYN)
     this.state = ConnectionState.SynSent
     return this.state
   }
 
   async sendSynAckPacket(packet: Packet): Promise<void> {
-    this.outBuffer.set(0, packet.header.timestampMicroseconds)
     await this.sendPacket(packet, PacketType.ST_STATE)
-    this.seqNr = this.seqNr + 1
   }
 
   async sendDataPacket(packet: Packet): Promise<Packet> {
@@ -106,9 +107,6 @@ export class UtpSocket extends EventEmitter {
     this.outBuffer.set(packet.header.seqNr, packet.header.timestampMicroseconds)
     this.cur_window = this.outBuffer.size * DEFAULT_PACKET_SIZE
     await this.sendPacket(packet, PacketType.ST_DATA)
-    this.logger(
-      `cur_window increasing from ${this.cur_window - DEFAULT_PACKET_SIZE} to ${this.cur_window}`
-    )
     this.seqNr++
     return packet
   }
@@ -187,9 +185,13 @@ export class UtpSocket extends EventEmitter {
     return bitMask
   }
 
-  async handleDataPacket(packet: Packet): Promise<Packet> {
+  async handleDataPacket(packet: Packet): Promise<Packet | undefined> {
+    clearTimeout(this.timeoutCounter)
     this.state = ConnectionState.Connected
-    const expected = this.ackNr + 1 === packet.header.seqNr
+    let expected = true
+    if (this.ackNrs.length > 1) {
+      expected = this.ackNr + 1 === packet.header.seqNr
+    }
     this.seqNr = this.seqNr + 1
     if (!this.reader) {
       this.reader = new ContentReader(this, packet.header.seqNr)
@@ -219,43 +221,21 @@ export class UtpSocket extends EventEmitter {
   async handleFinPacket(packet: Packet): Promise<Uint8Array | undefined> {
     this.logger(`Connection State: GotFin`)
     this.state = ConnectionState.GotFin
-    this.readerContent = await this.reader!.run()
-    this.logger(`Packet payloads compiled`)
-    this.logger(this.readerContent)
+    const _content = await this.reader!.run()
+    this.logger(`Packet payloads compiled.  Sending FIN-ACK`)
     this.seqNr = this.seqNr + 1
     this.ackNr = packet.header.seqNr
     await this.utp.sendStatePacket(this)
     clearTimeout(this.timeoutCounter)
-    return this.readerContent
+    return _content
   }
 
   updateRTT(packetRTT: number): void {
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
     const delta = this.rtt - packetRTT
-    this.logger.extend('RTT')(`
-    socket.rtt: ${this.rtt}
-    packetRTT: ${packetRTT}
-    delta: ${delta}
-    `)
-    this.logger.extend('RTT')(`
-    Updating socket.rtt_var and socket.rtt:
-    socket.rtt_var: ${this.rtt_var} += abs(delta: ${delta}) - socket.rtt_var: ${
-      this.rtt_var
-    } / 4 = ${this.rtt_var + Math.abs(delta) - this.rtt_var / 4}
-    socket.rtt: ${this.rtt} += (packetRTT: ${packetRTT} - socket.rtt: ${this.rtt}) / 8 = ${
-      this.rtt + packetRTT - this.rtt / 8
-    }
-    `)
     this.rtt_var = this.rtt_var + (Math.abs(delta) - this.rtt_var) / 4
     this.rtt = Math.floor(this.rtt + (packetRTT - this.rtt) / 8)
-    this.logger.extend('RTT')(
-      `Updating Timeout:
-     socket.timeout = this.rtt: ${this.rtt} + this.rtt_var: ${this.rtt_var} * 4 = ${
-        this.rtt + this.rtt_var * 4
-      }`
-    )
     this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
-    this.logger.extend('TIMEOUT')(`Timeout reset to: ${this.timeout}`)
     clearTimeout(this.timeoutCounter)
     this.timeoutCounter = setTimeout(() => {
       this.throttle()
@@ -278,18 +258,13 @@ export class UtpSocket extends EventEmitter {
   }
 
   updateDelay(timestamp: number, timeReceived: number) {
-    const delay = timeReceived - timestamp
+    const delay = Math.abs(timeReceived - timestamp)
     this.reply_micro = delay
-    this.logger.extend('DELAY')(
-      `timeReceived: ${timeReceived} - timestamp: ${timestamp} = delay: ${delay}`
-    )
     this.ourDelay = delay - this.baseDelay.delay
     if (timeReceived - this.baseDelay.timestamp > 120000) {
       this.baseDelay = { delay: delay, timestamp: timeReceived }
-      this.logger.extend('DELAY')(`baseDelay reset to ${this.baseDelay.delay}`)
     } else if (delay < this.baseDelay.delay) {
       this.baseDelay = { delay: delay, timestamp: timeReceived }
-      this.logger.extend('DELAY')(`baseDelay set to ${this.baseDelay.delay}`)
     }
     const offTarget = this.baseDelay.delay / this.ourDelay
     const delayFactor = offTarget / this.baseDelay.delay
@@ -297,22 +272,6 @@ export class UtpSocket extends EventEmitter {
     const scaledGain = MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor
     const new_max = this.max_window + scaledGain > 0 ? this.max_window + scaledGain : 0
     this.max_window = new_max
-    this.logger.extend('DELAY')(`
-    ourDelay: ${this.ourDelay}
-    offTarget: ${offTarget}
-    delayFactor: ${delayFactor}
-    windowFactor: ${windowFactor}
-    scaledGain: ${scaledGain}
-    max_window ${
-      new_max === 0
-        ? 'Set to 0'
-        : scaledGain > 0
-        ? `increasing to ${new_max}`
-        : scaledGain < 0
-        ? `decreasing to ${new_max}`
-        : `remaining at ${new_max}`
-    }
-    `)
   }
 
   compare(): boolean {
@@ -335,7 +294,6 @@ export class UtpSocket extends EventEmitter {
 
   close(): void {
     clearInterval(this.timeoutCounter)
-    this.logger.destroy()
     this.removeAllListeners()
   }
 }

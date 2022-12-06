@@ -283,6 +283,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger(
         `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`
       )
+      await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
+
       return
     }
 

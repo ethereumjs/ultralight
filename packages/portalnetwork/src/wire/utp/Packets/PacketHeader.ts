@@ -43,7 +43,7 @@ export class SelectiveAckHeader extends PacketHeader {
     buffer[1] = 0
     buffer.writeUInt16BE(this.connectionId, 2)
     buffer.writeUInt32BE(this.timestampMicroseconds, 4)
-    buffer.writeUInt32BE(this.timestampMicroseconds, 4)
+    buffer.writeUInt32BE(this.timestampDifferenceMicroseconds, 8)
     buffer.writeUInt32BE(this.wndSize, 12)
     buffer.writeUInt16BE(this.seqNr, 16)
     buffer.writeUInt16BE(this.ackNr, 18)

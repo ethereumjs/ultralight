@@ -36,7 +36,7 @@ export const peerReducer = (state: PeerState, action: PeerStateAction) => {
   const { type, payload } = action
   switch (type) {
     case PeerStateChange.SETEPOCH:
-      return state
+      return { ...state, epoch: payload }
     case PeerStateChange.SETOFFER:
       return {
         ...state,
