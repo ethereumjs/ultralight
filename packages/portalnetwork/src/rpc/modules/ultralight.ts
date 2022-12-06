@@ -43,8 +43,8 @@ export class ultralight {
     ) as never as HistoryProtocol
     try {
       addRLPSerializedBlock(rlpHex, blockHash, protocol)
-      this.logger(`blockheader for ${blockHash} added to content DB`)
-      return `blockheader for ${blockHash} added to content DB`
+      this.logger(`Block ${blockHash} added to content DB`)
+      return `Block ${blockHash} added to content DB`
     } catch (err: any) {
       this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
       return `internal error`

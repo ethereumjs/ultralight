@@ -53,18 +53,14 @@ export class ETH {
       } else {
         lookup = new ContentLookup(this.protocol, bodyContentKey!)
         body = await lookup.startLookup()
-        return new Promise((resolve) => {
-          // Try assembling block
-          try {
-            block = reassembleBlock(header, body)
-            resolve(block)
-          } catch {}
-
+        try {
+          block = reassembleBlock(header, body)
+        } catch {
           block = reassembleBlock(header)
-          resolve(block)
-        })
+        }
       }
     } catch {}
+    return block
   }
 
   public getBlockByNumber = async (
