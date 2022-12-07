@@ -35,6 +35,7 @@ There are two ways to specify bootnodes at start-up.  Either pass in a bootnode'
 The [`bootnodes.txt`](./bootnodes.txt) contains the public bootnodes designated for the Portal Network testnet that are intended to provide an initial connection point into the Portal Network (though they are not guaranteed to be running at any given time).  Use at your own risk!
 
 ## Local Devnet
+Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a terminal, or run a test script from `packages/cli/scripts/` like `sampleTest.ts`
 - From `./packages/cli`:
 - Run `npm run devnet -- --numNodes=3`
   - This will start 3 nodes with JSON-RPC server addresses `[8545, 8546, 8547]`
@@ -43,7 +44,7 @@ The [`bootnodes.txt`](./bootnodes.txt) contains the public bootnodes designated 
   - This will start 5 nodes with JSON-RPC server addresses `[9009, 9010, 9011, 9012, 9013]`
 
 ### Using the Devnet
-#### From the command line:
+#### command-line:
   *Make JSON-RPC calls using `curl` or `httpie`*
 - Get a node's ENR and NodeId
   - `http POST 127.0.0.1:8545 jsonrpc=2.0 id=1 method=discv5_nodeInfo params:=[]`
@@ -108,7 +109,14 @@ The [`bootnodes.txt`](./bootnodes.txt) contains the public bootnodes designated 
 
 
 #### Using Typescript
- - `npx ts-node --esm scripts/sampleTest.ts`
+*scripts/sampleTest.ts` performs the same sequence of JSON-RPC calls as above*
+- From `./packages/cli`
+   - `npm run devnet --numNodes=2`
+     - `starting 2 nodes...`
+     - `Started JSON RPC Server address=http://localhost:8545`
+     - `Started JSON RPC Server address=http://localhost:8546`
+- From `./packages/cli` *( in another terminal )*
+   - `npx ts-node --esm scripts/sampleTest.ts`
 ```ts
 // scripts/sampleTest.ts
 import jayson from 'jayson/promise/index.js'
@@ -126,21 +134,18 @@ const main = async () => {
   const ultralight = Client.http({ host: '127.0.0.1', port: 8545 })
   const peer0 = Client.http({ host: '127.0.0.1', port: 8546 })
   const ultralightENR = await ultralight.request('discv5_nodeInfo', [])
-  const peer0ENR = await peer0.request('discv5_nodeInfo', [])
   console.log(ultralightENR.result)
-  console.log(peer0ENR.result)
+
+  const ping1 = await peer0.request('portal_historyPing', [
+    ultralightENR.result.enr,
+  ])
+  console.log(ping1.result)
 
   const addBlock = await ultralight.request('ultralight_addBlockToHistory', [
     testBlock.hash,
     testBlock.rlp,
   ])
   console.log(addBlock.result)
-
-
-  const ping1 = await peer0.request('portal_historyPing', [
-    ultralightENR.result.enr,
-  ])
-  console.log(ping1.result)
 
   const findCon = await peer0.request('eth_getBlockByHash', [testBlock.hash, true])
   console.log(findCon)
@@ -149,6 +154,7 @@ const main = async () => {
 }
 
 main()
+
 
 ```
 

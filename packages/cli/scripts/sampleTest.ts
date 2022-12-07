@@ -13,21 +13,18 @@ const main = async () => {
   const ultralight = Client.http({ host: '127.0.0.1', port: 8545 })
   const peer0 = Client.http({ host: '127.0.0.1', port: 8546 })
   const ultralightENR = await ultralight.request('discv5_nodeInfo', [])
-  const peer0ENR = await peer0.request('discv5_nodeInfo', [])
   console.log(ultralightENR.result)
-  console.log(peer0ENR.result)
+
+  const ping1 = await peer0.request('portal_historyPing', [
+    ultralightENR.result.enr,
+  ])
+  console.log(ping1.result)
 
   const addBlock = await ultralight.request('ultralight_addBlockToHistory', [
     testBlock.hash,
     testBlock.rlp,
   ])
   console.log(addBlock.result)
-
-
-  const ping1 = await peer0.request('portal_historyPing', [
-    ultralightENR.result.enr,
-  ])
-  console.log(ping1.result)
 
   const findCon = await peer0.request('eth_getBlockByHash', [testBlock.hash, true])
   console.log(findCon)
