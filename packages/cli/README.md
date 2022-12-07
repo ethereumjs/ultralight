@@ -156,13 +156,41 @@ main()
 
 The Ultralight client exposes a minimal JSON-RPC interface that allows for some interaction with the node.  A list of methods exposed can be found below but is not guaranteed to be up to date.  Please refer to [the source](./src/rpc.ts) for all currently available methods.
 
-- `discv5_nodeInfo` - Returns the current client version
-- `eth_getBlockByHash` - Mimics the current Ethereum Full Node `eth_getBlockByHash` interface.  All data is retrieved from the local node database or else other Portal Network clients (if connected)
-- `portal_addBootNode` - Adds a new bootnode provided by the passed in ENR
-- `portal_addBlockToHistory` - Takes a hex string encoded Ethereum block by RLP and adds it to the local node database for later serving via the Portal Network
-- `portal_nodeEnr` - returns the base64 encoded string of the local node ENR
-- `portal_findNodes` - takes a nodeId and an array of log2distances and sends a `FINDNODES` request to that node
-- `portal_offer` - takes a nodeId, a block hash, and a content type, derives the corresponding contentKey, and then offers that content to the specified nodeId
-- `portal_ping` - takes a nodeId and then sends a `PING` message to the specified nodeId
+- `web3_clientVersion` - Returns the current client version (ultralight 0.0.1)
+
+**discv5** Discv5 Routing Table operations
+- `discv5_nodeInfo` - Returns the NodeId and ENR
+- `discv5_updateNodeInfo` - Update a node in the Routing Table
+- `discv5_routingTableInfo` - Returns Routing Table K-Buckets
+- `discv5_addEnr` - Adds an ENR to Discv5 Routing Table
+- `discv5_getEnr` - Retrieves an ENR by NodeId
+- `discv5_deleteEnr` - Deletes an ENR from Routing Table
+- `discv5_lookupEnr` - Lookup node by NodeId
+
+**portal_<subprotocol>** Portal Network subprotocol operations
+
+- `portal_historyAddBootNode` - Adds a new ENR to HistoryNetwork routing table
+- `portal_historyNodeInfo` - Returns NodeId and ENR of History Protocol supporting node
+- `portal_historyRoutingTableInfo` - Returns History Network Routing Table K-Buckets
+- `portal_historyLookupEnr` - Lookup node by NodeId
+- `portal_historyAddEnrs` - Add ENRs to Routing Table
+- `portal_historyPing` - Ping a node on History Protocol
+- `portal_historyFindNodes` - Takes a `nodeId` and an array of `log2distances` and sends a `FINDNODES` request to that node
+- `portal_historyLocalContent` - Search local database for content
+- `portal_historyFindContent` - Ask a peer for content by content key
+- `portal_historyOffer` - Offer a peer a list of content keys
+
+**eth_** - Mimics the current Ethereum Full Node `eth` namespace methods.
+- `eth_getBlockByNumber` 
+- `eth_getBlockByHash` 
+- `eth_getBlockTransactionCountByHash`
+- `eth_getUncleCountByNumber`
+- `eth_getLogs`
+
+**ultralight_** - Methods to manually add content to database
+- `ultralight_addBlockToHistory` - Add a block header and body to database
+- `ultralight_addContentToDB` - Add any content to database
+  
+
 ## Note
 This requires Node version 16 or above
