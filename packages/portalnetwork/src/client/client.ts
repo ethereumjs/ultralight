@@ -26,7 +26,7 @@ import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
+import { CapacitorUDPTransportService, SimpleTransportService } from '../transports/index.js'
 import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
@@ -105,7 +105,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        config.transport = new WebSocketTransportService(ma, config.enr.nodeId, opts.proxyAddress)
+        config.transport = new SimpleTransportService(ma, config.enr.nodeId, opts.proxyAddress)
         break
       }
       case TransportLayer.MOBILE:
