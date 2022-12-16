@@ -42,6 +42,7 @@
     "debug": "^4.3.2",
     "ethereum-cryptography": "^1.1.2",
     "ethers": "^5.7.0",
+    "p2pt": "1.5.1",
     "isomorphic-ws": "^4.0.1",
     "lru-cache": "^7.10.1",
     "memory-level": "^1.0.0",
