@@ -64,7 +64,7 @@ if (args.metrics) {
   metricsServer.listen(5051)
 }
 
-const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050, udpPort = 0) => {
+const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050, udpPort = 9009) => {
   log(`websocket server listening on ${args.ip ?? '127.0.0.1'}:${wssPort}`)
   ws.on('connection', async (websocket, req) => {
     if (args.persistentPort && ws.clients.size > 1) {
@@ -88,7 +88,9 @@ const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050, ud
     let foundPort = false
     while (!foundPort) {
       try {
-        udpPort > 0 ? await udpsocket.bind(udpPort) : await udpsocket.bind()
+        await udpsocket.bind(udpPort).once('error', () => {
+          udpsocket.bind(udpPort + Math.ceil(Math.random() * 990))
+        })
         foundPort = true
       } catch (err) {
         log(err)
