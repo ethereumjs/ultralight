@@ -1,4 +1,4 @@
-import React, { useContext, useReducer } from 'react'
+import React, { useContext, useReducer, useState } from 'react'
 import { CopyIcon } from '@chakra-ui/icons'
 import {
   Table,
@@ -13,14 +13,23 @@ import {
   Input,
   VStack,
   Box,
+  HStack,
 } from '@chakra-ui/react'
 import PeerButtons from './PeerButtons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerContext, peerInitialState, peerReducer } from '../peerReducer'
+import { SimpleTransportService } from 'portalnetwork'
 
 export default function RoutingTableView() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [_state, _dispatch] = useReducer(peerReducer, peerInitialState)
+  const [searchString, setSearchString] = useState('')
+  let location: string | undefined
+  try {
+    location = state.provider!.portal.discv5.enr.getLocationMultiaddr('udp')!.nodeAddress().address
+  } catch {
+    location = undefined
+  }
 
   async function connectToPeer() {
     try {
@@ -31,16 +40,25 @@ export default function RoutingTableView() {
   }
   return (
     <PeerContext.Provider value={{ peerState: _state, peerDispatch: _dispatch }}>
-      <VStack spacing={0} height="100%" width={'100%'}>
-        <Box width="100%" height="15%" border={'1px'}>
+      <VStack spacing={0} width={'100%'}>
+        <Box width="100%" border={'1px'}>
           {<PeerButtons />}
         </Box>
-        <Box height={'3%'} width="100%" bg="gray.500" color={'whiteAlpha.900'} boxShadow={'xl'}>
-          <Text textAlign={'center'} fontWeight={'bold'}>
+        <HStack width="100%" bg="gray.500" color={'whiteAlpha.900'} boxShadow={'xl'}>
+          <Text fontSize="xs" size="xs" width={'20%'} textAlign={'center'} fontWeight={'bold'}>
             Peers: {state.peers.length}
           </Text>
-        </Box>
-        <Box width="100%" boxShadow={'md'} height="75%" overflowY={'scroll'}>
+          <Input
+            width={'80%'}
+            bg="white"
+            size="xs"
+            type="text"
+            placeholder="search by nodeId"
+            onChange={(e) => setSearchString(e.target.value)}
+          />
+        </HStack>
+        <Text>{location}</Text>
+        <Box height={'40vh'} width="100%" boxShadow={'md'} overflowY={'scroll'}>
           <Table fontSize={'x-small'} size="xs" overflowY={'scroll'}>
             <Thead>
               <Tr>
@@ -49,52 +67,74 @@ export default function RoutingTableView() {
                 <Th>IP</Th>
                 <Th>PORT</Th>
                 <Th>NodeId</Th>
+                <Th>RTC</Th>
               </Tr>
             </Thead>
             <Tbody>
-              {state.sortedPeers.length > 0 &&
-                state.sortedPeers.map((peer, idx) => {
-                  return (
-                    <Tr
-                      key={peer[1][2]}
-                      onMouseEnter={() => dispatch({ type: StateChange.SETHOVER, payload: idx })}
-                      onMouseLeave={() => {
-                        dispatch({ type: StateChange.SETHOVER, payload: undefined })
-                      }}
-                      onClick={() => {
-                        dispatch({
-                          type: StateChange.SETSELECTEDPEER,
-                          payload: { idx: idx },
-                        })
-                      }}
-                      backgroundColor={
-                        idx === state.hover
-                          ? 'blue.100'
-                          : state.peerIdx === idx
-                          ? 'red.100'
-                          : 'whiteAlpha.100'
-                      }
-                    >
-                      <Td key={peer[1][2] + 'abc'}>
-                        <Tooltip label={peer[1][3]}>
-                          <CopyIcon
-                            cursor={'pointer'}
-                            onClick={() => navigator.clipboard.writeText(peer[1][3])}
-                          />
-                        </Tooltip>
-                      </Td>
-                      <Th>{peer[0]}</Th>
-                      <Td>{peer[1][0]}</Td>
-                      <Td>{peer[1][1]}</Td>
-                      <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
-                    </Tr>
-                  )
-                })}
+              {state.sortedPeers.filter((n) => n[1][2].includes(searchString)).length > 0 &&
+                state.sortedPeers
+                  .filter((n) => n[1][2].includes(searchString))
+                  .map((peer, idx) => {
+                    return (
+                      <Tr
+                        key={peer[1][2]}
+                        onMouseEnter={() => dispatch({ type: StateChange.SETHOVER, payload: idx })}
+                        onMouseLeave={() => {
+                          dispatch({ type: StateChange.SETHOVER, payload: undefined })
+                        }}
+                        onClick={() => {
+                          dispatch({
+                            type: StateChange.SETSELECTEDPEER,
+                            payload: {
+                              idx: state.sortedPeers.indexOf(peer),
+                            },
+                          })
+                        }}
+                        backgroundColor={
+                          idx === state.hover
+                            ? 'blue.100'
+                            : state.peerIdx === idx
+                            ? 'red.100'
+                            : Object.keys(
+                                (
+                                  state.provider!.portal.discv5.sessionService
+                                    .transport as SimpleTransportService
+                                ).RTC.usernames
+                              ).includes(peer[1][2])
+                            ? 'green.100'
+                            : 'whiteAlpha.100'
+                        }
+                      >
+                        <Td key={peer[1][2] + 'abc'}>
+                          <Tooltip label={peer[1][3]}>
+                            <CopyIcon
+                              cursor={'pointer'}
+                              onClick={() => navigator.clipboard.writeText(peer[1][3])}
+                            />
+                          </Tooltip>
+                        </Td>
+                        <Th>{peer[0]}</Th>
+                        <Td>{peer[1][0]}</Td>
+                        <Td>{peer[1][1]}</Td>
+                        <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
+                        <Td>
+                          {Object.keys(
+                            (
+                              state.provider!.portal.discv5.sessionService
+                                .transport as SimpleTransportService
+                            ).RTC.usernames
+                          ).includes(peer[1][2])
+                            ? 'RTC'
+                            : ''}
+                        </Td>
+                      </Tr>
+                    )
+                  })}
             </Tbody>
           </Table>
         </Box>
-        <Box width="100%" height={'7%'} boxShadow={'xl'}>
-          <VStack height="100%" paddingY={'4px'} width="100%" opacity={1} bg="gray.500">
+        <Box width="100%" boxShadow={'xl'}>
+          <VStack paddingY={'4px'} width="100%" opacity={1} bg="gray.500">
             <Button
               width={'90%'}
               border="gray.500"
