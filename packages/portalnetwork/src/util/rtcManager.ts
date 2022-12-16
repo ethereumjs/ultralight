@@ -61,6 +61,7 @@ export class RTCPeerManager extends EventEmitter {
       username: this.username,
       message: this.newMessage,
     }
+    this.messages.push(message)
     this.newMessage = ''
     if (to.trim() !== '') {
       const username = this.usernames[to]
@@ -71,7 +72,6 @@ export class RTCPeerManager extends EventEmitter {
         await this.p2pt.send(peer, JSON.stringify(message))
       }
     }
-    this.messages.push(message)
   }
   listen() {
     if (this.getUsername().trim() === '') {
