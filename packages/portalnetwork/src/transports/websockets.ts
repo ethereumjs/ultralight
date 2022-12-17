@@ -29,7 +29,6 @@ export class WebSocketTransportService
   implements ITransportService
 {
   public multiaddr: Multiaddr
-
   private socket: WebSocketAsPromised
   private srcId: string
 
