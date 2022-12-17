@@ -149,9 +149,12 @@ export abstract class BaseProtocol {
       const enr = this.client.discv5.getKadValue(src.nodeId)
       if (enr) {
         this.updateRoutingTable(enr, pingMessage.customPayload)
-      } else if (this.client.discv5.sessionService.transport instanceof SimpleTransportService) {
-        const _enr = (this.client.discv5.sessionService.transport as SimpleTransportService).RTC
-          .usernames[src.nodeId]
+      } else if (
+        this.client.discv5.sessionService.transport instanceof SimpleTransportService &&
+        this.client.discv5.sessionService.transport.rtcTransport
+      ) {
+        const _enr =
+          this.client.discv5.sessionService.transport.rtcTransport.RTC.usernames[src.nodeId]
         this.updateRoutingTable(ENR.decodeTxt(_enr), pingMessage.customPayload)
       }
     } else {

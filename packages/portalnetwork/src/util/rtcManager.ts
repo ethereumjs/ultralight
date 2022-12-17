@@ -81,28 +81,36 @@ export class RTCPeerManager extends EventEmitter {
     this.status = `${this.username} connected`
     this.usernames = {}
 
-    this.p2pt.on('peerconnect', (peer) => {
+    this.p2pt.on('peerconnect', async (peer) => {
       this.log(`Connected to ${peer.id}`)
       if (peer.id !== this.username) {
         this.peers[peer.id] = peer
         this.status = `New Connection with ${peer.id.slice(0, 10)}`
+        this.setNewMessage('hello')
+        await this.sendMessage()
       }
     })
     this.p2pt.on('peerclose', (peer) => {
       delete this.peers[peer.id]
       delete this.members[peer.id]
     })
-    this.p2pt.on('msg', (peer, msg) => {
+    this.p2pt.on('msg', async (peer, msg) => {
       msg = JSON.parse(msg)
       this.members[peer.id] = msg.username
       this.memberIds[msg.username] = peer.id
-      if (msg.username.startsWith('enr')) {
+      if (
+        msg.username.startsWith('enr') &&
+        this.usernames[ENR.decodeTxt(msg.username).nodeId] !== msg.username
+      ) {
         this.usernames[ENR.decodeTxt(msg.username).nodeId] = msg.username
       }
       this.messages.push({
         username: msg.username,
         message: msg.message,
       })
+      if (msg.message.includes('hello')) {
+        this.emit('hello', msg.username)
+      }
       if (msg.message.includes('address')) {
         this.emit('packet', msg.username, msg.message)
       }
