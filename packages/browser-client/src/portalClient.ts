@@ -60,8 +60,11 @@ export const startUp = async (provider: UltralightProvider) => {
   ;(window as any).hexer = { toHexString, fromHexString }
   provider.portal.discv5.on('multiaddrUpdated', () => {
     provider.portal.storeNodeDetails()
-    if (provider.portal.discv5.sessionService.transport instanceof SimpleTransportService) {
-      provider.portal.discv5.sessionService.transport.RTC.username =
+    if (
+      provider.portal.discv5.sessionService.transport instanceof SimpleTransportService &&
+      provider.portal.discv5.sessionService.transport.rtcTransport
+    ) {
+      provider.portal.discv5.sessionService.transport.rtcTransport.RTC.username =
         provider.portal.discv5.enr.encodeTxt()
     }
   })

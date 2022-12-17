@@ -95,11 +95,15 @@ export default function RoutingTableView() {
                             ? 'blue.100'
                             : state.peerIdx === idx
                             ? 'red.100'
-                            : Object.keys(
+                            : (
+                                state.provider!.portal.discv5.sessionService
+                                  .transport as SimpleTransportService
+                              ).rtcTransport &&
+                              Object.keys(
                                 (
                                   state.provider!.portal.discv5.sessionService
                                     .transport as SimpleTransportService
-                                ).RTC.usernames
+                                ).rtcTransport!.RTC.usernames
                               ).includes(peer[1][2])
                             ? 'green.100'
                             : 'whiteAlpha.100'
@@ -118,11 +122,15 @@ export default function RoutingTableView() {
                         <Td>{peer[1][1]}</Td>
                         <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
                         <Td>
-                          {Object.keys(
+                          {(
+                            state.provider!.portal.discv5.sessionService
+                              .transport as SimpleTransportService
+                          ).rtcTransport &&
+                          Object.keys(
                             (
                               state.provider!.portal.discv5.sessionService
                                 .transport as SimpleTransportService
-                            ).RTC.usernames
+                            ).rtcTransport!.RTC.usernames
                           ).includes(peer[1][2])
                             ? 'RTC'
                             : ''}
