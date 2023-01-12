@@ -83,7 +83,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       config.enr.setLocationMultiaddr(ma)
       config.multiaddr = ma
     } else {
-      ma = multiaddr()
+      ma = multiaddr(`/ip4/127.0.0.1/udp/${Math.floor(Math.random() * 990) + 9009}`)
       config.enr.setLocationMultiaddr(ma)
       config.multiaddr = ma
     }

@@ -108,7 +108,6 @@ const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050) =>
           if (data.toString().startsWith('port:')) {
             return
           }
-          console.log('MESSAGE: ' + data)
           try {
             const bAddress = Buffer.from(data.slice(0, 4) as ArrayBuffer)
             const address = `${bAddress[0]}.${bAddress[1]}.${bAddress[2]}.${bAddress[3]}`
