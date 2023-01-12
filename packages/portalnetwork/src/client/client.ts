@@ -26,7 +26,7 @@ import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
-import { CapacitorUDPTransportService, SimpleTransportService } from '../transports/index.js'
+import { CapacitorUDPTransportService, HybridTransportService } from '../transports/index.js'
 import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
@@ -53,9 +53,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         addrVotesToUpdateEnr: 5,
         enrUpdate: true,
         allowUnverifiedSessions: true,
+        requestTimeout: 10000,
+        sessionEstablishTimeout: 10000,
       },
     }
-    const config = { ...defaultConfig, ...opts.config }
+    const config = { ...defaultConfig }
     let bootnodes
     if (opts.rebuildFromMemory && opts.db) {
       const prev_enr_string = await opts.db.get('enr')
@@ -77,10 +79,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     let ma
     if (opts.bindAddress) {
-      ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 20)}`)
+      ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
       config.enr.setLocationMultiaddr(ma)
+      config.multiaddr = ma
     } else {
       ma = multiaddr()
+      config.enr.setLocationMultiaddr(ma)
+      config.multiaddr = ma
     }
 
     // Configure db size calculation
@@ -105,7 +110,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        config.transport = new SimpleTransportService(ma, config.enr.nodeId, opts.proxyAddress)
+        config.enr.set('rtc', fromHexString('0x01'))
+        config.transport = new HybridTransportService(ma, config.enr, opts.proxyAddress)
         break
       }
       case TransportLayer.MOBILE:
@@ -116,7 +122,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
 
     return new PortalNetwork({
-      config,
+      config: config,
       radius: 2n ** 256n,
       bootnodes,
       db: opts.db,
@@ -177,19 +183,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.uTP.closeRequest(msg, peerId)
       }
     })
+    if (this.discv5.sessionService.transport instanceof HybridTransportService) {
+      ;(this.discv5.sessionService as any).send = this.send.bind(this)
+    }
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
-      if (!verified || !enr.getLocationMultiaddr('udp')) {
-        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
-        // corresponding to the node's observed IP/Port so that we can send outbound messages to
-        // those nodes later on if needed.  This is currently used by uTP when responding to
-        // FINDCONTENT requests fron nodes with invalid ENRs.
-        const peerId = await createPeerIdFromKeypair(enr.keypair)
-        this.unverifiedSessionCache.set(
-          enr.nodeId,
-          multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
-        )
-        this.logger(this.unverifiedSessionCache.get(enr.nodeId))
-      }
+      this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
+
+      // if (!verified || !enr.getLocationMultiaddr('udp')) {
+      //   // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
+      //   // corresponding to the node's observed IP/Port so that we can send outbound messages to
+      //   // those nodes later on if needed.  This is currently used by uTP when responding to
+      //   // FINDCONTENT requests fron nodes with invalid ENRs.
+      //   const peerId = await createPeerIdFromKeypair(enr.keypair)
+      //   this.unverifiedSessionCache.set(
+      //     enr.nodeId,
+      //     multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
+      //   )
+      //   this.logger(this.unverifiedSessionCache.get(enr.nodeId))
+      // }
     })
 
     if (opts.metrics) {
@@ -202,6 +213,46 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
+  private send(nodeAddr: INodeAddress, packet: any) {
+    if (this.discv5.sessionService.transport instanceof HybridTransportService) {
+      const enr = this.discv5.findEnr(nodeAddr.nodeId)
+      this.logger(enr === undefined ? 'CAN:T FIND ENR' : 'FOUND ENR')
+      if (enr) {
+        if (enr.get('rtc') && toHexString(enr.get('rtc')!) === '0x01') {
+          this.logger('SENDING DISCV5...RTC')
+          this.discv5.sessionService.transport.send(
+            nodeAddr.socketAddr,
+            nodeAddr.nodeId,
+            packet,
+            true
+          )
+        } else {
+          this.logger('SENDING DISCV5...Websocket')
+          this.discv5.sessionService.transport.send(
+            nodeAddr.socketAddr,
+            nodeAddr.nodeId,
+            packet,
+            false
+          )
+        }
+      } else {
+        this.discv5.sessionService.transport.send(
+          nodeAddr.socketAddr,
+          nodeAddr.nodeId,
+          packet,
+          false
+        )
+        this.discv5.sessionService.transport.send(
+          nodeAddr.socketAddr,
+          nodeAddr.nodeId,
+          packet,
+          true
+        )
+      }
+    } else {
+      this.discv5.sessionService.transport.send(nodeAddr.socketAddr, nodeAddr.nodeId, packet)
+    }
+  }
   /**
    * Starts the portal network client
    */
@@ -237,7 +288,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param namespaces comma separated list of logging namespaces
    * defaults to "*Portal*,*uTP*"
    */
-  public enableLog = (namespaces: string = '*Portal*,*uTP*') => {
+  public enableLog = (namespaces: string = '*Portal*,*uTP*,*discv5*') => {
     debug.enable(namespaces)
   }
 

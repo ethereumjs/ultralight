@@ -24,7 +24,7 @@ import {
   ReceiptsManager,
   RequestCode,
   shortId,
-  SimpleTransportService,
+  HybridTransportService,
   SszProofType,
 } from '../../index.js'
 
@@ -110,11 +110,6 @@ export class HistoryProtocol extends BaseProtocol {
       }
       await this.addContentToHistory(selector, blockHash, content)
     })
-    if (this.client.discv5.sessionService.transport instanceof SimpleTransportService) {
-      this.client.discv5.sessionService.transport.rtcTransport?.on('hello', (enr) => {
-        this.addBootNode(enr)
-      })
-    }
   }
 
   /**

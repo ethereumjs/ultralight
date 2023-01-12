@@ -26,7 +26,7 @@ import {
   PingPongCustomDataType,
   PongMessage,
   PortalWireMessageType,
-  SimpleTransportService,
+  HybridTransportService,
   RequestCode,
   NodeLookup,
   StateNetworkRoutingTable,
@@ -103,7 +103,10 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol ID
    * @returns the PING payload specified by the subprotocol or undefined
    */
-  public sendPing = async (enr: ENR) => {
+  public sendPing = async (enr: ENR | string) => {
+    if (!(enr instanceof ENR)) {
+      enr = ENR.decodeTxt(enr)
+    }
     // 3000ms tolerance for ping timeout
     setTimeout(() => {
       return undefined
@@ -132,6 +135,16 @@ export abstract class BaseProtocol {
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
         this.updateRoutingTable(enr, pongMessage.customPayload)
+        if (
+          this.client.discv5.sessionService.transport instanceof HybridTransportService &&
+          !this.client.discv5.sessionService.transport.webRTC?.peers.has(enr.nodeId) &&
+          enr.get('rtc') &&
+          toHexString(enr.get('rtc')!) === '0x01'
+        ) {
+          this.logger.extend('RTC')('Adding RTC conneection')
+          await this.client.discv5.sessionService.transport.connectWebRTC(enr.nodeId)
+        }
+
         return pongMessage
       } else {
         this.routingTable.evictNode(enr.nodeId)
@@ -146,16 +159,9 @@ export abstract class BaseProtocol {
   private handlePing = (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
-      const enr = this.client.discv5.getKadValue(src.nodeId)
-      if (enr) {
+      const enr = this.client.discv5.findEnr(src.nodeId)
+      if (enr !== undefined) {
         this.updateRoutingTable(enr, pingMessage.customPayload)
-      } else if (
-        this.client.discv5.sessionService.transport instanceof SimpleTransportService &&
-        this.client.discv5.sessionService.transport.rtcTransport
-      ) {
-        const _enr =
-          this.client.discv5.sessionService.transport.rtcTransport.RTC.usernames[src.nodeId]
-        this.updateRoutingTable(ENR.decodeTxt(_enr), pingMessage.customPayload)
       }
     } else {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
@@ -559,7 +565,7 @@ export abstract class BaseProtocol {
         this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
         if (customPayload) {
           const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
-          this.routingTable.updateRadius(enr as any, decodedPayload.radius)
+          this.routingTable.updateRadius(enr.nodeId, decodedPayload.radius)
         }
       } catch (e) {
         this.logger(`Something went wrong : ${(e as any).message}`)
@@ -648,6 +654,9 @@ export abstract class BaseProtocol {
     if (enr.nodeId === this.client.discv5.enr.nodeId) {
       // Disregard attempts to add oneself as a bootnode
       return
+    }
+    if (enr.get('rtc')) {
+      this.client.discv5.addEnr(enr)
     }
     await this.sendPing(enr)
     for (let x = 239; x < 256; x++) {
