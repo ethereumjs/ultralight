@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 import {
   ENR,
   log2Distance,
-  SimpleTransportService,
+  HybridTransportService,
   toHexString,
   fromHexString,
   TransportLayer,
@@ -42,7 +42,7 @@ export const refresh = (state: AppState) => {
 export const startUp = async (provider: UltralightProvider) => {
   // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR if doing local testing
 
-  if (provider.portal.discv5.sessionService.transport instanceof SimpleTransportService) {
+  if (provider.portal.discv5.sessionService.transport instanceof HybridTransportService) {
     provider.portal.discv5.sessionService.transport.once('multiAddr', (multiaddr) => {
       provider.portal.discv5.enr.setLocationMultiaddr(multiaddr)
       provider.portal.discv5.emit('multiaddrUpdated', multiaddr)
@@ -60,13 +60,6 @@ export const startUp = async (provider: UltralightProvider) => {
   ;(window as any).hexer = { toHexString, fromHexString }
   provider.portal.discv5.on('multiaddrUpdated', () => {
     provider.portal.storeNodeDetails()
-    if (
-      provider.portal.discv5.sessionService.transport instanceof SimpleTransportService &&
-      provider.portal.discv5.sessionService.transport.rtcTransport
-    ) {
-      provider.portal.discv5.sessionService.transport.rtcTransport.RTC.username =
-        provider.portal.discv5.enr.encodeTxt()
-    }
   })
 }
 export async function createNodeFromScratch(state: AppState): Promise<UltralightProvider> {

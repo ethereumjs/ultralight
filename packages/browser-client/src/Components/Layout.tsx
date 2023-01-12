@@ -18,7 +18,7 @@ import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import DisplayBlock from './DisplayBlock'
 import GetByButtons from './GetByButton'
 import RoutingTableView from './RoutingTableView'
-import SimpleChat from './SimpleChat'
+
 export default function Layout() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   function handleTabsChange(index: number) {
@@ -66,9 +66,6 @@ export default function Layout() {
           </Tab>
         </TabList>
         <TabPanels width={'100%'}>
-          <TabPanel height="100%" padding="0">
-            {<SimpleChat />}
-          </TabPanel>
           <TabPanel padding="0">{<RoutingTableView />}</TabPanel>
           <TabPanel padding="1">{state.block && <DisplayBlock />}</TabPanel>
         </TabPanels>

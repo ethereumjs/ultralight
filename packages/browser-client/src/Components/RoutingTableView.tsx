@@ -18,7 +18,7 @@ import {
 import PeerButtons from './PeerButtons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerContext, peerInitialState, peerReducer } from '../peerReducer'
-import { SimpleTransportService } from 'portalnetwork'
+import { ENR, toHexString } from 'portalnetwork'
 
 export default function RoutingTableView() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
@@ -26,7 +26,7 @@ export default function RoutingTableView() {
   const [searchString, setSearchString] = useState('')
   let location: string | undefined
   try {
-    location = state.provider!.portal.discv5.enr.getLocationMultiaddr('udp')!.nodeAddress().address
+    location = state.provider!.portal.discv5.enr.getLocationMultiaddr('udp')!.toString()
   } catch {
     location = undefined
   }
@@ -95,16 +95,8 @@ export default function RoutingTableView() {
                             ? 'blue.100'
                             : state.peerIdx === idx
                             ? 'red.100'
-                            : (
-                                state.provider!.portal.discv5.sessionService
-                                  .transport as SimpleTransportService
-                              ).rtcTransport &&
-                              Object.keys(
-                                (
-                                  state.provider!.portal.discv5.sessionService
-                                    .transport as SimpleTransportService
-                                ).rtcTransport!.RTC.usernames
-                              ).includes(peer[1][2])
+                            : ENR.decodeTxt(peer[1][3]).get('rtc') &&
+                              toHexString(ENR.decodeTxt(peer[1][3]).get('rtc')!) === '0x01'
                             ? 'green.100'
                             : 'whiteAlpha.100'
                         }
@@ -122,18 +114,10 @@ export default function RoutingTableView() {
                         <Td>{peer[1][1]}</Td>
                         <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
                         <Td>
-                          {(
-                            state.provider!.portal.discv5.sessionService
-                              .transport as SimpleTransportService
-                          ).rtcTransport &&
-                          Object.keys(
-                            (
-                              state.provider!.portal.discv5.sessionService
-                                .transport as SimpleTransportService
-                            ).rtcTransport!.RTC.usernames
-                          ).includes(peer[1][2])
+                          {ENR.decodeTxt(peer[1][3]).get('rtc') &&
+                          toHexString(ENR.decodeTxt(peer[1][3]).get('rtc')!) === '0x01'
                             ? 'RTC'
-                            : ''}
+                            : '-'}
                         </Td>
                       </Tr>
                     )
