@@ -1,95 +1,78 @@
 ```mermaid
-classDiagram
-    direction TB
-    class App_State{
-        UltralightProvider
-        proxy
-        db
-    }
-    class browserclient_portalClient_ts{
-        +createNodeFromScratch(AppState) UltralightProvider
-        +createNodeFromStorage(AppState) UltralightProvider
-        +startUp(provider)
-        +refresh(AppState)
-    }
-    class UltralightProvider {
-        PortalNetwork
-    }
-    class PortalNetwork_create {
-        enr = ENR.createFromPeerId()
-        ma = new multiaddr()
-        transport = new SimpleTransportService()
-    }
-    class discv5{
-      enr
-      sessionService
-    }
-
-    class SimpleTransportService {
-        multiaddress
-        nodeId
-        RTC
-        socket
-        send()
-        handleRTC()
-        handleWebSocket()
-    }
-    class RTCPeerManager {
-        p2pt
-        room
-        username
-        members
-        memberIds
-        peers
-        usernames
-        joinChat()
-        listen()
-        sendMessage(to: Peer)
-    }
-    class sendMessage {
-        msg: / this.username, message /
-        p2p2.send(to, msg)
-    }
-    class send {
-        WebSocket Peer?
-        RTC Peer?
-    }
-    class PortalNetwork {
-        discv5
-        create()
-    }
-    browserclient_portalClient_ts --|> UltralightProvider: createNodeFrom...
-    App_State <-- UltralightProvider
-
-    UltralightProvider <-- PortalNetwork
-    UltralightProvider --> PortalNetwork
-
-    PortalNetwork --> PortalNetwork_create
-    PortalNetwork <-- discv5
-    
-    PortalNetwork_create --> SimpleTransportService
-    discv5 <-- SimpleTransportService
-
-
-    SimpleTransportService -- send
-    send --> RTCPeerManager
-    send --> WebSocket
-    handleWebSocket <-- WebSocket
-    RTCPeerManager -- sendMessage
-
-
-
-    RTCPeerManager -- listen
-    listen: p2pt.on('peerconnect'...)
-    listen: p2pt.on('peerclose', ...)
-    listen: p2pt.on('msg', ...)
-    listen: p2pt.start()
-    discv5 <-- handleWebSocket : this.emit(packet)
-    discv5 <-- handleRTC : this.emit(packet)
-    sendMessage --|> rtcPeer : outgoing
-    listen <|-- rtcPeer : incoming
-    handleRTC <-- listen
-    WebSocket --|> wsPeer : outgoing
-    WebSocket <|-- wsPeer : incoming
-    
+graph LR
+    X[proxy] ---- |websocket server listening on<br/>ws://127.0.0.1/5050| O[WS.Server]
+B(HybridTransport)
+    A[Discv5] === |"multiaddr(ip4/127.0.0.1/udp/9009)"<br/>NodeIdd| B
+    B === W{websocket}
+    W --- |UPD server listening on<br/>ws://127.0.0.1:9090|O
+    B === C{webRTC}
+    C ---|Discovery| D{WAKU}
+    D --- |addBootNode<br/>handlePing|P[Discv5:<br/>Ping/Pong<br/>whoareyou, etc.]
+    C ---|Transport| F{WebRTC}
+    F --- T[Discv5:<br/>FindNodes/Nodes<br/>FindContent/Content<br/>Offer/Accept<br/>LivenessCheck]
+    D --- R[WebRTC:<br/>Offer/Answer/Ice]
 ```
+```mermaid
+classDiagram
+    class PortalNetwork {
+        sendPortalNetworkMessage(peer_enr)
+        Discv5
+    }
+    PortalNetwork .. WebRTC : peer_enr.get('rtc') === 0x01
+    Transport <--> WebRTC
+    Transport <--> WebSocket
+    PortalNetwork .. WebSocket  : peer_enr.get('rtc') === undefined
+    PortalNetwork -- Transport : SessionService
+    WebRTC : send
+    WebRTC : handleIncoming
+    WebRTC : this.emit(packet)
+    WebRTC <--> WAKU
+    WAKU : waku.subscribe(nodeId)
+    WAKU <--> Discovery : protocol.addBootNode(peerId) <br/> protocol.handlePing(peerId)
+    Discovery : Discv5 - Ping/Pong
+    Discovery : Discv5 - whoareyou / challenge / handshake
+    Discovery : WebRTC - Offer/Answer/Ice
+    RTC <-- Discovery : peerId > RTCDataChannel
+    WebRTC <--> RTC
+    RTC <--> Wire
+    Wire : Liveness_Check(Ping/Pong)
+    Wire : FindNodes / Nodes
+    Wire : FindContent / Content
+    Wire : Offer / Accept
+    RTC : peerId > RTCConnection
+    WebSocket : send
+    WebSocket : handleIncoming
+    WebSocket : this.emit(packet)
+    WebSocket <--> WebSocketServer
+    class WebSocketServer {
+        websocket server listening on 127.0.0.1:5050
+        udp server listening on 127.0.0.1:9009
+    }
+    WebSocketServer <-- Discovery_and_Transport
+    Discovery_and_Transport : Ping / Pong
+    Discovery_and_Transport : FindNodes / Nodes
+    Discovery_and_Transport : FindContent / Content
+    Discovery_and_Transport : Offer / Accept
+
+```
+```mermaid
+graph LR
+    A["addBootNode(peer_enr)"] --> Z{"peer_enr.get('rtc') === ?"}
+    Z -->|0x01| D["waku.LightPush(peer_id, Discv5_Handshake)"]
+    Z -->|undefined| E["websocket.send(Discv5_Handshake)"]
+    D --> N["waku.LightPush(peer_id, WebRTC_Handshake)"]
+    N --> O[Connected via WebRTC]
+    E --> M[Connected via websocket]
+    B["handlePing(peerId)"] --> C{"whoareyou<br/>requesting ENR"}
+    C -.-> H["waku.lightPush(peerId, whoareyou)"]    
+    C -.-> G["websocket.send(whoareyou)"]    
+    H -.-> |Peer_ENR| I
+    G -.-> |Peer_ENR| I{"peer_enr.get('rtc') === ?"}
+    I --> |0x01| J["waku.LightPush(peerID, Discv5_Handshake)"]
+    I --> |undefined| K[Discv5_Handshake]
+    J --> L["waku.LightPush(peerId, WebRTC_Handshake)"]
+    L --> P[Connected via WebRTC]
+    K --> Q[Connected via WebSocket]
+
+```
+
