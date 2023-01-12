@@ -86,6 +86,7 @@ const main = async () => {
   if (args.bindAddress) {
     const addrOpts = args.bindAddress.split(':')
     initMa = multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
+    // @ts-ignore
     enr.setLocationMultiaddr(initMa)
   } else {
     initMa = multiaddr()
@@ -97,18 +98,18 @@ const main = async () => {
   if (args.dataDir) {
     db = new Level<string, string>(args.dataDir)
   }
-
-  const portal = await PortalNetwork.create({
+  const config = {
+    enr: enr,
+    peerId: id,
     config: {
-      enr: enr,
-      peerId: id,
-      multiaddr: initMa,
-      config: {
-        enrUpdate: true,
-        addrVotesToUpdateEnr: 5,
-        allowUnverifiedSessions: true,
-      },
+      enrUpdate: true,
+      addrVotesToUpdateEnr: 5,
+      allowUnverifiedSessions: true,
     },
+    multiaddr: initMa,
+  } as any
+  const portal = await PortalNetwork.create({
+    config: config,
     radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
@@ -117,7 +118,7 @@ const main = async () => {
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
-  portal.enableLog('*ultralight*, *Portal*, *uTP*, -*:NODES, -*:FINDNODES')
+  portal.enableLog('*ultralight*, *Portal*')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
