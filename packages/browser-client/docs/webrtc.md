@@ -15,7 +15,7 @@ B(HybridTransport)
 ```mermaid
 classDiagram
     class PortalNetwork {
-        sendPortalNetworkMessage(peer_enr)
+        sendPortalNetworkMessage(peer_enr)s
         Discv5
     }
     PortalNetwork .. WebRTC : peer_enr.get('rtc') === 0x01
@@ -75,4 +75,26 @@ graph LR
     K --> Q[Connected via WebSocket]
 
 ```
-
+```mermaid
+sequenceDiagram
+    participant wa as WAKU(Alice.nodeId)
+    actor a as Browser-Alice
+    actor b as Browser-Bob
+    participant wb as WAKU(Bob.nodeId)
+    Note over wa,wb: Alice joins network via Bootnode Bob
+    Note over a,b: Discv5 Discovery using WAKU
+    Note over a: addBootNode(Bob.enr)
+    a-->>wa: PING
+    wa->>wb: waku.LightPush(encoded_PING)
+    wb-->>b: decoded_PING
+    b-->>wb: PONG
+    wb->>wa: waku.LightPush(encoded_PONG)
+    wa-->>a: decoded_PONG
+    Note over a,b: WebRTC hanshake using WAKU
+    wa->>wb: OFFER
+    wb->>wa: ANSWER
+    wa->wb: ICE
+    Note over a,b: PortalNetwork wire over WebRTC
+    a->>b: FINDCONTENT
+    b->>a: CONTENT
+```
