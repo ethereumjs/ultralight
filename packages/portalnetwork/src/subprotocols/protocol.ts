@@ -26,7 +26,6 @@ import {
   PingPongCustomDataType,
   PongMessage,
   PortalWireMessageType,
-  HybridTransportService,
   RequestCode,
   NodeLookup,
   StateNetworkRoutingTable,
@@ -135,16 +134,6 @@ export abstract class BaseProtocol {
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
         this.updateRoutingTable(enr, pongMessage.customPayload)
-        if (
-          this.client.discv5.sessionService.transport instanceof HybridTransportService &&
-          !this.client.discv5.sessionService.transport.webRTC?.peers.has(enr.nodeId) &&
-          enr.get('rtc') &&
-          toHexString(enr.get('rtc')!) === '0x01'
-        ) {
-          this.logger.extend('RTC')('Adding RTC conneection')
-          await this.client.discv5.sessionService.transport.connectWebRTC(enr.nodeId)
-        }
-
         return pongMessage
       } else {
         this.routingTable.evictNode(enr.nodeId)
