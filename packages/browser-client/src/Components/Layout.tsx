@@ -18,7 +18,6 @@ import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import DisplayBlock from './DisplayBlock'
 import GetByButtons from './GetByButton'
 import RoutingTableView from './RoutingTableView'
-
 export default function Layout() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   function handleTabsChange(index: number) {
@@ -44,14 +43,8 @@ export default function Layout() {
 
   const layoutVariant = useBreakpointValue({
     base: (
-      <Tabs width={'100%'} index={state.tabIndex} onChange={handleTabsChange}>
-        <TabList width="100%" justifyContent={'space-around'}>
-          <Tab>
-            <VStack spacing={0}>
-              <Text>Simple_Peer</Text>
-              <Text fontSize={'xx-small'}>test network functions</Text>
-            </VStack>
-          </Tab>
+      <Tabs height="100%" width={'100%'} index={state.tabIndex} onChange={handleTabsChange}>
+        <TabList height="5%" width="100%" justifyContent={'space-around'}>
           <Tab>
             <VStack spacing={0}>
               <Text>Network</Text>
@@ -65,9 +58,13 @@ export default function Layout() {
             </VStack>
           </Tab>
         </TabList>
-        <TabPanels width={'100%'}>
-          <TabPanel padding="0">{<RoutingTableView />}</TabPanel>
-          <TabPanel padding="1">{state.block && <DisplayBlock />}</TabPanel>
+        <TabPanels height="95%" width={'100%'}>
+          <TabPanel height="100%" padding="0">
+            {<RoutingTableView />}
+          </TabPanel>
+          <TabPanel height="100%" padding="1">
+            {state.block && <DisplayBlock />}
+          </TabPanel>
         </TabPanels>
       </Tabs>
     ),
@@ -94,11 +91,13 @@ export default function Layout() {
   })
 
   return (
-    <VStack width={'100%'} spacing={0}>
-      <HStack bg="gray.500" width={'100%'}>
+    <VStack height={'100%'} width={'100%'} spacing={0}>
+      <Box bg="gray.500" height="3%" width={'100%'}>
         <GetByButtons />
-      </HStack>
-      <HStack width={'100%'}>{layoutVariant}</HStack>
+      </Box>
+      <Box height="97%" width={'100%'}>
+        {layoutVariant}
+      </Box>
     </VStack>
   )
 }
