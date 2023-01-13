@@ -25,7 +25,6 @@ jobs:
       with:
         node-version: 16
         cache: 'npm'
-    - run: npm i -g @mapbox/node-pre-gyp
     - run: npm i
       working-directory: ${{ github.workspace }}
 
