@@ -76,8 +76,8 @@ export class HybridTransportService
     this.webRTC.closeAll()
   }
 
-  async send(to: Multiaddr, toId: string, packet: IPacket, rtc?: boolean) {
-    if (rtc) {
+  async send(to: Multiaddr, toId: string, packet: IPacket) {
+    if (this.webRTC.getPeer(toId)) {
       this.log.extend('SEND')('Sending via RTC')
       try {
         await this.webRTC.send(to, toId, packet)
