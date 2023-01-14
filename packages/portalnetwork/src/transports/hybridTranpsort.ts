@@ -28,7 +28,7 @@ export class HybridTransportService
   public webRTC: WebRTC
   public websocket: WebSocketTransportService
   public waku: WakuPortal
-  public status: 'started' | 'stopped'
+  public status: 'stopped' | 'rtconly' | 'hybrid'
   public rtcEnabled: Map<string, boolean>
   constructor(multiaddr: Multiaddr, enr: ENR, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
@@ -43,8 +43,14 @@ export class HybridTransportService
     this.rtcEnabled = new Map()
   }
   async start() {
-    await this.startWebsocket()
     await this.webRTC.start()
+    this.status = 'rtconly'
+    try {
+      await this.startWebsocket()
+      this.status = 'hybrid'
+    } catch {
+      this.log.extend('START')('Failed to start websocket')
+    }
     this.webRTC.on('packet', async (src, packet) => {
       this.rtcEnabled.set(src.toString(), true)
       this.emit('packet', src, packet)
@@ -58,13 +64,12 @@ export class HybridTransportService
     this.webRTC.on('send', (toId: string, message: string) => {
       this.waku.sendMessage(message, toId)
     })
-    this.status = 'started'
   }
 
   async startWebsocket() {
     await this.websocket.start()
     this.websocket.on('packet', (src, packet) => {
-      this.rtcEnabled.set(src.toString(), false)
+      this.isRTC(src) === true || this.rtcEnabled.set(src.toString(), false)
       this.emit('packet', src, packet)
     })
     this.websocket.on('decodeError', (err, src) => {
@@ -80,27 +85,48 @@ export class HybridTransportService
     this.webRTC.closeAll()
   }
 
+  isRTC(to: Multiaddr): boolean | undefined {
+    return this.rtcEnabled.get(to.toString())
+  }
+
   async send(to: Multiaddr, toId: string, packet: IPacket) {
-    if (this.webRTC.getPeer(toId)) {
-      this.log.extend('SEND')('Sending via RTC')
+    // If we are only using RTC, send via RTC
+    if (this.status === 'rtconly') {
       try {
         await this.webRTC.send(to, toId, packet)
       } catch (e) {
         this.log.extend('SEND')('Error sending RTC: ' + (e as any).message)
       }
-    } else if (this.rtcEnabled.get(to.toString()) === false) {
-      this.log.extend('SEND')('Sending via Websocket')
-      try {
-        await this.websocket.send(to, toId, packet)
-      } catch (e) {
-        this.log.extend('SEND')('Error sending Websocket: ' + (e as any).message)
-      }
-    } else {
-      try {
-        await this.webRTC.send(to, toId, packet)
-        await this.websocket.send(to, toId, packet)
-      } catch (e) {
-        this.log.extend('SEND')('Error sending: ' + (e as any).message)
+      // If we are also using websocket proxy...
+    } else if (this.status === 'hybrid') {
+      // If we have already established a connection with the peer via WAKU/WebRTC
+      if (this.webRTC.getPeer(toId) || this.isRTC(to) === true) {
+        this.log.extend('SEND')('Sending via RTC')
+        try {
+          await this.webRTC.send(to, toId, packet)
+        } catch (e) {
+          this.log.extend('SEND')('Error sending RTC: ' + (e as any).message)
+        }
+        // If we have already established a connection with the peer via Websocket
+      } else if (this.isRTC(to) === false) {
+        this.log.extend('SEND')('Sending via Websocket')
+        try {
+          await this.websocket.send(to, toId, packet)
+        } catch (e) {
+          this.log.extend('SEND')('Error sending Websocket: ' + (e as any).message)
+        }
+        // If we do not yet know how to connect to the peer
+      } else {
+        try {
+          // Try webRTC first
+          await this.webRTC.send(to, toId, packet)
+          if (this.isRTC(to) === undefined) {
+            // If it fails, try websocket
+            await this.websocket.send(to, toId, packet)
+          }
+        } catch (e) {
+          this.log.extend('SEND')('Error sending: ' + (e as any).message)
+        }
       }
     }
   }
