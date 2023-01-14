@@ -29,6 +29,7 @@ export class HybridTransportService
   public websocket: WebSocketTransportService
   public waku: WakuPortal
   public status: 'started' | 'stopped'
+  public rtcEnabled: Map<string, boolean>
   constructor(multiaddr: Multiaddr, enr: ENR, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
@@ -39,11 +40,13 @@ export class HybridTransportService
     this.webRTC = new WebRTC(this.nodeId, new WakuPortal(multiaddr, enr))
     this.websocket = new WebSocketTransportService(this.multiaddr, this.nodeId, proxyAddress)
     this.status = 'stopped'
+    this.rtcEnabled = new Map()
   }
   async start() {
     await this.startWebsocket()
     await this.webRTC.start()
     this.webRTC.on('packet', async (src, packet) => {
+      this.rtcEnabled.set(src.toString(), true)
       this.emit('packet', src, packet)
     })
     this.webRTC.on('decodeError', (err, src) => {
@@ -61,6 +64,7 @@ export class HybridTransportService
   async startWebsocket() {
     await this.websocket.start()
     this.websocket.on('packet', (src, packet) => {
+      this.rtcEnabled.set(src.toString(), false)
       this.emit('packet', src, packet)
     })
     this.websocket.on('decodeError', (err, src) => {
@@ -84,12 +88,19 @@ export class HybridTransportService
       } catch (e) {
         this.log.extend('SEND')('Error sending RTC: ' + (e as any).message)
       }
-    } else {
+    } else if (this.rtcEnabled.get(to.toString()) === false) {
       this.log.extend('SEND')('Sending via Websocket')
       try {
         await this.websocket.send(to, toId, packet)
       } catch (e) {
         this.log.extend('SEND')('Error sending Websocket: ' + (e as any).message)
+      }
+    } else {
+      try {
+        await this.webRTC.send(to, toId, packet)
+        await this.websocket.send(to, toId, packet)
+      } catch (e) {
+        this.log.extend('SEND')('Error sending: ' + (e as any).message)
       }
     }
   }

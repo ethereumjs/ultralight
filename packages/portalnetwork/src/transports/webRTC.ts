@@ -89,16 +89,12 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
     })
   }
 
-  getPeer = (id: string): WebRTCPeer => {
+  getPeer = (id: string): WebRTCPeer | undefined => {
     const peer = this.peers.get(id)
       ? this.peers.get(id)
       : this.nodeIdToRtcId.get(id)
       ? this.peers.get(this.nodeIdToRtcId.get(id)!)
       : undefined
-
-    if (!peer) {
-      throw new Error(`Peer not found for ${id} or ${this.nodeIdToRtcId.get(id)}`)
-    }
     return peer
   }
 
@@ -271,9 +267,10 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
       `Setting remote description for ${message.userId.slice(0, 10)}`
     )
     const peer = this.getPeer(message.userId)
-    await peer.rtcPeer.setRemoteDescription(
-      new RTCSessionDescription({ type: 'answer', sdp: message.data })
-    )
+    peer &&
+      (await peer.rtcPeer.setRemoteDescription(
+        new RTCSessionDescription({ type: 'answer', sdp: message.data })
+      ))
   }
 
   async send(to: Multiaddr, toId: string, packet: IPacket) {

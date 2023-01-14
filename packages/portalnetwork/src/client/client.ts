@@ -183,9 +183,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.uTP.closeRequest(msg, peerId)
       }
     })
-    if (this.discv5.sessionService.transport instanceof HybridTransportService) {
-      ;(this.discv5.sessionService as any).send = this.send.bind(this)
-    }
+    // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
+    //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
+    // }
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
 
@@ -213,46 +213,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private send(nodeAddr: INodeAddress, packet: any) {
-    if (this.discv5.sessionService.transport instanceof HybridTransportService) {
-      const enr = this.discv5.findEnr(nodeAddr.nodeId)
-      this.logger(enr === undefined ? 'CAN:T FIND ENR' : 'FOUND ENR')
-      if (enr) {
-        if (enr.get('rtc') && toHexString(enr.get('rtc')!) === '0x01') {
-          this.logger('SENDING DISCV5...RTC')
-          this.discv5.sessionService.transport.send(
-            nodeAddr.socketAddr,
-            nodeAddr.nodeId,
-            packet,
-            true
-          )
-        } else {
-          this.logger('SENDING DISCV5...Websocket')
-          this.discv5.sessionService.transport.send(
-            nodeAddr.socketAddr,
-            nodeAddr.nodeId,
-            packet,
-            false
-          )
-        }
-      } else {
-        this.discv5.sessionService.transport.send(
-          nodeAddr.socketAddr,
-          nodeAddr.nodeId,
-          packet,
-          false
-        )
-        this.discv5.sessionService.transport.send(
-          nodeAddr.socketAddr,
-          nodeAddr.nodeId,
-          packet,
-          true
-        )
-      }
-    } else {
-      this.discv5.sessionService.transport.send(nodeAddr.socketAddr, nodeAddr.nodeId, packet)
-    }
-  }
   /**
    * Starts the portal network client
    */
