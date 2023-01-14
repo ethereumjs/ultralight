@@ -644,9 +644,6 @@ export abstract class BaseProtocol {
       // Disregard attempts to add oneself as a bootnode
       return
     }
-    if (enr.get('rtc')) {
-      this.client.discv5.addEnr(enr)
-    }
     await this.sendPing(enr)
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256

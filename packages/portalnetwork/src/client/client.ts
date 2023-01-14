@@ -110,7 +110,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        config.enr.set('rtc', fromHexString('0x01'))
         config.transport = new HybridTransportService(ma, config.enr, opts.proxyAddress)
         break
       }
