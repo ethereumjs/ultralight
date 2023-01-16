@@ -12,6 +12,10 @@ import debug from 'debug'
 import { setupMetrics } from './metrics.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import WebSocket from 'ws'
+import wrtc from 'wrtc'
+import { NodeTransportService } from './transport.js'
+import { execSync } from 'child_process'
 
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
@@ -74,6 +78,11 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 }
 
 const main = async () => {
+  const cmd = 'hostname -I'
+  const pubIp = execSync(cmd).toString().split(' ')
+  const ip = pubIp[0]
+  console.log('My real public IP address is: ' + ip)
+  const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
   if (!args.pk) {
@@ -82,17 +91,11 @@ const main = async () => {
     id = await createFromProtobuf(fromHexString(args.pk))
   }
   const enr = ENR.createFromPeerId(id)
-  let initMa: Multiaddr
-  if (args.bindAddress) {
-    const addrOpts = args.bindAddress.split(':')
-    initMa = multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
-    // @ts-ignore
-    enr.setLocationMultiaddr(initMa)
-  } else {
-    initMa = multiaddr()
-  }
+  const initMa: any = multiaddr(`/ip4/${ip}/udp/${args.rpcPort}`)
+  enr.setLocationMultiaddr(initMa)
 
-  const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
+  const transport = new NodeTransportService(initMa, enr as any)
+
   const metrics = setupMetrics()
   let db
   if (args.dataDir) {
@@ -106,6 +109,7 @@ const main = async () => {
       addrVotesToUpdateEnr: 5,
       allowUnverifiedSessions: true,
     },
+    transport: 'node',
     multiaddr: initMa,
   } as any
   const portal = await PortalNetwork.create({
@@ -127,9 +131,12 @@ const main = async () => {
       register.registerMetric(entry[1])
     })
     metricsServer.listen(args.metricsPort)
-    log(`Started Metrics Server address=http://${args.rpcAddr}:${args.metricsPort}`)
+    log(`Started Metrics Server address=http://${ip}:${args.metricsPort}`)
   }
+  portal.discv5.sessionService.transport = transport
   await portal.start()
+  log('mult')
+  log('mult' + enr.getLocationMultiaddr('udp')?.toString())
 
   const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
   if (args.bootnode) {
@@ -173,9 +180,46 @@ const main = async () => {
         } else return this._methods[method]
       },
     })
+    const s = server.http().listen(args.rpcPort)
+    const wss = new WebSocket.Server({
+      server: s,
+    })
+    wss.on('connection', async (socket: WebSocket) => {
+      socket.binaryType = 'arraybuffer'
+      const peer = new wrtc.RTCPeerConnection({})
+      const dc = peer.createDataChannel('test')
+      dc.onopen = () => {}
+      let index = 0
+      dc.onmessage = (msg: any) => {
+        dc.send(Buffer.from('pong' + index++))
+      }
+      peer.setLocalDescription(await peer.createOffer())
+      socket.send(peer.localDescription.sdp)
+      socket.on('message', (msg: any) => {
+        try {
+          if (JSON.parse(msg).type === 'answer') {
+            peer.setRemoteDescription(JSON.parse(msg))
+          }
+        } catch {}
+      })
+    })
+    wss.on('error', (err: any) => {
+      log(err)
+    })
+    wss.on('close', () => {
+      log('close')
+    })
+    wss.on('listening', () => {
+      log('listening')
+    })
+    wss.on('message', (msg: any) => {
+      log('socket msg')
+    })
 
-    server.http().listen(args.rpcPort)
-    log(`Started JSON RPC Server address=http://${args.rpcAddr}:${args.rpcPort}`)
+    server.websocket({
+      wss: wss,
+    })
+    log(`Started JSON RPC Server address=http://${ip}:${args.rpcPort}`)
   }
 
   process.on('SIGINT', async () => {

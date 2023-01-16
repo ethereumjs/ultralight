@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import * as fs from 'fs'
-import { spawn, ChildProcessByStdio } from 'child_process' 
+import { spawn, ChildProcessByStdio, execSync } from 'child_process'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
@@ -26,24 +26,48 @@ const args: any = yargs(hideBin(process.argv))
     }).argv
 
 const main = async () => {
-    let children: ChildProcessByStdio<any, any, null>[] = []
-    const file = require.resolve(process.cwd() + '/dist/index.js')
-    if (args.pks) {
-    const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
+  const cmd = 'hostname -I'
+  const pubIp = execSync(cmd).toString().split(' ')
+  const ip = pubIp[0]
+  let children: ChildProcessByStdio<any, any, null>[] = []
+  const file = require.resolve(process.cwd() + '/dist/index.js')
+  if (args.pks) {
+    const pks = fs.readFileSync(args.pks, { encoding: 'utf8' }).split('\n')
     pks.forEach((key, idx) => {
-        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${args.port+idx}`, `--metrics=true`, `--metricsPort=1${args.port+idx}`], {stdio: ['pipe', 'pipe', process.stderr]})
-        children.push(child)
+      const child = spawn(
+        process.execPath,
+        [
+          file,
+          `--bindAddress=${ip}:${8545 + idx}`,
+          `--pk=${key}`,
+          `--rpcPort=${8545 + idx}`,
+          `--metrics=true`,
+          `--metricsPort=${18545 + idx}`,
+        ],
+        { stdio: ['pipe', 'pipe', process.stderr] }
+      )
+      children.push(child)
     })
-    } else if (args.numNodes){
-        for (let x = 0; x < args.numNodes; x++) {
-            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${args.port+x}`, `--metrics=true`, `--metricsPort=1${args.port+x}`], {stdio: ['pipe', 'pipe', process.stderr]})
-            children.push(child)
-        }
+  } else if (args.numNodes) {
+    for (let x = 0; x < args.numNodes; x++) {
+      const child = spawn(
+        process.execPath,
+        [
+          file,
+          `--bindAddress=${ip}:${8545 + x}`,
+          `--rpcPort=${8545 + x}`,
+          `--metrics=true`,
+          `--metricsPort=${18545 + x}`,
+        ],
+        { stdio: ['pipe', 'pipe', process.stderr] }
+      )
+      children.push(child)
     }
+  }
 
     if (args.promConfig) {
         const targets:any[] = []
-        children.forEach((_child, idx) => targets.push(`localhost:1${args.port + idx}`))
+        children.forEach((_child, idx) => targets.push(`${ip}:1${args.port + idx}`))
         let targetBlob = [Object.assign({
             "targets": targets,
             "labels": { "env": "devnet" }

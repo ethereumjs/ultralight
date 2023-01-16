@@ -57,7 +57,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         sessionEstablishTimeout: 10000,
       },
     }
-    const config = { ...defaultConfig }
+    const config = { ...defaultConfig, ...opts.config }
     let bootnodes
     if (opts.rebuildFromMemory && opts.db) {
       const prev_enr_string = await opts.db.get('enr')
@@ -67,7 +67,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
-    } else {
+    } else if (opts.config?.enr === undefined) {
       config.peerId = opts.config?.peerId ?? (await createSecp256k1PeerId())
       if (opts.config?.enr) {
         config.enr =
@@ -76,16 +76,22 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         config.enr = ENR.createFromPeerId(config.peerId)
       }
       bootnodes = opts.bootnodes
+    } else {
+      config.enr = opts.config.enr as ENR
     }
     let ma
-    if (opts.bindAddress) {
-      ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
-      config.enr.setLocationMultiaddr(ma)
-      config.multiaddr = ma
+    if (opts.config?.multiaddr === undefined) {
+      if (opts.bindAddress) {
+        ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
+        config.enr.setLocationMultiaddr(ma)
+        config.multiaddr = ma
+      } else {
+        ma = multiaddr(`/ip4/127.0.0.1/udp/${Math.floor(Math.random() * 990) + 9009}`)
+        config.enr.setLocationMultiaddr(ma)
+        config.multiaddr = ma
+      }
     } else {
-      ma = multiaddr(`/ip4/127.0.0.1/udp/${Math.floor(Math.random() * 990) + 9009}`)
-      config.enr.setLocationMultiaddr(ma)
-      config.multiaddr = ma
+      ma = opts.config.multiaddr
     }
 
     // Configure db size calculation
