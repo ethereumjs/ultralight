@@ -53,8 +53,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         addrVotesToUpdateEnr: 5,
         enrUpdate: true,
         allowUnverifiedSessions: true,
-        requestTimeout: 10000,
-        sessionEstablishTimeout: 10000,
+        requestTimeout: 3000,
+        sessionEstablishTimeout: 3000,
       },
     }
     const config = { ...defaultConfig, ...opts.config }
@@ -86,7 +86,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         config.enr.setLocationMultiaddr(ma)
         config.multiaddr = ma
       } else {
-        ma = multiaddr(`/ip4/127.0.0.1/udp/${Math.floor(Math.random() * 990) + 9009}`)
+        const ip = await (await fetch('https://api.ipify.org')).text()
+        ma = multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
         config.multiaddr = ma
       }
@@ -231,9 +232,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         protocol.protocolId,
         setInterval(() => protocol.bucketRefresh(), 30000)
       )
-      this.bootnodes.forEach(async (peer: string) => {
-        await protocol.addBootNode(peer)
-      })
     }
   }
 
