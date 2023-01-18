@@ -1,6 +1,5 @@
 import { Debugger } from 'debug'
 import {
-  ENR,
   ProtocolId,
   addRLPSerializedBlock,
   HistoryNetworkContentTypes,

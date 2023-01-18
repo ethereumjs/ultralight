@@ -4,7 +4,6 @@ import {
   ProtocolId,
   fromHexString,
   shortId,
-  HistoryNetworkContentKeyType,
   toHexString,
   HistoryProtocol,
   PortalNetwork,
@@ -107,7 +106,7 @@ export class portal {
     this._history.routingTable.evictNode(nodeId)
     return true
   }
-  async historyRoutingTableInfo(params: []): Promise<any> {
+  async historyRoutingTableInfo(_params: []): Promise<any> {
     this.logger(`portal_historyRoutingTableInfo request received.`)
     let localNodeId = ''
     let buckets: string[][] = []
@@ -162,7 +161,6 @@ export class portal {
     } catch (err) {
       res = (err as any).message
     }
-    console.log(res)
     return res
   }
   async historyFindContent(params: [string, string]) {

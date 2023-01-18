@@ -1,6 +1,6 @@
 import { Packet } from './Packet.js'
 import { PacketHeader, SelectiveAckHeader } from './PacketHeader.js'
-import { PacketType, Uint16, Uint32, protocolVersion, Uint8 } from './PacketTyping.js'
+import { PacketType, Uint16, Uint32, Uint8 } from './PacketTyping.js'
 
 export type createSynOpts = {
   version: Uint8

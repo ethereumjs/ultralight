@@ -227,11 +227,11 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
     peer.rtcPeer.onicecandidateerror = (event) => {
       this.log.extend('ICE')('candidate error', JSON.stringify(event))
     }
-    peer.rtcPeer.onicegatheringstatechange = (event) => {
+    peer.rtcPeer.onicegatheringstatechange = (_event) => {
       this.log.extend('ICE')('gathering StateChange:')
     }
 
-    peer.rtcPeer.oniceconnectionstatechange = (event) => {
+    peer.rtcPeer.oniceconnectionstatechange = (_event) => {
       this.log.extend('ICE')('connection state change')
     }
     this.log.extend(`HANDLE_OFFER`)(`Storing Peer connection with:  ${message.userId.slice(0, 10)}`)

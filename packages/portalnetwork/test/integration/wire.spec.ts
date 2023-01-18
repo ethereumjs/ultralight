@@ -1,21 +1,19 @@
-import tape from 'tape'
-import { ChildProcessWithoutNullStreams } from 'child_process'
-import {
-  decodeSszBlockBody,
-  PortalNetwork,
-  ProtocolId,
-  sszEncodeBlockBody,
-  HistoryNetworkContentTypes,
-  HistoryNetworkContentKeyType,
-  HistoryProtocol,
-  reassembleBlock,
-  getHistoryNetworkContentKey,
-} from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
+import { ChildProcessWithoutNullStreams } from 'child_process'
 import { createRequire } from 'module'
-import { BlockHeader } from '@ethereumjs/block'
-import * as rlp from '@ethereumjs/rlp'
+import tape from 'tape'
+import {
+  decodeSszBlockBody,
+  getHistoryNetworkContentKey,
+  HistoryNetworkContentKeyType,
+  HistoryNetworkContentTypes,
+  HistoryProtocol,
+  PortalNetwork,
+  ProtocolId,
+  reassembleBlock,
+  sszEncodeBlockBody,
+} from '../../src/index.js'
 import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)
@@ -200,7 +198,7 @@ tape('OFFER/ACCEPT', (t) => {
       const _blocks: string[] = []
       const _headers: string[] = []
 
-      portal1.on('ContentAdded', async (blockHash, contentType, content) => {
+      portal1.on('ContentAdded', async (blockHash, contentType) => {
         if (contentType === 0) {
           _headers.push(blockHash)
         }

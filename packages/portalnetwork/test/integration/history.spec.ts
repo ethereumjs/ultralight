@@ -4,12 +4,10 @@ import { ChildProcessWithoutNullStreams } from 'child_process'
 import { createRequire } from 'module'
 import tape from 'tape'
 import {
-  getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   PortalNetwork,
   ProtocolId,
-  reassembleBlock,
   sszEncodeBlockBody,
 } from '../../src/index.js'
 import { connectAndTest, end } from './integrationTest.js'

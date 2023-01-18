@@ -7,8 +7,6 @@ import {
   HistoryProtocol,
   reassembleBlock,
   HistoryNetworkContentTypes,
-  HeaderAccumulatorType,
-  HeaderAccumulator,
   getHistoryNetworkContentKey,
 } from '../../src/index.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'

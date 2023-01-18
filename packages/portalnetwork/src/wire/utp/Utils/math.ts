@@ -13,7 +13,7 @@ import { Uint16 } from '../index.js'
 export function MicrosecondTimeStamp(): number {
   const now = Date.now() % 2 ** 32
   const milli = performance.timeOrigin + performance.now()
-  const micro = Math.round(milli * 1000)
+  const _micro = Math.round(milli * 1000)
   return now
 }
 

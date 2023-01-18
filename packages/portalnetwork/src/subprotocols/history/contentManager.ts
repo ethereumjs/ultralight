@@ -3,7 +3,6 @@ import { BlockHeader, Block } from '@ethereumjs/block'
 import { Debugger } from 'debug'
 import {
   EpochAccumulator,
-  EPOCH_SIZE,
   getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   HistoryProtocol,
@@ -50,7 +49,6 @@ export class ContentManager {
             this.logger(`Block header content doesn't match header hash ${hashKey}`)
             return
           }
-          const epochIdx = Math.floor(Number(header.number) / 8192)
 
           this.history.client.db.put(contentKey, toHexString(value))
           this.logger.extend('HEADER')(`added for block #${header.number}`)

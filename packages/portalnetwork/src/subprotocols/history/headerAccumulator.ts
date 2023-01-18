@@ -1,5 +1,5 @@
 import { createProof, SingleProof, ProofType } from '@chainsafe/persistent-merkle-tree'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import {
   blockNumberToGindex,

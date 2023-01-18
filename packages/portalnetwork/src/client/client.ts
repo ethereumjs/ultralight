@@ -1,6 +1,5 @@
 import {
   createKeypairFromPeerId,
-  createPeerIdFromKeypair,
   Discv5,
   ENR,
   IDiscv5CreateOptions,
@@ -192,7 +191,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
     //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
     // }
-    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
+    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, _verified) => {
       this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
 
       // if (!verified || !enr.getLocationMultiaddr('udp')) {

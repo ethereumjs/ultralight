@@ -1,6 +1,4 @@
-import { isPeerId } from '@libp2p/interface-peer-id'
 import { HistoryNetworkContentTypes, ProtocolId } from '../index.js'
-import { isValidId } from './util.js'
 
 const INVALID_PARAMS = -32602
 

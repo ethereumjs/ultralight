@@ -1,4 +1,4 @@
-import { ENR, distance, NodeId, EntryStatus } from '@chainsafe/discv5'
+import { ENR, distance, NodeId } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'

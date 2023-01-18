@@ -88,7 +88,7 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   // Mainly prevents self from continuing to PING dead enrs that we receive
 
   public isIgnored = (nodeId: string) => {
-    if (this.ignored.find(([t, n]) => n === nodeId)) {
+    if (this.ignored.find(([_t, n]) => n === nodeId)) {
       return true
     }
   }
