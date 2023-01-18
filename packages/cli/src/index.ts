@@ -1,7 +1,8 @@
+/// <reference path="./wrtc/index.d.ts" />
 import * as fs from 'fs'
 import { PortalNetwork, ProtocolId, ENR, fromHexString, RPCManager } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
-import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
+import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
 // eslint-disable-next-line node/file-extension-in-import
 import { hideBin } from 'yargs/helpers'
