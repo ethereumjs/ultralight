@@ -8,7 +8,7 @@ import {
   reassembleBlock,
   HistoryNetworkContentTypes,
   getHistoryNetworkContentKey,
-} from '../../src/index.js'
+} from 'portalnetwork'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import { createRequire } from 'module'

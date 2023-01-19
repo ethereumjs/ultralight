@@ -9,7 +9,7 @@ import {
   PortalNetwork,
   ProtocolId,
   sszEncodeBlockBody,
-} from '../../src/index.js'
+} from 'portalnetwork'
 import { connectAndTest, end } from './integrationTest.js'
 
 const require = createRequire(import.meta.url)

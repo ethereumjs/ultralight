@@ -1,8 +1,7 @@
 import tape from 'tape'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { multiaddr } from '@multiformats/multiaddr'
-import { PortalNetwork, ProtocolId } from '../../src/index.js'
-import { TransportLayer } from '../../src/client/types.js'
+import { PortalNetwork, ProtocolId, TransportLayer } from 'portalnetwork'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
