@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@chainsafe/discv5": "1.1.1",
+    "@chainsafe/ssz": "^0.9.1",
     "@ethereumjs/block": "^4.0.0",
     "@ethereumjs/tx": "^4.0.0",
     "@ethereumjs/util": "^8.0.0",
@@ -43,6 +44,7 @@
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
     "strict-event-emitter-types": "2.0.0",
+    "tape": "^5.3.2",
     "@ethereumjs/rlp": "^4.0.0",
     "wrtc": "^0.4.7",
     "ws": "^8.12.0",
