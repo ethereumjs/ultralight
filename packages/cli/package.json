@@ -54,6 +54,7 @@
     "start": "ts-node src/index.ts",
     "devnet": "npx ts-node --esm scripts/devnet.ts ",
     "dev": "npx nodemon --esm src/index.ts -- --bindAddress=127.0.0.1:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data'",
+    "tape": "NODE_OPTIONS='--loader ts-node/esm --experimental-json-modules' tape",
     "test:integration": "npm run tape -- 'test/integration/*.spec.ts'",
     "build": "tsc && cp bootnodes.txt ./dist",
     "lint": "../../config/cli/lint.sh",
