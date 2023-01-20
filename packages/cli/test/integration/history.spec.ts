@@ -4,6 +4,7 @@ import { ChildProcessByStdio, ChildProcessWithoutNullStreams } from 'child_proce
 import { createRequire } from 'module'
 import tape from 'tape'
 import {
+  getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   PortalNetwork,
@@ -24,6 +25,57 @@ const nodes = {
     nodeId: '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     enr: 'enr:-IS4QHgO8pX1b5I3z4tvMBpmqivXj3hKzcKSYiKH7cbqFcH1B5Yaofybqf175qt1I6Gxl8FzMTsf5aQOGjJ1p6mrEkEDgmlkgnY0gmlwhMCoVh2Jc2VjcDI1NmsxoQOZCain6B29yGdIDw7rdGgYnR56HdfuihPuSGyMvXQ3ZIN1ZHCCIWI',
   },
+}
+
+const testBlockData = require('./testBlocks.json')
+const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
+  return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
+    hardforkByBlockNumber: true,
+  })
+})
+const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
+  return testBlock.hash()
+})
+const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
+  return toHexString(testHash)
+})
+
+async function readyTest(
+  p1: ChildProcessWithoutNullStreams,
+  p2: ChildProcessWithoutNullStreams,
+  st: tape.Test,
+  continue1: () => Promise<void>,
+  listeners: ((msg: string) => Promise<void>)[] = []
+) {
+  let ready = false
+  p1.stderr.on('data', (data) => {
+    const msg = data.toString().split(' ').slice(1).join(' ')
+    if (msg.trim().includes('Started JSON RPC')) {
+      st.pass('p1 ready')
+      if (ready) {
+        st.pass('test ready')
+        continue1()
+      } else {
+        ready = true
+      }
+    }
+  })
+  p2.stderr.on('data', async (data: Buffer) => {
+    const msg = data.toString().split(' ').slice(1).join(' ')
+    if (msg.trim().includes('Started JSON RPC')) {
+      console.log('LISTEN')
+      st.pass('p2 ready')
+      if (ready) {
+        st.pass('test ready')
+        continue1()
+      } else {
+        ready = true
+      }
+    }
+    for (const listener of listeners) {
+      await listener(msg)
+    }
+  })
 }
 
 tape('History Protocol Integration Tests', (t) => {
@@ -51,70 +103,180 @@ tape('History Protocol Integration Tests', (t) => {
           `PING/PONG successful with ${nodes.node1.nodeId}`,
           'Node 2 pinged Node 1'
         )
-        const testBlockData = require('./testBlocks.json')
-        const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
-          return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
-            hardforkByBlockNumber: true,
-          })
-        })
 
-        const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
-          return testBlock.hash()
-        })
-        const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
-          return toHexString(testHash)
-        })
-        for await (const [idx, testBlock] of testBlocks.slice(0, 13).entries()) {
-          const req = await portal1.request('ultralight_addBlockToHistory', [
+        for await (const [idx, testBlock] of testBlocks.entries()) {
+          await portal1.request('ultralight_addBlockToHistory', [
             testHashStrings[idx],
             toHexString(testBlock.serialize()),
           ])
-          console.log(req.result)
         }
-
-        // end([p1, p2], st)
       }
 
-      let ready = 0
+      const continue2 = async () => {
+        p1.kill('SIGINT')
+        const ping2 = await portal2.request('portal_historyPing', [nodes.node1.enr])
+        st.equal(
+          ping2.result,
+          `PING/PONG with ${nodes.node1.nodeId} was unsuccessful`,
+          'Node unreachable after shutdown'
+        )
+        end([p1, p2], st)
+      }
       let received = 0
+      await readyTest(p1, p2, st, continue1, [
+        async (msg) => {
+          if (msg.trim().includes('added for block')) {
+            if (received === 51) {
+              st.pass('Gossip test passed -- 26 blocks gossiped ')
+              await continue2()
+            } else {
+              received += 1
+              received % 2 === 0 &&
+                st.pass(`received block ${received / 2} of ${testBlocks.length}`)
+            }
+          }
+        },
+      ])
+    }
+    connectAndTest(t, st, gossip, true)
+  })
+  t.test('Node should retrieve content via FINDCONTENT ', (st) => {
+    const gossip = async (
+      portal1: jayson.Client,
+      portal2: jayson.Client,
+      p1: ChildProcessWithoutNullStreams,
+      p2: ChildProcessWithoutNullStreams
+    ) => {
+      const continue1 = async () => {
+        await portal1.request('portal_historyPing', [nodes.node2.enr])
+        await portal2.request('portal_historyPing', [nodes.node1.enr])
+        await portal1.request('ultralight_addBlockToHistory', [
+          testBlockData[29].blockHash,
+          testBlockData[29].rlp,
+        ])
+        const findContent = await portal2.request('portal_historyFindContent', [
+          nodes.node1.nodeId,
+          getHistoryNetworkContentKey(
+            HistoryNetworkContentTypes.BlockHeader,
+            fromHexString(testBlockData[29].blockHash)
+          ),
+        ])
+        st.equal(findContent.result.selector, 1, 'Node 2 found content from Node 1')
+        end([p1, p2], st)
+      }
+
+      let ready = false
       p1.stderr.on('data', (data) => {
-        const msg = data.toString().split(' ').slice(2).join(' ')
-        if (msg.trim().startsWith('Started JSON RPC')) {
+        const msg = data.toString().split(' ').slice(1).join(' ')
+        if (msg.trim().includes('Started JSON RPC')) {
           st.pass('p1 ready')
-          if (ready === 1) {
-            st.pass('test passed')
-            ready += 1
+          if (ready) {
+            st.pass('test ready')
             continue1()
-            // end([p1, p2], st)
           } else {
-            ready += 1
+            ready = true
           }
         }
-        console.log('p1', `${msg}`)
       })
       p2.stderr.on('data', (data: Buffer) => {
-        const msg = data.toString().split(' ').slice(2).join(' ')
-        if (msg.trim().startsWith('Started JSON RPC')) {
+        const msg = data.toString().split(' ').slice(1).join(' ')
+        if (msg.trim().includes('Started JSON RPC')) {
           console.log('LISTEN')
           st.pass('p2 ready')
-          if (ready === 1) {
-            st.pass('test passed')
-            ready += 1
+          if (ready) {
+            st.pass('test ready')
             continue1()
-            // end([p1, p2], st)
           } else {
-            ready += 1
+            ready = true
           }
         }
-        if (msg.trim().startsWith('added BlockBody')) {
-          received += 1
-          if (received === 13) {
-            st.pass('Gossip test passed -- 13 blocks gossiped ')
-            end([p1, p2], st)
-          }
+        if (msg.trim().includes('added for block')) {
+          st.pass(`received block`)
         }
-        console.log('p2', `${msg}`)
       })
+    }
+    connectAndTest(t, st, gossip, true)
+  })
+  t.test('Node should retrieve content via eth_getBlockByHash ', (st) => {
+    const gossip = async (
+      portal1: jayson.Client,
+      portal2: jayson.Client,
+      p1: ChildProcessWithoutNullStreams,
+      p2: ChildProcessWithoutNullStreams
+    ) => {
+      const continue1 = async () => {
+        await portal1.request('portal_historyPing', [nodes.node2.enr])
+        await portal2.request('portal_historyPing', [nodes.node1.enr])
+        await portal1.request('ultralight_addBlockToHistory', [
+          testBlockData[29].blockHash,
+          testBlockData[29].rlp,
+        ])
+        const getBlock = await portal2.request('eth_getBlockByHash', [
+          testBlockData[29].blockHash,
+          true,
+        ])
+        const expected = Block.fromRLPSerializedBlock(
+          Buffer.from(fromHexString(testBlockData[29].rlp)),
+          {
+            hardforkByBlockNumber: true,
+          }
+        )
+        st.deepEqual(
+          getBlock.result,
+          expected.toJSON(),
+          'Node 2 found content with eth_getBlockByHash'
+        )
+        end([p1, p2], st)
+      }
+      await readyTest(p1, p2, st, continue1)
+    }
+    connectAndTest(t, st, gossip, true)
+  })
+  t.test('Node should retrieve content via eth_getBlockByNumber ', (st) => {
+    const gossip = async (
+      portal1: jayson.Client,
+      portal2: jayson.Client,
+      p1: ChildProcessWithoutNullStreams,
+      p2: ChildProcessWithoutNullStreams
+    ) => {
+      const continue1 = async () => {
+        const epochData = require('./testEpoch.json')
+        const block1000 = require('./testBlock1000.json')
+        const epochHash = epochData.hash
+        const epoch = epochData.serialized
+
+        const blockRlp = block1000.raw
+        const expected = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(blockRlp)), {
+          hardforkByBlockNumber: true,
+        })
+        const blockHash = block1000.hash
+
+        await portal1.request('portal_historyPing', [nodes.node2.enr])
+        await portal2.request('portal_historyPing', [nodes.node1.enr])
+        await portal1.request('ultralight_addBlockToHistory', [blockHash, blockRlp])
+        await portal1.request('ultralight_addContentToDB', [
+          getHistoryNetworkContentKey(
+            HistoryNetworkContentTypes.EpochAccumulator,
+            fromHexString(epochHash)
+          ),
+          epoch,
+        ])
+        const getBlock = await portal2.request('eth_getBlockByNumber', ['0x3e8', true])
+        st.deepEqual(
+          getBlock.result,
+          expected.toJSON(),
+          'Node 2 found content with eth_getBlockByNumber'
+        )
+        end([p1, p2], st)
+      }
+
+      await readyTest(p1, p2, st, continue1, [
+        async (msg: string) => {
+          if (msg.includes('added EpochAccumulator')) {
+            st.pass('EpochAccumulator acquired during eth_getBlockByNumber')
+          }
+        },
+      ])
     }
     connectAndTest(t, st, gossip, true)
   })
