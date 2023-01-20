@@ -85,7 +85,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         config.enr.setLocationMultiaddr(ma)
         config.multiaddr = ma
       } else {
-        const ip = await (await fetch('https://api.ipify.org')).text()
+        let ip = ''
+        try {
+          ip = await (await fetch('https://api.ipify.org')).text()
+        } catch (e) {
+          ip = '127.0.0.1'
+        }
         ma = multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
         config.multiaddr = ma
