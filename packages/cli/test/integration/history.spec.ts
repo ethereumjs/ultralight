@@ -1,16 +1,9 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
-import { ChildProcessByStdio, ChildProcessWithoutNullStreams } from 'child_process'
+import { ChildProcessWithoutNullStreams } from 'child_process'
 import { createRequire } from 'module'
 import tape from 'tape'
-import {
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
-  HistoryProtocol,
-  PortalNetwork,
-  ProtocolId,
-  sszEncodeBlockBody,
-} from 'portalnetwork'
+import { getHistoryNetworkContentKey, HistoryNetworkContentTypes } from 'portalnetwork'
 import { connectAndTest, end } from './integrationTest.js'
 import jayson from 'jayson/promise/index.js'
 
@@ -18,12 +11,10 @@ const require = createRequire(import.meta.url)
 
 const nodes = {
   node1: {
-    nodeId: 'f7c205cc868edd8519c2873ab4252b06842723b33d77acafe92271179aff02c8',
-    enr: 'enr:-IS4QCndV76oLLohd9CA0vRiX5b3_fGqExViBL4zvBbWcFOQXm-AwWhJkxN05hit9pDVGPDAkwn8qxMGYiXd-mJYo6EDgmlkgnY0gmlwhMCoVh2Jc2VjcDI1NmsxoQInMJdnOilIr5MxcjXS8CrZzzt5o07rN3IMXxngnxF4PIN1ZHCCIWE',
+    nodeId: '0xf7c205cc868edd8519c2873ab4252b06842723b33d77acafe92271179aff02c8',
   },
   node2: {
-    nodeId: '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
-    enr: 'enr:-IS4QHgO8pX1b5I3z4tvMBpmqivXj3hKzcKSYiKH7cbqFcH1B5Yaofybqf175qt1I6Gxl8FzMTsf5aQOGjJ1p6mrEkEDgmlkgnY0gmlwhMCoVh2Jc2VjcDI1NmsxoQOZCain6B29yGdIDw7rdGgYnR56HdfuihPuSGyMvXQ3ZIN1ZHCCIWI',
+    nodeId: '0x8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
   },
 }
 
@@ -78,7 +69,7 @@ async function readyTest(
   })
 }
 
-tape('History Protocol Integration Tests', (t) => {
+tape('Gossip Test', (t) => {
   t.test('Node should gossip new content to peer', (st) => {
     const gossip = async (
       portal1: jayson.Client,
@@ -86,21 +77,25 @@ tape('History Protocol Integration Tests', (t) => {
       p1: ChildProcessWithoutNullStreams,
       p2: ChildProcessWithoutNullStreams
     ) => {
+      let nodes1enr: string
+      let nodes2enr: string
       const continue1 = async () => {
         const node1Info = await portal1.request('discv5_nodeInfo', [])
-        st.equal(node1Info.result.enr, nodes.node1.enr, 'Node 1 started from private key')
+        st.equal(node1Info.result.nodeId, nodes.node1.nodeId, 'Node 1 started from private key')
+        nodes1enr = node1Info.result.enr
         const node2Info = await portal2.request('discv5_nodeInfo', [])
-        st.equal(node2Info.result.enr, nodes.node2.enr, 'Node 2 started from private key')
-        const ping1 = await portal1.request('portal_historyPing', [nodes.node2.enr])
+        st.equal(node2Info.result.nodeId, nodes.node2.nodeId, 'Node 2 started from private key')
+        nodes2enr = node2Info.result.enr
+        const ping1 = await portal1.request('portal_historyPing', [nodes2enr])
         st.equal(
           ping1.result,
-          `PING/PONG successful with ${nodes.node2.nodeId}`,
+          `PING/PONG successful with ${nodes.node2.nodeId.slice(2)}`,
           'Node 1 pinged Node 2'
         )
-        const ping2 = await portal2.request('portal_historyPing', [nodes.node1.enr])
+        const ping2 = await portal2.request('portal_historyPing', [nodes1enr])
         st.equal(
           ping2.result,
-          `PING/PONG successful with ${nodes.node1.nodeId}`,
+          `PING/PONG successful with ${nodes.node1.nodeId.slice(2)}`,
           'Node 2 pinged Node 1'
         )
 
@@ -114,10 +109,10 @@ tape('History Protocol Integration Tests', (t) => {
 
       const continue2 = async () => {
         p1.kill('SIGINT')
-        const ping2 = await portal2.request('portal_historyPing', [nodes.node1.enr])
+        const ping2 = await portal2.request('portal_historyPing', [nodes1enr])
         st.equal(
           ping2.result,
-          `PING/PONG with ${nodes.node1.nodeId} was unsuccessful`,
+          `PING/PONG with ${nodes.node1.nodeId.slice(2)} was unsuccessful`,
           'Node unreachable after shutdown'
         )
         end([p1, p2], st)
@@ -140,6 +135,9 @@ tape('History Protocol Integration Tests', (t) => {
     }
     connectAndTest(t, st, gossip, true)
   })
+  t.end()
+})
+tape('FindContent Test', (t) => {
   t.test('Node should retrieve content via FINDCONTENT ', (st) => {
     const gossip = async (
       portal1: jayson.Client,
@@ -147,15 +145,23 @@ tape('History Protocol Integration Tests', (t) => {
       p1: ChildProcessWithoutNullStreams,
       p2: ChildProcessWithoutNullStreams
     ) => {
+      let nodes1enr: string
+      let nodes2enr: string
       const continue1 = async () => {
-        await portal1.request('portal_historyPing', [nodes.node2.enr])
-        await portal2.request('portal_historyPing', [nodes.node1.enr])
+        const node1Info = await portal1.request('discv5_nodeInfo', [])
+        st.equal(node1Info.result.nodeId, nodes.node1.nodeId, 'Node 1 started from private key')
+        nodes1enr = node1Info.result.enr
+        const node2Info = await portal2.request('discv5_nodeInfo', [])
+        st.equal(node2Info.result.nodeId, nodes.node2.nodeId, 'Node 2 started from private key')
+        nodes2enr = node2Info.result.enr
+        await portal1.request('portal_historyPing', [nodes2enr])
+        await portal2.request('portal_historyPing', [nodes1enr])
         await portal1.request('ultralight_addBlockToHistory', [
           testBlockData[29].blockHash,
           testBlockData[29].rlp,
         ])
         const findContent = await portal2.request('portal_historyFindContent', [
-          nodes.node1.nodeId,
+          nodes.node1.nodeId.slice(2),
           getHistoryNetworkContentKey(
             HistoryNetworkContentTypes.BlockHeader,
             fromHexString(testBlockData[29].blockHash)
@@ -197,6 +203,9 @@ tape('History Protocol Integration Tests', (t) => {
     }
     connectAndTest(t, st, gossip, true)
   })
+  t.end()
+})
+tape('Eth_GetBlockByHash Test', (t) => {
   t.test('Node should retrieve content via eth_getBlockByHash ', (st) => {
     const gossip = async (
       portal1: jayson.Client,
@@ -204,9 +213,17 @@ tape('History Protocol Integration Tests', (t) => {
       p1: ChildProcessWithoutNullStreams,
       p2: ChildProcessWithoutNullStreams
     ) => {
+      let nodes1enr: string
+      let nodes2enr: string
       const continue1 = async () => {
-        await portal1.request('portal_historyPing', [nodes.node2.enr])
-        await portal2.request('portal_historyPing', [nodes.node1.enr])
+        const node1Info = await portal1.request('discv5_nodeInfo', [])
+        st.equal(node1Info.result.nodeId, nodes.node1.nodeId, 'Node 1 started from private key')
+        nodes1enr = node1Info.result.enr
+        const node2Info = await portal2.request('discv5_nodeInfo', [])
+        st.equal(node2Info.result.nodeId, nodes.node2.nodeId, 'Node 2 started from private key')
+        nodes2enr = node2Info.result.enr
+        await portal1.request('portal_historyPing', [nodes2enr])
+        await portal2.request('portal_historyPing', [nodes1enr])
         await portal1.request('ultralight_addBlockToHistory', [
           testBlockData[29].blockHash,
           testBlockData[29].rlp,
@@ -232,6 +249,9 @@ tape('History Protocol Integration Tests', (t) => {
     }
     connectAndTest(t, st, gossip, true)
   })
+  t.end()
+})
+tape('Eth_GetBlockByNumber', (t) => {
   t.test('Node should retrieve content via eth_getBlockByNumber ', (st) => {
     const gossip = async (
       portal1: jayson.Client,
@@ -239,7 +259,15 @@ tape('History Protocol Integration Tests', (t) => {
       p1: ChildProcessWithoutNullStreams,
       p2: ChildProcessWithoutNullStreams
     ) => {
+      let nodes1enr: string
+      let nodes2enr: string
       const continue1 = async () => {
+        const node1Info = await portal1.request('discv5_nodeInfo', [])
+        st.equal(node1Info.result.nodeId, nodes.node1.nodeId, 'Node 1 started from private key')
+        nodes1enr = node1Info.result.enr
+        const node2Info = await portal2.request('discv5_nodeInfo', [])
+        st.equal(node2Info.result.nodeId, nodes.node2.nodeId, 'Node 2 started from private key')
+        nodes2enr = node2Info.result.enr
         const epochData = require('./testEpoch.json')
         const block1000 = require('./testBlock1000.json')
         const epochHash = epochData.hash
@@ -251,8 +279,8 @@ tape('History Protocol Integration Tests', (t) => {
         })
         const blockHash = block1000.hash
 
-        await portal1.request('portal_historyPing', [nodes.node2.enr])
-        await portal2.request('portal_historyPing', [nodes.node1.enr])
+        await portal1.request('portal_historyPing', [nodes2enr])
+        await portal2.request('portal_historyPing', [nodes1enr])
         await portal1.request('ultralight_addBlockToHistory', [blockHash, blockRlp])
         await portal1.request('ultralight_addContentToDB', [
           getHistoryNetworkContentKey(
