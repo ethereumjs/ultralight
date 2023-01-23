@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  devnet-cli-run:
+  cli-devnet-integration:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,23 +38,3 @@ jobs:
       - run: |
           sleep 10 &&
           npx ts-node --esm scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10
-
-  test-integration-cli:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18]
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - run: npm i -g @mapbox/node-pre-gyp
-      - run: npm i
-        working-directory: ${{ github.workspace }}
-
-      - run: npm run test:integration  
-
