@@ -19,6 +19,10 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'create prometheus scrape_target file',
         boolean: true,
         default: false
+    }).option('port', {
+        describe: 'starting port number',
+        number: true,
+        default: 8545
     }).argv
 
 const main = async () => {
@@ -27,19 +31,19 @@ const main = async () => {
     if (args.pks) {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8'}).split('\n')
     pks.forEach((key, idx) => {
-        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${8545+idx}`, `--metrics=true`, `--metricsPort=${18545+idx}`], {stdio: ['pipe', 'pipe', process.stderr]})
+        const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + idx}`, `--pk=${key}`, `--rpcPort=${args.port+idx}`, `--metrics=true`, `--metricsPort=1${args.port+idx}`], {stdio: ['pipe', 'pipe', process.stderr]})
         children.push(child)
     })
     } else if (args.numNodes){
         for (let x = 0; x < args.numNodes; x++) {
-            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${8545+x}`, `--metrics=true`, `--metricsPort=${18545+x}`], {stdio: ['pipe', 'pipe', process.stderr]})
+            const child = spawn(process.execPath, [file, `--bindAddress=127.0.0.1:${5000 + x}`, `--rpcPort=${args.port+x}`, `--metrics=true`, `--metricsPort=1${args.port+x}`], {stdio: ['pipe', 'pipe', process.stderr]})
             children.push(child)
         }
     }
 
     if (args.promConfig) {
         const targets:any[] = []
-        children.forEach((_child, idx) => targets.push(`localhost:${18545 + idx}`))
+        children.forEach((_child, idx) => targets.push(`localhost:1${args.port + idx}`))
         let targetBlob = [Object.assign({
             "targets": targets,
             "labels": { "env": "devnet" }

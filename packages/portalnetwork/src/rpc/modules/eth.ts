@@ -1,7 +1,16 @@
 import { Block } from '@ethereumjs/block'
 import { intToHex, toBuffer } from '@ethereumjs/util'
 import { Debugger } from 'debug'
-import { ProtocolId, ReceiptsManager, HistoryProtocol, PortalNetwork } from '../../index.js'
+import {
+  ProtocolId,
+  ReceiptsManager,
+  HistoryProtocol,
+  PortalNetwork,
+  getHistoryNetworkContentKey,
+  fromHexString,
+  toHexString,
+  reassembleBlock,
+} from '../../index.js'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
 import { validators, middleware } from '../validators.js'
@@ -103,12 +112,16 @@ export class eth {
     this._client.logger(
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
     )
-    try {
-      const block = await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
-      return block ?? 'Block not found'
-    } catch {
-      return 'Block not found'
-    }
+    await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
+    const header = await this._history.findContentLocally(
+      fromHexString(getHistoryNetworkContentKey(0, fromHexString(blockHash)))
+    )
+    const body = await this._history.findContentLocally(
+      fromHexString(getHistoryNetworkContentKey(1, fromHexString(blockHash)))
+    )
+    const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
+
+    return block ?? 'Block not found'
   }
 
   /**
