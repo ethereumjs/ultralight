@@ -13,16 +13,32 @@ import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 const methods = [
-  'portal_historyAddBootNode',
-  'portal_historyNodeInfo',
   'portal_historyRoutingTableInfo',
+  // 'portal_historyAddEnr',
+  // 'portal_historyGetEnr',
+  // 'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
-  'portal_historyAddEnrs',
+  // 'portal_historySendPing',
+  // 'portal_historySendPong',
+  // 'portal_historySendFindNodes',
+  // 'portal_historySendFindContent',
+  // 'portal_historySendContent',
+  // 'portal_historySendOffer',
+  // 'portal_historySendAccept',
   'portal_historyPing',
   'portal_historyFindNodes',
-  'portal_historyLocalContent',
   'portal_historyFindContent',
   'portal_historyOffer',
+  // 'portal_historyRecursiveFindNodes',
+  // 'portal_historyRecursiveFindContent',
+  // 'portal_historyStore',
+  'portal_historyLocalContent',
+  // 'portal_historyGossip',
+
+  // not included in portal-network-specs
+  'portal_historyAddEnrs',
+  'portal_historyAddBootNode',
+  'portal_historyNodeInfo',
 ]
 
 export class portal {
