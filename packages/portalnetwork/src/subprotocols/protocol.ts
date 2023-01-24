@@ -30,6 +30,7 @@ import {
   RequestCode,
   NodeLookup,
   StateNetworkRoutingTable,
+  getHistoryNetworkContentId,
 } from '../index.js'
 import { bigIntToHex } from '@ethereumjs/util'
 export abstract class BaseProtocol {
@@ -648,5 +649,48 @@ export abstract class BaseProtocol {
       this.db()!.del(key)
     }
     this.nodeRadius = radius
+  }
+
+  // Gossip (OFFER) content to any interested peers.
+  // Returns the number of peers that accepted the gossip.
+  public async gossipContent(contentKey: Uint8Array, content: Uint8Array): Promise<number> {
+    const peers = this.routingTable
+      .values()
+      .filter((e) => !this.routingTable.contentKeyKnownToPeer(e.nodeId, toHexString(contentKey)))
+    const offerMsg: OfferMessage = {
+      contentKeys: [contentKey],
+    }
+    const payload = PortalWireMessageType.serialize({
+      selector: MessageCodes.OFFER,
+      value: offerMsg,
+    })
+    let accepted = 0
+    for (const peer of peers) {
+      const res = await this.client.sendPortalNetworkMessage(
+        peer,
+        Buffer.from(payload),
+        this.protocolId
+      )
+      if (res.length > 0) {
+        try {
+          const decoded = PortalWireMessageType.deserialize(res)
+          if (decoded.selector === MessageCodes.ACCEPT) {
+            const msg = decoded.value as AcceptMessage
+            if (msg.contentKeys.get(0) === true) {
+              accepted++
+              const id = Buffer.from(msg.connectionId).readUInt16BE(0)
+              this.client.uTP.handleNewRequest({
+                contentKeys: [contentKey],
+                peerId: peer.nodeId,
+                connectionId: id,
+                requestCode: RequestCode.OFFER_WRITE,
+                contents: [content],
+              })
+            }
+          }
+        } catch {}
+      }
+    }
+    return accepted
   }
 }
