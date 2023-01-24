@@ -33,7 +33,7 @@ const methods = [
   // 'portal_historyRecursiveFindContent',
   // 'portal_historyStore',
   'portal_historyLocalContent',
-  // 'portal_historyGossip',
+  'portal_historyGossip',
 
   // not included in portal-network-specs
   'portal_historyAddEnrs',
@@ -74,6 +74,10 @@ export class portal {
     this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.hex)],
+    ])
+    this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
+      [validators.contentKey],
+      [validators.hex],
     ])
   }
   async methods() {

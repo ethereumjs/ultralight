@@ -163,6 +163,34 @@ export const validators = {
   },
 
   /**
+   * contentKey validator to ensure string has `0x` prefix and 33 bytes length
+   * @param params parameters of method
+   * @param index index of parameter
+   */
+  get contentKey() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'string') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be a string`,
+        }
+      }
+      if (params[index].substr(0, 2) !== '0x') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: hex string without 0x prefix`,
+        }
+      }
+      if (params[index].length !== 68) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: content key must be 33 bytes`,
+        }
+      }
+    }
+  },
+
+  /**
    * hex validator to ensure has `0x` prefix
    * @param params parameters of method
    * @param index index of parameter
