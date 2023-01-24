@@ -192,4 +192,9 @@ export class portal {
     const res = await this._history.sendOffer(dstId, keys)
     return res
   }
+  async historyGossip(params: [string, string]) {
+    const [contentKey, content] = params
+    const res = await this._history.gossipContent(fromHexString(contentKey), fromHexString(content))
+    return res
+  }
 }
