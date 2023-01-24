@@ -8,6 +8,7 @@ import {
   toHexString,
   HistoryProtocol,
   PortalNetwork,
+  HistoryNetworkContentTypes,
 } from '../../index.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
@@ -31,7 +32,7 @@ const methods = [
   'portal_historyOffer',
   // 'portal_historyRecursiveFindNodes',
   // 'portal_historyRecursiveFindContent',
-  // 'portal_historyStore',
+  'portal_historyStore',
   'portal_historyLocalContent',
   'portal_historyGossip',
 
@@ -65,6 +66,10 @@ export class portal {
       [validators.array(validators.distance)],
     ])
     this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
+      [validators.hex],
+    ])
+    this.historyStore = middleware(this.historyStore.bind(this), 2, [
+      [validators.contentKey],
       [validators.hex],
     ])
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
@@ -200,5 +205,18 @@ export class portal {
     const [contentKey, content] = params
     const res = await this._history.gossipContent(fromHexString(contentKey), fromHexString(content))
     return res
+  }
+  async historyStore(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => fromHexString(param))
+    try {
+      await this._history.addContentToHistory(
+        contentKey[0] as HistoryNetworkContentTypes,
+        toHexString(contentKey.slice(1)),
+        content
+      )
+      return true
+    } catch {
+      return false
+    }
   }
 }
