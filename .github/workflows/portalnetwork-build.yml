@@ -36,6 +36,6 @@ jobs:
       - run: npm run test
 
       - run: npm run test:integration
-        working-directory: ${{ github.workspace}}/packages/cli
+
 
   
