@@ -6,6 +6,7 @@ import {
   addRLPSerializedBlock,
   ENR,
   fromHexString,
+  getHistoryNetworkContentKey,
   HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
@@ -35,7 +36,7 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
   return toHexString(testHash)
 })
 
-tape('integration tests', async (t) => {
+tape('gossip test', async (t) => {
   t.plan(2)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = ENR.createFromPeerId(id1)
@@ -101,5 +102,219 @@ tape('integration tests', async (t) => {
         }
       }
     })
+  })
+})
+tape('FindContent', async (t) => {
+  t.plan(1)
+  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const enr1 = ENR.createFromPeerId(id1)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  enr1.setLocationMultiaddr(initMa)
+  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const enr2 = ENR.createFromPeerId(id2)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  enr2.setLocationMultiaddr(initMa2)
+  const node1 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    config: {
+      enr: enr1,
+      multiaddr: initMa,
+      peerId: id1,
+    },
+  })
+  node1.enableLog('*Portal*,-uTP*')
+  const node2 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    config: {
+      enr: enr2,
+      multiaddr: initMa2,
+      peerId: id2,
+    },
+  })
+  node2.enableLog('*Portal*,-uTP*')
+
+  await node1.start()
+  await node2.start()
+  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+
+  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
+  await protocol1.sendPing(protocol2?.client.discv5.enr!)
+
+  const retrieved = await protocol2.sendFindContent(
+    node1.discv5.enr.nodeId,
+    fromHexString(
+      getHistoryNetworkContentKey(
+        HistoryNetworkContentTypes.BlockHeader,
+        fromHexString(testBlockData[29].blockHash)
+      )
+    )
+  )
+
+  // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
+  await new Promise((resolve) => {
+    const header = BlockHeader.fromRLPSerializedHeader(
+      Buffer.from(retrieved!.value as Uint8Array),
+      {
+        hardforkByBlockNumber: true,
+      }
+    )
+    t.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
+    // node2.on('ContentAdded', (key, contentType, content) => {
+    //   t.fail('should not have received content')
+    // if (key === testBlockData[29].blockHash) {
+    //   t.pass('found expected header')
+    void node1.stop()
+    void node2.stop()
+    resolve(undefined)
+    // } else {
+    //   t.fail(`${key} !== ${testHashStrings[29]}`)
+    //   void node1.stop()
+    //   void node2.stop()
+    //   resolve(undefined)
+    // }
+    // })
+    t.end()
+  })
+})
+tape('eth_getBlockByHash', async (t) => {
+  t.plan(1)
+  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const enr1 = ENR.createFromPeerId(id1)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  enr1.setLocationMultiaddr(initMa)
+  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const enr2 = ENR.createFromPeerId(id2)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  enr2.setLocationMultiaddr(initMa2)
+  const node1 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    config: {
+      enr: enr1,
+      multiaddr: initMa,
+      peerId: id1,
+    },
+  })
+  node1.enableLog('*Portal*,-uTP*')
+  const node2 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    config: {
+      enr: enr2,
+      multiaddr: initMa2,
+      peerId: id2,
+    },
+  })
+  node2.enableLog('*Portal*,-uTP*')
+
+  await node1.start()
+  await node2.start()
+  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+
+  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
+  await protocol1.sendPing(protocol2?.client.discv5.enr!)
+
+  const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
+
+  // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
+  await new Promise((resolve) => {
+    t.equal(
+      toHexString(retrieved!.hash()),
+      testBlockData[29].blockHash,
+      'retrieved expected header'
+    )
+    // node2.on('ContentAdded', (key, contentType, content) => {
+    //   t.fail('should not have received content')
+    // if (key === testBlockData[29].blockHash) {
+    //   t.pass('found expected header')
+    void node1.stop()
+    void node2.stop()
+    resolve(undefined)
+    // } else {
+    //   t.fail(`${key} !== ${testHashStrings[29]}`)
+    //   void node1.stop()
+    //   void node2.stop()
+    //   resolve(undefined)
+    // }
+    // })
+    t.end()
+  })
+})
+tape('eth_getBlockByNumber', async (t) => {
+  t.plan(1)
+  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const enr1 = ENR.createFromPeerId(id1)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  enr1.setLocationMultiaddr(initMa)
+  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const enr2 = ENR.createFromPeerId(id2)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  enr2.setLocationMultiaddr(initMa2)
+  const node1 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    config: {
+      enr: enr1,
+      multiaddr: initMa,
+      peerId: id1,
+    },
+  })
+  node1.enableLog('*Portal*,-uTP*')
+  const node2 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    config: {
+      enr: enr2,
+      multiaddr: initMa2,
+      peerId: id2,
+    },
+  })
+  node2.enableLog('*Portal*,-uTP*')
+
+  await node1.start()
+  await node2.start()
+  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+
+  const epochData = require('./testEpoch.json')
+  const block1000 = require('./testBlock1000.json')
+  const epochHash = epochData.hash
+  const epoch = epochData.serialized
+
+  const blockRlp = block1000.raw
+  const blockHash = block1000.hash
+
+  await protocol1.addContentToHistory(
+    HistoryNetworkContentTypes.EpochAccumulator,
+    epochHash,
+    fromHexString(epoch)
+  )
+  await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
+  await protocol1.sendPing(protocol2?.client.discv5.enr!)
+
+  const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
+
+  // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
+  await new Promise((resolve) => {
+    t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
+    // node2.on('ContentAdded', (key, contentType, content) => {
+    //   t.fail('should not have received content')
+    // if (key === testBlockData[29].blockHash) {
+    //   t.pass('found expected header')
+    void node1.stop()
+    void node2.stop()
+    resolve(undefined)
+    // } else {
+    //   t.fail(`${key} !== ${testHashStrings[29]}`)
+    //   void node1.stop()
+    //   void node2.stop()
+    //   resolve(undefined)
+    // }
+    // })
+    t.end()
   })
 })
