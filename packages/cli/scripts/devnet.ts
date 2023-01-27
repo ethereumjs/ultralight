@@ -15,6 +15,10 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'number of random nodes to start',
         number: true,
         optional: true,
+    }) .option('ip', {
+        describe: 'ip addr',
+        string: true,
+        optional: true,
     }).option('promConfig', {
         describe: 'create prometheus scrape_target file',
         boolean: true,
@@ -28,7 +32,7 @@ const args: any = yargs(hideBin(process.argv))
 const main = async () => {
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
-  const ip = pubIp[0]
+  const ip = args.ip ?? pubIp[0]
   let children: ChildProcessByStdio<any, any, null>[] = []
   const file = require.resolve(process.cwd() + '/dist/index.js')
   if (args.pks) {
@@ -38,7 +42,7 @@ const main = async () => {
         process.execPath,
         [
           file,
-          `--bindAddress=${ip}:${8545 + idx}`,
+          `--rpcAddr=${ip}`,
           `--pk=${key}`,
           `--rpcPort=${8545 + idx}`,
           `--metrics=true`,
@@ -54,7 +58,7 @@ const main = async () => {
         process.execPath,
         [
           file,
-          `--bindAddress=${ip}:${8545 + x}`,
+          `--rpcAddr=${ip}`,
           `--rpcPort=${8545 + x}`,
           `--metrics=true`,
           `--metricsPort=${18545 + x}`,

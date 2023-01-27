@@ -44,7 +44,8 @@ const args: any = yargs(hideBin(process.argv))
   })
   .option('rpcAddr', {
     describe: 'HTTP-RPC server listening interface address',
-    default: 'localhost',
+    optional: true,
+    string: true,
   })
   .option('metrics', {
     describe: 'Turn on Prometheus metrics reporting',
@@ -77,7 +78,7 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 const main = async () => {
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
-  const ip = pubIp[0]
+  const ip = args.rpcAddr ?? pubIp[0]
   const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
@@ -103,7 +104,6 @@ const main = async () => {
       addrVotesToUpdateEnr: 5,
       allowUnverifiedSessions: true,
     },
-    transport: 'node',
     multiaddr: initMa,
   } as any
   const portal = await PortalNetwork.create({
