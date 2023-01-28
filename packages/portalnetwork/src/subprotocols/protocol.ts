@@ -36,7 +36,7 @@ import { bigIntToHex } from '@ethereumjs/util'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
-  private nodeRadius: bigint
+  public nodeRadius: bigint
   private checkIndex: number
   protected abstract logger: Debugger
   abstract protocolId: ProtocolId

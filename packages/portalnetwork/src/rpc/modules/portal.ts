@@ -1,4 +1,5 @@
 import { EntryStatus } from '@chainsafe/discv5'
+import { MessageType } from '@chainsafe/discv5/lib/message/types.js'
 import { Debugger } from 'debug'
 import {
   ENR,
@@ -12,6 +13,9 @@ import {
   HistoryNetworkContentTypes,
   ContentLookup,
   NodeLookup,
+  PingPongCustomDataType,
+  PortalWireMessageType,
+  MessageCodes,
 } from '../../index.js'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -24,7 +28,7 @@ const methods = [
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
   'portal_historySendPing', // (ENR, DataRadius) => SendPingResult(requestId)
-  // 'portal_historySendPong',
+  'portal_historySendPong',
   // 'portal_historySendFindNodes',
   // 'portal_historySendFindContent',
   // 'portal_historySendContent',
@@ -72,6 +76,11 @@ export class portal {
     ])
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
       [validators.enr],
+      [validators.hex],
+    ])
+    this.historySendPong = middleware(this.historySendPong.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
       [validators.hex],
     ])
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
@@ -214,11 +223,35 @@ export class portal {
     }
   }
   async historySendPing(params: [string, string]) {
-    const [enr, dataRadius] = params
+    const [enr, _dataRadius] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
     return '0x' + pong?.enrSeq.toString(16)
+  }
+  async historySendPong(params: [string, string, string]) {
+    const [_enr, requestId, dataRadius] = params
+    const enr = ENR.decodeTxt(_enr)
+    this.logger(`PONG request received on HistoryNetwork for ${shortId(enr.nodeId)}`)
+    const payload = {
+      enrSeq: this._client.discv5.enr.seq,
+      customPayload: PingPongCustomDataType.serialize({ radius: BigInt(dataRadius) }),
+    }
+    const pongMsg = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: payload,
+    })
+    this.logger.extend('PONG')(`Sent to ${shortId(enr.nodeId)}`)
+    try {
+      await this._client.sendPortalNetworkResponse(
+        { nodeId: enr.nodeId, socketAddr: enr.getLocationMultiaddr('udp')! },
+        BigInt(requestId),
+        Buffer.from(pongMsg)
+      )
+    } catch {
+      return false
+    }
+    return true
   }
   async historyFindNodes(params: [string, number[]]) {
     const [dstId, distances] = params
