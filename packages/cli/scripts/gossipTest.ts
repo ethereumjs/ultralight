@@ -31,7 +31,7 @@ const testBlocks = [
 
 const { Client } = jayson
 
-const main = async () => {
+const gossip = async () => {
   const ultralights: HttpClient[] = []
   const enrs: string[] = []
   const nodeIds: string[] = []
@@ -43,24 +43,63 @@ const main = async () => {
     enrs.push(ultralightENR.result.enr)
     nodeIds.push(ultralightENR.result.nodeId)
   }
-  const headerKey = getHistoryNetworkContentKey(
-    HistoryNetworkContentTypes.BlockHeader,
-    testBlocks[0].hash()
-  )
-  const header = testBlocks[0].header.serialize()
-  const store = await ultralights[0].request('portal_historyStore', [headerKey, toHexString(header)])
-  console.log(store)
-  for (const enr of enrs.slice(1)) {
-    const ping = await ultralights[0].request('portal_historyPing', [enr])
-    console.log(ping)
-  }
-  const gossip = await ultralights[0].request('portal_historyGossip', [headerKey, toHexString(header)])
-  console.log(gossip.result === 9)
+  // GossipTest
 
-  for (const [idx, ultralight] of ultralights.entries()) {
-    const stored = await ultralight.request('portal_historyLocalContent', [headerKey])
-    console.log(idx, Buffer.from(stored.result.data).equals(header))
+    const headerKey = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.BlockHeader,
+      testBlocks[0].hash()
+    )
+    const header = testBlocks[0].header.serialize()
+    const store = await ultralights[0].request('portal_historyStore', [headerKey, toHexString(header)])
+    console.log(store)
+    for (const enr of enrs.slice(1)) {
+      const ping = await ultralights[0].request('portal_historyPing', [enr])
+      console.log(ping)
+    }
+    const gossip = await ultralights[0].request('portal_historyGossip', [headerKey, toHexString(header)])
+    console.log(gossip.result === 9)
+
+    for (const [idx, ultralight] of ultralights.entries()) {
+      const stored = await ultralight.request('portal_historyLocalContent', [headerKey])
+      console.log(idx, Buffer.from(stored.result.data).equals(header))
+    }
+}
+const enr = async () => {
+  const ultralights: HttpClient[] = []
+  const enrs: string[] = []
+  const nodeIds: string[] = []
+  for (let i = 0; i < 10; i++) {
+    const ultralight = Client.http({ host: '127.0.0.1', port: 8545 + i })
+    const ultralightENR = await ultralight.request('portal_historyNodeInfo', [])
+    ultralights.push(ultralight)
+    // console.log(ultralightENR)
+    enrs.push(ultralightENR.result.enr)
+    nodeIds.push(ultralightENR.result.nodeId)
   }
+
+  // Add/Get/Delete ENRTest
+  const add = await ultralights[0].request('portal_historyAddEnr', [enrs[1]])
+  console.log('add', add.result, enrs[1])
+  const get = await ultralights[0].request('portal_historyGetEnr', [nodeIds[1]])
+  console.log('get', get.result === enrs[1], nodeIds[1])
+  const ping = await ultralights[0].request('portal_historyPing', [enrs[1]])
+  console.log('ping', ping.result)
+  setTimeout( async () => {
+    const peers = await ultralights[0].request('portal_historyRoutingTableInfo', [])
+    console.log('peers', peers.result.buckets.flat())
+  }, 2000)
+  setTimeout( async () => {
+    const del = await ultralights[0].request('portal_historyDeleteEnr', [nodeIds[1]])
+    console.log('del', del)
+  }, 3000)
+  setTimeout( async () => {
+    const peers = await ultralights[0].request('portal_historyRoutingTableInfo', [])
+    console.log('peers', peers.result.buckets.flat())
+  }, 4000)
+}
+
+const main = async () => {
+    await gossip()
 }
 
 main()
