@@ -1,3 +1,4 @@
+import { EntryStatus } from '@chainsafe/discv5'
 import { Debugger } from 'debug'
 import {
   ENR,
@@ -10,14 +11,15 @@ import {
   PortalNetwork,
   HistoryNetworkContentTypes,
 } from '../../index.js'
+import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 const methods = [
   'portal_historyRoutingTableInfo',
-  // 'portal_historyAddEnr',
-  // 'portal_historyGetEnr',
-  // 'portal_historyDeleteEnr',
+  'portal_historyAddEnr',
+  'portal_historyGetEnr',
+  'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
   // 'portal_historySendPing',
   // 'portal_historySendPong',
@@ -56,10 +58,12 @@ export class portal {
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
+    this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
+    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
+    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
-    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [validators.dstId])
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.dstId],
@@ -127,9 +131,35 @@ export class portal {
     }
     return true
   }
-  async historyDeleteEnr(params: [string]): Promise<boolean> {
+  async historyGetEnr(params: [string]): Promise<GetEnrResult> {
     const [nodeId] = params
-    this._history.routingTable.evictNode(nodeId)
+    this.logger(`portal_historyGetEnr request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._history.routingTable.getValue(nodeId)
+    if (enr) {
+      return enr.encodeTxt()
+    }
+    return ''
+  }
+
+  async historyAddEnr(params: [string]): Promise<boolean> {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
+    this.logger(`portal_historyAddEnr request received for ${shortEnr}`)
+    try {
+      if (this._history.routingTable.getValue(encodedENR.nodeId)) {
+        return true
+      }
+      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Disconnected)
+      return true
+    } catch {
+      return false
+    }
+  }
+  async historyDeleteEnr(params: [string]): Promise<boolean> {
+    this.logger(`portal_historyDeleteEnr request received.`)
+    const [nodeId] = params
+    this._history.routingTable.removeById(nodeId)
     return true
   }
   async historyRoutingTableInfo(params: []): Promise<any> {
