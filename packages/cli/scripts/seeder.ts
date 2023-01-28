@@ -142,9 +142,9 @@ const main = async () => {
   await testRes([clients[0]], 'portal_historyLookupEnr', [[clientInfo.peer1.enr]])
   // portal_historyPing
   await testRes(clients.slice(1), 'portal_historyPing', [
-    [clientInfo.ultralight.enr],
-    [clientInfo.ultralight.enr],
-    [clientInfo.ultralight.enr],
+    [clientInfo.ultralight.enr, "0x00"],
+    [clientInfo.ultralight.enr, "0x00"],
+    [clientInfo.ultralight.enr, "0x00"],
   ])
   // portal_historyFindNodes
   await testRes([clients[1]], 'portal_historyFindNodes', [

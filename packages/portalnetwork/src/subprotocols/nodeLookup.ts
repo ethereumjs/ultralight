@@ -26,7 +26,7 @@ export class NodeLookup {
    * @param nodeSought nodeId of node sought in lookup
    * @param protocolId `SubNetworkId` of the routing table to be queried
    */
-  public startLookup = async () => {
+  public startLookup = async (): Promise<undefined | string> => {
     const closestPeers = this.protocol.routingTable.nearest(this.nodeSought, a)
     const newPeers: ENR[] = []
     const nodesAlreadyAsked = new Set()
@@ -51,7 +51,7 @@ export class NodeLookup {
 
       if (res?.enrs && res.enrs.length > 0) {
         const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, this.nodeSought)
-        res.enrs.forEach((enr: Uint8Array) => {
+        for await (const enr of res.enrs) {
           if (!finished) {
             const decodedEnr = ENR.decode(Buffer.from(enr))
             if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
@@ -61,7 +61,7 @@ export class NodeLookup {
               // `nodeSought` was found -- add to table and terminate lookup
               finished = true
               this.protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              this.protocol.sendPing(decodedEnr)
+              await this.protocol.sendPing(decodedEnr)
             } else if (
               distance(decodedEnr.nodeId, this.nodeSought) < distanceFromSoughtNodeToQueriedNode
             ) {
@@ -71,7 +71,7 @@ export class NodeLookup {
               newPeers.push(decodedEnr)
             }
           }
-        })
+        }
       }
     }
     newPeers.length > 0 &&
@@ -80,10 +80,11 @@ export class NodeLookup {
           newPeers.length
         } new peers`
       )
-    newPeers.forEach(async (enr) => {
+    for await (const enr of newPeers) {
       // Add all newly found peers to the subprotocol routing table
       const res = await this.protocol.sendPing(enr)
       if (res) this.protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-    })
+    }
+    return this.protocol.routingTable.getValue(this.nodeSought)?.encodeTxt()
   }
 }
