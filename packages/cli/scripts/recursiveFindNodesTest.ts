@@ -14,17 +14,24 @@ const recursiveFindNodes = async () => {
     enrs.push(ultralightENR.result.enr)
     nodeIds.push(ultralightENR.result.nodeId)
   }
-  const ping9 = await ultralights[1].request('portal_historyPing', [enrs[9], '0x00'])
-  console.log('PING 1 <> 9', ping9.result.startsWith(`PING/PONG successful`) ? 'pass' : 'fail')
   for (const [idx, enr] of enrs.slice(2).entries()) {
     const ping = await ultralights[0].request('portal_historyPing', [enr, '0x00'])
-    if(!ping.result.startsWith(`PING/PONG successful`)) {
-        console.log('pingfail') 
+    if(!ping.result) {
+      console.log('pingfail') 
     } else {
-        console.log(`PING 0 <> ${idx + 2}`)
+      console.log(`PING 0 <> ${idx + 2} pass`)
     }
   }
-
+  for (const [idx, enr] of enrs.slice(2, 8).entries()) {
+    const ping = await ultralights[9].request('portal_historyPing', [enr, '0x00'])
+    if(!ping.result) {
+      console.log('pingfail') 
+    } else {
+      console.log(`PING 9 <> ${idx + 2} pass`)
+    }
+  }
+  
+  const ping9 = await ultralights[1].request('portal_historyPing', [enrs[9], '0x00'])
   const find = await ultralights[0].request('portal_historyRecursiveFindNodes', [nodeIds[1]])
   console.log('RecursiveFindNodes', find.result === enrs[1] ? 'pass' : find)
 

@@ -54,7 +54,7 @@ const gossip = async () => {
     console.log(store)
     for (const enr of enrs.slice(1)) {
       const ping = await ultralights[0].request('portal_historyPing', [enr, '0x00'])
-      console.log(ping.result.startsWith(`PING/PONG successful`))
+      console.log(ping.result !== undefined)
     }
     const gossip = await ultralights[0].request('portal_historyGossip', [headerKey, toHexString(header)])
     console.log(gossip.result === 9)

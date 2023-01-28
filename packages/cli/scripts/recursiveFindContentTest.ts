@@ -57,7 +57,7 @@ const recursiveFindContent = async () => {
   store.result || console.log('store fail')
   for (const enr of enrs.slice(0, 9)) {
     const ping = await ultralights[9].request('portal_historyPing', [enr, '0x00'])
-    if(!ping.result.startsWith(`PING/PONG successful`)) {
+    if(!ping.result) {
         console.log('pingfail')
     }
   }

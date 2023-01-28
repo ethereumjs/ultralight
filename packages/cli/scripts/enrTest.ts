@@ -21,7 +21,7 @@ const enr = async () => {
   const get = await ultralights[0].request('portal_historyGetEnr', [nodeIds[1]])
   console.log('portal_historyGetEnr', get.result === enrs[1] ? 'pass' : 'fail')
   const ping = await ultralights[0].request('portal_historyPing', [enrs[1], '0x00'])
-  if (ping.result.startsWith(`PING/PONG successful`)) {
+  if (ping.result) {
     const peers = await ultralights[0].request('portal_historyRoutingTableInfo', [])
     console.log('Enr Added: ', peers.result.buckets.flat().includes(nodeIds[1]) ? 'pass' : 'fail')
     // setTimeout(async () => {

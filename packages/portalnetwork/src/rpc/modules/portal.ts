@@ -1,12 +1,10 @@
 import { EntryStatus } from '@chainsafe/discv5'
-import { MessageType } from '@chainsafe/discv5/lib/message/types.js'
 import { Debugger } from 'debug'
 import {
   ENR,
   ProtocolId,
   fromHexString,
   shortId,
-  HistoryNetworkContentKeyType,
   toHexString,
   HistoryProtocol,
   PortalNetwork,
@@ -217,17 +215,21 @@ export class portal {
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
     if (pong) {
-      return `PING/PONG successful with ${encodedENR.nodeId}`
+      this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
     } else {
-      return `PING/PONG with ${encodedENR.nodeId} was unsuccessful`
+      this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
     }
+    return (
+      pong && {
+        enrSeq: '0x' + pong.enrSeq.toString(16),
+        dataRadius: toHexString(pong.customPayload),
+      }
+    )
   }
   async historySendPing(params: [string, string]) {
-    const [enr, _dataRadius] = params
-    const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._history.sendPing(encodedENR)
-    return '0x' + pong?.enrSeq.toString(16)
+    this.logger(`portal_historySendPing`)
+    const pong = await this.historyPing(params)
+    return pong && pong.enrSeq
   }
   async historySendPong(params: [string, string, string]) {
     const [_enr, requestId, dataRadius] = params
