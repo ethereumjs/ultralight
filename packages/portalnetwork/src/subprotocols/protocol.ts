@@ -30,13 +30,12 @@ import {
   RequestCode,
   NodeLookup,
   StateNetworkRoutingTable,
-  getHistoryNetworkContentId,
 } from '../index.js'
 import { bigIntToHex } from '@ethereumjs/util'
 export abstract class BaseProtocol {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
-  public nodeRadius: bigint
+  private nodeRadius: bigint
   private checkIndex: number
   protected abstract logger: Debugger
   abstract protocolId: ProtocolId
@@ -231,7 +230,7 @@ export abstract class BaseProtocol {
     }
   }
 
-  public handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
+  private handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
         total: 0,
@@ -352,7 +351,7 @@ export abstract class BaseProtocol {
     }
   }
 
-  handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  private handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`
     )

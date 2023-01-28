@@ -51,7 +51,7 @@ export class NodeLookup {
 
       if (res?.enrs && res.enrs.length > 0) {
         const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, this.nodeSought)
-        res.enrs.forEach(async (enr: Uint8Array) => {
+        for await (const enr of res.enrs) {
           if (!finished) {
             const decodedEnr = ENR.decode(Buffer.from(enr))
             if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
@@ -71,7 +71,7 @@ export class NodeLookup {
               newPeers.push(decodedEnr)
             }
           }
-        })
+        }
       }
     }
     newPeers.length > 0 &&
