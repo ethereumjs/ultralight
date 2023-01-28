@@ -11,6 +11,7 @@ import {
   PortalNetwork,
   HistoryNetworkContentTypes,
   ContentLookup,
+  NodeLookup,
 } from '../../index.js'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -33,7 +34,7 @@ const methods = [
   'portal_historyFindNodes',
   'portal_historyFindContent',
   'portal_historyOffer',
-  // 'portal_historyRecursiveFindNodes',
+  'portal_historyRecursiveFindNodes',
   'portal_historyRecursiveFindContent',
   'portal_historyStore',
   'portal_historyLocalContent',
@@ -76,6 +77,9 @@ export class portal {
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.distance)],
+    ])
+    this.historyRecursiveFindNodes = middleware(this.historyRecursiveFindNodes.bind(this), 1, [
+      [validators.dstId],
     ])
     this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
       [validators.hex],
@@ -225,6 +229,14 @@ export class portal {
     const res = await this._history.sendFindNodes(dstId, distances)
     this.logger(`findNodes request returned ${res?.total} enrs`)
     return res?.enrs.map((v) => toHexString(v))
+  }
+  async historyRecursiveFindNodes(params: [string]) {
+    const [dstId] = params
+    this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
+    const lookup = new NodeLookup(this._history, dstId)
+    const res = await lookup.startLookup()
+    this.logger(`historyRecursiveFindNodes request returned ${res}`)
+    return res ?? ''
   }
   async historyLocalContent(params: [string]) {
     const [contentKey] = params
