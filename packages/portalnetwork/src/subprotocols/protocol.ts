@@ -231,7 +231,7 @@ export abstract class BaseProtocol {
     }
   }
 
-  private handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
+  public handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
         total: 0,
@@ -352,7 +352,7 @@ export abstract class BaseProtocol {
     }
   }
 
-  private handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`
     )

@@ -1,4 +1,5 @@
 import { EntryStatus } from '@chainsafe/discv5'
+import { BitArray } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import {
   ENR,
@@ -14,6 +15,9 @@ import {
   PingPongCustomDataType,
   PortalWireMessageType,
   MessageCodes,
+  NodesMessage,
+  ContentMessageType,
+  AcceptMessage,
 } from '../../index.js'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -25,14 +29,15 @@ const methods = [
   'portal_historyGetEnr',
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
-  'portal_historySendPing', // (ENR, DataRadius) => SendPingResult(requestId)
+  'portal_historySendPing',
   'portal_historySendPong',
-  // 'portal_historySendFindNodes',
-  // 'portal_historySendFindContent',
-  // 'portal_historySendContent',
-  // 'portal_historySendOffer',
-  // 'portal_historySendAccept',
-  'portal_historyPing', // (ENR, DataRadius) => PingResult (PONG MESSAGE)
+  'portal_historySendFindNodes',
+  'portal_historySendNodes',
+  'portal_historySendFindContent',
+  'portal_historySendContent',
+  'portal_historySendOffer',
+  'portal_historySendAccept',
+  'portal_historyPing',
   'portal_historyFindNodes',
   'portal_historyFindContent',
   'portal_historyOffer',
@@ -85,8 +90,17 @@ export class portal {
       [validators.dstId],
       [validators.array(validators.distance)],
     ])
+    this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
+      [validators.dstId],
+      [validators.array(validators.distance)],
+    ])
     this.historyRecursiveFindNodes = middleware(this.historyRecursiveFindNodes.bind(this), 1, [
       [validators.dstId],
+    ])
+    this.historySendNodes = middleware(this.historySendNodes.bind(this), 2, [
+      [validators.dstId],
+      [validators.array(validators.enr)],
+      [validators.hex],
     ])
     this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
       [validators.hex],
@@ -105,6 +119,15 @@ export class portal {
     this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.hex)],
+    ])
+    this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
+      [validators.dstId],
+      [validators.array(validators.hex)],
+    ])
+    this.historySendAccept = middleware(this.historySendAccept.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+      [validators.array(validators.contentKey)],
     ])
     this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
       [validators.contentKey],
@@ -265,6 +288,50 @@ export class portal {
     this.logger(`findNodes request returned ${res?.total} enrs`)
     return res?.enrs.map((v) => toHexString(v))
   }
+  async historySendFindNodes(params: [string, number[]]) {
+    const [dstId, distances] = params
+    this.logger(`portal_historySendFindNodes`)
+    try {
+      const enr = this._history.routingTable.getValue(dstId)
+      if (!enr) {
+        return
+      }
+      const res = await this._history.sendFindNodes(dstId, distances)
+      return res ? '0x' + enr.seq.toString(16) : res
+    } catch {
+      return
+    }
+  }
+  async historySendNodes(params: [string, string[], string]) {
+    const [dstId, enrs, requestId] = params
+    this.logger(`portal_historySendNodes`)
+    try {
+      const enr = this._history.routingTable.getValue(dstId)
+      if (!enr) {
+        return
+      }
+      const nodesPayload: NodesMessage = {
+        total: enrs.length,
+        enrs: enrs.map((v) => ENR.decodeTxt(v).encode()),
+      }
+      const encodedPayload = PortalWireMessageType.serialize({
+        selector: MessageCodes.NODES,
+        value: nodesPayload,
+      })
+      this._client.sendPortalNetworkResponse(
+        {
+          nodeId: dstId,
+          socketAddr: enr.getLocationMultiaddr('udp')!,
+        },
+        BigInt(requestId),
+        Uint8Array.from(encodedPayload)
+      )
+
+      return enrs.length > 0 ? 1 : 0
+    } catch {
+      return
+    }
+  }
   async historyRecursiveFindNodes(params: [string]) {
     const [dstId] = params
     this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
@@ -282,13 +349,32 @@ export class portal {
     } catch (err) {
       res = (err as any).message
     }
-    console.log(res)
     return res
   }
   async historyFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
     return res
+  }
+  async historySendFindContent(params: [string, string]) {
+    const [nodeId, contentKey] = params
+    const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
+    const enr = this._history.routingTable.getValue(nodeId)
+    return res && enr && '0x' + enr.seq.toString(16)
+  }
+  async historySendContent(params: [string, string]) {
+    const [nodeId, content] = params
+    const payload = ContentMessageType.serialize({
+      selector: 1,
+      value: fromHexString(content),
+    })
+    const enr = this._history.routingTable.getValue(nodeId)
+    this._client.sendPortalNetworkResponse(
+      { nodeId, socketAddr: enr?.getLocationMultiaddr('udp')! },
+      enr!.seq,
+      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
+    )
+    return '0x' + enr!.seq.toString(16)
   }
   async historyRecursiveFindContent(params: [string]) {
     const [contentKey] = params
@@ -304,6 +390,46 @@ export class portal {
     const keys = contentKeys.map((key) => fromHexString(key))
     const res = await this._history.sendOffer(dstId, keys)
     return res
+  }
+  async historySendOffer(params: [string, string[]]) {
+    const [dstId, contentKeys] = params
+    const keys = contentKeys.map((key) => fromHexString(key))
+    const res = await this._history.sendOffer(dstId, keys)
+    const enr = this._history.routingTable.getValue(dstId)
+    return res && enr && '0x' + enr.seq.toString(16)
+  }
+  async historySendAccept(params: [string, string, string[]]) {
+    const [enr, connectionId, contentKeys] = params
+    const myEnr = this._client.discv5.enr
+    const _enr = ENR.decodeTxt(enr)
+    const accepted: boolean[] = Array(contentKeys.length).fill(false)
+    for (let x = 0; x < contentKeys.length; x++) {
+      try {
+        await this._client.db.get(contentKeys[x])
+      } catch (err) {
+        accepted[x] = true
+      }
+    }
+    const idBuffer = Buffer.alloc(2)
+    idBuffer.writeUInt16BE(Number(BigInt(connectionId)), 0)
+    const payload: AcceptMessage = {
+      connectionId: idBuffer,
+      contentKeys: BitArray.fromBoolArray(accepted),
+    }
+    const encodedPayload = PortalWireMessageType.serialize({
+      selector: MessageCodes.ACCEPT,
+      value: payload,
+    })
+    this._client.sendPortalNetworkResponse(
+      {
+        nodeId: _enr.nodeId,
+        socketAddr: _enr.getLocationMultiaddr('udp')!,
+      },
+      myEnr.seq,
+      Buffer.from(encodedPayload)
+    )
+
+    return '0x' + myEnr.seq.toString(16)
   }
   async historyGossip(params: [string, string]) {
     const [contentKey, content] = params
