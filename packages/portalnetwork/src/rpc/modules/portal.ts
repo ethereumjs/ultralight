@@ -10,6 +10,7 @@ import {
   HistoryProtocol,
   PortalNetwork,
   HistoryNetworkContentTypes,
+  ContentLookup,
 } from '../../index.js'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -33,7 +34,7 @@ const methods = [
   'portal_historyFindContent',
   'portal_historyOffer',
   // 'portal_historyRecursiveFindNodes',
-  // 'portal_historyRecursiveFindContent',
+  'portal_historyRecursiveFindContent',
   'portal_historyStore',
   'portal_historyLocalContent',
   'portal_historyGossip',
@@ -86,6 +87,9 @@ export class portal {
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
       [validators.dstId],
       [validators.hex],
+    ])
+    this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
+      [validators.contentKey],
     ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.dstId],
@@ -237,6 +241,15 @@ export class portal {
   async historyFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
+    return res
+  }
+  async historyRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    const lookup = new ContentLookup(this._history, fromHexString(contentKey))
+    const res = await lookup.startLookup()
+    if (res instanceof Uint8Array) {
+      return toHexString(res)
+    }
     return res
   }
   async historyOffer(params: [string, string[]]) {

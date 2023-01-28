@@ -31,7 +31,7 @@ const testBlocks = [
 
 const { Client } = jayson
 
-const gossip = async () => {
+const recursiveFindContent = async () => {
   const ultralights: HttpClient[] = []
   const enrs: string[] = []
   const nodeIds: string[] = []
@@ -45,28 +45,35 @@ const gossip = async () => {
   }
   // GossipTest
 
-    const headerKey = getHistoryNetworkContentKey(
-      HistoryNetworkContentTypes.BlockHeader,
-      testBlocks[0].hash()
-    )
-    const header = testBlocks[0].header.serialize()
-    const store = await ultralights[0].request('portal_historyStore', [headerKey, toHexString(header)])
-    console.log(store)
-    for (const enr of enrs.slice(1)) {
-      const ping = await ultralights[0].request('portal_historyPing', [enr, '0x00'])
-      console.log(ping.result.startsWith(`PING/PONG successful`))
+  const headerKey = getHistoryNetworkContentKey(
+    HistoryNetworkContentTypes.BlockHeader,
+    testBlocks[0].hash()
+  )
+  const header = testBlocks[0].header.serialize()
+  const store = await ultralights[0].request('portal_historyStore', [
+    headerKey,
+    toHexString(header),
+  ])
+  store.result || console.log('store fail')
+  for (const enr of enrs.slice(0, 9)) {
+    const ping = await ultralights[9].request('portal_historyPing', [enr, '0x00'])
+    if(!ping.result.startsWith(`PING/PONG successful`)) {
+        console.log('pingfail')
     }
-    const gossip = await ultralights[0].request('portal_historyGossip', [headerKey, toHexString(header)])
-    console.log(gossip.result === 9)
+  }
 
-    for (const [idx, ultralight] of ultralights.entries()) {
-      const stored = await ultralight.request('portal_historyLocalContent', [headerKey])
-      console.log(idx, Buffer.from(stored.result.data).equals(header))
-    }
+  const find = await ultralights[8].request('portal_historyRecursiveFindContent', [headerKey])
+  console.log('RecursiveFindContent', Buffer.from(fromHexString(find.result)).equals(header) ? 'pass' : 'fail')
+  if (find.result) {
+    await ultralights[8].request('portal_historyStore', [headerKey, find.result])
+  }
+  const stored = await ultralights[8].request('portal_historyLocalContent', [headerKey])
+
+  console.log('Store Retrieved Header', stored.result.data && Buffer.from(stored.result.data).equals(header) ? 'pass' :  'fail')
 }
 
 const main = async () => {
-    await gossip()
+  await recursiveFindContent()
 }
 
 main()
