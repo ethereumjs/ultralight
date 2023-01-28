@@ -21,14 +21,14 @@ const methods = [
   'portal_historyGetEnr',
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
-  // 'portal_historySendPing',
+  'portal_historySendPing', // (ENR, DataRadius) => SendPingResult(requestId)
   // 'portal_historySendPong',
   // 'portal_historySendFindNodes',
   // 'portal_historySendFindContent',
   // 'portal_historySendContent',
   // 'portal_historySendOffer',
   // 'portal_historySendAccept',
-  'portal_historyPing',
+  'portal_historyPing', // (ENR, DataRadius) => PingResult (PONG MESSAGE)
   'portal_historyFindNodes',
   'portal_historyFindContent',
   'portal_historyOffer',
@@ -64,7 +64,14 @@ export class portal {
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
-    this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
+    this.historyPing = middleware(this.historyPing.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
+    this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.distance)],
@@ -187,8 +194,8 @@ export class portal {
     this.logger(`Found: ${enr}`)
     return enr
   }
-  async historyPing(params: [string]) {
-    const [enr] = params
+  async historyPing(params: [string, string]) {
+    const [enr, dataRadius] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
@@ -197,6 +204,13 @@ export class portal {
     } else {
       return `PING/PONG with ${encodedENR.nodeId} was unsuccessful`
     }
+  }
+  async historySendPing(params: [string, string]) {
+    const [enr, dataRadius] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
+    const pong = await this._history.sendPing(encodedENR)
+    return '0x' + pong?.enrSeq.toString(16)
   }
   async historyFindNodes(params: [string, number[]]) {
     const [dstId, distances] = params

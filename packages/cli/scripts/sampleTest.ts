@@ -17,6 +17,7 @@ const main = async () => {
 
   const ping1 = await peer0.request('portal_historyPing', [
     ultralightENR.result.enr,
+    "0x00"
   ])
   console.log(ping1.result)
 
