@@ -22,9 +22,9 @@ const require = createRequire(import.meta.url)
 // 2. Respond to request for Header Proof by creating proof from historical epoch
 
 tape('Header Record Proof tests', (t) => {
-  const accumulator = require('../../integration/testAccumulator.json')
-  const epoch = require('../../integration/testEpoch.json')
-  const block1000 = require('../../integration/testBlock1000.json')
+  const accumulator = require('../../testData/testAccumulator.json')
+  const epoch = require('../../testData/testEpoch.json')
+  const block1000 = require('../../testData/testBlock1000.json')
   const headerRecord1000 = {
     blockHash: '0x5b4590a9905fa1c9cc273f32e6dc63b4c512f0ee14edc6fa41c26b416a7b5d58',
     totalDifficulty: 22019797038325n,

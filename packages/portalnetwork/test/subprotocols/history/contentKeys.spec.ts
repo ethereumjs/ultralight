@@ -9,7 +9,7 @@ import {
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
-const testVectors = require('./testdata/testVectors.json')
+const testVectors = require('../../testData/testVectors.json')
 
 tape('ContentKey and ContentId', (t) => {
   t.test('block header', (st) => {

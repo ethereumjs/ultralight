@@ -7,7 +7,6 @@ import {
   ENR,
   fromHexString,
   getHistoryNetworkContentKey,
-  HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   PortalNetwork,
@@ -55,7 +54,6 @@ tape('gossip test', async (t) => {
       peerId: id1,
     },
   })
-  node1.enableLog('*Portal*,-uTP*')
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
     supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -65,7 +63,6 @@ tape('gossip test', async (t) => {
       peerId: id2,
     },
   })
-  node2.enableLog('*Portal*,-uTP*')
 
   await node1.start()
   await node2.start()
@@ -133,7 +130,6 @@ tape('FindContent', async (t) => {
       peerId: id2,
     },
   })
-  node2.enableLog('*Portal*,-uTP*')
 
   await node1.start()
   await node2.start()
@@ -153,32 +149,17 @@ tape('FindContent', async (t) => {
     )
   )
 
-  // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
-  await new Promise((resolve) => {
-    const header = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(retrieved!.value as Uint8Array),
-      {
-        hardforkByBlockNumber: true,
-      }
-    )
-    t.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
-    // node2.on('ContentAdded', (key, contentType, content) => {
-    //   t.fail('should not have received content')
-    // if (key === testBlockData[29].blockHash) {
-    //   t.pass('found expected header')
-    void node1.stop()
-    void node2.stop()
-    resolve(undefined)
-    // } else {
-    //   t.fail(`${key} !== ${testHashStrings[29]}`)
-    //   void node1.stop()
-    //   void node2.stop()
-    //   resolve(undefined)
-    // }
-    // })
-    t.end()
+  const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(retrieved!.value as Uint8Array), {
+    hardforkByBlockNumber: true,
   })
+  t.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
+
+  void node1.stop()
+  void node2.stop()
+
+  t.end()
 })
+
 tape('eth_getBlockByHash', async (t) => {
   t.plan(1)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
@@ -198,7 +179,7 @@ tape('eth_getBlockByHash', async (t) => {
       peerId: id1,
     },
   })
-  node1.enableLog('*Portal*,-uTP*')
+
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
     supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -208,7 +189,6 @@ tape('eth_getBlockByHash', async (t) => {
       peerId: id2,
     },
   })
-  node2.enableLog('*Portal*,-uTP*')
 
   await node1.start()
   await node2.start()
@@ -220,30 +200,14 @@ tape('eth_getBlockByHash', async (t) => {
 
   const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
 
-  // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
-  await new Promise((resolve) => {
-    t.equal(
-      toHexString(retrieved!.hash()),
-      testBlockData[29].blockHash,
-      'retrieved expected header'
-    )
-    // node2.on('ContentAdded', (key, contentType, content) => {
-    //   t.fail('should not have received content')
-    // if (key === testBlockData[29].blockHash) {
-    //   t.pass('found expected header')
-    void node1.stop()
-    void node2.stop()
-    resolve(undefined)
-    // } else {
-    //   t.fail(`${key} !== ${testHashStrings[29]}`)
-    //   void node1.stop()
-    //   void node2.stop()
-    //   resolve(undefined)
-    // }
-    // })
-    t.end()
-  })
+  t.equal(toHexString(retrieved!.hash()), testBlockData[29].blockHash, 'retrieved expected header')
+
+  void node1.stop()
+  void node2.stop()
+
+  t.end()
 })
+
 tape('eth_getBlockByNumber', async (t) => {
   t.plan(1)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
@@ -263,7 +227,7 @@ tape('eth_getBlockByNumber', async (t) => {
       peerId: id1,
     },
   })
-  node1.enableLog('*Portal*,-uTP*')
+
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
     supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -273,7 +237,6 @@ tape('eth_getBlockByNumber', async (t) => {
       peerId: id2,
     },
   })
-  node2.enableLog('*Portal*,-uTP*')
 
   await node1.start()
   await node2.start()
@@ -298,23 +261,10 @@ tape('eth_getBlockByNumber', async (t) => {
 
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
 
-  // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
-  await new Promise((resolve) => {
-    t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
-    // node2.on('ContentAdded', (key, contentType, content) => {
-    //   t.fail('should not have received content')
-    // if (key === testBlockData[29].blockHash) {
-    //   t.pass('found expected header')
-    void node1.stop()
-    void node2.stop()
-    resolve(undefined)
-    // } else {
-    //   t.fail(`${key} !== ${testHashStrings[29]}`)
-    //   void node1.stop()
-    //   void node2.stop()
-    //   resolve(undefined)
-    // }
-    // })
-    t.end()
-  })
+  t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
+
+  void node1.stop()
+  void node2.stop()
+
+  t.end()
 })
