@@ -22,7 +22,7 @@ const privateKeys = [
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
 
-const testBlockData = require('./testBlocks.json')
+const testBlockData = require('../testData/testBlocks.json')
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
   return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
     hardforkByBlockNumber: true,
@@ -36,7 +36,6 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
 })
 
 tape('gossip test', async (t) => {
-  t.plan(2)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = ENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -86,23 +85,23 @@ tape('gossip test', async (t) => {
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   await new Promise((resolve) => {
-    node2.on('ContentAdded', (key, contentType, content) => {
+    node2.on('ContentAdded', async (key, contentType, content) => {
       if (contentType === 0) {
         const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(content)), {
           hardforkByBlockNumber: true,
         })
         if ('0x' + header.hash().toString('hex') === testHashStrings[25]) {
           t.pass('found expected last header')
-          void node1.stop()
-          void node2.stop()
-          resolve(undefined)
+          await node1.stop()
+          await node2.stop()
+          resolve(() => t.end())
         }
       }
     })
   })
 })
+
 tape('FindContent', async (t) => {
-  t.plan(1)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = ENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -120,7 +119,7 @@ tape('FindContent', async (t) => {
       peerId: id1,
     },
   })
-  node1.enableLog('*Portal*,-uTP*')
+
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
     supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -154,14 +153,12 @@ tape('FindContent', async (t) => {
   })
   t.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
 
-  void node1.stop()
-  void node2.stop()
-
+  await node1.stop()
+  await node2.stop()
   t.end()
 })
 
 tape('eth_getBlockByHash', async (t) => {
-  t.plan(1)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = ENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -202,9 +199,8 @@ tape('eth_getBlockByHash', async (t) => {
 
   t.equal(toHexString(retrieved!.hash()), testBlockData[29].blockHash, 'retrieved expected header')
 
-  void node1.stop()
-  void node2.stop()
-
+  await node1.stop()
+  await node2.stop()
   t.end()
 })
 
@@ -238,13 +234,16 @@ tape('eth_getBlockByNumber', async (t) => {
     },
   })
 
+  node1.enableLog('*Portal*,-uTP*')
+  node2.enableLog('*Portal*,-uTP*')
+
   await node1.start()
   await node2.start()
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
 
-  const epochData = require('./testEpoch.json')
-  const block1000 = require('./testBlock1000.json')
+  const epochData = require('../testData/testEpoch.json')
+  const block1000 = require('../testData/testBlock1000.json')
   const epochHash = epochData.hash
   const epoch = epochData.serialized
 
@@ -263,8 +262,6 @@ tape('eth_getBlockByNumber', async (t) => {
 
   t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
 
-  void node1.stop()
-  void node2.stop()
-
-  t.end()
+  await node1.stop()
+  await node2.stop()
 })
