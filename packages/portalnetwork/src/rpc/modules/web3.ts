@@ -2,8 +2,6 @@ import { Debugger } from 'debug'
 import { PortalNetwork } from '../../index.js'
 import { middleware } from '../validators.js'
 
-const methods = ['web3_clientVersion']
-
 export class web3 {
   private _client: PortalNetwork
   private logger: Debugger
@@ -17,7 +15,7 @@ export class web3 {
    * Returns client name and version
    * @param params an empty array
    */
-  async clientVersion(params: []): Promise<string> {
+  async clientVersion(_params: []): Promise<string> {
     return 'ultralight 0.0.1'
   }
 }

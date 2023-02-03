@@ -12,6 +12,7 @@ import debug from 'debug'
 import { setupMetrics } from './metrics.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { execSync } from 'child_process'
 
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
@@ -43,7 +44,8 @@ const args: any = yargs(hideBin(process.argv))
   })
   .option('rpcAddr', {
     describe: 'HTTP-RPC server listening interface address',
-    default: 'localhost',
+    optional: true,
+    string: true,
   })
   .option('metrics', {
     describe: 'Turn on Prometheus metrics reporting',
@@ -74,6 +76,10 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 }
 
 const main = async () => {
+  const cmd = 'hostname -I'
+  const pubIp = execSync(cmd).toString().split(' ')
+  const ip = args.rpcAddr ?? pubIp[0]
+  const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
   if (!args.pk) {
@@ -82,33 +88,26 @@ const main = async () => {
     id = await createFromProtobuf(fromHexString(args.pk))
   }
   const enr = ENR.createFromPeerId(id)
-  let initMa: Multiaddr
-  if (args.bindAddress) {
-    const addrOpts = args.bindAddress.split(':')
-    initMa = multiaddr(`/ip4/${addrOpts[0]}/udp/${addrOpts[1]}`)
-    enr.setLocationMultiaddr(initMa)
-  } else {
-    initMa = multiaddr()
-  }
+  const initMa: any = multiaddr(`/ip4/${ip}/udp/${args.rpcPort}`)
+  enr.setLocationMultiaddr(initMa)
 
-  const log = debug(enr.nodeId.slice(0, 5)).extend('ultralight')
   const metrics = setupMetrics()
   let db
   if (args.dataDir) {
     db = new Level<string, string>(args.dataDir)
   }
-
-  const portal = await PortalNetwork.create({
+  const config = {
+    enr: enr,
+    peerId: id,
     config: {
-      enr: enr,
-      peerId: id,
-      multiaddr: initMa,
-      config: {
-        enrUpdate: true,
-        addrVotesToUpdateEnr: 5,
-        allowUnverifiedSessions: true,
-      },
+      enrUpdate: true,
+      addrVotesToUpdateEnr: 5,
+      allowUnverifiedSessions: true,
     },
+    multiaddr: initMa,
+  } as any
+  const portal = await PortalNetwork.create({
+    config: config,
     radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
@@ -117,7 +116,7 @@ const main = async () => {
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
-  portal.enableLog('*ultralight*, *Portal*, *uTP*, -*:NODES, -*:FINDNODES')
+  portal.enableLog('*ultralight*, *Portal*')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
@@ -126,7 +125,7 @@ const main = async () => {
       register.registerMetric(entry[1])
     })
     metricsServer.listen(args.metricsPort)
-    log(`Started Metrics Server address=http://${args.rpcAddr}:${args.metricsPort}`)
+    log(`Started Metrics Server address=http://${ip}:${args.metricsPort}`)
   }
   await portal.start()
 
@@ -172,9 +171,9 @@ const main = async () => {
         } else return this._methods[method]
       },
     })
-
     server.http().listen(args.rpcPort)
-    log(`Started JSON RPC Server address=http://${args.rpcAddr}:${args.rpcPort}`)
+
+    log(`Started JSON RPC Server address=http://${ip}:${args.rpcPort}`)
   }
 
   process.on('SIGINT', async () => {

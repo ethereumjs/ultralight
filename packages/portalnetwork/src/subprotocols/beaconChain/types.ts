@@ -1,14 +1,6 @@
-import {
-  ByteListType,
-  ByteVectorType,
-  ContainerType,
-  ListCompositeType,
-  UintBigintType,
-  UnionType,
-  BitVectorType,
-} from '@chainsafe/ssz'
+import { ByteVectorType, ContainerType, UintBigintType, BitVectorType } from '@chainsafe/ssz'
 
-/* ----------------- Alliases ----------------- */
+/* ----------------- Aliases ----------------- */
 const Bytes4 = new ByteVectorType(4)
 const Bytes32 = new ByteVectorType(32)
 const Bytes48 = new ByteVectorType(48)

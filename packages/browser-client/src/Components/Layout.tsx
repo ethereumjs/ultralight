@@ -32,6 +32,11 @@ export default function Layout() {
     dispatch({ type: StateChange.SETBLOCK, payload: sampleBlock })
   }
   useEffect(() => {
+    if (state.provider) {
+      for (const peer of state.provider.portal.bootnodes) {
+        state.provider?.historyProtocol.addBootNode(peer)
+      }
+    }
     setSample()
     setTimeout(() => {
       dispatch({ type: StateChange.REFRESHPEERS })

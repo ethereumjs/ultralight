@@ -49,7 +49,7 @@ export class discv5 {
     ])
   }
 
-  async methods(params: []): Promise<string[]> {
+  async methods(_params: []): Promise<string[]> {
     return methods
   }
 
@@ -57,7 +57,7 @@ export class discv5 {
    * Returns ENR and nodeId information of the local discv5 node.
    * @param params an empty array
    */
-  async nodeInfo(params: []): Promise<NodeInfoResult> {
+  async nodeInfo(_params: []): Promise<NodeInfoResult> {
     return {
       enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
       nodeId: '0x' + this._client.discv5.enr.nodeId,
@@ -71,7 +71,7 @@ export class discv5 {
    *  2. *optional* isTcp: TCP or UDP socket
    */
   async updateNodeInfo(params: [socketAddr, isTcp]): Promise<NodeInfoResult> {
-    const [socketAddr, isTcp] = params
+    const [socketAddr, _isTcp] = params
     this._client.discv5.enr.setLocationMultiaddr(multiaddr(socketAddr))
     return {
       enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
@@ -83,7 +83,7 @@ export class discv5 {
    * Returns meta information about discv5 routing table.
    * @param params an empty array
    */
-  async routingTableInfo(params: []): Promise<RoutingTableInfoResult> {
+  async routingTableInfo(_params: []): Promise<RoutingTableInfoResult> {
     const buckets = (this._client.discv5 as any).kbuckets.buckets as unknown[]
     const lowToHi = buckets.map((kb: any) => kb.nodes.map((node: any) => '0x' + node.value._nodeId))
     const hiToLow = lowToHi.reverse()
@@ -137,7 +137,7 @@ export class discv5 {
    * 2. ENR Seq number
    */
   async lookupEnr(params: [NodeId, EnrSeq]): Promise<LookupEnrResult> {
-    const [nodeId, enrseq] = params
+    const [nodeId, _enrseq] = params
     return this._client.discv5.findEnr(nodeId)?.encodeTxt()
   }
 }

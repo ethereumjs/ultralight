@@ -4,22 +4,20 @@ import { randomBytes } from 'crypto'
 import debug from 'debug'
 import tape from 'tape'
 import {
-  HistoryNetworkContentKey,
-  HistoryNetworkContentKeyType,
-  HistoryNetworkContentTypes,
-  ProtocolId,
   BUFFER_SIZE,
+  Bytes32TimeStamp,
+  ContentRequest,
+  createSocketKey,
   dropPrefixes,
   encodeWithVariantPrefix,
+  HistoryNetworkContentKeyType,
+  HistoryNetworkContentTypes,
+  INewRequest,
   Packet,
   PacketType,
-  createSocketKey,
-  INewRequest,
   PortalNetworkUTP,
+  ProtocolId,
   RequestCode,
-  ContentRequest,
-  Bytes32TimeStamp,
-  SelectiveAckHeader,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Protocol/read/ContentReader.js'
 import { Packets } from '../packets.js'

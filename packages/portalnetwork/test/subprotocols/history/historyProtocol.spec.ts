@@ -24,7 +24,7 @@ import RLP from '@ethereumjs/rlp'
 import { bufArrToArr } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
-const testBlocks = require('./testdata/testBlocks.json')
+const testBlocks = require('../../testData/testBlocksForHistory.json')
 
 tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
   const block1Rlp = testBlocks.block1.blockRlp
@@ -116,7 +116,7 @@ tape('addContentToHistory -- Headers and Epoch Accumulators', async (t) => {
   t.test('Should store and retrieve an EpochAccumulator from DB', async (st) => {
     const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
     const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
-    const epochAccumulator = require('../../integration/testEpoch.json')
+    const epochAccumulator = require('../../testData/testEpoch.json')
     const rebuilt = EpochAccumulator.deserialize(fromHexString(epochAccumulator.serialized))
     const hashRoot = EpochAccumulator.hashTreeRoot(rebuilt)
     const contentKey = getHistoryNetworkContentKey(
@@ -202,14 +202,14 @@ tape('addContentToHistory -- Block Bodies and Receipts', async (t) => {
 })
 
 tape('Header Proof Tests', async (t) => {
-  const _epoch1 = require('../../integration/testEpoch.json')
+  const _epoch1 = require('../../testData/testEpoch.json')
   const node = await PortalNetwork.create({ transport: TransportLayer.WEB })
   const protocol = new HistoryProtocol(node, 2n) as HistoryProtocol
   // protocol.accumulator.replaceAccumulator(accumulator)
   t.test(
     'HistoryProtocol can create and verify proofs for a HeaderRecord from an EpochAccumulator',
     async (st) => {
-      const _block1000 = require('../../integration/testBlock1000.json')
+      const _block1000 = require('../../testData/testBlock1000.json')
       await protocol.addContentToHistory(
         HistoryNetworkContentTypes.EpochAccumulator,
         _epoch1.hash,

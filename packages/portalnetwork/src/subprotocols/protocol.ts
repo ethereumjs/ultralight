@@ -26,7 +26,6 @@ import {
   PingPongCustomDataType,
   PongMessage,
   PortalWireMessageType,
-  connectionIdType,
   RequestCode,
   NodeLookup,
   StateNetworkRoutingTable,
@@ -103,7 +102,10 @@ export abstract class BaseProtocol {
    * @param protocolId subprotocol ID
    * @returns the PING payload specified by the subprotocol or undefined
    */
-  public sendPing = async (enr: ENR) => {
+  public sendPing = async (enr: ENR | string) => {
+    if (!(enr instanceof ENR)) {
+      enr = ENR.decodeTxt(enr)
+    }
     // 3000ms tolerance for ping timeout
     setTimeout(() => {
       return undefined
@@ -146,8 +148,10 @@ export abstract class BaseProtocol {
   private handlePing = (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
-      const enr = this.client.discv5.getKadValue(src.nodeId)
-      this.updateRoutingTable(enr!, pingMessage.customPayload)
+      const enr = this.client.discv5.findEnr(src.nodeId)
+      if (enr !== undefined) {
+        this.updateRoutingTable(enr, pingMessage.customPayload)
+      }
     } else {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
       this.routingTable.updateRadius(src.nodeId, radius)
@@ -532,8 +536,8 @@ export abstract class BaseProtocol {
    * @param customPayload payload of the PING/PONG message being decoded
    */
   private updateRoutingTable = (enr: ENR, customPayload?: any) => {
-    const nodeId = enr.nodeId
     try {
+      const nodeId = enr.nodeId
       // Only add node to the routing table if we have an ENR
       this.routingTable.getValue(enr.nodeId) === undefined &&
         this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
@@ -543,8 +547,18 @@ export abstract class BaseProtocol {
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
       }
     } catch (err) {
-      this.logger(`Something went wrong`)
-      this.logger(err)
+      this.logger(`Something went wrong: ${(err as any).message}`)
+      try {
+        this.routingTable.getValue(enr as any) === undefined &&
+          this.logger(`adding ${enr as any} to ${this.protocolName} routing table`)
+        this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+        if (customPayload) {
+          const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
+          this.routingTable.updateRadius(enr.nodeId, decodedPayload.radius)
+        }
+      } catch (e) {
+        this.logger(`Something went wrong : ${(e as any).message}`)
+      }
     }
     return
   }

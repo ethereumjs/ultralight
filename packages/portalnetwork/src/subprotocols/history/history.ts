@@ -2,7 +2,6 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import {
   AccumulatorManager,
-  connectionIdType,
   ContentLookup,
   ContentManager,
   ContentMessageType,

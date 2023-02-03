@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 import {
   ENR,
   log2Distance,
-  WebSocketTransportService,
+  HybridTransportService,
   toHexString,
   fromHexString,
   TransportLayer,
@@ -42,18 +42,17 @@ export const refresh = (state: AppState) => {
 export const startUp = async (provider: UltralightProvider) => {
   // Listen for proxy reflected multiaddr to allow browser client to specify a valid ENR if doing local testing
 
-  if (
-    provider.portal.discv5.sessionService.transport instanceof WebSocketTransportService &&
-    process.env.BINDADDRESS
-  ) {
+  if (provider.portal.discv5.sessionService.transport instanceof HybridTransportService) {
     provider.portal.discv5.sessionService.transport.once('multiAddr', (multiaddr) => {
       provider.portal.discv5.enr.setLocationMultiaddr(multiaddr)
+      provider.portal.discv5.emit('multiaddrUpdated', multiaddr)
+
       // Remove listener after multiAddr received from proxy as this is a one time event
       provider.portal.discv5.sessionService.transport.removeAllListeners('multiAddr')
     })
   }
 
-  provider.portal.enableLog('*Portal*, -*uTP*, -*FINDNODES*')
+  provider.portal.enableLog('*Portal*')
   await provider.portal.start()
   provider.portal.storeNodeDetails()
   ;(window as any).portal = provider.portal

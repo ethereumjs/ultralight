@@ -9,6 +9,7 @@ import {
   Box,
   Center,
   IconButton,
+  Text,
 } from '@chakra-ui/react'
 import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
@@ -67,13 +68,23 @@ export default function Header() {
             icon={<FaEye />}
           />
         </VStack>
-        <VStack width={'50%'}>
-          <Heading size={'2xl'} textAlign="center">
+        <VStack spacing={0} width={'50%'}>
+          <Heading size={'lg'} textAlign="center">
             Ultralight
           </Heading>
-          <Heading size={'l'} textAlign="center">
-            Portal Network Explorer
-          </Heading>
+          <HStack>
+            <VStack width="60%">
+              <Heading size={'sm'} textAlign="center">
+                {enr.slice(0, 10)}
+              </Heading>
+              <Heading size={'xs'} textAlign="center">
+                {state.provider!.portal!.discv5.enr.nodeId.slice(0, 10)}
+              </Heading>
+            </VStack>
+            <Text width="40%" wordBreak={'break-all'}>
+              {state.provider!.portal!.discv5.enr.getLocationMultiaddr('udp')?.toString()}
+            </Text>
+          </HStack>
         </VStack>
         <Box width={'25%'}>
           <ContentManager />

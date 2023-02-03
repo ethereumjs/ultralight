@@ -1,4 +1,4 @@
-import debug from 'debug'
+import debug, { Debugger } from 'debug'
 import { EventEmitter } from 'events'
 import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
@@ -29,13 +29,14 @@ export class WebSocketTransportService
   implements ITransportService
 {
   public multiaddr: Multiaddr
-
   private socket: WebSocketAsPromised
   private srcId: string
+  private log: Debugger
 
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
+    this.log = debug('Portal').extend('WebSocketTransportService')
     this.multiaddr = multiaddr
     this.srcId = srcId
     this.socket = new WebSocketAsPromised(proxyAddress, {
@@ -48,17 +49,20 @@ export class WebSocketTransportService
   }
 
   public async start(): Promise<void> {
+    this.socket.onOpen.addListener(() => {
+      this.log('opening websocket')
+      this.socket.send(`port:${this.multiaddr.nodeAddress().port}`)
+    })
     await this.socket.open()
     this.socket.ws.binaryType = 'arraybuffer'
     this.socket.onMessage.addListener((msg: MessageEvent | ArrayBuffer) => {
       const data = msg instanceof MessageEvent ? Buffer.from(msg.data) : Buffer.from(msg)
 
       if (data.length === 6) {
-        const address = `${data[0].toString()}.${data[1].toString()}.${data[2].toString()}.${data[3].toString()}`
-        const port = data.readUIntBE(4, 2)
-        this.multiaddr = ma(`/ip4/${address}/udp/${port}`)
-
-        this.emit('multiAddr', this.multiaddr)
+        // const address = `${data[0].toString()}.${data[1].toString()}.${data[2].toString()}.${data[3].toString()}`
+        // const port = data.readUIntBE(4, 2)
+        // this.multiaddr = ma(`/ip4/${address}/udp/${port}`)
+        // this.emit('multiAddr', this.multiaddr)
       } else {
         this.handleIncoming(data)
       }
@@ -71,6 +75,7 @@ export class WebSocketTransportService
   }
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
+    this.log('sending via websocket')
     // Send via websocket (i.e. in browser)
     const opts = to.toOptions()
     const encodedPacket = encodePacket(toId, packet)

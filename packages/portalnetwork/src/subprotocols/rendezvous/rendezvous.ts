@@ -2,14 +2,7 @@ import { NodeId, ENR } from '@chainsafe/discv5'
 import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { Debugger } from 'debug'
-import {
-  shortId,
-  BaseProtocol,
-  ProtocolId,
-  PortalNetwork,
-  Bytes32TimeStamp,
-  FindContentMessage,
-} from '../../index.js'
+import { shortId, BaseProtocol, ProtocolId, PortalNetwork, Bytes32TimeStamp } from '../../index.js'
 
 /** NOTE: This code is untested in current form and definitely DOES NOT work without more labor */
 export class Rendezvous extends BaseProtocol {
@@ -27,7 +20,7 @@ export class Rendezvous extends BaseProtocol {
     return Promise.resolve()
   }
 
-  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
+  public findContentLocally = async (_contentKey: Uint8Array): Promise<Uint8Array> => {
     return Promise.resolve(Uint8Array.from([]))
   }
   public sendFindContent = (_dstId: string, _key: Uint8Array) => {

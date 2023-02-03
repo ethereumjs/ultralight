@@ -207,7 +207,7 @@ export class portal {
     this._history.routingTable.removeById(nodeId)
     return true
   }
-  async historyRoutingTableInfo(params: []): Promise<any> {
+  async historyRoutingTableInfo(_params: []): Promise<any> {
     this.logger(`portal_historyRoutingTableInfo request received.`)
     let localNodeId = ''
     let buckets: string[][] = []
