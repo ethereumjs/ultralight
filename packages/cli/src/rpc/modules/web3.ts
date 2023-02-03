@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { PortalNetwork } from '../../index.js'
+import { PortalNetwork } from 'portalnetwork'
 import { middleware } from '../validators.js'
 
 export class web3 {

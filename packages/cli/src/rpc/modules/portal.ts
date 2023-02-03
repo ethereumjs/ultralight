@@ -18,7 +18,7 @@ import {
   NodesMessage,
   ContentMessageType,
   AcceptMessage,
-} from '../../index.js'
+} from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'

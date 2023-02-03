@@ -1,4 +1,4 @@
-import { HistoryNetworkContentTypes, ProtocolId } from '../index.js'
+import { HistoryNetworkContentTypes, ProtocolId } from 'portalnetwork'
 
 const INVALID_PARAMS = -32602
 

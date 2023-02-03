@@ -75,7 +75,7 @@ tape('gossip test', async (t) => {
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
   )
 
-  for await (const [idx, testBlock] of testBlocks.entries()) {
+  for await (const [_idx, testBlock] of testBlocks.entries()) {
     addRLPSerializedBlock(
       '0x' + testBlock.serialize().toString('hex'),
       '0x' + testBlock.hash().toString('hex'),
