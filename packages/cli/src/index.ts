@@ -1,7 +1,7 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR, fromHexString, RPCManager } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, ENR, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
-import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
+import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
 // eslint-disable-next-line node/file-extension-in-import
 import { hideBin } from 'yargs/helpers'
@@ -13,7 +13,7 @@ import { setupMetrics } from './metrics.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { execSync } from 'child_process'
-
+import { RPCManager } from './rpc/rpc.js'
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
     describe: 'base64 string encoded protobuf serialized private key',

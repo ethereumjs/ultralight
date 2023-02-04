@@ -10,7 +10,7 @@ import {
   fromHexString,
   toHexString,
   reassembleBlock,
-} from '../../index.js'
+} from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
 import { validators, middleware } from '../validators.js'

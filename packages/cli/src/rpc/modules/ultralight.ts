@@ -6,7 +6,7 @@ import {
   fromHexString,
   HistoryProtocol,
   PortalNetwork,
-} from '../../index.js'
+} from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
 
 const methods = ['ultralight_addContentToHistory', 'ultralight_addBlockToHistory']

@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { NodeId, PortalNetwork } from '../../index.js'
+import { NodeId, PortalNetwork } from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
 import * as schema from '../schema/index.js'
 import {
