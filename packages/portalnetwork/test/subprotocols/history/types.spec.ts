@@ -2,18 +2,24 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import tape from 'tape'
 import { randomBytes } from 'crypto'
 import {
+  AccumulatorManager,
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyType,
+  HistoryProtocol,
   Receipt,
   TxReceiptType,
 } from '../../../src/subprotocols/history/index.js'
 import {
   BlockHeaderWithProof,
+  HeaderAccumulatorType,
   HistoryNetworkContentTypes,
 } from '../../../src/subprotocols/history/types.js'
 import { bufArrToArr } from '@ethereumjs/util'
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
 import { BlockHeader } from '@ethereumjs/block'
+import * as fs from 'fs'
+import { FakeProtocol } from '../protocol.spec.js'
+import { PortalNetwork, ProtocolId } from '../../../src/index.js'
 
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
@@ -170,7 +176,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.end()
 })
 
-tape('Header With Proof serialization/deserialization tests', async (t) => {
+tape.only('Header With Proof serialization/deserialization tests', async (t) => {
   const serializedBlock1 = fromHexString(testData[1000001].content_value)
   const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)
   const deserializedHeader = BlockHeader.fromRLPSerializedHeader(
@@ -190,4 +196,11 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
   )
   t.equal(deserializedHeader.number, 1000001n, 'deserialized header number matches test vector')
   t.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
+
+  const node = await PortalNetwork.create({
+    bindAddress: '192.168.0.1',
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+  })
+  const protocol = new FakeProtocol(node, 1n)
+  const accumulator = new AccumulatorManager({ history: protocol as HistoryProtocol })
 })

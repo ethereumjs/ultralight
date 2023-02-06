@@ -22,7 +22,7 @@ import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 // Fake Protocol class for testing Protocol class
-class FakeProtocol extends BaseProtocol {
+export class FakeProtocol extends BaseProtocol {
   logger: Debugger
   protocolId: ProtocolId
   protocolName: string

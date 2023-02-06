@@ -13,7 +13,7 @@ import {
 } from '../index.js'
 import accumulator from './data/master.js'
 
-const historicalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
+const mainnetHistoricalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
   return fromHexString(hash)
 })
 
@@ -24,26 +24,16 @@ export interface AccumulatorOpts {
   }
 }
 export class HeaderAccumulator {
-  private _currentEpoch: HeaderRecord[]
-  private _historicalEpochs: Uint8Array[]
+  currentEpoch: HeaderRecord[]
+  historicalEpochs: Uint8Array[]
 
   /**
    *
    * @param initFromGenesis boolean indicating whether to initialize the accumulator with the mainnet genesis block
    */
   constructor(opts: AccumulatorOpts) {
-    this._currentEpoch = []
-    this._historicalEpochs = []
-    this._currentEpoch = opts.storedAccumulator.currentEpoch
-    this._historicalEpochs = opts.storedAccumulator.historicalEpochs
-  }
-
-  public get currentEpoch() {
-    return this._currentEpoch
-  }
-
-  public get historicalEpochs() {
-    return this._historicalEpochs
+    this.currentEpoch = opts.storedAccumulator.currentEpoch ?? []
+    this.historicalEpochs = opts.storedAccumulator.historicalEpochs ?? []
   }
 
   /**
@@ -71,7 +61,7 @@ export class AccumulatorManager {
       storedAccumulator: {
         // TODO: Hardcode "current" epoch
         currentEpoch: [],
-        historicalEpochs,
+        historicalEpochs: mainnetHistoricalEpochs,
       },
     })
   }
@@ -84,7 +74,7 @@ export class AccumulatorManager {
     return this.headerAccumulator.currentEpoch
   }
 
-  public historicalEpochs() {
+  public getHistoricalEpochs() {
     return this.headerAccumulator.historicalEpochs
   }
 

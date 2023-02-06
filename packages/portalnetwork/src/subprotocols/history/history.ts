@@ -53,7 +53,7 @@ export class HistoryProtocol extends BaseProtocol {
   ): Promise<Uint8Array | Uint8Array[] | undefined> => {
     const log = this.logger.extend('portal_getEpoch')
     log(`Searching for epoch: ${index}`)
-    const epochHash = toHexString(this.accumulator.historicalEpochs()[index])
+    const epochHash = toHexString(this.accumulator.getHistoricalEpochs()[index])
     log(`Searching for epoch with root: ${epochHash}`)
     const contentKey = getHistoryNetworkContentKey(
       HistoryNetworkContentTypes.EpochAccumulator,
