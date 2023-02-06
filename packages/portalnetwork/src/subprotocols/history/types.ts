@@ -3,7 +3,10 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
+  NoneType,
   UintBigintType,
+  UnionType,
+  VectorCompositeType,
 } from '@chainsafe/ssz'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
@@ -13,11 +16,11 @@ export const EPOCH_SIZE = 8192
 // maximum number of epoch accumulator root hashes stored in historical epochs array
 export const MAX_HISTORICAL_EPOCHS = 131072
 // Block Body SSZ encoding related constants
-export const MAX_TRANSACTION_LENGTH = 2 ** 24
-export const MAX_TRANSACTION_COUNT = 2 ** 14
-export const MAX_RECEIPT_LENGTH = 2 ** 27
-export const MAX_HEADER_LENGTH = 2 ** 13
-export const MAX_ENCODED_UNCLES_LENGTH = MAX_HEADER_LENGTH * 2 ** 4
+export const MAX_TRANSACTION_LENGTH = 16777216 // 2 ** 24
+export const MAX_TRANSACTION_COUNT = 16384 // 2 ** 14
+export const MAX_RECEIPT_LENGTH = 134217728 // 2 ** 27
+export const MAX_HEADER_LENGTH = 8192 // 2 ** 13
+export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 
 /* ----------------- Enums ----------- */
 export enum HistoryNetworkContentTypes {
@@ -116,7 +119,7 @@ export const Bytes32Type = new ByteVectorType(32)
 export const HashRootType = Bytes32Type
 export const TotalDifficultyType = new UintBigintType(32)
 export const LeafType = Bytes32Type
-export const WitnessesType = new ListCompositeType(HashRootType, 2 ** 16)
+export const WitnessesType = new ListCompositeType(HashRootType, 65536)
 export const GIndexType = new UintBigintType(4)
 export const HistoryNetworkContentKeyType = new ByteVectorType(33)
 export const HistoryNetworkContentType = new ContainerType({
@@ -155,3 +158,10 @@ export const BlockBodyContentType = new ContainerType({
 
 export const sszReceiptType = new ByteListType(MAX_RECEIPT_LENGTH)
 export const sszReceiptsListType = new ListCompositeType(sszReceiptType, MAX_TRANSACTION_COUNT)
+
+export const AccumulatorProofType = new VectorCompositeType(Bytes32Type, 15)
+export const BlockHeaderProofType = new UnionType([new NoneType(), AccumulatorProofType])
+export const BlockHeaderWithProof = new ContainerType({
+  header: new ByteListType(MAX_HEADER_LENGTH),
+  proof: BlockHeaderProofType,
+})

@@ -7,8 +7,13 @@ import {
   Receipt,
   TxReceiptType,
 } from '../../../src/subprotocols/history/index.js'
-import { HistoryNetworkContentTypes } from '../../../src/subprotocols/history/types.js'
+import {
+  BlockHeaderWithProof,
+  HistoryNetworkContentTypes,
+} from '../../../src/subprotocols/history/types.js'
 import { bufArrToArr } from '@ethereumjs/util'
+import testData from './testData/headerWithProof.json' assert { type: 'json' }
+import { BlockHeader } from '@ethereumjs/block'
 
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
@@ -163,4 +168,26 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     st.end()
   })
   t.end()
+})
+
+tape('Header With Proof serialization/deserialization tests', async (t) => {
+  const serializedBlock1 = fromHexString(testData[1000001].content_value)
+  const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)
+  const deserializedHeader = BlockHeader.fromRLPSerializedHeader(
+    Buffer.from(headerWithProof.header),
+    {
+      skipConsensusFormatValidation: true,
+      hardforkByBlockNumber: true,
+    }
+  )
+  const contentKey = toHexString(
+    HistoryNetworkContentKeyType.serialize(
+      Buffer.concat([
+        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+        Uint8Array.from(deserializedHeader.hash()),
+      ])
+    )
+  )
+  t.equal(deserializedHeader.number, 1000001n, 'deserialized header number matches test vector')
+  t.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
 })
