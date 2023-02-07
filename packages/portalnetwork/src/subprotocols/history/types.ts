@@ -14,7 +14,7 @@ import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ether
 // number of header records in a single epoch
 export const EPOCH_SIZE = 8192
 // maximum number of epoch accumulator root hashes stored in historical epochs array
-export const MAX_HISTORICAL_EPOCHS = 131072
+export const MAX_HISTORICAL_EPOCHS = 1897
 // Block Body SSZ encoding related constants
 export const MAX_TRANSACTION_LENGTH = 16777216 // 2 ** 24
 export const MAX_TRANSACTION_COUNT = 16384 // 2 ** 14

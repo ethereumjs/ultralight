@@ -11,16 +11,22 @@ import {
 } from '../../../src/subprotocols/history/index.js'
 import {
   BlockHeaderWithProof,
-  HeaderAccumulatorType,
+  EpochAccumulator,
+  HistoricalEpochsType,
   HistoryNetworkContentTypes,
 } from '../../../src/subprotocols/history/types.js'
 import { bufArrToArr } from '@ethereumjs/util'
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
 import { BlockHeader } from '@ethereumjs/block'
-import * as fs from 'fs'
 import { FakeProtocol } from '../protocol.spec.js'
-import { PortalNetwork, ProtocolId } from '../../../src/index.js'
-
+import {
+  blockNumberToGindex,
+  HeaderAccumulator,
+  PortalNetwork,
+  ProtocolId,
+} from '../../../src/index.js'
+import { ProofType } from '@chainsafe/persistent-merkle-tree'
+import { readFileSync } from 'fs'
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
@@ -201,6 +207,14 @@ tape.only('Header With Proof serialization/deserialization tests', async (t) => 
     bindAddress: '192.168.0.1',
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
-  const protocol = new FakeProtocol(node, 1n)
-  const accumulator = new AccumulatorManager({ history: protocol as HistoryProtocol })
+
+  const accumBytes = readFileSync('./src/subprotocols/history/data/finished_accumulator.ssz')
+  console.log(accumBytes)
+  const epocs = HistoricalEpochsType.deserialize(Uint8Array.from(accumBytes))
+  const epoch = EpochAccumulator.createFromProof({
+    type: ProofType.single,
+    leaf: Uint8Array.from(deserializedHeader.hash()),
+    witnesses: headerWithProof.proof.value!,
+    gindex: blockNumberToGindex(1000001n),
+  })
 })
