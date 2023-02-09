@@ -1,6 +1,15 @@
-import { UtpSocket, ConnectionState, sendSynPacket, RequestCode } from '../index.js'
+import { UtpSocket, ConnectionState } from '../index.js'
 import { ProtocolId } from '../../../index.js'
+import { RequestCode } from './types.js'
 
+export interface ContentRequestOptions {
+  protocolId: ProtocolId
+  requestCode: RequestCode
+  socket: UtpSocket
+  socketKey: string
+  contentKeys: Uint8Array[]
+  content?: Uint8Array
+}
 export class ContentRequest {
   protocolId: ProtocolId
   requestCode: RequestCode
@@ -8,41 +17,34 @@ export class ContentRequest {
   contentKeys: Uint8Array[]
   socket: UtpSocket
   socketKey: string
-  content: Uint8Array
+  content?: Uint8Array
 
-  constructor(
-    protocolId: ProtocolId,
-    requestCode: RequestCode,
-    socket: UtpSocket,
-    socketKey: string,
-    content: Uint8Array,
-    contentKeys: Uint8Array[]
-  ) {
-    this.protocolId = protocolId
-    this.contentKeys = contentKeys
-    this.requestCode = requestCode
-    this.content = content
-    this.socketKey = socketKey
-    this.socket = socket
+  constructor(options: ContentRequestOptions) {
+    this.protocolId = options.protocolId
+    this.contentKeys = options.contentKeys
+    this.requestCode = options.requestCode
+    this.content = options.content
+    this.socketKey = options.socketKey
+    this.socket = options.socket
   }
 
   async init(): Promise<RequestCode> {
-    let writer
     switch (this.requestCode) {
-      case RequestCode.FOUNDCONTENT_WRITE:
-        break
       case RequestCode.FINDCONTENT_READ:
-        await sendSynPacket(this.socket)
+        this.socket.logger.extend('ContentRequest')('init() - Sending a SYN')
+        await this.sendSyn()
         break
       case RequestCode.OFFER_WRITE:
         if (this.content) {
-          writer = await this.socket.utp.createNewWriter(this.socket, 2)
-          this.socket.writer = writer
-          await sendSynPacket(this.socket)
-          this.socket.state = ConnectionState.SynSent
+          this.socket.content = this.content
+          // this.socket.seqNr = 2
+          this.socket.logger.extend('ContentRequest')('init() - Sending a SYN')
+          await this.sendSyn()
+          // this.socket.setWriter()
         }
         break
-      case RequestCode.ACCEPT_READ:
+      default:
+        this.socket.logger.extend('ContentRequest')('init() - Waiting for a SYN')
         break
     }
     return this.requestCode
@@ -51,5 +53,10 @@ export class ContentRequest {
   close(): void {
     this.content = Uint8Array.from([])
     this.socket.close()
+  }
+
+  async sendSyn(): Promise<void> {
+    await this.socket.sendSynPacket()
+    this.socket.state = ConnectionState.SynSent
   }
 }
