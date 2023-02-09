@@ -1,6 +1,6 @@
 export * from './Packet.js'
 export * from './PacketHeader.js'
-export * from './PacketSenders.js'
+export * from './PacketManager.js'
 export * from './PacketTyping.js'
 export * from './Extentions.js'
 export * from './create.js'
