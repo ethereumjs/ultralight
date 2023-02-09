@@ -189,6 +189,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
       try {
         await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+        this.uTP.emit('Sent')
       } catch {
         this.uTP.closeRequest(msg, peerId)
       }

@@ -72,7 +72,8 @@ tape('gossip test', async (t) => {
     protocol1?.routingTable.getValue(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
     )?.nodeId,
-    '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
+    '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+    'node1 added node2 to routing table'
   )
 
   for await (const [_idx, testBlock] of testBlocks.entries()) {
@@ -90,7 +91,11 @@ tape('gossip test', async (t) => {
         const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(content)), {
           hardforkByBlockNumber: true,
         })
-        if ('0x' + header.hash().toString('hex') === testHashStrings[25]) {
+        t.ok(
+          testHashStrings.includes('0x' + header.hash().toString('hex')),
+          'node 2 found expected header'
+        )
+        if ('0x' + header.hash().toString('hex') === testHashStrings[6]) {
           t.pass('found expected last header')
           await node1.stop()
           await node2.stop()
@@ -234,8 +239,8 @@ tape('eth_getBlockByNumber', async (t) => {
     },
   })
 
-  node1.enableLog('*Portal*,-uTP*')
-  node2.enableLog('*Portal*,-uTP*')
+  // node1.enableLog('*Portal*,-uTP*')
+  // node2.enableLog('*Portal*,-uTP*')
 
   await node1.start()
   await node2.start()

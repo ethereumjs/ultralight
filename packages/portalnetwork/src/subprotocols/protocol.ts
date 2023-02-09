@@ -309,6 +309,7 @@ export abstract class BaseProtocol {
         Buffer.from(payload),
         this.protocolId
       )
+      this.logger.extend(`OFFER`)(`Response from ${shortId(dstId)}`)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -322,7 +323,7 @@ export abstract class BaseProtocol {
             )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
-              this.logger.extend('ACCEPT')(`Received no desired content`)
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
               return []
             }
 
@@ -412,9 +413,7 @@ export abstract class BaseProtocol {
   ) => {
     const id = randUint16()
     this.logger.extend('ACCEPT')(
-      `Sent to ${shortId(src.nodeId)} for ${
-        desiredContentKeys.length
-      } pieces of content.  connectionId: ${id}`
+      `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`
     )
 
     this.metrics?.acceptMessagesSent.inc()
@@ -437,6 +436,11 @@ export abstract class BaseProtocol {
       value: payload,
     })
     await this.client.sendPortalNetworkResponse(src, requestId, Buffer.from(encodedPayload))
+    this.logger.extend('ACCEPT')(
+      `Sent to ${shortId(src.nodeId)} for ${
+        desiredContentKeys.length
+      } pieces of content.  connectionId: ${id}`
+    )
   }
 
   private handleFindContent = async (

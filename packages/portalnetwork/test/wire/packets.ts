@@ -67,7 +67,7 @@ export function Packets(
 } {
   if (type === RequestCode.FINDCONTENT_READ) {
     const dataPackets = dataChunks.map((chunk, i) => {
-      const p = Packet.create(PacketType.ST_DATA, {
+      const p = Packet.fromOpts(PacketType.ST_DATA, {
         connectionId: rcvId,
         seqNr: DEFAULT_RAND_SEQNR + 1 + i,
         ackNr: 2 + i,
@@ -79,7 +79,7 @@ export function Packets(
       return p
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
+      return Packet.fromOpts(PacketType.ST_STATE, {
         connectionId: sndId,
         seqNr: 3 + i,
         ackNr: p.header.seqNr,
@@ -91,7 +91,7 @@ export function Packets(
 
     const testPackets = {
       send: {
-        syn: Packet.create(PacketType.ST_SYN, {
+        syn: Packet.fromOpts(PacketType.ST_SYN, {
           connectionId: sndId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
@@ -99,7 +99,7 @@ export function Packets(
           timestampDifferenceMicroseconds: 0,
           wndSize: 1048576,
         }),
-        synackack: Packet.create(PacketType.ST_STATE, {
+        synackack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: 2,
           ackNr: DEFAULT_RAND_SEQNR,
@@ -108,7 +108,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         dataAcks: dataAcks,
-        finack: Packet.create(PacketType.ST_STATE, {
+        finack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: 2 + dataAcks.length,
           ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
@@ -118,7 +118,7 @@ export function Packets(
         }),
       },
       rec: {
-        synack: Packet.create(PacketType.ST_STATE, {
+        synack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
@@ -127,7 +127,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
+        fin: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           ackNr: 2 + dataPackets.length,
@@ -140,7 +140,7 @@ export function Packets(
     return testPackets
   } else if (type === RequestCode.FOUNDCONTENT_WRITE) {
     const dataPackets = dataChunks.map((chunk, i) => {
-      const p = Packet.create(PacketType.ST_DATA, {
+      const p = Packet.fromOpts(PacketType.ST_DATA, {
         connectionId: sndId,
         seqNr: DEFAULT_RAND_SEQNR + 1 + i,
         ackNr: 2 + i,
@@ -152,7 +152,7 @@ export function Packets(
       return p
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
+      return Packet.fromOpts(PacketType.ST_STATE, {
         connectionId: rcvId,
         seqNr: 3 + i,
         ackNr: p.header.seqNr,
@@ -163,7 +163,7 @@ export function Packets(
     })
     const testPackets = {
       send: {
-        synack: Packet.create(PacketType.ST_STATE, {
+        synack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
@@ -172,7 +172,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
+        fin: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: sndId,
           seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           ackNr: 2 + dataPackets.length,
@@ -182,7 +182,7 @@ export function Packets(
         }),
       },
       rec: {
-        syn: Packet.create(PacketType.ST_SYN, {
+        syn: Packet.fromOpts(PacketType.ST_SYN, {
           connectionId: rcvId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
@@ -190,7 +190,7 @@ export function Packets(
           timestampDifferenceMicroseconds: 0,
           wndSize: 1048576,
         }),
-        synackack: Packet.create(PacketType.ST_STATE, {
+        synackack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: rcvId,
           seqNr: 2,
           ackNr: DEFAULT_RAND_SEQNR,
@@ -199,7 +199,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         acks: dataAcks,
-        finack: Packet.create(PacketType.ST_STATE, {
+        finack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: rcvId,
           seqNr: 3 + dataAcks.length,
           ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
@@ -212,7 +212,7 @@ export function Packets(
     return testPackets
   } else if (type === RequestCode.OFFER_WRITE) {
     const dataPackets = offerChunks.map((chunk, i) => {
-      return Packet.create(PacketType.ST_DATA, {
+      return Packet.fromOpts(PacketType.ST_DATA, {
         connectionId: sndId,
         seqNr: 2 + i,
         ackNr: DEFAULT_RAND_ACKNR + 1 + i,
@@ -222,7 +222,7 @@ export function Packets(
       })
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
+      return Packet.fromOpts(PacketType.ST_STATE, {
         connectionId: rcvId,
         seqNr: DEFAULT_RAND_ACKNR + 2 + i,
         ackNr: 2 + i,
@@ -233,7 +233,7 @@ export function Packets(
     })
     const testPackets = {
       send: {
-        syn: Packet.create(PacketType.ST_SYN, {
+        syn: Packet.fromOpts(PacketType.ST_SYN, {
           connectionId: sndId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
@@ -242,7 +242,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
+        fin: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: sndId,
           seqNr: 2 + dataPackets.length,
           ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
@@ -252,7 +252,7 @@ export function Packets(
         }),
       },
       rec: {
-        synack: Packet.create(PacketType.ST_STATE, {
+        synack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
@@ -261,7 +261,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         acks: dataAcks,
-        finack: Packet.create(PacketType.ST_FIN, {
+        finack: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
           ackNr: 2 + dataPackets.length,
@@ -274,7 +274,7 @@ export function Packets(
     return testPackets
   } else if (type === RequestCode.ACCEPT_READ) {
     const dataPackets = offerChunks.map((chunk, i) => {
-      return Packet.create(PacketType.ST_DATA, {
+      return Packet.fromOpts(PacketType.ST_DATA, {
         connectionId: rcvId,
         seqNr: 2 + i,
         ackNr: DEFAULT_RAND_ACKNR + 1 + i,
@@ -285,7 +285,7 @@ export function Packets(
       })
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
+      return Packet.fromOpts(PacketType.ST_STATE, {
         connectionId: sndId,
         seqNr: DEFAULT_RAND_ACKNR + 2 + i,
         ackNr: 2 + i,
@@ -296,7 +296,7 @@ export function Packets(
     })
     const testPackets = {
       send: {
-        synack: Packet.create(PacketType.ST_STATE, {
+        synack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
@@ -305,7 +305,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         acks: dataAcks,
-        finack: Packet.create(PacketType.ST_FIN, {
+        finack: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: sndId,
           seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
           ackNr: 2 + dataPackets.length,
@@ -315,7 +315,7 @@ export function Packets(
         }),
       },
       rec: {
-        syn: Packet.create(PacketType.ST_SYN, {
+        syn: Packet.fromOpts(PacketType.ST_SYN, {
           connectionId: sndId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
@@ -324,7 +324,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
+        fin: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: sndId,
           seqNr: 2 + dataPackets.length,
           ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
@@ -337,7 +337,7 @@ export function Packets(
     return testPackets
   } else if (type === 'FINDCONTENT_READ-Block') {
     const dataPackets = blockChunks.map((chunk, i) => {
-      const p = Packet.create(PacketType.ST_DATA, {
+      const p = Packet.fromOpts(PacketType.ST_DATA, {
         connectionId: rcvId,
         seqNr: DEFAULT_RAND_SEQNR + 1 + i,
         ackNr: 2 + i,
@@ -349,7 +349,7 @@ export function Packets(
       return p
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
+      return Packet.fromOpts(PacketType.ST_STATE, {
         connectionId: sndId,
         seqNr: 3 + i,
         ackNr: p.header.seqNr,
@@ -361,7 +361,7 @@ export function Packets(
 
     const testPackets = {
       send: {
-        syn: Packet.create(PacketType.ST_SYN, {
+        syn: Packet.fromOpts(PacketType.ST_SYN, {
           connectionId: sndId,
           seqNr: 1,
           ackNr: DEFAULT_RAND_ACKNR,
@@ -369,7 +369,7 @@ export function Packets(
           timestampDifferenceMicroseconds: 0,
           wndSize: 1048576,
         }),
-        synackack: Packet.create(PacketType.ST_STATE, {
+        synackack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: 2,
           ackNr: DEFAULT_RAND_SEQNR,
@@ -378,7 +378,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         dataAcks: dataAcks,
-        finack: Packet.create(PacketType.ST_STATE, {
+        finack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: sndId,
           seqNr: 2 + dataAcks.length,
           ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
@@ -388,7 +388,7 @@ export function Packets(
         }),
       },
       rec: {
-        synack: Packet.create(PacketType.ST_STATE, {
+        synack: Packet.fromOpts(PacketType.ST_STATE, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR,
           ackNr: 1,
@@ -397,7 +397,7 @@ export function Packets(
           wndSize: 1048576,
         }),
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
+        fin: Packet.fromOpts(PacketType.ST_FIN, {
           connectionId: rcvId,
           seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
           ackNr: 2 + dataPackets.length,
