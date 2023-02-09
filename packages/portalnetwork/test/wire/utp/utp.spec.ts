@@ -231,264 +231,278 @@ tape('uTP Reader/Writer tests', (t) => {
   })
 })
 
-// tape('PortalNetworkUTP tests', (t) => {
-//   const RCs = ['FOUNDCONTENT_WRITE', 'OFFER_WRITE', 'ACCEPT_READ', 'FINDCONTENT_READ-Block']
-//   const requests = RCs.map(async (type) => {
-//     const logger = debug('log')
-//     const utp = new PortalNetworkUTP(logger)
-//     let params: INewRequest
-//     let mode: 'read' | 'write'
-//     let rcvId: number
-//     let sndId: number
-//     switch (type) {
-//       // TODO: Use larger content for testing SELECTIVE ACK
-//       case 'FINDCONTENT_READ':
-//         params = {
-//           contentKeys: [randomBytes(32)],
-//           peerId: '0xfoundcontent',
-//           connectionId: DEFAULT_RAND_ID,
-//           requestCode: RequestCode.FINDCONTENT_READ,
-//         }
-//         mode = 'read'
-//         rcvId = DEFAULT_RAND_ID
-//         sndId = DEFAULT_RAND_ID + 1
-//         break
-//       case 'FOUNDCONTENT_WRITE':
-//         params = {
-//           contentKeys: [randomBytes(32)],
-//           peerId: '0xfindcontent',
-//           connectionId: DEFAULT_RAND_ID,
-//           requestCode: RequestCode.FOUNDCONTENT_WRITE,
-//           contents: [randomBytes(32)],
-//         }
-//         mode = 'write'
-//         rcvId = DEFAULT_RAND_ID + 1
-//         sndId = DEFAULT_RAND_ID
-//         break
-//       case 'OFFER_WRITE':
-//         params = {
-//           contentKeys: offerKeys,
-//           peerId: '0xaccept',
-//           connectionId: DEFAULT_RAND_ID,
-//           requestCode: RequestCode.OFFER_WRITE,
-//           contents: rlps,
-//         }
-//         mode = 'write'
-//         rcvId = DEFAULT_RAND_ID
-//         sndId = DEFAULT_RAND_ID + 1
-//         break
-//       case 'ACCEPT_READ':
-//         params = {
-//           contentKeys: offerKeys,
-//           peerId: '0xoffer',
-//           connectionId: DEFAULT_RAND_ID,
-//           requestCode: RequestCode.ACCEPT_READ,
-//         }
-//         mode = 'read'
-//         rcvId = DEFAULT_RAND_ID + 1
-//         sndId = DEFAULT_RAND_ID
-//         break
-//       default:
-//         // case FINDCONTENT_READ-Block
-//         params = {
-//           contentKeys: [offerKeys[2]],
-//           peerId: '0xfoundcontent',
-//           connectionId: DEFAULT_RAND_ID,
-//           requestCode: RequestCode.FINDCONTENT_READ,
-//         }
-//         mode = 'read'
-//         rcvId = DEFAULT_RAND_ID
-//         sndId = DEFAULT_RAND_ID + 1
-//         break
-//     }
-//     const request = await utp.handleNewRequest(params)
+tape('PortalNetworkUTP tests', (t) => {
+  const RCs = ['FOUNDCONTENT_WRITE', 'OFFER_WRITE', 'ACCEPT_READ', 'FINDCONTENT_READ-Block']
+  const requests = RCs.map(async (type) => {
+    const logger = debug('log')
+    const utp = new PortalNetworkUTP(logger)
+    let params: INewRequest
+    let mode: 'read' | 'write'
+    let rcvId: number
+    let sndId: number
+    switch (type) {
+      // TODO: Use larger content for testing SELECTIVE ACK
+      case 'FINDCONTENT_READ':
+        params = {
+          contentKeys: [randomBytes(32)],
+          peerId: '0xfoundcontent',
+          connectionId: DEFAULT_RAND_ID,
+          requestCode: RequestCode.FINDCONTENT_READ,
+        }
+        mode = 'read'
+        rcvId = DEFAULT_RAND_ID
+        sndId = DEFAULT_RAND_ID + 1
+        break
+      case 'FOUNDCONTENT_WRITE':
+        params = {
+          contentKeys: [randomBytes(32)],
+          peerId: '0xfindcontent',
+          connectionId: DEFAULT_RAND_ID,
+          requestCode: RequestCode.FOUNDCONTENT_WRITE,
+          contents: [randomBytes(32)],
+        }
+        mode = 'write'
+        rcvId = DEFAULT_RAND_ID + 1
+        sndId = DEFAULT_RAND_ID
+        break
+      case 'OFFER_WRITE':
+        params = {
+          contentKeys: offerKeys,
+          peerId: '0xaccept',
+          connectionId: DEFAULT_RAND_ID,
+          requestCode: RequestCode.OFFER_WRITE,
+          contents: rlps,
+        }
+        mode = 'write'
+        rcvId = DEFAULT_RAND_ID
+        sndId = DEFAULT_RAND_ID + 1
+        break
+      case 'ACCEPT_READ':
+        params = {
+          contentKeys: offerKeys,
+          peerId: '0xoffer',
+          connectionId: DEFAULT_RAND_ID,
+          requestCode: RequestCode.ACCEPT_READ,
+        }
+        mode = 'read'
+        rcvId = DEFAULT_RAND_ID + 1
+        sndId = DEFAULT_RAND_ID
+        break
+      default:
+        // case FINDCONTENT_READ-Block
+        params = {
+          contentKeys: [offerKeys[2]],
+          peerId: '0xfoundcontent',
+          connectionId: DEFAULT_RAND_ID,
+          requestCode: RequestCode.FINDCONTENT_READ,
+        }
+        mode = 'read'
+        rcvId = DEFAULT_RAND_ID
+        sndId = DEFAULT_RAND_ID + 1
+        break
+    }
+    const request = await utp.handleNewRequest(params)
 
-//     return { request, utp, type, mode, rcvId, sndId, params }
-//   })
+    return { request, utp, type, mode, rcvId, sndId, params }
+  })
 
-//   t.test('createSocketKey', async (st) => {
-//     const socketKey = createSocketKey('0xa1b2c3d4e5f6', DEFAULT_RAND_ID, DEFAULT_RAND_ID + 1)
-//     st.equal(socketKey, '0xa1b-1234-1235', `Successfully created socket key`)
-//     st.end()
-//   })
+  t.test('createSocketKey', async (st) => {
+    const socketKey = createSocketKey('0xa1b2c3d4e5f6', DEFAULT_RAND_ID, DEFAULT_RAND_ID + 1)
+    st.equal(socketKey, '0xa1b-1234-1235', `Successfully created socket key`)
+    st.end()
+  })
 
-//   requests.forEach(async (req) => {
-//     const { request, utp, type, mode, rcvId, sndId, params } = await req
-//     const testPacketList = Packets(
-//       params.requestCode,
-//       request.socket.rcvConnectionId,
-//       request.socket.sndConnectionId
-//     )
-//     const socketKey = createSocketKey(
-//       request.socket.remoteAddress,
-//       request.socket.sndConnectionId,
-//       request.socket.rcvConnectionId
-//     )
-//     const samplePacketBuffer = Packet.fromOpts(PacketType.ST_STATE, {
-//       connectionId: request.socket.rcvConnectionId,
-//       seqNr: DEFAULT_RAND_SEQNR,
-//       ackNr: DEFAULT_RAND_ACKNR,
-//       timestampMicroseconds: Bytes32TimeStamp(),
-//       timestampDifferenceMicroseconds: 20,
-//       wndSize: 1048576,
-//     }).encode()
+  requests.forEach(async (req) => {
+    const { request, utp, type, mode, rcvId, sndId, params } = await req
+    const testPacketList = Packets(
+      params.requestCode,
+      request.socket.rcvConnectionId,
+      request.socket.sndConnectionId
+    )
+    const socketKey = createSocketKey(
+      request.socket.remoteAddress,
+      request.socket.sndConnectionId,
+      request.socket.rcvConnectionId
+    )
+    const samplePacketBuffer = Packet.fromOpts({
+      header: {
+        pType: PacketType.ST_STATE,
+        extension: HeaderExtension.none,
+        version: 1,
+        connectionId: request.socket.rcvConnectionId,
+        seqNr: DEFAULT_RAND_SEQNR,
+        ackNr: DEFAULT_RAND_ACKNR,
+        timestampMicroseconds: Bytes32TimeStamp(),
+        timestampDifferenceMicroseconds: 20,
+        wndSize: 1048576,
+      },
+    }).encode()
 
-//     if (type === 'FINDCONTENT_READ-Block') {
-//       t.test('handle fin for block content', async (st) => {
-//         request.socket.reader = new ContentReader(request.socket, 3)
-//         request.socket.reader.packets = testPacketList.rec.data as Packet[]
-//         await utp._handleFinPacket(request, testPacketList.rec.fin as Packet)
-//         st.ok(true)
-//         st.end()
-//       })
-//     } else {
-//       t.test(`handleNewRequest  - ${(await req).type}`, async (st) => {
-//         st.deepEqual(
-//           utp.openContentRequest.get(socketKey),
-//           request,
-//           `${type} request added to openContentRequests`
-//         )
-//         st.deepEqual(
-//           utp.getRequestKeyFromPortalMessage(samplePacketBuffer, params.peerId),
-//           socketKey,
-//           'Successfull lookup of request key from packet buffer'
-//         )
-//         // TODO: Why does this work, and other st.throws fail?
-//         st.throws(
-//           () => utp.getRequestKeyFromPortalMessage(samplePacketBuffer, 'bogusPeerId'),
-//           `getRequestKey should fail with incorrect PeerId`
-//         )
-//         st.equal(
-//           utp.openContentRequest.get(socketKey)?.socket.type,
-//           mode,
-//           `${mode} socket opened for ${type} request`
-//         )
-//         st.equal(
-//           utp.openContentRequest.get(socketKey)?.socket.rcvConnectionId,
-//           rcvId,
-//           `rcvConnectionID set by ${type} request creation`
-//         )
-//         st.equal(
-//           utp.openContentRequest.get(socketKey)?.socket.sndConnectionId,
-//           sndId,
-//           `sndConnectionID set by ${type} request creation`
-//         )
-//         st.end()
-//       })
-//       t.test('Packet Rejectors', async (st) => {
-//         if (
-//           request.requestCode === RequestCode.ACCEPT_READ ||
-//           request.requestCode === RequestCode.FOUNDCONTENT_WRITE
-//         ) {
-//         } else {
-//           const badsyn = Packet.fromOpts(PacketType.ST_SYN, {
-//             connectionId: request.socket.rcvConnectionId,
-//             seqNr: 1,
-//             ackNr: 1,
-//             timestampMicroseconds: Bytes32TimeStamp(),
-//             timestampDifferenceMicroseconds: 1,
-//             wndSize: 1048576,
-//           })
-//           try {
-//             await utp._handleSynPacket(request, badsyn)
-//             st.fail('should throw')
-//           } catch (e: any) {
-//             st.equal(e.message, 'I send SYNs, I do not handle them.', 'throws with correct error')
-//           }
-//         }
-//         if (type === 'write') {
-//           const badFin = Packet.fromOpts(PacketType.ST_FIN, {
-//             connectionId: request.socket.rcvConnectionId,
-//             seqNr: 432,
-//             ackNr: 234,
-//             timestampMicroseconds: Bytes32TimeStamp(),
-//             timestampDifferenceMicroseconds: 20,
-//             wndSize: 1048576,
-//           })
-//           st.notok(await utp._handleFinPacket(request, badFin), 'Write socket doesnt handle FIN')
-//           request.socket.finNr = (testPacketList.send.fin as Packet).header.seqNr
-//           st.doesNotThrow(
-//             async () => await utp._handleStatePacket(request, testPacketList.rec.finack as Packet),
-//             'FinAck Handled'
-//           )
-//         }
+    if (type === 'FINDCONTENT_READ-Block') {
+      t.test('handle fin for block content', async (st) => {
+        request.socket.reader = new ContentReader(3)
+        request.socket.reader.packets = testPacketList.rec.data as Packet<PacketType.ST_DATA>[]
+        await utp._handleFinPacket(request, testPacketList.rec.fin[0] as Packet<PacketType.ST_FIN>)
+        st.ok(true)
+        st.end()
+      })
+    } else {
+      t.test(`handleNewRequest  - ${(await req).type}`, async (st) => {
+        st.deepEqual(
+          utp.openContentRequest.get(socketKey),
+          request,
+          `${type} request added to openContentRequests`
+        )
+        st.deepEqual(
+          utp.getRequestKeyFromPortalMessage(samplePacketBuffer, params.peerId),
+          socketKey,
+          'Successfull lookup of request key from packet buffer'
+        )
+        // TODO: Why does this work, and other st.throws fail?
+        st.throws(
+          () => utp.getRequestKeyFromPortalMessage(samplePacketBuffer, 'bogusPeerId'),
+          `getRequestKey should fail with incorrect PeerId`
+        )
+        st.equal(
+          utp.openContentRequest.get(socketKey)?.socket.type,
+          mode,
+          `${mode} socket opened for ${type} request`
+        )
+        st.equal(
+          utp.openContentRequest.get(socketKey)?.socket.rcvConnectionId,
+          rcvId,
+          `rcvConnectionID set by ${type} request creation`
+        )
+        st.equal(
+          utp.openContentRequest.get(socketKey)?.socket.sndConnectionId,
+          sndId,
+          `sndConnectionID set by ${type} request creation`
+        )
+        st.end()
+      })
+      t.test('Packet Rejectors', async (st) => {
+        if (
+          request.requestCode === RequestCode.ACCEPT_READ ||
+          request.requestCode === RequestCode.FOUNDCONTENT_WRITE
+        ) {
+        } else {
+          const badsyn = Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_SYN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: request.socket.rcvConnectionId,
+              seqNr: 1,
+              ackNr: 1,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 1,
+              wndSize: 1048576,
+            },
+          })
+          try {
+            await utp._handleSynPacket(request, badsyn)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(e.message, 'I send SYNs, I do not handle them.', 'throws with correct error')
+          }
+        }
+        if (type === 'write') {
+          const badFin = Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: request.socket.rcvConnectionId,
+              seqNr: 432,
+              ackNr: 234,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 20,
+              wndSize: 1048576,
+            },
+          })
+          st.notok(await utp._handleFinPacket(request, badFin), 'Write socket doesnt handle FIN')
+          request.socket.finNr = testPacketList.send.fin[0].header.seqNr
+          st.doesNotThrow(
+            async () => await utp._handleStatePacket(request, testPacketList.rec.finack[0]),
+            'FinAck Handled'
+          )
+        }
 
-//         const bogusPacket = Packet.fromOpts(PacketType.ST_SYN, {
-//           connectionId: request.socket.rcvConnectionId,
-//           seqNr: 789,
-//           ackNr: 987,
-//           timestampMicroseconds: Bytes32TimeStamp(),
-//           timestampDifferenceMicroseconds: 0,
-//           wndSize: 1048576,
-//         })
-//         bogusPacket.header.pType = 9
-
-//         try {
-//           await utp.handleUtpPacket(bogusPacket.encode(), params.peerId)
-//           st.fail('should throw')
-//         } catch (e: any) {
-//           st.equal(e.message, 'Unknown Packet Type 9', 'Unknown Packet Type rejected')
-//         }
-//         if (type === 'ACCEPT_READ') {
-//           bogusPacket.header.pType = PacketType.ST_STATE
-//           try {
-//             await utp._handleStatePacket(request, bogusPacket)
-//             st.fail('should throw')
-//           } catch (e: any) {
-//             st.equal(
-//               e.message,
-//               'Why did I get a STATE packet?',
-//               'Accept Request rejects STATE packet'
-//             )
-//           }
-//         }
-//         if (mode === 'write') {
-//           bogusPacket.header.pType = PacketType.ST_DATA
-//           try {
-//             await utp._handleDataPacket(request, bogusPacket)
-//             st.fail('should throw')
-//           } catch (e: any) {
-//             st.equal(
-//               e.message,
-//               'Why did I get a DATA packet?',
-//               `${type} request rejects all DATA packets`
-//             )
-//           }
-//         }
-//         if (type === 'FINDCONTENT_READ') {
-//           bogusPacket.header.pType = PacketType.ST_STATE
-//           bogusPacket.header.seqNr = 2
-//           try {
-//             await utp._handleStatePacket(request, bogusPacket)
-//             st.fail('should throw')
-//           } catch (e: any) {
-//             st.equal(
-//               e.message,
-//               'READ socket should not get acks',
-//               'FINDCONTENT rejects STATE packets beyond SYNACK'
-//             )
-//           }
-//         }
-//         if (testPacketList.send.syn) {
-//           await utp.send(
-//             params.peerId,
-//             (testPacketList.send.syn as Packet).encode(),
-//             ProtocolId.HistoryNetwork
-//           )
-//         }
-//         if (testPacketList.send.synack) {
-//           const packet = await utp.sendSynAckPacket(request.socket)
-//           utp.send(params.peerId, packet.encode(), ProtocolId.HistoryNetwork)
-//         }
-//         if (testPacketList.send.data) {
-//           const packet = await utp.sendDataPacket(
-//             request.socket,
-//             (testPacketList.send.data as Packet[])[0].payload
-//           )
-//           await utp.send(params.peerId, packet.encode(), ProtocolId.HistoryNetwork)
-//         }
-//         st.end()
-//       })
-//     }
-//   })
-// })
+        const bogusPacket = Packet.fromOpts({
+          header: {
+            pType: 9 as PacketType,
+            extension: HeaderExtension.none,
+            version: 1,
+            connectionId: request.socket.rcvConnectionId,
+            seqNr: 789,
+            ackNr: 987,
+            timestampMicroseconds: Bytes32TimeStamp(),
+            timestampDifferenceMicroseconds: 0,
+            wndSize: 1048576,
+          },
+        })
+        try {
+          await utp.handleUtpPacket(bogusPacket.encode(), params.peerId)
+          st.fail('should throw')
+        } catch (e: any) {
+          st.equal(e.message, 'Unknown Packet Type 9', 'Unknown Packet Type rejected')
+        }
+        if (type === 'ACCEPT_READ') {
+          bogusPacket.header.pType = PacketType.ST_STATE
+          try {
+            await utp._handleStatePacket(request, bogusPacket)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(
+              e.message,
+              'Why did I get a STATE packet?',
+              'Accept Request rejects STATE packet'
+            )
+          }
+        }
+        if (mode === 'write') {
+          bogusPacket.header.pType = PacketType.ST_DATA
+          try {
+            await utp._handleDataPacket(request, bogusPacket)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(
+              e.message,
+              'Why did I get a DATA packet?',
+              `${type} request rejects all DATA packets`
+            )
+          }
+        }
+        if (type === 'FINDCONTENT_READ') {
+          bogusPacket.header.pType = PacketType.ST_STATE
+          bogusPacket.header.seqNr = 2
+          try {
+            await utp._handleStatePacket(request, bogusPacket)
+            st.fail('should throw')
+          } catch (e: any) {
+            st.equal(
+              e.message,
+              'READ socket should not get acks',
+              'FINDCONTENT rejects STATE packets beyond SYNACK'
+            )
+          }
+        }
+        if (testPacketList.send.syn) {
+          await utp.send(
+            params.peerId,
+            testPacketList.send.syn[0].encode(),
+            ProtocolId.HistoryNetwork
+          )
+        }
+        if (testPacketList.send.synack) {
+          await request.socket.sendSynAckPacket()
+        }
+        if (testPacketList.send.data) {
+          await request.socket.sendDataPacket(testPacketList.send.data[0].payload!)
+        }
+        st.end()
+      })
+    }
+  })
+  t.end()
+})
