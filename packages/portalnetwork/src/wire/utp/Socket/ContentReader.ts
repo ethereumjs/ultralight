@@ -1,34 +1,30 @@
+import debug from 'debug'
 import { Debugger } from 'debug'
-import { Packet, UtpSocket } from '../../index.js'
+import { StatePacket, UtpSocket } from '../index.js'
 export default class ContentReader {
-  packets: Packet[]
-  inOrder: Packet[]
+  packets: StatePacket[]
+  inOrder: StatePacket[]
   reading: boolean
-  gotFinPacket: boolean
-  socket: UtpSocket
   startingDataNr: number
   nextDataNr: number | undefined
   lastDataNr: number | undefined
   logger: Debugger
-  constructor(socket: UtpSocket, startingDataNr: number) {
-    this.socket = socket
-    this.packets = new Array<Packet>()
-    this.inOrder = new Array<Packet>()
+  constructor(startingDataNr: number) {
+    this.packets = new Array<StatePacket>()
+    this.inOrder = new Array<StatePacket>()
     this.reading = true
-    this.gotFinPacket = false
     this.startingDataNr = startingDataNr
     this.nextDataNr = startingDataNr
     this.lastDataNr = undefined
-    this.logger = this.socket.logger.extend('READING')
-    this.socket.reader = this
+    this.logger = debug('read').extend('READING')
+    // this.socket.reader = this
   }
 
-  async addPacket(packet: Packet): Promise<boolean> {
+  async addPacket(packet: StatePacket): Promise<boolean | number> {
     this.packets.push(packet)
     if (packet.header.seqNr === this.nextDataNr) {
-      this.inOrder.push(packet)
       this.nextDataNr++
-      return true
+      return this.inOrder.push(packet)
     } else {
       return false
     }
@@ -45,7 +41,7 @@ export default class ContentReader {
       return a.header.seqNr - b.header.seqNr
     })
     const precompiled = sortedPackets.map((pk) => {
-      return pk.payload
+      return pk.payload!
     })
     const compiled = await this.compile(precompiled)
     return compiled
