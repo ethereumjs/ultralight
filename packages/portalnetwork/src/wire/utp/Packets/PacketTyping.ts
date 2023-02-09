@@ -24,7 +24,7 @@ export enum HeaderExtension {
   selectiveAck = 1,
 }
 
-interface IHeaderInput {
+interface IHeaderInput<T extends PacketType> {
   pType: PacketType
   version: Uint8
   connectionId: Uint16
@@ -34,11 +34,12 @@ interface IHeaderInput {
   seqNr: Uint16
   ackNr: Uint16
 }
-interface IBasicHeaderInput<T extends PacketType> extends IHeaderInput {
+interface IBasicHeaderInput<T extends PacketType> extends IHeaderInput<T> {
   pType: PacketType
   extension: HeaderExtension.none
 }
-export interface ISelectiveAckHeaderInput extends IHeaderInput {
+export interface ISelectiveAckHeaderInput extends IHeaderInput<PacketType.ST_STATE> {
+  pType: PacketType.ST_STATE
   extension: HeaderExtension.selectiveAck
   bitmask: Uint8Array
 }
@@ -73,13 +74,16 @@ export interface IPacket<T extends PacketType> {
   payload?: Uint8Array
 }
 export interface IBasic<T extends PacketType> extends IPacket<T> {
+  pType: T
   extension: HeaderExtension.none
 }
 export interface ISelectiveAck extends IPacket<PacketType.ST_STATE> {
+  pType: PacketType.ST_STATE
   extension: HeaderExtension.selectiveAck
   bitmask: Uint8Array
 }
 export interface IData extends IPacket<PacketType.ST_DATA> {
+  pType: PacketType.ST_DATA
   extension: HeaderExtension.none
   payload: Uint8Array
 }
@@ -121,5 +125,5 @@ export type PacketHeaderType = {
   wndSize: Uint32
   seqNr: Uint16
   ackNr: Uint16
-  extentions?: Uint8Array
+  extensions?: Uint8Array
 }

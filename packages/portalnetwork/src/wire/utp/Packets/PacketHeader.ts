@@ -1,6 +1,6 @@
 import { Uint16, Uint32, Uint8 } from '../index.js'
 import { VERSION } from '../Utils/constants.js'
-import { SelectiveAckHeaderExtension } from './Extentions.js'
+import { SelectiveAckHeaderExtension } from './Extensions.js'
 import {
   HeaderInput,
   ISelectiveAckHeaderInput,
@@ -69,7 +69,6 @@ export class SelectiveAckHeader extends Header<PacketType.ST_STATE> {
   }
 
   encode(): Buffer {
-    console.log('encoding selective ack header')
     const buffer = Buffer.alloc(20 + this.bitmask.length + 2)
     const p = this.pType.toString(16)
     const v = this.version.toString(16)

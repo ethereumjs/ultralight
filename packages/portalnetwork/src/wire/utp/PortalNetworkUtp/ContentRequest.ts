@@ -37,10 +37,8 @@ export class ContentRequest {
       case RequestCode.OFFER_WRITE:
         if (this.content) {
           this.socket.content = this.content
-          // this.socket.seqNr = 2
           this.socket.logger.extend('ContentRequest')('init() - Sending a SYN')
           await this.sendSyn()
-          // this.socket.setWriter()
         }
         break
       default:

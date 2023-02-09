@@ -25,7 +25,6 @@ import {
   UtpSocketKey,
 } from '../../../index.js'
 import ContentReader from '../Socket/ContentReader.js'
-import ContentWriter from '../Socket/ContentWriter.js'
 import { EventEmitter } from 'events'
 
 export class PortalNetworkUTP extends EventEmitter {
@@ -294,7 +293,7 @@ export class PortalNetworkUTP extends EventEmitter {
       case RequestCode.ACCEPT_READ:
         return await request.socket.handleDataPacket(packet)
       default:
-        throw new Error(`Why did I get a DATA packet? to:${packet.header.connectionId}`)
+        throw new Error(`Why did I get a DATA packet?`)
     }
   }
   async _handleResetPacket(request: ContentRequest) {
