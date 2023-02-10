@@ -148,48 +148,4 @@ export class ContentManager {
       this.addContentToHistory(type, hash, content as Uint8Array)
     } catch {}
   }
-
-  private receiveEpoch(epoch: Uint8Array) {
-    const _epoch = EpochAccumulator.deserialize(epoch).map((record) => {
-      return record.blockHash
-    })
-    for (const hash in _epoch) {
-      const headerKey = getHistoryNetworkContentKey(
-        HistoryNetworkContentTypes.BlockHeader,
-        fromHexString(hash)
-      )
-      const bodyKey = getHistoryNetworkContentKey(
-        HistoryNetworkContentTypes.BlockBody,
-        fromHexString(hash)
-      )
-      const headerDistance = distance(this.history.client.discv5.enr.nodeId, headerKey)
-      const bodyDistance = distance(this.history.client.discv5.enr.nodeId, bodyKey)
-      if (headerDistance <= this.radius) {
-        try {
-          this.history.client.db.get(headerKey)
-        } catch {
-          const key = HistoryNetworkContentKeyType.serialize(
-            Buffer.concat([
-              Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
-              fromHexString(hash),
-            ])
-          )
-          this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockHeader)
-        }
-      }
-      if (bodyDistance <= this.radius) {
-        try {
-          this.history.client.db.get(bodyKey)
-        } catch {
-          const key = HistoryNetworkContentKeyType.serialize(
-            Buffer.concat([
-              Uint8Array.from([HistoryNetworkContentTypes.BlockBody]),
-              fromHexString(hash),
-            ])
-          )
-          this.autoLookup(key, hash, HistoryNetworkContentTypes.BlockBody)
-        }
-      }
-    }
-  }
 }
