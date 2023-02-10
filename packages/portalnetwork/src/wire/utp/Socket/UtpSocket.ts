@@ -285,6 +285,7 @@ export class UtpSocket extends EventEmitter {
 
   close(): void {
     clearInterval(this.packetManager.congestionControl.timeoutCounter)
+    this.packetManager.congestionControl.removeAllListeners()
     this.removeAllListeners()
   }
   logProgress() {
