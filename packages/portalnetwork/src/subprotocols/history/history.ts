@@ -91,6 +91,17 @@ export class HistoryProtocol extends BaseProtocol {
     })
   }
 
+  public validateHeader = async (value: Uint8Array, contentHash: string) => {
+    const header = BlockHeaderWithProof.deserialize(value as Uint8Array)
+    if (header.proof.value === null) {
+      throw new Error('Received block header without proof')
+    }
+    if (!this.accumulator.verifyInclusionProof(header.proof, contentHash)) {
+      throw new Error('Received block header with invalid proof')
+    }
+    await this.addContentToHistory(HistoryNetworkContentTypes.BlockHeader, contentHash, value)
+  }
+
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
    * @param dstId node id of peer
@@ -128,20 +139,6 @@ export class HistoryProtocol extends BaseProtocol {
         const contentKey = decodeHistoryNetworkContentKey(toHexString(key))
         const contentHash = contentKey.blockHash
         const contentType = contentKey.contentType
-        const validateHeader = async () => {
-          const header = BlockHeaderWithProof.deserialize(decoded.value as Uint8Array)
-          if (header.proof.value === null) {
-            throw new Error('Received block header without proof')
-          }
-          if (!this.accumulator.verifyInclusionProof(header.proof, contentHash)) {
-            throw new Error('Received block header with invalid proof')
-          }
-          await this.addContentToHistory(
-            contentType,
-            toHexString(Buffer.from(contentHash)),
-            decoded.value as Uint8Array
-          )
-        }
 
         switch (decoded.selector) {
           case FoundContent.UTP: {
@@ -162,7 +159,7 @@ export class HistoryProtocol extends BaseProtocol {
             )
             try {
               if (contentType === HistoryNetworkContentTypes.BlockHeader) {
-                await validateHeader()
+                await this.validateHeader(decoded.value as Uint8Array, contentHash)
               } else {
                 {
                   await this.addContentToHistory(
