@@ -36,8 +36,6 @@ export class eth {
       this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     ).receiptManager
 
-    this.blockNumber = middleware(this.blockNumber.bind(this), 0)
-
     this.getBlockByNumber = middleware(this.getBlockByNumber.bind(this), 2, [
       [validators.blockOption],
       [validators.bool],
@@ -81,15 +79,6 @@ export class eth {
         }),
       ],
     ])
-  }
-
-  /**
-   * Returns number of the most recent block stored in the Accumulator.
-   * This is probably not the actual "latest" block in the chain.
-   * @param params An empty array
-   */
-  async blockNumber(_params = []) {
-    return this._history.accumulator.currentHeight()
   }
 
   /**
@@ -159,11 +148,9 @@ export class eth {
     }
 
     let block: Block
-    const latest = await this.blockNumber([])
 
     if (blockOpt === 'latest') {
-      this.logger(`"latest" will return current accumulator height`)
-      block = (await this.getBlockByNumber([latest.toString(), true])) as Block
+      throw new Error(`History Network does not support "latest" block`)
     } else if (blockOpt === 'earliest') {
       block = (await this.getBlockByNumber(['0', true])) as Block
     } else {
@@ -228,30 +215,15 @@ export class eth {
       if (fromBlock === 'earliest') {
         from = (await this.getBlockByNumber(['0', true])) as Block
       } else if (fromBlock === 'latest' || fromBlock === undefined) {
-        from = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
+        throw new Error(`History Network does not support "latest" block`)
       } else {
         const blockNum = BigInt(fromBlock)
-        if (blockNum > this._history.accumulator.currentHeight()) {
-          throw {
-            code: INVALID_PARAMS,
-            message: 'specified `fromBlock` greater than current height',
-          }
-        }
         from = (await this.getBlockByNumber([blockNum.toString(), true])) as Block
       }
       if (toBlock === fromBlock) {
         to = from
-      } else if (toBlock === 'latest' || toBlock === undefined) {
-        to = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
       } else {
-        const blockNum = toBlock
-        if (parseInt(blockNum) > (await this.blockNumber())) {
-          throw {
-            code: INVALID_PARAMS,
-            message: 'specified `toBlock` greater than current height',
-          }
-        }
-        to = (await this.getBlockByNumber([blockNum.toString(), true])) as Block
+        throw new Error(`unsupported toBlock: ${toBlock}`)
       }
     }
     if (

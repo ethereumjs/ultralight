@@ -8,6 +8,7 @@ import {
   BlockBodyContentType,
   getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
+  epochRootByBlocknumber,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 
@@ -64,65 +65,42 @@ export class ETH {
   }
 
   public getBlockByNumber = async (
-    blockNumber: number,
+    blockNumber: number | bigint,
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
-    if (blockNumber > this.protocol.accumulator.currentHeight()) {
-      this.protocol.logger(`Block number ${blockNumber} is higher than current known chain height`)
-      return
-    }
     let blockHash
-    const blockIndex = blockNumber % EPOCH_SIZE
-    if (blockNumber > 8192 * this.protocol.accumulator.getHistoricalEpochs.length) {
-      const currentEpoch = this.protocol.accumulator.currentEpoch()
-      blockHash = toHexString(currentEpoch[blockIndex].blockHash)
-      this.protocol.logger(`Blockhash found for BlockNumber ${blockNumber}: ${blockHash}`)
-      try {
-        const block = await this.getBlockByHash(blockHash, includeTransactions)
-        return block
-      } catch (err) {
-        this.protocol.logger(`getBlockByNumber error: ${(err as any).message}`)
-      }
-    } else {
-      const historicalEpochIndex = Math.floor(blockNumber / EPOCH_SIZE)
-      const epochRootHash = this.protocol.accumulator.getHistoricalEpochs()[historicalEpochIndex]
-      if (!epochRootHash) {
-        this.protocol.logger('Error with epoch root lookup')
-        return
-      }
-      const lookupKey = getHistoryNetworkContentKey(
-        HistoryNetworkContentTypes.EpochAccumulator,
-        Buffer.from(epochRootHash)
+    const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
+    const lookupKey = getHistoryNetworkContentKey(
+      HistoryNetworkContentTypes.EpochAccumulator,
+      Buffer.from(epochRootHash)
+    )
+    const epoch_lookup = new ContentLookup(this.protocol, fromHexString(lookupKey))
+    const result = await epoch_lookup.startLookup()
+    if (result === undefined || !(result instanceof Uint8Array)) {
+      this.protocol.logger('eth_getBlockByNumber failed to retrieve historical epoch accumulator')
+      return undefined
+    }
+
+    try {
+      const epoch = EpochAccumulator.deserialize(result as Uint8Array)
+      this.protocol.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
+        `Found EpochAccumulator with header record for block ${blockNumber}`
       )
+      blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
 
-      const lookup = new ContentLookup(this.protocol, fromHexString(lookupKey))
-      const result = await lookup.startLookup()
-      if (result === undefined || !(result instanceof Uint8Array)) {
-        this.protocol.logger('eth_getBlockByNumber failed to retrieve historical epoch accumulator')
-        return undefined
-      }
-
-      try {
-        const epoch = EpochAccumulator.deserialize(result as Uint8Array)
-        this.protocol.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-          `Found EpochAccumulator with header record for block ${blockNumber}: ${epoch[blockIndex]}: result ${result.length}`
+      const block = await this.getBlockByHash(blockHash, includeTransactions)
+      if (block?.header.number === BigInt(blockNumber)) {
+        return block
+      } else if (block !== undefined) {
+        this.protocol.logger(
+          `eth_getBlockByNumber returned the wrong block, ${block?.header.number}`
         )
-        blockHash = toHexString(epoch[blockIndex].blockHash)
-
-        const block = await this.getBlockByHash(blockHash, includeTransactions)
-        if (block?.header.number === BigInt(blockNumber)) {
-          return block
-        } else if (block !== undefined) {
-          this.protocol.logger(
-            `eth_getBlockByNumber returned the wrong block, ${block?.header.number}`
-          )
-          return
-        } else {
-          this.protocol.logger(`eth_getBlockByNumber failed to find block`)
-        }
-      } catch (err: any) {
-        this.protocol.logger(`eth_getBlockByNumber encountered an error: ${err.message}`)
+        return
+      } else {
+        this.protocol.logger(`eth_getBlockByNumber failed to find block`)
       }
+    } catch (err: any) {
+      this.protocol.logger(`eth_getBlockByNumber encountered an error: ${err.message}`)
     }
   }
 }
