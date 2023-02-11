@@ -1,4 +1,4 @@
-import { fromHexString, toHexString, UintBigintType } from '@chainsafe/ssz'
+import { ContainerType, fromHexString, toHexString, UintBigintType } from '@chainsafe/ssz'
 import tape from 'tape'
 import { randomBytes } from 'crypto'
 import {
@@ -12,11 +12,12 @@ import {
 import {
   BlockHeaderWithProof,
   EpochAccumulator,
+  HistoricalEpochsType,
   HistoryNetworkContentTypes,
 } from '../../../src/subprotocols/history/types.js'
 import { bufArrToArr } from '@ethereumjs/util'
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
-import historicalEpochs from '../../../src/subprotocols/history/data/epochHashes.json' assert { type: 'json' }
+import _historicalEpochs from '../../../src/subprotocols/history/data/epochHashes.json' assert { type: 'json' }
 import { BlockHeader } from '@ethereumjs/block'
 import { readFileSync } from 'fs'
 import { PortalNetwork, ProtocolId } from '../../../src/index.js'
@@ -177,6 +178,28 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
 })
 
 tape.only('Header With Proof serialization/deserialization tests', async (t) => {
+  const masterAccumulator = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
+    encoding: 'hex',
+  })
+  const historicalEpochs = HistoricalEpochsType.deserialize(
+    fromHexString(masterAccumulator).slice(4)
+  )
+  const MasterAccumulatorType = new ContainerType({
+    historicalEpochs: HistoricalEpochsType,
+  })
+  const serialized_container = MasterAccumulatorType.serialize({
+    historicalEpochs,
+  })
+  t.deepEqual(
+    fromHexString(masterAccumulator),
+    serialized_container,
+    'Serialized Container matches MasterAccumulator'
+  )
+  console.log({
+    mast_accumulator: '0x' + masterAccumulator.slice(0, 32) + '...',
+    serial_container: toHexString(serialized_container).slice(0, 34) + '...',
+  })
+
   const actualEpoch = readFileSync(
     './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
     { encoding: 'hex' }
@@ -208,7 +231,7 @@ tape.only('Header With Proof serialization/deserialization tests', async (t) => 
     HistoryNetworkContentTypes.BlockHeader,
     deserializedHeader.hash()
   )
-  const epochHash = historicalEpochs[Math.floor(1000001 / 8192)]
+  const epochHash = _historicalEpochs[Math.floor(1000001 / 8192)]
   const actual_Epoch = EpochAccumulator.deserialize(fromHexString(actualEpoch))
   const tree = EpochAccumulator.value_toTree(actual_Epoch)
   const proof = EpochAccumulator.createFromProof(

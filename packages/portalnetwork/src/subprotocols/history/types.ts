@@ -144,9 +144,8 @@ export const HistoricalEpochsType = new ListCompositeType(
   MAX_HISTORICAL_EPOCHS
 )
 export const EpochAccumulator = new ListCompositeType(HeaderRecordType, EPOCH_SIZE)
-export const HeaderAccumulatorType = new ContainerType({
+export const MasterAccumulatorType = new ContainerType({
   historicalEpochs: HistoricalEpochsType,
-  currentEpoch: EpochAccumulator,
 })
 export const sszTransactionType = new ByteListType(MAX_TRANSACTION_LENGTH)
 export const allTransactionsType = new ListCompositeType(sszTransactionType, MAX_TRANSACTION_COUNT)
@@ -161,6 +160,7 @@ export const sszReceiptsListType = new ListCompositeType(sszReceiptType, MAX_TRA
 
 export const AccumulatorProofType = new VectorCompositeType(Bytes32Type, 15)
 export const BlockHeaderProofType = new UnionType([new NoneType(), AccumulatorProofType])
+
 export const BlockHeaderWithProof = new ContainerType({
   header: new ByteListType(MAX_HEADER_LENGTH),
   proof: BlockHeaderProofType,
