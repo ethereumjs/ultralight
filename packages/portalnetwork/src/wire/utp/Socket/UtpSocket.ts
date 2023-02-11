@@ -16,15 +16,6 @@ import ContentReader from './ContentReader.js'
 import { PacketManager } from '../Packets/PacketManager.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
 
-interface ReadSocketOptions extends UtpSocketOptions {
-  type: UtpSocketType.READ
-}
-
-interface WriteSocketOptions extends UtpSocketOptions {
-  type: UtpSocketType.WRITE
-  content: Uint8Array
-}
-
 export class UtpSocket extends EventEmitter {
   type: UtpSocketType
   content: Uint8Array
@@ -219,8 +210,7 @@ export class UtpSocket extends EventEmitter {
         this.sendFinPacket()
         return true
       } else {
-        // this._writer.next()
-        this.writer?.writing && this.writer?.write()
+        this.writer?.writing && this.writer.write()
       }
     }
   }

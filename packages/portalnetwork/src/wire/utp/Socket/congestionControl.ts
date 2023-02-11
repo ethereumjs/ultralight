@@ -42,12 +42,11 @@ export class CongestionControl extends EventEmitter {
     } else {
       this.logger(` cur_window: ${this.cur_window} - max_window ${this.max_window}`)
       this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
-      return false
-      // return new Promise((resolve, reject) => {
-      //   this.once('canSend', () => {
-      //     resolve(true)
-      //   })
-      // })
+      return new Promise((resolve, reject) => {
+        this.once('canSend', () => {
+          resolve(true)
+        })
+      })
     }
   }
 

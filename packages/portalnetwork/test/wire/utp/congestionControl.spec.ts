@@ -32,11 +32,28 @@ tape('CongestionControl', async (t) => {
       'canSend() returns true when cur_window < max_window'
     )
     congestionControl.cur_window = congestionControl.max_window
+    let updated = false
+    setTimeout(() => {
+      updated = true
+      congestionControl.outBuffer = new Map()
+      congestionControl.updateWindow()
+    }, 100)
+    st.equal(updated, false, 'window not yet updated')
     st.equal(
       await congestionControl.canSend(),
-      false,
-      'canSend() returns false when cur_window >= max_window'
+      true,
+      'canSend() waits for window to be open to return'
     )
+
+    congestionControl.cur_window = congestionControl.max_window
+    updated = false
+    setTimeout(() => {
+      st.pass('canSend() does not return until event promise is resolved')
+      st.end()
+    }, 100)
+    st.equal(updated, false, 'window not yet updated')
+    await congestionControl.canSend(),
+      st.fail('canSend() should not return until event promise is resolved')
     st.end()
   })
   t.test('updateRTT()', async (st) => {

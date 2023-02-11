@@ -44,7 +44,6 @@ export default class ContentWriter extends EventEmitter {
 
       await this.send(PacketType.ST_DATA, bytes)
       this.seqNr = this.sentChunks.slice(-1)[0] + 1
-      // this.write()
       return
     }
     this.writing = false
