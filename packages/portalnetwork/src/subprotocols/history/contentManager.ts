@@ -110,31 +110,17 @@ export class ContentManager {
           toHexString(value)
         )
         break
-      case HistoryNetworkContentTypes.HeaderProof: {
-        try {
-          const proof = SszProofType.deserialize(value)
-          const verified = await this.history.accumulator.verifyInclusionProof(proof, hashKey)
-          this.history.client.emit('Verified', hashKey, verified)
-          break
-        } catch (err) {
-          this.logger(`VERIFY Error: ${(err as any).message}`)
-          this.history.client.emit('Verified', hashKey, false)
-          break
-        }
-      }
       default:
         throw new Error('unknown data type provided')
     }
-    if (contentType !== HistoryNetworkContentTypes.HeaderProof) {
-      this.history.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
-      this.logger(
-        `added ${
-          Object.keys(HistoryNetworkContentTypes)[
-            Object.values(HistoryNetworkContentTypes).indexOf(contentType)
-          ]
-        } for ${hashKey}`
-      )
-    }
+    this.history.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
+    this.logger(
+      `added ${
+        Object.keys(HistoryNetworkContentTypes)[
+          Object.values(HistoryNetworkContentTypes).indexOf(contentType)
+        ]
+      } for ${hashKey}`
+    )
     if (this.history.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
       this.history.gossipManager.add(hashKey, contentType)
