@@ -1,18 +1,19 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import {
-  AccumulatorManager,
   BlockHeaderWithProof,
-  ContentLookup,
+  blockNumberToGindex,
   ContentManager,
   ContentMessageType,
   decodeHistoryNetworkContentKey,
   EpochAccumulator,
+  epochIndexByBlocknumber,
+  epochRootByBlocknumber,
+  epochRootByIndex,
   ETH,
   FindContentMessage,
   getHistoryNetworkContentKey,
   GossipManager,
-  HeaderProofInterface,
   HistoryNetworkContentTypes,
   MessageCodes,
   PortalNetwork,
@@ -22,9 +23,18 @@ import {
   ReceiptsManager,
   RequestCode,
   shortId,
+  Witnesses,
 } from '../../index.js'
 
 import { BaseProtocol } from '../protocol.js'
+import {
+  createProof,
+  Proof,
+  ProofType,
+  SingleProof,
+  SingleProofInput,
+} from '@chainsafe/persistent-merkle-tree'
+import { BlockHeader } from '@ethereumjs/block'
 
 enum FoundContent {
   'UTP' = 0,
@@ -32,9 +42,19 @@ enum FoundContent {
   'ENRS' = 2,
 }
 export class HistoryProtocol extends BaseProtocol {
+  verifyInclusionProof(witnesses: Uint8Array[], blockHash: string, blockNumber: bigint): boolean {
+    const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
+    const proof: Proof = {
+      type: ProofType.single,
+      gindex: blockNumberToGindex(blockNumber),
+      witnesses: witnesses,
+      leaf: fromHexString(blockHash),
+    }
+    EpochAccumulator.createFromProof(proof, target)
+    return true
+  }
   protocolId: ProtocolId
   protocolName = 'HistoryNetwork'
-  accumulator: AccumulatorManager
   logger: Debugger
   ETH: ETH
   gossipManager: GossipManager
@@ -44,26 +64,11 @@ export class HistoryProtocol extends BaseProtocol {
     super(client, undefined, metrics)
     this.protocolId = ProtocolId.HistoryNetwork
     this.logger = client.logger.extend('HistoryNetwork')
-    this.accumulator = new AccumulatorManager({ history: this })
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
     this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
     this.routingTable.setLogger(this.logger)
-  }
-
-  public getEpochByIndex = async (
-    index: number
-  ): Promise<Uint8Array | Uint8Array[] | undefined> => {
-    const epochHash = toHexString(this.accumulator.getHistoricalEpochs()[index])
-    const contentKey = getHistoryNetworkContentKey(
-      HistoryNetworkContentTypes.EpochAccumulator,
-      Buffer.from(fromHexString(epochHash))
-    )
-    const lookup = new ContentLookup(this, fromHexString(contentKey))
-    const epoch = await lookup.startLookup()
-    this.logger(`Epoch ${index}: ${epoch}`)
-    return epoch
   }
 
   /**
@@ -90,11 +95,17 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
-    const header = BlockHeaderWithProof.deserialize(value as Uint8Array)
-    if (header.proof.value === null) {
+    const headerProof = BlockHeaderWithProof.deserialize(value as Uint8Array)
+    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerProof.header), {
+      hardforkByBlockNumber: true,
+    })
+    const proof = headerProof.proof
+    if (proof.value === null) {
       throw new Error('Received block header without proof')
     }
-    if (!this.accumulator.verifyInclusionProof(header.proof, contentHash)) {
+    try {
+      this.verifyInclusionProof(proof.value, contentHash, header.number)
+    } catch {
       throw new Error('Received block header with invalid proof')
     }
     await this.addContentToHistory(HistoryNetworkContentTypes.BlockHeader, contentHash, value)
@@ -198,7 +209,23 @@ export class HistoryProtocol extends BaseProtocol {
     this.contentManager.addContentToHistory(contentType, hashKey, value)
   }
 
-  public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
-    return this.accumulator.generateInclusionProof(blockHash)
+  public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
+    const epochHash = epochRootByBlocknumber(blockNumber)
+    let epoch: string
+    try {
+      epoch = await this.client.db.get(
+        getHistoryNetworkContentKey(HistoryNetworkContentTypes.EpochAccumulator, epochHash)
+      )
+      const accumulator = EpochAccumulator.deserialize(fromHexString(epoch))
+      const tree = EpochAccumulator.value_toTree(accumulator)
+      const proofInput: SingleProofInput = {
+        type: ProofType.single,
+        gindex: blockNumberToGindex(blockNumber),
+      }
+      const proof = createProof(tree, proofInput) as SingleProof
+      return proof.witnesses
+    } catch (err: any) {
+      throw new Error('Error generating inclusion proof: ' + (err as any).message)
+    }
   }
 }
