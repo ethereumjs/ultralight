@@ -3,6 +3,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   BlockBodyContent,
   BlockBodyContentType,
+  EpochAccumulator,
   HistoryNetworkContentTypes,
   sszTransactionType,
   sszUnclesType,
@@ -16,6 +17,7 @@ import {
   UncleHeadersBuffer,
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
+import historicalEpochs from './data/epochHashes.json' assert { type: 'json' }
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -144,7 +146,25 @@ export const addRLPSerializedBlock = async (
 // So the gIndices of the leaf nodes start at 16384
 
 export const blockNumberToGindex = (blockNumber: bigint): bigint => {
-  const listIndex = blockNumber % BigInt(8192)
-  const gIndex = listIndex + BigInt(16384)
+  const randArray = new Array(8192).fill({
+    blockHash: fromHexString('0xa66afd523336ddf6e71567e366c7ef98aa529644915c30a3802eac73c2c2f3a6'),
+    totalDifficulty: 1n,
+  })
+  const epochAcc = EpochAccumulator.value_toTree(randArray)
+  const listIndex = (Number(blockNumber) % 8192) * 2
+  const gIndex = EpochAccumulator.tree_getLeafGindices(1n, epochAcc)[listIndex]
   return gIndex
+}
+
+export const epochIndexByBlocknumber = (blockNumber: bigint) => {
+  return Math.floor(Number(blockNumber) / 8192)
+}
+export const blockNumberToLeafIndex = (blockNumber: bigint) => {
+  return (Number(blockNumber) % 8192) * 2
+}
+export const epochRootByIndex = (index: number) => {
+  return fromHexString(historicalEpochs[index])
+}
+export const epochRootByBlocknumber = (blockNumber: bigint) => {
+  return epochRootByIndex(epochIndexByBlocknumber(blockNumber))
 }
