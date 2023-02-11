@@ -1,9 +1,9 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString, UintBigintType } from '@chainsafe/ssz'
 import tape from 'tape'
 import { randomBytes } from 'crypto'
 import {
-  AccumulatorManager,
   getHistoryNetworkContentId,
+  getHistoryNetworkContentKey,
   HistoryNetworkContentKeyType,
   HistoryProtocol,
   Receipt,
@@ -12,21 +12,15 @@ import {
 import {
   BlockHeaderWithProof,
   EpochAccumulator,
-  HistoricalEpochsType,
   HistoryNetworkContentTypes,
 } from '../../../src/subprotocols/history/types.js'
 import { bufArrToArr } from '@ethereumjs/util'
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
+import historicalEpochs from '../../../src/subprotocols/history/data/epochHashes.json' assert { type: 'json' }
 import { BlockHeader } from '@ethereumjs/block'
-import { FakeProtocol } from '../protocol.spec.js'
-import {
-  blockNumberToGindex,
-  HeaderAccumulator,
-  PortalNetwork,
-  ProtocolId,
-} from '../../../src/index.js'
-import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { readFileSync } from 'fs'
+import { PortalNetwork, ProtocolId } from '../../../src/index.js'
+import { ProofType } from '@chainsafe/persistent-merkle-tree'
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
@@ -183,8 +177,19 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
 })
 
 tape.only('Header With Proof serialization/deserialization tests', async (t) => {
+  const actualEpoch = readFileSync(
+    './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
+    { encoding: 'hex' }
+  )
+  const node = await PortalNetwork.create({
+    bindAddress: '192.168.0.1',
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+  })
+  const history = new HistoryProtocol(node)
   const serializedBlock1 = fromHexString(testData[1000001].content_value)
+  const serializedBlock2 = fromHexString(testData[1000002].content_value)
   const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)
+  const headerWithProof2 = BlockHeaderWithProof.deserialize(serializedBlock2)
   const deserializedHeader = BlockHeader.fromRLPSerializedHeader(
     Buffer.from(headerWithProof.header),
     {
@@ -192,29 +197,44 @@ tape.only('Header With Proof serialization/deserialization tests', async (t) => 
       hardforkByBlockNumber: true,
     }
   )
-  const contentKey = toHexString(
-    HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
-        Uint8Array.from(deserializedHeader.hash()),
-      ])
-    )
+  const deserializedHeader2 = BlockHeader.fromRLPSerializedHeader(
+    Buffer.from(headerWithProof2.header),
+    {
+      skipConsensusFormatValidation: true,
+      hardforkByBlockNumber: true,
+    }
+  )
+  const contentKey = getHistoryNetworkContentKey(
+    HistoryNetworkContentTypes.BlockHeader,
+    deserializedHeader.hash()
+  )
+  const epochHash = historicalEpochs[Math.floor(1000001 / 8192)]
+  const actual_Epoch = EpochAccumulator.deserialize(fromHexString(actualEpoch))
+  const tree = EpochAccumulator.value_toTree(actual_Epoch)
+  const proof = EpochAccumulator.createFromProof(
+    {
+      type: ProofType.single,
+      gindex: EpochAccumulator.tree_getLeafGindices(1n, tree)[(1000001 % 8192) * 2],
+      witnesses: headerWithProof.proof.value!,
+      leaf: deserializedHeader.hash(),
+    },
+    fromHexString(epochHash)
+  )
+  t.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
+  t.equal(
+    toHexString(EpochAccumulator.hashTreeRoot(actual_Epoch)),
+    epochHash,
+    'stored epoch hash matches valid epoch'
+  )
+  const total_difficulty = new UintBigintType(32).deserialize(headerWithProof.proof.value![0])
+  const total_difficulty2 = new UintBigintType(32).deserialize(headerWithProof2.proof.value![0])
+  t.equal(
+    total_difficulty2 - total_difficulty,
+    deserializedHeader2.difficulty,
+    'deserialized headers have valid difficulty'
   )
   t.equal(deserializedHeader.number, 1000001n, 'deserialized header number matches test vector')
   t.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
-
-  const node = await PortalNetwork.create({
-    bindAddress: '192.168.0.1',
-    supportedProtocols: [ProtocolId.HistoryNetwork],
-  })
-
-  const accumBytes = readFileSync('./src/subprotocols/history/data/finished_accumulator.ssz')
-  console.log(accumBytes)
-  const epocs = HistoricalEpochsType.deserialize(Uint8Array.from(accumBytes))
-  const epoch = EpochAccumulator.createFromProof({
-    type: ProofType.single,
-    leaf: Uint8Array.from(deserializedHeader.hash()),
-    witnesses: headerWithProof.proof.value!,
-    gindex: blockNumberToGindex(1000001n),
-  })
+  t.ok(history.validateHeader(serializedBlock1, toHexString(deserializedHeader.hash())))
+  t.end()
 })

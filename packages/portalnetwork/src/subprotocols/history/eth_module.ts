@@ -2,7 +2,6 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import {
   EpochAccumulator,
-  EPOCH_SIZE,
   reassembleBlock,
   HistoryProtocol,
   BlockBodyContentType,

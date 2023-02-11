@@ -1,7 +1,11 @@
-import { fromHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import tape from 'tape'
 import {
+  blockNumberToGindex,
+  blockNumberToLeafIndex,
+  epochRootByBlocknumber,
+  epochRootByIndex,
   getHistoryNetworkContentId,
   HistoryNetworkContentKeyType,
   HistoryNetworkContentTypes,
@@ -23,6 +27,31 @@ tape('utility functions', (t) => {
     serializedContentKeyToContentId(block1headerContentKey),
     'produced same content id'
   )
+  t.equal(blockNumberToGindex(1000n), 34768n, 'blockNumberToGindex returned correct gindex')
+  t.equal(blockNumberToGindex(9192n), 34768n, 'blockNumberToGindex returned correct gindex')
+  t.equal(blockNumberToLeafIndex(1000n), 2000, 'blockNumberToLeafIndex returned correct leaf index')
+  t.equal(blockNumberToLeafIndex(9192n), 2000, 'blockNumberToLeafIndex returned correct leaf index')
+  t.equal(
+    toHexString(epochRootByBlocknumber(1000n)),
+    '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
+    'epochRootByBlocknumber returned correct epoch root'
+  )
+  t.equal(
+    toHexString(epochRootByIndex(0)),
+    '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
+    'epochRootByIndex returned correct epoch root'
+  )
+  t.equal(
+    toHexString(epochRootByBlocknumber(9192n)),
+    '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
+    'epochRootByBlocknumber returned correct epoch root'
+  )
+  t.equal(
+    toHexString(epochRootByIndex(1)),
+    '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
+    'epochRootByIndex returned correct epoch root'
+  )
+
   t.end()
 })
 
