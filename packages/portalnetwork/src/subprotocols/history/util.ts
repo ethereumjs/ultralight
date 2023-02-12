@@ -17,7 +17,7 @@ import {
   UncleHeadersBuffer,
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
-import historicalEpochs from './data/epochHashes.json' assert { type: 'json' }
+import { historicalEpochs } from './data/epochHashes.js'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
