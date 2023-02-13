@@ -132,15 +132,15 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendSynPacket(): Promise<void> {
-    const p = this.createPacket<PacketType.ST_SYN>({ pType: PacketType.ST_SYN })
-    await this.sendPacket<PacketType.ST_SYN>(p, PacketType.ST_SYN)
+    const p = this.createPacket({ pType: PacketType.ST_SYN })
+    await this.sendPacket(p, PacketType.ST_SYN)
     this.state = ConnectionState.SynSent
   }
   async sendAckPacket(bitmask?: Uint8Array): Promise<void> {
     const packet = bitmask
-      ? this.createPacket<PacketType.ST_STATE>({ pType: PacketType.ST_STATE, bitmask })
-      : this.createPacket<PacketType.ST_STATE>({ pType: PacketType.ST_STATE })
-    await this.sendPacket<PacketType.ST_STATE>(packet, PacketType.ST_STATE)
+      ? this.createPacket({ pType: PacketType.ST_STATE, bitmask })
+      : this.createPacket({ pType: PacketType.ST_STATE })
+    await this.sendPacket(packet, PacketType.ST_STATE)
   }
   async sendSynAckPacket(): Promise<void> {
     this.state = ConnectionState.SynRecv
@@ -158,7 +158,8 @@ export class UtpSocket extends EventEmitter {
     await this.sendPacket<PacketType.ST_FIN>(packet, PacketType.ST_FIN)
   }
 
-  async sendDataPacket(bytes: Uint8Array): Promise<Packet<PacketType.ST_DATA>> {
+  async sendDataPacket(bytes: Uint8Array): Promise<void> {
+    this.state = ConnectionState.Connected
     await this.packetManager.congestionControl.canSend()
     const packet = this.createPacket<PacketType.ST_DATA>({
       pType: PacketType.ST_DATA,
@@ -170,12 +171,10 @@ export class UtpSocket extends EventEmitter {
       packet.header.timestampMicroseconds
     )
     this.updateWindow()
-    return packet
   }
 
   async handleSynPacket(): Promise<void> {
     this.logger(`Connection State: SynRecv`)
-    this.state = ConnectionState.SynRecv
     return this.sendSynAckPacket()
   }
 

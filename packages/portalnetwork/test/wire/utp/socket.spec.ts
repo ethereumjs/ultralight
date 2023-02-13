@@ -9,6 +9,8 @@ import {
   HeaderExtension,
   fromHexString,
   toHexString,
+  Packet,
+  ConnectionState,
 } from '../../../src/index.js'
 
 const sampleSize = 50000
@@ -20,25 +22,30 @@ const DEFAULT_RAND_ACKNR = 4444
 const readId = 1111
 const writeId = 2222
 
-const read = new UtpSocket({
-  ackNr: DEFAULT_RAND_ACKNR,
-  seqNr: DEFAULT_RAND_SEQNR,
-  remoteAddress: '1234',
-  rcvId: readId,
-  sndId: writeId,
-  logger: debug('test'),
-  type: UtpSocketType.READ,
-})
-const write = new UtpSocket({
-  ackNr: DEFAULT_RAND_ACKNR,
-  seqNr: DEFAULT_RAND_SEQNR,
-  remoteAddress: '1234',
-  rcvId: writeId,
-  sndId: readId,
-  logger: debug('test'),
-  type: UtpSocketType.WRITE,
-})
+const _read = () =>
+  new UtpSocket({
+    ackNr: DEFAULT_RAND_ACKNR,
+    seqNr: DEFAULT_RAND_SEQNR,
+    remoteAddress: '1234',
+    rcvId: readId,
+    sndId: writeId,
+    logger: debug('test'),
+    type: UtpSocketType.READ,
+  })
+const _write = () =>
+  new UtpSocket({
+    ackNr: DEFAULT_RAND_ACKNR,
+    seqNr: DEFAULT_RAND_SEQNR,
+    remoteAddress: '1234',
+    rcvId: writeId,
+    sndId: readId,
+    logger: debug('test'),
+    type: UtpSocketType.WRITE,
+    content: content,
+  })
 tape('socket constructor', (t) => {
+  const read = _read()
+  const write = _write()
   t.test('Read Socket', (st) => {
     st.equal(read.type, UtpSocketType.READ, 'Socket type correctly updated to READ')
     st.equal(read.sndConnectionId, writeId, 'Socket sndId correctly updated to 2')
@@ -53,11 +60,14 @@ tape('socket constructor', (t) => {
     st.equal(write.rcvConnectionId, writeId, 'Socket rcvId correctly updated to 1')
     st.equal(write.getSeqNr(), DEFAULT_RAND_SEQNR, 'Socket seqNr correctly updated to 5555')
     st.equal(write.ackNr, DEFAULT_RAND_ACKNR, 'Socket ackNr correctly updated to 4444')
+    st.deepEqual(write.content, content, 'Socket content correctly updated')
     st.end()
   })
 })
 
 tape('createPacket()', (t) => {
+  const read = _read()
+  const write = _write()
   t.test('SYN', (st) => {
     const read_syn = read.createPacket({ pType: PacketType.ST_SYN })
     st.equal(read_syn.header.pType, PacketType.ST_SYN, 'Packet type correctly set to ST_SYN')
@@ -189,8 +199,44 @@ tape('createPacket()', (t) => {
   t.end()
 })
 
+tape('sendPacket()', async (t) => {
+  const read = _read()
+  const write = _write()
+  const test = async (
+    socket: UtpSocket,
+    testFunction: (...args: any) => Promise<void>,
+    expected: any,
+    ...args: any
+  ) => {
+    socket.once('send', (remoteAddr, msg) => {
+      socket.emit('sent')
+      t.equal(Packet.fromBuffer(msg).header.pType, expected, 'Packet type correctly set')
+    })
+    await testFunction.bind(socket)(...args)
+  }
+  await test(read, read.sendSynPacket, PacketType.ST_SYN)
+  t.equal(read.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
+  await test(read, read.sendSynAckPacket, PacketType.ST_STATE)
+  t.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+  await test(read, read.sendDataPacket, PacketType.ST_DATA, fromHexString('0x1234'))
+  t.equal(read.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
+  await test(read, read.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
+  await test(read, read.sendFinPacket, PacketType.ST_FIN)
+
+  await test(write, write.sendSynPacket, PacketType.ST_SYN)
+  t.equal(write.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
+  await test(write, write.sendSynAckPacket, PacketType.ST_STATE)
+  t.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+  await test(write, write.sendDataPacket, PacketType.ST_DATA), fromHexString('0x1234')
+  t.equal(write.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
+  await test(write, write.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
+  await test(write, write.sendFinPacket, PacketType.ST_FIN)
+
+  t.end()
+})
+
 tape('uTP Socket Tests', (t) => {
-  const s = write
+  const s = _write()
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
   s.setWriter()
