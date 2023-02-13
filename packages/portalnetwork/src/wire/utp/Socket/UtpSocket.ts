@@ -227,7 +227,7 @@ export class UtpSocket extends EventEmitter {
       )
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
-    const add = await this.reader.addPacket(packet)
+    await this.reader.addPacket(packet)
     if (expected) {
       // Update this.ackNr to last in-order seqNr received.
       const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
