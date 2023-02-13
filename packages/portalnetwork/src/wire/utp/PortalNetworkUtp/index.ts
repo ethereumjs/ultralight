@@ -178,7 +178,7 @@ export class PortalNetworkUTP extends EventEmitter {
         request.socket.setWriter()
         break
       case RequestCode.ACCEPT_READ:
-        request.socket.setReader(new ContentReader(2))
+        request.socket.setReader(2)
         break
       default:
         throw new Error('I send SYNs, I do not handle them.')
@@ -209,7 +209,7 @@ export class PortalNetworkUTP extends EventEmitter {
           this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
           const startingSeqNr = request.socket.getSeqNr() + 1
           request.socket.setAckNr(packet.header.seqNr)
-          request.socket.setReader(new ContentReader(startingSeqNr))
+          request.socket.setReader(startingSeqNr)
         } else {
           throw new Error('READ socket should not get acks')
         }

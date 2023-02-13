@@ -105,8 +105,7 @@ tape('uTP Reader/Writer tests', (t) => {
     )
     socket.setSeqNr(2)
     socket.setWriter()
-    const reader = new ContentReader(2)
-    _socket.setReader(reader)
+    _socket.setReader(2)
     const chunks = socket.writer!.chunk()
     const compiled = await _socket.reader!.compile(Object.values(chunks))
     st.equal(

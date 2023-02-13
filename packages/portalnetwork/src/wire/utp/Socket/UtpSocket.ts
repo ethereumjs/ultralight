@@ -94,8 +94,8 @@ export class UtpSocket extends EventEmitter {
     this.writer.start()
   }
 
-  setReader(reader: ContentReader) {
-    this.reader = reader
+  setReader(startingSeqNr: number) {
+    this.reader = new ContentReader(startingSeqNr)
   }
 
   _clearTimeout() {
@@ -120,12 +120,12 @@ export class UtpSocket extends EventEmitter {
   createPacket<T extends PacketType>(
     opts: ICreatePacketOpts<T> = {} as ICreatePacketOpts<T>
   ): Packet<T> {
-    if ('bitmask' in opts && 'payload' in opts) {
-      throw new Error('Bitmask and payload are mutually exclusive')
-    }
-    if ('payload' in opts && opts.pType !== PacketType.ST_DATA) {
-      throw new Error('Payload can only be set for data packets')
-    }
+    // if ('bitmask' in opts && 'payload' in opts) {
+    //   throw new Error('Bitmask and payload are mutually exclusive')
+    // }
+    // if ('payload' in opts && opts.pType !== PacketType.ST_DATA) {
+    //   throw new Error('Payload can only be set for data packets')
+    // }
     opts.pType === PacketType.ST_DATA && this.seqNr++
     const extension = 'bitmask' in opts ? 1 : 0
     const params: ICreate<T> = {
@@ -236,9 +236,7 @@ export class UtpSocket extends EventEmitter {
       )
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
-    this.logger('ADDING PACKET')
     const add = await this.reader.addPacket(packet)
-    this.logger(`ADDED PACKET?  ${add}`)
     if (expected) {
       // Update this.ackNr to last in-order seqNr received.
       const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
