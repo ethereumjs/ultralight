@@ -178,18 +178,17 @@ export class UtpSocket extends EventEmitter {
     return this.sendSynAckPacket()
   }
 
-  handleFinAck(): boolean {
+  async handleFinAck(): Promise<boolean> {
     this.logger(`FIN packet ACKed. Closing Socket.`)
     this.state = ConnectionState.Closed
     this._clearTimeout()
     return true
   }
 
-  async handleStatePacket(
-    packet: Packet<PacketType.ST_STATE>
-  ): Promise<void | boolean | Packet<PacketType.ST_STATE>> {
-    if (packet.header.ackNr === this.finNr) {
-      return this.handleFinAck()
+  async handleStatePacket(ackNr: number): Promise<void> {
+    if (ackNr === this.finNr) {
+      await this.handleFinAck()
+      return
     }
     if (this.type === 'read') {
       this.state = ConnectionState.Connected
@@ -201,7 +200,6 @@ export class UtpSocket extends EventEmitter {
       if (this.compare()) {
         this.logger(`all data packets acked`)
         this.sendFinPacket()
-        return true
       } else {
         this.writer?.writing && this.writer.write()
       }

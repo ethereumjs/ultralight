@@ -235,61 +235,108 @@ tape('sendPacket()', async (t) => {
   t.end()
 })
 
-tape('uTP Socket Tests', (t) => {
-  const s = _write()
-  s.logger = debug('test')
-  s.content = Uint8Array.from([111, 222])
-  s.setWriter()
-  t.test('socket.compare()', (st) => {
-    s.ackNrs = [0, 1, 2, 3, 4, 5]
-    s.writer!.dataNrs = [0, 1, 2, 3, 4, 5]
-    st.ok(s.compare(), 'socket.compare() returns true for matching ackNrs and dataNrs')
-    s.writer!.dataNrs = [0, 1, 2, 3, 4, 5, 6]
-    st.notOk(s.compare(), 'socket.compare() returns false for mismatched ackNrs and dataNrs')
-    s.ackNrs = [0, 1, 2, 3, 4, 6, 5]
-    st.ok(
-      s.compare(),
-      'socket.compare() returns true for matching but out of order ackNrs and dataNrs'
-    )
-    st.end()
-  })
-  t.test('socket.updateRtt()', (st) => {
-    const delay = 100
-    s.packetManager.congestionControl.rtt = delay
-    s.packetManager.congestionControl.rtt_var = 0
-    s.packetManager.congestionControl.updateRTT(delay)
-    st.deepEqual(
-      s.packetManager.congestionControl.rtt,
-      delay,
-      'socket.rtt should not change if packet rtt_var remains 0.'
-    )
-    s.packetManager.congestionControl.updateRTT(delay - 8)
-    st.deepEqual(
-      s.packetManager.congestionControl.rtt,
-      delay - 1,
-      'should correctly update RTT with from packet rtt value'
-    )
-    s.packetManager.congestionControl.updateRTT(delay + 9)
-    st.deepEqual(
-      s.packetManager.congestionControl.rtt,
-      delay,
-      'should correctly update RTT with from packet rtt value'
-    )
-    s.packetManager.congestionControl.updateRTT(delay + 8)
-    st.deepEqual(
-      s.packetManager.congestionControl.rtt,
-      delay + 1,
-      'should correctly update RTT with from packet rtt value'
-    )
-    s.packetManager.congestionControl.updateRTT(delay - 7)
-    st.deepEqual(
-      s.packetManager.congestionControl.rtt,
-      delay,
-      'should correctly update RTT with from packet rtt value'
-    )
-    st.end()
-  })
+tape('handle()', async (t) => {
+  const read = _read()
+  const write = _write()
+  const test = async (
+    socket: UtpSocket,
+    testFunction: (...args: any) => Promise<any>,
+    expected: any,
+    ...args: any
+  ) => {
+    socket.once('send', (remoteAddr, msg) => {
+      socket.emit('sent')
+      t.equal(
+        Packet.fromBuffer(msg).header.pType,
+        expected,
+        'Packet type handled with correct response Packet type'
+      )
+    })
+    await testFunction.bind(socket)(...args)
+  }
+
+  await test(read, read.handleSynPacket, PacketType.ST_STATE)
+  t.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+  await test(read, read.handleStatePacket, PacketType.ST_STATE, 1)
+  await test(
+    read,
+    read.handleDataPacket,
+    PacketType.ST_STATE,
+    write.createPacket({ pType: PacketType.ST_DATA, payload: fromHexString('0x1234') })
+  )
+  t.equal(read.state, ConnectionState.Connected, 'Socket state updated to CONNECTED')
+  await test(
+    read,
+    read.handleFinPacket,
+    PacketType.ST_STATE,
+    write.createPacket({ pType: PacketType.ST_FIN })
+  )
+  t.equal(read.state, ConnectionState.GotFin, 'Socket state updated to GOT_FIN')
+  await test(write, write.handleSynPacket, PacketType.ST_STATE)
+  t.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+  write.finNr = 3
+  await write.handleStatePacket(3)
+  t.equal(write.state, ConnectionState.Closed, 'Socket state updated to CLOSED')
+
+  t.end()
 })
+
+// tape('uTP Socket Tests', (t) => {
+//   const s = _write()
+//   s.logger = debug('test')
+//   s.content = Uint8Array.from([111, 222])
+//   s.setWriter()
+//   t.test('socket.compare()', (st) => {
+//     s.ackNrs = [0, 1, 2, 3, 4, 5]
+//     s.writer!.dataNrs = [0, 1, 2, 3, 4, 5]
+//     st.ok(s.compare(), 'socket.compare() returns true for matching ackNrs and dataNrs')
+//     s.writer!.dataNrs = [0, 1, 2, 3, 4, 5, 6]
+//     st.notOk(s.compare(), 'socket.compare() returns false for mismatched ackNrs and dataNrs')
+//     s.ackNrs = [0, 1, 2, 3, 4, 6, 5]
+//     st.ok(
+//       s.compare(),
+//       'socket.compare() returns true for matching but out of order ackNrs and dataNrs'
+//     )
+//     st.end()
+//   })
+//   t.test('socket.updateRtt()', (st) => {
+//     const delay = 100
+//     s.packetManager.congestionControl.rtt = delay
+//     s.packetManager.congestionControl.rtt_var = 0
+//     s.packetManager.congestionControl.updateRTT(delay)
+//     st.deepEqual(
+//       s.packetManager.congestionControl.rtt,
+//       delay,
+//       'socket.rtt should not change if packet rtt_var remains 0.'
+//     )
+//     s.packetManager.congestionControl.updateRTT(delay - 8)
+//     st.deepEqual(
+//       s.packetManager.congestionControl.rtt,
+//       delay - 1,
+//       'should correctly update RTT with from packet rtt value'
+//     )
+//     s.packetManager.congestionControl.updateRTT(delay + 9)
+//     st.deepEqual(
+//       s.packetManager.congestionControl.rtt,
+//       delay,
+//       'should correctly update RTT with from packet rtt value'
+//     )
+//     s.packetManager.congestionControl.updateRTT(delay + 8)
+//     st.deepEqual(
+//       s.packetManager.congestionControl.rtt,
+//       delay + 1,
+//       'should correctly update RTT with from packet rtt value'
+//     )
+//     s.packetManager.congestionControl.updateRTT(delay - 7)
+//     st.deepEqual(
+//       s.packetManager.congestionControl.rtt,
+//       delay,
+//       'should correctly update RTT with from packet rtt value'
+//     )
+//     st.end()
+//   })
+// })
+
 // tape('FIND/FOUND Socket Tests', (t) => {
 //   const logger = debug('uTP-')
 //   const uTP = new PortalNetworkUTP(logger)

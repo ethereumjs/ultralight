@@ -202,7 +202,7 @@ export class PortalNetworkUTP extends EventEmitter {
           request.socket.updateRTT(rtt)
           request.socket.packetManager.congestionControl.outBuffer.delete(packet.header.ackNr)
         }
-        await request.socket.handleStatePacket(packet)
+        await request.socket.handleStatePacket(packet.header.ackNr)
       },
       [RequestCode.FINDCONTENT_READ]: async () => {
         if (packet.header.ackNr === 0) {
@@ -238,7 +238,7 @@ export class PortalNetworkUTP extends EventEmitter {
             request.socket.updateRTT(rtt)
             request.socket.packetManager.congestionControl.outBuffer.delete(packet.header.ackNr)
           }
-          await request.socket.handleStatePacket(packet)
+          await request.socket.handleStatePacket(packet.header.ackNr)
         }
       },
       [RequestCode.ACCEPT_READ]: async () => {
@@ -281,7 +281,7 @@ export class PortalNetworkUTP extends EventEmitter {
           // If packet is more than 3 behind, assume it to be lost and resend.
           request.socket.writer!.seqNr = packet.header.ackNr + 1
         }
-        await request.socket.handleStatePacket(packet)
+        await request.socket.handleStatePacket(packet.header.ackNr)
         return
       default:
         throw new Error('Why did I get a SELECTIVE ACK packet?')
