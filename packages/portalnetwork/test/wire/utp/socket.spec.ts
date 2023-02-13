@@ -3,14 +3,12 @@ import { randomBytes } from 'crypto'
 import debug from 'debug'
 import tape from 'tape'
 import {
-  ConnectionState,
-  Packet,
   PacketType,
   UtpSocket,
-  PortalNetworkUTP,
-  RequestCode,
-  Bytes32TimeStamp,
   UtpSocketType,
+  HeaderExtension,
+  fromHexString,
+  toHexString,
 } from '../../../src/index.js'
 
 const sampleSize = 50000
@@ -19,18 +17,180 @@ const _peerId = await createSecp256k1PeerId()
 const content = randomBytes(sampleSize)
 const DEFAULT_RAND_SEQNR = 5555
 const DEFAULT_RAND_ACKNR = 4444
+const readId = 1111
+const writeId = 2222
+
+const read = new UtpSocket({
+  ackNr: DEFAULT_RAND_ACKNR,
+  seqNr: DEFAULT_RAND_SEQNR,
+  remoteAddress: '1234',
+  rcvId: readId,
+  sndId: writeId,
+  logger: debug('test'),
+  type: UtpSocketType.READ,
+})
+const write = new UtpSocket({
+  ackNr: DEFAULT_RAND_ACKNR,
+  seqNr: DEFAULT_RAND_SEQNR,
+  remoteAddress: '1234',
+  rcvId: writeId,
+  sndId: readId,
+  logger: debug('test'),
+  type: UtpSocketType.WRITE,
+})
+tape('socket constructor', (t) => {
+  t.test('Read Socket', (st) => {
+    st.equal(read.type, UtpSocketType.READ, 'Socket type correctly updated to READ')
+    st.equal(read.sndConnectionId, writeId, 'Socket sndId correctly updated to 2')
+    st.equal(read.rcvConnectionId, readId, 'Socket rcvId correctly updated to 1')
+    st.equal(read.getSeqNr(), DEFAULT_RAND_SEQNR, 'Socket seqNr correctly updated to 5555')
+    st.equal(read.ackNr, DEFAULT_RAND_ACKNR, 'Socket ackNr correctly updated to 4444')
+    st.end()
+  })
+  t.test('Write Socket', (st) => {
+    st.equal(write.type, UtpSocketType.WRITE, 'Socket type correctly updated to WRITE')
+    st.equal(write.sndConnectionId, readId, 'Socket sndId correctly updated to 2')
+    st.equal(write.rcvConnectionId, writeId, 'Socket rcvId correctly updated to 1')
+    st.equal(write.getSeqNr(), DEFAULT_RAND_SEQNR, 'Socket seqNr correctly updated to 5555')
+    st.equal(write.ackNr, DEFAULT_RAND_ACKNR, 'Socket ackNr correctly updated to 4444')
+    st.end()
+  })
+})
+
+tape('createPacket()', (t) => {
+  t.test('SYN', (st) => {
+    const read_syn = read.createPacket({ pType: PacketType.ST_SYN })
+    st.equal(read_syn.header.pType, PacketType.ST_SYN, 'Packet type correctly set to ST_SYN')
+    st.equal(read_syn.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(read_syn.header.extension, HeaderExtension.none, 'SYN Packet extension should be none')
+    st.equal(read_syn.header.connectionId, write.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(read_syn.header.seqNr, read.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(read_syn.header.ackNr, read.ackNr, 'Packet ackNr correctly set')
+    st.equal(read_syn.size, 20, 'SYN Packet size should be 20')
+
+    const write_syn = write.createPacket({ pType: PacketType.ST_SYN })
+    st.equal(write_syn.header.pType, PacketType.ST_SYN, 'Packet type correctly set to ST_SYN')
+    st.equal(write_syn.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      write_syn.header.extension,
+      HeaderExtension.none,
+      'SYN Packet extension should be none'
+    )
+    st.equal(write_syn.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(write_syn.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(write_syn.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
+    st.equal(write_syn.size, 20, 'SYN Packet size should be 20')
+
+    st.end()
+  })
+
+  t.test('STATE', (st) => {
+    const read_state = read.createPacket({ pType: PacketType.ST_STATE })
+    st.equal(read_state.header.pType, PacketType.ST_STATE, 'Packet type correctly set to ST_STATE')
+    st.equal(read_state.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      read_state.header.extension,
+      HeaderExtension.none,
+      'STATE Packet extension should be none'
+    )
+    st.equal(read_state.header.connectionId, write.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(read_state.header.seqNr, read.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(read_state.header.ackNr, read.ackNr, 'Packet ackNr correctly set')
+    st.equal(read_state.size, 20, 'STATE Packet size should be 20')
+
+    const write_state = write.createPacket({ pType: PacketType.ST_STATE })
+
+    st.equal(write_state.header.pType, PacketType.ST_STATE, 'Packet type correctly set to ST_STATE')
+    st.equal(write_state.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      write_state.header.extension,
+      HeaderExtension.none,
+      'STATE Packet extension should be none'
+    )
+    st.equal(write_state.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(write_state.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(write_state.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
+    st.equal(write_state.size, 20, 'STATE Packet size should be 20')
+
+    st.end()
+  })
+
+  t.test('FIN', (st) => {
+    const write_fin = write.createPacket({ pType: PacketType.ST_FIN })
+    st.equal(write_fin.header.pType, PacketType.ST_FIN, 'Packet type correctly set to ST_FIN')
+    st.equal(write_fin.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      write_fin.header.extension,
+      HeaderExtension.none,
+      'FIN Packet extension should be none'
+    )
+    st.equal(write_fin.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(write_fin.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(write_fin.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
+    st.equal(write_fin.size, 20, 'FIN Packet size should be 20')
+
+    st.end()
+  })
+
+  t.test('RESET', (st) => {
+    const read_reset = read.createPacket({ pType: PacketType.ST_RESET })
+    st.equal(read_reset.header.pType, PacketType.ST_RESET, 'Packet type correctly set to ST_RESET')
+    st.equal(read_reset.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      read_reset.header.extension,
+      HeaderExtension.none,
+      'RESET Packet extension should be none'
+    )
+    st.equal(read_reset.header.connectionId, write.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(read_reset.header.seqNr, read.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(read_reset.header.ackNr, read.ackNr, 'Packet ackNr correctly set')
+    st.equal(read_reset.size, 20, 'RESET Packet size should be 20')
+
+    const write_reset = write.createPacket({ pType: PacketType.ST_RESET })
+    st.equal(write_reset.header.pType, PacketType.ST_RESET, 'Packet type correctly set to ST_RESET')
+    st.equal(write_reset.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      write_reset.header.extension,
+      HeaderExtension.none,
+      'RESET Packet extension should be none'
+    )
+    st.equal(write_reset.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(write_reset.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(write_reset.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
+    st.equal(write_reset.size, 20, 'RESET Packet size should be 20')
+
+    st.end()
+  })
+
+  t.test('DATA', (st) => {
+    const write_data = write.createPacket({
+      pType: PacketType.ST_DATA,
+      payload: fromHexString('0x1234'),
+    })
+    st.equal(write_data.header.pType, PacketType.ST_DATA, 'Packet type correctly set to ST_DATA')
+    st.equal(write_data.header.version, 1, 'Packet version correctly set to 1')
+    st.equal(
+      write_data.header.extension,
+      HeaderExtension.none,
+      'DATA Packet extension should be none'
+    )
+    st.equal(write_data.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
+    st.equal(write_data.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(write_data.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
+    st.equal(
+      toHexString(write_data.payload!),
+      '0x1234',
+      'DATA Packet payload correctly set to undefined'
+    )
+    st.equal(write_data.size, 20 + fromHexString('0x1234').length, 'DATA Packet size should be 20')
+
+    st.end()
+  })
+  t.end()
+})
 
 tape('uTP Socket Tests', (t) => {
-  const s = new UtpSocket({
-    ackNr: DEFAULT_RAND_ACKNR,
-    seqNr: DEFAULT_RAND_SEQNR,
-    remoteAddress: '1234',
-    rcvId: 1,
-    sndId: 2,
-    logger: debug('test'),
-    type: UtpSocketType.WRITE,
-    content: content,
-  })
+  const s = write
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
   s.setWriter()

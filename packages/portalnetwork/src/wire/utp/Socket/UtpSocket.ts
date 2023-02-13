@@ -120,12 +120,6 @@ export class UtpSocket extends EventEmitter {
   createPacket<T extends PacketType>(
     opts: ICreatePacketOpts<T> = {} as ICreatePacketOpts<T>
   ): Packet<T> {
-    // if ('bitmask' in opts && 'payload' in opts) {
-    //   throw new Error('Bitmask and payload are mutually exclusive')
-    // }
-    // if ('payload' in opts && opts.pType !== PacketType.ST_DATA) {
-    //   throw new Error('Payload can only be set for data packets')
-    // }
     opts.pType === PacketType.ST_DATA && this.seqNr++
     const extension = 'bitmask' in opts ? 1 : 0
     const params: ICreate<T> = {
