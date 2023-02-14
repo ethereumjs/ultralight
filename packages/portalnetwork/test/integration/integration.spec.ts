@@ -259,7 +259,6 @@ tape('eth_getBlockByHash', async (t) => {
   await protocol1.sendPing(protocol2?.client.discv5.enr!)
 
   const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
-
   t.equal(toHexString(retrieved!.hash()), testBlockData[29].blockHash, 'retrieved expected header')
 
   await node1.stop()
@@ -318,13 +317,18 @@ tape('eth_getBlockByNumber', async (t) => {
     epochHash,
     fromHexString(epoch)
   )
+  await protocol2.addContentToHistory(
+    HistoryNetworkContentTypes.EpochAccumulator,
+    epochHash,
+    fromHexString(epoch)
+  )
   await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
   await protocol1.sendPing(protocol2?.client.discv5.enr!)
-
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
 
   t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
 
   await node1.stop()
   await node2.stop()
+  t.end()
 })
