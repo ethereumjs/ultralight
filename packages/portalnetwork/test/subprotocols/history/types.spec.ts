@@ -177,7 +177,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.end()
 })
 
-tape.only('Header With Proof serialization/deserialization tests', async (t) => {
+tape('Header With Proof serialization/deserialization tests', async (t) => {
   const masterAccumulator = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
     encoding: 'hex',
   })
