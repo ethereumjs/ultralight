@@ -2,17 +2,14 @@ import { toHexString, fromHexString } from '@chainsafe/ssz'
 import { BlockHeader, Block } from '@ethereumjs/block'
 import { Debugger } from 'debug'
 import {
-  EpochAccumulator,
   getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   HistoryProtocol,
   reassembleBlock,
-  SszProofType,
-  HistoryNetworkContentKeyType,
+  BlockHeaderWithProof,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 import { shortId } from '../../index.js'
-import { distance } from '@chainsafe/discv5'
 
 export class ContentManager {
   history: HistoryProtocol
@@ -41,8 +38,9 @@ export class ContentManager {
 
     switch (contentType) {
       case HistoryNetworkContentTypes.BlockHeader: {
+        const headerWithProof = BlockHeaderWithProof.deserialize(value)
         try {
-          const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(value), {
+          const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
             hardforkByBlockNumber: true,
           })
           if (toHexString(header.hash()) !== hashKey) {
