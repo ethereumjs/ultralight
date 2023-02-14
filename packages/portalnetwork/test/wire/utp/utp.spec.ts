@@ -506,23 +506,14 @@ tape('PortalNetworkUTP test', (t) => {
         getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, fromHexString(hash))
       )
     )
-    let streamed = 0
     utp.on('Stream', (selector, hash, value) => {
       st.equal(selector, HistoryNetworkContentTypes.BlockHeader, 'Stream selector correct')
       st.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
       st.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
-      streamed++
-      console.log(streamed)
-      // if (streamed === 3) {
-      //   st.end()
-      //   t.end()
-      // }
     })
     await utp.returnContent(contents, contentKeys)
     utp.removeAllListeners()
     st.end()
-    // clearTimeout()
-    console.log('hey')
   })
   t.end()
 })
