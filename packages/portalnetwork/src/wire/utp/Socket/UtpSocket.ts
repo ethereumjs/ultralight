@@ -162,7 +162,13 @@ export class UtpSocket extends EventEmitter {
   }
   async sendDataPacket(bytes: Uint8Array): Promise<void> {
     this.state = ConnectionState.Connected
-    await this.packetManager.congestionControl.canSend()
+    try {
+      await this.packetManager.congestionControl.canSend()
+    } catch (e) {
+      this.logger(`DATA packet not acked.  Closing connection to ${this.remoteAddress}`)
+      await this.sendResetPacket()
+      this.close()
+    }
     const packet = this.createPacket<PacketType.ST_DATA>({
       pType: PacketType.ST_DATA,
       payload: bytes,
