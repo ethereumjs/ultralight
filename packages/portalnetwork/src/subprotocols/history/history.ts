@@ -88,7 +88,7 @@ export class HistoryProtocol extends BaseProtocol {
   public init = async () => {
     this.client.uTP.on('Stream', async (selector, blockHash, content) => {
       if (selector === HistoryNetworkContentTypes.BlockHeader) {
-        await this.validateHeader(fromHexString(content), blockHash)
+        await this.validateHeader(content, blockHash)
       }
       await this.addContentToHistory(selector, blockHash, content)
     })
