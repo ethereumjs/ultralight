@@ -1,9 +1,11 @@
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
+import { readFileSync } from 'fs'
 import tape from 'tape'
 import {
   addRLPSerializedBlock,
+  BlockHeaderWithProof,
   ENR,
   fromHexString,
   getHistoryNetworkContentKey,
@@ -23,6 +25,10 @@ const privateKeys = [
 ]
 
 const testBlockData = require('../testData/testBlocks.json')
+const epoch25 = readFileSync(
+  './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
+  { encoding: 'hex' }
+)
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
   return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
     hardforkByBlockNumber: true,
@@ -75,7 +81,18 @@ tape('gossip test', async (t) => {
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     'node1 added node2 to routing table'
   )
-
+  await protocol1.addContentToHistory(
+    HistoryNetworkContentTypes.EpochAccumulator,
+    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    fromHexString(epoch25)
+  )
+  t.equal(
+    await protocol1.client.db.get(
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+    ),
+    '0x' + epoch25,
+    'epoch 25 added'
+  )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
     addRLPSerializedBlock(
       '0x' + testBlock.serialize().toString('hex'),
@@ -85,10 +102,12 @@ tape('gossip test', async (t) => {
   }
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
+  const h = 0
   await new Promise((resolve) => {
     node2.on('ContentAdded', async (key, contentType, content) => {
       if (contentType === 0) {
-        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(content)), {
+        const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
+        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
           hardforkByBlockNumber: true,
         })
         t.ok(
@@ -97,9 +116,12 @@ tape('gossip test', async (t) => {
         )
         if ('0x' + header.hash().toString('hex') === testHashStrings[6]) {
           t.pass('found expected last header')
+          node2.removeAllListeners()
           await node1.stop()
           await node2.stop()
-          resolve(() => t.end())
+          resolve(() => {
+            t.end()
+          })
         }
       }
     })
@@ -140,10 +162,22 @@ tape('FindContent', async (t) => {
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
 
+  await protocol1.addContentToHistory(
+    HistoryNetworkContentTypes.EpochAccumulator,
+    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    fromHexString(epoch25)
+  )
+  t.equal(
+    await protocol1.client.db.get(
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+    ),
+    '0x' + epoch25,
+    'epoch 25 added'
+  )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
   await protocol1.sendPing(protocol2?.client.discv5.enr!)
 
-  const retrieved = await protocol2.sendFindContent(
+  const res = await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
     fromHexString(
       getHistoryNetworkContentKey(
@@ -152,15 +186,28 @@ tape('FindContent', async (t) => {
       )
     )
   )
-
-  const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(retrieved!.value as Uint8Array), {
-    hardforkByBlockNumber: true,
+  console.log(res)
+  await new Promise((resolve) => {
+    node2.on('ContentAdded', async (key, contentType, content) => {
+      if (contentType === 0) {
+        const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
+        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
+          hardforkByBlockNumber: true,
+        })
+        t.equal(
+          toHexString(header.hash()),
+          testBlockData[29].blockHash,
+          'retrieved expected header'
+        )
+        node2.removeAllListeners()
+        await node1.stop()
+        await node2.stop()
+        resolve(() => {
+          t.end()
+        })
+      }
+    })
   })
-  t.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
-
-  await node1.stop()
-  await node2.stop()
-  t.end()
 })
 
 tape('eth_getBlockByHash', async (t) => {
@@ -196,7 +243,18 @@ tape('eth_getBlockByHash', async (t) => {
   await node2.start()
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-
+  await protocol1.addContentToHistory(
+    HistoryNetworkContentTypes.EpochAccumulator,
+    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    fromHexString(epoch25)
+  )
+  t.equal(
+    await protocol1.client.db.get(
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+    ),
+    '0x' + epoch25,
+    'epoch 25 added'
+  )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
   await protocol1.sendPing(protocol2?.client.discv5.enr!)
 
