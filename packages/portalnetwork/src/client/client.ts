@@ -191,7 +191,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
         this.uTP.emit('Sent')
       } catch {
-        this.uTP.closeRequest(msg, peerId)
+        this.uTP.closeRequest(msg.readUInt16BE(2), peerId)
       }
     })
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {

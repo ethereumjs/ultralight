@@ -39,8 +39,8 @@ export class PortalNetworkUTP extends EventEmitter {
     this.working = false
   }
 
-  closeRequest(packet: Buffer, peerId: string) {
-    const requestKey = this.getRequestKeyFromPortalMessage(packet, peerId)
+  closeRequest(connectionId: number, peerId: string) {
+    const requestKey = this.getRequestKey(connectionId, peerId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       request.socket.sendResetPacket()
@@ -50,8 +50,7 @@ export class PortalNetworkUTP extends EventEmitter {
     }
   }
 
-  getRequestKeyFromPortalMessage(packetBuffer: Buffer, peerId: string): string {
-    const connId = packetBuffer.readUInt16BE(2)
+  getRequestKey(connId: number, peerId: string): string {
     const idA = connId + 1
     const idB = connId - 1
     const keyA = createSocketKey(peerId, connId, idA)
@@ -122,7 +121,7 @@ export class PortalNetworkUTP extends EventEmitter {
 
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
     const timeReceived = Bytes32TimeStamp()
-    const requestKey = this.getRequestKeyFromPortalMessage(packetBuffer, srcId)
+    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), srcId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       request.socket._clearTimeout()
