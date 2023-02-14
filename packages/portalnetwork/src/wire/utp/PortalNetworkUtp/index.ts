@@ -163,7 +163,7 @@ export class PortalNetworkUTP extends EventEmitter {
 
   async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {
     this.emit('Send', peerId, msg, protocolId, true)
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       this.once('Sent', () => {
         resolve(true)
       })

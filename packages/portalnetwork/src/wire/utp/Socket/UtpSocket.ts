@@ -107,7 +107,6 @@ export class UtpSocket extends EventEmitter {
   }
 
   async sendPacket<T extends PacketType>(packet: Packet<T>, type: PacketType): Promise<Buffer> {
-    // console.log('packet', packet)
     const msg = packet.encode()
     const messageData: Record<PacketType, string> = {
       0: `seqNr: ${packet.header.seqNr}`,
@@ -240,13 +239,13 @@ export class UtpSocket extends EventEmitter {
       const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
       this.ackNr = future.slice(future.findIndex((n, i, ackNrs) => ackNrs[i + 1] === undefined))[0]!
       // Send "Regular" ACK with the new this.ackNr
-      return await this.sendAckPacket()
+      return this.sendAckPacket()
     } else {
       // Do not increment this.ackNr
       // Send SELECTIVE_ACK with bitmask of received seqNrs > this.ackNr
       this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
       const bitmask = this.generateSelectiveAckBitMask()
-      return await this.sendAckPacket(bitmask)
+      return this.sendAckPacket(bitmask)
     }
   }
 
