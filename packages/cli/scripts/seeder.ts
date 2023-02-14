@@ -8,6 +8,7 @@ import {
   ProtocolId,
 } from 'portalnetwork'
 import { createRequire } from 'module'
+import { readFileSync } from 'fs'
 
 const require = createRequire(import.meta.url)
 const { Client } = jayson
@@ -72,6 +73,8 @@ const main = async () => {
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
   const epoch = require('./testEpoch.json')
+  const epoch25 = readFileSync('./scripts/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent', {encoding: 'hex'})
+
 
   async function testRes(clients: HttpClient[], method: string, params: any[][]) {
     for (const [i, client] of clients.entries()) {
@@ -92,6 +95,13 @@ const main = async () => {
   ])
   if (res.error) {
     throw new Error(`ultralight_addContentToDB error`)
+  }
+  res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
+    "0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70",
+    '0x' + epoch25,
+  ])
+  if (res.error) {
+    throw new Error(`ultralight_addContentToDB error: ${res.error.message}}`)
   }
   console.log('ok ultralight_addContentToDB')
   for (let x = 0; x < numBlocks; x++) {
