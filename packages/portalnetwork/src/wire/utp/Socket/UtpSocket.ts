@@ -36,7 +36,7 @@ export class UtpSocket extends EventEmitter {
   packetManager: PacketManager
   throttle: () => void
   updateDelay: (timestamp: number, timeReceived: number) => void
-  updateRTT: (packetRTT: number) => void
+  updateRTT: (packetRTT: number, ackNr: number) => void
   updateWindow: () => void
   constructor(options: UtpSocketOptions) {
     super()
@@ -60,8 +60,8 @@ export class UtpSocket extends EventEmitter {
     this.throttle = () => this.packetManager.congestionControl.throttle()
     this.updateDelay = (timestamp: number, timeReceived: number) =>
       this.packetManager.congestionControl.updateDelay(timestamp, timeReceived)
-    this.updateRTT = (packetRtt: number) =>
-      this.packetManager.congestionControl.updateRTT(packetRtt)
+    this.updateRTT = (packetRtt: number, ackNr: number) =>
+      this.packetManager.congestionControl.updateRTT(packetRtt, ackNr)
     this.updateWindow = () => this.packetManager.updateWindow()
     this.packetManager.congestionControl.on('write', async () => {
       await this.writer?.write()
@@ -80,8 +80,9 @@ export class UtpSocket extends EventEmitter {
     return this.seqNr
   }
 
-  setWriter() {
-    this.writer = new ContentWriter(this.content, this.seqNr + 1, this.logger)
+  setWriter(seqNr: number) {
+    this.setSeqNr(seqNr)
+    this.writer = new ContentWriter(this.content, seqNr + 1, this.logger)
     this.writer.on('send', async (packetType: PacketType, bytes?: Uint8Array) => {
       if (packetType === PacketType.ST_DATA && bytes) {
         await this.sendDataPacket(bytes)
@@ -92,6 +93,9 @@ export class UtpSocket extends EventEmitter {
       }
     })
     this.writer.start()
+  }
+  setState(state: ConnectionState) {
+    this.state = state
   }
 
   setReader(startingSeqNr: number) {
@@ -144,6 +148,7 @@ export class UtpSocket extends EventEmitter {
   }
   async sendSynAckPacket(): Promise<void> {
     this.state = ConnectionState.SynRecv
+    this.logger(`Connection State: SynRecv`)
     await this.sendAckPacket()
   }
   async sendResetPacket() {
@@ -151,13 +156,11 @@ export class UtpSocket extends EventEmitter {
     const packet = this.createPacket<PacketType.ST_RESET>({ pType: PacketType.ST_RESET })
     await this.sendPacket<PacketType.ST_RESET>(packet, PacketType.ST_RESET)
   }
-
   async sendFinPacket(): Promise<void> {
     const packet = this.createPacket<PacketType.ST_FIN>({ pType: PacketType.ST_FIN })
     this.finNr = packet.header.seqNr
     await this.sendPacket<PacketType.ST_FIN>(packet, PacketType.ST_FIN)
   }
-
   async sendDataPacket(bytes: Uint8Array): Promise<void> {
     this.state = ConnectionState.Connected
     await this.packetManager.congestionControl.canSend()
@@ -173,9 +176,10 @@ export class UtpSocket extends EventEmitter {
     this.updateWindow()
   }
 
-  async handleSynPacket(): Promise<void> {
-    this.logger(`Connection State: SynRecv`)
-    return this.sendSynAckPacket()
+  async handleSynPacket(seqNr: number): Promise<void> {
+    this.setAckNr(seqNr)
+    this.type === UtpSocketType.READ ? this.setReader(2) : this.setWriter(seqNr)
+    await this.sendSynAckPacket()
   }
 
   async handleFinAck(): Promise<boolean> {
@@ -185,24 +189,27 @@ export class UtpSocket extends EventEmitter {
     return true
   }
 
-  async handleStatePacket(ackNr: number): Promise<void> {
+  async handleStatePacket(ackNr: number, timestamp: number): Promise<void> {
+    this.state === ConnectionState.Connected || this.setState(ConnectionState.Connected)
     if (ackNr === this.finNr) {
       await this.handleFinAck()
       return
     }
     if (this.type === 'read') {
-      this.state = ConnectionState.Connected
-      return await this.sendAckPacket()
+      this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
+      const startingSeqNr = this.getSeqNr() + 1
+      this.setReader(startingSeqNr)
+      await this.sendAckPacket()
     } else {
-      this.state = ConnectionState.Connected
+      this.updateAckNrs(ackNr)
+      this.updateRTT(timestamp, ackNr)
       this.packetManager.updateWindow()
       this.logProgress()
       if (this.compare()) {
         this.logger(`all data packets acked`)
-        this.sendFinPacket()
-      } else {
-        this.writer?.writing && this.writer.write()
+        return this.sendFinPacket()
       }
+      this.writer!.write()
     }
   }
 
@@ -243,7 +250,7 @@ export class UtpSocket extends EventEmitter {
     }
   }
 
-  async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array | undefined> {
+  async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array> {
     this.logger(`Connection State: GotFin`)
     this.state = ConnectionState.GotFin
     const _content = await this.reader!.run()
@@ -252,6 +259,7 @@ export class UtpSocket extends EventEmitter {
     this.ackNr = packet.header.seqNr
     this.sendAckPacket()
     this._clearTimeout()
+    this.close()
     return _content
   }
 
@@ -294,5 +302,10 @@ export class UtpSocket extends EventEmitter {
     }
     const bitMask = new BitVectorType(32).serialize(BitArray.fromBoolArray(window))
     return bitMask
+  }
+  updateAckNrs(ackNr: number) {
+    this.ackNrs = Object.keys(this.writer!.dataChunks)
+      .filter((n) => parseInt(n) <= ackNr)
+      .map((n) => parseInt(n))
   }
 }

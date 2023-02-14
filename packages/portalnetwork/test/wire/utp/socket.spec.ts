@@ -275,7 +275,7 @@ tape('handle()', async (t) => {
   await test(write, write.handleSynPacket, PacketType.ST_STATE)
   t.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
   write.finNr = 3
-  await write.handleStatePacket(3)
+  await write.handleStatePacket(3, 1000)
   t.equal(write.state, ConnectionState.Closed, 'Socket state updated to CLOSED')
 
   t.end()
@@ -285,7 +285,7 @@ tape('uTP Socket Tests', (t) => {
   const s = _write()
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
-  s.setWriter()
+  s.setWriter(s.getSeqNr())
   t.test('socket.compare()', (st) => {
     s.ackNrs = [0, 1, 2, 3, 4, 5]
     s.writer!.dataNrs = [0, 1, 2, 3, 4, 5]
@@ -301,33 +301,38 @@ tape('uTP Socket Tests', (t) => {
   })
   t.test('socket.updateRtt()', (st) => {
     const delay = 100
+    s.packetManager.congestionControl.outBuffer.set(1, 1000)
+    s.packetManager.congestionControl.outBuffer.set(2, 2000)
+    s.packetManager.congestionControl.outBuffer.set(3, 3000)
+    s.packetManager.congestionControl.outBuffer.set(4, 4000)
+    s.packetManager.congestionControl.outBuffer.set(5, 5000)
     s.packetManager.congestionControl.rtt = delay
     s.packetManager.congestionControl.rtt_var = 0
-    s.packetManager.congestionControl.updateRTT(delay)
+    s.packetManager.congestionControl.updateRTT(1100, 1)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay,
       'socket.rtt should not change if packet rtt_var remains 0.'
     )
-    s.packetManager.congestionControl.updateRTT(delay - 8)
+    s.packetManager.congestionControl.updateRTT(2092, 2)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay - 1,
       'should correctly update RTT with from packet rtt value'
     )
-    s.packetManager.congestionControl.updateRTT(delay + 9)
+    s.packetManager.congestionControl.updateRTT(3108, 3)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay,
       'should correctly update RTT with from packet rtt value'
     )
-    s.packetManager.congestionControl.updateRTT(delay + 8)
+    s.packetManager.congestionControl.updateRTT(4108, 4)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay + 1,
       'should correctly update RTT with from packet rtt value'
     )
-    s.packetManager.congestionControl.updateRTT(delay - 7)
+    s.packetManager.congestionControl.updateRTT(5093, 5)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay,

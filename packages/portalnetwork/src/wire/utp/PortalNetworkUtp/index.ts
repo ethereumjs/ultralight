@@ -171,81 +171,42 @@ export class PortalNetworkUTP extends EventEmitter {
   }
 
   async _handleSynPacket(request: ContentRequest, packet: SynPacket): Promise<void> {
-    this.logger(`SYN received to initiate stream for ${request.requestCode} request`)
     switch (request.requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
-        request.socket.setSeqNr(packet.header.seqNr)
-        request.socket.setWriter()
-        break
       case RequestCode.ACCEPT_READ:
-        request.socket.setReader(2)
+        this.logger(`SYN received to initiate stream for ${request.requestCode} request`)
+        await request.socket.handleSynPacket(packet.header.seqNr)
         break
       default:
         throw new Error('I send SYNs, I do not handle them.')
     }
-    request.socket.setAckNr(packet.header.seqNr)
-    await request.socket.handleSynPacket()
   }
   async _handleStatePacket(request: ContentRequest, packet: StatePacket): Promise<void> {
-    const sentTime = request.socket.packetManager.congestionControl.outBuffer.get(
-      packet.header.ackNr
-    )
-    const handle: Record<RequestCode, () => Promise<void>> = {
-      [RequestCode.FOUNDCONTENT_WRITE]: async () => {
-        if (packet.header.ackNr > request.socket.writer!.startingSeqNr) {
-          request.socket.ackNrs = Object.keys(request.socket.writer!.dataChunks)
-            .filter((n) => parseInt(n) <= packet.header.ackNr)
-            .map((n) => parseInt(n))
-        }
-        if (request.socket.type === 'write' && sentTime != undefined) {
-          const rtt = packet.header.timestampMicroseconds - sentTime
-          request.socket.updateRTT(rtt)
-          request.socket.packetManager.congestionControl.outBuffer.delete(packet.header.ackNr)
-        }
-        await request.socket.handleStatePacket(packet.header.ackNr)
-      },
-      [RequestCode.FINDCONTENT_READ]: async () => {
+    switch (request.requestCode) {
+      case RequestCode.FINDCONTENT_READ: {
         if (packet.header.ackNr === 0) {
-          this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
-          const startingSeqNr = request.socket.getSeqNr() + 1
           request.socket.setAckNr(packet.header.seqNr)
-          request.socket.setReader(startingSeqNr)
+          break
         } else {
           throw new Error('READ socket should not get acks')
         }
-      },
-      [RequestCode.OFFER_WRITE]: async () => {
+      }
+      case RequestCode.FOUNDCONTENT_WRITE:
+        break
+      case RequestCode.OFFER_WRITE:
         if (request.socket.getSeqNr() === 1) {
-          request.socket.state = ConnectionState.Connected
-          request.socket.ackNr = packet.header.seqNr - 1
-          request.socket.setSeqNr(1)
+          request.socket.setAckNr(packet.header.seqNr - 1)
           request.socket.logger(
             `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`
           )
-          request.socket.setWriter()
-        } else if (packet.header.ackNr === request.socket.finNr) {
-          request.socket.logger(`FIN Packet ACK received.  Closing Socket.`)
-          request.socket._clearTimeout()
-        } else {
-          request.socket.ackNrs = Object.keys(request.socket.writer!.dataChunks)
-            .filter((n) => parseInt(n) <= packet.header.ackNr)
-            .map((n) => parseInt(n))
-          request.socket.logger(
-            `ST_STATE (Ack) Packet Received.  SeqNr: ${packet.header.seqNr}, AckNr: ${packet.header.ackNr}`
-          )
-          if (sentTime != undefined) {
-            const rtt = packet.header.timestampMicroseconds - sentTime
-            request.socket.updateRTT(rtt)
-            request.socket.packetManager.congestionControl.outBuffer.delete(packet.header.ackNr)
-          }
-          await request.socket.handleStatePacket(packet.header.ackNr)
+          request.socket.setWriter(1)
         }
-      },
-      [RequestCode.ACCEPT_READ]: async () => {
+        break
+      case RequestCode.ACCEPT_READ:
+      default:
         throw new Error('Why did I get a STATE packet?')
-      },
     }
-    await handle[request.requestCode]()
+    await request.socket.handleStatePacket(packet.header.ackNr, packet.header.timestampMicroseconds)
   }
   public static bitmaskToAckNrs(bitmask: Uint8Array, ackNr: number): number[] {
     const bitArray = new BitVectorType(32).deserialize(bitmask)
@@ -268,10 +229,7 @@ export class PortalNetworkUTP extends EventEmitter {
       }`
     )
     if (acked) {
-      request.socket.packetManager.congestionControl.rtt =
-        request.socket.packetManager.congestionControl.reply_micro -
-        request.socket.packetManager.congestionControl.outBuffer.get(acked)!
-      request.socket.packetManager.congestionControl.outBuffer.delete(acked)
+      request.socket.updateRTT(packet.header.timestampMicroseconds, acked)
       request.socket.ackNrs.push(acked)
     }
     switch (request.requestCode) {
@@ -281,7 +239,10 @@ export class PortalNetworkUTP extends EventEmitter {
           // If packet is more than 3 behind, assume it to be lost and resend.
           request.socket.writer!.seqNr = packet.header.ackNr + 1
         }
-        await request.socket.handleStatePacket(packet.header.ackNr)
+        await request.socket.handleStatePacket(
+          packet.header.ackNr,
+          packet.header.timestampMicroseconds
+        )
         return
       default:
         throw new Error('Why did I get a SELECTIVE ACK packet?')
@@ -301,44 +262,26 @@ export class PortalNetworkUTP extends EventEmitter {
   }
   async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
     const keys = request.contentKeys
-    const streamer = async (content: Uint8Array) => {
-      this.logger(`Decompressing stream into ${keys.length} pieces of content`)
-      let contents = [content]
-      if (request.requestCode === RequestCode.ACCEPT_READ) {
-        contents = dropPrefixes(content)
-      }
-      if (keys.length < 1) {
-        throw new Error('Missing content keys')
-      }
-      for (const [idx, k] of keys.entries()) {
-        const decodedContentKey = {
-          selector: k[0],
-          blockHash: k.subarray(1),
-        } as HistoryNetworkContentKey
-        const _content = contents[idx]
-        this.logger.extend(`FINISHED`)(
-          `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
-        )
-        this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
-      }
+    const content = await request.socket.handleFinPacket(packet)
+    let contents = [content]
+    if (request.requestCode === RequestCode.ACCEPT_READ) {
+      contents = dropPrefixes(content)
     }
-
-    let content
-    switch (request.requestCode) {
-      case RequestCode.FINDCONTENT_READ:
-      case RequestCode.ACCEPT_READ:
-        content = await request.socket.handleFinPacket(packet)
-        content && (await streamer(content))
-        request.socket.logger(`Closing uTP Socket`)
-        request.socket._clearTimeout()
-        break
-      case RequestCode.FOUNDCONTENT_WRITE:
-      case RequestCode.OFFER_WRITE:
-      default:
-        this.logger('I send FIN not handle FIN')
-        return false
+    await this.returnContent(contents, keys)
+  }
+  async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
+    this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+    for (const [idx, k] of keys.entries()) {
+      const decodedContentKey = {
+        selector: k[0],
+        blockHash: k.subarray(1),
+      } as HistoryNetworkContentKey
+      const _content = contents[idx]
+      this.logger.extend(`FINISHED`)(
+        `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
+      )
+      this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
     }
-    return true
   }
 }
 

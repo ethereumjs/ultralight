@@ -104,7 +104,7 @@ tape('uTP Reader/Writer tests', (t) => {
       DEFAULT_RAND_ID
     )
     socket.setSeqNr(2)
-    socket.setWriter()
+    socket.setWriter(2)
     _socket.setReader(2)
     const chunks = socket.writer!.chunk()
     const compiled = await _socket.reader!.compile(Object.values(chunks))
@@ -222,7 +222,7 @@ tape('uTP Reader/Writer tests', (t) => {
       'OFFER request constructed with propper content compression'
     )
     _socket2.setSeqNr(2)
-    _socket2.setWriter()
+    _socket2.setWriter(2)
     st.doesNotThrow(async () => {
       await _socket2.writer!.start()
     }, 'writer.start() does not throw')

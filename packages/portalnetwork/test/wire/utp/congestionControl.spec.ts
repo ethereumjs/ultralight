@@ -58,9 +58,11 @@ tape('CongestionControl', async (t) => {
   })
   t.test('updateRTT()', async (st) => {
     const congestionControl = new CongestionControl()
-    congestionControl.updateRTT(1000)
+    congestionControl.outBuffer.set(1, 1000)
+    congestionControl.updateRTT(2000, 1)
     st.equal(congestionControl.rtt, 1000, 'rtt updated to 1000')
-    congestionControl.updateRTT(2000)
+    congestionControl.outBuffer.set(2, 2000)
+    congestionControl.updateRTT(4000, 2)
     st.equal(congestionControl.rtt, 1125, 'rtt updated to 1125')
     st.equal(congestionControl.rtt_var, 250, 'rtt_var updated to 250')
     st.equal(congestionControl.timeout, 2125, 'timeout updated to 2125')
