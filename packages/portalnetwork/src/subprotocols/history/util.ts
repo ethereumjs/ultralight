@@ -3,10 +3,12 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   BlockBodyContent,
   BlockBodyContentType,
+  BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentTypes,
   sszTransactionType,
   sszUnclesType,
+  Witnesses,
 } from './types.js'
 import rlp from '@ethereumjs/rlp'
 import {
@@ -122,14 +124,19 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
 export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
-  protocol: HistoryProtocol
+  protocol: HistoryProtocol,
+  witnesses?: Witnesses
 ) => {
-  const decodedBlock = rlp.decode(fromHexString(rlpHex))
-  await protocol.addContentToHistory(
-    HistoryNetworkContentTypes.BlockHeader,
-    blockHash,
-    rlp.encode((decodedBlock as Buffer[])[0])
-  )
+  const block = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+    hardforkByBlockNumber: true,
+  })
+  const header = block.header
+  const proof = witnesses ?? (await protocol.generateInclusionProof(header.number))
+  const headerProof = BlockHeaderWithProof.serialize({
+    header: header.serialize(),
+    proof: { selector: 1, value: proof },
+  })
+  await protocol.addContentToHistory(HistoryNetworkContentTypes.BlockHeader, blockHash, headerProof)
   await protocol.addContentToHistory(
     HistoryNetworkContentTypes.BlockBody,
     blockHash,
