@@ -8,8 +8,8 @@ import {
   PortalNetwork,
   getHistoryNetworkContentKey,
   fromHexString,
-  toHexString,
   reassembleBlock,
+  BlockHeaderWithProof,
 } from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
@@ -102,9 +102,10 @@ export class eth {
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
     )
     await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
-    const header = await this._history.findContentLocally(
+    const headerWithProof = await this._history.findContentLocally(
       fromHexString(getHistoryNetworkContentKey(0, fromHexString(blockHash)))
     )
+    const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
       fromHexString(getHistoryNetworkContentKey(1, fromHexString(blockHash)))
     )
