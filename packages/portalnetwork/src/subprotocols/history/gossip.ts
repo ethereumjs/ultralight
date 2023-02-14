@@ -1,7 +1,7 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { HistoryProtocol } from './history.js'
-import { HistoryNetworkContentKeyType, HistoryNetworkContentTypes } from './types.js'
-import { getHistoryNetworkContentId } from './util.js'
+import { HistoryNetworkContentTypes } from './types.js'
+import { getHistoryNetworkContentId, getHistoryNetworkContentKey } from './util.js'
 
 type Peer = string
 
@@ -59,12 +59,10 @@ export class GossipManager {
    */
   public add(hash: string, contentType: HistoryNetworkContentTypes): void {
     const id = getHistoryNetworkContentId(contentType, hash)
-    const key = HistoryNetworkContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([contentType]), fromHexString(hash)])
-    )
+    const key = getHistoryNetworkContentKey(contentType, fromHexString(hash))
     const peers = this.history.routingTable.nearest(id, 5)
     for (const peer of peers) {
-      const size = this.enqueue(peer.nodeId, key)
+      const size = this.enqueue(peer.nodeId, fromHexString(key))
       if (size >= this.pulse) {
         this.gossip(peer.nodeId)
       }

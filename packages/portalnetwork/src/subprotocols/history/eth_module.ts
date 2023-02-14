@@ -8,6 +8,7 @@ import {
   getHistoryNetworkContentKey,
   HistoryNetworkContentTypes,
   epochRootByBlocknumber,
+  BlockHeaderWithProof,
 } from './index.js'
 import { ContentLookup } from '../index.js'
 
@@ -38,8 +39,10 @@ export class ETH {
     try {
       let lookup = new ContentLookup(this.protocol, headerContentKey)
       header = await lookup.startLookup()
-      if (!header) {
+      if (!(header instanceof Uint8Array)) {
         return undefined
+      } else {
+        header = BlockHeaderWithProof.deserialize(header as Uint8Array).header
       }
       if (!includeTransactions) {
         block = reassembleBlock(
