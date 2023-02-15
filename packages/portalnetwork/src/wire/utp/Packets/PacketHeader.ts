@@ -1,8 +1,15 @@
 import { Uint16, Uint32, Uint8 } from '../index.js'
 import { VERSION } from '../Utils/constants.js'
-import { SelectiveAckHeaderExtension } from './Extentions.js'
-import { IPacketHeader, MicroSeconds, PacketType } from './PacketTyping.js'
-export class PacketHeader {
+import { SelectiveAckHeaderExtension } from './Extensions.js'
+import {
+  HeaderInput,
+  ISelectiveAckHeaderInput,
+  MicroSeconds,
+  PacketHeader,
+  PacketType,
+} from './PacketTyping.js'
+
+abstract class Header<T extends PacketType> {
   pType: PacketType
   version: Uint8
   extension: Uint8
@@ -13,8 +20,7 @@ export class PacketHeader {
   seqNr: Uint16
   ackNr: Uint16
   length: number
-
-  constructor(options: IPacketHeader) {
+  constructor(options: HeaderInput<T>) {
     this.pType = options.pType
     this.version = options.version ?? VERSION
     this.extension = options.extension ?? 0
@@ -26,21 +32,50 @@ export class PacketHeader {
     this.ackNr = options.ackNr
     this.length = 20
   }
+
+  abstract encode(): Buffer
+}
+export class BasicPacketHeader<T extends PacketType> extends Header<T> {
+  constructor(options: HeaderInput<T>) {
+    super(options)
+  }
+  encode(): Buffer {
+    const buffer = Buffer.alloc(this.length)
+    const p = Number(this.pType).toString(16)
+    const v = this.version.toString(16)
+    const pv = p + v
+    const typeAndVer = parseInt(pv, 16)
+    buffer.writeUInt8(typeAndVer, 0)
+    buffer.writeUInt8(this.extension, 1)
+    buffer.writeUInt16BE(this.connectionId, 2)
+    buffer.writeUint32BE(this.timestampMicroseconds, 4)
+    buffer.writeUint32BE(this.timestampDifferenceMicroseconds, 8)
+    buffer.writeUInt32BE(this.wndSize, 12)
+    buffer.writeUInt16BE(this.seqNr, 16)
+    buffer.writeUInt16BE(this.ackNr, 18)
+    return buffer
+  }
 }
 
-export class SelectiveAckHeader extends PacketHeader {
+export class SelectiveAckHeader extends Header<PacketType.ST_STATE> {
   selectiveAckExtension: SelectiveAckHeaderExtension
-  constructor(options: IPacketHeader, bitmask: Uint8Array) {
+  bitmask: Uint8Array
+  constructor(options: ISelectiveAckHeaderInput) {
     super(options)
     this.extension = 1
-    this.selectiveAckExtension = SelectiveAckHeaderExtension.create(bitmask)
-    this.length = this.encodeHeaderStream().length
+    this.bitmask = options.bitmask
+    this.selectiveAckExtension = SelectiveAckHeaderExtension.create(options.bitmask)
+    this.length = this.encode().length
   }
 
-  encodeHeaderStream(): Buffer {
-    const buffer = Buffer.alloc(20 + this.selectiveAckExtension.len + 2)
-    buffer[0] = 1
-    buffer[1] = 0
+  encode(): Buffer {
+    const buffer = Buffer.alloc(20 + this.bitmask.length + 2)
+    const p = this.pType.toString(16)
+    const v = this.version.toString(16)
+    const pv = p + v
+    const typeAndVer = parseInt(pv, 16)
+    buffer.writeUInt8(typeAndVer, 0)
+    buffer.writeUInt8(this.extension, 1)
     buffer.writeUInt16BE(this.connectionId, 2)
     buffer.writeUInt32BE(this.timestampMicroseconds, 4)
     buffer.writeUInt32BE(this.timestampDifferenceMicroseconds, 8)
@@ -53,5 +88,14 @@ export class SelectiveAckHeader extends PacketHeader {
       buffer.writeUInt8(value, 22 + idx)
     })
     return buffer
+  }
+}
+
+export function createPacketHeader<T extends PacketType>(options: HeaderInput<T>): PacketHeader<T> {
+  if (options.extension === 1) {
+    const header = new SelectiveAckHeader(options)
+    return header
+  } else {
+    return new BasicPacketHeader<T>(options)
   }
 }

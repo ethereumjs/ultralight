@@ -1,3 +1,5 @@
+import { RequestCode, randUint16 } from '../index.js'
+
 export const VERSION = 1
 export const MAX_UINT_8 = 0xff
 export const MAX_BYTE = MAX_UINT_8
@@ -33,3 +35,10 @@ export const DEBUG: boolean = false
 export const MAX_UTP_PACKET_LENGTH = MAX_PACKET_SIZE
 export const MAX_UDP_HEADER_LENGTH = 48
 export const DEF_HEADER_LENGTH = 20
+
+export const startingNrs: Record<RequestCode, { seqNr: number; ackNr: number }> = {
+  0: { seqNr: randUint16(), ackNr: 0 },
+  1: { seqNr: 0, ackNr: 1 },
+  2: { seqNr: 1, ackNr: randUint16() },
+  3: { seqNr: randUint16(), ackNr: 0 },
+}

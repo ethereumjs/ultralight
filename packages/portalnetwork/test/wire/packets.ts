@@ -2,6 +2,7 @@ import {
   BUFFER_SIZE,
   Bytes32TimeStamp,
   encodeWithVariantPrefix,
+  HeaderExtension,
   Packet,
   PacketType,
   RequestCode,
@@ -62,349 +63,561 @@ export function Packets(
   rcvId: number,
   sndId: number
 ): {
-  send: Record<string, Packet | Packet[]>
-  rec: Record<string, Packet | Packet[]>
+  send: Record<string, Packet<PacketType>[]>
+  rec: Record<string, Packet<PacketType>[]>
 } {
   if (type === RequestCode.FINDCONTENT_READ) {
     const dataPackets = dataChunks.map((chunk, i) => {
-      const p = Packet.create(PacketType.ST_DATA, {
-        connectionId: rcvId,
-        seqNr: DEFAULT_RAND_SEQNR + 1 + i,
-        ackNr: 2 + i,
+      const p = Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_DATA,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: rcvId,
+          seqNr: DEFAULT_RAND_SEQNR + 1 + i,
+          ackNr: 2 + i,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
         payload: chunk,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
       })
       return p
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
-        connectionId: sndId,
-        seqNr: 3 + i,
-        ackNr: p.header.seqNr,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_STATE,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: sndId,
+          seqNr: 3 + i,
+          ackNr: p.header.seqNr,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
       })
     })
 
     const testPackets = {
       send: {
-        syn: Packet.create(PacketType.ST_SYN, {
-          connectionId: sndId,
-          seqNr: 1,
-          ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
-        synackack: Packet.create(PacketType.ST_STATE, {
-          connectionId: sndId,
-          seqNr: 2,
-          ackNr: DEFAULT_RAND_SEQNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        syn: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_SYN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 1,
+              ackNr: DEFAULT_RAND_ACKNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
+        synackack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 2,
+              ackNr: DEFAULT_RAND_SEQNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         dataAcks: dataAcks,
-        finack: Packet.create(PacketType.ST_STATE, {
-          connectionId: sndId,
-          seqNr: 2 + dataAcks.length,
-          ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        finack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 2 + dataAcks.length,
+              ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
       rec: {
-        synack: Packet.create(PacketType.ST_STATE, {
-          connectionId: rcvId,
-          seqNr: DEFAULT_RAND_SEQNR,
-          ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        synack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: DEFAULT_RAND_SEQNR,
+              ackNr: 1,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
-          connectionId: rcvId,
-          seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
-          ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        fin: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
+              ackNr: 2 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
     }
     return testPackets
   } else if (type === RequestCode.FOUNDCONTENT_WRITE) {
     const dataPackets = dataChunks.map((chunk, i) => {
-      const p = Packet.create(PacketType.ST_DATA, {
-        connectionId: sndId,
-        seqNr: DEFAULT_RAND_SEQNR + 1 + i,
-        ackNr: 2 + i,
+      const p = Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_DATA,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: sndId,
+          seqNr: DEFAULT_RAND_SEQNR + 1 + i,
+          ackNr: 2 + i,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
         payload: chunk,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
       })
       return p
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
-        connectionId: rcvId,
-        seqNr: 3 + i,
-        ackNr: p.header.seqNr,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_STATE,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: rcvId,
+          seqNr: 3 + i,
+          ackNr: p.header.seqNr,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
       })
     })
     const testPackets = {
       send: {
-        synack: Packet.create(PacketType.ST_STATE, {
-          connectionId: sndId,
-          seqNr: DEFAULT_RAND_SEQNR,
-          ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        synack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: DEFAULT_RAND_SEQNR,
+              ackNr: 1,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
-          connectionId: sndId,
-          seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
-          ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        fin: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
+              ackNr: 2 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
       rec: {
-        syn: Packet.create(PacketType.ST_SYN, {
-          connectionId: rcvId,
-          seqNr: 1,
-          ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
-        synackack: Packet.create(PacketType.ST_STATE, {
-          connectionId: rcvId,
-          seqNr: 2,
-          ackNr: DEFAULT_RAND_SEQNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        syn: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_SYN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: 1,
+              ackNr: DEFAULT_RAND_ACKNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
+        synackack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: 2,
+              ackNr: DEFAULT_RAND_SEQNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         acks: dataAcks,
-        finack: Packet.create(PacketType.ST_STATE, {
-          connectionId: rcvId,
-          seqNr: 3 + dataAcks.length,
-          ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        finack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: 3 + dataAcks.length,
+              ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
     }
     return testPackets
   } else if (type === RequestCode.OFFER_WRITE) {
     const dataPackets = offerChunks.map((chunk, i) => {
-      return Packet.create(PacketType.ST_DATA, {
-        connectionId: sndId,
-        seqNr: 2 + i,
-        ackNr: DEFAULT_RAND_ACKNR + 1 + i,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 100,
-        wndSize: 1048576,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_DATA,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: sndId,
+          seqNr: 2 + i,
+          ackNr: DEFAULT_RAND_ACKNR + 1 + i,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 100,
+          wndSize: 1048576,
+        },
+        payload: chunk,
       })
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
-        connectionId: rcvId,
-        seqNr: DEFAULT_RAND_ACKNR + 2 + i,
-        ackNr: 2 + i,
-        timestampMicroseconds: Bytes32TimeStamp() + 2000,
-        timestampDifferenceMicroseconds: 100,
-        wndSize: 1048576,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_STATE,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: rcvId,
+          seqNr: DEFAULT_RAND_ACKNR + 2 + i,
+          ackNr: 2 + i,
+          timestampMicroseconds: Bytes32TimeStamp() + 2000,
+          timestampDifferenceMicroseconds: 100,
+          wndSize: 1048576,
+        },
       })
     })
     const testPackets = {
       send: {
-        syn: Packet.create(PacketType.ST_SYN, {
-          connectionId: sndId,
-          seqNr: 1,
-          ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp() + 4000,
-          timestampDifferenceMicroseconds: 100,
-          wndSize: 1048576,
-        }),
+        syn: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_SYN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 1,
+              ackNr: DEFAULT_RAND_ACKNR,
+              timestampMicroseconds: Bytes32TimeStamp() + 4000,
+              timestampDifferenceMicroseconds: 100,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
-          connectionId: sndId,
-          seqNr: 2 + dataPackets.length,
-          ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp() + 6000,
-          timestampDifferenceMicroseconds: 100,
-          wndSize: 1048576,
-        }),
+        fin: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 2 + dataPackets.length,
+              ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp() + 6000,
+              timestampDifferenceMicroseconds: 100,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
       rec: {
-        synack: Packet.create(PacketType.ST_STATE, {
-          connectionId: rcvId,
-          seqNr: DEFAULT_RAND_SEQNR,
-          ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp() + 8000,
-          timestampDifferenceMicroseconds: 100,
-          wndSize: 1048576,
-        }),
+        synack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: DEFAULT_RAND_SEQNR,
+              ackNr: 1,
+              timestampMicroseconds: Bytes32TimeStamp() + 8000,
+              timestampDifferenceMicroseconds: 100,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         acks: dataAcks,
-        finack: Packet.create(PacketType.ST_FIN, {
-          connectionId: rcvId,
-          seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
-          ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp() + 10000,
-          timestampDifferenceMicroseconds: 100,
-          wndSize: 1048576,
-        }),
+        finack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
+              ackNr: 2 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp() + 10000,
+              timestampDifferenceMicroseconds: 100,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
     }
     return testPackets
   } else if (type === RequestCode.ACCEPT_READ) {
     const dataPackets = offerChunks.map((chunk, i) => {
-      return Packet.create(PacketType.ST_DATA, {
-        connectionId: rcvId,
-        seqNr: 2 + i,
-        ackNr: DEFAULT_RAND_ACKNR + 1 + i,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_DATA,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: rcvId,
+          seqNr: 2 + i,
+          ackNr: DEFAULT_RAND_ACKNR + 1 + i,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
         payload: chunk,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
       })
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
-        connectionId: sndId,
-        seqNr: DEFAULT_RAND_ACKNR + 2 + i,
-        ackNr: 2 + i,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_STATE,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: sndId,
+          seqNr: DEFAULT_RAND_ACKNR + 2 + i,
+          ackNr: 2 + i,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
       })
     })
     const testPackets = {
       send: {
-        synack: Packet.create(PacketType.ST_STATE, {
-          connectionId: sndId,
-          seqNr: DEFAULT_RAND_SEQNR,
-          ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        synack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: DEFAULT_RAND_SEQNR,
+              ackNr: 1,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         acks: dataAcks,
-        finack: Packet.create(PacketType.ST_FIN, {
-          connectionId: sndId,
-          seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
-          ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        finack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: DEFAULT_RAND_ACKNR + 2 + dataAcks.length,
+              ackNr: 2 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
       rec: {
-        syn: Packet.create(PacketType.ST_SYN, {
-          connectionId: sndId,
-          seqNr: 1,
-          ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        syn: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_SYN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 1,
+              ackNr: DEFAULT_RAND_ACKNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
-          connectionId: sndId,
-          seqNr: 2 + dataPackets.length,
-          ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        fin: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 2 + dataPackets.length,
+              ackNr: DEFAULT_RAND_ACKNR + 1 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
     }
     return testPackets
   } else if (type === 'FINDCONTENT_READ-Block') {
     const dataPackets = blockChunks.map((chunk, i) => {
-      const p = Packet.create(PacketType.ST_DATA, {
-        connectionId: rcvId,
-        seqNr: DEFAULT_RAND_SEQNR + 1 + i,
-        ackNr: 2 + i,
+      const p = Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_DATA,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: rcvId,
+          seqNr: DEFAULT_RAND_SEQNR + 1 + i,
+          ackNr: 2 + i,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
         payload: chunk,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
       })
       return p
     })
     const dataAcks = dataPackets.map((p, i) => {
-      return Packet.create(PacketType.ST_STATE, {
-        connectionId: sndId,
-        seqNr: 3 + i,
-        ackNr: p.header.seqNr,
-        timestampMicroseconds: Bytes32TimeStamp(),
-        timestampDifferenceMicroseconds: 0,
-        wndSize: 1048576,
+      return Packet.fromOpts({
+        header: {
+          pType: PacketType.ST_STATE,
+          extension: HeaderExtension.none,
+          version: 1,
+          connectionId: sndId,
+          seqNr: 3 + i,
+          ackNr: p.header.seqNr,
+          timestampMicroseconds: Bytes32TimeStamp(),
+          timestampDifferenceMicroseconds: 0,
+          wndSize: 1048576,
+        },
       })
     })
 
     const testPackets = {
       send: {
-        syn: Packet.create(PacketType.ST_SYN, {
-          connectionId: sndId,
-          seqNr: 1,
-          ackNr: DEFAULT_RAND_ACKNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
-        synackack: Packet.create(PacketType.ST_STATE, {
-          connectionId: sndId,
-          seqNr: 2,
-          ackNr: DEFAULT_RAND_SEQNR,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        syn: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_SYN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 1,
+              ackNr: DEFAULT_RAND_ACKNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
+        synackack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 2,
+              ackNr: DEFAULT_RAND_SEQNR,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         dataAcks: dataAcks,
-        finack: Packet.create(PacketType.ST_STATE, {
-          connectionId: sndId,
-          seqNr: 2 + dataAcks.length,
-          ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        finack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: sndId,
+              seqNr: 2 + dataAcks.length,
+              ackNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
       rec: {
-        synack: Packet.create(PacketType.ST_STATE, {
-          connectionId: rcvId,
-          seqNr: DEFAULT_RAND_SEQNR,
-          ackNr: 1,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        synack: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_STATE,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: DEFAULT_RAND_SEQNR,
+              ackNr: 1,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
         data: dataPackets,
-        fin: Packet.create(PacketType.ST_FIN, {
-          connectionId: rcvId,
-          seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
-          ackNr: 2 + dataPackets.length,
-          timestampMicroseconds: Bytes32TimeStamp(),
-          timestampDifferenceMicroseconds: 0,
-          wndSize: 1048576,
-        }),
+        fin: [
+          Packet.fromOpts({
+            header: {
+              pType: PacketType.ST_FIN,
+              extension: HeaderExtension.none,
+              version: 1,
+              connectionId: rcvId,
+              seqNr: DEFAULT_RAND_SEQNR + 1 + dataPackets.length,
+              ackNr: 2 + dataPackets.length,
+              timestampMicroseconds: Bytes32TimeStamp(),
+              timestampDifferenceMicroseconds: 0,
+              wndSize: 1048576,
+            },
+          }),
+        ],
       },
     }
     return testPackets

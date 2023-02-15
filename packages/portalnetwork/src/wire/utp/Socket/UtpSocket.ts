@@ -1,84 +1,112 @@
-import { Packet, PacketType, DEFAULT_PACKET_SIZE, ConnectionState } from '../index.js'
+import {
+  Packet,
+  PacketType,
+  ConnectionState,
+  ICreate,
+  ICreatePacketOpts,
+  UtpSocketOptions,
+  UtpSocketType,
+  ICreateData,
+} from '../index.js'
 import EventEmitter from 'events'
-import { ProtocolId, bitmap, MAX_CWND_INCREASE_PACKETS_PER_RTT } from '../../../index.js'
+import { ProtocolId, bitmap } from '../../../index.js'
 import { Debugger } from 'debug'
-import ContentWriter from '../Protocol/write/ContentWriter.js'
-import ContentReader from '../Protocol/read/ContentReader.js'
-import { BasicUtp } from '../Protocol/BasicUtp.js'
-import { sendAckPacket, sendSynAckPacket } from '../Packets/PacketSenders.js'
+import ContentWriter from './ContentWriter.js'
+import ContentReader from './ContentReader.js'
+import { PacketManager } from '../Packets/PacketManager.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
 
 export class UtpSocket extends EventEmitter {
-  type: 'read' | 'write'
-  utp: BasicUtp
+  type: UtpSocketType
   content: Uint8Array
   remoteAddress: string
-  seqNr: number
+  protected seqNr: number
   ackNr: number
   finNr: number | undefined
   sndConnectionId: number
   rcvConnectionId: number
   state: ConnectionState | null
-  max_window: number
-  cur_window: number
-  reply_micro: number
-  rtt: number
-  rtt_var: number
-  timeout: number
-  timeoutCounter?: NodeJS.Timeout
-  baseDelay: { delay: number; timestamp: number }
-  ourDelay: number
-  sendRate: number
   writer: ContentWriter | undefined
   reader: ContentReader | undefined
   readerContent: Uint8Array | undefined
-  dataNrs: number[]
   ackNrs: (number | undefined)[]
   received: number[]
   expected: number[]
   logger: Debugger
-  outBuffer: Map<number, number>
-  constructor(
-    utp: BasicUtp,
-    remoteAddress: string,
-    sndId: number,
-    rcvId: number,
-    seqNr: number,
-    ackNr: number,
-    type: 'read' | 'write',
-    logger: Debugger,
-    content?: Uint8Array
-  ) {
+  packetManager: PacketManager
+  throttle: () => void
+  updateDelay: (timestamp: number, timeReceived: number) => void
+  updateRTT: (packetRTT: number, ackNr: number) => void
+  updateWindow: () => void
+  constructor(options: UtpSocketOptions) {
     super()
-    this.content = content ? Uint8Array.from(content) : Uint8Array.from([])
-    this.utp = utp
-    this.remoteAddress = remoteAddress
-    this.rcvConnectionId = rcvId
-    this.sndConnectionId = sndId
-    this.seqNr = seqNr
-    this.ackNr = ackNr
+    this.content = options.content ?? Uint8Array.from([])
+    this.remoteAddress = options.remoteAddress
+    this.rcvConnectionId = options.rcvId
+    this.sndConnectionId = options.sndId
+    this.seqNr = options.seqNr
+    this.ackNr = options.ackNr
     this.finNr = undefined
-    this.max_window = DEFAULT_PACKET_SIZE * 3
-    this.cur_window = 0
-    this.reply_micro = 0
     this.state = null
-    this.rtt = 1000
-    this.rtt_var = 0
-    this.timeout = 1000
-    this.baseDelay = { delay: 0, timestamp: 0 }
-    this.ourDelay = 0
-    this.sendRate = 0
     this.readerContent = new Uint8Array()
-    this.type = type
-    this.dataNrs = []
+    this.type = options.type
     this.ackNrs = []
     this.received = []
     this.expected = []
-    this.logger = logger.extend('Socket').extend(this.rcvConnectionId.toString())
-    this.outBuffer = new Map()
+    this.logger = options.logger
+      .extend(`${this.type}Socket`)
+      .extend(this.rcvConnectionId.toString())
+    this.packetManager = new PacketManager(options.rcvId, options.sndId, this.logger)
+    this.throttle = () => this.packetManager.congestionControl.throttle()
+    this.updateDelay = (timestamp: number, timeReceived: number) =>
+      this.packetManager.congestionControl.updateDelay(timestamp, timeReceived)
+    this.updateRTT = (packetRtt: number, ackNr: number) =>
+      this.packetManager.congestionControl.updateRTT(packetRtt, ackNr)
+    this.updateWindow = () => this.packetManager.updateWindow()
+    this.packetManager.congestionControl.on('write', async () => {
+      await this.writer?.write()
+    })
   }
 
-  async sendPacket(packet: Packet, type: PacketType): Promise<Buffer> {
+  setAckNr(ackNr: number) {
+    this.ackNr = ackNr
+  }
+
+  setSeqNr(seqNr: number) {
+    this.seqNr = seqNr
+  }
+
+  getSeqNr() {
+    return this.seqNr
+  }
+
+  setWriter(seqNr: number) {
+    this.setSeqNr(seqNr)
+    this.writer = new ContentWriter(this.content, seqNr + 1, this.logger)
+    this.writer.on('send', async (packetType: PacketType, bytes?: Uint8Array) => {
+      if (packetType === PacketType.ST_DATA && bytes) {
+        await this.sendDataPacket(bytes)
+        this.writer?.emit('sent')
+      } else {
+        await this.sendFinPacket()
+        this.writer?.emit('sent')
+      }
+    })
+    this.writer.start()
+  }
+  setState(state: ConnectionState) {
+    this.state = state
+  }
+
+  setReader(startingSeqNr: number) {
+    this.reader = new ContentReader(startingSeqNr)
+  }
+
+  _clearTimeout() {
+    clearTimeout(this.packetManager.congestionControl.timeoutCounter)
+  }
+
+  async sendPacket<T extends PacketType>(packet: Packet<T>, type: PacketType): Promise<Buffer> {
     const msg = packet.encode()
     const messageData: Record<PacketType, string> = {
       0: `seqNr: ${packet.header.seqNr}`,
@@ -87,93 +115,189 @@ export class UtpSocket extends EventEmitter {
       3: ``,
       4: `rcvId: ${this.rcvConnectionId}`,
     }
-    this.logger(`${PacketType[type]}   sent - ${messageData[type]}`)
-    this.utp.emit('Send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
+    this.logger(`${PacketType[packet.header.pType]}   sent - ${messageData[type]}`)
+    this.emit('send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
     return msg
   }
 
-  async sendSynPacket(packet: Packet): Promise<ConnectionState> {
-    await this.sendPacket(packet, PacketType.ST_SYN)
+  createPacket<T extends PacketType>(
+    opts: ICreatePacketOpts<T> = {} as ICreatePacketOpts<T>
+  ): Packet<T> {
+    opts.pType === PacketType.ST_DATA && this.seqNr++
+    const extension = 'bitmask' in opts ? 1 : 0
+    const params: ICreate<T> = {
+      ...opts,
+      seqNr: this.seqNr,
+      ackNr: this.ackNr,
+      extension,
+    }
+    return this.packetManager.createPacket<T>(params)
+  }
+
+  async sendSynPacket(): Promise<void> {
+    const p = this.createPacket({ pType: PacketType.ST_SYN })
+    await this.sendPacket(p, PacketType.ST_SYN)
     this.state = ConnectionState.SynSent
-    return this.state
   }
-
-  async sendSynAckPacket(packet: Packet): Promise<void> {
+  async sendAckPacket(bitmask?: Uint8Array): Promise<void> {
+    const packet = bitmask
+      ? this.createPacket({ pType: PacketType.ST_STATE, bitmask })
+      : this.createPacket({ pType: PacketType.ST_STATE })
     await this.sendPacket(packet, PacketType.ST_STATE)
   }
-
-  async sendDataPacket(packet: Packet): Promise<Packet> {
-    this.state = ConnectionState.Connected
-    this.outBuffer.set(packet.header.seqNr, packet.header.timestampMicroseconds)
-    this.cur_window = this.outBuffer.size * DEFAULT_PACKET_SIZE
-    await this.sendPacket(packet, PacketType.ST_DATA)
-    this.seqNr++
-    return packet
-  }
-
-  async sendStatePacket(packet: Packet): Promise<void> {
-    await this.sendPacket(packet, PacketType.ST_STATE)
-  }
-
-  async sendResetPacket(packet: Packet) {
-    this.state = ConnectionState.Reset
-    await this.sendPacket(packet, PacketType.ST_RESET)
-  }
-
-  async sendFinPacket(packet: Packet): Promise<Buffer> {
-    this.finNr = packet.header.seqNr
-    return await this.sendPacket(packet, PacketType.ST_FIN)
-  }
-
-  async handleSynPacket(): Promise<Packet> {
-    this.logger(`Connection State: SynRecv`)
+  async sendSynAckPacket(): Promise<void> {
     this.state = ConnectionState.SynRecv
-    return sendSynAckPacket(this)
+    this.logger(`Connection State: SynRecv`)
+    await this.sendAckPacket()
+  }
+  async sendResetPacket() {
+    this.state = ConnectionState.Reset
+    const packet = this.createPacket<PacketType.ST_RESET>({ pType: PacketType.ST_RESET })
+    await this.sendPacket<PacketType.ST_RESET>(packet, PacketType.ST_RESET)
+  }
+  async sendFinPacket(): Promise<void> {
+    const packet = this.createPacket<PacketType.ST_FIN>({ pType: PacketType.ST_FIN })
+    this.finNr = packet.header.seqNr
+    await this.sendPacket<PacketType.ST_FIN>(packet, PacketType.ST_FIN)
+  }
+  async sendDataPacket(bytes: Uint8Array): Promise<void> {
+    this.state = ConnectionState.Connected
+    try {
+      await this.packetManager.congestionControl.canSend()
+    } catch (e) {
+      this.logger(`DATA packet not acked.  Closing connection to ${this.remoteAddress}`)
+      await this.sendResetPacket()
+      this.close()
+    }
+    const packet = this.createPacket<PacketType.ST_DATA>({
+      pType: PacketType.ST_DATA,
+      payload: bytes,
+    } as ICreateData)
+    await this.sendPacket<PacketType.ST_DATA>(packet, PacketType.ST_DATA)
+    this.packetManager.congestionControl.outBuffer.set(
+      packet.header.seqNr,
+      packet.header.timestampMicroseconds
+    )
+    this.updateWindow()
   }
 
-  async handleStatePacket(packet: Packet): Promise<void | boolean | Packet> {
-    if (packet.header.ackNr === this.finNr) {
-      this.logger(`FIN packet acked`)
-      this.logger(`Closing Socket.  Goodnight.`)
-      clearTimeout(this.timeoutCounter)
-      this.state = ConnectionState.Closed
-      return true
+  async handleSynPacket(seqNr: number): Promise<void> {
+    this.setAckNr(seqNr)
+    this.type === UtpSocketType.READ ? this.setReader(2) : this.setWriter(seqNr)
+    await this.sendSynAckPacket()
+  }
+
+  async handleFinAck(): Promise<boolean> {
+    this.logger(`FIN packet ACKed. Closing Socket.`)
+    this.state = ConnectionState.Closed
+    this._clearTimeout()
+    return true
+  }
+
+  async handleStatePacket(ackNr: number, timestamp: number): Promise<void> {
+    this.state === ConnectionState.Connected || this.setState(ConnectionState.Connected)
+    if (ackNr === this.finNr) {
+      await this.handleFinAck()
+      return
     }
     if (this.type === 'read') {
-      this.state = ConnectionState.Connected
-      return await sendAckPacket(this)
+      this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
+      const startingSeqNr = this.getSeqNr() + 1
+      this.setReader(startingSeqNr)
+      await this.sendAckPacket()
     } else {
-      this.state = ConnectionState.Connected
-      if (this.writer) {
-        const inFlight = this.outBuffer.size
-        this.cur_window = inFlight * DEFAULT_PACKET_SIZE
-        const needed = this.dataNrs.filter((n) => !this.ackNrs.includes(n))
-        this.logger(`cur_window: ${this.cur_window} bytes in flight`)
-        this.logger(
-          `AckNr's received (${this.ackNrs.length}/${
-            this.writer.sentChunks.length
-          }): ${this.ackNrs[0]?.toString()}...${
-            this.ackNrs.slice(1).length > 3
-              ? this.ackNrs.slice(this.ackNrs.length - 3)?.toString()
-              : this.ackNrs.slice(1)?.toString()
-          }`
-        )
-        this.logger(`AckNr's needed (${needed.length}/${
-          Object.keys(this.writer.dataChunks).length
-        }): ${needed.slice(0, 3)?.toString()}${
-          needed.slice(3)?.length > 0 ? '...' + needed[needed.length - 1] : ''
-        }
-          `)
-      }
+      this.updateAckNrs(ackNr)
+      this.updateRTT(timestamp, ackNr)
+      this.packetManager.updateWindow()
+      this.logProgress()
       if (this.compare()) {
         this.logger(`all data packets acked`)
-        return true
-      } else {
-        this.writer?.writing && this.writer?.start()
+        return this.sendFinPacket()
       }
+      this.writer!.write()
     }
   }
 
+  async handleDataPacket(packet: Packet<PacketType.ST_DATA>): Promise<void> {
+    this._clearTimeout()
+    this.state = ConnectionState.Connected
+    let expected = true
+    if (this.ackNrs.length > 1) {
+      expected = this.ackNr + 1 === packet.header.seqNr
+    }
+    this.setSeqNr(this.getSeqNr() + 1)
+    if (!this.reader) {
+      this.reader = new ContentReader(packet.header.seqNr)
+    }
+    // Add the packet.seqNr to this.ackNrs at the relative index, regardless of order received.
+    if (this.ackNrs[0] === undefined) {
+      this.logger(`Setting AckNr[0] to ${packet.header.seqNr}]`)
+      this.ackNrs[0] = packet.header.seqNr
+    } else {
+      this.logger(
+        `Setting AckNr[${packet.header.seqNr - this.ackNrs[0]}] to ${packet.header.seqNr}]`
+      )
+      this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
+    }
+    await this.reader.addPacket(packet)
+    if (expected) {
+      // Update this.ackNr to last in-order seqNr received.
+      const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
+      this.ackNr = future.slice(future.findIndex((n, i, ackNrs) => ackNrs[i + 1] === undefined))[0]!
+      // Send "Regular" ACK with the new this.ackNr
+      return this.sendAckPacket()
+    } else {
+      // Do not increment this.ackNr
+      // Send SELECTIVE_ACK with bitmask of received seqNrs > this.ackNr
+      this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
+      const bitmask = this.generateSelectiveAckBitMask()
+      return this.sendAckPacket(bitmask)
+    }
+  }
+
+  async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array> {
+    this.logger(`Connection State: GotFin`)
+    this.state = ConnectionState.GotFin
+    const _content = await this.reader!.run()
+    this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
+    this.seqNr = this.seqNr + 1
+    this.ackNr = packet.header.seqNr
+    this.sendAckPacket()
+    this._clearTimeout()
+    this.close()
+    return _content
+  }
+
+  compare(): boolean {
+    if (!this.ackNrs.includes(undefined) && this.ackNrs.length === this.writer!.dataNrs.length) {
+      return true
+    }
+    return false
+  }
+
+  close(): void {
+    clearInterval(this.packetManager.congestionControl.timeoutCounter)
+    this.packetManager.congestionControl.removeAllListeners()
+    this.removeAllListeners()
+  }
+  logProgress() {
+    const needed = this.writer!.dataNrs.filter((n) => !this.ackNrs.includes(n))
+    this.logger(
+      `AckNr's received (${this.ackNrs.length}/${
+        this.writer!.sentChunks.length
+      }): ${this.ackNrs[0]?.toString()}...${
+        this.ackNrs.slice(1).length > 3
+          ? this.ackNrs.slice(this.ackNrs.length - 3)?.toString()
+          : this.ackNrs.slice(1)?.toString()
+      }`
+    )
+    this.logger(`AckNr's needed (${needed.length}/${
+      Object.keys(this.writer!.dataChunks).length
+    }): ${needed.slice(0, 3)?.toString()}${
+      needed.slice(3)?.length > 0 ? '...' + needed[needed.length - 1] : ''
+    }
+        `)
+  }
   generateSelectiveAckBitMask(): Uint8Array {
     const window = new Array(32).fill(false)
     for (let i = 0; i < 32; i++) {
@@ -184,116 +308,9 @@ export class UtpSocket extends EventEmitter {
     const bitMask = new BitVectorType(32).serialize(BitArray.fromBoolArray(window))
     return bitMask
   }
-
-  async handleDataPacket(packet: Packet): Promise<Packet | undefined> {
-    clearTimeout(this.timeoutCounter)
-    this.state = ConnectionState.Connected
-    let expected = true
-    if (this.ackNrs.length > 1) {
-      expected = this.ackNr + 1 === packet.header.seqNr
-    }
-    this.seqNr = this.seqNr + 1
-    if (!this.reader) {
-      this.reader = new ContentReader(this, packet.header.seqNr)
-    }
-    // Add the packet.seqNr to this.ackNrs at the relative index, regardless of order received.
-    if (this.ackNrs[0] === undefined) {
-      this.ackNrs[0] = packet.header.seqNr
-    } else {
-      this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
-    }
-    await this.reader.addPacket(packet)
-    if (expected) {
-      // Update this.ackNr to last in-order seqNr received.
-      const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0])
-      this.ackNr = future.slice(future.findIndex((n, i, ackNrs) => ackNrs[i + 1] === undefined))[0]!
-      // Send "Regular" ACK with the new this.ackNr
-      return await this.utp.sendStatePacket(this)
-    } else {
-      // Do not increment this.ackNr
-      // Send SELECTIVE_ACK with bitmask of received seqNrs > this.ackNr
-      this.logger(`Packet has arrived out of order.  Replying with SELECTIVE ACK.`)
-      const bitmask = this.generateSelectiveAckBitMask()
-      return await this.utp.sendSelectiveAckPacket(this, bitmask)
-    }
-  }
-
-  async handleFinPacket(packet: Packet): Promise<Uint8Array | undefined> {
-    this.logger(`Connection State: GotFin`)
-    this.state = ConnectionState.GotFin
-    const _content = await this.reader!.run()
-    this.logger(`Packet payloads compiled.  Sending FIN-ACK`)
-    this.seqNr = this.seqNr + 1
-    this.ackNr = packet.header.seqNr
-    await this.utp.sendStatePacket(this)
-    clearTimeout(this.timeoutCounter)
-    return _content
-  }
-
-  updateRTT(packetRTT: number): void {
-    // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
-    const delta = this.rtt - packetRTT
-    this.rtt_var = this.rtt_var + (Math.abs(delta) - this.rtt_var) / 4
-    this.rtt = Math.floor(this.rtt + (packetRTT - this.rtt) / 8)
-    this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
-    clearTimeout(this.timeoutCounter)
-    this.timeoutCounter = setTimeout(() => {
-      this.throttle()
-    }, this.timeout)
-  }
-
-  throttle() {
-    this.max_window = DEFAULT_PACKET_SIZE
-    this.logger.extend('TIMEOUT')(`THROTTLE TRIGGERED after ${this.timeout}ms TIMEOUT`)
-    clearTimeout(this.timeoutCounter)
-    this.timeout = this.timeout * 2
-    if (this.writer?.writing) {
-      this.writer?.start()
-    } else {
-      return
-    }
-    this.timeoutCounter = setTimeout(() => {
-      this.throttle()
-    }, this.timeout)
-  }
-
-  updateDelay(timestamp: number, timeReceived: number) {
-    const delay = Math.abs(timeReceived - timestamp)
-    this.reply_micro = delay
-    this.ourDelay = delay - this.baseDelay.delay
-    if (timeReceived - this.baseDelay.timestamp > 120000) {
-      this.baseDelay = { delay: delay, timestamp: timeReceived }
-    } else if (delay < this.baseDelay.delay) {
-      this.baseDelay = { delay: delay, timestamp: timeReceived }
-    }
-    const offTarget = this.baseDelay.delay / this.ourDelay
-    const delayFactor = offTarget / this.baseDelay.delay
-    const windowFactor = this.cur_window / this.max_window
-    const scaledGain = MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor
-    const new_max = this.max_window + scaledGain > 0 ? this.max_window + scaledGain : 0
-    this.max_window = new_max
-  }
-
-  compare(): boolean {
-    if (this.ackNrs.includes(undefined)) {
-      return false
-    }
-    const sent = JSON.stringify(
-      this.dataNrs.sort((a, b) => {
-        return a - b
-      })
-    )
-    const received = JSON.stringify(
-      this.ackNrs.sort((a, b) => {
-        return a! - b!
-      })
-    )
-    const equal = sent === received
-    return equal
-  }
-
-  close(): void {
-    clearInterval(this.timeoutCounter)
-    this.removeAllListeners()
+  updateAckNrs(ackNr: number) {
+    this.ackNrs = Object.keys(this.writer!.dataChunks)
+      .filter((n) => parseInt(n) <= ackNr)
+      .map((n) => parseInt(n))
   }
 }

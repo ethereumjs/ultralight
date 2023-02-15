@@ -1,4 +1,4 @@
-import { Packet } from '../Packets/Packet.js'
+import { SynPacket } from '../Packets/Packet.js'
 import * as dgram from 'dgram'
 import { Multiaddr } from '@multiformats/multiaddr'
 import { Uint16, Uint32 } from '../index.js'
@@ -83,7 +83,7 @@ export interface ISocketOptions {
   port: number
   host: string
   socket: dgram.Socket
-  syn: Packet | null
+  syn: SynPacket | null
 }
 
 export type SocketCloseCallBack = () => void
