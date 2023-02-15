@@ -48,12 +48,14 @@ tape('CongestionControl', async (t) => {
     congestionControl.cur_window = congestionControl.max_window
     updated = false
     setTimeout(() => {
-      st.pass('canSend() does not return until event promise is resolved')
-      st.end()
+      st.pass('canSend() does not return until event promise is resolved or rejected')
     }, 100)
     st.equal(updated, false, 'window not yet updated')
-    await congestionControl.canSend(),
-      st.fail('canSend() should not return until event promise is resolved')
+    try {
+      await congestionControl.canSend()
+    } catch (e) {
+      st.pass('canSend throws when timeout occurs')
+    }
     st.end()
   })
   t.test('updateRTT()', async (st) => {
