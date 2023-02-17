@@ -29,6 +29,7 @@ import {
   RequestCode,
   NodeLookup,
   StateNetworkRoutingTable,
+  encodeWithVariantPrefix,
 } from '../index.js'
 import { bigIntToHex } from '@ethereumjs/util'
 export abstract class BaseProtocol {
@@ -339,12 +340,13 @@ export abstract class BaseProtocol {
               }
             }
 
+            const contents = encodeWithVariantPrefix(requestedData)
             await this.client.uTP.handleNewRequest({
               contentKeys: requestedKeys,
               peerId: dstId,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
-              contents: requestedData,
+              contents: [contents],
             })
 
             return msg.contentKeys

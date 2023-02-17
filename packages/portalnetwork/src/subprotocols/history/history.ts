@@ -89,13 +89,14 @@ export class HistoryProtocol extends BaseProtocol {
     this.client.uTP.on('Stream', async (selector, blockHash, content) => {
       if (selector === HistoryNetworkContentTypes.BlockHeader) {
         await this.validateHeader(content, blockHash)
+      } else {
+        await this.addContentToHistory(selector, blockHash, content)
       }
-      await this.addContentToHistory(selector, blockHash, content)
     })
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
-    const headerProof = BlockHeaderWithProof.deserialize(value as Uint8Array)
+    const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerProof.header), {
       hardforkByBlockNumber: true,
     })
