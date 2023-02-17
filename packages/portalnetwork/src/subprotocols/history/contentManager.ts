@@ -68,9 +68,10 @@ export class ContentManager {
             fromHexString(hashKey)
           )
 
-          const hexHeader = await this.history.client.db.get(headerContentKey)
+          const headerWith = await this.history.client.db.get(headerContentKey)
+          const hexHeader = BlockHeaderWithProof.deserialize(fromHexString(headerWith)).header
           // Verify we can construct a valid block from the header and body provided
-          block = reassembleBlock(fromHexString(hexHeader), value)
+          block = reassembleBlock(hexHeader, value)
         } catch {
           this.logger(
             `Block Header for ${shortId(hashKey)} not found locally.  Querying network...`

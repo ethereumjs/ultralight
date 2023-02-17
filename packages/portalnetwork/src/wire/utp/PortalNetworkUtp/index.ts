@@ -23,6 +23,7 @@ import {
   INewRequest,
   RequestCode,
   UtpSocketKey,
+  decodeHistoryNetworkContentKey,
 } from '../../../index.js'
 import ContentReader from '../Socket/ContentReader.js'
 import { EventEmitter } from 'events'
@@ -271,15 +272,12 @@ export class PortalNetworkUTP extends EventEmitter {
   async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
     for (const [idx, k] of keys.entries()) {
-      const decodedContentKey = {
-        selector: k[0],
-        blockHash: k.subarray(1),
-      } as HistoryNetworkContentKey
+      const decodedContentKey = decodeHistoryNetworkContentKey(toHexString(k))
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
         `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
       )
-      this.emit('Stream', k[0], toHexString(decodedContentKey.blockHash), _content)
+      this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
     }
   }
 }

@@ -131,11 +131,16 @@ export const addRLPSerializedBlock = async (
     hardforkByBlockNumber: true,
   })
   const header = block.header
-  const proof = witnesses ?? (await protocol.generateInclusionProof(header.number))
+  const proof: Witnesses = witnesses ?? (await protocol.generateInclusionProof(header.number))
   const headerProof = BlockHeaderWithProof.serialize({
     header: header.serialize(),
     proof: { selector: 1, value: proof },
   })
+  try {
+    await protocol.validateHeader(headerProof, blockHash)
+  } catch {
+    throw new Error('Header proof failed validation')
+  }
   await protocol.addContentToHistory(HistoryNetworkContentTypes.BlockHeader, blockHash, headerProof)
   await protocol.addContentToHistory(
     HistoryNetworkContentTypes.BlockBody,
