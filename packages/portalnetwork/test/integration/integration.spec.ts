@@ -8,8 +8,8 @@ import {
   BlockHeaderWithProof,
   ENR,
   fromHexString,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentKey,
+  ContentType,
   HistoryProtocol,
   PortalNetwork,
   ProtocolId,
@@ -82,13 +82,13 @@ tape('gossip test', async (t) => {
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     'node1 added node2 to routing table'
   )
-  await protocol1.addContentToHistory(
-    HistoryNetworkContentTypes.EpochAccumulator,
+  await protocol1.store(
+    ContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     fromHexString(epoch25)
   )
-  // await protocol2.addContentToHistory(
-  //   HistoryNetworkContentTypes.EpochAccumulator,
+  // await protocol2.store(
+  //   ContentType.EpochAccumulator,
   //   '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
   //   fromHexString(epoch25)
   // )
@@ -109,16 +109,13 @@ tape('gossip test', async (t) => {
         value: proof,
       },
     })
-    await protocol1.addContentToHistory(
-      HistoryNetworkContentTypes.BlockHeader,
-      toHexString(testBlock.hash()),
-      headerWith
-    )
+    await protocol1.store(ContentType.BlockHeader, toHexString(testBlock.hash()), headerWith)
   }
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
   const to = setTimeout(() => {
+    t.fail('timeout')
     end.emit('end()')
   }, 4000)
   node2.on('ContentAdded', async (key, contentType, content) => {
@@ -182,8 +179,8 @@ tape('FindContent', async (t) => {
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
 
-  await protocol1.addContentToHistory(
-    HistoryNetworkContentTypes.EpochAccumulator,
+  await protocol1.store(
+    ContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     fromHexString(epoch25)
   )
@@ -200,10 +197,7 @@ tape('FindContent', async (t) => {
   const res = await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
     fromHexString(
-      getHistoryNetworkContentKey(
-        HistoryNetworkContentTypes.BlockHeader,
-        fromHexString(testBlockData[29].blockHash)
-      )
+      getContentKey(ContentType.BlockHeader, fromHexString(testBlockData[29].blockHash))
     )
   )
   console.log(res)
@@ -263,8 +257,8 @@ tape('eth_getBlockByHash', async (t) => {
   await node2.start()
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  await protocol1.addContentToHistory(
-    HistoryNetworkContentTypes.EpochAccumulator,
+  await protocol1.store(
+    ContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     fromHexString(epoch25)
   )
@@ -332,16 +326,8 @@ tape('eth_getBlockByNumber', async (t) => {
   const blockRlp = block1000.raw
   const blockHash = block1000.hash
 
-  await protocol1.addContentToHistory(
-    HistoryNetworkContentTypes.EpochAccumulator,
-    epochHash,
-    fromHexString(epoch)
-  )
-  await protocol2.addContentToHistory(
-    HistoryNetworkContentTypes.EpochAccumulator,
-    epochHash,
-    fromHexString(epoch)
-  )
+  await protocol1.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
+  await protocol2.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
   await protocol1.sendPing(protocol2?.client.discv5.enr!)
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)

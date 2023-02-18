@@ -6,9 +6,9 @@ import {
   blockNumberToLeafIndex,
   epochRootByBlocknumber,
   epochRootByIndex,
-  getHistoryNetworkContentId,
-  HistoryNetworkContentKeyType,
-  HistoryNetworkContentTypes,
+  getContentId,
+  ContentKeyType,
+  ContentType,
   reassembleBlock,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
@@ -16,14 +16,14 @@ import {
 
 tape('utility functions', (t) => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-  const block1headerContentKey = HistoryNetworkContentKeyType.serialize(
+  const block1headerContentKey = ContentKeyType.serialize(
     Buffer.concat([
-      Uint8Array.from([HistoryNetworkContentTypes.BlockHeader]),
+      Uint8Array.from([ContentType.BlockHeader]),
       fromHexString(block1Hash),
     ])
   )
   t.equal(
-    getHistoryNetworkContentId(HistoryNetworkContentTypes.BlockHeader, block1Hash),
+    getContentId(ContentType.BlockHeader, block1Hash),
     serializedContentKeyToContentId(block1headerContentKey),
     'produced same content id'
   )
