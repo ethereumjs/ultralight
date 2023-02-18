@@ -72,11 +72,7 @@ export class ContentLookup {
           finished = true
           nearestPeer.hasContent = true
           return new Promise((resolve) => {
-            const utpDecoder = (
-              contentKey: string,
-              contentType: ContentType,
-              content: string
-            ) => {
+            const utpDecoder = (contentKey: string, contentType: ContentType, content: string) => {
               this.protocol.client.removeListener('ContentAdded', utpDecoder)
               resolve(fromHexString(content))
             }

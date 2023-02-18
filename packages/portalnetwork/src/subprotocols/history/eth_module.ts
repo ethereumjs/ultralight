@@ -26,12 +26,7 @@ export class ETH {
     )
 
     const bodyContentKey = includeTransactions
-      ? fromHexString(
-          getContentKey(
-            ContentType.BlockBody,
-            fromHexString(blockHash)
-          )
-        )
+      ? fromHexString(getContentKey(ContentType.BlockBody, fromHexString(blockHash)))
       : undefined
     let header: any
     let body: any
@@ -72,10 +67,7 @@ export class ETH {
   ): Promise<Block | undefined> => {
     let blockHash
     const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
-    const lookupKey = getContentKey(
-      ContentType.EpochAccumulator,
-      Buffer.from(epochRootHash)
-    )
+    const lookupKey = getContentKey(ContentType.EpochAccumulator, Buffer.from(epochRootHash))
     const epoch_lookup = new ContentLookup(this.protocol, fromHexString(lookupKey))
     const result = await epoch_lookup.startLookup()
     if (result === undefined || !(result instanceof Uint8Array)) {

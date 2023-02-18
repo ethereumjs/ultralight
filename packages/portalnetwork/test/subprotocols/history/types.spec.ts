@@ -26,10 +26,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = ContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([ContentType.BlockHeader]),
-        fromHexString(blockHash),
-      ])
+      Buffer.concat([Uint8Array.from([ContentType.BlockHeader]), fromHexString(blockHash)])
     )
     let contentId = getContentId(ContentType.BlockHeader, blockHash)
     st.equals(
@@ -44,10 +41,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([ContentType.BlockBody]),
-        fromHexString(blockHash),
-      ])
+      Buffer.concat([Uint8Array.from([ContentType.BlockBody]), fromHexString(blockHash)])
     )
     contentId = getContentId(ContentType.BlockBody, blockHash)
     st.equals(
@@ -62,10 +56,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([ContentType.Receipt]),
-        fromHexString(blockHash),
-      ])
+      Buffer.concat([Uint8Array.from([ContentType.Receipt]), fromHexString(blockHash)])
     )
     contentId = getContentId(ContentType.Receipt, blockHash)
     st.equals(
@@ -195,10 +186,6 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
     serialized_container,
     'Serialized Container matches MasterAccumulator'
   )
-  console.log({
-    mast_accumulator: '0x' + masterAccumulator.slice(0, 32) + '...',
-    serial_container: toHexString(serialized_container).slice(0, 34) + '...',
-  })
 
   const actualEpoch = readFileSync(
     './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
@@ -227,10 +214,7 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
       hardforkByBlockNumber: true,
     }
   )
-  const contentKey = getContentKey(
-    ContentType.BlockHeader,
-    deserializedHeader.hash()
-  )
+  const contentKey = getContentKey(ContentType.BlockHeader, deserializedHeader.hash())
   const epochHash = historicalEpochs[Math.floor(1000001 / 8192)]
   const actual_Epoch = EpochAccumulator.deserialize(fromHexString(actualEpoch))
   const tree = EpochAccumulator.value_toTree(actual_Epoch)

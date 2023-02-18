@@ -17,10 +17,7 @@ import {
 tape('utility functions', (t) => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
   const block1headerContentKey = ContentKeyType.serialize(
-    Buffer.concat([
-      Uint8Array.from([ContentType.BlockHeader]),
-      fromHexString(block1Hash),
-    ])
+    Buffer.concat([Uint8Array.from([ContentType.BlockHeader]), fromHexString(block1Hash)])
   )
   t.equal(
     getContentId(ContentType.BlockHeader, block1Hash),

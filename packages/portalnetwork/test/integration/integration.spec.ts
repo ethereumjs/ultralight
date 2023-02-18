@@ -194,13 +194,12 @@ tape('FindContent', async (t) => {
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
   await protocol1.sendPing(protocol2?.client.discv5.enr!)
 
-  const res = await protocol2.sendFindContent(
+  await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
     fromHexString(
       getContentKey(ContentType.BlockHeader, fromHexString(testBlockData[29].blockHash))
     )
   )
-  console.log(res)
   await new Promise((resolve) => {
     node2.on('ContentAdded', async (key, contentType, content) => {
       if (contentType === 0) {

@@ -33,10 +33,7 @@ tape('DBManager unit tests', async (t) => {
   const testHash = randomBytes(32)
   const testVal = randomBytes(48)
   const testKey = getContentKey(ContentType.BlockHeader, testHash)
-  const testId = getContentId(
-    ContentType.BlockHeader,
-    toHexString(testHash)
-  )
+  const testId = getContentId(ContentType.BlockHeader, toHexString(testHash))
   const _testId = serializedContentKeyToContentId(fromHexString(testKey))
   t.equal(_testId, testId, 'testIds match')
 

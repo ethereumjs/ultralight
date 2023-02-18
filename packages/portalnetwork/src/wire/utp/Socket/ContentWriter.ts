@@ -25,7 +25,7 @@ export default class ContentWriter extends EventEmitter {
   async send(packetType: PacketType, bytes?: Uint8Array) {
     this.logger(`Sending ${PacketType[packetType]} packet.`)
     this.emit('send', packetType, bytes)
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       this.once('sent', () => resolve(true))
     })
   }

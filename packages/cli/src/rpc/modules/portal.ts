@@ -233,7 +233,7 @@ export class portal {
     return enr
   }
   async historyPing(params: [string, string]) {
-    const [enr, dataRadius] = params
+    const [enr, _dataRadius] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)

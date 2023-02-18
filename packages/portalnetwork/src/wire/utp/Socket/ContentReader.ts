@@ -1,6 +1,6 @@
 import debug from 'debug'
 import { Debugger } from 'debug'
-import { StatePacket, UtpSocket } from '../index.js'
+import { StatePacket } from '../index.js'
 export default class ContentReader {
   packets: StatePacket[]
   inOrder: StatePacket[]

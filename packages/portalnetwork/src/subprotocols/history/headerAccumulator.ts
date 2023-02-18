@@ -97,10 +97,7 @@ export class AccumulatorManager {
       Buffer.from(
         fromHexString(
           await this._history.client.db.get(
-            getContentKey(
-              ContentType.BlockHeader,
-              fromHexString(blockHash)
-            )
+            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
           )
         )
       ),
@@ -166,10 +163,7 @@ export class AccumulatorManager {
       Buffer.from(
         fromHexString(
           await this._history.client.db.get(
-            getContentKey(
-              ContentType.BlockHeader,
-              fromHexString(blockHash)
-            )
+            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
           )
         )
       ),

@@ -110,11 +110,7 @@ export class ReceiptsManager {
         `Encoding ${receipts.length} receipts from Block: ${block.header.number}`
       )
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
-    await this.protocol.store(
-      ContentType.Receipt,
-      toHexString(block.hash()),
-      encoded
-    )
+    await this.protocol.store(ContentType.Receipt, toHexString(block.hash()), encoded)
     return receipts
   }
 
