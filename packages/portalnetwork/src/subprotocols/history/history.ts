@@ -58,7 +58,6 @@ export class HistoryProtocol extends BaseProtocol {
   logger: Debugger
   ETH: ETH
   gossipManager: GossipManager
-  contentManager: ContentManager
   public receiptManager: ReceiptsManager
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
     super(client, undefined, metrics)
@@ -67,7 +66,6 @@ export class HistoryProtocol extends BaseProtocol {
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.receiptManager = new ReceiptsManager(this.client.db, this)
-    this.contentManager = new ContentManager(this, nodeRadius ?? 4n)
     this.routingTable.setLogger(this.logger)
   }
 
