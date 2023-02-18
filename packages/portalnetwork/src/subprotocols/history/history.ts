@@ -75,12 +75,8 @@ export class HistoryProtocol extends BaseProtocol {
    * @returns content if available locally
    */
   public findContentLocally = async (contentKey: Uint8Array) => {
-    let value = Uint8Array.from([])
-    try {
-      //Check to see if value in content db
-      value = Buffer.from(fromHexString(await this.client.db.get(toHexString(contentKey))))
-    } catch {}
-    return value
+    const value = await this.retrieve(toHexString(contentKey))
+    return value ? fromHexString(value) : undefined
   }
 
   public init = async () => {
