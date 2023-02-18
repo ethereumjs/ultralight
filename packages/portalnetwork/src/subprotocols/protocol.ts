@@ -32,7 +32,8 @@ import {
   encodeWithVariantPrefix,
 } from '../index.js'
 import { bigIntToHex } from '@ethereumjs/util'
-export abstract class BaseProtocol {
+import { EventEmitter } from 'events'
+export abstract class BaseProtocol extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   protected metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint
@@ -42,6 +43,7 @@ export abstract class BaseProtocol {
   abstract protocolName: string
   public client: PortalNetwork
   constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
+    super()
     this.client = client
     this.checkIndex = 0
     this.nodeRadius = nodeRadius ?? 2n ** 256n - 1n

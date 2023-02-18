@@ -202,12 +202,32 @@ export class HistoryProtocol extends BaseProtocol {
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
-  public addContentToHistory = async (
-    contentType: HistoryNetworkContentTypes,
+  public store = async (
+    contentType: ContentType,
     hashKey: string,
     value: Uint8Array
   ): Promise<void> => {
-    this.contentManager.addContentToHistory(contentType, hashKey, value)
+    const contentKey = getContentKey(contentType, fromHexString(hashKey))
+    if (contentType === ContentType.BlockBody) {
+      await this.addBlockBody(value, hashKey)
+    } else {
+      this.emit('store', contentKey, toHexString(value))
+    }
+    this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
+    if (this.routingTable.values().length > 0) {
+      // Gossip new content to network (except header accumulators)
+      this.gossipManager.add(hashKey, contentType)
+    }
+  }
+
+  public async retrieve(key: string): Promise<string | null> {
+    this.emit('retrieve', key)
+    return new Promise((resolve, _reject) => {
+      this.once(key, (value) => {
+        resolve(value)
+      })
+    })
+  }
   }
 
   public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {

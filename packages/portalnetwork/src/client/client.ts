@@ -171,9 +171,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ) as DBManager
     opts.supportedProtocols = opts.supportedProtocols ?? []
     for (const protocol of opts.supportedProtocols) {
+      let p: BaseProtocol
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
-          this.protocols.set(protocol, new HistoryProtocol(this, opts.radius, opts.metrics))
+          p = new HistoryProtocol(this, opts.radius, opts.metrics)
+          p.on('store', (key, value) => this.db.put(key, value))
+          p.on('retrieve', async (key) => {
+            try {
+              p.emit(key, await this.db.get(key))
+            } catch {
+              p.emit(key, null)
+            }
+          })
+          this.protocols.set(protocol, p)
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
