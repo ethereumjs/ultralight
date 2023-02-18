@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import { fromHexString, getHistoryNetworkContentId, ProtocolId } from 'portalnetwork'
+import { fromHexString, getContentId, ProtocolId } from 'portalnetwork'
 
 const testBlocks = [
   {

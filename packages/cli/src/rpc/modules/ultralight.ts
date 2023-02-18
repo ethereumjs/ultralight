@@ -2,14 +2,14 @@ import { Debugger } from 'debug'
 import {
   ProtocolId,
   addRLPSerializedBlock,
-  HistoryNetworkContentTypes,
+  ContentType,
   fromHexString,
   HistoryProtocol,
   PortalNetwork,
 } from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
 
-const methods = ['ultralight_addContentToHistory', 'ultralight_addBlockToHistory']
+const methods = ['ultralight_store', 'ultralight_addBlockToHistory']
 
 export class ultralight {
   private _client: PortalNetwork
@@ -54,10 +54,10 @@ export class ultralight {
 
     const type: number = parseInt(contentKey.slice(0, 4))
     this.logger(
-      `ultralight_addContentToDB request received for ${HistoryNetworkContentTypes[type]} ${contentKey}`
+      `ultralight_addContentToDB request received for ${ContentType[type]} ${contentKey}`
     )
     try {
-      this._history.addContentToHistory(type, '0x' + contentKey.slice(4), fromHexString(value))
+      this._history.store(type, '0x' + contentKey.slice(4), fromHexString(value))
       this.logger(`${type} value for 0x${contentKey.slice(4)} added to content DB`)
       return `${type} value for ${contentKey} added to content DB`
     } catch (err: any) {

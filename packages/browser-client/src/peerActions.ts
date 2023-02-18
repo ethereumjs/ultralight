@@ -1,9 +1,9 @@
 import {
   ENR,
   fromHexString,
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentId,
+  getContentKey,
+  ContentType,
   HistoryProtocol,
   reassembleBlock,
 } from 'portalnetwork'
@@ -19,10 +19,10 @@ export class PeerActions {
     this.historyProtocol = protocol
   }
 
-  addToOffer = (type: HistoryNetworkContentTypes): void => {
+  addToOffer = (type: ContentType): void => {
     this.dispatch({
       type: PeerStateChange.SETOFFER,
-      payload: [...this.state.offer, getHistoryNetworkContentId(type, this.state.blockHash)],
+      payload: [...this.state.offer, getContentId(type, this.state.blockHash)],
     })
   }
 
@@ -55,8 +55,8 @@ export class PeerActions {
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerContentId = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockHeader,
+        getContentKey(
+          ContentType.BlockHeader,
           Buffer.from(fromHexString(this.state.blockHash))
         )
       )
@@ -68,23 +68,23 @@ export class PeerActions {
       return block //
     } else if (type === 'body') {
       const headerContentKey = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockHeader,
+        getContentKey(
+          ContentType.BlockHeader,
           Buffer.from(fromHexString(this.state.blockHash))
         )
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
       const bodyContentKey = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockBody,
+        getContentKey(
+          ContentType.BlockBody,
           Buffer.from(fromHexString(this.state.blockHash))
         )
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
     } else if (type === 'epoch') {
       const epochContentKey = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.EpochAccumulator,
+        getContentKey(
+          ContentType.EpochAccumulator,
           this.historyProtocol.accumulator.getHistoricalEpochs[this.state.epoch]
         )
       )

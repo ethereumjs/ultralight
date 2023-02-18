@@ -9,7 +9,7 @@ import {
   toHexString,
   HistoryProtocol,
   PortalNetwork,
-  HistoryNetworkContentTypes,
+  ContentType,
   ContentLookup,
   NodeLookup,
   PingPongCustomDataType,
@@ -439,8 +439,8 @@ export class portal {
   async historyStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
-      await this._history.addContentToHistory(
-        contentKey[0] as HistoryNetworkContentTypes,
+      await this._history.store(
+        contentKey[0] as ContentType,
         toHexString(contentKey.slice(1)),
         content
       )

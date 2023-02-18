@@ -21,8 +21,8 @@ import { _Block } from '@ethersproject/abstract-provider'
 import {
   ExtendedEthersBlockWithTransactions,
   fromHexString,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentKey,
+  ContentType,
   toHexString,
   TxReceiptWithType,
 } from 'portalnetwork'
@@ -241,13 +241,13 @@ const DisplayBlock = () => {
       typeof (state.block as any).hash === 'string'
         ? (state.block as any).hash
         : toHexString((state.block as any).hash())
-    const header = getHistoryNetworkContentKey(
-      HistoryNetworkContentTypes.BlockHeader,
+    const header = getContentKey(
+      ContentType.BlockHeader,
       Buffer.from(fromHexString(hash))
     )
 
-    const body = getHistoryNetworkContentKey(
-      HistoryNetworkContentTypes.BlockBody,
+    const body = getContentKey(
+      ContentType.BlockBody,
       Buffer.from(fromHexString(hash))
     )
     setKeys({

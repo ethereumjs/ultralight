@@ -20,9 +20,9 @@ import { PeerActions } from '../peerActions'
 import {
   ENR,
   fromHexString,
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentId,
+  getContentKey,
+  ContentType,
 } from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
@@ -67,9 +67,9 @@ export function PortalButton(props: IPortalButton) {
     setInput(blockHash)
   }, [blockHash])
 
-  const addToOffer = async (type: HistoryNetworkContentTypes) => {
-    const contentKey = getHistoryNetworkContentKey(type, Buffer.from(fromHexString(blockHash)))
-    const contentId = getHistoryNetworkContentId(type, blockHash)
+  const addToOffer = async (type: ContentType) => {
+    const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
+    const contentId = getContentId(type, blockHash)
     if (await state.provider?.historyProtocol.client.db.get(contentKey)) {
       setOffer([...offer, contentId])
     }
@@ -240,7 +240,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(HistoryNetworkContentTypes.BlockHeader)
+                addToOffer(ContentType.BlockHeader)
               }}
             >
               add_header_to_offer
@@ -250,7 +250,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(HistoryNetworkContentTypes.BlockBody)
+                addToOffer(ContentType.BlockBody)
               }}
             >
               add_block_body_to_offer
@@ -260,7 +260,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(HistoryNetworkContentTypes.EpochAccumulator)
+                addToOffer(ContentType.EpochAccumulator)
               }}
             >
               add_epoch_to_offer

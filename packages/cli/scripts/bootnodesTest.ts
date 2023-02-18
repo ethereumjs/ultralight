@@ -3,7 +3,7 @@ import jayson, { HttpClient } from 'jayson/promise/index.js'
 import {
   ENR,
   fromHexString,
-  getHistoryNetworkContentId,
+  getContentId,
   ProtocolId,
   toHexString,
 } from 'portalnetwork'

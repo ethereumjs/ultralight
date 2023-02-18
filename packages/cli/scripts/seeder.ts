@@ -3,8 +3,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import {
   fromHexString,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentKey,
+  ContentType,
   ProtocolId,
 } from 'portalnetwork'
 import { createRequire } from 'module'
@@ -85,8 +85,8 @@ const main = async () => {
     }
     console.log(`ok ${method} test`)
   }
-  const epochKey = getHistoryNetworkContentKey(
-    HistoryNetworkContentTypes.EpochAccumulator,
+  const epochKey = getContentKey(
+    ContentType.EpochAccumulator,
     fromHexString(epoch.hash)
   )
   let res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
@@ -171,12 +171,12 @@ const main = async () => {
     [
       clientInfo.peer1.nodeId.slice(2),
       [
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockHeader,
+        getContentKey(
+          ContentType.BlockHeader,
           fromHexString(blocks[3][0])
         ),
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockBody,
+        getContentKey(
+          ContentType.BlockBody,
           fromHexString(blocks[3][0])
         ),
       ],

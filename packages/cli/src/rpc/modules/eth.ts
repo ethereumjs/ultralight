@@ -6,7 +6,7 @@ import {
   ReceiptsManager,
   HistoryProtocol,
   PortalNetwork,
-  getHistoryNetworkContentKey,
+  getContentKey,
   fromHexString,
   reassembleBlock,
   BlockHeaderWithProof,
@@ -103,11 +103,11 @@ export class eth {
     )
     await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
     const headerWithProof = await this._history.findContentLocally(
-      fromHexString(getHistoryNetworkContentKey(0, fromHexString(blockHash)))
+      fromHexString(getContentKey(0, fromHexString(blockHash)))
     )
     const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
-      fromHexString(getHistoryNetworkContentKey(1, fromHexString(blockHash)))
+      fromHexString(getContentKey(1, fromHexString(blockHash)))
     )
     const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
 

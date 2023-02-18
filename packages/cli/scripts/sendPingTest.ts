@@ -3,9 +3,9 @@ import jayson, { HttpClient } from 'jayson/promise/index.js'
 import {
   ENR,
   fromHexString,
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentId,
+  getContentKey,
+  ContentType,
   ProtocolId,
   toHexString,
 } from 'portalnetwork'
