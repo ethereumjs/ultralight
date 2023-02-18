@@ -222,6 +222,33 @@ export class HistoryProtocol extends BaseProtocol {
       })
     })
   }
+
+  public async addBlockBody(value: Uint8Array, hashKey: string) {
+    const bodyKey = getContentKey(ContentType.BlockBody, fromHexString(hashKey))
+    if (value.length === 0) {
+      // Occurs when `getBlockByHash` called `includeTransactions` === false
+      return
+    }
+    let block: Block | undefined
+    try {
+      const headerContentKey = getContentKey(ContentType.BlockHeader, fromHexString(hashKey))
+      const headerWith = await this.retrieve(headerContentKey)
+      const hexHeader = BlockHeaderWithProof.deserialize(fromHexString(headerWith!)).header
+      // Verify we can construct a valid block from the header and body provided
+      block = reassembleBlock(hexHeader, value)
+    } catch {
+      this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
+      block = await this.ETH.getBlockByHash(hashKey, false)
+    }
+    if (block instanceof Block) {
+      this.emit('store', bodyKey, toHexString(value))
+      this.logger.extend('BLOCK_BODY')(`added for block #${block!.header.number}`)
+      block.transactions.length > 0 && (await this.receiptManager.saveReceipts(block!))
+    } else {
+      this.logger(`Could not verify block content`)
+      // Don't store block body where we can't assemble a valid block
+      return
+    }
   }
 
   public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
