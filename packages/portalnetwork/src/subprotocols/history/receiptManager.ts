@@ -14,8 +14,8 @@ import { DBManager } from '../../client/dbManager.js'
 import {
   Bloom,
   HistoryProtocol,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentKey,
+  ContentType,
   Log,
   TxReceiptType,
   TxReceiptWithType,
@@ -110,8 +110,8 @@ export class ReceiptsManager {
         `Encoding ${receipts.length} receipts from Block: ${block.header.number}`
       )
     const encoded = this.rlp(RlpConvert.Encode, RlpType.Receipts, receipts)
-    await this.protocol.addContentToHistory(
-      HistoryNetworkContentTypes.Receipt,
+    await this.protocol.store(
+      ContentType.Receipt,
       toHexString(block.hash()),
       encoded
     )
@@ -139,7 +139,7 @@ export class ReceiptsManager {
     calcBloom = false,
     includeTxType = false
   ): Promise<TxReceipt[] | TxReceiptWithType[]> {
-    const encoded = await this.db.get(getHistoryNetworkContentKey(2, fromHexString(blockHash)))
+    const encoded = await this.db.get(getContentKey(2, fromHexString(blockHash)))
     if (!encoded) return []
     let receipts = this.rlp(
       RlpConvert.Decode,

@@ -2,7 +2,6 @@ import { BitVectorType, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import {
   ProtocolId,
-  ConnectionState,
   Packet,
   PacketType,
   UtpSocket,
@@ -11,8 +10,7 @@ import {
   Bytes32TimeStamp,
   UtpSocketType,
   startingNrs,
-  HistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  ContentType,
   ContentRequest,
   dropPrefixes,
   FinPacket,
@@ -23,9 +21,8 @@ import {
   INewRequest,
   RequestCode,
   UtpSocketKey,
-  decodeHistoryNetworkContentKey,
+  decodeContentKey,
 } from '../../../index.js'
-import ContentReader from '../Socket/ContentReader.js'
 import { EventEmitter } from 'events'
 
 export class PortalNetworkUTP extends EventEmitter {
@@ -272,10 +269,10 @@ export class PortalNetworkUTP extends EventEmitter {
   async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
     for (const [idx, k] of keys.entries()) {
-      const decodedContentKey = decodeHistoryNetworkContentKey(toHexString(k))
+      const decodedContentKey = decodeContentKey(toHexString(k))
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
-        `${idx + 1}/${keys.length} -- sending ${HistoryNetworkContentTypes[k[0]]} to database`
+        `${idx + 1}/${keys.length} -- sending ${ContentType[k[0]]} to database`
       )
       this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
     }

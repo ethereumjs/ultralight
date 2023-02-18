@@ -5,10 +5,10 @@ import {
   blockNumberToGindex,
   EpochAccumulator,
   EPOCH_SIZE,
-  getHistoryNetworkContentKey,
+  getContentKey,
   HeaderProofInterface,
   HeaderRecord,
-  HistoryNetworkContentTypes,
+  ContentType,
   HistoryProtocol,
 } from '../index.js'
 import accumulator from './data/master.js'
@@ -97,8 +97,8 @@ export class AccumulatorManager {
       Buffer.from(
         fromHexString(
           await this._history.client.db.get(
-            getHistoryNetworkContentKey(
-              HistoryNetworkContentTypes.BlockHeader,
+            getContentKey(
+              ContentType.BlockHeader,
               fromHexString(blockHash)
             )
           )
@@ -122,7 +122,7 @@ export class AccumulatorManager {
   }
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.client.db.get(
-      getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, fromHexString(blockHash))
+      getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
     )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
@@ -142,8 +142,8 @@ export class AccumulatorManager {
         ? EpochAccumulator.serialize(this.headerAccumulator.currentEpoch.slice(0, listIdx))
         : fromHexString(
             await this._history.client.db.get(
-              getHistoryNetworkContentKey(
-                HistoryNetworkContentTypes.EpochAccumulator,
+              getContentKey(
+                ContentType.EpochAccumulator,
                 this.headerAccumulator.historicalEpochs[epochIdx - 1]
               )
             )
@@ -166,8 +166,8 @@ export class AccumulatorManager {
       Buffer.from(
         fromHexString(
           await this._history.client.db.get(
-            getHistoryNetworkContentKey(
-              HistoryNetworkContentTypes.BlockHeader,
+            getContentKey(
+              ContentType.BlockHeader,
               fromHexString(blockHash)
             )
           )
@@ -183,7 +183,7 @@ export class AccumulatorManager {
       const epoch = EpochAccumulator.deserialize(
         fromHexString(
           await this._history.client.db.get(
-            getHistoryNetworkContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1])
+            getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1])
           )
         )
       )

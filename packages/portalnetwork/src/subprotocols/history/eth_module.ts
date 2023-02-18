@@ -5,8 +5,8 @@ import {
   reassembleBlock,
   HistoryProtocol,
   BlockBodyContentType,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentKey,
+  ContentType,
   epochRootByBlocknumber,
   BlockHeaderWithProof,
 } from './index.js'
@@ -22,13 +22,13 @@ export class ETH {
     includeTransactions: boolean
   ): Promise<Block | undefined> => {
     const headerContentKey = fromHexString(
-      getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, fromHexString(blockHash))
+      getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
     )
 
     const bodyContentKey = includeTransactions
       ? fromHexString(
-          getHistoryNetworkContentKey(
-            HistoryNetworkContentTypes.BlockBody,
+          getContentKey(
+            ContentType.BlockBody,
             fromHexString(blockHash)
           )
         )
@@ -72,8 +72,8 @@ export class ETH {
   ): Promise<Block | undefined> => {
     let blockHash
     const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
-    const lookupKey = getHistoryNetworkContentKey(
-      HistoryNetworkContentTypes.EpochAccumulator,
+    const lookupKey = getContentKey(
+      ContentType.EpochAccumulator,
       Buffer.from(epochRootHash)
     )
     const epoch_lookup = new ContentLookup(this.protocol, fromHexString(lookupKey))

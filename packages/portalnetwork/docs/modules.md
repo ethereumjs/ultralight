@@ -29,7 +29,7 @@
 - [FindContentMessage](modules.md#findcontentmessage)
 - [FindNodesMessage](modules.md#findnodesmessage)
 - [HeaderRecordType](modules.md#headerrecordtype)
-- [HistoryNetworkContentKey](modules.md#historynetworkcontentkey)
+- [ContentKey](modules.md#historynetworkcontentkey)
 - [MessageTypeUnion](modules.md#messagetypeunion)
 - [NodeId](modules.md#nodeid)
 - [NodesMessage](modules.md#nodesmessage)
@@ -55,7 +55,7 @@
 - [FindNodesMessageType](modules.md#findnodesmessagetype)
 - [HeaderAccumulatorType](modules.md#headeraccumulatortype)
 - [HeaderRecord](modules.md#headerrecord)
-- [HistoryNetworkContentKeyUnionType](modules.md#historynetworkcontentkeyuniontype)
+- [ContentKeyUnionType](modules.md#historynetworkcontentkeyuniontype)
 - [MEGABYTE](modules.md#megabyte)
 - [NodesMessageType](modules.md#nodesmessagetype)
 - [OfferMessageType](modules.md#offermessagetype)
@@ -73,7 +73,7 @@
 - [distance](modules.md#distance)
 - [fromHexString](modules.md#fromhexstring)
 - [generateRandomNodeIdAtDistance](modules.md#generaterandomnodeidatdistance)
-- [getHistoryNetworkContentId](modules.md#gethistorynetworkcontentid)
+- [getContentId](modules.md#getContentId)
 - [log2Distance](modules.md#log2distance)
 - [reassembleBlock](modules.md#reassembleblock)
 - [serializedContentKeyToContentId](modules.md#serializedcontentkeytocontentid)
@@ -166,9 +166,9 @@ ___
 
 ___
 
-### HistoryNetworkContentKey
+### ContentKey
 
-Ƭ **HistoryNetworkContentKey**: `Object`
+Ƭ **ContentKey**: `Object`
 
 **`property`** chainId - integer representing the chain ID (e.g. Ethereum Mainnet is 1)
 
@@ -446,9 +446,9 @@ ___
 
 ___
 
-### HistoryNetworkContentKeyUnionType
+### ContentKeyUnionType
 
-• `Const` **HistoryNetworkContentKeyUnionType**: `UnionType`<`ContainerType`<{ `blockHash`: `ByteVectorType` ; `chainId`: `UintNumberType`  }\>[]\>
+• `Const` **ContentKeyUnionType**: `UnionType`<`ContainerType`<{ `blockHash`: `ByteVectorType` ; `chainId`: `UintNumberType`  }\>[]\>
 
 #### Defined in
 
@@ -670,9 +670,9 @@ a random node ID at a log2 distance of `targetDistance`
 
 ___
 
-### getHistoryNetworkContentId
+### getContentId
 
-▸ **getHistoryNetworkContentId**(`chainId`, `blockHash`, `contentType`): `string`
+▸ **getContentId**(`chainId`, `blockHash`, `contentType`): `string`
 
 Generates the Content ID used to calculate the distance between a node ID and the content Key
 
@@ -682,7 +682,7 @@ Generates the Content ID used to calculate the distance between a node ID and th
 | :------ | :------ | :------ |
 | `chainId` | `number` | - |
 | `blockHash` | `string` | - |
-| `contentType` | `HistoryNetworkContentTypes` | a number identifying the type of content (block header, block body, receipt) |
+| `contentType` | `ContentType` | a number identifying the type of content (block header, block body, receipt) |
 
 #### Returns
 
