@@ -5,7 +5,7 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  HistoryNetworkContentTypes,
+  ContentType,
   sszTransactionType,
   sszUnclesType,
   Witnesses,
@@ -28,18 +28,15 @@ import { historicalEpochs } from './data/epochHashes.js'
  * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getHistoryNetworkContentKey = (
-  contentType: HistoryNetworkContentTypes,
-  hash: Uint8Array
-): string => {
+export const getContentKey = (contentType: ContentType, hash: Uint8Array): string => {
   let encodedKey
   const prefix = Buffer.alloc(1, contentType)
   switch (contentType) {
-    case HistoryNetworkContentTypes.BlockHeader:
-    case HistoryNetworkContentTypes.BlockBody:
-    case HistoryNetworkContentTypes.Receipt:
-    case HistoryNetworkContentTypes.HeaderProof:
-    case HistoryNetworkContentTypes.EpochAccumulator: {
+    case ContentType.BlockHeader:
+    case ContentType.BlockBody:
+    case ContentType.Receipt:
+    case ContentType.HeaderProof:
+    case ContentType.EpochAccumulator: {
       if (!hash) throw new Error('block hash is required to generate contentId')
       encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
       break
@@ -49,17 +46,12 @@ export const getHistoryNetworkContentKey = (
   }
   return encodedKey
 }
-export const getHistoryNetworkContentId = (
-  contentType: HistoryNetworkContentTypes,
-  hash: string
-) => {
-  const encodedKey = fromHexString(
-    getHistoryNetworkContentKey(contentType, Buffer.from(fromHexString(hash)))
-  )
+export const getContentId = (contentType: ContentType, hash: string) => {
+  const encodedKey = fromHexString(getContentKey(contentType, Buffer.from(fromHexString(hash))))
 
   return toHexString(digest(encodedKey))
 }
-export const decodeHistoryNetworkContentKey = (contentKey: string) => {
+export const decodeContentKey = (contentKey: string) => {
   const contentType = parseInt(contentKey.slice(0, 4))
   const blockHash = '0x' + contentKey.slice(4)
   return {
@@ -136,19 +128,22 @@ export const addRLPSerializedBlock = async (
     header: header.serialize(),
     proof: { selector: 1, value: proof },
   })
+  const headerKey = getContentKey(ContentType.BlockHeader, header.hash())
+  const bodyKey = getContentKey(ContentType.BlockBody, header.hash())
   try {
     await protocol.validateHeader(headerProof, blockHash)
   } catch {
     throw new Error('Header proof failed validation')
   }
-  await protocol.addContentToHistory(HistoryNetworkContentTypes.BlockHeader, blockHash, headerProof)
-  await protocol.addContentToHistory(
-    HistoryNetworkContentTypes.BlockBody,
-    blockHash,
-    sszEncodeBlockBody(
-      Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
-        hardforkByBlockNumber: true,
-      })
+  protocol.client.db.put(headerKey, toHexString(headerProof))
+  protocol.client.db.put(
+    bodyKey,
+    toHexString(
+      sszEncodeBlockBody(
+        Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+          hardforkByBlockNumber: true,
+        })
+      )
     )
   )
 }

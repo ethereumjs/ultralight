@@ -23,7 +23,7 @@ export const MAX_HEADER_LENGTH = 8192 // 2 ** 13
 export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 
 /* ----------------- Enums ----------- */
-export enum HistoryNetworkContentTypes {
+export enum ContentType {
   BlockHeader = 0,
   BlockBody = 1,
   Receipt = 2,
@@ -83,8 +83,8 @@ export type TotalDifficulty = bigint
 export type Leaf = Uint8Array
 export type Witnesses = Uint8Array[]
 export type GIndex = bigint
-export type HistoryNetworkContentKey = {
-  selector: HistoryNetworkContentTypes
+export type ContentKey = {
+  selector: ContentType
   blockHash: HashRoot
 }
 export type SszProof = {
@@ -121,15 +121,7 @@ export const TotalDifficultyType = new UintBigintType(32)
 export const LeafType = Bytes32Type
 export const WitnessesType = new ListCompositeType(HashRootType, 65536)
 export const GIndexType = new UintBigintType(4)
-export const HistoryNetworkContentKeyType = new ByteVectorType(33)
-export const HistoryNetworkContentType = new ContainerType({
-  blockHash: HashRootType,
-})
-export const BlockHeaderType = HistoryNetworkContentType
-export const BlockBodyType = HistoryNetworkContentType
-export const ReceiptType = HistoryNetworkContentType
-export const EpochAccumulatorType = HistoryNetworkContentType
-export const ProofType = HistoryNetworkContentType
+export const ContentKeyType = new ByteVectorType(33)
 export const SszProofType = new ContainerType({
   leaf: HashRootType,
   witnesses: WitnessesType,
