@@ -105,10 +105,16 @@ export class eth {
     const headerWithProof = await this._history.findContentLocally(
       fromHexString(getContentKey(0, fromHexString(blockHash)))
     )
+    if (!headerWithProof) {
+      return 'Block not found'
+    }
     const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
       fromHexString(getContentKey(1, fromHexString(blockHash)))
     )
+    if (!body) {
+      return 'Block not found'
+    }
     const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
 
     return block ?? 'Block not found'
