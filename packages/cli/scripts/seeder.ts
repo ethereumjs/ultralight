@@ -185,6 +185,10 @@ const main = async () => {
   // eth_getBlockByHash
   await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
   // eth_getBlockByNumber
+  await clientInfo.peer3.client.request('ultralight_addContentToDB', [
+    epochKey,
+    epoch.serialized,
+  ])
   await testRes([clients[3]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
 
