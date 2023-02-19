@@ -190,6 +190,7 @@ const main = async () => {
     epoch.serialized,
   ])
   await testRes([clients[3]], 'eth_getBlockByNumber', [['0x3e8', false]])
+  await testRes([clients[2]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
 
 main()

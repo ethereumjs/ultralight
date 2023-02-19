@@ -131,16 +131,12 @@ export class eth {
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
     )
-    try {
-      const block = await this._history.ETH.getBlockByNumber(
-        parseInt(blockNumber),
-        includeTransactions
-      )
-      this.logger(block)
-      return block ?? 'Block not found'
-    } catch {
-      return 'Block not found'
-    }
+    const block = await this._history.ETH.getBlockByNumber(
+      parseInt(blockNumber),
+      includeTransactions
+    )
+    this.logger(block)
+    return block ?? 'Block not found'
   }
 
   /**
