@@ -87,7 +87,7 @@ export class HistoryProtocol extends BaseProtocol {
         if (selector === ContentType.BlockHeader) {
           await this.validateHeader(content, blockHash)
         } else {
-          this.emit('store', getContentKey(selector, fromHexString(blockHash)), content)
+          this.store(selector, blockHash, content)
         }
       }
     })
