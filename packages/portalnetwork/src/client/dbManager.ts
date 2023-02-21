@@ -78,6 +78,14 @@ export class DBManager {
     return db
   }
 
+  async prune(sublevel: ProtocolId, radius: bigint) {
+    const db = this.sublevels.get(sublevel)
+    if (!db) return
+    for await (const key of db.keys({ gte: bigIntToHex(radius) })) {
+      db.del(key)
+    }
+  }
+
   async open() {
     await this.db.open()
     for (const sublevel of this.sublevels.values()) {

@@ -26,7 +26,7 @@ export class ContentLookup {
     this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
-    this.logger = this.protocol.client.logger.extend('lookup')
+    this.logger = this.protocol.logger.extend('lookup')
   }
 
   /**
@@ -36,9 +36,9 @@ export class ContentLookup {
   public startLookup = async (): Promise<Uint8Array | Uint8Array[] | undefined> => {
     // Don't support content lookups for protocols that don't implement it (i.e. Canonical Indices)
     if (!this.protocol.sendFindContent) return
-    this.protocol.client.metrics?.totalContentLookups.inc()
+    this.protocol.metrics?.totalContentLookups.inc()
     try {
-      const res = await this.protocol.client.db.get(toHexString(this.contentKey))
+      const res = await this.protocol.get(toHexString(this.contentKey))
       return fromHexString(res)
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
@@ -52,7 +52,7 @@ export class ContentLookup {
     while (!finished) {
       if (this.lookupPeers.length === 0) {
         finished = true
-        this.protocol.client.metrics?.failedContentLookups.inc()
+        this.protocol.metrics?.failedContentLookups.inc()
         this.logger(`failed to retrieve ${toHexString(this.contentKey)} from network`)
         return
       }
@@ -73,10 +73,10 @@ export class ContentLookup {
           nearestPeer.hasContent = true
           return new Promise((resolve) => {
             const utpDecoder = (contentKey: string, contentType: ContentType, content: string) => {
-              this.protocol.client.removeListener('ContentAdded', utpDecoder)
+              this.protocol.removeListener('ContentAdded', utpDecoder)
               resolve(fromHexString(content))
             }
-            this.protocol.client.on('ContentAdded', utpDecoder)
+            this.protocol.on('ContentAdded', utpDecoder)
           })
         }
 
@@ -85,7 +85,7 @@ export class ContentLookup {
           this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
           finished = true
           nearestPeer.hasContent = true
-          this.protocol.client.metrics?.successfulContentLookups.inc()
+          this.protocol.metrics?.successfulContentLookups.inc()
           // POKE -- Offer content to neighbors who should have had content but don't if we receive content directly
           for (const peer of this.contacted) {
             if (

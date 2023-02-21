@@ -135,8 +135,8 @@ export const addRLPSerializedBlock = async (
   } catch {
     throw new Error('Header proof failed validation')
   }
-  protocol.client.db.put(headerKey, toHexString(headerProof))
-  protocol.client.db.put(
+  protocol.put(headerKey, toHexString(headerProof))
+  protocol.put(
     bodyKey,
     toHexString(
       sszEncodeBlockBody(

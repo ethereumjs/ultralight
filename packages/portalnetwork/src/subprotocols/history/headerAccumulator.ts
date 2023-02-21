@@ -96,9 +96,7 @@ export class AccumulatorManager {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
         fromHexString(
-          await this._history.client.db.get(
-            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-          )
+          await this._history.get(getContentKey(ContentType.BlockHeader, fromHexString(blockHash)))
         )
       ),
       { hardforkByBlockNumber: true }
@@ -118,7 +116,7 @@ export class AccumulatorManager {
     return true
   }
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
-    const _blockHeader = await this._history.client.db.get(
+    const _blockHeader = await this._history.get(
       getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
     )
     if (_blockHeader === undefined) {
@@ -138,7 +136,7 @@ export class AccumulatorManager {
       this.headerAccumulator.historicalEpochs.length < epochIdx
         ? EpochAccumulator.serialize(this.headerAccumulator.currentEpoch.slice(0, listIdx))
         : fromHexString(
-            await this._history.client.db.get(
+            await this._history.get(
               getContentKey(
                 ContentType.EpochAccumulator,
                 this.headerAccumulator.historicalEpochs[epochIdx - 1]
@@ -162,9 +160,7 @@ export class AccumulatorManager {
     const header = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(
         fromHexString(
-          await this._history.client.db.get(
-            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-          )
+          await this._history.get(getContentKey(ContentType.BlockHeader, fromHexString(blockHash)))
         )
       ),
       { hardforkByBlockNumber: true }
@@ -176,7 +172,7 @@ export class AccumulatorManager {
     } else {
       const epoch = EpochAccumulator.deserialize(
         fromHexString(
-          await this._history.client.db.get(
+          await this._history.get(
             getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1])
           )
         )
