@@ -174,14 +174,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       let p: BaseProtocol
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
-          p = new HistoryProtocol(this, opts.radius, opts.metrics)
-          p.on('store', (key, value) => this.db.put(key, value))
-          p.on('retrieve', async (key) => {
-            try {
-              p.emit(key, await this.db.get(key))
-            } catch {
-              p.emit(key, null)
-            }
+          p = new HistoryProtocol({
+            sendMessage: this.sendPortalNetworkMessage.bind(this),
+            sendResponse: this.sendPortalNetworkResponse.bind(this),
+            findEnr: this.discv5.findEnr.bind(this.discv5),
+            put: this.db.put.bind(this.db),
+            get: this.db.get.bind(this.db),
+            handleNewRequest: this.uTP.handleNewRequest.bind(this.uTP),
+            prune: this.db.prune.bind(this.db, protocol),
+            ENR: this.discv5.enr,
+            metrics: this.metrics,
           })
           this.protocols.set(protocol, p)
           break
@@ -204,6 +206,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.uTP.closeRequest(msg.readUInt16BE(2), peerId)
       }
     })
+    this.uTP.on('Stream', async (selector, blockHash, content) => {
+      // TODO: function selectorToProtocolId()
+      const protocol = this.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+      await protocol.store(selector, blockHash, content)
+    })
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
     //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
     // }
@@ -214,7 +221,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       //   // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
       //   // corresponding to the node's observed IP/Port so that we can send outbound messages to
       //   // those nodes later on if needed.  This is currently used by uTP when responding to
-      //   // FINDCONTENT requests fron nodes with invalid ENRs.
+      //   // FINDCONTENT requests from nodes with invalid ENRs.
       //   const peerId = await createPeerIdFromKeypair(enr.keypair)
       //   this.unverifiedSessionCache.set(
       //     enr.nodeId,

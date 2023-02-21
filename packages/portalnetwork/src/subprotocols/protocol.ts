@@ -10,7 +10,6 @@ import {
   arrayByteLength,
   PortalNetworkMetrics,
   ProtocolId,
-  PortalNetwork,
   PortalNetworkRoutingTable,
   shortId,
   serializedContentKeyToContentId,
@@ -30,25 +29,63 @@ import {
   NodeLookup,
   StateNetworkRoutingTable,
   encodeWithVariantPrefix,
+  INewRequest,
+  ContentRequest,
 } from '../index.js'
-import { bigIntToHex } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
+
+export interface IProtocolOpts {
+  sendMessage: (
+    enr: ENR | string,
+    payload: Buffer,
+    protocolId: ProtocolId,
+    utpMessage?: boolean
+  ) => Promise<Buffer>
+  sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
+  findEnr: (nodeId: string) => ENR | undefined
+  put: (contentKey: string, content: string) => void
+  get: (contentKey: string) => Promise<string>
+  handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
+  prune: (radius: bigint) => Promise<void>
+  ENR: ENR
+  nodeRadius?: bigint
+  metrics?: PortalNetworkMetrics
+}
 export abstract class BaseProtocol extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
-  protected metrics: PortalNetworkMetrics | undefined
+  public metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint
   private checkIndex: number
-  protected abstract logger: Debugger
+  abstract logger: Debugger
   abstract protocolId: ProtocolId
   abstract protocolName: string
-  public client: PortalNetwork
-  constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
+  public ENR: ENR
+  handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
+  sendMessage: (
+    enr: ENR | string,
+    payload: Buffer,
+    protocolId: ProtocolId,
+    utpMessage?: boolean
+  ) => Promise<Buffer>
+  sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
+  findEnr: (nodeId: string) => ENR | undefined
+  put: (contentKey: string, content: string) => void
+  get: (contentKey: string) => Promise<string>
+  _prune: (radius: bigint) => Promise<void>
+  constructor(opts: IProtocolOpts) {
     super()
-    this.client = client
+    this.sendMessage = opts.sendMessage
+    this.sendResponse = opts.sendResponse
+    this.findEnr = opts.findEnr
+    this.put = opts.put
+    this.get = opts.get
+    this.handleNewRequest = opts.handleNewRequest
+    this._prune = opts.prune
+    this.ENR = opts.ENR
     this.checkIndex = 0
-    this.nodeRadius = nodeRadius ?? 2n ** 256n - 1n
-    this.routingTable = new PortalNetworkRoutingTable(client.discv5.enr.nodeId)
-    this.metrics = metrics
+    this.nodeRadius = opts.nodeRadius ?? 2n ** 256n - 1n
+    this.routingTable = new PortalNetworkRoutingTable(this.ENR.nodeId)
+    this.metrics = opts.metrics
     if (this.metrics) {
       this.metrics.knownHistoryNodes.collect = () => {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
@@ -77,25 +114,19 @@ export abstract class BaseProtocol extends EventEmitter {
         this.metrics?.findNodesMessagesReceived.inc()
         this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
-      case MessageCodes.NODES:
-        this.logger(`NODES message not expected in TALKREQ`)
-        break
       case MessageCodes.FINDCONTENT:
         this.metrics?.findContentMessagesReceived.inc()
         this.handleFindContent(src, id, protocol, decoded as FindContentMessage)
-        break
-      case MessageCodes.CONTENT:
-        this.logger(`ACCEPT message not expected in TALKREQ`)
         break
       case MessageCodes.OFFER:
         this.metrics?.offerMessagesReceived.inc()
         this.handleOffer(src, id, decoded as OfferMessage)
         break
+      case MessageCodes.NODES:
+      case MessageCodes.CONTENT:
       case MessageCodes.ACCEPT:
-        this.logger(`ACCEPT message not expected in TALKREQ`)
-        break
       default:
-        this.logger(`Unrecognized message type received`)
+        this.logger(`${messageType} message not expected in TALKREQ`)
     }
   }
   /**
@@ -121,16 +152,12 @@ export abstract class BaseProtocol extends EventEmitter {
       const pingMsg = PortalWireMessageType.serialize({
         selector: MessageCodes.PING,
         value: {
-          enrSeq: this.client.discv5.enr.seq,
+          enrSeq: this.ENR.seq,
           customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
         },
       })
       this.logger.extend(`PING`)(`Sent to ${shortId(enr.nodeId)}`)
-      const res = await this.client.sendPortalNetworkMessage(
-        enr,
-        Buffer.from(pingMsg),
-        this.protocolId
-      )
+      const res = await this.sendMessage(enr, Buffer.from(pingMsg), this.protocolId)
       if (parseInt(res.subarray(0, 1).toString('hex')) === MessageCodes.PONG) {
         this.logger.extend('PONG')(`Received from ${shortId(enr.nodeId)}`)
         const decoded = PortalWireMessageType.deserialize(res)
@@ -148,10 +175,10 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private handlePing = (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
+  handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getValue(src.nodeId)) {
       // Check to see if node is already in corresponding network routing table and add if not
-      const enr = this.client.discv5.findEnr(src.nodeId)
+      const enr = this.findEnr(src.nodeId)
       if (enr !== undefined) {
         this.updateRoutingTable(enr, pingMessage.customPayload)
       }
@@ -162,9 +189,9 @@ export abstract class BaseProtocol extends EventEmitter {
     this.sendPong(src, id)
   }
 
-  private sendPong = async (src: INodeAddress, requestId: bigint) => {
+  sendPong = async (src: INodeAddress, requestId: bigint) => {
     const payload = {
-      enrSeq: this.client.discv5.enr.seq,
+      enrSeq: this.ENR.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: this.nodeRadius }),
     }
     const pongMsg = PortalWireMessageType.serialize({
@@ -172,7 +199,7 @@ export abstract class BaseProtocol extends EventEmitter {
       value: payload,
     })
     this.logger.extend('PONG')(`Sent to ${shortId(src.nodeId)}`)
-    this.client.sendPortalNetworkResponse(src, requestId, Buffer.from(pongMsg))
+    this.sendResponse(src, requestId, Buffer.from(pongMsg))
   }
 
   /**
@@ -196,11 +223,7 @@ export abstract class BaseProtocol extends EventEmitter {
       if (!enr) {
         return
       }
-      const res = await this.client.sendPortalNetworkMessage(
-        enr,
-        Buffer.from(payload),
-        this.protocolId
-      )
+      const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
       if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.NODES) {
         this.metrics?.nodesMessagesReceived.inc()
         const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
@@ -237,7 +260,11 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private handleFindNodes = (src: INodeAddress, requestId: bigint, payload: FindNodesMessage) => {
+  private handleFindNodes = async (
+    src: INodeAddress,
+    requestId: bigint,
+    payload: FindNodesMessage
+  ) => {
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
         total: 0,
@@ -247,7 +274,7 @@ export abstract class BaseProtocol extends EventEmitter {
         if (distance === 0 && arrayByteLength(nodesPayload.enrs) < 1200) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
-          nodesPayload.enrs.push(this.client.discv5.enr.encode())
+          nodesPayload.enrs.push(this.ENR.encode())
         } else {
           return this.routingTable.valuesOfDistance(distance).every((enr) => {
             // Exclude ENR from response if it matches the requesting node
@@ -276,10 +303,10 @@ export abstract class BaseProtocol extends EventEmitter {
           shortId(src.nodeId)
         )
       }
-      this.client.sendPortalNetworkResponse(src, requestId, encodedPayload)
+      this.sendResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
-      this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
+      this.sendResponse(src, requestId, Buffer.from([]))
     }
   }
 
@@ -307,11 +334,7 @@ export abstract class BaseProtocol extends EventEmitter {
       this.logger.extend(`OFFER`)(
         `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`
       )
-      const res = await this.client.sendPortalNetworkMessage(
-        enr,
-        Buffer.from(payload),
-        this.protocolId
-      )
+      const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
       this.logger.extend(`OFFER`)(`Response from ${shortId(dstId)}`)
       if (res.length > 0) {
         try {
@@ -334,7 +357,7 @@ export abstract class BaseProtocol extends EventEmitter {
             for await (const key of requestedKeys) {
               let value = Uint8Array.from([])
               try {
-                value = fromHexString(await this.client.db.get(toHexString(key)))
+                value = fromHexString(await this.get(toHexString(key)))
                 requestedData.push(value)
               } catch (err: any) {
                 this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -343,7 +366,7 @@ export abstract class BaseProtocol extends EventEmitter {
             }
 
             const contents = encodeWithVariantPrefix(requestedData)
-            await this.client.uTP.handleNewRequest({
+            await this.handleNewRequest({
               contentKeys: requestedKeys,
               peerId: dstId,
               connectionId: id,
@@ -372,7 +395,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
-              await this.client.db.get(toHexString(msg.contentKeys[x]))
+              await this.get(toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
@@ -388,21 +411,21 @@ export abstract class BaseProtocol extends EventEmitter {
             this.sendAccept(src, requestId, contentIds, desiredKeys)
           } else {
             this.logger(`Declining an OFFER since no interesting content`)
-            this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
+            this.sendResponse(src, requestId, Buffer.from([]))
           }
         } catch {
           this.logger(`Something went wrong handling offer message`)
           // Send empty response if something goes wrong parsing content keys
-          this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
+          this.sendResponse(src, requestId, Buffer.from([]))
         }
         if (!offerAccepted) {
           this.logger('We already have all this content')
-          this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
+          this.sendResponse(src, requestId, Buffer.from([]))
         }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
-        this.client.sendPortalNetworkResponse(src, requestId, Buffer.from([]))
+        this.sendResponse(src, requestId, Buffer.from([]))
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
@@ -421,7 +444,7 @@ export abstract class BaseProtocol extends EventEmitter {
     )
 
     this.metrics?.acceptMessagesSent.inc()
-    await this.client.uTP.handleNewRequest({
+    await this.handleNewRequest({
       contentKeys: desiredContentKeys,
       peerId: src.nodeId,
       connectionId: id,
@@ -439,7 +462,7 @@ export abstract class BaseProtocol extends EventEmitter {
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    await this.client.sendPortalNetworkResponse(src, requestId, Buffer.from(encodedPayload))
+    await this.sendResponse(src, requestId, Buffer.from(encodedPayload))
     this.logger.extend('ACCEPT')(
       `Sent to ${shortId(src.nodeId)} for ${
         desiredContentKeys.length
@@ -470,7 +493,7 @@ export abstract class BaseProtocol extends EventEmitter {
         // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
         // contentId than this node
         return enr.nodeId !== src.nodeId &&
-          distance(enr.nodeId, lookupKey) < distance(this.client.discv5.enr.nodeId, lookupKey)
+          distance(enr.nodeId, lookupKey) < distance(this.ENR.nodeId, lookupKey)
           ? enr.encode()
           : undefined
       }).filter((enr) => enr !== undefined)
@@ -485,14 +508,14 @@ export abstract class BaseProtocol extends EventEmitter {
           selector: 2,
           value: encodedEnrs as Buffer[],
         })
-        this.client.sendPortalNetworkResponse(
+        this.sendResponse(
           src,
           requestId,
           Buffer.concat([Buffer.from([MessageCodes.CONTENT]), payload])
         )
       } else {
         this.logger(`Found no ENRs closer to content than us`)
-        this.client.sendPortalNetworkResponse(src, requestId, Uint8Array.from([]))
+        this.sendResponse(src, requestId, Uint8Array.from([]))
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
@@ -506,7 +529,7 @@ export abstract class BaseProtocol extends EventEmitter {
         value: value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
-      this.client.sendPortalNetworkResponse(
+      this.sendResponse(
         src,
         requestId,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
@@ -516,7 +539,7 @@ export abstract class BaseProtocol extends EventEmitter {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.'
       )
       const _id = randUint16()
-      await this.client.uTP.handleNewRequest({
+      await this.handleNewRequest({
         contentKeys: [decodedContentMessage.contentKey],
         peerId: src.nodeId,
         connectionId: _id,
@@ -528,7 +551,7 @@ export abstract class BaseProtocol extends EventEmitter {
       id.writeUInt16BE(_id)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
       const payload = ContentMessageType.serialize({ selector: 0, value: id })
-      this.client.sendPortalNetworkResponse(
+      this.sendResponse(
         src,
         requestId,
         Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
@@ -632,10 +655,7 @@ export abstract class BaseProtocol extends EventEmitter {
     } else bucketsToRefresh = notFullBuckets
     for (const bucket of bucketsToRefresh) {
       const distance = bucket.distance
-      const randomNodeAtDistance = generateRandomNodeIdAtDistance(
-        this.client.discv5.enr.nodeId,
-        distance
-      )
+      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.ENR.nodeId, distance)
       const lookup = new NodeLookup(this, randomNodeAtDistance)
       await lookup.startLookup()
     }
@@ -648,7 +668,7 @@ export abstract class BaseProtocol extends EventEmitter {
    */
   public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
-    if (enr.nodeId === this.client.discv5.enr.nodeId) {
+    if (enr.nodeId === this.ENR.nodeId) {
       // Disregard attempts to add oneself as a bootnode
       return
     }
@@ -661,14 +681,8 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private db() {
-    return this.client.db.sublevels.get(this.protocolId)
-  }
-
   public async prune(radius: bigint) {
-    for await (const key of this.db()!.keys({ gte: bigIntToHex(radius) })) {
-      this.db()!.del(key)
-    }
+    this._prune(radius)
     this.nodeRadius = radius
   }
 
@@ -687,11 +701,7 @@ export abstract class BaseProtocol extends EventEmitter {
     })
     let accepted = 0
     for (const peer of peers) {
-      const res = await this.client.sendPortalNetworkMessage(
-        peer,
-        Buffer.from(payload),
-        this.protocolId
-      )
+      const res = await this.sendMessage(peer, Buffer.from(payload), this.protocolId)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -700,7 +710,7 @@ export abstract class BaseProtocol extends EventEmitter {
             if (msg.contentKeys.get(0) === true) {
               accepted++
               const id = Buffer.from(msg.connectionId).readUInt16BE(0)
-              this.client.uTP.handleNewRequest({
+              this.handleNewRequest({
                 contentKeys: [contentKey],
                 peerId: peer.nodeId,
                 connectionId: id,

@@ -1,5 +1,5 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Debugger } from 'debug'
+import debug, { Debugger } from 'debug'
 import {
   BlockHeaderWithProof,
   blockNumberToGindex,
@@ -15,18 +15,17 @@ import {
   GossipManager,
   ContentType,
   MessageCodes,
-  PortalNetwork,
-  PortalNetworkMetrics,
   PortalWireMessageType,
   ProtocolId,
   reassembleBlock,
-  ReceiptsManager,
   RequestCode,
   shortId,
   Witnesses,
+  saveReceipts,
+  decodeReceipts,
 } from '../../index.js'
 
-import { BaseProtocol } from '../protocol.js'
+import { BaseProtocol, IProtocolOpts } from '../protocol.js'
 import {
   createProof,
   Proof,
@@ -58,17 +57,14 @@ export class HistoryProtocol extends BaseProtocol {
   logger: Debugger
   ETH: ETH
   gossipManager: GossipManager
-  public receiptManager: ReceiptsManager
-  constructor(client: PortalNetwork, nodeRadius?: bigint, metrics?: PortalNetworkMetrics) {
-    super(client, undefined, metrics)
+  constructor(opts: IProtocolOpts) {
+    super(opts)
     this.protocolId = ProtocolId.HistoryNetwork
-    this.logger = client.logger.extend('HistoryNetwork')
+    this.logger = debug(this.ENR.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
-    this.receiptManager = new ReceiptsManager(this.client.db, this)
     this.routingTable.setLogger(this.logger)
   }
-
   /**
    *
    * @param decodedContentMessage content key to be found
@@ -79,19 +75,7 @@ export class HistoryProtocol extends BaseProtocol {
     return value ? fromHexString(value) : undefined
   }
 
-  public init = async () => {
-    this.client.uTP.on('Stream', async (selector, blockHash, content) => {
-      if (content === '0x') {
-        this.logger('Trying to add empty content')
-      } else {
-        if (selector === ContentType.BlockHeader) {
-          await this.validateHeader(content, blockHash)
-        } else {
-          this.store(selector, blockHash, content)
-        }
-      }
-    })
-  }
+  public init = async () => {}
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
@@ -107,7 +91,7 @@ export class HistoryProtocol extends BaseProtocol {
     } catch {
       throw new Error('Received block header with invalid proof')
     }
-    await this.store(ContentType.BlockHeader, contentHash, value)
+    this.put(getContentKey(ContentType.BlockHeader, fromHexString(contentHash)), toHexString(value))
   }
 
   /**
@@ -130,11 +114,7 @@ export class HistoryProtocol extends BaseProtocol {
       value: findContentMsg,
     })
     this.logger.extend('FINDCONTENT')(`Sending to ${shortId(dstId)}`)
-    const res = await this.client.sendPortalNetworkMessage(
-      enr,
-      Buffer.from(payload),
-      this.protocolId
-    )
+    const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
     if (res.length === 0) {
       return undefined
     }
@@ -152,7 +132,7 @@ export class HistoryProtocol extends BaseProtocol {
           case FoundContent.UTP: {
             const id = Buffer.from(decoded.value as Uint8Array).readUint16BE()
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            await this.client.uTP.handleNewRequest({
+            await this.handleNewRequest({
               contentKeys: [key],
               peerId: dstId,
               connectionId: id,
@@ -208,23 +188,33 @@ export class HistoryProtocol extends BaseProtocol {
     const contentKey = getContentKey(contentType, fromHexString(hashKey))
     if (contentType === ContentType.BlockBody) {
       await this.addBlockBody(value, hashKey)
+    } else if (contentType === ContentType.BlockHeader) {
+      await this.validateHeader(value, hashKey)
     } else {
-      this.emit('store', contentKey, toHexString(value))
+      this.put(contentKey, toHexString(value))
     }
-    this.client.emit('ContentAdded', hashKey, contentType, toHexString(value))
+    this.emit('ContentAdded', hashKey, contentType, toHexString(value))
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
       this.gossipManager.add(hashKey, contentType)
     }
+    this.logger(`${ContentType[contentType]} added for ${hashKey}`)
   }
 
-  public async retrieve(key: string): Promise<string | null> {
-    this.emit('retrieve', key)
-    return new Promise((resolve, _reject) => {
-      this.once(key, (value) => {
-        resolve(value)
-      })
-    })
+  public async retrieve(contentKey: string): Promise<string | undefined> {
+    try {
+      const content = await this.get(contentKey)
+      return content
+    } catch {
+      this.logger('Error retrieving content from DB')
+    }
+  }
+
+  public async saveReceipts(block: Block) {
+    this.logger.extend('BLOCK_BODY')(`added for block #${block.header.number}`)
+    const receipts = await saveReceipts(block)
+    this.store(ContentType.Receipt, toHexString(block.hash()), receipts)
+    return decodeReceipts(receipts)
   }
 
   public async addBlockBody(value: Uint8Array, hashKey: string) {
@@ -245,9 +235,8 @@ export class HistoryProtocol extends BaseProtocol {
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
     if (block instanceof Block) {
-      this.emit('store', bodyKey, toHexString(value))
-      this.logger.extend('BLOCK_BODY')(`added for block #${block!.header.number}`)
-      block.transactions.length > 0 && (await this.receiptManager.saveReceipts(block!))
+      this.put(bodyKey, toHexString(value))
+      await this.saveReceipts(block)
     } else {
       this.logger(`Could not verify block content`)
       // Don't store block body where we can't assemble a valid block
