@@ -25,6 +25,7 @@ import {
   ContentType,
   toHexString,
   TxReceiptWithType,
+  decodeReceipts,
 } from 'portalnetwork'
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
@@ -222,11 +223,17 @@ const DisplayBlock = () => {
   }
   async function init() {
     try {
-      const receipts = await state.provider!.historyProtocol.receiptManager.getReceipts(
-        state.block!.hash
+      const receipts = decodeReceipts(
+        Buffer.from(
+          fromHexString(
+            await state.provider!.historyProtocol.get(
+              getContentKey(ContentType.Receipt, fromHexString(state.block!.hash))
+            )
+          )
+        )
       )
       if (receipts) {
-        setReceipts(receipts)
+        setReceipts(receipts as TxReceiptWithType[])
       }
     } catch (err) {
       console.log('Receipts Error: ', (err as any).message)
@@ -241,15 +248,9 @@ const DisplayBlock = () => {
       typeof (state.block as any).hash === 'string'
         ? (state.block as any).hash
         : toHexString((state.block as any).hash())
-    const header = getContentKey(
-      ContentType.BlockHeader,
-      Buffer.from(fromHexString(hash))
-    )
+    const header = getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(hash)))
 
-    const body = getContentKey(
-      ContentType.BlockBody,
-      Buffer.from(fromHexString(hash))
-    )
+    const body = getContentKey(ContentType.BlockBody, Buffer.from(fromHexString(hash)))
     setKeys({
       header,
       body,
