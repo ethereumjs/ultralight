@@ -1,15 +1,16 @@
 import { Block } from '@ethereumjs/block'
-import { intToHex, toBuffer } from '@ethereumjs/util'
+import { bigIntToHex, intToHex, toBuffer } from '@ethereumjs/util'
 import { Debugger } from 'debug'
 import {
   ProtocolId,
-  ReceiptsManager,
   HistoryProtocol,
   PortalNetwork,
   getContentKey,
   fromHexString,
   reassembleBlock,
   BlockHeaderWithProof,
+  GET_LOGS_BLOCK_RANGE_LIMIT,
+  getLogs,
 } from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
@@ -23,7 +24,6 @@ export class eth {
   private _client: PortalNetwork
   private _history: HistoryProtocol
   private logger: Debugger
-  private receiptsManager: ReceiptsManager
   /**
    * Create eth_* RPC module
    * @param rpcManager RPC client to which the module binds
@@ -32,9 +32,6 @@ export class eth {
     this._client = client
     this._history = client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     this.logger = logger.extend('eth')
-    this.receiptsManager = (
-      this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    ).receiptManager
 
     this.getBlockByNumber = middleware(this.getBlockByNumber.bind(this), 2, [
       [validators.blockOption],
@@ -197,7 +194,6 @@ export class eth {
    */
   async getLogs(params: [GetLogsParams]) {
     const { fromBlock, toBlock, blockHash, address, topics } = params[0]
-    if (!this.receiptsManager) throw new Error('missing receiptsManager')
     if (blockHash !== undefined && (fromBlock !== undefined || toBlock !== undefined)) {
       throw {
         code: INVALID_PARAMS,
@@ -229,13 +225,10 @@ export class eth {
         throw new Error(`unsupported toBlock: ${toBlock}`)
       }
     }
-    if (
-      Number(to.header.number) - Number(from.header.number) >
-      this.receiptsManager.GET_LOGS_BLOCK_RANGE_LIMIT
-    ) {
+    if (Number(to.header.number) - Number(from.header.number) > GET_LOGS_BLOCK_RANGE_LIMIT) {
       throw {
         code: INVALID_PARAMS,
-        message: `block range limit is ${this.receiptsManager.GET_LOGS_BLOCK_RANGE_LIMIT} blocks`,
+        message: `block range limit is ${GET_LOGS_BLOCK_RANGE_LIMIT} blocks`,
       }
     }
     try {
@@ -256,7 +249,17 @@ export class eth {
           addrs = [toBuffer(address)]
         }
       }
-      const logs = await this.receiptsManager.getLogs(from, to, addrs, formattedTopics)
+      const blocks = Promise.all(
+        Array.from(
+          { length: Number(to.header.number) - Number(from.header.number) + 1 } as any,
+          async (_, i) =>
+            (await this.getBlockByNumber([
+              bigIntToHex(BigInt(i) + from.header.number),
+              true,
+            ])) as Block
+        )
+      )
+      const logs = await getLogs(await blocks, addrs, formattedTopics)
       return await Promise.all(
         logs.map(({ log, block, tx, txIndex, logIndex }) =>
           jsonRpcLog(log, block, tx, txIndex, logIndex)
