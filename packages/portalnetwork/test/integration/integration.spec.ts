@@ -74,7 +74,7 @@ tape('gossip test', async (t) => {
   await node2.start()
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  await protocol1?.sendPing(protocol2?.client.discv5.enr!)
+  await protocol1?.sendPing(protocol2?.ENR!)
   t.equal(
     protocol1?.routingTable.getValue(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
@@ -93,9 +93,7 @@ tape('gossip test', async (t) => {
   //   fromHexString(epoch25)
   // )
   t.equal(
-    await protocol1.client.db.get(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
-    ),
+    await protocol1.get('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
     '0x' + epoch25,
     'epoch 25 added'
   )
@@ -118,7 +116,7 @@ tape('gossip test', async (t) => {
     t.fail('timeout')
     end.emit('end()')
   }, 4000)
-  node2.on('ContentAdded', async (key, contentType, content) => {
+  protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
       const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
@@ -185,14 +183,12 @@ tape('FindContent', async (t) => {
     fromHexString(epoch25)
   )
   t.equal(
-    await protocol1.client.db.get(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
-    ),
+    await protocol1.get('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
     '0x' + epoch25,
     'epoch 25 added'
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.client.discv5.enr!)
+  await protocol1.sendPing(protocol2?.ENR!)
 
   await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
@@ -201,7 +197,7 @@ tape('FindContent', async (t) => {
     )
   )
   await new Promise((resolve) => {
-    node2.on('ContentAdded', async (key, contentType, content) => {
+    protocol2.on('ContentAdded', async (key, contentType, content) => {
       if (contentType === 0) {
         const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
         const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
@@ -262,14 +258,12 @@ tape('eth_getBlockByHash', async (t) => {
     fromHexString(epoch25)
   )
   t.equal(
-    await protocol1.client.db.get(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
-    ),
+    await protocol1.get('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
     '0x' + epoch25,
     'epoch 25 added'
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.client.discv5.enr!)
+  await protocol1.sendPing(protocol2?.ENR!)
 
   const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
   t.equal(toHexString(retrieved!.hash()), testBlockData[29].blockHash, 'retrieved expected header')
@@ -328,7 +322,7 @@ tape('eth_getBlockByNumber', async (t) => {
   await protocol1.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   await protocol2.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.client.discv5.enr!)
+  await protocol1.sendPing(protocol2?.ENR!)
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
 
   t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')

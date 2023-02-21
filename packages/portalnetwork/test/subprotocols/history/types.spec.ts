@@ -195,7 +195,7 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
     bindAddress: '192.168.0.1',
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
-  const history = new HistoryProtocol(node)
+  const history = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const serializedBlock1 = fromHexString(testData[1000001].content_value)
   const serializedBlock2 = fromHexString(testData[1000002].content_value)
   const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)

@@ -18,6 +18,7 @@ import {
   reassembleBlock,
   BlockHeaderWithProof,
   epochRootByBlocknumber,
+  ContentMessageType,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import RLP from '@ethereumjs/rlp'
@@ -34,33 +35,26 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
 
-  node.sendPortalNetworkMessage = td.func<any>()
-  node.sendPortalNetworkResponse = td.func<any>()
-
-  const protocol = new HistoryProtocol(node, 2n)
+  const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const remoteEnr =
     'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
   const decodedEnr = ENR.decodeTxt(remoteEnr)
   protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-  const key = ContentKeyType.serialize(
-    ContentKeyType.serialize(
-      Buffer.concat([
-        Uint8Array.from([ContentType.BlockBody]),
-        fromHexString('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'),
-      ])
-    )
+  const key = getContentKey(
+    ContentType.BlockBody,
+    fromHexString('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6')
   )
+
   const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
   protocol.store = td.func<any>()
+  protocol.validateHeader = td.func<any>()
+  // protocol.sendFindContent = td.func<any>()
+  protocol.sendMessage = td.func<any>()
   td.when(
-    node.sendPortalNetworkMessage(
-      td.matchers.anything(),
-      td.matchers.anything(),
-      td.matchers.anything()
-    )
+    protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
   ).thenResolve(Buffer.from(findContentResponse))
-  const res = await protocol.sendFindContent(decodedEnr.nodeId, key)
-  t.deepEqual(res!.value, Buffer.from([97, 98, 99]), 'got correct response for content abc')
+  const res = await protocol.sendFindContent(decodedEnr.nodeId, fromHexString(key))
+  t.deepEqual(res?.value, Buffer.from([97, 98, 99]), 'got correct response for content abc')
 
   // TODO: Write good `handleFindContent` tests
 
@@ -163,21 +157,21 @@ tape('store -- Block Bodies and Receipts', async (t) => {
       value: proof,
     },
   })
-  await protocol.store(ContentType.BlockHeader, serializedBlock.blockHash, headerWithProof)
+  protocol.store(ContentType.BlockHeader, serializedBlock.blockHash, headerWithProof)
   await protocol.store(ContentType.BlockBody, serializedBlock.blockHash, sszEncodeBlockBody(block))
   const header = BlockHeaderWithProof.deserialize(
     fromHexString(
-      await node.db.get(
+      await protocol.get(
         getContentKey(ContentType.BlockHeader, fromHexString(serializedBlock.blockHash))
       )
     )
   ).header
-  const body = await node.db.get(
+  const body = await protocol.get(
     getContentKey(ContentType.BlockBody, fromHexString(serializedBlock.blockHash))
   )
-  const rebuilt = reassembleBlock(header, fromHexString(body))
+  const rebuilt = reassembleBlock(header, fromHexString(body!))
   t.equal(rebuilt.header.number, block.header.number, 'reassembled block from components in DB')
-  const receipt = await protocol.receiptManager.saveReceipts(block)
+  const receipt = await protocol.saveReceipts(block)
   t.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
   t.end()
 })
