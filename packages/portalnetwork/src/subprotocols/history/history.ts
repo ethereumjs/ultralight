@@ -76,8 +76,6 @@ export class HistoryProtocol extends BaseProtocol {
     return value ? fromHexString(value) : undefined
   }
 
-  public init = async () => {}
-
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerProof.header), {
