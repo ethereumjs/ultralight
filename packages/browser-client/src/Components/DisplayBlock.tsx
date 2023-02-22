@@ -1,9 +1,6 @@
 import { CheckCircleIcon, CopyIcon } from '@chakra-ui/icons'
 import {
   Box,
-  Center,
-  Grid,
-  GridItem,
   Heading,
   HStack,
   Link,
@@ -17,7 +14,6 @@ import {
   VStack,
 } from '@chakra-ui/react'
 import { BigNumber } from 'ethers'
-import { _Block } from '@ethersproject/abstract-provider'
 import {
   ExtendedEthersBlockWithTransactions,
   fromHexString,
@@ -29,7 +25,6 @@ import {
 } from 'portalnetwork'
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
-import GetHeaderProofByHash from './GetHeaderProofByHash'
 import SelectTx from './SelectTx'
 
 const DisplayBlock = () => {

@@ -17,13 +17,7 @@ import {
 import { ChevronDownIcon, SearchIcon } from '@chakra-ui/icons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
-import {
-  ENR,
-  fromHexString,
-  getContentId,
-  getContentKey,
-  ContentType,
-} from 'portalnetwork'
+import { ENR, fromHexString, getContentId, getContentKey, ContentType } from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
 enum GetBy {
@@ -70,7 +64,7 @@ export function PortalButton(props: IPortalButton) {
   const addToOffer = async (type: ContentType) => {
     const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
     const contentId = getContentId(type, blockHash)
-    if (await state.provider?.historyProtocol.client.db.get(contentKey)) {
+    if (await state.provider?.historyProtocol.get(contentKey)) {
       setOffer([...offer, contentId])
     }
   }
@@ -206,9 +200,6 @@ export function PortalButton(props: IPortalButton) {
           <Button
             aria-label="submit"
             size="sm"
-            disabled={
-              state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
-            }
             width={'50%'}
             onClick={handleClick}
             rightIcon={<SearchIcon />}

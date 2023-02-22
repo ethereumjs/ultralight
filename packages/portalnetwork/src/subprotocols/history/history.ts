@@ -42,17 +42,6 @@ enum FoundContent {
   'ENRS' = 2,
 }
 export class HistoryProtocol extends BaseProtocol {
-  verifyInclusionProof(witnesses: Uint8Array[], blockHash: string, blockNumber: bigint): boolean {
-    const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
-    const proof: Proof = {
-      type: ProofType.single,
-      gindex: blockNumberToGindex(blockNumber),
-      witnesses: witnesses,
-      leaf: fromHexString(blockHash),
-    }
-    EpochAccumulator.createFromProof(proof, target)
-    return true
-  }
   protocolId: ProtocolId
   protocolName = 'HistoryNetwork'
   logger: Debugger
@@ -252,5 +241,21 @@ export class HistoryProtocol extends BaseProtocol {
     } catch (err: any) {
       throw new Error('Error generating inclusion proof: ' + (err as any).message)
     }
+  }
+
+  public verifyInclusionProof(
+    witnesses: Uint8Array[],
+    blockHash: string,
+    blockNumber: bigint
+  ): boolean {
+    const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
+    const proof: Proof = {
+      type: ProofType.single,
+      gindex: blockNumberToGindex(blockNumber),
+      witnesses: witnesses,
+      leaf: fromHexString(blockHash),
+    }
+    EpochAccumulator.createFromProof(proof, target)
+    return true
   }
 }

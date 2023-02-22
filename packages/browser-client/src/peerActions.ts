@@ -6,6 +6,7 @@ import {
   ContentType,
   HistoryProtocol,
   reassembleBlock,
+  epochRootByIndex,
 } from 'portalnetwork'
 import { PeerContextType, PeerDispatch, PeerState, PeerStateChange } from './peerReducer'
 
@@ -55,10 +56,7 @@ export class PeerActions {
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerContentId = fromHexString(
-        getContentKey(
-          ContentType.BlockHeader,
-          Buffer.from(fromHexString(this.state.blockHash))
-        )
+        getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(this.state.blockHash)))
       )
       const header = await this.historyProtocol.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
@@ -68,25 +66,16 @@ export class PeerActions {
       return block //
     } else if (type === 'body') {
       const headerContentKey = fromHexString(
-        getContentKey(
-          ContentType.BlockHeader,
-          Buffer.from(fromHexString(this.state.blockHash))
-        )
+        getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(this.state.blockHash)))
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
       const bodyContentKey = fromHexString(
-        getContentKey(
-          ContentType.BlockBody,
-          Buffer.from(fromHexString(this.state.blockHash))
-        )
+        getContentKey(ContentType.BlockBody, Buffer.from(fromHexString(this.state.blockHash)))
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
     } else if (type === 'epoch') {
       const epochContentKey = fromHexString(
-        getContentKey(
-          ContentType.EpochAccumulator,
-          this.historyProtocol.accumulator.getHistoricalEpochs[this.state.epoch]
-        )
+        getContentKey(ContentType.EpochAccumulator, epochRootByIndex(this.state.epoch))
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)
     }
