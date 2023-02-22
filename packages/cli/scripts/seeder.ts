@@ -3,11 +3,12 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import {
   fromHexString,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentKey,
+  ContentType,
   ProtocolId,
 } from 'portalnetwork'
 import { createRequire } from 'module'
+import { readFileSync } from 'fs'
 
 const require = createRequire(import.meta.url)
 const { Client } = jayson
@@ -72,6 +73,8 @@ const main = async () => {
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
   const epoch = require('./testEpoch.json')
+  const epoch25 = readFileSync('./scripts/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent', {encoding: 'hex'})
+
 
   async function testRes(clients: HttpClient[], method: string, params: any[][]) {
     for (const [i, client] of clients.entries()) {
@@ -82,8 +85,8 @@ const main = async () => {
     }
     console.log(`ok ${method} test`)
   }
-  const epochKey = getHistoryNetworkContentKey(
-    HistoryNetworkContentTypes.EpochAccumulator,
+  const epochKey = getContentKey(
+    ContentType.EpochAccumulator,
     fromHexString(epoch.hash)
   )
   let res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
@@ -92,6 +95,13 @@ const main = async () => {
   ])
   if (res.error) {
     throw new Error(`ultralight_addContentToDB error`)
+  }
+  res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
+    "0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70",
+    '0x' + epoch25,
+  ])
+  if (res.error) {
+    throw new Error(`ultralight_addContentToDB error: ${res.error.message}}`)
   }
   console.log('ok ultralight_addContentToDB')
   for (let x = 0; x < numBlocks; x++) {
@@ -161,12 +171,12 @@ const main = async () => {
     [
       clientInfo.peer1.nodeId.slice(2),
       [
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockHeader,
+        getContentKey(
+          ContentType.BlockHeader,
           fromHexString(blocks[3][0])
         ),
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockBody,
+        getContentKey(
+          ContentType.BlockBody,
           fromHexString(blocks[3][0])
         ),
       ],
@@ -175,7 +185,12 @@ const main = async () => {
   // eth_getBlockByHash
   await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
   // eth_getBlockByNumber
+  await clientInfo.peer3.client.request('ultralight_addContentToDB', [
+    epochKey,
+    epoch.serialized,
+  ])
   await testRes([clients[3]], 'eth_getBlockByNumber', [['0x3e8', false]])
+  await testRes([clients[2]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
 
 main()

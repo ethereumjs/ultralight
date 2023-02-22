@@ -173,7 +173,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     for (const protocol of opts.supportedProtocols) {
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
-          this.protocols.set(protocol, new HistoryProtocol(this, opts.radius, opts.metrics))
+          this.protocols.set(protocol, new HistoryProtocol(this, opts.radius))
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
@@ -204,7 +204,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       //   // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
       //   // corresponding to the node's observed IP/Port so that we can send outbound messages to
       //   // those nodes later on if needed.  This is currently used by uTP when responding to
-      //   // FINDCONTENT requests fron nodes with invalid ENRs.
+      //   // FINDCONTENT requests from nodes with invalid ENRs.
       //   const peerId = await createPeerIdFromKeypair(enr.keypair)
       //   this.unverifiedSessionCache.set(
       //     enr.nodeId,
@@ -231,7 +231,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.start()
     await this.db.open()
     for (const protocol of this.protocols.values()) {
-      await protocol.init()
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
         protocol.protocolId,

@@ -9,7 +9,7 @@ import {
   toHexString,
   HistoryProtocol,
   PortalNetwork,
-  HistoryNetworkContentTypes,
+  ContentType,
   ContentLookup,
   NodeLookup,
   PingPongCustomDataType,
@@ -233,7 +233,7 @@ export class portal {
     return enr
   }
   async historyPing(params: [string, string]) {
-    const [enr, dataRadius] = params
+    const [enr, _dataRadius] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
@@ -439,8 +439,8 @@ export class portal {
   async historyStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
-      await this._history.addContentToHistory(
-        contentKey[0] as HistoryNetworkContentTypes,
+      await this._history.store(
+        contentKey[0] as ContentType,
         toHexString(contentKey.slice(1)),
         content
       )

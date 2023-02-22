@@ -3,9 +3,12 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   BlockBodyContent,
   BlockBodyContentType,
-  HistoryNetworkContentTypes,
+  BlockHeaderWithProof,
+  EpochAccumulator,
+  ContentType,
   sszTransactionType,
   sszUnclesType,
+  Witnesses,
 } from './types.js'
 import rlp from '@ethereumjs/rlp'
 import {
@@ -16,6 +19,7 @@ import {
   UncleHeadersBuffer,
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
+import { historicalEpochs } from './data/epochHashes.js'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -24,18 +28,15 @@ import { HistoryProtocol } from './history.js'
  * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getHistoryNetworkContentKey = (
-  contentType: HistoryNetworkContentTypes,
-  hash: Uint8Array
-): string => {
+export const getContentKey = (contentType: ContentType, hash: Uint8Array): string => {
   let encodedKey
   const prefix = Buffer.alloc(1, contentType)
   switch (contentType) {
-    case HistoryNetworkContentTypes.BlockHeader:
-    case HistoryNetworkContentTypes.BlockBody:
-    case HistoryNetworkContentTypes.Receipt:
-    case HistoryNetworkContentTypes.HeaderProof:
-    case HistoryNetworkContentTypes.EpochAccumulator: {
+    case ContentType.BlockHeader:
+    case ContentType.BlockBody:
+    case ContentType.Receipt:
+    case ContentType.HeaderProof:
+    case ContentType.EpochAccumulator: {
       if (!hash) throw new Error('block hash is required to generate contentId')
       encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
       break
@@ -45,17 +46,12 @@ export const getHistoryNetworkContentKey = (
   }
   return encodedKey
 }
-export const getHistoryNetworkContentId = (
-  contentType: HistoryNetworkContentTypes,
-  hash: string
-) => {
-  const encodedKey = fromHexString(
-    getHistoryNetworkContentKey(contentType, Buffer.from(fromHexString(hash)))
-  )
+export const getContentId = (contentType: ContentType, hash: string) => {
+  const encodedKey = fromHexString(getContentKey(contentType, Buffer.from(fromHexString(hash))))
 
   return toHexString(digest(encodedKey))
 }
-export const decodeHistoryNetworkContentKey = (contentKey: string) => {
+export const decodeContentKey = (contentKey: string) => {
   const contentType = parseInt(contentKey.slice(0, 4))
   const blockHash = '0x' + contentKey.slice(4)
   return {
@@ -120,21 +116,34 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
 export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
-  protocol: HistoryProtocol
+  protocol: HistoryProtocol,
+  witnesses?: Witnesses
 ) => {
-  const decodedBlock = rlp.decode(fromHexString(rlpHex))
-  await protocol.addContentToHistory(
-    HistoryNetworkContentTypes.BlockHeader,
-    blockHash,
-    rlp.encode((decodedBlock as Buffer[])[0])
-  )
-  await protocol.addContentToHistory(
-    HistoryNetworkContentTypes.BlockBody,
-    blockHash,
-    sszEncodeBlockBody(
-      Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
-        hardforkByBlockNumber: true,
-      })
+  const block = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+    hardforkByBlockNumber: true,
+  })
+  const header = block.header
+  const proof: Witnesses = witnesses ?? (await protocol.generateInclusionProof(header.number))
+  const headerProof = BlockHeaderWithProof.serialize({
+    header: header.serialize(),
+    proof: { selector: 1, value: proof },
+  })
+  const headerKey = getContentKey(ContentType.BlockHeader, header.hash())
+  const bodyKey = getContentKey(ContentType.BlockBody, header.hash())
+  try {
+    await protocol.validateHeader(headerProof, blockHash)
+  } catch {
+    throw new Error('Header proof failed validation')
+  }
+  protocol.put(headerKey, toHexString(headerProof))
+  protocol.put(
+    bodyKey,
+    toHexString(
+      sszEncodeBlockBody(
+        Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+          hardforkByBlockNumber: true,
+        })
+      )
     )
   )
 }
@@ -144,7 +153,25 @@ export const addRLPSerializedBlock = async (
 // So the gIndices of the leaf nodes start at 16384
 
 export const blockNumberToGindex = (blockNumber: bigint): bigint => {
-  const listIndex = blockNumber % BigInt(8192)
-  const gIndex = listIndex + BigInt(16384)
+  const randArray = new Array(8192).fill({
+    blockHash: fromHexString('0xa66afd523336ddf6e71567e366c7ef98aa529644915c30a3802eac73c2c2f3a6'),
+    totalDifficulty: 1n,
+  })
+  const epochAcc = EpochAccumulator.value_toTree(randArray)
+  const listIndex = (Number(blockNumber) % 8192) * 2
+  const gIndex = EpochAccumulator.tree_getLeafGindices(1n, epochAcc)[listIndex]
   return gIndex
+}
+
+export const epochIndexByBlocknumber = (blockNumber: bigint) => {
+  return Math.floor(Number(blockNumber) / 8192)
+}
+export const blockNumberToLeafIndex = (blockNumber: bigint) => {
+  return (Number(blockNumber) % 8192) * 2
+}
+export const epochRootByIndex = (index: number) => {
+  return fromHexString(historicalEpochs[index])
+}
+export const epochRootByBlocknumber = (blockNumber: bigint) => {
+  return epochRootByIndex(epochIndexByBlocknumber(blockNumber))
 }

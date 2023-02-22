@@ -3,9 +3,9 @@ import jayson, { HttpClient } from 'jayson/promise/index.js'
 import {
   ENR,
   fromHexString,
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentId,
+  getContentKey,
+  ContentType,
   ProtocolId,
   toHexString,
 } from 'portalnetwork'
@@ -45,8 +45,8 @@ const recursiveFindContent = async () => {
   }
   // GossipTest
 
-  const headerKey = getHistoryNetworkContentKey(
-    HistoryNetworkContentTypes.BlockHeader,
+  const headerKey = getContentKey(
+    ContentType.BlockHeader,
     testBlocks[0].hash()
   )
   const header = testBlocks[0].header.serialize()

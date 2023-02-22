@@ -1,14 +1,11 @@
 import { SearchIcon } from '@chakra-ui/icons'
-import { FormControl, HStack, IconButton, Input, useToast } from '@chakra-ui/react'
+import { FormControl, HStack, IconButton, Input } from '@chakra-ui/react'
 import React, { useContext, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function GetBlockByNumber() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
-  const [searchNumber, setSearchNumber] = useState(
-    state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight().toString()
-  )
-  const toast = useToast()
+  const [searchNumber, setSearchNumber] = useState('1')
 
   async function eth_getBlockByNumber(blockNumber: string, includeTransactions: boolean) {
     try {
@@ -22,20 +19,6 @@ export default function GetBlockByNumber() {
   }
 
   async function handleClick() {
-    if (
-      parseInt(searchNumber) >
-      state.provider!.historyProtocol!.accumulator!.masterAccumulator().currentHeight()
-    ) {
-      toast({
-        title: 'Invalid Block Number',
-        status: 'error',
-        description: 'Block number higher than current known chain height',
-        duration: 3000,
-        position: 'bottom',
-      })
-      setSearchNumber('')
-      return
-    }
     dispatch({ type: StateChange.TOGGLELOADING })
     await eth_getBlockByNumber(searchNumber, true)
     dispatch({ type: StateChange.TOGGLELOADING })
@@ -48,9 +31,7 @@ export default function GetBlockByNumber() {
           rounded="md"
           size={'xs'}
           bg="whiteAlpha.800"
-          placeholder={`BlockNumber (Max: ${state
-            .provider!.historyProtocol!.accumulator.masterAccumulator()
-            .currentHeight()})`}
+          placeholder={'BlockNumber'}
           type={'number'}
           onChange={(e) => setSearchNumber(e.target.value)}
           onKeyUp={(e) => e.key === 'Enter' && handleClick()}
@@ -59,9 +40,6 @@ export default function GetBlockByNumber() {
       <IconButton
         aria-label="submit"
         size="xs"
-        disabled={
-          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
-        }
         width={'20%'}
         onClick={handleClick}
         icon={<SearchIcon />}

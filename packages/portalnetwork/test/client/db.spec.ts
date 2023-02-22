@@ -1,8 +1,8 @@
 import tape from 'tape'
 import {
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentId,
+  getContentKey,
+  ContentType,
   ProtocolId,
   toHexString,
   DBManager,
@@ -32,11 +32,8 @@ tape('DBManager unit tests', async (t) => {
 
   const testHash = randomBytes(32)
   const testVal = randomBytes(48)
-  const testKey = getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, testHash)
-  const testId = getHistoryNetworkContentId(
-    HistoryNetworkContentTypes.BlockHeader,
-    toHexString(testHash)
-  )
+  const testKey = getContentKey(ContentType.BlockHeader, testHash)
+  const testId = getContentId(ContentType.BlockHeader, toHexString(testHash))
   const _testId = serializedContentKeyToContentId(fromHexString(testKey))
   t.equal(_testId, testId, 'testIds match')
 
@@ -84,7 +81,7 @@ tape('DBManager unit tests', async (t) => {
   }
   for (let i = 0; i < 9999; i++) {
     const testHash = randomBytes(32)
-    const testKey = getHistoryNetworkContentKey(HistoryNetworkContentTypes.BlockHeader, testHash)
+    const testKey = getContentKey(ContentType.BlockHeader, testHash)
     const testVal = randomBytes(48)
     db.put(testKey, toHexString(testVal))
   }

@@ -1,4 +1,3 @@
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
 import tape from 'tape'
@@ -14,8 +13,6 @@ import {
 } from '../../../src/index.js'
 
 const sampleSize = 50000
-const peerId = await createSecp256k1PeerId()
-const _peerId = await createSecp256k1PeerId()
 const content = randomBytes(sampleSize)
 const DEFAULT_RAND_SEQNR = 5555
 const DEFAULT_RAND_ACKNR = 4444

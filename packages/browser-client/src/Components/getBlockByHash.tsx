@@ -43,9 +43,6 @@ export default function GetBlockByHash() {
       <IconButton
         aria-label="submit"
         size="xs"
-        disabled={
-          state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
-        }
         width={'20%'}
         onClick={handleClick}
         icon={<SearchIcon />}

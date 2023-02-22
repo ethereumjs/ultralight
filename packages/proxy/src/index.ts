@@ -89,7 +89,7 @@ const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050) =>
           websocket.send(msg)
         })
         log(`incoming connection from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
-        await udpsocket.bind(port).once('error', (e) => {
+        udpsocket.bind(port).once('error', () => {
           return
         })
         // Send external IP address/port to websocket client to update ENR

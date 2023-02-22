@@ -17,13 +17,7 @@ import {
 import { ChevronDownIcon, SearchIcon } from '@chakra-ui/icons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
-import {
-  ENR,
-  fromHexString,
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
-} from 'portalnetwork'
+import { ENR, fromHexString, getContentId, getContentKey, ContentType } from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
 enum GetBy {
@@ -67,10 +61,10 @@ export function PortalButton(props: IPortalButton) {
     setInput(blockHash)
   }, [blockHash])
 
-  const addToOffer = async (type: HistoryNetworkContentTypes) => {
-    const contentKey = getHistoryNetworkContentKey(type, Buffer.from(fromHexString(blockHash)))
-    const contentId = getHistoryNetworkContentId(type, blockHash)
-    if (await state.provider?.historyProtocol.client.db.get(contentKey)) {
+  const addToOffer = async (type: ContentType) => {
+    const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
+    const contentId = getContentId(type, blockHash)
+    if (await state.provider?.historyProtocol.get(contentKey)) {
       setOffer([...offer, contentId])
     }
   }
@@ -206,9 +200,6 @@ export function PortalButton(props: IPortalButton) {
           <Button
             aria-label="submit"
             size="sm"
-            disabled={
-              state.provider!.historyProtocol!.accumulator.masterAccumulator().currentHeight() < 1
-            }
             width={'50%'}
             onClick={handleClick}
             rightIcon={<SearchIcon />}
@@ -240,7 +231,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(HistoryNetworkContentTypes.BlockHeader)
+                addToOffer(ContentType.BlockHeader)
               }}
             >
               add_header_to_offer
@@ -250,7 +241,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(HistoryNetworkContentTypes.BlockBody)
+                addToOffer(ContentType.BlockBody)
               }}
             >
               add_block_body_to_offer
@@ -260,7 +251,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(HistoryNetworkContentTypes.EpochAccumulator)
+                addToOffer(ContentType.EpochAccumulator)
               }}
             >
               add_epoch_to_offer

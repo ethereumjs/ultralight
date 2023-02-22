@@ -1,15 +1,16 @@
 import { Block } from '@ethereumjs/block'
-import { intToHex, toBuffer } from '@ethereumjs/util'
+import { bigIntToHex, intToHex, toBuffer } from '@ethereumjs/util'
 import { Debugger } from 'debug'
 import {
   ProtocolId,
-  ReceiptsManager,
   HistoryProtocol,
   PortalNetwork,
-  getHistoryNetworkContentKey,
+  getContentKey,
   fromHexString,
-  toHexString,
   reassembleBlock,
+  BlockHeaderWithProof,
+  GET_LOGS_BLOCK_RANGE_LIMIT,
+  getLogs,
 } from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
@@ -23,7 +24,6 @@ export class eth {
   private _client: PortalNetwork
   private _history: HistoryProtocol
   private logger: Debugger
-  private receiptsManager: ReceiptsManager
   /**
    * Create eth_* RPC module
    * @param rpcManager RPC client to which the module binds
@@ -32,11 +32,6 @@ export class eth {
     this._client = client
     this._history = client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     this.logger = logger.extend('eth')
-    this.receiptsManager = (
-      this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    ).receiptManager
-
-    this.blockNumber = middleware(this.blockNumber.bind(this), 0)
 
     this.getBlockByNumber = middleware(this.getBlockByNumber.bind(this), 2, [
       [validators.blockOption],
@@ -84,15 +79,6 @@ export class eth {
   }
 
   /**
-   * Returns number of the most recent block stored in the Accumulator.
-   * This is probably not the actual "latest" block in the chain.
-   * @param params An empty array
-   */
-  async blockNumber(_params = []) {
-    return this._history.accumulator.currentHeight()
-  }
-
-  /**
    * Returns the currently configured chain id, a value used in replay-protected transaction signing as introduced by EIP-155.
    * @param _params An empty array
    * @returns The chain ID.
@@ -113,12 +99,19 @@ export class eth {
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
     )
     await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
-    const header = await this._history.findContentLocally(
-      fromHexString(getHistoryNetworkContentKey(0, fromHexString(blockHash)))
+    const headerWithProof = await this._history.findContentLocally(
+      fromHexString(getContentKey(0, fromHexString(blockHash)))
     )
+    if (!headerWithProof) {
+      return 'Block not found'
+    }
+    const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
-      fromHexString(getHistoryNetworkContentKey(1, fromHexString(blockHash)))
+      fromHexString(getContentKey(1, fromHexString(blockHash)))
     )
+    if (!body) {
+      return 'Block not found'
+    }
     const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
 
     return block ?? 'Block not found'
@@ -135,16 +128,12 @@ export class eth {
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
     )
-    try {
-      const block = await this._history.ETH.getBlockByNumber(
-        parseInt(blockNumber),
-        includeTransactions
-      )
-      this.logger(block)
-      return block ?? 'Block not found'
-    } catch {
-      return 'Block not found'
-    }
+    const block = await this._history.ETH.getBlockByNumber(
+      parseInt(blockNumber),
+      includeTransactions
+    )
+    this.logger(block)
+    return block ?? 'Block not found'
   }
 
   /**
@@ -159,11 +148,9 @@ export class eth {
     }
 
     let block: Block
-    const latest = await this.blockNumber([])
 
     if (blockOpt === 'latest') {
-      this.logger(`"latest" will return current accumulator height`)
-      block = (await this.getBlockByNumber([latest.toString(), true])) as Block
+      throw new Error(`History Network does not support "latest" block`)
     } else if (blockOpt === 'earliest') {
       block = (await this.getBlockByNumber(['0', true])) as Block
     } else {
@@ -207,7 +194,6 @@ export class eth {
    */
   async getLogs(params: [GetLogsParams]) {
     const { fromBlock, toBlock, blockHash, address, topics } = params[0]
-    if (!this.receiptsManager) throw new Error('missing receiptsManager')
     if (blockHash !== undefined && (fromBlock !== undefined || toBlock !== undefined)) {
       throw {
         code: INVALID_PARAMS,
@@ -228,39 +214,21 @@ export class eth {
       if (fromBlock === 'earliest') {
         from = (await this.getBlockByNumber(['0', true])) as Block
       } else if (fromBlock === 'latest' || fromBlock === undefined) {
-        from = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
+        throw new Error(`History Network does not support "latest" block`)
       } else {
         const blockNum = BigInt(fromBlock)
-        if (blockNum > this._history.accumulator.currentHeight()) {
-          throw {
-            code: INVALID_PARAMS,
-            message: 'specified `fromBlock` greater than current height',
-          }
-        }
         from = (await this.getBlockByNumber([blockNum.toString(), true])) as Block
       }
       if (toBlock === fromBlock) {
         to = from
-      } else if (toBlock === 'latest' || toBlock === undefined) {
-        to = (await this.getBlockByNumber([(await this.blockNumber()).toString(), true])) as Block
       } else {
-        const blockNum = toBlock
-        if (parseInt(blockNum) > (await this.blockNumber())) {
-          throw {
-            code: INVALID_PARAMS,
-            message: 'specified `toBlock` greater than current height',
-          }
-        }
-        to = (await this.getBlockByNumber([blockNum.toString(), true])) as Block
+        throw new Error(`unsupported toBlock: ${toBlock}`)
       }
     }
-    if (
-      Number(to.header.number) - Number(from.header.number) >
-      this.receiptsManager.GET_LOGS_BLOCK_RANGE_LIMIT
-    ) {
+    if (Number(to.header.number) - Number(from.header.number) > GET_LOGS_BLOCK_RANGE_LIMIT) {
       throw {
         code: INVALID_PARAMS,
-        message: `block range limit is ${this.receiptsManager.GET_LOGS_BLOCK_RANGE_LIMIT} blocks`,
+        message: `block range limit is ${GET_LOGS_BLOCK_RANGE_LIMIT} blocks`,
       }
     }
     try {
@@ -281,7 +249,17 @@ export class eth {
           addrs = [toBuffer(address)]
         }
       }
-      const logs = await this.receiptsManager.getLogs(from, to, addrs, formattedTopics)
+      const blocks = Promise.all(
+        Array.from(
+          { length: Number(to.header.number) - Number(from.header.number) + 1 } as any,
+          async (_, i) =>
+            (await this.getBlockByNumber([
+              bigIntToHex(BigInt(i) + from.header.number),
+              true,
+            ])) as Block
+        )
+      )
+      const logs = await getLogs(await blocks, addrs, formattedTopics)
       return await Promise.all(
         logs.map(({ log, block, tx, txIndex, logIndex }) =>
           jsonRpcLog(log, block, tx, txIndex, logIndex)

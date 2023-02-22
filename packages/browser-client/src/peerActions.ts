@@ -1,11 +1,12 @@
 import {
   ENR,
   fromHexString,
-  getHistoryNetworkContentId,
-  getHistoryNetworkContentKey,
-  HistoryNetworkContentTypes,
+  getContentId,
+  getContentKey,
+  ContentType,
   HistoryProtocol,
   reassembleBlock,
+  epochRootByIndex,
 } from 'portalnetwork'
 import { PeerContextType, PeerDispatch, PeerState, PeerStateChange } from './peerReducer'
 
@@ -19,10 +20,10 @@ export class PeerActions {
     this.historyProtocol = protocol
   }
 
-  addToOffer = (type: HistoryNetworkContentTypes): void => {
+  addToOffer = (type: ContentType): void => {
     this.dispatch({
       type: PeerStateChange.SETOFFER,
-      payload: [...this.state.offer, getHistoryNetworkContentId(type, this.state.blockHash)],
+      payload: [...this.state.offer, getContentId(type, this.state.blockHash)],
     })
   }
 
@@ -55,10 +56,7 @@ export class PeerActions {
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerContentId = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockHeader,
-          Buffer.from(fromHexString(this.state.blockHash))
-        )
+        getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(this.state.blockHash)))
       )
       const header = await this.historyProtocol.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
@@ -68,25 +66,16 @@ export class PeerActions {
       return block //
     } else if (type === 'body') {
       const headerContentKey = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockHeader,
-          Buffer.from(fromHexString(this.state.blockHash))
-        )
+        getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(this.state.blockHash)))
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
       const bodyContentKey = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.BlockBody,
-          Buffer.from(fromHexString(this.state.blockHash))
-        )
+        getContentKey(ContentType.BlockBody, Buffer.from(fromHexString(this.state.blockHash)))
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
     } else if (type === 'epoch') {
       const epochContentKey = fromHexString(
-        getHistoryNetworkContentKey(
-          HistoryNetworkContentTypes.EpochAccumulator,
-          this.historyProtocol.accumulator.historicalEpochs()[this.state.epoch]
-        )
+        getContentKey(ContentType.EpochAccumulator, epochRootByIndex(this.state.epoch))
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)
     }

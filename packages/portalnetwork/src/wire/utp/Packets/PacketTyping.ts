@@ -24,6 +24,7 @@ export enum HeaderExtension {
   selectiveAck = 1,
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface IHeaderInput<T extends PacketType> {
   pType: PacketType
   version: Uint8

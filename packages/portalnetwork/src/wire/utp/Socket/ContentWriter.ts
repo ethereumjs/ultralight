@@ -25,7 +25,7 @@ export default class ContentWriter extends EventEmitter {
   async send(packetType: PacketType, bytes?: Uint8Array) {
     this.logger(`Sending ${PacketType[packetType]} packet.`)
     this.emit('send', packetType, bytes)
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       this.once('sent', () => resolve(true))
     })
   }
@@ -41,9 +41,9 @@ export default class ContentWriter extends EventEmitter {
           this.socket.seqNr
         }`
       )
+      this.seqNr = this.sentChunks.slice(-1)[0] + 1
 
       await this.send(PacketType.ST_DATA, bytes)
-      this.seqNr = this.sentChunks.slice(-1)[0] + 1
       return
     }
     this.writing = false

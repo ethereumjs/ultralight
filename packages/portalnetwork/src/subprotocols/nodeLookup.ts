@@ -17,7 +17,7 @@ export class NodeLookup {
   constructor(protocol: BaseProtocol, nodeId: string) {
     this.protocol = protocol
     this.nodeSought = nodeId
-    this.log = this.protocol.client.logger.extend('nodeLookup', ':')
+    this.log = this.protocol.logger.extend('nodeLookup', ':')
   }
 
   /**
