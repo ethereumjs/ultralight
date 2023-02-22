@@ -171,21 +171,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     ) as DBManager
     opts.supportedProtocols = opts.supportedProtocols ?? []
     for (const protocol of opts.supportedProtocols) {
-      let p: BaseProtocol
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
-          p = new HistoryProtocol({
-            sendMessage: this.sendPortalNetworkMessage.bind(this),
-            sendResponse: this.sendPortalNetworkResponse.bind(this),
-            findEnr: this.discv5.findEnr.bind(this.discv5),
-            put: this.db.put.bind(this.db),
-            get: this.db.get.bind(this.db),
-            handleNewRequest: this.uTP.handleNewRequest.bind(this.uTP),
-            prune: this.db.prune.bind(this.db, protocol),
-            ENR: this.discv5.enr,
-            metrics: this.metrics,
-          })
-          this.protocols.set(protocol, p)
+          this.protocols.set(protocol, new HistoryProtocol(this, opts.radius))
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
@@ -205,11 +193,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       } catch {
         this.uTP.closeRequest(msg.readUInt16BE(2), peerId)
       }
-    })
-    this.uTP.on('Stream', async (selector, blockHash, content) => {
-      // TODO: function selectorToProtocolId()
-      const protocol = this.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-      await protocol.store(selector, blockHash, content)
     })
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
     //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
@@ -248,7 +231,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.start()
     await this.db.open()
     for (const protocol of this.protocols.values()) {
-      await protocol.init()
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
         protocol.protocolId,

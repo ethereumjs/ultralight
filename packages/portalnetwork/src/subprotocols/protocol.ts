@@ -31,26 +31,11 @@ import {
   encodeWithVariantPrefix,
   INewRequest,
   ContentRequest,
+  PortalNetwork,
+  ContentType,
 } from '../index.js'
 import { EventEmitter } from 'events'
 
-export interface IProtocolOpts {
-  sendMessage: (
-    enr: ENR | string,
-    payload: Buffer,
-    protocolId: ProtocolId,
-    utpMessage?: boolean
-  ) => Promise<Buffer>
-  sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
-  findEnr: (nodeId: string) => ENR | undefined
-  put: (contentKey: string, content: string) => void
-  get: (contentKey: string) => Promise<string>
-  handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
-  prune: (radius: bigint) => Promise<void>
-  ENR: ENR
-  nodeRadius?: bigint
-  metrics?: PortalNetworkMetrics
-}
 export abstract class BaseProtocol extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
@@ -59,7 +44,7 @@ export abstract class BaseProtocol extends EventEmitter {
   abstract logger: Debugger
   abstract protocolId: ProtocolId
   abstract protocolName: string
-  public ENR: ENR
+  public enr: ENR
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -71,29 +56,32 @@ export abstract class BaseProtocol extends EventEmitter {
   findEnr: (nodeId: string) => ENR | undefined
   put: (contentKey: string, content: string) => void
   get: (contentKey: string) => Promise<string>
-  _prune: (radius: bigint) => Promise<void>
-  constructor(opts: IProtocolOpts) {
+  _prune: (protocol: ProtocolId, radius: bigint) => Promise<void>
+  constructor(client: PortalNetwork, radius?: bigint) {
     super()
-    this.sendMessage = opts.sendMessage
-    this.sendResponse = opts.sendResponse
-    this.findEnr = opts.findEnr
-    this.put = opts.put
-    this.get = opts.get
-    this.handleNewRequest = opts.handleNewRequest
-    this._prune = opts.prune
-    this.ENR = opts.ENR
+    this.sendMessage = client.sendPortalNetworkMessage.bind(client)
+    this.sendResponse = client.sendPortalNetworkResponse.bind(client)
+    this.findEnr = client.discv5.findEnr.bind(client.discv5)
+    this.put = client.db.put.bind(client.db)
+    this.get = client.db.get.bind(client.db)
+    this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
+    this._prune = client.db.prune.bind(client.db)
+    this.enr = client.discv5.enr
     this.checkIndex = 0
-    this.nodeRadius = opts.nodeRadius ?? 2n ** 256n - 1n
-    this.routingTable = new PortalNetworkRoutingTable(this.ENR.nodeId)
-    this.metrics = opts.metrics
+    this.nodeRadius = radius ?? 2n ** 256n - 1n
+    this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
+    this.metrics = client.metrics
     if (this.metrics) {
       this.metrics.knownHistoryNodes.collect = () => {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
+    client.uTP.on('Stream', async (contentType: ContentType, hash: string, value: Uint8Array) => {
+      await this.store(contentType, hash, value)
+    })
   }
 
-  abstract init(): Promise<void>
+  abstract store(contentType: ContentType, hashKey: string, value: Uint8Array): Promise<void>
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
@@ -152,7 +140,7 @@ export abstract class BaseProtocol extends EventEmitter {
       const pingMsg = PortalWireMessageType.serialize({
         selector: MessageCodes.PING,
         value: {
-          enrSeq: this.ENR.seq,
+          enrSeq: this.enr.seq,
           customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
         },
       })
@@ -191,7 +179,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
   sendPong = async (src: INodeAddress, requestId: bigint) => {
     const payload = {
-      enrSeq: this.ENR.seq,
+      enrSeq: this.enr.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: this.nodeRadius }),
     }
     const pongMsg = PortalWireMessageType.serialize({
@@ -274,7 +262,7 @@ export abstract class BaseProtocol extends EventEmitter {
         if (distance === 0 && arrayByteLength(nodesPayload.enrs) < 1200) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
-          nodesPayload.enrs.push(this.ENR.encode())
+          nodesPayload.enrs.push(this.enr.encode())
         } else {
           return this.routingTable.valuesOfDistance(distance).every((enr) => {
             // Exclude ENR from response if it matches the requesting node
@@ -493,7 +481,7 @@ export abstract class BaseProtocol extends EventEmitter {
         // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
         // contentId than this node
         return enr.nodeId !== src.nodeId &&
-          distance(enr.nodeId, lookupKey) < distance(this.ENR.nodeId, lookupKey)
+          distance(enr.nodeId, lookupKey) < distance(this.enr.nodeId, lookupKey)
           ? enr.encode()
           : undefined
       }).filter((enr) => enr !== undefined)
@@ -655,7 +643,7 @@ export abstract class BaseProtocol extends EventEmitter {
     } else bucketsToRefresh = notFullBuckets
     for (const bucket of bucketsToRefresh) {
       const distance = bucket.distance
-      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.ENR.nodeId, distance)
+      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.enr.nodeId, distance)
       const lookup = new NodeLookup(this, randomNodeAtDistance)
       await lookup.startLookup()
     }
@@ -668,7 +656,7 @@ export abstract class BaseProtocol extends EventEmitter {
    */
   public addBootNode = async (bootnode: string) => {
     const enr = ENR.decodeTxt(bootnode)
-    if (enr.nodeId === this.ENR.nodeId) {
+    if (enr.nodeId === this.enr.nodeId) {
       // Disregard attempts to add oneself as a bootnode
       return
     }
@@ -682,7 +670,7 @@ export abstract class BaseProtocol extends EventEmitter {
   }
 
   public async prune(radius: bigint) {
-    this._prune(radius)
+    this._prune(this.protocolId, radius)
     this.nodeRadius = radius
   }
 

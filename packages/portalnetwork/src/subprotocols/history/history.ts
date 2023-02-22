@@ -23,9 +23,10 @@ import {
   Witnesses,
   saveReceipts,
   decodeReceipts,
+  PortalNetwork,
 } from '../../index.js'
 
-import { BaseProtocol, IProtocolOpts } from '../protocol.js'
+import { BaseProtocol } from '../protocol.js'
 import {
   createProof,
   Proof,
@@ -57,10 +58,10 @@ export class HistoryProtocol extends BaseProtocol {
   logger: Debugger
   ETH: ETH
   gossipManager: GossipManager
-  constructor(opts: IProtocolOpts) {
-    super(opts)
+  constructor(client: PortalNetwork, nodeRadius?: bigint) {
+    super(client, nodeRadius)
     this.protocolId = ProtocolId.HistoryNetwork
-    this.logger = debug(this.ENR.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
+    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
@@ -146,17 +147,11 @@ export class HistoryProtocol extends BaseProtocol {
               `received ${ContentType[contentType]} content corresponding to ${contentHash}`
             )
             try {
-              if (contentType === ContentType.BlockHeader) {
-                await this.validateHeader(decoded.value as Uint8Array, contentHash)
-              } else {
-                {
-                  await this.store(
-                    contentType,
-                    toHexString(Buffer.from(contentHash)),
-                    decoded.value as Uint8Array
-                  )
-                }
-              }
+              await this.store(
+                contentType,
+                toHexString(Buffer.from(contentHash)),
+                decoded.value as Uint8Array
+              )
             } catch {
               this.logger('Error adding content to DB')
             }
