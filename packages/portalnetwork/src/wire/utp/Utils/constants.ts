@@ -1,4 +1,5 @@
-import { RequestCode, randUint16 } from '../index.js'
+import { RequestCode } from '../PortalNetworkUtp/types.js'
+import { randUint16 } from './math.js'
 
 export const VERSION = 1
 export const MAX_UINT_8 = 0xff
