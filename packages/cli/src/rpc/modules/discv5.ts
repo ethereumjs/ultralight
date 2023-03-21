@@ -59,7 +59,7 @@ export class discv5 {
    */
   async nodeInfo(_params: []): Promise<NodeInfoResult> {
     return {
-      enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
+      enr: this._client.discv5.enr.encodeTxt(),
       nodeId: '0x' + this._client.discv5.enr.nodeId,
     }
   }
@@ -74,7 +74,7 @@ export class discv5 {
     const [socketAddr, _isTcp] = params
     this._client.discv5.enr.setLocationMultiaddr(multiaddr(socketAddr))
     return {
-      enr: this._client.discv5.enr.encodeTxt(this._client.discv5.keypair.privateKey),
+      enr: this._client.discv5.enr.encodeTxt(),
       nodeId: '0x' + this._client.discv5.enr.nodeId,
     }
   }

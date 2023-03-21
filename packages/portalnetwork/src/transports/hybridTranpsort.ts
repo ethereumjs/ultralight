@@ -4,9 +4,10 @@ import { Multiaddr } from '@multiformats/multiaddr'
 import { IPacket } from '@chainsafe/discv5/packet'
 import { ITransportEvents, ITransportService } from '@chainsafe/discv5/lib/transport/types.js'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
-import { ENR, WebSocketTransportService } from '../index.js'
+import { WebSocketTransportService } from '../index.js'
 import { WakuPortal } from './waku.js'
 import WebRTC from './webRTC.js'
+import { SignableENR } from '@chainsafe/discv5'
 
 interface IHybridTransportEvents extends ITransportEvents {
   multiAddr: (src: Multiaddr) => void
@@ -30,7 +31,7 @@ export class HybridTransportService
   public waku: WakuPortal
   public status: 'stopped' | 'rtconly' | 'hybrid'
   public rtcEnabled: Map<string, boolean>
-  constructor(multiaddr: Multiaddr, enr: ENR, proxyAddress: string) {
+  constructor(multiaddr: Multiaddr, enr: SignableENR, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
     this.log = debug('Portal').extend('HybridTransportService')

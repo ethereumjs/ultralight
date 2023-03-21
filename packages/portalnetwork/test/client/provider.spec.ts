@@ -1,15 +1,16 @@
 import tape from 'tape'
 import { UltralightProvider } from '../../src/client/provider.js'
-import { ENR, TransportLayer } from '../../src/index.js'
+import { TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { multiaddr } from '@multiformats/multiaddr'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { SignableENR } from '@chainsafe/discv5'
 
 tape('Test provider functionality', async (t) => {
   const ma = multiaddr('/ip4/0.0.0.0/udp/1500')
   const peerId = await createSecp256k1PeerId()
-  const enr = ENR.createFromPeerId(peerId)
+  const enr = SignableENR.createFromPeerId(peerId)
   enr.setLocationMultiaddr(ma)
   const provider = await UltralightProvider.create(new MockProvider(), 1, {
     bindAddress: '0.0.0.0',

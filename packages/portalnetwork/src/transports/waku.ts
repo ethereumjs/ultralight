@@ -9,10 +9,9 @@ import {
   IPacket,
   IWhoAreYouAuthdata,
 } from '@chainsafe/discv5/packet'
-import { ITransportEvents, ITransportService } from '@chainsafe/discv5'
+import { ITransportEvents, ITransportService, SignableENR } from '@chainsafe/discv5'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import { createLightNode } from '@waku/create'
-import { ENR } from '../index.js'
 import { bootstrap } from '@libp2p/bootstrap'
 import {
   Encoder as EncoderV0,
@@ -57,7 +56,7 @@ export class WakuPortal
   private log: Debugger
   public multiaddr: Multiaddr
   nodeId: string
-  enr: ENR
+  enr: SignableENR
   status: WakuStatus
   messages: ChatMessage[]
   sendCounter: number
@@ -66,7 +65,7 @@ export class WakuPortal
 
   contentTopic: string
   decoder: IDecoder<ChatMessage>
-  constructor(multiaddr: Multiaddr, enr: ENR) {
+  constructor(multiaddr: Multiaddr, enr: SignableENR) {
     //eslint-disable-next-line constructor-super
     super()
     this.log = debug('Portal').extend('WAKU')

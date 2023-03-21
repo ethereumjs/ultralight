@@ -6,7 +6,6 @@ import tape from 'tape'
 import {
   addRLPSerializedBlock,
   BlockHeaderWithProof,
-  ENR,
   fromHexString,
   getContentKey,
   ContentType,
@@ -18,6 +17,7 @@ import {
 } from '../../src/index.js'
 import { createRequire } from 'module'
 import { EventEmitter } from 'events'
+import { SignableENR } from '@chainsafe/discv5'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -44,11 +44,11 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
 
 tape('gossip test', async (t) => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
-  const enr1 = ENR.createFromPeerId(id1)
+  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
-  const enr2 = ENR.createFromPeerId(id2)
+  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -74,7 +74,7 @@ tape('gossip test', async (t) => {
   await node2.start()
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  await protocol1?.sendPing(protocol2?.enr!)
+  await protocol1?.sendPing(protocol2?.enr!.toENR())
   t.equal(
     protocol1?.routingTable.getValue(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
@@ -145,11 +145,11 @@ tape('gossip test', async (t) => {
 
 tape('FindContent', async (t) => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
-  const enr1 = ENR.createFromPeerId(id1)
+  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
-  const enr2 = ENR.createFromPeerId(id2)
+  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -188,7 +188,7 @@ tape('FindContent', async (t) => {
     'epoch 25 added'
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.enr!)
+  await protocol1.sendPing(protocol2?.enr!.toENR())
 
   await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
@@ -221,11 +221,11 @@ tape('FindContent', async (t) => {
 
 tape('eth_getBlockByHash', async (t) => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
-  const enr1 = ENR.createFromPeerId(id1)
+  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
-  const enr2 = ENR.createFromPeerId(id2)
+  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -263,7 +263,7 @@ tape('eth_getBlockByHash', async (t) => {
     'epoch 25 added'
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.enr!)
+  await protocol1.sendPing(protocol2?.enr!.toENR())
 
   const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
   t.equal(toHexString(retrieved!.hash()), testBlockData[29].blockHash, 'retrieved expected header')
@@ -276,11 +276,11 @@ tape('eth_getBlockByHash', async (t) => {
 tape('eth_getBlockByNumber', async (t) => {
   t.plan(1)
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
-  const enr1 = ENR.createFromPeerId(id1)
+  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
-  const enr2 = ENR.createFromPeerId(id2)
+  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -322,7 +322,7 @@ tape('eth_getBlockByNumber', async (t) => {
   await protocol1.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   await protocol2.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.enr!)
+  await protocol1.sendPing(protocol2?.enr!.toENR())
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
 
   t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')

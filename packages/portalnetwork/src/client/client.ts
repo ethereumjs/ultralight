@@ -1,10 +1,4 @@
-import {
-  createKeypairFromPeerId,
-  Discv5,
-  ENR,
-  IDiscv5CreateOptions,
-  NodeId,
-} from '@chainsafe/discv5'
+import { Discv5, SignableENR, IDiscv5CreateOptions, NodeId, ENR } from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
@@ -45,7 +39,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
-      enr: {} as ENR,
+      enr: {} as SignableENR,
       peerId: {} as Secp256k1PeerId,
       multiaddr: multiaddr(),
       config: {
@@ -59,24 +53,22 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const config = { ...defaultConfig, ...opts.config }
     let bootnodes
     if (opts.rebuildFromMemory && opts.db) {
-      const prev_enr_string = await opts.db.get('enr')
+      // TODO: Decide whether to stop storing ENR in db
+      //const prev_enr_string = await opts.db.get('enr')
       const prev_peerid = await opts.db.get('peerid')
-      config.enr = ENR.decodeTxt(prev_enr_string)
       config.peerId = await peerIdFromString(prev_peerid)
+      config.enr = SignableENR.createFromPeerId(config.peerId)
+
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
     } else if (opts.config?.enr === undefined) {
       config.peerId = opts.config?.peerId ?? (await createSecp256k1PeerId())
-      if (opts.config?.enr) {
-        config.enr =
-          typeof opts.config.enr === 'string' ? ENR.decodeTxt(opts.config.enr) : opts.config.enr
-      } else {
-        config.enr = ENR.createFromPeerId(config.peerId)
-      }
+      config.enr = SignableENR.createFromPeerId(config.peerId)
+
       bootnodes = opts.bootnodes
     } else {
-      config.enr = opts.config.enr as ENR
+      config.enr = opts.config.enr as SignableENR
     }
     let ma
     if (opts.config?.multiaddr === undefined) {
@@ -153,7 +145,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
-    this.discv5.enr.encode(createKeypairFromPeerId(opts.config.peerId as PeerId).privateKey)
+    this.discv5.enr.encode()
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.protocols = new Map()
     this.bootnodes = opts.bootnodes ?? []
@@ -265,7 +257,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public storeNodeDetails = async () => {
     const peers: string[] = []
     for (const protocol of this.protocols) {
-      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
+      ;(protocol[1] as any).routingTable.values().forEach((enr: SignableENR) => {
         peers.push(enr.encodeTxt())
       })
     }
@@ -274,7 +266,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         {
           type: 'put',
           key: 'enr',
-          value: this.discv5.enr.encodeTxt(this.discv5.keypair.privateKey),
+          value: this.discv5.enr.encodeTxt(),
         },
         {
           type: 'put',
