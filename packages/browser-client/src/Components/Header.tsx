@@ -14,15 +14,12 @@ import {
 import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
 import ContentManager from './ContentManager'
-import ValidateAccumulator from './ValidateAccumulator'
 import { AppContext, AppContextType } from '../globalReducer'
 import { FaCopy, FaEye, FaShare } from 'react-icons/fa'
 
 export default function Header() {
   const { state } = useContext(AppContext as React.Context<AppContextType>)
-  const enr = state.provider!.portal!.discv5.enr.encodeTxt(
-    state.provider!.portal!.discv5.keypair.privateKey
-  )
+  const enr = state.provider!.portal!.discv5.enr.encodeTxt()
   const { onCopy } = useClipboard(enr)
   const toast = useToast()
   async function share() {

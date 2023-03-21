@@ -17,14 +17,6 @@ export const mediumblue = theme.colors.blue[200]
 export const App = () => {
   const [state, dispatch] = useReducerAsync(reducer, initialState, asyncActionHandlers)
 
-  async function connectToPeer() {
-    try {
-      await state.provider?.historyProtocol.addBootNode(state.searchEnr)
-      dispatch({ type: StateChange.SETSEARCHENR, payload: '' })
-      dispatch({ type: StateChange.REFRESHPEERS })
-    } catch (err) {}
-  }
-
   const init = async () => {
     if (navigator.storage && navigator.storage.persist) {
       navigator.storage.persist()
