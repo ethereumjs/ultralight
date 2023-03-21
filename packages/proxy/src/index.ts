@@ -89,7 +89,7 @@ const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050) =>
           websocket.send(msg)
         })
         log(`incoming connection from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
-        udpsocket.bind(port).once('error', () => {
+        udpsocket.bind(port).once('error', (err) => {
           return
         })
         // Send external IP address/port to websocket client to update ENR
@@ -103,7 +103,7 @@ const startServer = async (ws: WS.Server, externalIp: string, wssPort = 5050) =>
         const bPort = Buffer.alloc(2)
         bPort.writeUIntBE(port, 0, 2)
         websocket.send(Buffer.concat([bAddress, bPort]))
-        log('UDP proxy listening on ', externalIp, udpsocket.address().port)
+        log(`UDP proxy listening on ${externalIp}:${port}`)
         websocket.on('message', (data) => {
           if (data.toString().startsWith('port:')) {
             return

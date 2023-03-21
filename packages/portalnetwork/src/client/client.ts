@@ -23,6 +23,7 @@ import { CapacitorUDPTransportService, HybridTransportService } from '../transpo
 import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
+import { fromUtf8 } from '@ethereumjs/util'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
@@ -173,6 +174,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
 
+    // Set version info pair in ENR
+    this.discv5.enr.set('c', new TextEncoder().encode('u 0.0.1'))
     // Event handling
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
