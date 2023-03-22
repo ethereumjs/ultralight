@@ -18,7 +18,7 @@ import {
 import PeerButtons from './PeerButtons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerContext, peerInitialState, peerReducer } from '../peerReducer'
-import { ENR, toHexString } from 'portalnetwork'
+import { ENR } from 'portalnetwork'
 
 export default function RoutingTableView() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)

@@ -1,4 +1,11 @@
-import { Discv5, SignableENR, IDiscv5CreateOptions, NodeId, ENR } from '@chainsafe/discv5'
+import {
+  Discv5,
+  SignableENR,
+  IDiscv5CreateOptions,
+  NodeId,
+  ENR,
+  createKeypairFromPeerId,
+} from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
@@ -10,7 +17,6 @@ import {
   PortalNetworkOpts,
   TransportLayer,
 } from './types.js'
-import { peerIdFromString } from '@libp2p/peer-id'
 import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
@@ -23,7 +29,7 @@ import { CapacitorUDPTransportService, HybridTransportService } from '../transpo
 import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
-import { fromUtf8 } from '@ethereumjs/util'
+import { peerIdFromKeys } from '@libp2p/peer-id'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
@@ -54,12 +60,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const config = { ...defaultConfig, ...opts.config }
     let bootnodes
     if (opts.rebuildFromMemory && opts.db) {
-      // TODO: Decide whether to stop storing ENR in db
-      //const prev_enr_string = await opts.db.get('enr')
-      const prev_peerid = await opts.db.get('peerid')
-      config.peerId = await peerIdFromString(prev_peerid)
-      config.enr = SignableENR.createFromPeerId(config.peerId)
+      const prevEnrString = await opts.db.get('enr')
+      const prevPrivateKey = await opts.db.get('privateKey')
+      const prevPublicKey = await opts.db.get('publicKey')
 
+      config.peerId = await peerIdFromKeys(
+        fromHexString(prevPublicKey),
+        fromHexString(prevPrivateKey)
+      )
+
+      config.enr = SignableENR.decodeTxt(prevEnrString, createKeypairFromPeerId(config.peerId))
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
@@ -260,7 +270,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public storeNodeDetails = async () => {
     const peers: string[] = []
     for (const protocol of this.protocols) {
-      ;(protocol[1] as any).routingTable.values().forEach((enr: SignableENR) => {
+      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
         peers.push(enr.encodeTxt())
       })
     }
@@ -273,8 +283,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         },
         {
           type: 'put',
-          key: 'peerid',
-          value: this.peerId.toString(),
+          key: 'privateKey',
+          value: toHexString(this.peerId.privateKey!),
+        },
+        {
+          type: 'put',
+          key: 'publicKey',
+          value: toHexString(this.peerId.publicKey!),
         },
         {
           type: 'put',
@@ -282,7 +297,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           value: JSON.stringify(peers),
         },
       ])
-    } catch (err) {}
+    } catch (err) {
+      console.log('error', err)
+    }
   }
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
