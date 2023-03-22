@@ -1,4 +1,4 @@
-import { distance, ENR, EntryStatus } from '@chainsafe/discv5'
+import { distance, ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
 import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'
@@ -44,7 +44,7 @@ export abstract class BaseProtocol extends EventEmitter {
   abstract logger: Debugger
   abstract protocolId: ProtocolId
   abstract protocolName: string
-  public enr: ENR
+  public enr: SignableENR
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -258,11 +258,12 @@ export abstract class BaseProtocol extends EventEmitter {
         total: 0,
         enrs: [],
       }
+
       payload.distances.every((distance) => {
         if (distance === 0 && arrayByteLength(nodesPayload.enrs) < 1200) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
-          nodesPayload.enrs.push(this.enr.encode())
+          nodesPayload.enrs.push(this.enr.toENR().encode())
         } else {
           return this.routingTable.valuesOfDistance(distance).every((enr) => {
             // Exclude ENR from response if it matches the requesting node

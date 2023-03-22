@@ -1,9 +1,8 @@
-import { createKeypairFromPeerId, EntryStatus } from '@chainsafe/discv5'
-import { multiaddr, protocols } from '@multiformats/multiaddr'
+import { ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
+import { multiaddr } from '@multiformats/multiaddr'
 import tape from 'tape'
 import * as td from 'testdouble'
 import {
-  ENR,
   generateRandomNodeIdAtDistance,
   MessageCodes,
   NodesMessage,
@@ -15,11 +14,11 @@ import {
   BaseProtocol,
   ContentRequest,
   INewRequest,
+  HistoryProtocol,
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { BitArray } from '@chainsafe/ssz'
-import { proto } from '@waku/core/lib/message/version_0.js'
 
 tape('protocol wire message tests', async (t) => {
   const node = await PortalNetwork.create({
@@ -187,7 +186,7 @@ tape('handleFindNodes message handler tests', async (st) => {
     transport: TransportLayer.WEB,
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
-  const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as any
+  const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   type sendResponse = (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   protocol.sendResponse = td.func<sendResponse>()
 
@@ -196,12 +195,12 @@ tape('handleFindNodes message handler tests', async (st) => {
   for (let x = 239; x < 257; x++) {
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
     const peerId = await createSecp256k1PeerId()
-    const enr = ENR.createFromPeerId(peerId)
-    const keypair = createKeypairFromPeerId(peerId)
-    enr.encode(keypair.privateKey)
-    sortedEnrs.push(enr)
-    ;(enr as any)._nodeId = id
-    protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+    const enr = SignableENR.createFromPeerId(peerId)
+    const remoteEnr = enr.toENR()
+    ;(remoteEnr as any).nodeId = id
+    sortedEnrs.push(remoteEnr)
+
+    protocol.routingTable.insertOrUpdate(remoteEnr, EntryStatus.Connected)
   }
   const newNode = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 0)
   await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
@@ -218,7 +217,7 @@ tape('handleFindNodes message handler tests', async (st) => {
       })
     )
   )
-  st.pass('Nodes response contained 1 ENR since should be nothing in table at distance 239')
+  st.pass('Nodes response contained no ENRs since should be nothing in table at distance 239')
 
   td.reset()
 
@@ -242,11 +241,10 @@ tape('handleFindNodes message handler tests', async (st) => {
 
   const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
   const peerId = await createSecp256k1PeerId()
-  const enr = ENR.createFromPeerId(peerId)
-  const keypair = createKeypairFromPeerId(peerId)
-  enr.encode(keypair.privateKey)
+  const enr = SignableENR.createFromPeerId(peerId)
+  enr.encode()
   ;(enr as any)._nodeId = id
-  protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+  protocol.routingTable.insertOrUpdate(enr.toENR(), EntryStatus.Connected)
 
   await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
     distances: [255, 256],

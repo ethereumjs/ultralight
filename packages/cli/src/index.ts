@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, ENR, fromHexString } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -14,6 +14,7 @@ import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { execSync } from 'child_process'
 import { RPCManager } from './rpc/rpc.js'
+import { SignableENR } from '@chainsafe/discv5'
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
     describe: 'base64 string encoded protobuf serialized private key',
@@ -87,7 +88,7 @@ const main = async () => {
   } else {
     id = await createFromProtobuf(fromHexString(args.pk))
   }
-  const enr = ENR.createFromPeerId(id)
+  const enr = SignableENR.createFromPeerId(id)
   const initMa: any = multiaddr(`/ip4/${ip}/udp/${args.rpcPort}`)
   enr.setLocationMultiaddr(initMa)
 
