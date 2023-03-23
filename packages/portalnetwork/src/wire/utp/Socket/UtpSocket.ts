@@ -16,7 +16,8 @@ import ContentReader from './ContentReader.js'
 import { PacketManager } from '../Packets/PacketManager.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
 
-export class UtpSocket extends EventEmitter {
+export class UtpSocket<P extends ProtocolId> extends EventEmitter {
+  protocolId: P
   type: UtpSocketType
   content: Uint8Array
   remoteAddress: string
@@ -38,8 +39,9 @@ export class UtpSocket extends EventEmitter {
   updateDelay: (timestamp: number, timeReceived: number) => void
   updateRTT: (packetRTT: number, ackNr: number) => void
   updateWindow: () => void
-  constructor(options: UtpSocketOptions) {
+  constructor(options: UtpSocketOptions<P>) {
     super()
+    this.protocolId = options.protocolId
     this.content = options.content ?? Uint8Array.from([])
     this.remoteAddress = options.remoteAddress
     this.rcvConnectionId = options.rcvId
@@ -116,7 +118,7 @@ export class UtpSocket extends EventEmitter {
       4: `rcvId: ${this.rcvConnectionId}`,
     }
     this.logger(`${PacketType[packet.header.pType]}   sent - ${messageData[type]}`)
-    this.emit('send', this.remoteAddress, msg, ProtocolId.HistoryNetwork, true)
+    this.emit('send', this.remoteAddress, msg, this.protocolId, true)
     return msg
   }
 

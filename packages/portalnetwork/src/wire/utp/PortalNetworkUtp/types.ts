@@ -1,3 +1,5 @@
+import { ProtocolId } from '../../../subprotocols'
+
 export type UtpSocketKey = string
 
 export enum RequestCode {
@@ -10,7 +12,8 @@ export enum RequestCode {
 export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
-export interface INewRequest {
+export interface INewRequest<P extends ProtocolId> {
+  protocolId: P
   contentKeys: Uint8Array[]
   peerId: string
   connectionId: number
