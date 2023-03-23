@@ -21,13 +21,16 @@ tape('DBManager unit tests', async (t) => {
   const _self = randomBytes(32)
   const self = toHexString(_self)
   const log = debug('db test')
-  const db = new DBManager(self.slice(2), log, size, [ProtocolId.HistoryNetwork])
+  const db = new DBManager(self.slice(2), log, size, [
+    ProtocolId.HistoryNetwork,
+    ProtocolId.StateNetwork,
+  ])
   await db.open()
   const historyDb = db.sublevels.get(ProtocolId.HistoryNetwork)!
-  const state = db.sublevels.get(ProtocolId.StateNetwork)
+  const utpNetwork = db.sublevels.get(ProtocolId.UTPNetwork)
   t.equal(db.db.status, 'open', 'Main database is open')
   t.equal(historyDb.status, 'open', 'History Sublevel open')
-  t.equal(state, undefined, 'Unsupported Network not open')
+  t.equal(utpNetwork, undefined, 'Unsupported Network not open')
   t.equal(db.nodeId, self.slice(2), 'db nodeId set correctly')
 
   const testHash = randomBytes(32)
@@ -37,7 +40,7 @@ tape('DBManager unit tests', async (t) => {
   const _testId = serializedContentKeyToContentId(fromHexString(testKey))
   t.equal(_testId, testId, 'testIds match')
 
-  db.put(testKey, toHexString(testVal))
+  db.put(ProtocolId.HistoryNetwork, testId, toHexString(testVal))
   const lookupD = BigInt.asUintN(32, distance(self.slice(2), testId.slice(2)))
   const lookupKey = bigIntToHex(lookupD)
   const historyPrefix = '!0x500b!'
@@ -68,7 +71,7 @@ tape('DBManager unit tests', async (t) => {
     toHexString(testVal),
     'HistoryNetwork content retrieved directly from history sublevel'
   )
-  const res = await db.get(testKey)
+  const res = await db.get(ProtocolId.HistoryNetwork, testId)
   t.equal(res, toHexString(testVal), 'DBManager retrieved History Content from a content key')
 
   for (let i = 0; i < 10000; i++) {
@@ -77,13 +80,13 @@ tape('DBManager unit tests', async (t) => {
       testKey = toHexString(randomBytes(33))
     }
     const testVal = randomBytes(48)
-    db.put(testKey, toHexString(testVal))
+    db.put(ProtocolId.StateNetwork, testKey, toHexString(testVal))
   }
   for (let i = 0; i < 9999; i++) {
     const testHash = randomBytes(32)
     const testKey = getContentKey(ContentType.BlockHeader, testHash)
     const testVal = randomBytes(48)
-    db.put(testKey, toHexString(testVal))
+    db.put(ProtocolId.HistoryNetwork, testKey, toHexString(testVal))
   }
 
   t.equal((await db.db.keys().all()).length, 20000, '20000 total keys')
