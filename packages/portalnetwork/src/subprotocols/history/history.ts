@@ -79,7 +79,11 @@ export class HistoryProtocol extends BaseProtocol {
     } catch {
       throw new Error('Received block header with invalid proof')
     }
-    this.put(getContentKey(ContentType.BlockHeader, fromHexString(contentHash)), toHexString(value))
+    this.put(
+      ProtocolId.HistoryNetwork,
+      getContentKey(ContentType.BlockHeader, fromHexString(contentHash)),
+      toHexString(value)
+    )
   }
 
   /**
@@ -171,9 +175,17 @@ export class HistoryProtocol extends BaseProtocol {
     if (contentType === ContentType.BlockBody) {
       await this.addBlockBody(value, hashKey)
     } else if (contentType === ContentType.BlockHeader) {
-      await this.validateHeader(value, hashKey)
+      try {
+        await this.validateHeader(value, hashKey)
+      } catch (err) {
+        this.logger(`Error validating header: ${(err as any).message}`)
+      }
     } else {
-      this.put(contentKey, toHexString(value))
+      this.put(
+        ProtocolId.HistoryNetwork,
+        getContentKey(contentType, fromHexString(hashKey)),
+        toHexString(value)
+      )
     }
     this.emit('ContentAdded', hashKey, contentType, toHexString(value))
     if (this.routingTable.values().length > 0) {
@@ -185,7 +197,7 @@ export class HistoryProtocol extends BaseProtocol {
 
   public async retrieve(contentKey: string): Promise<string | undefined> {
     try {
-      const content = await this.get(contentKey)
+      const content = await this.get(ProtocolId.HistoryNetwork, contentKey)
       return content
     } catch {
       this.logger('Error retrieving content from DB')
@@ -217,8 +229,11 @@ export class HistoryProtocol extends BaseProtocol {
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
     if (block instanceof Block) {
-      this.put(bodyKey, toHexString(value))
-      await this.saveReceipts(block)
+      const bodyContentKey = getContentKey(ContentType.BlockBody, fromHexString(hashKey))
+      this.put(ProtocolId.HistoryNetwork, bodyContentKey, toHexString(value))
+      if (block.transactions.length > 0) {
+        await this.saveReceipts(block)
+      }
     } else {
       this.logger(`Could not verify block content`)
       // Don't store block body where we can't assemble a valid block

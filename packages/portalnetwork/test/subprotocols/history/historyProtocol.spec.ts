@@ -18,7 +18,6 @@ import {
   reassembleBlock,
   BlockHeaderWithProof,
   epochRootByBlocknumber,
-  ContentMessageType,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import RLP from '@ethereumjs/rlp'
@@ -102,7 +101,7 @@ tape('store -- Headers and Epoch Accumulators', async (t) => {
     )
     const contentKey = getContentKey(ContentType.BlockHeader, fromHexString(block1Hash))
 
-    const val = await node.db.get(contentKey)
+    const val = await node.db.get(ProtocolId.HistoryNetwork, contentKey)
     const headerWith = BlockHeaderWithProof.deserialize(fromHexString(val))
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWith.header), {
       hardforkByBlockNumber: true,
@@ -162,11 +161,13 @@ tape('store -- Block Bodies and Receipts', async (t) => {
   const header = BlockHeaderWithProof.deserialize(
     fromHexString(
       await protocol.get(
+        ProtocolId.HistoryNetwork,
         getContentKey(ContentType.BlockHeader, fromHexString(serializedBlock.blockHash))
       )
     )
   ).header
   const body = await protocol.get(
+    ProtocolId.HistoryNetwork,
     getContentKey(ContentType.BlockBody, fromHexString(serializedBlock.blockHash))
   )
   const rebuilt = reassembleBlock(header, fromHexString(body!))

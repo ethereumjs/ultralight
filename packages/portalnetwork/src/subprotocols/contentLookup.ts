@@ -38,7 +38,7 @@ export class ContentLookup {
     if (!this.protocol.sendFindContent) return
     this.protocol.metrics?.totalContentLookups.inc()
     try {
-      const res = await this.protocol.get(toHexString(this.contentKey))
+      const res = await this.protocol.get(this.protocol.protocolId, toHexString(this.contentKey))
       return fromHexString(res)
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)

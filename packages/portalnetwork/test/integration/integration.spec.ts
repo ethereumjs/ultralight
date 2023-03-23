@@ -93,7 +93,9 @@ tape('gossip test', async (t) => {
   //   fromHexString(epoch25)
   // )
   t.equal(
-    await protocol1.get('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
+    await protocol1.retrieve(
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+    ),
     '0x' + epoch25,
     'epoch 25 added'
   )
@@ -183,7 +185,9 @@ tape('FindContent', async (t) => {
     fromHexString(epoch25)
   )
   t.equal(
-    await protocol1.get('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
+    await protocol1.retrieve(
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+    ),
     '0x' + epoch25,
     'epoch 25 added'
   )
@@ -258,7 +262,9 @@ tape('eth_getBlockByHash', async (t) => {
     fromHexString(epoch25)
   )
   t.equal(
-    await protocol1.get('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
+    await protocol1.retrieve(
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+    ),
     '0x' + epoch25,
     'epoch 25 added'
   )

@@ -10,7 +10,7 @@ import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ProtocolId } from '../subprotocols/index.js'
+import { ProtocolId, StateProtocol } from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
@@ -177,6 +177,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       switch (protocol) {
         case ProtocolId.HistoryNetwork:
           this.protocols.set(protocol, new HistoryProtocol(this, opts.radius))
+          break
+        case ProtocolId.StateNetwork:
+          this.protocols.set(protocol, new StateProtocol(this, opts.radius))
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
