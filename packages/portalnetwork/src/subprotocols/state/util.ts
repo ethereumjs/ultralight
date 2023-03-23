@@ -1,3 +1,14 @@
+import { digest as sha256 } from '@chainsafe/as-sha256'
+import { Address, bigIntToBuffer } from '@ethereumjs/util'
+import { toHexString } from '../../util/discv5.js'
+
+import {
+  AccountTrieProofKeyType,
+  ContractByteCodeKeyType,
+  ContractStorageTrieKeyType,
+  StateNetworkContentType,
+} from './types.js'
+
 export const MODULO = 2n ** 256n
 const MID = 2n ** 255n
 
@@ -13,4 +24,157 @@ export const distance = (id1: bigint, id2: bigint): bigint => {
   id1 > id2 ? (diff = id1 - id2) : (diff = id2 - id1)
   diff > MID ? (diff = MODULO - diff) : diff
   return diff
+}
+
+interface ContentKeyOpts {
+  contentType: StateNetworkContentType
+  address: Address
+  stateRoot: Uint8Array
+  slot: bigint
+  codeHash: Uint8Array
+}
+
+export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
+  if (!opts.address) {
+    throw new Error('address is required')
+  }
+  switch (opts.contentType) {
+    case StateNetworkContentType.AccountTrieProof: {
+      if (!opts.stateRoot) {
+        throw new Error('stateRoot is required')
+      }
+      const key = AccountTrieProofKeyType.serialize({
+        address: opts.address.toBuffer(),
+        stateRoot: opts.stateRoot,
+      })
+      return Uint8Array.from([opts.contentType, ...key])
+    }
+    case StateNetworkContentType.ContractStorageTrieProof: {
+      if (!opts.slot || !opts.stateRoot) {
+        throw new Error('required fields missing')
+      }
+      const key = ContractStorageTrieKeyType.serialize({
+        address: opts.address.toBuffer(),
+        slot: opts.slot,
+        stateRoot: opts.stateRoot,
+      })
+      return Uint8Array.from([opts.contentType, ...key])
+    }
+    case StateNetworkContentType.ContractByteCode: {
+      if (!opts.codeHash) {
+        throw new Error('codeHash required')
+      }
+      const key = ContractByteCodeKeyType.serialize({
+        address: opts.address.toBuffer(),
+        codeHash: opts.codeHash,
+      })
+      return Uint8Array.from([opts.contentType, ...key])
+    }
+    default:
+      throw new Error(`Content Type ${opts.contentType} not supported`)
+  }
+}
+
+export const decodeStateNetworkContentKey = (key: Uint8Array) => {
+  const contentType = key[0] as StateNetworkContentType
+  switch (contentType) {
+    case StateNetworkContentType.AccountTrieProof: {
+      return AccountTrieProofKeyType.deserialize(key.slice(1))
+    }
+    case StateNetworkContentType.ContractStorageTrieProof: {
+      return ContractStorageTrieKeyType.deserialize(key.slice(1))
+    }
+    case StateNetworkContentType.ContractByteCode: {
+      return ContractByteCodeKeyType.deserialize(key.slice(1))
+    }
+    default:
+      throw new Error(`Content Type ${contentType} not supported`)
+  }
+}
+
+export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>) => {
+  if (!opts.address) {
+    throw new Error('address is required')
+  }
+  switch (opts.contentType) {
+    case StateNetworkContentType.AccountTrieProof: {
+      return sha256(opts.address.toBuffer())
+    }
+    case StateNetworkContentType.ContractStorageTrieProof: {
+      if (!opts.slot) {
+        throw new Error('slot value required')
+      }
+      return Uint8Array.from(
+        bigIntToBuffer(
+          BigInt(toHexString(sha256(opts.address.toBuffer()))) +
+            (BigInt(toHexString(sha256(bigIntToBuffer(opts.slot)))) % MODULO)
+        )
+      )
+    }
+    case StateNetworkContentType.ContractByteCode: {
+      if (!opts.codeHash) {
+        throw new Error('codeHash required')
+      }
+      return sha256(Buffer.concat([opts.address.toBuffer(), opts.codeHash]))
+    }
+    default:
+      throw new Error(`Content Type ${opts.contentType} not supported`)
+  }
+}
+
+export function mergeArrays(arrays: string[][]): (string | string[])[] {
+  const merged = arrays[0].map((v, i) => {
+    const ambiguous = Array.from({ length: arrays.length }, (_, idx) => arrays[idx][i])
+      .map((v) => JSON.stringify(v))
+      .filter((v, i, _array) => _array.indexOf(v) === i)
+      .map((v) => JSON.parse(v))
+    return v === arrays[1][i] ? v : ambiguous
+  })
+  return merged
+}
+
+export function isSubarrayOf(a: string[], b: string[]): boolean {
+  if (a.length > b.length) {
+    return false
+  }
+  for (let i = 0; i <= b.length - a.length; i++) {
+    let found = true
+    for (let j = 0; j < a.length; j++) {
+      if (a[j] !== b[i + j]) {
+        found = false
+        break
+      }
+    }
+    if (found) {
+      return true
+    }
+  }
+  return false
+}
+export function removeDuplicateSequences(_arr: string[][]): string[][] {
+  const arr = _arr
+    .map((a) => JSON.stringify(a))
+    .filter((a, i, _array) => _array.indexOf(a) === i)
+    .map((a) => JSON.parse(a))
+  const subarrays = new Set<string[]>()
+  const result: string[][] = []
+
+  for (let i = 0; i < arr.length; i++) {
+    let isSubarray = false
+    for (let j = 0; j < arr.length; j++) {
+      if (i === j) {
+        continue
+      }
+      if (isSubarrayOf(arr[i], arr[j])) {
+        subarrays.add(arr[i])
+        isSubarray = true
+        break
+      }
+    }
+    if (!isSubarray && !subarrays.has(arr[i])) {
+      result.push(arr[i])
+    }
+  }
+
+  return result
 }
