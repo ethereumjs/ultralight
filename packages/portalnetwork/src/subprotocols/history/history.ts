@@ -41,8 +41,8 @@ enum FoundContent {
   'CONTENT' = 1,
   'ENRS' = 2,
 }
-export class HistoryProtocol extends BaseProtocol {
-  protocolId: ProtocolId
+export class HistoryProtocol extends BaseProtocol<ProtocolId.HistoryNetwork> {
+  protocolId: ProtocolId.HistoryNetwork
   protocolName = 'HistoryNetwork'
   logger: Debugger
   ETH: ETH
@@ -80,7 +80,7 @@ export class HistoryProtocol extends BaseProtocol {
       throw new Error('Received block header with invalid proof')
     }
     this.put(
-      ProtocolId.HistoryNetwork,
+      this.protocolId,
       getContentKey(ContentType.BlockHeader, fromHexString(contentHash)),
       toHexString(value)
     )
@@ -125,6 +125,7 @@ export class HistoryProtocol extends BaseProtocol {
             const id = Buffer.from(decoded.value as Uint8Array).readUint16BE()
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             await this.handleNewRequest({
+              protocolId: this.protocolId,
               contentKeys: [key],
               peerId: dstId,
               connectionId: id,
@@ -182,7 +183,7 @@ export class HistoryProtocol extends BaseProtocol {
       }
     } else {
       this.put(
-        ProtocolId.HistoryNetwork,
+        this.protocolId,
         getContentKey(contentType, fromHexString(hashKey)),
         toHexString(value)
       )
@@ -197,7 +198,7 @@ export class HistoryProtocol extends BaseProtocol {
 
   public async retrieve(contentKey: string): Promise<string | undefined> {
     try {
-      const content = await this.get(ProtocolId.HistoryNetwork, contentKey)
+      const content = await this.get(this.protocolId, contentKey)
       return content
     } catch {
       this.logger('Error retrieving content from DB')
@@ -230,7 +231,7 @@ export class HistoryProtocol extends BaseProtocol {
     }
     if (block instanceof Block) {
       const bodyContentKey = getContentKey(ContentType.BlockBody, fromHexString(hashKey))
-      this.put(ProtocolId.HistoryNetwork, bodyContentKey, toHexString(value))
+      this.put(this.protocolId, bodyContentKey, toHexString(value))
       if (block.transactions.length > 0) {
         await this.saveReceipts(block)
       }
