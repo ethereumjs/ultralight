@@ -10,7 +10,7 @@ import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ProtocolId } from '../subprotocols/index.js'
+import { ProtocolId, StateProtocol } from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,

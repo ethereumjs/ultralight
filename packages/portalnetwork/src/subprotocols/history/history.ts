@@ -229,6 +229,7 @@ export class HistoryProtocol extends BaseProtocol {
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
     if (block instanceof Block) {
+      const bodyContentKey = getContentKey(ContentType.BlockBody, fromHexString(hashKey))
       this.put(ProtocolId.HistoryNetwork, bodyContentKey, toHexString(value))
       if (block.transactions.length > 0) {
         await this.saveReceipts(block)
