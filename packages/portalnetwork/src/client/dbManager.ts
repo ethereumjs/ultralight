@@ -1,11 +1,10 @@
 import { NodeId, distance } from '@chainsafe/discv5'
-import { fromHexString } from '@chainsafe/ssz'
 import { bigIntToHex } from '@ethereumjs/util'
 import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
+import { fromHexString, serializedContentKeyToContentId } from '../index.js'
 import { ProtocolId } from '../subprotocols/index.js'
-import { serializedContentKeyToContentId } from '../util/util.js'
 
 export class DBManager {
   nodeId: string
@@ -33,14 +32,14 @@ export class DBManager {
     }
   }
 
-  get(key: string) {
-    const db = this.sublevel(key)
+  get(protocol: ProtocolId, key: string) {
+    const db = this.sublevel(protocol)
     const databaseKey = this.databaseKey(key)
     return db.get(databaseKey)
   }
 
-  put(key: string, val: string) {
-    const db = this.sublevel(key)
+  put(protocol: ProtocolId, key: string, val: string) {
+    const db = this.sublevel(protocol)
     const databaseKey = this.databaseKey(key)
     return db.put(databaseKey, val, (err: any) => {
       if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
@@ -52,8 +51,8 @@ export class DBManager {
     return (db as any).batch(ops)
   }
 
-  del(key: string) {
-    const db = this.sublevel(key)
+  del(protocol: ProtocolId, key: string) {
+    const db = this.sublevel(protocol)
     const databaseKey = this.databaseKey(key)
     return db.del(databaseKey)
   }
@@ -63,19 +62,8 @@ export class DBManager {
     return bigIntToHex(d)
   }
 
-  sublevel(key: string) {
-    let db = this.db
-    switch (key.slice(0, 4)) {
-      case '0x00':
-      case '0x01':
-      case '0x02':
-      case '0x03':
-      case '0x04':
-      case '0x05': {
-        db = this.sublevels.get(ProtocolId.HistoryNetwork)!
-      }
-    }
-    return db
+  sublevel(protocol: ProtocolId) {
+    return this.sublevels.get(protocol)!
   }
 
   async prune(sublevel: ProtocolId, radius: bigint) {

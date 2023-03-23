@@ -405,7 +405,7 @@ export class portal {
     const accepted: boolean[] = Array(contentKeys.length).fill(false)
     for (let x = 0; x < contentKeys.length; x++) {
       try {
-        await this._client.db.get(contentKeys[x])
+        await this._client.db.get(ProtocolId.HistoryNetwork, contentKeys[x])
       } catch (err) {
         accepted[x] = true
       }

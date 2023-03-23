@@ -178,6 +178,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         case ProtocolId.HistoryNetwork:
           this.protocols.set(protocol, new HistoryProtocol(this, opts.radius))
           break
+        case ProtocolId.StateNetwork:
+          this.protocols.set(protocol, new StateProtocol(this, opts.radius))
+          break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
           break

@@ -54,8 +54,8 @@ export abstract class BaseProtocol extends EventEmitter {
   ) => Promise<Buffer>
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
-  put: (contentKey: string, content: string) => void
-  get: (contentKey: string) => Promise<string>
+  put: (protocol: ProtocolId, contentKey: string, content: string) => void
+  get: (protocol: ProtocolId, contentKey: string) => Promise<string>
   _prune: (protocol: ProtocolId, radius: bigint) => Promise<void>
   constructor(client: PortalNetwork, radius?: bigint) {
     super()
@@ -81,7 +81,7 @@ export abstract class BaseProtocol extends EventEmitter {
     })
   }
 
-  abstract store(contentType: ContentType, hashKey: string, value: Uint8Array): Promise<void>
+  abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
@@ -346,7 +346,7 @@ export abstract class BaseProtocol extends EventEmitter {
             for await (const key of requestedKeys) {
               let value = Uint8Array.from([])
               try {
-                value = fromHexString(await this.get(toHexString(key)))
+                value = fromHexString(await this.get(ProtocolId.HistoryNetwork, toHexString(key)))
                 requestedData.push(value)
               } catch (err: any) {
                 this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -384,7 +384,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
-              await this.get(toHexString(msg.contentKeys[x]))
+              await this.get(ProtocolId.HistoryNetwork, toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
