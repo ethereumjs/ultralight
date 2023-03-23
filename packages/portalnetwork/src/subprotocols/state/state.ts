@@ -1,5 +1,5 @@
 import { Union } from '@chainsafe/ssz/lib/interface.js'
-import { debug, Debugger } from 'debug'
+import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import { BaseProtocol } from '../protocol.js'
 import { ProtocolId } from '../types.js'
