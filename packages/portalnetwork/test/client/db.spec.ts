@@ -40,14 +40,20 @@ tape('DBManager unit tests', async (t) => {
   const _testId = serializedContentKeyToContentId(fromHexString(testKey))
   t.equal(_testId, testId, 'testIds match')
 
-  db.put(ProtocolId.HistoryNetwork, testId, toHexString(testVal))
+  db.put(ProtocolId.HistoryNetwork, testKey, toHexString(testVal))
   const lookupD = BigInt.asUintN(32, distance(self.slice(2), testId.slice(2)))
   const lookupKey = bigIntToHex(lookupD)
+  console.log({
+    testKey,
+    testId,
+    lookupKey,
+    lookupD,
+  })
   const historyPrefix = '!0x500b!'
   const key0 = [...(await db.db.keys().all())][0]
   t.equal(
-    historyPrefix + lookupKey,
     key0,
+    historyPrefix + lookupKey,
     'DBManager prefixed HistoryNetwork key with HistoryNetwork prefix'
   )
   t.equal(
@@ -71,7 +77,7 @@ tape('DBManager unit tests', async (t) => {
     toHexString(testVal),
     'HistoryNetwork content retrieved directly from history sublevel'
   )
-  const res = await db.get(ProtocolId.HistoryNetwork, testId)
+  const res = await db.get(ProtocolId.HistoryNetwork, testKey)
   t.equal(res, toHexString(testVal), 'DBManager retrieved History Content from a content key')
 
   for (let i = 0; i < 10000; i++) {
