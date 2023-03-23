@@ -26,7 +26,7 @@ tape('protocol wire message tests', async (t) => {
     transport: TransportLayer.WEB,
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
-  const baseProtocol = node.protocols.get(ProtocolId.HistoryNetwork) as BaseProtocol
+  const baseProtocol = node.protocols.get(ProtocolId.HistoryNetwork) as BaseProtocol<ProtocolId>
   t.test('BaseProtocol', async (st) => {
     baseProtocol.sendMessage = td.func<any>()
     td.when(
@@ -163,7 +163,7 @@ tape('protocol wire message tests', async (t) => {
         peerId: td.matchers.contains('abc'),
         connectionId: td.matchers.anything(),
         contents: td.matchers.anything(),
-      } as INewRequest)
+      })
     ).thenResolve(ContentRequest.prototype)
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([1])])
     st.deepEqual(

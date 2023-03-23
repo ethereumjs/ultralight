@@ -10,6 +10,7 @@ import {
   toHexString,
   Packet,
   ConnectionState,
+  ProtocolId,
 } from '../../../src/index.js'
 
 const sampleSize = 50000
@@ -19,8 +20,9 @@ const DEFAULT_RAND_ACKNR = 4444
 const readId = 1111
 const writeId = 2222
 
-const _read = () =>
-  new UtpSocket({
+const _read = <P extends ProtocolId>(protocolId: P) =>
+  new UtpSocket<P>({
+    protocolId: protocolId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
     remoteAddress: '1234',
@@ -29,8 +31,9 @@ const _read = () =>
     logger: debug('test'),
     type: UtpSocketType.READ,
   })
-const _write = () =>
+const _write = <P extends ProtocolId>(protocolId: P) =>
   new UtpSocket({
+    protocolId: protocolId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
     remoteAddress: '1234',
@@ -41,8 +44,8 @@ const _write = () =>
     content: content,
   })
 tape('socket constructor', (t) => {
-  const read = _read()
-  const write = _write()
+  const read = _read(ProtocolId.HistoryNetwork)
+  const write = _write(ProtocolId.HistoryNetwork)
   t.test('Read Socket', (st) => {
     st.equal(read.type, UtpSocketType.READ, 'Socket type correctly updated to READ')
     st.equal(read.sndConnectionId, writeId, 'Socket sndId correctly updated to 2')
@@ -63,8 +66,8 @@ tape('socket constructor', (t) => {
 })
 
 tape('createPacket()', (t) => {
-  const read = _read()
-  const write = _write()
+  const read = _read(ProtocolId.HistoryNetwork)
+  const write = _write(ProtocolId.HistoryNetwork)
   t.test('SYN', (st) => {
     const read_syn = read.createPacket({ pType: PacketType.ST_SYN })
     st.equal(read_syn.header.pType, PacketType.ST_SYN, 'Packet type correctly set to ST_SYN')
@@ -197,10 +200,10 @@ tape('createPacket()', (t) => {
 })
 
 tape('sendPacket()', async (t) => {
-  const read = _read()
-  const write = _write()
-  const test = async (
-    socket: UtpSocket,
+  const read = _read(ProtocolId.HistoryNetwork)
+  const write = _write(ProtocolId.HistoryNetwork)
+  const test = async <P extends ProtocolId>(
+    socket: UtpSocket<P>,
     testFunction: (...args: any) => Promise<void>,
     expected: any,
     ...args: any
@@ -233,10 +236,10 @@ tape('sendPacket()', async (t) => {
 })
 
 tape('handle()', async (t) => {
-  const read = _read()
-  const write = _write()
-  const test = async (
-    socket: UtpSocket,
+  const read = _read(ProtocolId.HistoryNetwork)
+  const write = _write(ProtocolId.HistoryNetwork)
+  const test = async <P extends ProtocolId>(
+    socket: UtpSocket<P>,
     testFunction: (...args: any) => Promise<any>,
     expected: any,
     ...args: any
@@ -279,7 +282,7 @@ tape('handle()', async (t) => {
 })
 
 tape('uTP Socket Tests', (t) => {
-  const s = _write()
+  const s = _write(ProtocolId.HistoryNetwork)
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
   s.setWriter(s.getSeqNr())
