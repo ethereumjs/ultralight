@@ -33,7 +33,7 @@ import { peerIdFromKeys } from '@libp2p/peer-id'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
-  protocols: Map<ProtocolId, BaseProtocol>
+  protocols: Map<ProtocolId, BaseProtocol<any>>
   uTP: PortalNetworkUTP
   db: DBManager
   bootnodes: string[]

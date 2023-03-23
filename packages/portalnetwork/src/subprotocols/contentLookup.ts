@@ -4,6 +4,7 @@ import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 import { ContentType } from './history/types.js'
 import { BaseProtocol } from './protocol.js'
+import { ProtocolId } from './types.js'
 
 type lookupPeer = {
   nodeId: NodeId
@@ -11,8 +12,8 @@ type lookupPeer = {
   hasContent?: boolean
 }
 
-export class ContentLookup {
-  private protocol: BaseProtocol
+export class ContentLookup<P extends ProtocolId> {
+  private protocol: BaseProtocol<P>
   private lookupPeers: lookupPeer[]
   private contacted: NodeId[]
   private contentId: string
@@ -20,7 +21,7 @@ export class ContentLookup {
   private logger: Debugger
   private uTPlistener: any
 
-  constructor(protocol: BaseProtocol, contentKey: Uint8Array) {
+  constructor(protocol: BaseProtocol<P>, contentKey: Uint8Array) {
     this.protocol = protocol
     this.lookupPeers = []
     this.contacted = []

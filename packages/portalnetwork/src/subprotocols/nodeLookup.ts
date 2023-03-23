@@ -1,6 +1,6 @@
 import { ENR, distance, EntryStatus, log2Distance } from '@chainsafe/discv5'
 import { Debugger } from 'debug'
-import { shortId } from '../index.js'
+import { ProtocolId, shortId } from '../index.js'
 import { BaseProtocol } from './protocol.js'
 
 // This class implements a version of the the lookup algorithm defined in the Kademlia paper
@@ -9,12 +9,12 @@ import { BaseProtocol } from './protocol.js'
 const k = 16 // Kademlia constant for max nodes to be retrieved by `nodeLookup`
 const a = 3 // Concurrency parameter defined in Kademlia paper
 
-export class NodeLookup {
-  private protocol: BaseProtocol
+export class NodeLookup<P extends ProtocolId> {
+  private protocol: BaseProtocol<P>
   private nodeSought: string
   private log: Debugger
 
-  constructor(protocol: BaseProtocol, nodeId: string) {
+  constructor(protocol: BaseProtocol<P>, nodeId: string) {
     this.protocol = protocol
     this.nodeSought = nodeId
     this.log = this.protocol.logger.extend('nodeLookup', ':')
