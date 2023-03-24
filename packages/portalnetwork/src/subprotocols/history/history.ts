@@ -71,13 +71,17 @@ export class HistoryProtocol extends BaseProtocol {
       hardforkByBlockNumber: true,
     })
     const proof = headerProof.proof
-    if (proof.value === null) {
-      throw new Error('Received block header without proof')
-    }
-    try {
-      this.verifyInclusionProof(proof.value, contentHash, header.number)
-    } catch {
-      throw new Error('Received block header with invalid proof')
+
+    if (header.number < 15537351n) {
+      // Only check for proof if pre-merge block header
+      if (proof.value === null) {
+        throw new Error('Received block header without proof')
+      }
+      try {
+        this.verifyInclusionProof(proof.value, contentHash, header.number)
+      } catch {
+        throw new Error('Received block header with invalid proof')
+      }
     }
     this.put(
       this.protocolId,
