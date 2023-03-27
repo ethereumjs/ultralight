@@ -36,27 +36,27 @@ import {
 } from '../index.js'
 import { EventEmitter } from 'events'
 
-export abstract class BaseProtocol<P extends ProtocolId> extends EventEmitter {
+export abstract class BaseProtocol extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
   private nodeRadius: bigint
   private checkIndex: number
   abstract logger: Debugger
-  abstract protocolId: P
+  abstract protocolId: ProtocolId
   abstract protocolName: string
   public enr: SignableENR
-  handleNewRequest: (request: INewRequest<P>) => Promise<ContentRequest<P>>
+  handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
     payload: Buffer,
-    protocolId: P,
+    protocolId: ProtocolId,
     utpMessage?: boolean
   ) => Promise<Buffer>
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
-  put: (protocol: P, contentKey: string, content: string) => void
-  get: (protocol: P, contentKey: string) => Promise<string>
-  _prune: (protocol: P, radius: bigint) => Promise<void>
+  put: (protocol: ProtocolId, contentKey: string, content: string) => void
+  get: (protocol: ProtocolId, contentKey: string) => Promise<string>
+  _prune: (protocol: ProtocolId, radius: bigint) => Promise<void>
   constructor(client: PortalNetwork, radius?: bigint) {
     super()
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)

@@ -26,7 +26,7 @@ import {
 import { EventEmitter } from 'events'
 
 export class PortalNetworkUTP extends EventEmitter {
-  openContentRequest: Map<UtpSocketKey, ContentRequest<ProtocolId>>
+  openContentRequest: Map<UtpSocketKey, ContentRequest>
   logger: Debugger
   working: boolean
 
@@ -65,15 +65,15 @@ export class PortalNetworkUTP extends EventEmitter {
     )
   }
 
-  createPortalNetworkUTPSocket<P extends ProtocolId>(
-    protocolId: P,
+  createPortalNetworkUTPSocket(
+    protocolId: ProtocolId,
     requestCode: RequestCode,
     remoteAddress: string,
     sndId: number,
     rcvId: number,
     content?: Uint8Array
-  ): UtpSocket<P> {
-    const socket: UtpSocket<P> = new UtpSocket<P>({
+  ): UtpSocket {
+    const socket: UtpSocket = new UtpSocket({
       protocolId,
       remoteAddress,
       sndId,
@@ -100,7 +100,7 @@ export class PortalNetworkUTP extends EventEmitter {
     }
   }
 
-  async handleNewRequest<P extends ProtocolId>(params: INewRequest<P>): Promise<ContentRequest<P>> {
+  async handleNewRequest(params: INewRequest): Promise<ContentRequest> {
     const { contentKeys, peerId, connectionId, requestCode } = params
     const content = params.contents ? params.contents[0] : undefined
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
@@ -108,7 +108,7 @@ export class PortalNetworkUTP extends EventEmitter {
     const newRequest = new ContentRequest({
       protocolId: params.protocolId,
       requestCode,
-      socket: this.createPortalNetworkUTPSocket<P>(
+      socket: this.createPortalNetworkUTPSocket(
         params.protocolId,
         requestCode,
         peerId,
@@ -176,7 +176,7 @@ export class PortalNetworkUTP extends EventEmitter {
     })
   }
 
-  async _handleSynPacket(request: ContentRequest<ProtocolId>, packet: SynPacket): Promise<void> {
+  async _handleSynPacket(request: ContentRequest, packet: SynPacket): Promise<void> {
     switch (request.requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
       case RequestCode.ACCEPT_READ:
@@ -187,10 +187,7 @@ export class PortalNetworkUTP extends EventEmitter {
         throw new Error('I send SYNs, I do not handle them.')
     }
   }
-  async _handleStatePacket(
-    request: ContentRequest<ProtocolId>,
-    packet: StatePacket
-  ): Promise<void> {
+  async _handleStatePacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ: {
         if (packet.header.ackNr === 0) {
@@ -224,10 +221,7 @@ export class PortalNetworkUTP extends EventEmitter {
     })
     return ackNrs
   }
-  async _handleSelectiveAckPacket(
-    request: ContentRequest<ProtocolId>,
-    packet: StatePacket
-  ): Promise<void> {
+  async _handleSelectiveAckPacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     const ackNrs = PortalNetworkUTP.bitmaskToAckNrs(
       (packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask,
       request.socket.ackNr
@@ -260,7 +254,7 @@ export class PortalNetworkUTP extends EventEmitter {
         throw new Error('Why did I get a SELECTIVE ACK packet?')
     }
   }
-  async _handleDataPacket(request: ContentRequest<ProtocolId>, packet: DataPacket) {
+  async _handleDataPacket(request: ContentRequest, packet: DataPacket) {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ:
       case RequestCode.ACCEPT_READ:
@@ -269,10 +263,10 @@ export class PortalNetworkUTP extends EventEmitter {
         throw new Error(`Why did I get a DATA packet?`)
     }
   }
-  async _handleResetPacket(request: ContentRequest<ProtocolId>) {
+  async _handleResetPacket(request: ContentRequest) {
     request.socket.close()
   }
-  async _handleFinPacket(request: ContentRequest<ProtocolId>, packet: FinPacket) {
+  async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
     const keys = request.contentKeys
     const content = await request.socket.handleFinPacket(packet)
     let contents = [content]

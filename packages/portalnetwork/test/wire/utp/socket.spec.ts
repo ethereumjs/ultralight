@@ -20,8 +20,8 @@ const DEFAULT_RAND_ACKNR = 4444
 const readId = 1111
 const writeId = 2222
 
-const _read = <P extends ProtocolId>(protocolId: P) =>
-  new UtpSocket<P>({
+const _read = (protocolId: ProtocolId) =>
+  new UtpSocket({
     protocolId: protocolId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
@@ -31,7 +31,7 @@ const _read = <P extends ProtocolId>(protocolId: P) =>
     logger: debug('test'),
     type: UtpSocketType.READ,
   })
-const _write = <P extends ProtocolId>(protocolId: P) =>
+const _write = (protocolId: ProtocolId) =>
   new UtpSocket({
     protocolId: protocolId,
     ackNr: DEFAULT_RAND_ACKNR,
@@ -202,8 +202,8 @@ tape('createPacket()', (t) => {
 tape('sendPacket()', async (t) => {
   const read = _read(ProtocolId.HistoryNetwork)
   const write = _write(ProtocolId.HistoryNetwork)
-  const test = async <P extends ProtocolId>(
-    socket: UtpSocket<P>,
+  const test = async (
+    socket: UtpSocket,
     testFunction: (...args: any) => Promise<void>,
     expected: any,
     ...args: any
@@ -238,8 +238,8 @@ tape('sendPacket()', async (t) => {
 tape('handle()', async (t) => {
   const read = _read(ProtocolId.HistoryNetwork)
   const write = _write(ProtocolId.HistoryNetwork)
-  const test = async <P extends ProtocolId>(
-    socket: UtpSocket<P>,
+  const test = async (
+    socket: UtpSocket,
     testFunction: (...args: any) => Promise<any>,
     expected: any,
     ...args: any

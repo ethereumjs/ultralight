@@ -91,8 +91,8 @@ export interface IData extends IPacket<PacketType.ST_DATA> {
 }
 export type ICreate<T extends PacketType> = IBasic<T> | ISelectiveAck | IData
 
-export interface UtpSocketOptions<P extends ProtocolId> {
-  protocolId: P
+export interface UtpSocketOptions {
+  protocolId: ProtocolId
   remoteAddress: string
   sndId: number
   rcvId: number

@@ -89,7 +89,6 @@ tape('uTP Reader/Writer tests', (t) => {
     )
     const _socket = uTP.createPortalNetworkUTPSocket(
       protocolId,
-
       RequestCode.FINDCONTENT_READ,
       _peerId.toString(),
       DEFAULT_RAND_ID + 1,
@@ -310,7 +309,7 @@ tape('PortalNetworkUTP test', (t) => {
   t.test('handleNewRequest', async (st) => {
     const connectionId = randUint16()
     const socketIds = utp.startingIdNrs(connectionId)
-    let params: INewRequest<ProtocolId.HistoryNetwork> = {
+    let params: INewRequest = {
       protocolId: ProtocolId.HistoryNetwork,
       contentKeys: [randomBytes(33)],
       peerId: '0xPeerAddress',

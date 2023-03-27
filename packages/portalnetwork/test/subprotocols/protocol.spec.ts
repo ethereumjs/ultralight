@@ -13,7 +13,6 @@ import {
   TransportLayer,
   BaseProtocol,
   ContentRequest,
-  INewRequest,
   HistoryProtocol,
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
@@ -26,7 +25,7 @@ tape('protocol wire message tests', async (t) => {
     transport: TransportLayer.WEB,
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
-  const baseProtocol = node.protocols.get(ProtocolId.HistoryNetwork) as BaseProtocol<ProtocolId>
+  const baseProtocol = node.protocols.get(ProtocolId.HistoryNetwork) as BaseProtocol
   t.test('BaseProtocol', async (st) => {
     baseProtocol.sendMessage = td.func<any>()
     td.when(

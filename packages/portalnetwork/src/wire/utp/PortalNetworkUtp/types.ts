@@ -12,8 +12,8 @@ export enum RequestCode {
 export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
   return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
 }
-export interface INewRequest<P extends ProtocolId> {
-  protocolId: P
+export interface INewRequest {
+  protocolId: ProtocolId
   contentKeys: Uint8Array[]
   peerId: string
   connectionId: number

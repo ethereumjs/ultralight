@@ -41,7 +41,7 @@ enum FoundContent {
   'CONTENT' = 1,
   'ENRS' = 2,
 }
-export class HistoryProtocol extends BaseProtocol<ProtocolId.HistoryNetwork> {
+export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId.HistoryNetwork
   protocolName = 'HistoryNetwork'
   logger: Debugger
