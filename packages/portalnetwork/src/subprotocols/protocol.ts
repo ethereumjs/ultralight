@@ -346,7 +346,7 @@ export abstract class BaseProtocol extends EventEmitter {
             for await (const key of requestedKeys) {
               let value = Uint8Array.from([])
               try {
-                value = fromHexString(await this.get(ProtocolId.HistoryNetwork, toHexString(key)))
+                value = fromHexString(await this.get(this.protocolId, toHexString(key)))
                 requestedData.push(value)
               } catch (err: any) {
                 this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -356,6 +356,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
             const contents = encodeWithVariantPrefix(requestedData)
             await this.handleNewRequest({
+              protocolId: this.protocolId,
               contentKeys: requestedKeys,
               peerId: dstId,
               connectionId: id,
@@ -384,7 +385,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
             try {
-              await this.get(ProtocolId.HistoryNetwork, toHexString(msg.contentKeys[x]))
+              await this.get(this.protocolId, toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
@@ -434,6 +435,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
     this.metrics?.acceptMessagesSent.inc()
     await this.handleNewRequest({
+      protocolId: this.protocolId,
       contentKeys: desiredContentKeys,
       peerId: src.nodeId,
       connectionId: id,
@@ -529,6 +531,7 @@ export abstract class BaseProtocol extends EventEmitter {
       )
       const _id = randUint16()
       await this.handleNewRequest({
+        protocolId: this.protocolId,
         contentKeys: [decodedContentMessage.contentKey],
         peerId: src.nodeId,
         connectionId: _id,
@@ -700,6 +703,7 @@ export abstract class BaseProtocol extends EventEmitter {
               accepted++
               const id = Buffer.from(msg.connectionId).readUInt16BE(0)
               this.handleNewRequest({
+                protocolId: this.protocolId,
                 contentKeys: [contentKey],
                 peerId: peer.nodeId,
                 connectionId: id,

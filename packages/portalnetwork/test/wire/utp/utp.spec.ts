@@ -74,11 +74,13 @@ const _peerId = await createSecp256k1PeerId()
 const DEFAULT_RAND_ID = 1234
 
 tape('uTP Reader/Writer tests', (t) => {
+  const protocolId = ProtocolId.HistoryNetwork
   const content = randomBytes(sampleSize)
   const logger = debug('uTP-')
   const uTP = new PortalNetworkUTP(logger)
   t.test('Content Write/Read', async (st) => {
     const socket = uTP.createPortalNetworkUTPSocket(
+      protocolId,
       RequestCode.FOUNDCONTENT_WRITE,
       peerId.toString(),
       DEFAULT_RAND_ID,
@@ -86,6 +88,7 @@ tape('uTP Reader/Writer tests', (t) => {
       content
     )
     const _socket = uTP.createPortalNetworkUTPSocket(
+      protocolId,
       RequestCode.FINDCONTENT_READ,
       _peerId.toString(),
       DEFAULT_RAND_ID + 1,
@@ -171,6 +174,8 @@ tape('uTP Reader/Writer tests', (t) => {
     })
 
     const _socket2 = uTP.createPortalNetworkUTPSocket(
+      protocolId,
+
       RequestCode.FOUNDCONTENT_WRITE,
       _peerId.toString(),
       5678,
@@ -181,6 +186,8 @@ tape('uTP Reader/Writer tests', (t) => {
     const socketKey = createSocketKey(peerId.toString(), 1234, 5678)
     const contents = [encodeWithVariantPrefix(offerContents)]
     const offer_socket = uTP.createPortalNetworkUTPSocket(
+      protocolId,
+
       RequestCode.OFFER_WRITE,
       peerId.toString(),
       1234,
@@ -219,11 +226,13 @@ tape('PortalNetworkUTP test', (t) => {
   const logger = debug('log')
   const utp = new PortalNetworkUTP(logger)
   t.test('createPortalNetworkUTPSocket', async (st) => {
+    const protocolId = ProtocolId.HistoryNetwork
     // connectionId comes from discv5 talkResp message
     const connectionId = randUint16()
     const socketIds = utp.startingIdNrs(connectionId)
     st.ok(utp, 'PortalNetworkUTP created')
     let socket = utp.createPortalNetworkUTPSocket(
+      protocolId,
       RequestCode.FOUNDCONTENT_WRITE,
       '0xPeerAddress',
       socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
@@ -242,6 +251,7 @@ tape('PortalNetworkUTP test', (t) => {
       'UTPSocket has correct ackNr'
     )
     socket = utp.createPortalNetworkUTPSocket(
+      protocolId,
       RequestCode.FINDCONTENT_READ,
       '0xPeerAddress',
       socketIds[RequestCode.FINDCONTENT_READ].sndId,
@@ -263,6 +273,7 @@ tape('PortalNetworkUTP test', (t) => {
     )
 
     socket = utp.createPortalNetworkUTPSocket(
+      protocolId,
       RequestCode.OFFER_WRITE,
       '0xPeerAddress',
       socketIds[RequestCode.OFFER_WRITE].sndId,
@@ -279,6 +290,7 @@ tape('PortalNetworkUTP test', (t) => {
       'UTPSocket has correct seqNr'
     )
     socket = utp.createPortalNetworkUTPSocket(
+      protocolId,
       RequestCode.ACCEPT_READ,
       '0xPeerAddress',
       socketIds[RequestCode.ACCEPT_READ].sndId,
@@ -298,6 +310,7 @@ tape('PortalNetworkUTP test', (t) => {
     const connectionId = randUint16()
     const socketIds = utp.startingIdNrs(connectionId)
     let params: INewRequest = {
+      protocolId: ProtocolId.HistoryNetwork,
       contentKeys: [randomBytes(33)],
       peerId: '0xPeerAddress',
       connectionId,

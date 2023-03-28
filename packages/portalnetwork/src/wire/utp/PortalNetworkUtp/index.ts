@@ -26,7 +26,7 @@ import {
 import { EventEmitter } from 'events'
 
 export class PortalNetworkUTP extends EventEmitter {
-  openContentRequest: Map<UtpSocketKey, ContentRequest> // TODO enable other networks
+  openContentRequest: Map<UtpSocketKey, ContentRequest>
   logger: Debugger
   working: boolean
 
@@ -66,6 +66,7 @@ export class PortalNetworkUTP extends EventEmitter {
   }
 
   createPortalNetworkUTPSocket(
+    protocolId: ProtocolId,
     requestCode: RequestCode,
     remoteAddress: string,
     sndId: number,
@@ -73,6 +74,7 @@ export class PortalNetworkUTP extends EventEmitter {
     content?: Uint8Array
   ): UtpSocket {
     const socket: UtpSocket = new UtpSocket({
+      protocolId,
       remoteAddress,
       sndId,
       rcvId,
@@ -104,9 +106,16 @@ export class PortalNetworkUTP extends EventEmitter {
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
     const newRequest = new ContentRequest({
-      protocolId: ProtocolId.HistoryNetwork,
+      protocolId: params.protocolId,
       requestCode,
-      socket: this.createPortalNetworkUTPSocket(requestCode, peerId, sndId, rcvId, content),
+      socket: this.createPortalNetworkUTPSocket(
+        params.protocolId,
+        requestCode,
+        peerId,
+        sndId,
+        rcvId,
+        content
+      ),
       socketKey: createSocketKey(peerId, sndId, rcvId),
       content: params.contents ? params.contents[0] : undefined,
       contentKeys,

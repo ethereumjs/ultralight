@@ -13,7 +13,6 @@ import {
   TransportLayer,
   BaseProtocol,
   ContentRequest,
-  INewRequest,
   HistoryProtocol,
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
@@ -163,7 +162,7 @@ tape('protocol wire message tests', async (t) => {
         peerId: td.matchers.contains('abc'),
         connectionId: td.matchers.anything(),
         contents: td.matchers.anything(),
-      } as INewRequest)
+      })
     ).thenResolve(ContentRequest.prototype)
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([1])])
     st.deepEqual(
