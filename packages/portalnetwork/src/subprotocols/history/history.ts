@@ -72,7 +72,7 @@ export class HistoryProtocol extends BaseProtocol {
     })
     const proof = headerProof.proof
 
-    if (header.number < 15537351n) {
+    if (header.number < 15537393n) {
       // Only check for proof if pre-merge block header
       if (proof.value === null) {
         throw new Error('Received block header without proof')

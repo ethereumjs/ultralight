@@ -123,7 +123,7 @@ export const addRLPSerializedBlock = async (
     hardforkByBlockNumber: true,
   })
   const header = block.header
-  if (header.number < 15537351n) {
+  if (header.number < 15537393n) {
     // Only generate proofs for pre-merge headers
     const proof: Witnesses = witnesses ?? (await protocol.generateInclusionProof(header.number))
     const headerProof = BlockHeaderWithProof.serialize({
