@@ -3,6 +3,9 @@ import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { Address } from '@ethereumjs/util'
 import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
+import { shortId } from '../../util/util.js'
+import { RequestCode } from '../../wire/index.js'
+import { FindContentMessage, PortalWireMessageType, MessageCodes } from '../../wire/types.js'
 import {
   AccountTrieProof,
   AccountTrieProofKeyType,
@@ -14,6 +17,12 @@ import {
   StateNetworkContentType,
 } from '../index.js'
 import { ProtocolId } from '../types.js'
+
+export enum FoundContent {
+  'UTP' = 0,
+  'CONTENT' = 1,
+  'ENRS' = 2,
+}
 
 export class StateProtocol extends BaseProtocol {
   protocolId: ProtocolId.StateNetwork
@@ -29,7 +38,73 @@ export class StateProtocol extends BaseProtocol {
   }
 
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    return undefined
+    const res = await this._sendFindContent(dstId, key)
+
+    switch (res.selector) {
+      case FoundContent.UTP: {
+        if (!(res.value instanceof Uint8Array)) {
+          throw new Error('Invalid Content Type')
+        }
+        const id = Buffer.from(res.value).readUint16BE()
+        this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
+        await this.handleNewRequest({
+          protocolId: ProtocolId.StateNetwork,
+          contentKeys: [key],
+          peerId: dstId,
+          connectionId: id,
+          requestCode: RequestCode.FINDCONTENT_READ,
+          contents: [],
+        })
+        return { selector: FoundContent.UTP, value: res.value }
+      }
+      case FoundContent.CONTENT: {
+        if (!(res.value instanceof Uint8Array)) {
+          throw new Error('Invalid Content Type')
+        }
+        this.logger(`received content corresponding to ${toHexString(key)}`)
+        try {
+          // TODO: Infer content type
+          await this.store(StateNetworkContentType.AccountTrieProof, toHexString(key), res.value)
+          return { selector: FoundContent.CONTENT, value: res.value }
+        } catch (err) {
+          this.logger('Error adding content to DB: ' + (err as any).message)
+        }
+        return { selector: FoundContent.CONTENT, value: res.value }
+      }
+      case FoundContent.ENRS: {
+        if (!(res.value instanceof Array)) {
+          throw new Error('Invalid ENR Type')
+        }
+        this.logger.extend('FOUNDCONTENT')(`received ${res.value.length} ENRs`)
+        return { selector: FoundContent.ENRS, value: res.value }
+      }
+    }
+  }
+  private _sendFindContent = async (
+    dstId: string,
+    key: Uint8Array
+  ): Promise<{ selector: number; value: any }> => {
+    const enr = this.routingTable.getValue(dstId)
+    if (!enr) {
+      throw new Error(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
+    }
+    const findContentMsg: FindContentMessage = { contentKey: key }
+    const payload = PortalWireMessageType.serialize({
+      selector: MessageCodes.FINDCONTENT,
+      value: findContentMsg,
+    })
+    this.logger.extend('FINDCONTENT')(`Sending to ${shortId(dstId)}`)
+    const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
+    if (res.length === 0) {
+      throw new Error('No response received to FINDCONTENT message')
+    }
+
+    const portalMessage = PortalWireMessageType.deserialize(res)
+    if (portalMessage.selector !== MessageCodes.CONTENT) {
+      throw new Error(`Unexpected response to FINDCONTENT message: ${portalMessage.selector}`)
+    }
+    const contentMsg = portalMessage.value as { selector: number; value: Uint8Array }
+    return contentMsg
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
