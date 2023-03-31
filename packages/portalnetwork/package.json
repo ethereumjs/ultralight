@@ -58,6 +58,8 @@
   },
   "devDependencies": {
     "@ethereumjs/common": "^3.0.0",
+    "@ethereumjs/statemanager": "^1.0.4",
+    "@ethereumjs/trie": "^5.0.4",
     "@ethereumjs/tx": "^4.0.0",
     "@ethereumjs/util": "^8.0.0",
     "@types/debug": "^4.1.7",
