@@ -1,7 +1,10 @@
-import { fromHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { DefaultStateManager } from '@ethereumjs/statemanager'
+import { Address } from '@ethereumjs/util'
 import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import {
+  AccountTrieProof,
   AccountTrieProofKeyType,
   AccountTrieProofType,
   BaseProtocol,
@@ -55,5 +58,20 @@ export class StateProtocol extends BaseProtocol {
         break
       }
     }
+  }
+  public retrieveAccountTrieProof = async (contentKey: Uint8Array): Promise<Uint8Array> => {
+    const { address, stateRoot } = AccountTrieProofKeyType.deserialize(contentKey)
+    const stateTrie = await this.stateDB.getStateTrie(stateRoot)
+    const state = new DefaultStateManager({ trie: stateTrie })
+    const account = await state.getAccount(Address.fromString(toHexString(address)))
+    const proof = await stateTrie.createProof(Buffer.from(address))
+    const accountTrieProof: AccountTrieProof = {
+      balance: account.balance,
+      codeHash: account.codeHash,
+      nonce: account.nonce,
+      storageRoot: account.storageRoot,
+      witnesses: proof.map((p) => Buffer.from(p)),
+    }
+    return AccountTrieProofType.serialize(accountTrieProof)
   }
 }
