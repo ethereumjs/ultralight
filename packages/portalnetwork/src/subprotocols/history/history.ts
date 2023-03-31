@@ -143,11 +143,7 @@ export class HistoryProtocol extends BaseProtocol {
               `received ${ContentType[contentType]} content corresponding to ${contentHash}`
             )
             try {
-              await this.store(
-                contentType,
-                toHexString(Buffer.from(contentHash)),
-                decoded.value as Uint8Array
-              )
+              await this.store(key, decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -171,33 +167,29 @@ export class HistoryProtocol extends BaseProtocol {
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
-  public store = async (
-    contentType: ContentType,
-    hashKey: string,
-    value: Uint8Array
-  ): Promise<void> => {
-    const contentKey = getContentKey(contentType, fromHexString(hashKey))
+  public store = async (contentKey: Uint8Array, value: Uint8Array): Promise<void> => {
+    const { contentType, blockHash } = decodeContentKey(toHexString(contentKey))
     if (contentType === ContentType.BlockBody) {
-      await this.addBlockBody(value, hashKey)
+      await this.addBlockBody(value, blockHash)
     } else if (contentType === ContentType.BlockHeader) {
       try {
-        await this.validateHeader(value, hashKey)
+        await this.validateHeader(value, blockHash)
       } catch (err) {
         this.logger(`Error validating header: ${(err as any).message}`)
       }
     } else {
       this.put(
         this.protocolId,
-        getContentKey(contentType, fromHexString(hashKey)),
+        getContentKey(contentType, fromHexString(blockHash)),
         toHexString(value)
       )
     }
-    this.emit('ContentAdded', hashKey, contentType, toHexString(value))
+    this.emit('ContentAdded', blockHash, contentType, toHexString(value))
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
-      this.gossipManager.add(hashKey, contentType)
+      this.gossipManager.add(blockHash, contentType)
     }
-    this.logger(`${ContentType[contentType]} added for ${hashKey}`)
+    this.logger(`${ContentType[contentType]} added for ${blockHash}`)
   }
 
   public async retrieve(contentKey: string): Promise<string | undefined> {
@@ -212,7 +204,7 @@ export class HistoryProtocol extends BaseProtocol {
   public async saveReceipts(block: Block) {
     this.logger.extend('BLOCK_BODY')(`added for block #${block.header.number}`)
     const receipts = await saveReceipts(block)
-    this.store(ContentType.Receipt, toHexString(block.hash()), receipts)
+    this.store(fromHexString(getContentKey(ContentType.Receipt, block.hash())), receipts)
     return decodeReceipts(receipts)
   }
 

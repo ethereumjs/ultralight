@@ -278,12 +278,12 @@ export class PortalNetworkUTP extends EventEmitter {
   async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
     for (const [idx, k] of keys.entries()) {
-      const decodedContentKey = decodeContentKey(toHexString(k))
+      // const decodedContentKey = decodeContentKey(toHexString(k))
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
-        `${idx + 1}/${keys.length} -- sending ${ContentType[k[0]]} to database`
+        `${idx + 1}/${keys.length} -- sending ${toHexString(k)} to database`
       )
-      this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+      this.emit('Stream', k, _content)
     }
   }
 }

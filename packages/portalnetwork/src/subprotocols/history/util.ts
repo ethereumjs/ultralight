@@ -135,17 +135,22 @@ export const addRLPSerializedBlock = async (
     } catch {
       throw new Error('Header proof failed validation')
     }
-    await protocol.store(ContentType.BlockHeader, toHexString(header.hash()), headerProof)
+    await protocol.store(
+      fromHexString(getContentKey(ContentType.BlockHeader, header.hash())),
+      headerProof
+    )
   } else {
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
       proof: { selector: 0, value: null },
     })
-    await protocol.store(ContentType.BlockHeader, toHexString(header.hash()), headerProof)
+    await protocol.store(
+      fromHexString(getContentKey(ContentType.BlockHeader, header.hash())),
+      headerProof
+    )
   }
   await protocol.store(
-    ContentType.BlockBody,
-    toHexString(header.hash()),
+    fromHexString(getContentKey(ContentType.BlockBody, header.hash())),
     sszEncodeBlockBody(
       Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
         hardforkByBlockNumber: true,

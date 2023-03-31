@@ -64,7 +64,7 @@ export class StateProtocol extends BaseProtocol {
         this.logger(`received content corresponding to ${toHexString(key)}`)
         try {
           // TODO: Infer content type
-          await this.store(StateNetworkContentType.AccountTrieProof, toHexString(key), res.value)
+          await this.store(key, res.value)
           return { selector: FoundContent.CONTENT, value: res.value }
         } catch (err) {
           this.logger('Error adding content to DB: ' + (err as any).message)
@@ -108,31 +108,30 @@ export class StateProtocol extends BaseProtocol {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
-    return undefined
+    // TODO: Infer content type
+    return this.retrieveAccountTrieProof(contentKey)
   }
 
-  public store = async (
-    contentType: StateNetworkContentType,
-    contentKey: string,
-    value: Uint8Array
-  ) => {
+  public store = async (contentKey: Uint8Array, value: Uint8Array) => {
+    const contentType = StateNetworkContentType.AccountTrieProof
     switch (contentType) {
       case StateNetworkContentType.AccountTrieProof: {
-        const key = AccountTrieProofKeyType.deserialize(fromHexString(contentKey))
+        const key = AccountTrieProofKeyType.deserialize(contentKey)
         const accountData = AccountTrieProofType.deserialize(value)
         await this.stateDB.updateAccount(key, accountData)
         break
       }
-      case StateNetworkContentType.ContractByteCode:
-        // TODO: Figure out best way to add bytecode to DB -- bypass trie and call db.put directly
-        break
-      case StateNetworkContentType.ContractStorageTrieProof: {
-        const key = ContractStorageTrieKeyType.deserialize(fromHexString(contentKey))
-        const storageData = ContractStorageTrieProofType.deserialize(value)
-        await this.stateDB.updateAccount(key, storageData)
-        break
-      }
+      // case StateNetworkContentType.ContractByteCode:
+      //   // TODO: Figure out best way to add bytecode to DB -- bypass trie and call db.put directly
+      //   break
+      // case StateNetworkContentType.ContractStorageTrieProof: {
+      //   const key = ContractStorageTrieKeyType.deserialize(contentKey)
+      //   const storageData = ContractStorageTrieProofType.deserialize(value)
+      //   await this.stateDB.updateAccount(key, storageData)
+      //   break
+      // }
     }
+    this.emit('ContentAdded', contentType, toHexString(contentKey), toHexString(value))
   }
   public retrieveAccountTrieProof = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const { address, stateRoot } = AccountTrieProofKeyType.deserialize(contentKey)

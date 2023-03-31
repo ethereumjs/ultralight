@@ -76,12 +76,12 @@ export abstract class BaseProtocol extends EventEmitter {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
-    client.uTP.on('Stream', async (contentType: ContentType, hash: string, value: Uint8Array) => {
-      await this.store(contentType, hash, value)
+    client.uTP.on('Stream', async (contentKey: Uint8Array, value: Uint8Array) => {
+      await this.store(contentKey, value)
     })
   }
 
-  abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
+  abstract store(contentKey: Uint8Array, value: Uint8Array): Promise<void>
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
@@ -478,6 +478,7 @@ export abstract class BaseProtocol extends EventEmitter {
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value || value.length === 0) {
+      this.logger(`Content not found locally, sending nearest ENRs`)
       // Discv5 calls for maximum of 16 nodes per NODES message
       const ENRs = this.routingTable.nearest(lookupKey, 16)
       const encodedEnrs = ENRs.map((enr) => {
