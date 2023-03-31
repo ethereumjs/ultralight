@@ -46,11 +46,14 @@ export type AccountTrieProof = {
 }
 
 export type ContractStorageTrieProof = {
-  witness: MPTWitnessNode[]
+  witnesses: MPTWitnessNode[]
   data: Bytes32
 }
 
 export type ContractByteCode = Uint8Array
+
+export type StateContentTypes = AccountTrieProof | ContractStorageTrieProof | ContractByteCode
+export type StateAccountProofs = Exclude<StateContentTypes, ContractByteCode>
 
 /* ----------------- SSZ Type Aliases ----------- */
 const Bytes32Type = new ByteVectorType(32)

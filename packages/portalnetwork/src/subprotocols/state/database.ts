@@ -5,7 +5,7 @@ import { Account, Address } from '@ethereumjs/util'
 import { AbstractLevel, NodeCallback } from 'abstract-level'
 import { MemoryLevel } from 'memory-level'
 import { StateRootIndex } from './stateroots.js'
-import { AccountTrieProof, AccountTrieProofKey, StateRoot, StateRootHex } from './types.js'
+import { AccountTrieProofKey, StateAccountProofs, StateRoot, StateRootHex } from './types.js'
 
 export type TrieDB = MemoryLevel | AbstractLevel<string, string>
 export type TrieLevelStatus = 'opening' | 'open' | 'closing' | 'closed'
@@ -206,7 +206,7 @@ export class StateDB {
   async getStateRootOrderForAccount(addr: string) {
     return this.stateRootIndex.pathThru(Object.keys(await this._getAddrRoots(addr)))
   }
-  async updateAccount(contentKey: AccountTrieProofKey, content: AccountTrieProof) {
+  async updateAccount(contentKey: AccountTrieProofKey, content: StateAccountProofs) {
     const { stateRoot, address } = contentKey
 
     this.knownAddresses.add(toHexString(address))
