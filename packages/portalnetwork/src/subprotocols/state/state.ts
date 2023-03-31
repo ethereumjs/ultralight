@@ -1,17 +1,19 @@
 import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
-import { BaseProtocol } from '../index.js'
+import { BaseProtocol, StateDB } from '../index.js'
 import { ProtocolId } from '../types.js'
 
 export class StateProtocol extends BaseProtocol {
   protocolId: ProtocolId.StateNetwork
   protocolName = 'StateNetwork'
   logger: Debugger
+  StateDB: StateDB
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
     this.protocolId = ProtocolId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.routingTable.setLogger(this.logger)
+    this.StateDB = new StateDB()
   }
 
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
