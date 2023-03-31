@@ -1,3 +1,5 @@
+import { removeDuplicateSequences } from './util.js'
+
 export type TStateRoot = string /** 0x prefixed, hex encoded, 32 byte state root */
 export type Sequence = TStateRoot[] /** array of state roots in a known valid order */
 export type Edge = [TStateRoot, TStateRoot] /** directional edge between state roots */
@@ -102,5 +104,98 @@ export class PathFinder {
       await this.graphSort(start, new Set([start]), [start], 1, v)
     }
     return this.maxPaths
+  }
+}
+
+/** @class StateRootIndex */
+export class StateRootIndex {
+  stateroots: Set<TStateRoot>
+  graph: DAG
+  public static from(sequences: Sequence[]): StateRootIndex {
+    const { stateroots, dag } = graph(sequences)
+    return new StateRootIndex(stateroots, dag)
+  }
+  constructor(stateroots: Set<TStateRoot>, graph: DAG) {
+    this.stateroots = stateroots
+    this.graph = graph
+  }
+
+  /**
+   *
+   * @param sequences arrays of state roots in known valid order
+   */
+  update(sequences: Sequence[]): void {
+    const { stateroots, dag } = graph(sequences)
+    for (const stateroot of stateroots.values()) {
+      this.stateroots.add(stateroot)
+    }
+    this.graph.push(...dag)
+  }
+
+  /**
+   *
+   * @param u source root
+   * @param v sink root
+   * @returns valid paths from u to v
+   */
+  async path(u: TStateRoot, v: TStateRoot): Promise<TStateRoot[][]> {
+    const pf = new PathFinder(this.stateroots, this.graph)
+    const paths = await pf.findPaths(u, v)
+    return removeDuplicateSequences(paths)
+  }
+
+  /**
+   *
+   * @returns source roots
+   */
+  sourceroots(): TStateRoot[] {
+    const sources = []
+    for (const u of this.stateroots) {
+      if (this.graph.every((e) => e[1] !== u)) {
+        sources.push(u)
+      }
+    }
+    return sources
+  }
+
+  /**
+   *
+   * @returns sink roots
+   */
+  sinkroots(): TStateRoot[] {
+    const sinks = []
+    for (const u of this.stateroots) {
+      if (this.graph.every((e) => e[0] !== u)) {
+        sinks.push(u)
+      }
+    }
+    return sinks
+  }
+
+  /**
+   *
+   * @returns one or more valid sequences of state roots
+   */
+  async allPaths(): Promise<TStateRoot[][]> {
+    const paths = []
+    for (const u of this.sourceroots()) {
+      for (const v of this.sinkroots()) {
+        if (u !== v) {
+          const path = await this.path(u, v)
+          paths.push(...path)
+        }
+      }
+    }
+    return removeDuplicateSequences(paths)
+  }
+
+  /**
+   *
+   * @param sequence array of state roots in known valid order
+   * @returns valid paths that run through each state root in sequence
+   */
+  async pathThru(sequence: Sequence): Promise<Sequence[]> {
+    const paths: Sequence[] = await this.allPaths()
+    return paths.filter((n) => sequence.every((e) => n.includes(e)))
   }
 }
