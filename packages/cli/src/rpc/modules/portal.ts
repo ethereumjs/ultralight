@@ -18,6 +18,7 @@ import {
   NodesMessage,
   ContentMessageType,
   AcceptMessage,
+  getContentKey,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -440,8 +441,7 @@ export class portal {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
       await this._history.store(
-        contentKey[0] as ContentType,
-        toHexString(contentKey.slice(1)),
+        fromHexString(getContentKey(contentKey[0] as ContentType, contentKey.slice(1))),
         content
       )
       return true

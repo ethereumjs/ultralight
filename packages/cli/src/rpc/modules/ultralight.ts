@@ -6,6 +6,7 @@ import {
   fromHexString,
   HistoryProtocol,
   PortalNetwork,
+  getContentKey,
 } from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
 
@@ -55,7 +56,10 @@ export class ultralight {
     const type: number = parseInt(contentKey.slice(0, 4))
     this.logger(`ultralight_addContentToDB request received for ${ContentType[type]} ${contentKey}`)
     try {
-      this._history.store(type, '0x' + contentKey.slice(4), fromHexString(value))
+      this._history.store(
+        fromHexString(getContentKey(type, fromHexString('0x' + contentKey.slice(4)))),
+        fromHexString(value)
+      )
       this.logger(`${type} value for 0x${contentKey.slice(4)} added to content DB`)
       return `${type} value for ${contentKey} added to content DB`
     } catch (err: any) {
