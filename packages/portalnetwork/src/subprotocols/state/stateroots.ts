@@ -28,3 +28,26 @@ export function graph(sequences: Sequence[]): GraphInput {
   }
   return { stateroots, dag }
 }
+
+/**
+ * @class PathFinder
+ */
+export class PathFinder {
+  stateroots: Set<TStateRoot> /** set of state roots */
+  graph: DAG /** directed acyclic graph of state roots */
+  visited: Map<TStateRoot, number[]> /** map of visited state roots */
+  maxLenth: number /** length of longest valid sequence */
+  maxPaths: Sequence[] /** array of valid sequences */
+  /**
+   *
+   * @param stateroots set of state roots
+   * @param graph directed acyclic graph of state roots
+   */
+  constructor(stateroots: Set<TStateRoot>, graph: DAG) {
+    this.stateroots = stateroots
+    this.graph = graph
+    this.visited = new Map<string, number[]>()
+    this.maxLenth = -1
+    this.maxPaths = []
+  }
+}
