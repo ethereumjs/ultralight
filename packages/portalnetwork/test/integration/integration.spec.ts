@@ -83,8 +83,12 @@ tape('gossip test', async (t) => {
     'node1 added node2 to routing table'
   )
   await protocol1.store(
-    ContentType.EpochAccumulator,
-    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    fromHexString(
+      getContentKey(
+        ContentType.EpochAccumulator,
+        fromHexString('0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70')
+      )
+    ),
     fromHexString(epoch25)
   )
   // await protocol2.store(
@@ -109,7 +113,10 @@ tape('gossip test', async (t) => {
         value: proof,
       },
     })
-    await protocol1.store(ContentType.BlockHeader, toHexString(testBlock.hash()), headerWith)
+    await protocol1.store(
+      fromHexString(getContentKey(ContentType.BlockHeader, testBlock.hash())),
+      headerWith
+    )
   }
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
@@ -180,8 +187,12 @@ tape('FindContent', async (t) => {
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
 
   await protocol1.store(
-    ContentType.EpochAccumulator,
-    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    fromHexString(
+      getContentKey(
+        ContentType.EpochAccumulator,
+        fromHexString('0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70')
+      )
+    ),
     fromHexString(epoch25)
   )
   t.equal(
@@ -257,8 +268,12 @@ tape('eth_getBlockByHash', async (t) => {
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   await protocol1.store(
-    ContentType.EpochAccumulator,
-    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    fromHexString(
+      getContentKey(
+        ContentType.EpochAccumulator,
+        fromHexString('0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70')
+      )
+    ),
     fromHexString(epoch25)
   )
   t.equal(
@@ -325,8 +340,14 @@ tape('eth_getBlockByNumber', async (t) => {
   const blockRlp = block1000.raw
   const blockHash = block1000.hash
 
-  await protocol1.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
-  await protocol2.store(ContentType.EpochAccumulator, epochHash, fromHexString(epoch))
+  await protocol1.store(
+    fromHexString(getContentKey(ContentType.EpochAccumulator, fromHexString(epochHash))),
+    fromHexString(epoch)
+  )
+  await protocol2.store(
+    fromHexString(getContentKey(ContentType.EpochAccumulator, fromHexString(epochHash))),
+    fromHexString(epoch)
+  )
   await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
   await protocol1.sendPing(protocol2?.enr!.toENR())
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)

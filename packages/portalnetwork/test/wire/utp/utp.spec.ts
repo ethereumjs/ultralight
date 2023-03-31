@@ -22,6 +22,7 @@ import {
   RequestCode,
   startingNrs,
   UtpSocketType,
+  decodeContentKey,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Socket/ContentReader.js'
 
@@ -514,10 +515,11 @@ tape('PortalNetworkUTP test', (t) => {
     const contentKeys = contentHashes.map((hash) =>
       fromHexString(getContentKey(ContentType.BlockHeader, fromHexString(hash)))
     )
-    utp.on('Stream', (selector, hash, value) => {
-      st.equal(selector, ContentType.BlockHeader, 'Stream selector correct')
-      st.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
-      st.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
+    utp.on('Stream', (contentKey, value) => {
+      const { contentType, blockHash } = decodeContentKey(toHexString(contentKey))
+      st.equal(contentType, ContentType.BlockHeader, 'Stream selector correct')
+      st.ok(contentHashes.includes(blockHash), 'Streamed a requested content hash')
+      st.deepEqual(value, contents[contentHashes.indexOf(blockHash)], 'Stream content correct')
     })
     await utp.returnContent(contents, contentKeys)
     utp.removeAllListeners()
