@@ -92,7 +92,7 @@ export const decodeStateNetworkContentKey = (key: Uint8Array) => {
   }
 }
 
-export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>) => {
+export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
   if (!opts.address) {
     throw new Error('address is required')
   }
