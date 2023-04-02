@@ -69,10 +69,12 @@ export class TrieLevel implements DB {
 
 export class StateDB {
   accountTries: Map<StateRootHex, TrieLevel>
+  storageTries: StorageRecord
   knownAddresses: Set<string>
   stateRootIndex: StateRootIndex
   constructor() {
     this.accountTries = new Map()
+    this.storageTries = new Map()
     this.knownAddresses = new Set()
     this.stateRootIndex = StateRootIndex.from([])
   }
