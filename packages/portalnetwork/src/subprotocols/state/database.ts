@@ -287,6 +287,24 @@ export class StateDB {
     return trie
   }
 
+  async updateContractStorage(contentKey: StorageTrieProofKey, content: ContractStorageTrieProof) {
+    const { stateRoot, address, slot } = contentKey
+    const trie = await this.getStorageTrie(stateRoot, toHexString(address))
+    if (
+      !trie.verifyProof(
+        Buffer.from(stateRoot),
+        Buffer.from(address),
+        content.witnesses.map((w) => Buffer.from(w))
+      )
+    ) {
+      throw new Error('Invalid account trie proof')
+    }
+    await trie.fromProof(content.witnesses.map((w) => Buffer.from(w)))
+    this.delAccountTrie(stateRoot)
+    this.putAccountTrie(stateRoot, trie.database().db as TrieLevel)
+    return trie
+  }
+
   async size(): Promise<number> {
     let size = 0
     for (const sub of this.accountTries.keys()) {
