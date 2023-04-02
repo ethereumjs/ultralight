@@ -12,6 +12,9 @@ export type TrieLevelStatus = 'opening' | 'open' | 'closing' | 'closed'
 export type Addr = string
 export type AddressRoots = Map<Addr, StateRootHex[]>
 export type AccountRecord = { address: Addr; accounts: Record<StateRootHex, Account> }
+export type ContractRecord = { address: string; storageTrie: TrieLevel }
+export type ContractsStore = Map<Addr, TrieLevel>
+export type StorageRecord = Map<StateRootHex, ContractsStore>
 export type AddressRecord = [Addr, AccountRecord]
 export class TrieLevel implements DB {
   db: TrieDB
