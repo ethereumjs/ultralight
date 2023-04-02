@@ -103,6 +103,21 @@ flowchart TD
     ACC --> Trie
     ADD --> Subs
 ```
+### Store: ByteCode
+
+```mermaid
+flowchart TD
+    Bridge[BridgeNode]
+    Network[State Network]
+    StateDB{StateDB}
+    ATP(ContractByteCode)
+    Bridge -->|New Content| ATP
+    Network -->|Gossip| ATP
+    ATP --> KEY(ContentKey)
+    ATP --> CON(Content)
+    KEY --> StateDB
+    CON --> StateDB
+```
 
 ### Find Content: AccountTrieProof (account + state_root)
 
