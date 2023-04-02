@@ -1,51 +1,58 @@
 # State Network Database
 
 ### DB Structure
+
 ```mermaid
-classDiagram
-    StateDB -- SubLevels
-    StateDB -- StateRootIndex
-    StateDB -- KnownAddresses
+erDiagram
+    STATE_DB }|--|{ ACCOUNTS : MAP    
+    STATE_DB ||--o{ STATEROOT_INDEX : STATE_ROOTS
+    STATE_DB ||--|{ CONTRACTS : MAP
+    STATE_DB ||--|{ BYTECODE : ABSTRACT-LEVEL
+    
+    ACCOUNTS ||--|| ACCOUNTS_TRIE_C: STATE_ROOT_C
+    ACCOUNTS ||--|| ACCOUNTS_TRIE_B: STATE_ROOT_B
+    ACCOUNTS ||--|| ACCOUNTS_TRIE_A: STATE_ROOT_A
+    CONTRACTS ||--|| CONTRACTS_A: STATE_ROOT_A
+    CONTRACTS ||--|| CONTRACTS_B: STATE_ROOT_B
+    CONTRACTS ||--|| CONTRACTS_C: STATE_ROOT_C
+    
+    STATEROOT_INDEX ||--o{ STATE_A : A
+    ACCOUNTS_TRIE_A ||..|| STATE_A: STATE_ROOT_A
+    ACCOUNTS_TRIE_B ||..|| STATE_B: STATE_ROOT_B
+    ACCOUNTS_TRIE_C ||..|| STATE_C: STATE_ROOT_C
+    CONTRACTS_C ||..|| STATE_C: STATE_ROOT_C
+    CONTRACTS_A ||..|| STATE_A: STATE_ROOT_A
+    CONTRACTS_B ||..|| STATE_B: STATE_ROOT_B
+    STATE_A ||--o{ STATE_B : B
+    STATE_B ||--o{ STATE_C : C
+    CONTRACTS_A {
+        addr storage_trie
+        addr storage_trie
+        addr storage_trie
+        addr storage_trie
+    }
+    CONTRACTS_B {
+        addr storage_trie
+        addr storage_trie
+        addr storage_trie
+        addr storage_trie
+    }
+    CONTRACTS_C {
+        addr storage_trie
+        addr storage_trie
+        addr storage_trie
+        addr storage_trie
+    }
 
-    class SubLevels {
-        StateRoot > TrieLevel
-    }
-    SubLevels -- StateB
-    SubLevels -- StateA
-    SubLevels -- StateY
-    SubLevels -- StateX
-    class StateA {
-        TrieLevel
-    }
-    class StateB {
-        TrieLevel
-    }
-    class StateY {
-        TrieLevel
-    }
-    class StateX {
-        TrieLevel
-    }
-    class KnownAddresses {
-        distance < radius
-    }
-    KnownAddresses -- Addr1
-    KnownAddresses -- Addr2
-    KnownAddresses -- Addr3
-    KnownAddresses -- Addr4
-    StateRootIndex <-- SubLevels
-    StateRootIndex <-- KnownAddresses
 
-    class StateRootIndex {
-        sort(stateroots) [A, B, X, Y]
-    }
 ```
 
-### Store: AccountTrieProof 
+### Store: AccountTrieProof
+
 ```mermaid
 flowchart TD
     Bridge[BridgeNode]
-    Network[State Network] 
+    Network[State Network]
     StateDB{StateDB}
     ACC(Account Data)
     PROOF(Merkle Proof)
@@ -64,7 +71,7 @@ flowchart TD
     CON --> ACC
     VALID --> StateDB
     ACC --> StateDB
-    StateDB --> Subs[sublevels]
+    StateDB --> Subs[accounttries]
     Subs --> |State Root| Sub[TrieLevel]
     Sub --> |Trie.DB = TrieLevel| Trie[Trie]
     Trie --> FROM[Updated Trie]
@@ -73,9 +80,10 @@ flowchart TD
 ```
 
 ### Find Content: AccountTrieProof (account + state_root)
+
 ```mermaid
 flowchart TD
-    Network[State Network] 
+    Network[State Network]
     StateDB{StateDB}
     ACC(Account Data)
     PROOF(Merkle Proof)
@@ -87,7 +95,7 @@ flowchart TD
     ATPK --> ROOT(State Root)
     ADD --> StateDB
     ROOT --> StateDB
-    StateDB --> Subs[sublevels]
+    StateDB --> Subs[accounttries]
     Subs --> |State Root| Sub[TrieLevel]
     Sub --> |Trie.DB = TrieLevel| Trie[Trie]
     Trie --> ACC
