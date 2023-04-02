@@ -148,4 +148,22 @@ export class StateProtocol extends BaseProtocol {
     }
     return AccountTrieProofType.serialize(accountTrieProof)
   }
+
+  public retrieveContractStorageTrieProof = async (contentKey: StorageKey): Promise<Uint8Array> => {
+    const { address, stateRoot, slot } = ContractStorageTrieKeyType.deserialize(contentKey)
+    const stateTrie = await this.stateDB.getStorageTrie(stateRoot, toHexString(address))
+    const state = new DefaultStateManager({ trie: stateTrie })
+    const account = await state.getAccount(Address.fromString(toHexString(address)))
+    if (!account.isContract()) {
+      throw new Error('Account is not a contract')
+    }
+    const proof = await state.getProof(Address.fromString(toHexString(address)), [
+      bigIntToBuffer(slot),
+    ])
+    const storageTrieProof: ContractStorageTrieProof = {
+      data: fromHexString(proof.storageProof[0].value),
+      witnesses: proof.storageProof[0].proof.map((p) => fromHexString(p)),
+    }
+    return ContractStorageTrieProofType.serialize(storageTrieProof)
+  }
 }
