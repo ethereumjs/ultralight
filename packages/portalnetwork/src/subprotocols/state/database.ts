@@ -65,11 +65,11 @@ export class TrieLevel implements DB {
 }
 
 export class StateDB {
-  sublevels: Map<StateRootHex, TrieLevel>
+  accountTries: Map<StateRootHex, TrieLevel>
   knownAddresses: Set<string>
   stateRootIndex: StateRootIndex
   constructor() {
-    this.sublevels = new Map()
+    this.accountTries = new Map()
     this.knownAddresses = new Set()
     this.stateRootIndex = StateRootIndex.from([])
   }
@@ -84,14 +84,14 @@ export class StateDB {
     return sub
   }
   putSublevel(stateRoot: StateRoot, sublevel: TrieLevel): TrieLevel {
-    this.sublevels.set(toHexString(stateRoot), sublevel)
+    this.accountTries.set(toHexString(stateRoot), sublevel)
     return sublevel
   }
   async getSublevel(stateRoot: StateRoot): Promise<TrieLevel> {
-    return this.sublevels.get(toHexString(stateRoot)) ?? this.addRoot(stateRoot)
+    return this.accountTries.get(toHexString(stateRoot)) ?? this.addRoot(stateRoot)
   }
   delSublevel(stateRoot: StateRoot): void {
-    this.sublevels.delete(toHexString(stateRoot))
+    this.accountTries.delete(toHexString(stateRoot))
   }
 
   async getStateTrie(stateRoot: StateRoot) {
@@ -102,7 +102,7 @@ export class StateDB {
 
   async getAllTries() {
     const tries: Trie[] = []
-    for (const root of this.sublevels.keys()) {
+    for (const root of this.accountTries.keys()) {
       const db = await this.getSublevel(fromHexString(root))
       const trie = await Trie.create({ db, root: Buffer.from(fromHexString(root)) })
       tries.push(trie)
@@ -232,10 +232,10 @@ export class StateDB {
 
   async size(): Promise<number> {
     let size = 0
-    for (const sub of this.sublevels.keys()) {
+    for (const sub of this.accountTries.keys()) {
       size += fromHexString(sub).length
     }
-    for (const sub of this.sublevels.values()) {
+    for (const sub of this.accountTries.values()) {
       size += await sub.size()
     }
     return size
