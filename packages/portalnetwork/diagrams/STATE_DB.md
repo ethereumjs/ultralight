@@ -56,27 +56,23 @@ flowchart TD
     StateDB{StateDB}
     ACC(Account Data)
     PROOF(Merkle Proof)
-    VALID(verify)
     ATP(AccountTrieProof)
     Bridge -->|New Content| ATP
     Network -->|Gossip| ATP
     ATP --> KEY(ContentKey)
     ATP --> CON(Content)
-    KEY --> ADD(Address)
     KEY --> ROOT(State Root)
-    ADD --> StateDB
-    ROOT --> VALID
-    PROOF --> VALID
+    KEY --> ADD(Address)
     CON --> PROOF
     CON --> ACC
-    VALID --> StateDB
-    ACC --> StateDB
-    StateDB --> Subs[accounttries]
-    Subs --> |State Root| Sub[TrieLevel]
-    Sub --> |Trie.DB = TrieLevel| Trie[Trie]
-    Trie --> FROM[Updated Trie]
-    PROOF --> FROM
-    FROM --> Subs
+    PROOF
+    StateDB <--> Subs[Account Tries]
+    Subs <--> |State Root| Sub[TrieLevel]
+    Sub <--> |Trie.DB = TrieLevel| Trie[Trie]
+    ACC --> Trie
+    PROOF --> Trie
+    ROOT -.- Subs
+    ADD -.- Sub
 ```
 ### Store: ContractStorageTrieProof
 
@@ -87,7 +83,6 @@ flowchart TD
     StateDB{StateDB}
     ACC(StorageSlotData)
     PROOF(Merkle Proof)
-    VALID(verify)
     ATP(ContractStorageTrieProof)
     Bridge -->|New Content| ATP
     Network -->|Gossip| ATP
