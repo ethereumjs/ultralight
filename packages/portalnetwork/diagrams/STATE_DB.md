@@ -78,6 +78,36 @@ flowchart TD
     PROOF --> FROM
     FROM --> Subs
 ```
+### Store: ContractStorageTrieProof
+
+```mermaid
+flowchart TD
+    Bridge[BridgeNode]
+    Network[State Network]
+    StateDB{StateDB}
+    ACC(StorageSlotData)
+    PROOF(Merkle Proof)
+    VALID(verify)
+    ATP(ContractStorageTrieProof)
+    Bridge -->|New Content| ATP
+    Network -->|Gossip| ATP
+    ATP --> KEY(ContentKey)
+    ATP --> CON(Content)
+    KEY --> ROOT(State Root)
+    KEY --> ADD(Address)
+    KEY --> SLOT(Slot)
+    ROOT --> Contracts
+
+    CON --> PROOF
+    CON --> ACC
+    Contracts[Contracts] --> StateDB
+    Subs[StorageTries]  --> |State Root| Contracts
+    Trie[Trie]--> |Address| Subs 
+    SLOT --> Trie
+    PROOF --> Trie
+    ACC --> Trie
+    ADD --> Subs
+```
 
 ### Find Content: AccountTrieProof (account + state_root)
 
