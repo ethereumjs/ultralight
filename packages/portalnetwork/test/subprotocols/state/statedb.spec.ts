@@ -83,20 +83,20 @@ tape('StateDB', async (t) => {
 
   t.test('constuctor', (st) => {
     st.ok(stateDB, `StateDB created`)
-    st.equal(stateDB.sublevels.size, 0, `StateDB sublevels is empty`)
+    st.equal(stateDB.accountTries.size, 0, `StateDB accountTries is empty`)
     st.equal(stateDB.knownAddresses.size, 0, `StateDB knownAddresses is empty`)
     st.equal(stateDB.stateRootIndex.stateroots.size, 0, `StateDB stateRootIndex is empty`)
     st.end()
   })
 
   t.test('set, get, delete sublevel', (st) => {
-    stateDB.sublevels.set(toHexString(state_root_1), new TrieLevel())
-    const trie_db_0 = stateDB.sublevels.get(toHexString(state_root_1))
-    st.ok(trie_db_0, `StateDB sublevels has state trieLevel`)
-    st.ok(trie_db_0 instanceof TrieLevel, `StateDB sublevels has state trieLevel`)
-    stateDB.sublevels.delete(toHexString(state_root_1))
+    stateDB.accountTries.set(toHexString(state_root_1), new TrieLevel())
+    const trie_db_0 = stateDB.accountTries.get(toHexString(state_root_1))
+    st.ok(trie_db_0, `StateDB accountTries has state trieLevel`)
+    st.ok(trie_db_0 instanceof TrieLevel, `StateDB accountTries has state trieLevel`)
+    stateDB.accountTries.delete(toHexString(state_root_1))
     st.equal(
-      stateDB.sublevels.get(toHexString(state_root_1)),
+      stateDB.accountTries.get(toHexString(state_root_1)),
       undefined,
       `TrieLevel Deleted from StateDB`
     )
@@ -122,9 +122,9 @@ tape('StateDB', async (t) => {
     st.equal(all_tries.length, 2, `getAllTries returns 2 tries`)
 
     st.deepEqual(
-      [...stateDB.sublevels.keys()],
+      [...stateDB.accountTries.keys()],
       [toHexString(state_root_1), toHexString(state_root_2)],
-      `all state roots are stored in sublevels`
+      `all state roots are stored in accountTries`
     )
     st.deepEqual(
       [all_tries[0].root(), all_tries[1].root()],
@@ -177,7 +177,7 @@ tape('StateDB Sorting', async (t) => {
       `Account storageRoot stored in Trie`
     )
   }
-  t.equal(stateDB.sublevels.size, 19, `StateDB sublevels has 19 roots`)
+  t.equal(stateDB.accountTries.size, 19, `StateDB accountTries has 19 roots`)
 
   const allTries = await stateDB.getAllTries()
   t.equal(allTries.length, 19, `StateDB has 19 tries`)
