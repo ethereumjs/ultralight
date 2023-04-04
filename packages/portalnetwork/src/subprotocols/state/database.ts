@@ -5,7 +5,14 @@ import { Account, Address } from '@ethereumjs/util'
 import { AbstractLevel, NodeCallback } from 'abstract-level'
 import { MemoryLevel } from 'memory-level'
 import { StateRootIndex } from './stateroots.js'
-import { AccountTrieProofKey, StateAccountProofs, StateRoot, StateRootHex } from './types.js'
+import {
+  AccountTrieProofKey,
+  ContractStorageTrieProof,
+  StateAccountProofs,
+  StateRoot,
+  StateRootHex,
+  StorageTrieProofKey,
+} from './types.js'
 
 export type TrieDB = MemoryLevel | AbstractLevel<string, string>
 export type TrieLevelStatus = 'opening' | 'open' | 'closing' | 'closed'
@@ -81,34 +88,79 @@ export class StateDB {
 
   async addRoot(stateRoot: StateRoot): Promise<TrieLevel> {
     const sub = new TrieLevel()
-    this.putSublevel(stateRoot, sub)
+    this.putAccountTrie(stateRoot, sub)
     await sub.open()
     while (sub.status !== 'open') {
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
     return sub
   }
-  putSublevel(stateRoot: StateRoot, sublevel: TrieLevel): TrieLevel {
-    this.accountTries.set(toHexString(stateRoot), sublevel)
-    return sublevel
+  putAccountTrie(stateRoot: StateRoot, accountTrie: TrieLevel): TrieLevel {
+    this.accountTries.set(toHexString(stateRoot), accountTrie)
+    return accountTrie
   }
-  async getSublevel(stateRoot: StateRoot): Promise<TrieLevel> {
+  async getAccountTrieDB(stateRoot: StateRoot): Promise<TrieLevel> {
     return this.accountTries.get(toHexString(stateRoot)) ?? this.addRoot(stateRoot)
   }
-  delSublevel(stateRoot: StateRoot): void {
+  delAccountTrie(stateRoot: StateRoot): void {
     this.accountTries.delete(toHexString(stateRoot))
   }
-
-  async getStateTrie(stateRoot: StateRoot) {
-    const db = await this.getSublevel(stateRoot)
+  putStorageTrie(stateRoot: StateRoot, address: string, storageTrie: TrieLevel): TrieLevel {
+    const state = this.storageTries.get(toHexString(stateRoot)) ?? new Map()
+    state.set(address, storageTrie)
+    this.storageTries.set(toHexString(stateRoot), state)
+    return storageTrie
+  }
+  putStateContracts(stateRoot: StateRoot, storageTries: ContractsStore): ContractsStore {
+    this.storageTries.set(toHexString(stateRoot), storageTries)
+    return storageTries
+  }
+  putStorageTries(stateRoot: StateRoot, storageTries: ContractRecord[]): void {
+    const state: ContractsStore = new Map()
+    for (const { address, storageTrie } of storageTries) {
+      state.set(address, storageTrie)
+    }
+    this.storageTries.set(toHexString(stateRoot), state)
+  }
+  async storageTrieDB(stateRoot: StateRoot, address: Addr): Promise<TrieLevel> {
+    const state = this.storageTries.get(toHexString(stateRoot)) ?? new Map()
+    return state.get(address) ?? new Map()
+  }
+  async getStorageTrie(stateRoot: StateRoot, address: Addr): Promise<Trie> {
+    const db = await this.storageTrieDB(stateRoot, address)
     const trie = await Trie.create({ db: new TrieLevel(db.db), root: Buffer.from(stateRoot) })
     return trie
   }
+  delStorageTries(stateRoot: StateRoot): void {
+    this.accountTries.delete(toHexString(stateRoot))
+  }
 
-  async getAllTries() {
+  async getAccountTrie(stateRoot: StateRoot) {
+    const db = await this.getAccountTrieDB(stateRoot)
+    const trie = await Trie.create({ db: new TrieLevel(db.db), root: Buffer.from(stateRoot) })
+    return trie
+  }
+  async getStorageTries(stateRoot: StateRootHex): Promise<Trie[]> {
+    const state = this.storageTries.get(stateRoot)
+    if (!state) {
+      return []
+    }
+    const storageTrieDBs: TrieLevel[] = [...state.values()].map((storageTrie) => {
+      return storageTrie
+    })
+    const tries = await Promise.all(
+      storageTrieDBs.map(async (db) => {
+        const trie = await Trie.create({ db: new TrieLevel(db.db), root: Buffer.from(stateRoot) })
+        return trie
+      })
+    )
+    return tries
+  }
+
+  async getAllAccountTries() {
     const tries: Trie[] = []
     for (const root of this.accountTries.keys()) {
-      const db = await this.getSublevel(fromHexString(root))
+      const db = await this.getAccountTrieDB(fromHexString(root))
       const trie = await Trie.create({ db, root: Buffer.from(fromHexString(root)) })
       tries.push(trie)
     }
@@ -116,7 +168,7 @@ export class StateDB {
   }
 
   private async _getAddrRoots(addr: string): Promise<StateRoot[]> {
-    const tries = await this.getAllTries()
+    const tries = await this.getAllAccountTries()
     const accountPresent = []
     for (const trie of tries) {
       const state = new DefaultStateManager({ trie: trie })
@@ -138,7 +190,7 @@ export class StateDB {
   }
 
   async getAccount(stateRoot: StateRoot, address: Address): Promise<Account> {
-    const trie = await this.getStateTrie(stateRoot)
+    const trie = await this.getAccountTrie(stateRoot)
     const state = new DefaultStateManager({ trie })
     return state.getAccount(address)
   }
@@ -215,7 +267,7 @@ export class StateDB {
     const { stateRoot, address } = contentKey
 
     this.knownAddresses.add(toHexString(address))
-    const trie = await this.getStateTrie(stateRoot)
+    const trie = await this.getAccountTrie(stateRoot)
     if (
       !trie.verifyProof(
         Buffer.from(stateRoot),
@@ -226,8 +278,8 @@ export class StateDB {
       throw new Error('Invalid account trie proof')
     }
     await trie.fromProof(content.witnesses.map((w) => Buffer.from(w)))
-    this.delSublevel(stateRoot)
-    this.putSublevel(stateRoot, trie.database().db as TrieLevel)
+    this.delAccountTrie(stateRoot)
+    this.putAccountTrie(stateRoot, trie.database().db as TrieLevel)
     const roots = Object.keys(
       this.sortAccountRecord(await this.getAccountRecord(toHexString(address))).accounts
     )

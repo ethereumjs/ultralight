@@ -107,18 +107,18 @@ tape('StateDB', async (t) => {
     const trie_db_1 = await stateDB.addRoot(state_root_1)
     st.equal(trie_db_1.status, 'open', `addRoot returns trieLevel with status: open`)
 
-    const stored_trie_db_1 = await stateDB.getSublevel(state_root_1)
-    st.equal(stored_trie_db_1.status, 'open', `getSublevel returns trieLevel with status: open`)
+    const stored_trie_db_1 = await stateDB.getAccountTrieDB(state_root_1)
+    st.equal(stored_trie_db_1.status, 'open', `accountTrie returns trieLevel with status: open`)
 
-    const trie_1 = await stateDB.getStateTrie(state_root_1)
+    const trie_1 = await stateDB.getAccountTrie(state_root_1)
 
-    st.deepEqual(trie_1.root(), state_root_1, `getStateTrie returns trie with root: state_root1`)
+    st.deepEqual(trie_1.root(), state_root_1, `getAccountTrie returns trie with root: state_root1`)
 
     await stateDB.addRoot(state_root_2)
-    const trie_db_2 = await stateDB.getSublevel(state_root_2)
+    const trie_db_2 = await stateDB.getAccountTrieDB(state_root_2)
     st.equal(trie_db_2.status, 'open', `addRoot returns trieLevel with status: open`)
 
-    const all_tries = await stateDB.getAllTries()
+    const all_tries = await stateDB.getAllAccountTries()
     st.equal(all_tries.length, 2, `getAllTries returns 2 tries`)
 
     st.deepEqual(
@@ -155,7 +155,7 @@ tape('StateDB Sorting', async (t) => {
     const content = AccountTrieProofType.deserialize(fromHexString(value))
 
     const trie = await stateDB.updateAccount(contentKey, content)
-    const stored_trie = await stateDB.getStateTrie(trie.root())
+    const stored_trie = await stateDB.getAccountTrie(trie.root())
     t.deepEqual(trie, stored_trie, `StateDB returns stored Trie`)
     const state = new DefaultStateManager({ trie: stored_trie })
     const account = await state.getAccount(Address.fromString(toHexString(contentKey.address)))
@@ -179,7 +179,7 @@ tape('StateDB Sorting', async (t) => {
   }
   t.equal(stateDB.accountTries.size, 19, `StateDB accountTries has 19 roots`)
 
-  const allTries = await stateDB.getAllTries()
+  const allTries = await stateDB.getAllAccountTries()
   t.equal(allTries.length, 19, `StateDB has 19 tries`)
 
   t.equal(stateDB.knownAddresses.size, 118, `StateDB knownAddresses has 118 addresses`)

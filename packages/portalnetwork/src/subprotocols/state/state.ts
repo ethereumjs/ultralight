@@ -135,7 +135,7 @@ export class StateProtocol extends BaseProtocol {
   }
   public retrieveAccountTrieProof = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const { address, stateRoot } = AccountTrieProofKeyType.deserialize(contentKey)
-    const stateTrie = await this.stateDB.getStateTrie(stateRoot)
+    const stateTrie = await this.stateDB.getAccountTrie(stateRoot)
     const state = new DefaultStateManager({ trie: stateTrie })
     const account = await state.getAccount(Address.fromString(toHexString(address)))
     const proof = await stateTrie.createProof(Buffer.from(address))
