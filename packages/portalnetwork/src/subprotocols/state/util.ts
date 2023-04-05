@@ -1,6 +1,7 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
-import { Address, bigIntToBuffer } from '@ethereumjs/util'
-import { toHexString } from '../../util/discv5.js'
+import { Require } from '@chainsafe/ssz/lib/util/types.js'
+import { bigIntToBuffer } from '@ethereumjs/util'
+import { fromHexString, toHexString } from '../../util/discv5.js'
 
 import {
   AccountTrieProofKeyType,
@@ -26,100 +27,112 @@ export const distance = (id1: bigint, id2: bigint): bigint => {
   return diff
 }
 
-interface ContentKeyOpts {
-  contentType: StateNetworkContentType
-  address: Address
-  stateRoot: Uint8Array
-  slot: bigint
-  codeHash: Uint8Array
+export interface IContentKeyOpts {
+  address: string
+  stateRoot?: Uint8Array
+  slot?: bigint
+  codeHash?: Uint8Array
 }
 
-export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
-  if (!opts.address) {
-    throw new Error('address is required')
-  }
-  switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
-      if (!opts.stateRoot) {
-        throw new Error('stateRoot is required')
-      }
-      const key = AccountTrieProofKeyType.serialize({
-        address: opts.address.toBuffer(),
-        stateRoot: opts.stateRoot,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    case StateNetworkContentType.ContractStorageTrieProof: {
-      if (!opts.slot || !opts.stateRoot) {
-        throw new Error('required fields missing')
-      }
-      const key = ContractStorageTrieKeyType.serialize({
-        address: opts.address.toBuffer(),
-        slot: opts.slot,
-        stateRoot: opts.stateRoot,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    case StateNetworkContentType.ContractByteCode: {
-      if (!opts.codeHash) {
-        throw new Error('codeHash required')
-      }
-      const key = ContractByteCodeKeyType.serialize({
-        address: opts.address.toBuffer(),
-        codeHash: opts.codeHash,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    default:
-      throw new Error(`Content Type ${opts.contentType} not supported`)
-  }
+export type TContentKeyOpts<TContent extends StateNetworkContentType> =
+  TContent extends StateNetworkContentType.AccountTrieProof
+    ? Require<IContentKeyOpts, 'stateRoot'>
+    : TContent extends StateNetworkContentType.ContractStorageTrieProof
+    ? Require<Require<IContentKeyOpts, 'slot'>, 'stateRoot'>
+    : TContent extends StateNetworkContentType.ContractByteCode
+    ? Require<IContentKeyOpts, 'codeHash'>
+    : never
+
+export type ContentKeyOpts =
+  | TContentKeyOpts<StateNetworkContentType.AccountTrieProof>
+  | TContentKeyOpts<StateNetworkContentType.ContractStorageTrieProof>
+  | TContentKeyOpts<StateNetworkContentType.ContractByteCode>
+
+const getAccountTrieProofKey = (
+  opts: TContentKeyOpts<StateNetworkContentType.AccountTrieProof>
+) => {
+  const key = AccountTrieProofKeyType.serialize({
+    address: fromHexString(opts.address),
+    stateRoot: opts.stateRoot,
+  })
+
+  return Uint8Array.from([StateNetworkContentType.AccountTrieProof, ...key])
+}
+const getContractStorageTrieKey = (
+  opts: TContentKeyOpts<StateNetworkContentType.ContractStorageTrieProof>
+) => {
+  const key = ContractStorageTrieKeyType.serialize({
+    address: fromHexString(opts.address),
+    slot: opts.slot,
+    stateRoot: opts.stateRoot,
+  })
+
+  return Uint8Array.from([StateNetworkContentType.ContractStorageTrieProof, ...key])
+}
+const getContractByteCodeKey = (
+  opts: TContentKeyOpts<StateNetworkContentType.ContractByteCode>
+) => {
+  const key = ContractByteCodeKeyType.serialize({
+    address: fromHexString(opts.address),
+    codeHash: opts.codeHash,
+  })
+
+  return Uint8Array.from([StateNetworkContentType.ContractByteCode, ...key])
 }
 
-export const decodeStateNetworkContentKey = (key: Uint8Array) => {
-  const contentType = key[0] as StateNetworkContentType
+export function getStateNetworkContentKey<T extends StateNetworkContentType>(
+  opts: TContentKeyOpts<T>
+): Uint8Array {
+  return 'slot' in opts
+    ? getContractStorageTrieKey(
+        opts as TContentKeyOpts<StateNetworkContentType.ContractStorageTrieProof>
+      )
+    : 'codeHash' in opts
+    ? getContractByteCodeKey(opts as TContentKeyOpts<StateNetworkContentType.ContractByteCode>)
+    : getAccountTrieProofKey(opts as TContentKeyOpts<StateNetworkContentType.AccountTrieProof>)
+}
+
+export const decodeStateNetworkContentKey = <T extends StateNetworkContentType>(
+  key: Uint8Array
+): ContentKeyOpts => {
+  const contentType: StateNetworkContentType = key[0]
   switch (contentType) {
     case StateNetworkContentType.AccountTrieProof: {
-      return AccountTrieProofKeyType.deserialize(key.slice(1))
+      const deserialized = AccountTrieProofKeyType.deserialize(key.slice(1))
+      return {
+        address: toHexString(deserialized.address),
+        stateRoot: deserialized.stateRoot,
+      } as TContentKeyOpts<StateNetworkContentType.AccountTrieProof>
     }
     case StateNetworkContentType.ContractStorageTrieProof: {
-      return ContractStorageTrieKeyType.deserialize(key.slice(1))
+      const deserialized = ContractStorageTrieKeyType.deserialize(key.slice(1))
+      return {
+        address: toHexString(deserialized.address),
+        slot: deserialized.slot,
+        stateRoot: deserialized.stateRoot,
+      } as TContentKeyOpts<StateNetworkContentType.ContractStorageTrieProof>
     }
     case StateNetworkContentType.ContractByteCode: {
-      return ContractByteCodeKeyType.deserialize(key.slice(1))
+      const deserialized = ContractByteCodeKeyType.deserialize(key.slice(1))
+      return {
+        address: toHexString(deserialized.address),
+        codeHash: deserialized.codeHash,
+      } as TContentKeyOpts<StateNetworkContentType.ContractByteCode>
     }
-    default:
-      throw new Error(`Content Type ${contentType} not supported`)
   }
 }
 
-export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
-  if (!opts.address) {
-    throw new Error('address is required')
-  }
-  switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
-      return sha256(opts.address.toBuffer())
-    }
-    case StateNetworkContentType.ContractStorageTrieProof: {
-      if (!opts.slot) {
-        throw new Error('slot value required')
-      }
-      return Uint8Array.from(
+export const getStateNetworkContentId = (opts: TContentKeyOpts<StateNetworkContentType>) => {
+  return 'slot' in opts
+    ? Uint8Array.from(
         bigIntToBuffer(
-          BigInt(toHexString(sha256(opts.address.toBuffer()))) +
-            (BigInt(toHexString(sha256(bigIntToBuffer(opts.slot)))) % MODULO)
+          BigInt(toHexString(sha256(fromHexString(opts.address)))) +
+            (BigInt(toHexString(sha256(bigIntToBuffer(opts.slot!)))) % MODULO)
         )
       )
-    }
-    case StateNetworkContentType.ContractByteCode: {
-      if (!opts.codeHash) {
-        throw new Error('codeHash required')
-      }
-      return sha256(Buffer.concat([opts.address.toBuffer(), opts.codeHash]))
-    }
-    default:
-      throw new Error(`Content Type ${opts.contentType} not supported`)
-  }
+    : 'codeHash' in opts
+    ? sha256(Buffer.concat([fromHexString(opts.address), opts.codeHash!]))
+    : sha256(fromHexString(opts.address))
 }
 
 export function mergeArrays(arrays: string[][]): (string | string[])[] {
