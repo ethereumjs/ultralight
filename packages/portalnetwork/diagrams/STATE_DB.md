@@ -51,14 +51,16 @@ erDiagram
 
 ```mermaid
 flowchart TD
-    Bridge[BridgeNode]
-    Network[State Network]
+    Bridge{BridgeNode}
+    Network{State Network}
     StateDB{StateDB}
     ACC(Account Data)
     PROOF(Merkle Proof)
-    ATP(AccountTrieProof)
-    Bridge -->|New Content| ATP
-    Network -->|Gossip| ATP
+    PORTAL((Portal Client))
+    ATP(AccountTrieProof<br/>Content + ContentKey)
+    Bridge -..->|New Content| PORTAL
+    Network -..->|Gossip| PORTAL
+    PORTAL ---> ATP
     ATP --> KEY(ContentKey)
     ATP --> CON(Content)
     KEY --> ROOT(State Root)
@@ -66,13 +68,16 @@ flowchart TD
     CON --> PROOF
     CON --> ACC
     PROOF
-    StateDB <--> Subs[Account Tries]
-    Subs <--> |State Root| Sub[TrieLevel]
-    Sub <--> |Trie.DB = TrieLevel| Trie[Trie]
-    ACC --> Trie
-    PROOF --> Trie
-    ROOT -.- Subs
-    ADD -.- Sub
+    Subs[this.accountTries.set < state_root > ] --- StateDB 
+    Sub[TrieLevel]--> Subs 
+    CREATE[createFromProof] ---> Trie
+    Trie --> |Trie.DB = TrieLevel| Sub
+    ACC --> CREATE
+    PROOF --> CREATE
+    ROOT -.-> Subs
+    ROOT -..- Trie
+    ADD -..-> KNOWN[this.knownAddresses]
+    KNOWN --- StateDB
 ```
 ### Store: ContractStorageTrieProof
 
