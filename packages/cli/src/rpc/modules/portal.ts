@@ -340,16 +340,13 @@ export class portal {
     this.logger(`historyRecursiveFindNodes request returned ${res}`)
     return res ?? ''
   }
-  async historyLocalContent(params: [string]) {
+  async historyLocalContent(params: [string]): Promise<string> {
     const [contentKey] = params
     this.logger(`Received historyLocalContent request for ${contentKey}`)
-    let res
-    try {
-      res = await this._history.findContentLocally(fromHexString(contentKey))
-    } catch (err) {
-      res = (err as any).message
-    }
-    return res
+
+    const res = await this._history.findContentLocally(fromHexString(contentKey))
+    this.logger(`historyLocalContent request returned ${res.length} bytes`)
+    return toHexString(res)
   }
   async historyFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
