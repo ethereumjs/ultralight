@@ -60,9 +60,9 @@ export class HistoryProtocol extends BaseProtocol {
    * @param decodedContentMessage content key to be found
    * @returns content if available locally
    */
-  public findContentLocally = async (contentKey: Uint8Array) => {
+  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const value = await this.retrieve(toHexString(contentKey))
-    return value ? fromHexString(value) : undefined
+    return value ? fromHexString(value) : fromHexString('0x')
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
