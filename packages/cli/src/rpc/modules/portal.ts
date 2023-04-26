@@ -385,13 +385,19 @@ export class portal {
   }
   async historyOffer(params: [string, string, string]) {
     const [enr, _contentKey, content] = params
+    const dstId = ENR.decodeTxt(enr).nodeId
     const hashKey = _contentKey.slice(1)
     const contentKey = fromHexString(_contentKey)
+    if (!this._history.routingTable.getValue(dstId)) {
+      const pong = await this._history.sendPing(enr)
+      if (!pong) {
+        return
+      }
+    }
     if ((await this._history.findContentLocally(contentKey)).length > 0) {
       await this._history.store(contentKey[0], hashKey, fromHexString(content))
     }
     const keys = [contentKey]
-    const dstId = ENR.decodeTxt(enr).nodeId
     const res = await this._history.sendOffer(dstId, keys)
     return res
   }
