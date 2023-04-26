@@ -48,15 +48,15 @@ const blocks = {
 const main = async () => {
 
   const nodeA = jayson.Client.http({ host: '127.0.0.1', port: 8546 })
-  const nodeAEnr = await nodeA.request('portal_nodeEnr', [])
+  const nodeAEnr = await nodeA.request('discv5_nodeInfo', [])
   console.log(nodeAEnr)
 
   const nodeB = jayson.Client.http({ host: '127.0.0.1', port: 8545 })
-  const nodeBEnr = await nodeB.request('portal_nodeEnr', [])
+  const nodeBEnr = await nodeB.request('discv5_nodeInfo', [])
   console.log(nodeBEnr)
 
     Object.entries(blocks).map(([hash, block]) => {
-        nodeA.request('portal_addBlockToHistory', [hash, block.rlp])
+        nodeA.request('ultralight_addBlockToHistory', [hash, block.rlp])
     })
 
     const blockHashes = Object.keys(blocks)
@@ -65,11 +65,11 @@ const main = async () => {
 
     const types = [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1]
     
-    const ping = await nodeA.request('portal_ping', [nodeBEnr.result, ProtocolId.HistoryNetwork])
+    const ping = await nodeA.request('portal_historyPing', [nodeBEnr.result.enr, ProtocolId.HistoryNetwork])
 
     console.log(ping)
 
-    const offer = await nodeA.request('portal_history_offer', [nodeBEnr.result ,blockHashes, types])
+    const offer = await nodeA.request('portal_historyOffer', [nodeBEnr.result.nodeId.slice(2),blockHashes, types])
 
     console.log(offer)
 }

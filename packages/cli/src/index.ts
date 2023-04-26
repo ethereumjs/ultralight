@@ -117,7 +117,7 @@ const main = async () => {
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
-  portal.enableLog('*ultralight*, *Portal*')
+  portal.enableLog('*ultralight*, *Portal*, *ultralight:RPC*')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
@@ -168,8 +168,12 @@ const main = async () => {
             const res = await web3!.request(method, params)
             if (res.result) return res.result
             else return res.error
-          }) //@ts-expect-error
-        } else return this._methods[method]
+          })
+        } else {
+          log(`Received ${method} with params: ${params}`)
+          //@ts-expect-error
+          return this._methods[method]
+        }
       },
     })
     server.http().listen(args.rpcPort)
