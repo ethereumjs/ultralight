@@ -116,9 +116,10 @@ export class portal {
     this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
-    this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
+    this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
       [validators.dstId],
-      [validators.array(validators.hex)],
+      [validators.hex],
+      [validators.hex],
     ])
     this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
       [validators.dstId],
@@ -382,9 +383,13 @@ export class portal {
     }
     return res
   }
-  async historyOffer(params: [string, string[]]) {
-    const [dstId, contentKeys] = params
-    const keys = contentKeys.map((key) => fromHexString(key))
+  async historyOffer(params: [string, string, string]) {
+    const [dstId, _contentKey, content] = params
+    const contentKey = fromHexString(_contentKey)
+    if ((await this._history.findContentLocally(contentKey)) === Uint8Array.from([])) {
+      await this._history.store(contentKey[0], _contentKey, fromHexString(content))
+    }
+    const keys = [contentKey]
     const res = await this._history.sendOffer(dstId, keys)
     return res
   }
