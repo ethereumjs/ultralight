@@ -186,11 +186,7 @@ export class HistoryProtocol extends BaseProtocol {
         this.logger(`Error validating header: ${(err as any).message}`)
       }
     } else {
-      this.put(
-        this.protocolId,
-        getContentKey(contentType, fromHexString(hashKey)),
-        toHexString(value)
-      )
+      this.put(this.protocolId, contentKey, toHexString(value))
     }
     this.emit('ContentAdded', hashKey, contentType, toHexString(value))
     if (this.routingTable.values().length > 0) {
@@ -205,7 +201,7 @@ export class HistoryProtocol extends BaseProtocol {
       const content = await this.get(this.protocolId, contentKey)
       return content
     } catch {
-      this.logger('Error retrieving content from DB')
+      this.logger('Content not found in DB')
     }
   }
 

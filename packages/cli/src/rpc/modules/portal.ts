@@ -394,7 +394,7 @@ export class portal {
         return
       }
     }
-    if ((await this._history.findContentLocally(contentKey)).length > 0) {
+    if ((await this._history.findContentLocally(contentKey)).length === 0) {
       await this._history.store(contentKey[0], hashKey, fromHexString(content))
     }
     const keys = [contentKey]
