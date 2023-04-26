@@ -315,7 +315,7 @@ export abstract class BaseProtocol extends EventEmitter {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      const enr = dstId.startsWith('enr') ? ENR.decodeTxt(dstId) : this.routingTable.getValue(dstId)
+      const enr = this.routingTable.getValue(dstId)
       if (!enr) {
         this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
         return

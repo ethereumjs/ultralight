@@ -384,13 +384,14 @@ export class portal {
     return res
   }
   async historyOffer(params: [string, string, string]) {
-    const [dstId, _contentKey, content] = params
+    const [enr, _contentKey, content] = params
     const hashKey = _contentKey.slice(1)
     const contentKey = fromHexString(_contentKey)
-    if ((await this._history.findContentLocally(contentKey)) === Uint8Array.from([])) {
+    if ((await this._history.findContentLocally(contentKey)).length > 0) {
       await this._history.store(contentKey[0], hashKey, fromHexString(content))
     }
     const keys = [contentKey]
+    const dstId = ENR.decodeTxt(enr).nodeId
     const res = await this._history.sendOffer(dstId, keys)
     return res
   }
