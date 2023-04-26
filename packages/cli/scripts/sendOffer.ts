@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import {  ProtocolId, toHexString } from 'portalnetwork'
+import {  ProtocolId, fromHexString, getContentKey, toHexString } from 'portalnetwork'
 import { Block, BlockData, BlockHeader } from '@ethereumjs/block';
 
 const blocks = {
@@ -69,7 +69,7 @@ const main = async () => {
 
     console.log(ping)
 
-    const offer = await nodeA.request('portal_historyOffer', [nodeBEnr.result.nodeId.slice(2),blockHashes, types])
+    const offer = await nodeA.request('portal_historyOffer', [nodeBEnr.result.nodeId.slice(2),blockHashes.map((hash, idx) => getContentKey(idx < 10 ? 0 : 1, fromHexString(hash))), types])
 
     console.log(offer)
 }
