@@ -125,16 +125,16 @@ export const addRLPSerializedBlock = async (
   const header = block.header
   if (header.number < 15537393n) {
     // Only generate proofs for pre-merge headers
-    //const proof: Witnesses = witnesses ?? (await protocol.generateInclusionProof(header.number))
+    const proof: Witnesses = witnesses ?? (await protocol.generateInclusionProof(header.number))
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
-      proof: { selector: 0, value: null },
+      proof: { selector: 1, value: proof },
     })
-    /* try {
+    try {
       await protocol.validateHeader(headerProof, blockHash)
     } catch {
       throw new Error('Header proof failed validation')
-    }*/
+    }
     await protocol.store(ContentType.BlockHeader, toHexString(header.hash()), headerProof)
   } else {
     const headerProof = BlockHeaderWithProof.serialize({
