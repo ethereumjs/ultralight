@@ -6,9 +6,11 @@ import {
   getContentKey,
   ContentType,
   ProtocolId,
+  toHexString,
 } from 'portalnetwork'
 import { createRequire } from 'module'
 import { readFileSync } from 'fs'
+import { Block } from '@ethereumjs/block'
 
 const require = createRequire(import.meta.url)
 const { Client } = jayson
@@ -74,7 +76,6 @@ const main = async () => {
   const blocks = Object.entries(blockData)
   const epoch = require('./testEpoch.json')
   const epoch25 = readFileSync('./scripts/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent', {encoding: 'hex'})
-
 
   async function testRes(clients: HttpClient[], method: string, params: any[][]) {
     for (const [i, client] of clients.entries()) {
@@ -167,21 +168,18 @@ const main = async () => {
   // portal_historyLocalContent
   await testRes([clients[0]], 'portal_historyLocalContent', [[epochKey]])
   // portal_historyOffer
+  for (const block of blocks.slice(0,1)){
   await testRes([clients[0]], 'portal_historyOffer', [
     [
-      clientInfo.peer1.nodeId.slice(2),
-      [
+      clientInfo.peer1.enr,
         getContentKey(
           ContentType.BlockHeader,
-          fromHexString(blocks[3][0])
+          fromHexString(block[0])
         ),
-        getContentKey(
-          ContentType.BlockBody,
-          fromHexString(blocks[3][0])
-        ),
-      ],
+        toHexString(Block.fromRLPSerializedBlock(Buffer.from((block[1] as any).rlp.slice(2),'hex'), { hardforkByBlockNumber: true}).header.serialize())
+      ,
     ],
-  ])
+  ])}
   // eth_getBlockByHash
   await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
   // eth_getBlockByNumber
