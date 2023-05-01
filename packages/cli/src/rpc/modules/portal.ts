@@ -74,10 +74,7 @@ export class portal {
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
-    this.historyPing = middleware(this.historyPing.bind(this), 2, [
-      [validators.enr],
-      [validators.hex],
-    ])
+    this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
       [validators.enr],
       [validators.hex],
@@ -234,8 +231,8 @@ export class portal {
     this.logger(`Found: ${enr}`)
     return enr
   }
-  async historyPing(params: [string, string]) {
-    const [enr, _dataRadius] = params
+  async historyPing(params: [string]) {
+    const [enr] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
@@ -253,7 +250,7 @@ export class portal {
   }
   async historySendPing(params: [string, string]) {
     this.logger(`portal_historySendPing`)
-    const pong = await this.historyPing(params)
+    const pong = await this.historyPing([params[0]])
     return pong && pong.enrSeq
   }
   async historySendPong(params: [string, string, string]) {
