@@ -18,6 +18,7 @@ import {
   NodesMessage,
   ContentMessageType,
   AcceptMessage,
+  decodeContentKey,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -116,9 +117,10 @@ export class portal {
     this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
-    this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
-      [validators.dstId],
-      [validators.array(validators.hex)],
+    this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
+      [validators.enr],
+      [validators.hex],
+      [validators.hex],
     ])
     this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
       [validators.dstId],
@@ -382,10 +384,22 @@ export class portal {
     }
     return res
   }
-  async historyOffer(params: [string, string[]]) {
-    const [dstId, contentKeys] = params
-    const keys = contentKeys.map((key) => fromHexString(key))
-    const res = await this._history.sendOffer(dstId, keys)
+  async historyOffer(params: [string, string, string]) {
+    const [enrHex, contentKeyHex, contentValueHex] = params
+    const enr = ENR.decodeTxt(enrHex)
+    const contentKey = decodeContentKey(contentKeyHex)
+    if (this._history.routingTable.getValue(enr.nodeId) === undefined) {
+      const res = await this._history.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    await this._history.store(
+      contentKey.contentType,
+      contentKey.blockHash,
+      fromHexString(contentValueHex)
+    )
+    const res = await this._history.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
     return res
   }
   async historySendOffer(params: [string, string[]]) {
