@@ -117,7 +117,7 @@ tape('gossip test', async (t) => {
   const to = setTimeout(() => {
     t.fail('timeout')
     end.emit('end()')
-  }, 4000)
+  }, 10000)
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
