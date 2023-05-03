@@ -4,6 +4,7 @@ import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -18,8 +19,18 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     this.routingTable.setLogger(this.logger)
   }
 
-  public findContentLocally = (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
-    return Promise.resolve(undefined)
+  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
+    const value = await this.retrieve(toHexString(contentKey))
+    return value ? fromHexString(value) : fromHexString('0x')
+  }
+
+  public async retrieve(contentKey: string): Promise<string | undefined> {
+    try {
+      const content = await this.get(this.protocolId, contentKey)
+      return content
+    } catch {
+      this.logger('Error retrieving content from DB')
+    }
   }
 
   public sendFindContent = (
