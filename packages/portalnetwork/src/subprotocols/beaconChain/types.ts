@@ -61,6 +61,7 @@ export const SLOTS_PER_EPOCH = 32 //  2**5
 export const SYNC_COMMITTEE_SIZE = 512
 export const SLOTS_PER_SYNC_PERIOD = SLOTS_PER_EPOCH * EPOCHS_PER_SYNC_COMMITTEE_PERIOD
 export const UPDATE_TIMEOUT = SLOTS_PER_SYNC_PERIOD
+export const MAX_REQUEST_LIGHT_CLIENT_UPDATE = 128 // 2**7
 
 export const BeaconBlockHeader = new ContainerType({
   slot: SlotType,
@@ -209,4 +210,11 @@ export interface ILightClientStore {
   optimisticHeader: IBeaconBlockHeader
   previousMaxActiveParticipants: bigint
   currentMaxActiveParticipants: bigint
+}
+
+export enum BeaconLightClientNetworkContentType {
+  LightClientBootstrap = 0,
+  LightClientUpdatesByRange = 1,
+  LightClientFinalityUpdate = 2,
+  LightClientOptimisticUpdate = 3,
 }
