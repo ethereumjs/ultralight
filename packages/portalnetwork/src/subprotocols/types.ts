@@ -8,6 +8,7 @@ export enum ProtocolId {
   TxGossipNetwork = '0x500c',
   HeaderGossipNetwork = '0x500d',
   CanonicalIndicesNetwork = '0x500e',
+  BeaconLightClientNetwork = '0x501a',
   UTPNetwork = '0x757470',
   Rendezvous = '0x72656e',
 }
