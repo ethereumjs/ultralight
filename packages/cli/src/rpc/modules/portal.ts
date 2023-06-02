@@ -243,8 +243,8 @@ export class portal {
     }
     return (
       pong && {
-        enrSeq: '0x' + pong.enrSeq.toString(16),
-        dataRadius: toHexString(pong.customPayload),
+        enrSeq: pong.enrSeq,
+        dataRadius: pong.customPayload,
       }
     )
   }
