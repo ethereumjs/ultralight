@@ -244,7 +244,7 @@ export class portal {
     return (
       pong && {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: pong.customPayload,
+        dataRadius: toHexString(pong.customPayload),
       }
     )
   }
