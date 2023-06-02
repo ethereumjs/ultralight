@@ -243,7 +243,7 @@ export class portal {
     }
     return (
       pong && {
-        enrSeq: pong.enrSeq,
+        enrSeq: pong.enrSeq.toString(),
         dataRadius: pong.customPayload,
       }
     )
