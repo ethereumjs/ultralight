@@ -41,7 +41,7 @@ tape('Header Record Proof tests', (t) => {
   const header = BlockHeader.fromRLPSerializedHeader(
     Buffer.from(fromHexString(block1000.rawHeader)),
     {
-      hardforkByBlockNumber: true,
+      setHardfork: true,
     }
   )
   t.test('Test Data is valid', (st) => {

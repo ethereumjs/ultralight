@@ -1,5 +1,5 @@
 import { Block } from '@ethereumjs/block'
-import { bigIntToHex, intToHex, toBuffer } from '@ethereumjs/util'
+import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
 import { Debugger } from 'debug'
 import {
   ProtocolId,
@@ -236,17 +236,17 @@ export class eth {
         if (t === null) {
           return null
         } else if (Array.isArray(t)) {
-          return t.map((x) => toBuffer(x))
+          return t.map((x) => toBytes(x))
         } else {
-          return toBuffer(t)
+          return toBytes(t)
         }
       })
       let addrs
       if (address) {
         if (Array.isArray(address)) {
-          addrs = address.map((a) => toBuffer(a))
+          addrs = address.map((a) => toBytes(a))
         } else {
-          addrs = [toBuffer(address)]
+          addrs = [toBytes(address)]
         }
       }
       const blocks = Promise.all(

@@ -60,7 +60,7 @@ const main = async () => {
     const find = await ultralights[0].request('portal_historyLocalContent', [
       testBlocks[0].headerKey,
     ])
-    console.log(BlockHeader.fromRLPSerializedHeader(find.result.data, { hardforkByBlockNumber: true }))
+    console.log(BlockHeader.fromRLPSerializedHeader(find.result.data, { setHardfork: true }))
   }, 2000)
 }
 main()

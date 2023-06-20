@@ -18,7 +18,7 @@ const main = async () => {
         BigInt(res.result.number)
       )}`
     )
-    const block = Block.fromRPC(res.result, [], { hardforkByBlockNumber: true })
+    const block = Block.fromRPC(res.result, [], { setHardfork: true })
     const portRes = await portal.request('ultralight_addBlockToHistory', [
       toHexString(block.hash()),
       toHexString(block.serialize()),

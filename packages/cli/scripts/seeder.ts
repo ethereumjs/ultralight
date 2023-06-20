@@ -176,7 +176,7 @@ const main = async () => {
           ContentType.BlockHeader,
           fromHexString(block[0])
         ),
-        toHexString(Block.fromRLPSerializedBlock(Buffer.from((block[1] as any).rlp.slice(2),'hex'), { hardforkByBlockNumber: true}).header.serialize())
+        toHexString(Block.fromRLPSerializedBlock(Buffer.from((block[1] as any).rlp.slice(2),'hex'), { setHardfork: true}).header.serialize())
       ,
     ],
   ])}

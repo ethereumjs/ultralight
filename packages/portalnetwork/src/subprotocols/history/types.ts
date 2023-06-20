@@ -60,7 +60,7 @@ export interface IReceiptOpts {
   /**
    * Bloom bitvector
    */
-  bitvector: Buffer
+  bitvector: Uint8Array
   /**
    * Logs emitted
    */
@@ -68,7 +68,7 @@ export interface IReceiptOpts {
   /**
    * Intermediary state root
    */
-  stateRoot?: Buffer
+  stateRoot?: Uint8Array
   /**
    * Status of transaction, `1` if successful, `0` if an exception occured
    */
@@ -99,11 +99,11 @@ export type HistoricalEpoch = Uint8Array
 export type HeaderRecordList = Uint8Array[]
 export type Rlp = Uint8Array
 export type BlockBodyContent = { txsRlp: Rlp[]; unclesRlp: Rlp }
-export type Log = [address: Buffer, topics: Buffer[], data: Buffer]
+export type Log = [address: Uint8Array, topics: Uint8Array[], data: Uint8Array]
 export type rlpReceipt = [
-  postStateOrStatus: Buffer,
-  cumulativeGasUsed: Buffer,
-  bitvector: Buffer,
+  postStateOrStatus: Uint8Array,
+  cumulativeGasUsed: Uint8Array,
+  bitvector: Uint8Array,
   logs: Log[]
 ]
 

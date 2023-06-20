@@ -18,6 +18,7 @@ import {
 import { createRequire } from 'module'
 import { EventEmitter } from 'events'
 import { SignableENR } from '@chainsafe/discv5'
+import { bytesToPrefixedHexString } from '@ethereumjs/util'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -32,7 +33,7 @@ const epoch25 = readFileSync(
 )
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
   return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
-    hardforkByBlockNumber: true,
+    setHardfork: true,
   })
 })
 const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
@@ -122,13 +123,13 @@ tape('gossip test', async (t) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
       const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
-        hardforkByBlockNumber: true,
+        setHardfork: true,
       })
       t.ok(
-        testHashStrings.includes('0x' + header.hash().toString('hex')),
+        testHashStrings.includes(bytesToPrefixedHexString(header.hash())),
         'node 2 found expected header'
       )
-      if ('0x' + header.hash().toString('hex') === testHashStrings[6]) {
+      if (bytesToPrefixedHexString(header.hash()) === testHashStrings[6]) {
         t.pass('found expected last header')
         node2.removeAllListeners()
         await node1.stop()
@@ -205,7 +206,7 @@ tape('FindContent', async (t) => {
       if (contentType === 0) {
         const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
         const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
-          hardforkByBlockNumber: true,
+          setHardfork: true,
         })
         t.equal(
           toHexString(header.hash()),

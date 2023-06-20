@@ -1,11 +1,11 @@
 import {
-  arrToBufArr,
-  bigIntToBuffer,
-  bufArrToArr,
-  bufferToBigInt,
-  bufferToInt,
-  intToBuffer,
+  bigIntToBytes,
+  bytesToBigInt,
+  bytesToInt,
+  equalsBytes,
+  intToBytes,
   NestedUint8Array,
+  utf8ToBytes,
 } from '@ethereumjs/util'
 import * as RLP from '@ethereumjs/rlp'
 import type { Block } from '@ethereumjs/block'
@@ -14,7 +14,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { TxReceipt, PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
 import { TypedTransaction } from '@ethereumjs/tx'
 
-type rlpReceipt = [postStateOrStatus: Buffer, cumulativeGasUsed: Buffer, logs: Log[]]
+type rlpReceipt = [postStateOrStatus: Uint8Array, cumulativeGasUsed: Uint8Array, logs: Log[]]
 
 export const GET_LOGS_BLOCK_RANGE_LIMIT = 2500
 export const GET_LOGS_LIMIT = 10000
@@ -41,9 +41,9 @@ export function logsBloom(logs: Log[]) {
   return bloom
 }
 
-export function decodeReceipts(value: Buffer) {
+export function decodeReceipts(value: Uint8Array) {
   const arr = RLP.decode(Uint8Array.from(value)) as NestedUint8Array
-  const decoded = arrToBufArr(arr) as rlpReceipt[]
+  const decoded = arr as rlpReceipt[]
   return decoded.map((r) => {
     const gasUsed = r[1]
     const logs = r[2]
@@ -51,23 +51,23 @@ export function decodeReceipts(value: Buffer) {
     if (r[0].length === 32) {
       return {
         stateRoot: r[0],
-        cumulativeBlockGasUsed: bufferToBigInt(gasUsed),
+        cumulativeBlockGasUsed: bytesToBigInt(gasUsed),
         logs,
       } as PreByzantiumTxReceipt
     } else {
       return {
-        status: bufferToInt(r[0]),
-        cumulativeBlockGasUsed: bufferToBigInt(gasUsed),
+        status: bytesToInt(r[0]),
+        cumulativeBlockGasUsed: bytesToBigInt(gasUsed),
         logs,
       } as PostByzantiumTxReceipt
     }
   })
 }
 
-export async function saveReceipts(block: Block): Promise<Buffer> {
+export async function saveReceipts(block: Block): Promise<Uint8Array> {
   const vm = await VM.create({
     common: block._common,
-    hardforkByBlockNumber: true,
+    setHardfork: true,
   })
   const receipts: TxReceiptType[] = []
   for (const tx of block.transactions) {
@@ -79,17 +79,12 @@ export async function saveReceipts(block: Block): Promise<Buffer> {
     })
     receipts.push(txResult.receipt)
   }
-  return Buffer.from(
-    RLP.encode(
-      bufArrToArr(
-        receipts.map((r) => [
-          (r as PreByzantiumTxReceipt).stateRoot ??
-            intToBuffer((r as PostByzantiumTxReceipt).status),
-          bigIntToBuffer(r.cumulativeBlockGasUsed),
-          Buffer.from(RLP.encode(bufArrToArr(r.logs))),
-        ])
-      )
-    )
+  return RLP.encode(
+    receipts.map((r) => [
+      (r as PreByzantiumTxReceipt).stateRoot ?? intToBytes((r as PostByzantiumTxReceipt).status),
+      bigIntToBytes(r.cumulativeBlockGasUsed),
+      RLP.encode(r.logs),
+    ])
   )
 }
 
@@ -100,7 +95,7 @@ export async function getReceipts(
   includeTxType?: true
 ): Promise<TxReceipt[] | TxReceiptWithType[]> {
   if (!encoded) return []
-  let receipts = decodeReceipts(Buffer.from(fromHexString(encoded)))
+  let receipts = decodeReceipts(fromHexString(encoded))
   if (calcBloom) {
     receipts = receipts.map((r) => {
       r.bitvector = logsBloom(r.logs).bitvector
@@ -119,8 +114,8 @@ export async function getReceipts(
 
 export async function getLogs(
   blocks: Block[],
-  addresses?: Buffer[],
-  topics: (Buffer | Buffer[] | null)[] = []
+  addresses?: Uint8Array[],
+  topics: (Uint8Array | Uint8Array[] | null)[] = []
 ): Promise<GetLogsReturn> {
   const returnedLogs: GetLogsReturn = []
   let returnedLogsSize = 0
@@ -142,25 +137,25 @@ export async function getLogs(
         )
     }
     if (addresses && addresses.length > 0) {
-      logs = logs.filter((l) => addresses.some((a) => a.equals(l.log[0])))
+      logs = logs.filter((l) => addresses.some((a) => equalsBytes(a, l.log[0])))
     }
     if (topics.length > 0) {
       logs = logs.filter((l) => {
         for (const [i, topic] of topics.entries()) {
           if (Array.isArray(topic)) {
-            if (!topic.find((t) => t.equals(l.log[1][i]))) return false
+            if (!topic.find((t) => equalsBytes(t, l.log[1][i]))) return false
           } else if (!topic) {
             // If null then can match any
           } else {
             // If a value is specified then it must match
-            if (!topic.equals(l.log[1][i])) return false
+            if (!equalsBytes(topic, l.log[1][i])) return false
           }
           return true
         }
       })
     }
     returnedLogs.push(...logs)
-    returnedLogsSize += Buffer.byteLength(JSON.stringify(logs))
+    returnedLogsSize += utf8ToBytes(JSON.stringify(logs)).byteLength
     if (
       returnedLogs.length >= GET_LOGS_LIMIT ||
       returnedLogsSize >= GET_LOGS_LIMIT_MEGABYTES * 1048576

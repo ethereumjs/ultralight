@@ -10,13 +10,13 @@ import {
   sszUnclesType,
   Witnesses,
 } from './types.js'
-import rlp from '@ethereumjs/rlp'
+import { RLP as rlp } from '@ethereumjs/rlp'
 import {
   Block,
-  BlockBuffer,
-  BlockHeaderBuffer,
-  TransactionsBuffer,
-  UncleHeadersBuffer,
+  BlockBytes,
+  BlockHeaderBytes,
+  TransactionsBytes,
+  UncleHeadersBytes,
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
 import { historicalEpochs } from './data/epochHashes.js'
@@ -89,20 +89,20 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     const decodedBody = decodeSszBlockBody(rawBody)
     const block = Block.fromValuesArray(
       [
-        rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBuffer,
-        decodedBody.txsRlp as TransactionsBuffer,
-        rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBuffer,
-      ] as BlockBuffer,
-      { hardforkByBlockNumber: true }
+        rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBytes,
+        decodedBody.txsRlp as TransactionsBytes,
+        rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBytes,
+      ] as BlockBytes,
+      { setHardfork: true }
     )
     return block
   } else {
-    const blockBuffer: BlockBuffer = [
-      rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBuffer,
-      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as TransactionsBuffer,
-      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as UncleHeadersBuffer,
-    ] as BlockBuffer
-    const block = Block.fromValuesArray(blockBuffer, { hardforkByBlockNumber: true })
+    const blockBuffer: BlockBytes = [
+      rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBytes,
+      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as TransactionsBytes,
+      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as UncleHeadersBytes,
+    ] as BlockBytes
+    const block = Block.fromValuesArray(blockBuffer, { setHardfork: true })
     return block
   }
 }
@@ -120,7 +120,7 @@ export const addRLPSerializedBlock = async (
   witnesses?: Witnesses
 ) => {
   const block = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
-    hardforkByBlockNumber: true,
+    setHardfork: true,
   })
   const header = block.header
   if (header.number < 15537393n) {
@@ -148,7 +148,7 @@ export const addRLPSerializedBlock = async (
     toHexString(header.hash()),
     sszEncodeBlockBody(
       Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
-        hardforkByBlockNumber: true,
+        setHardfork: true,
       })
     )
   )

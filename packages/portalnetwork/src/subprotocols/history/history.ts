@@ -68,7 +68,7 @@ export class HistoryProtocol extends BaseProtocol {
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerProof.header), {
-      hardforkByBlockNumber: true,
+      setHardfork: true,
     })
     const proof = headerProof.proof
 

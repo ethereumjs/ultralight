@@ -9,7 +9,6 @@ import {
 } from '@chainsafe/discv5/lib/transport/types.js'
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
-import { numberToBuffer } from '@chainsafe/discv5'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 const log = debug('discv5:transport')
 
@@ -80,10 +79,11 @@ export class WebSocketTransportService
     const opts = to.toOptions()
     const encodedPacket = encodePacket(toId, packet)
     const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
-    const encodedPort = numberToBuffer(opts.port, 2)
+    const encodedPort = new Uint8Array(2)
+    new DataView(new Uint8Array(2)).setUint16(0, opts.port)
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
-      ...Uint8Array.from(encodedPort),
+      ...encodedPort,
       ...Uint8Array.from(encodedPacket),
     ])
     this.socket.sendPacked(encodedMessage)

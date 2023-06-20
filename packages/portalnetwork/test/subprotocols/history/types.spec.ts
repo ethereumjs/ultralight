@@ -204,14 +204,14 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
     Buffer.from(headerWithProof.header),
     {
       skipConsensusFormatValidation: true,
-      hardforkByBlockNumber: true,
+      setHardfork: true,
     }
   )
   const deserializedHeader2 = BlockHeader.fromRLPSerializedHeader(
     Buffer.from(headerWithProof2.header),
     {
       skipConsensusFormatValidation: true,
-      hardforkByBlockNumber: true,
+      setHardfork: true,
     }
   )
   const contentKey = getContentKey(ContentType.BlockHeader, deserializedHeader.hash())

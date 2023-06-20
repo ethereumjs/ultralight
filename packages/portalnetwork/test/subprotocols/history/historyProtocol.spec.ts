@@ -104,7 +104,7 @@ tape('store -- Headers and Epoch Accumulators', async (t) => {
     const val = await node.db.get(ProtocolId.HistoryNetwork, contentKey)
     const headerWith = BlockHeaderWithProof.deserialize(fromHexString(val))
     const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWith.header), {
-      hardforkByBlockNumber: true,
+      setHardfork: true,
     })
     st.equal(header.number, 1n, 'retrieved block header based on content key')
     st.end()
@@ -138,7 +138,7 @@ tape('store -- Block Bodies and Receipts', async (t) => {
   const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp))
-  const block = Block.fromValuesArray(blockRlp as BlockBuffer, { hardforkByBlockNumber: true })
+  const block = Block.fromValuesArray(blockRlp as BlockBuffer, { setHardfork: true })
   const epoch = readFileSync(
     './test/subprotocols/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
     { encoding: 'hex' }

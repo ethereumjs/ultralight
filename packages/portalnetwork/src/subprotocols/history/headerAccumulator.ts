@@ -102,7 +102,7 @@ export class AccumulatorManager {
           )
         )
       ),
-      { hardforkByBlockNumber: true }
+      { setHardfork: true }
     )
     try {
       const _proof: SingleProof = {
@@ -129,7 +129,7 @@ export class AccumulatorManager {
     const blockHeader = BlockHeader.fromRLPSerializedHeader(
       Buffer.from(fromHexString(_blockHeader)),
       {
-        hardforkByBlockNumber: true,
+        setHardfork: true,
       }
     )
     this._history.logger(`generating proof for block ${blockHeader.number}`)
@@ -171,7 +171,7 @@ export class AccumulatorManager {
           )
         )
       ),
-      { hardforkByBlockNumber: true }
+      { setHardfork: true }
     )
     const epochIndex = Math.ceil(Number(header.number) / 8192)
     const listIndex = Number(header.number) % 8192
