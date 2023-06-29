@@ -1,5 +1,5 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
-import { Block, BlockBuffer, BlockHeader } from '@ethereumjs/block'
+import { Block, BlockBytes, BlockHeader } from '@ethereumjs/block'
 import tape from 'tape'
 import * as td from 'testdouble'
 import { readFileSync } from 'fs'
@@ -138,7 +138,7 @@ tape('store -- Block Bodies and Receipts', async (t) => {
   const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp))
-  const block = Block.fromValuesArray(blockRlp as BlockBuffer, { setHardfork: true })
+  const block = Block.fromValuesArray(blockRlp as BlockBytes, { setHardfork: true })
   const epoch = readFileSync(
     './test/subprotocols/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
     { encoding: 'hex' }
