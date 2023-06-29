@@ -20,7 +20,7 @@ import {
   epochRootByBlocknumber,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
-import RLP from '@ethereumjs/rlp'
+import * as RLP from '@ethereumjs/rlp'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')

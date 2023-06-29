@@ -15,7 +15,7 @@ import {
   HistoricalEpochsType,
   ContentType,
 } from '../../../src/subprotocols/history/types.js'
-import { bufArrToArr } from '@ethereumjs/util'
+
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
 import { historicalEpochs } from '../../../src/subprotocols/history/data/epochHashes.js'
 import { BlockHeader } from '@ethereumjs/block'
@@ -143,23 +143,23 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     st.deepEqual(receipts[5].decoded(), testReceiptData[5], 'Receipt decode test passed 8')
 
     st.deepEqual(
-      Receipt.decodeReceiptBuffer(serializedReceipts[0]).logs,
-      bufArrToArr(testReceiptData[0].logs),
+      Receipt.decodeReceiptBytes(serializedReceipts[0]).logs,
+      testReceiptData[0].logs,
       'Decoded lgos from buffer'
     )
     st.deepEqual(
-      Receipt.decodeReceiptBuffer(serializedReceipts[0]).bitvector,
-      bufArrToArr(testReceiptData[0].bitvector),
+      Receipt.decodeReceiptBytes(serializedReceipts[0]).bitvector,
+      testReceiptData[0].bitvector,
       'Decoded bitvector from buffer'
     )
     st.deepEqual(
-      Receipt.decodeReceiptBuffer(serializedReceipts[1]).logs,
-      bufArrToArr(testReceiptData[1].logs),
+      Receipt.decodeReceiptBytes(serializedReceipts[1]).logs,
+      testReceiptData[1].logs,
       'Decoded lgos from buffer'
     )
     st.deepEqual(
-      Receipt.decodeReceiptBuffer(serializedReceipts[1]).bitvector,
-      bufArrToArr(testReceiptData[1].bitvector),
+      Receipt.decodeReceiptBytes(serializedReceipts[1]).bitvector,
+      testReceiptData[1].bitvector,
       'Decoded bitvector from buffer'
     )
 
