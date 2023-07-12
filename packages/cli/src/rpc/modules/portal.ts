@@ -85,7 +85,7 @@ export class portal {
       [validators.hex],
     ])
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
-      [validators.dstId],
+      [validators.enr],
       [validators.array(validators.distance)],
     ])
     this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
@@ -108,7 +108,7 @@ export class portal {
       [validators.hex],
     ])
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
-      [validators.dstId],
+      [validators.enr],
       [validators.hex],
     ])
     this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
@@ -280,6 +280,12 @@ export class portal {
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
+    if (!this._history.routingTable.getValue(dstId)) {
+      const pong = await this.historyPing([dstId])
+      if (!pong) {
+        return ''
+      }
+    }
     const res = await this._history.sendFindNodes(dstId, distances)
     this.logger(`findNodes request returned ${res?.total} enrs`)
     return res?.enrs.map((v) => toHexString(v))
@@ -345,7 +351,14 @@ export class portal {
     return toHexString(res)
   }
   async historyFindContent(params: [string, string]) {
-    const [nodeId, contentKey] = params
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    if (!this._history.routingTable.getValue(nodeId)) {
+      const pong = await this._history.sendPing(enr)
+      if (!pong) {
+        return
+      }
+    }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
     return res
   }
