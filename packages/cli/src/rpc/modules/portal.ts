@@ -275,8 +275,9 @@ export class portal {
     return true
   }
   async historyFindNodes(params: [string, number[]]) {
-    const [dstId, distances] = params
+    const [enr, distances] = params
     this.logger(`findNodes request received with these distances ${distances.toString()}`)
+    const dstId = ENR.decodeTxt(enr).nodeId
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
@@ -360,7 +361,20 @@ export class portal {
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    return res
+    switch (res?.selector) {
+      case 0:
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve('')
+          }, 2000)
+          this._history.on('ContentAdded', (hashKey, contentType, value) => {
+            resolve(toHexString(value))
+          })
+        })
+      case 2:
+      case 1:
+        return res.value
+    }
   }
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
