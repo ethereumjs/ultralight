@@ -282,7 +282,7 @@ export class portal {
       return 'invalid node id'
     }
     if (!this._history.routingTable.getValue(dstId)) {
-      const pong = await this.historyPing([dstId])
+      const pong = await this._history.sendPing(enr)
       if (!pong) {
         return ''
       }
@@ -363,17 +363,9 @@ export class portal {
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
     switch (res?.selector) {
       case 0:
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve('')
-          }, 2000)
-          this._history.on('ContentAdded', (hashKey, contentType, value) => {
-            resolve(toHexString(value))
-          })
-        })
-      case 2:
-      case 1:
-        return res.value
+        return this._history.findContentLocally(fromHexString(contentKey))
+      default:
+        return res?.value
     }
   }
   async historySendFindContent(params: [string, string]) {
