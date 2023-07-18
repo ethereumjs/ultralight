@@ -13,6 +13,7 @@ import {
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
 } from '../../../src/index.js'
+import { bytesToHex } from '@ethereumjs/util'
 
 tape('utility functions', (t) => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
@@ -62,8 +63,8 @@ tape('BlockBody ssz serialization/deserialization', (t) => {
   const encodedHeader = block.header.serialize()
   const reassembledBlock = reassembleBlock(encodedHeader, encodedBody)
   t.equal(
-    block.header.hash().toString('hex'),
-    reassembledBlock.header.hash().toString('hex'),
+    bytesToHex(block.header.hash()),
+    bytesToHex(reassembledBlock.header.hash()),
     'was able to ssz serialize and deserialize a block'
   )
   t.end()

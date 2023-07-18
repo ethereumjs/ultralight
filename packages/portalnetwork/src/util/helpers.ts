@@ -47,7 +47,7 @@ export interface ExtendedTxReceipt extends TransactionReceipt {
 
 export async function getBlockReceipts(block: Block): Promise<TransactionReceipt[]> {
   const vm = await VM.create({
-    common: block._common,
+    common: block.common,
     setHardfork: true,
   })
   const receipts: TxReceiptType[] = []
@@ -286,7 +286,7 @@ export function blockFromRpc(
   const header = blockHeaderFromRpc(blockParams, options)
 
   const transactions: TypedTransaction[] = []
-  const opts = { common: header._common, setHardfork: true }
+  const opts = { common: header.common, setHardfork: true }
   for (const _txParams of blockParams.transactions ?? []) {
     const txParams = normalizeTxParams(_txParams)
     const tx = TransactionFactory.fromTxData(txParams as TypedTxData, opts)

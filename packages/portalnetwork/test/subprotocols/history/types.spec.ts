@@ -127,7 +127,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     })
     const deserialized = Receipt.fromEncodedReceipt(serializedReceipts[0])
     st.deepEqual(
-      receipts[0].encoded(),
+      receipts[0].encoded(), //@ts-ignore
       Receipt.fromReceiptData(testReceiptData[0] as TxReceiptType).encoded()
     )
     st.deepEqual(receipts[0].encoded(), serializedReceipts[0], 'Receipt decode test passed 1')

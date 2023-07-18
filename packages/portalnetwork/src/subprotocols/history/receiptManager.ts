@@ -66,7 +66,7 @@ export function decodeReceipts(value: Uint8Array) {
 
 export async function saveReceipts(block: Block): Promise<Uint8Array> {
   const vm = await VM.create({
-    common: block._common,
+    common: block.common,
     setHardfork: true,
   })
   const receipts: TxReceiptType[] = []

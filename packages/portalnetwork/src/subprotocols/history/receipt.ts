@@ -3,7 +3,7 @@ import {
   bytesToBigInt,
   bytesToInt,
   concatBytes,
-  prefixedHexStringToBytes,
+  hexToBytes,
   intToBytes,
 } from '@ethereumjs/util'
 import { RLP } from '@ethereumjs/rlp'
@@ -121,9 +121,7 @@ export class Receipt {
 export function encodeReceipt(receipt: TxReceipt, txType: number) {
   const encoded = RLP.encode([
     (receipt as PreByzantiumTxReceipt).stateRoot ??
-      ((receipt as PostByzantiumTxReceipt).status === 0
-        ? new Uint8Array()
-        : prefixedHexStringToBytes('01')),
+      ((receipt as PostByzantiumTxReceipt).status === 0 ? new Uint8Array() : hexToBytes('01')),
     bigIntToBytes(receipt.cumulativeBlockGasUsed),
     receipt.bitvector,
     receipt.logs,

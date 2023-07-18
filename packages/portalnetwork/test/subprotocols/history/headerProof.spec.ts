@@ -38,12 +38,9 @@ tape('Header Record Proof tests', (t) => {
   }
   const historicalEpochs = HistoricalEpochsType.deserialize(fromHexString(accumulator))
   const epoch = EpochAccumulator.deserialize(fromHexString(epoch_hex))
-  const header = BlockHeader.fromRLPSerializedHeader(
-    Buffer.from(fromHexString(block1000.rawHeader)),
-    {
-      setHardfork: true,
-    }
-  )
+  const header = BlockHeader.fromRLPSerializedHeader(fromHexString(block1000.rawHeader), {
+    setHardfork: true,
+  })
   t.test('Test Data is valid', (st) => {
     st.equal(historicalEpochs.length, 1897, 'Accumulator contains 1897 historical epochs')
     st.equal(
