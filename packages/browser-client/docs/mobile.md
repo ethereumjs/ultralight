@@ -23,7 +23,7 @@ The nice part of this for our purposes is that the React web app is the same cod
 ## Debugging the mobile app
 
 There are a couple of ways to debug Android apps but far and away the easiest is:
- - Run `npx cap open android` from `[directory root]/packages/browser-client` and then select the "Run" tab on the very bottom left of the Android Studio UI and it wll show you all of the debug logs from the app.
+ - Run `npx cap open android` from `[directory root]/packages/browser-client` and then select the "Run" tab on the very bottom left of the Android Studio UI and it will show you all of the debug logs from the app.
 
  ## Local development notes
 
