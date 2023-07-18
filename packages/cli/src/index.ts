@@ -162,17 +162,15 @@ const main = async () => {
         // `_methods` is not part of the jayson.Server interface but exists on the object
         // but the docs recommend this pattern for custom routing
         // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js
-        //@ts-expect-error
-        if (!this._methods[method] && web3) {
+        if (!this.getMethod && web3) {
           return new jayson.Method(async function () {
             const res = await web3!.request(method, params)
             if (res.result) return res.result
             else return res.error
           })
         } else {
-          log(`Received ${method} with params: ${params}`)
-          //@ts-expect-error
-          return this._methods[method]
+          log(`Received ${method} with params: ${JSON.stringify(params)}`)
+          return this.getMethod(method)
         }
       },
     })
