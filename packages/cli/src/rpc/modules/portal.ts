@@ -288,8 +288,13 @@ export class portal {
       }
     }
     const res = await this._history.sendFindNodes(dstId, distances)
-    this.logger(`findNodes request returned ${res?.total} enrs`)
-    return res?.enrs.map((v) => toHexString(v))
+    if (!res) {
+      return []
+    }
+    const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
+    this.logger(`findNodes request returned ${res?.total} enrs:`)
+    this.logger(enrs)
+    return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
   async historySendFindNodes(params: [string, number[]]) {
     const [dstId, distances] = params
@@ -357,15 +362,36 @@ export class portal {
     if (!this._history.routingTable.getValue(nodeId)) {
       const pong = await this._history.sendPing(enr)
       if (!pong) {
-        return
+        return ''
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    switch (res?.selector) {
-      case 0:
-        return this._history.findContentLocally(fromHexString(contentKey))
-      default:
-        return res?.value
+    if (!res) {
+      return ''
+    }
+    const content: Uint8Array =
+      res.selector === 1
+        ? (res.value as Uint8Array)
+        : await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              resolve(Uint8Array.from([]))
+            }, 2000)
+            this._client.uTP.on(
+              'Stream',
+              (_contentType: ContentType, hash: string, value: Uint8Array) => {
+                if (hash.slice(2) === contentKey.slice(4)) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              }
+            )
+          })
+    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
+    res.selector === 0 && this.logger.extend('findContent')('utp')
+    this.logger.extend('findContent')(content)
+    return {
+      content: toHexString(content),
+      utpTransfer: res.selector === 0,
     }
   }
   async historySendFindContent(params: [string, string]) {
