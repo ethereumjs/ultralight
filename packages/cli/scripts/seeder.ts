@@ -159,11 +159,11 @@ const main = async () => {
   ])
   // portal_historyFindNodes
   await testRes([clients[1]], 'portal_historyFindNodes', [
-    [clientInfo.ultralight.nodeId.slice(2), [255]],
+    [clientInfo.ultralight.enr, [255]],
   ])
   // portal_historyFindContent
   await testRes([clients[1]], 'portal_historyFindContent', [
-    [clientInfo.ultralight.nodeId.slice(2), blocks[1][0]],
+    [clientInfo.ultralight.enr, blocks[1][0]],
   ])
   // portal_historyLocalContent
   await testRes([clients[0]], 'portal_historyLocalContent', [[epochKey]])
