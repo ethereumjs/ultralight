@@ -93,7 +93,7 @@ export class eth {
    *   1. a block hash
    *   2. boolean - if true returns the full transaction objects, if false only the hashes of the transactions.
    */
-  async getBlockByHash(params: [string, boolean]) {
+  async getBlockByHash(params: [string, boolean]): Promise<Block> {
     const [blockHash, includeTransactions] = params
     this._client.logger(
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
@@ -103,18 +103,18 @@ export class eth {
       fromHexString(getContentKey(0, fromHexString(blockHash)))
     )
     if (!headerWithProof) {
-      return 'Block not found'
+      throw new Error('Block not found')
     }
     const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
       fromHexString(getContentKey(1, fromHexString(blockHash)))
     )
     if (!body) {
-      return 'Block not found'
+      throw new Error('Block not found')
     }
     const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
-
-    return block ?? 'Block not found'
+    //@ts-ignore
+    return block
   }
 
   /**
@@ -123,7 +123,7 @@ export class eth {
    *   1. integer of a block number
    *   2. boolean - if true returns the full transaction objects, if false only the hashes of the transactions.
    */
-  async getBlockByNumber(params: [string, boolean]) {
+  async getBlockByNumber(params: [string, boolean]): Promise<Block> {
     const [blockNumber, includeTransactions] = params
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
@@ -132,8 +132,10 @@ export class eth {
       parseInt(blockNumber),
       includeTransactions
     )
+    if (block === undefined) throw new Error('block not found')
     this.logger(block)
-    return block ?? 'Block not found'
+    //@ts-ignore
+    return block
   }
 
   /**
@@ -152,12 +154,12 @@ export class eth {
     if (blockOpt === 'latest') {
       throw new Error(`History Network does not support "latest" block`)
     } else if (blockOpt === 'earliest') {
-      block = (await this.getBlockByNumber(['0', true])) as Block
+      block = await this.getBlockByNumber(['0', true])
     } else {
-      block = (await this.getBlockByNumber([blockOpt, true])) as Block
-    }
+      block = await this.getBlockByNumber([blockOpt, true])
 
-    return block
+      return block
+    }
   }
 
   /**
@@ -167,7 +169,7 @@ export class eth {
   async getBlockTransactionCountByHash(params: [string]) {
     const [blockHash] = params
     try {
-      const block = (await this.getBlockByHash([blockHash, true])) as Block
+      const block = await this.getBlockByHash([blockHash, true])
       return intToHex(block.transactions.length)
     } catch (error) {
       throw {
@@ -184,7 +186,7 @@ export class eth {
    */
   async getUncleCountByBlockNumber(params: [string]) {
     const [blockNumber] = params
-    const block = (await this.getBlockByNumber([blockNumber, true])) as Block
+    const block = await this.getBlockByNumber([blockNumber, true])
     return block.uncleHeaders.length
   }
   /**
@@ -258,11 +260,13 @@ export class eth {
               true,
             ])) as Block
         )
-      )
+      ) //@ts-ignore
       const logs = await getLogs(await blocks, addrs, formattedTopics)
       return await Promise.all(
-        logs.map(({ log, block, tx, txIndex, logIndex }) =>
-          jsonRpcLog(log, block, tx, txIndex, logIndex)
+        logs.map(
+          (
+            { log, block, tx, txIndex, logIndex } //@ts-ignore
+          ) => jsonRpcLog(log, block, tx, txIndex, logIndex)
         )
       )
     } catch (error: any) {

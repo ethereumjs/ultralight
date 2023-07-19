@@ -125,7 +125,7 @@ const main = async () => {
     Object.entries(metrics).forEach((entry) => {
       register.registerMetric(entry[1])
     })
-    metricsServer.listen(args.metricsPort)
+    metricsServer?.listen(args.metricsPort)
     log(`Started Metrics Server address=http://${ip}:${args.metricsPort}`)
   }
   await portal.start()
