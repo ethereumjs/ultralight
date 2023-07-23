@@ -191,7 +191,7 @@ export class portal {
     const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
     this.logger(`portal_historyAddEnr request received for ${shortEnr}`)
     try {
-      if (this._history.routingTable.getValue(encodedENR.nodeId)) {
+      if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
         return true
       }
       this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Disconnected)
@@ -284,7 +284,7 @@ export class portal {
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
-    if (!this._history.routingTable.getValue(dstId)) {
+    if (!this._history.routingTable.getWithPending(dstId)?.value) {
       const pong = await this._history.sendPing(enr)
       if (!pong) {
         return ''
@@ -303,7 +303,7 @@ export class portal {
     const [dstId, distances] = params
     this.logger(`portal_historySendFindNodes`)
     try {
-      const enr = this._history.routingTable.getValue(dstId)
+      const enr = this._history.routingTable.getWithPending(dstId)?.value
       if (!enr) {
         return
       }
@@ -317,7 +317,7 @@ export class portal {
     const [dstId, enrs, requestId] = params
     this.logger(`portal_historySendNodes`)
     try {
-      const enr = this._history.routingTable.getValue(dstId)
+      const enr = this._history.routingTable.getWithPending(dstId)?.value
       if (!enr) {
         return
       }
@@ -362,7 +362,7 @@ export class portal {
   async historyFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
-    if (!this._history.routingTable.getValue(nodeId)) {
+    if (!this._history.routingTable.getWithPending(nodeId)?.value) {
       const pong = await this._history.sendPing(enr)
       if (!pong) {
         return ''
@@ -400,7 +400,7 @@ export class portal {
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    const enr = this._history.routingTable.getValue(nodeId)
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
   async historySendContent(params: [string, string]) {
@@ -409,7 +409,7 @@ export class portal {
       selector: 1,
       value: fromHexString(content),
     })
-    const enr = this._history.routingTable.getValue(nodeId)
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
     this._client.sendPortalNetworkResponse(
       { nodeId, socketAddr: enr?.getLocationMultiaddr('udp')! },
       enr!.seq,
@@ -430,7 +430,7 @@ export class portal {
     const [enrHex, contentKeyHex, contentValueHex] = params
     const enr = ENR.decodeTxt(enrHex)
     const contentKey = decodeContentKey(contentKeyHex)
-    if (this._history.routingTable.getValue(enr.nodeId) === undefined) {
+    if (this._history.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
       const res = await this._history.sendPing(enr)
       if (res === undefined) {
         return '0x'
@@ -448,7 +448,7 @@ export class portal {
     const [dstId, contentKeys] = params
     const keys = contentKeys.map((key) => fromHexString(key))
     const res = await this._history.sendOffer(dstId, keys)
-    const enr = this._history.routingTable.getValue(dstId)
+    const enr = this._history.routingTable.getWithPending(dstId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
   async historySendAccept(params: [string, string, string[]]) {

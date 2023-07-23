@@ -164,7 +164,7 @@ export abstract class BaseProtocol extends EventEmitter {
   }
 
   handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
-    if (!this.routingTable.getValue(src.nodeId)) {
+    if (!this.routingTable.getWithPending(src.nodeId)?.value) {
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
       if (enr !== undefined) {
@@ -207,7 +207,7 @@ export abstract class BaseProtocol extends EventEmitter {
     })
 
     try {
-      const enr = this.routingTable.getValue(dstId)
+      const enr = this.routingTable.getWithPending(dstId)?.value
       if (!enr) {
         return
       }
@@ -221,7 +221,7 @@ export abstract class BaseProtocol extends EventEmitter {
             (enr) => !this.routingTable.isIgnored(ENR.decode(Buffer.from(enr)).nodeId)
           )
           const unknown = notIgnored.filter(
-            (enr) => !this.routingTable.getValue(ENR.decode(Buffer.from(enr)).nodeId)
+            (enr) => !this.routingTable.getWithPending(ENR.decode(Buffer.from(enr)).nodeId)?.value
           )
           // Ping node if not currently in subprotocol routing table
           for (const enr of unknown) {
@@ -315,7 +315,7 @@ export abstract class BaseProtocol extends EventEmitter {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      const enr = this.routingTable.getValue(dstId)
+      const enr = this.routingTable.getWithPending(dstId)?.value
       if (!enr) {
         this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
         return
@@ -563,7 +563,7 @@ export abstract class BaseProtocol extends EventEmitter {
     try {
       const nodeId = enr.nodeId
       // Only add node to the routing table if we have an ENR
-      this.routingTable.getValue(enr.nodeId) === undefined &&
+      this.routingTable.getWithPending(enr.nodeId)?.value === undefined &&
         this.logger(`adding ${nodeId} to ${this.protocolName} routing table`)
       this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
       if (customPayload) {
@@ -573,7 +573,7 @@ export abstract class BaseProtocol extends EventEmitter {
     } catch (err) {
       this.logger(`Something went wrong: ${(err as any).message}`)
       try {
-        this.routingTable.getValue(enr as any) === undefined &&
+        this.routingTable.getWithPending(enr as any)?.value === undefined &&
           this.logger(`adding ${enr as any} to ${this.protocolName} routing table`)
         this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
         if (customPayload) {

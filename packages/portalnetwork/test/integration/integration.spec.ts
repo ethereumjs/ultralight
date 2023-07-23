@@ -76,7 +76,7 @@ tape('gossip test', async (t) => {
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   await protocol1?.sendPing(protocol2?.enr!.toENR())
   t.equal(
-    protocol1?.routingTable.getValue(
+    protocol1?.routingTable.getWithPending(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
     )?.nodeId,
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
