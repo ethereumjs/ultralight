@@ -1,13 +1,7 @@
 import jayson, { HttpClient } from 'jayson/promise/index.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import {
-  fromHexString,
-  getContentKey,
-  ContentType,
-  ProtocolId,
-  toHexString,
-} from 'portalnetwork'
+import { fromHexString, getContentKey, ContentType, ProtocolId, toHexString } from 'portalnetwork'
 import { createRequire } from 'module'
 import { readFileSync } from 'fs'
 import { Block } from '@ethereumjs/block'
@@ -75,7 +69,10 @@ const main = async () => {
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
   const epoch = require('./testEpoch.json')
-  const epoch25 = readFileSync('./scripts/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent', {encoding: 'hex'})
+  const epoch25 = readFileSync(
+    './scripts/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
+    { encoding: 'hex' }
+  )
 
   async function testRes(clients: HttpClient[], method: string, params: any[][]) {
     for (const [i, client] of clients.entries()) {
@@ -86,10 +83,7 @@ const main = async () => {
     }
     console.log(`ok ${method} test`)
   }
-  const epochKey = getContentKey(
-    ContentType.EpochAccumulator,
-    fromHexString(epoch.hash)
-  )
+  const epochKey = getContentKey(ContentType.EpochAccumulator, fromHexString(epoch.hash))
   let res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
     epochKey,
     epoch.serialized,
@@ -98,7 +92,7 @@ const main = async () => {
     throw new Error(`ultralight_addContentToDB error`)
   }
   res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
-    "0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70",
+    '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     '0x' + epoch25,
   ])
   if (res.error) {
@@ -150,17 +144,15 @@ const main = async () => {
   // portal_historyRoutingTableInfo
   await testRes(clients, 'portal_historyRoutingTableInfo', [[], [], [], []])
   // portal_historyLookupEnr
-  await testRes([clients[0]], 'portal_historyLookupEnr', [[clientInfo.peer1.enr]])
+  await testRes([clients[0]], 'portal_historyLookupEnr', [['0x' + clientInfo.peer1.nodeId]])
   // portal_historyPing
   await testRes(clients.slice(1), 'portal_historyPing', [
-    [clientInfo.ultralight.enr, "0x00"],
-    [clientInfo.ultralight.enr, "0x00"],
-    [clientInfo.ultralight.enr, "0x00"],
+    [clientInfo.ultralight.enr, '0x00'],
+    [clientInfo.ultralight.enr, '0x00'],
+    [clientInfo.ultralight.enr, '0x00'],
   ])
   // portal_historyFindNodes
-  await testRes([clients[1]], 'portal_historyFindNodes', [
-    [clientInfo.ultralight.enr, [255]],
-  ])
+  await testRes([clients[1]], 'portal_historyFindNodes', [[clientInfo.ultralight.enr, [255]]])
   // portal_historyFindContent
   await testRes([clients[1]], 'portal_historyFindContent', [
     [clientInfo.ultralight.enr, blocks[1][0]],
@@ -168,25 +160,23 @@ const main = async () => {
   // portal_historyLocalContent
   await testRes([clients[0]], 'portal_historyLocalContent', [[epochKey]])
   // portal_historyOffer
-  for (const block of blocks.slice(0,1)){
-  await testRes([clients[0]], 'portal_historyOffer', [
-    [
-      clientInfo.peer1.enr,
-        getContentKey(
-          ContentType.BlockHeader,
-          fromHexString(block[0])
+  for (const block of blocks.slice(0, 1)) {
+    await testRes([clients[0]], 'portal_historyOffer', [
+      [
+        clientInfo.peer1.enr,
+        getContentKey(ContentType.BlockHeader, fromHexString(block[0])),
+        toHexString(
+          Block.fromRLPSerializedBlock(Buffer.from((block[1] as any).rlp.slice(2), 'hex'), {
+            hardforkByBlockNumber: true,
+          }).header.serialize()
         ),
-        toHexString(Block.fromRLPSerializedBlock(Buffer.from((block[1] as any).rlp.slice(2),'hex'), { hardforkByBlockNumber: true}).header.serialize())
-      ,
-    ],
-  ])}
+      ],
+    ])
+  }
   // eth_getBlockByHash
   await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
   // eth_getBlockByNumber
-  await clientInfo.peer3.client.request('ultralight_addContentToDB', [
-    epochKey,
-    epoch.serialized,
-  ])
+  await clientInfo.peer3.client.request('ultralight_addContentToDB', [epochKey, epoch.serialized])
   await testRes([clients[3]], 'eth_getBlockByNumber', [['0x3e8', false]])
   await testRes([clients[2]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
