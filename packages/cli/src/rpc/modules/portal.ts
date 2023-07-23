@@ -66,11 +66,11 @@ export class portal {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
-    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
+    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.hex]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
     this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.hex]])
-    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.hex]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
@@ -203,7 +203,7 @@ export class portal {
   async historyDeleteEnr(params: [string]): Promise<boolean> {
     this.logger(`portal_historyDeleteEnr request received.`)
     const [nodeId] = params
-    const remove = this._history.routingTable.removeById(nodeId)
+    const remove = this._history.routingTable.removeById(nodeId.slice(2))
     return remove !== undefined
   }
   async historyRoutingTableInfo(_params: []): Promise<any> {
@@ -227,7 +227,7 @@ export class portal {
   async historyLookupEnr(params: [string]) {
     const [nodeId] = params
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value.encodeTxt()
     this.logger(`Found: ${enr}`)
     return enr ?? ''
   }
