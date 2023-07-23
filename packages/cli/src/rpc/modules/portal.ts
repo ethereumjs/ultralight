@@ -69,7 +69,7 @@ export class portal {
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
-    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
+    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.hex]])
     this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
@@ -178,7 +178,7 @@ export class portal {
   async historyGetEnr(params: [string]): Promise<GetEnrResult> {
     const [nodeId] = params
     this.logger(`portal_historyGetEnr request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._history.routingTable.getValue(nodeId)
+    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value
     if (enr) {
       return enr.encodeTxt()
     }
