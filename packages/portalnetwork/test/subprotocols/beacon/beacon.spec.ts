@@ -1,8 +1,8 @@
 import tape from 'tape'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
-import { lightClientOptimisticUpdateFromJson } from '../../../src/subprotocols/beaconChain/helpers.js'
-import { LightClientOptimisticUpdate } from '../../../src/subprotocols/beaconChain/types.js'
+import { lightClientOptimisticUpdateFromJson } from '../../../src/subprotocols/beacon/helpers.js'
+import { LightClientOptimisticUpdate } from '../../../src/subprotocols/beacon/types.js'
 import { fromHexString, getUint8ByteToBitBooleanArray } from '@chainsafe/ssz'
 tape('type tests', (t) => {
   const testdata = require('./testdata.json')
