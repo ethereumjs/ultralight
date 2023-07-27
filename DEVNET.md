@@ -18,7 +18,7 @@ Notes:  The nodes started by the script have a JSON-RPC server enabled.  The por
 ```sh
 npx ts-node scripts/seeder.ts --rpcPort=8546 --numBlocks=[number of blocks to seed into network] --sourceFile="[path/to/json/file/with/block/data.json]" --numNodes=[number of nodes in devnet (same as above)]
 ```
-This will load the first `numBlocks` blocks from your `sourceFile` to the the node with the `rpcPort` specified.
+This will load the first `numBlocks` blocks from your `sourceFile` to the node with the `rpcPort` specified.
 
 3. If all goes well, you should see the nodes start to connect with one another
 

@@ -18,6 +18,7 @@ import {
   NodesMessage,
   ContentMessageType,
   AcceptMessage,
+  decodeContentKey,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -65,18 +66,15 @@ export class portal {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
-    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.enr]])
+    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.hex]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
-    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
-    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.hex]])
+    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.hex]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
-    this.historyPing = middleware(this.historyPing.bind(this), 2, [
-      [validators.enr],
-      [validators.hex],
-    ])
+    this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
       [validators.enr],
       [validators.hex],
@@ -87,7 +85,7 @@ export class portal {
       [validators.hex],
     ])
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
-      [validators.dstId],
+      [validators.enr],
       [validators.array(validators.distance)],
     ])
     this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
@@ -110,15 +108,16 @@ export class portal {
       [validators.hex],
     ])
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
-      [validators.dstId],
+      [validators.enr],
       [validators.hex],
     ])
     this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
-    this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
-      [validators.dstId],
-      [validators.array(validators.hex)],
+    this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
+      [validators.enr],
+      [validators.hex],
+      [validators.hex],
     ])
     this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
       [validators.dstId],
@@ -179,7 +178,7 @@ export class portal {
   async historyGetEnr(params: [string]): Promise<GetEnrResult> {
     const [nodeId] = params
     this.logger(`portal_historyGetEnr request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._history.routingTable.getValue(nodeId)
+    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value
     if (enr) {
       return enr.encodeTxt()
     }
@@ -204,8 +203,8 @@ export class portal {
   async historyDeleteEnr(params: [string]): Promise<boolean> {
     this.logger(`portal_historyDeleteEnr request received.`)
     const [nodeId] = params
-    this._history.routingTable.removeById(nodeId)
-    return true
+    const remove = this._history.routingTable.removeById(nodeId.slice(2))
+    return remove !== undefined
   }
   async historyRoutingTableInfo(_params: []): Promise<any> {
     this.logger(`portal_historyRoutingTableInfo request received.`)
@@ -228,12 +227,12 @@ export class portal {
   async historyLookupEnr(params: [string]) {
     const [nodeId] = params
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._history.routingTable.getValue(nodeId)?.encodeTxt()
+    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value.encodeTxt()
     this.logger(`Found: ${enr}`)
-    return enr
+    return enr ?? ''
   }
-  async historyPing(params: [string, string]) {
-    const [enr, _dataRadius] = params
+  async historyPing(params: [string]) {
+    const [enr] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
@@ -244,14 +243,14 @@ export class portal {
     }
     return (
       pong && {
-        enrSeq: '0x' + pong.enrSeq.toString(16),
+        enrSeq: Number(pong.enrSeq),
         dataRadius: toHexString(pong.customPayload),
       }
     )
   }
   async historySendPing(params: [string, string]) {
     this.logger(`portal_historySendPing`)
-    const pong = await this.historyPing(params)
+    const pong = await this.historyPing([params[0]])
     return pong && pong.enrSeq
   }
   async historySendPong(params: [string, string, string]) {
@@ -279,14 +278,26 @@ export class portal {
     return true
   }
   async historyFindNodes(params: [string, number[]]) {
-    const [dstId, distances] = params
+    const [enr, distances] = params
     this.logger(`findNodes request received with these distances ${distances.toString()}`)
+    const dstId = ENR.decodeTxt(enr).nodeId
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
+    if (!this._history.routingTable.getValue(dstId)) {
+      const pong = await this._history.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
     const res = await this._history.sendFindNodes(dstId, distances)
-    this.logger(`findNodes request returned ${res?.total} enrs`)
-    return res?.enrs.map((v) => toHexString(v))
+    if (!res) {
+      return []
+    }
+    const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
+    this.logger(`findNodes request returned ${res?.total} enrs:`)
+    this.logger(enrs)
+    return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
   async historySendFindNodes(params: [string, number[]]) {
     const [dstId, distances] = params
@@ -349,9 +360,42 @@ export class portal {
     return toHexString(res)
   }
   async historyFindContent(params: [string, string]) {
-    const [nodeId, contentKey] = params
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    if (!this._history.routingTable.getValue(nodeId)) {
+      const pong = await this._history.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    return res
+    if (!res) {
+      return ''
+    }
+    const content: Uint8Array =
+      res.selector === 1
+        ? (res.value as Uint8Array)
+        : await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              resolve(Uint8Array.from([]))
+            }, 2000)
+            this._client.uTP.on(
+              'Stream',
+              (_contentType: ContentType, hash: string, value: Uint8Array) => {
+                if (hash.slice(2) === contentKey.slice(4)) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              }
+            )
+          })
+    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
+    res.selector === 0 && this.logger.extend('findContent')('utp')
+    this.logger.extend('findContent')(content)
+    return {
+      content: toHexString(content),
+      utpTransfer: res.selector === 0,
+    }
   }
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
@@ -382,10 +426,22 @@ export class portal {
     }
     return res
   }
-  async historyOffer(params: [string, string[]]) {
-    const [dstId, contentKeys] = params
-    const keys = contentKeys.map((key) => fromHexString(key))
-    const res = await this._history.sendOffer(dstId, keys)
+  async historyOffer(params: [string, string, string]) {
+    const [enrHex, contentKeyHex, contentValueHex] = params
+    const enr = ENR.decodeTxt(enrHex)
+    const contentKey = decodeContentKey(contentKeyHex)
+    if (this._history.routingTable.getValue(enr.nodeId) === undefined) {
+      const res = await this._history.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    await this._history.store(
+      contentKey.contentType,
+      contentKey.blockHash,
+      fromHexString(contentValueHex)
+    )
+    const res = await this._history.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
     return res
   }
   async historySendOffer(params: [string, string[]]) {

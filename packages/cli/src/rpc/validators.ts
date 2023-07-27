@@ -1,4 +1,4 @@
-import { ContentType, ProtocolId } from 'portalnetwork'
+import { ContentType, ProtocolId, toHexString } from 'portalnetwork'
 
 const INVALID_PARAMS = -32602
 
@@ -103,10 +103,15 @@ export const validators = {
    */
   get dstId() {
     return (params: any[], index: number) => {
+      if (params[index]['raw'] !== undefined) {
+        params[index] = toHexString(Uint8Array.from(params[index]['raw'])).slice(2)
+      }
       if (typeof params[index] !== 'string') {
         return {
           code: INVALID_PARAMS,
-          message: `invalid argument ${index}: argument must be a string`,
+          message: `invalid argument ${index}: argument must be a string - received ${typeof params[
+            index
+          ]}`,
         }
       }
       if (params[index].startsWith('0x')) {

@@ -176,7 +176,6 @@ export class HistoryProtocol extends BaseProtocol {
     hashKey: string,
     value: Uint8Array
   ): Promise<void> => {
-    const contentKey = getContentKey(contentType, fromHexString(hashKey))
     if (contentType === ContentType.BlockBody) {
       await this.addBlockBody(value, hashKey)
     } else if (contentType === ContentType.BlockHeader) {

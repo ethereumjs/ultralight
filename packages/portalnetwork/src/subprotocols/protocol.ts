@@ -398,6 +398,7 @@ export abstract class BaseProtocol extends EventEmitter {
           if (offerAccepted) {
             this.logger(`Accepting an OFFER`)
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
+            this.logger(toHexString(msg.contentKeys[0]))
             this.sendAccept(src, requestId, contentIds, desiredKeys)
           } else {
             this.logger(`Declining an OFFER since no interesting content`)

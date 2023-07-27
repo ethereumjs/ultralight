@@ -20,7 +20,7 @@ The proxy strips this prefix from the message payload and forwards the remaining
 
 #### UDP -> Websocket forwarding
 
-Any message received at a UDP port are forwarded to the corresponding websocket client unmodified.
+Any message received at a UDP port is forwarded to the corresponding websocket client unmodified.
 ## Usage
 
 To run a proxy on a local network, run `npm run start`.  
