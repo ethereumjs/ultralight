@@ -24,6 +24,8 @@
   "author": "acolytec3",
   "license": "MIT",
   "dependencies": {
+    "@lodestar/config": "^1.9.2",
+    "@lodestar/types": "^1.9.2",
     "@chainsafe/as-sha256": "^0.3.1",
     "@chainsafe/discv5": "^3.0.0",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",

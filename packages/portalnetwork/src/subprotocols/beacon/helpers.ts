@@ -1,5 +1,4 @@
 import { BitArray, fromHexString } from '@chainsafe/ssz'
-import { SYNC_COMMITTEE_SIZE } from './types.js'
 
 export const attestedHeaderFromJson = (data: any) => {
   return {

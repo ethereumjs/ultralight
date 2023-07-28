@@ -6,20 +6,28 @@ import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
+import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+import { Forks, MainnetGenesisValidatorsRoot } from './types.js'
 import {
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { BeaconLightClientNetworkContentType, LightClientOptimisticUpdate } from './types.js'
+import { ssz } from '@lodestar/types'
+import { BeaconLightClientNetworkContentType } from './types.js'
+import { BeaconConfig } from '@lodestar/config'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
+  beaconConfig: BeaconConfig
   protocolName = 'BeaconLightClientNetwork'
   logger: Debugger
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
+
+    const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot)
+    this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
     this.protocolId = ProtocolId.BeaconLightClientNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5))
       .extend('Portal')
@@ -66,10 +74,12 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentHash = toHexString(key)
+        const forkhash = decoded.value.slice(0,4) as Uint8Array
+        const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as never as Forks
         switch (decoded.selector) {
           case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
             try {
-              LightClientOptimisticUpdate.deserialize(decoded.value as Uint8Array)
+              ssz[forkname].LightClientOptimisticUpdate.deserialize(decoded.value as Uint8Array)
             } catch (err) {
               this.logger(`received invalid content from ${shortId(dstId)}`)
               break
