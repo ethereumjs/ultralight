@@ -43,12 +43,7 @@ tape('DBManager unit tests', async (t) => {
   db.put(ProtocolId.HistoryNetwork, testKey, toHexString(testVal))
   const lookupD = BigInt.asUintN(32, distance(self.slice(2), testId.slice(2)))
   const lookupKey = bigIntToHex(lookupD)
-  console.log({
-    testKey,
-    testId,
-    lookupKey,
-    lookupD,
-  })
+
   const historyPrefix = '!0x500b!'
   const key0 = [...(await db.db.keys().all())][0]
   t.equal(
