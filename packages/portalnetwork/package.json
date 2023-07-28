@@ -24,8 +24,6 @@
   "author": "acolytec3",
   "license": "MIT",
   "dependencies": {
-    "@lodestar/config": "^1.9.2",
-    "@lodestar/types": "^1.9.2",
     "@chainsafe/as-sha256": "^0.3.1",
     "@chainsafe/discv5": "^3.0.0",
     "@chainsafe/persistent-merkle-tree": "^0.4.1",
@@ -39,6 +37,9 @@
     "@libp2p/interface-peer-id": "^2.0.1",
     "@libp2p/peer-id": "^2.0.1",
     "@libp2p/peer-id-factory": "^2.0.3",
+    "@lodestar/config": "^1.9.2",
+    "@lodestar/params": "^1.9.2",
+    "@lodestar/types": "^1.9.2",
     "@multiformats/multiaddr": "^11.0.0",
     "@thi.ng/leb128": "^2.1.11",
     "@waku/core": "0.0.8",

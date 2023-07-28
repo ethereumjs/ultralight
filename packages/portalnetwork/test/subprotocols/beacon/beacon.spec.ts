@@ -19,20 +19,28 @@ tape('portal network spec test vectors', (t) => {
   const deserializedOptimisticUpdate = ssz.capella.LightClientOptimisticUpdate.deserialize(
     serializedOptimistincUpdate.slice(4)
   )
-  t.equal(deserializedOptimisticUpdate.attestedHeader.beacon.slot, 6718463, 'deserialized optimistic update')
+  t.equal(
+    deserializedOptimisticUpdate.attestedHeader.beacon.slot,
+    6718463,
+    'deserialized optimistic update'
+  )
   const finalityUpdate = fromHexString(specTestVectors.finalityUpdate['6718463'].content_value)
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
     finalityUpdate.slice(4)
   )
-  t.equal(deserializedFinalityUpdate.attestedHeader.beacon.slot, 6718463, 'deserialized finality update')
+  t.equal(
+    deserializedFinalityUpdate.attestedHeader.beacon.slot,
+    6718463,
+    'deserialized finality update'
+  )
   const bootstrap = specTestVectors.bootstrap['6718368']
   const deserializedBootstrap = ssz.capella.LightClientBootstrap.deserialize(
     fromHexString(bootstrap.content_value).slice(4)
   )
   t.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
 
-  const updateByRange = fromHexString(specTestVectors.updateByRange['6684738'].content_value)
-  const newforkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
+  const _updateByRange = fromHexString(specTestVectors.updateByRange['6684738'].content_value)
+  const _newforkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
   // TODO: Figure out how to deserialize updatesByRange
   t.end()
 })
