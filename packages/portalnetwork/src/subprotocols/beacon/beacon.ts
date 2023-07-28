@@ -81,6 +81,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         switch (decoded.selector) {
           case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
             try {
+              // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
               ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
                 decoded.value as Uint8Array
               )

@@ -4,7 +4,10 @@ const require = createRequire(import.meta.url)
 import { fromHexString } from '@chainsafe/ssz'
 import { ssz } from '@lodestar/types'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
-import { MainnetGenesisValidatorsRoot } from '../../../src/subprotocols/beacon/types.js'
+import {
+  LightClientUpdatesByRange,
+  MainnetGenesisValidatorsRoot,
+} from '../../../src/subprotocols/beacon/types.js'
 
 tape('portal network spec test vectors', (t) => {
   const specTestVectors = require('./specTestVectors.json')
@@ -39,8 +42,17 @@ tape('portal network spec test vectors', (t) => {
   )
   t.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
 
-  const _updateByRange = fromHexString(specTestVectors.updateByRange['6684738'].content_value)
-  const _newforkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
-  // TODO: Figure out how to deserialize updatesByRange
+  const updateByRange = fromHexString(specTestVectors.updateByRange['6684738'].content_value)
+  const deserializedRange = LightClientUpdatesByRange.deserialize(updateByRange)
+
+  let numUpdatesDeserialized = 0
+  for (const update of deserializedRange) {
+    const forkdigest = update.slice(0, 4)
+    const forkname = config.forkDigest2ForkName(forkdigest)
+    //@ts-ignore - ssz won't let me
+    ssz[forkname].LightClientUpdate.deserialize(update.slice(4)).attestedHeader.beacon.slot
+    numUpdatesDeserialized++
+  }
+  t.equal(numUpdatesDeserialized, 4, 'deserialized LightClientUpdatesByRange')
   t.end()
 })
