@@ -6,8 +6,12 @@ import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
-import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
-import { Forks, MainnetGenesisValidatorsRoot } from './types.js'
+import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
+import {
+  Forks,
+  MainnetGenesisValidatorsRoot,
+  BeaconLightClientNetworkContentType,
+} from './types.js'
 import {
   ContentMessageType,
   FindContentMessage,
@@ -15,8 +19,6 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { ssz } from '@lodestar/types'
-import { BeaconLightClientNetworkContentType } from './types.js'
-import { BeaconConfig } from '@lodestar/config'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -74,12 +76,14 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentHash = toHexString(key)
-        const forkhash = decoded.value.slice(0,4) as Uint8Array
-        const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as never as Forks
+        const forkhash = decoded.value.slice(0, 4) as Uint8Array
+        const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
         switch (decoded.selector) {
           case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
             try {
-              ssz[forkname].LightClientOptimisticUpdate.deserialize(decoded.value as Uint8Array)
+              ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+                decoded.value as Uint8Array
+              )
             } catch (err) {
               this.logger(`received invalid content from ${shortId(dstId)}`)
               break
