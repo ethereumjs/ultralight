@@ -7,7 +7,11 @@ import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
 import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
-import { MainnetGenesisValidatorsRoot, BeaconLightClientNetworkContentType } from './types.js'
+import {
+  MainnetGenesisValidatorsRoot,
+  BeaconLightClientNetworkContentType,
+  LightClientUpdatesByRange,
+} from './types.js'
 import {
   ContentMessageType,
   FindContentMessage,
@@ -15,6 +19,7 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { ssz } from '@lodestar/types'
+import { getBeaconContentKey } from './util.js'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -79,8 +84,54 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             try {
               // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
               ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
-                decoded.value as Uint8Array
+                (decoded.value as Uint8Array).slice(4)
               )
+            } catch (err) {
+              this.logger(`received invalid content from ${shortId(dstId)}`)
+              break
+            }
+            this.logger(
+              `received ${
+                BeaconLightClientNetworkContentType[decoded.selector]
+              } content corresponding to ${contentHash}`
+            )
+            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
+            break
+          case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+            try {
+              ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
+                (decoded.value as Uint8Array).slice(4)
+              )
+            } catch (err) {
+              this.logger(`received invalid content from ${shortId(dstId)}`)
+              break
+            }
+            this.logger(
+              `received ${
+                BeaconLightClientNetworkContentType[decoded.selector]
+              } content corresponding to ${contentHash}`
+            )
+            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
+            break
+          case BeaconLightClientNetworkContentType.LightClientBootstrap:
+            try {
+              ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
+                (decoded.value as Uint8Array).slice(4)
+              )
+            } catch (err) {
+              this.logger(`received invalid content from ${shortId(dstId)}`)
+              break
+            }
+            this.logger(
+              `received ${
+                BeaconLightClientNetworkContentType[decoded.selector]
+              } content corresponding to ${contentHash}`
+            )
+            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
+            break
+          case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+            try {
+              LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
             } catch (err) {
               this.logger(`received invalid content from ${shortId(dstId)}`)
               break
@@ -106,7 +157,15 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     }
   }
 
-  public store = async (contentType: any, hashKey: string, value: Uint8Array): Promise<void> => {
-    await this.put(this.protocolId, hashKey, toHexString(value))
+  public store = async (
+    contentType: BeaconLightClientNetworkContentType,
+    hashKey: string,
+    value: Uint8Array
+  ): Promise<void> => {
+    await this.put(
+      this.protocolId,
+      getBeaconContentKey(contentType, fromHexString(hashKey)),
+      toHexString(value)
+    )
   }
 }

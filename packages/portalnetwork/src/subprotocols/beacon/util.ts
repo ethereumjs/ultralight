@@ -1,4 +1,5 @@
-import { BitArray, fromHexString } from '@chainsafe/ssz'
+import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
+import { BeaconLightClientNetworkContentType } from './types.js'
 
 export const attestedHeaderFromJson = (data: any) => {
   return {
@@ -27,4 +28,18 @@ export const lightClientOptimisticUpdateFromJson = (data: any) => {
     attestedHeader: attestedHeaderFromJson(data.attested_header),
     syncAggregate: syncAggregateFromJson(data.sync_aggregate),
   }
+}
+
+/**
+ * Serializes a beacon network content key
+ * @param contentType content type as defined by `BeaconNetworkContentType`
+ * @param serializedKey the SSZ encoded key corresponding to the `BeaconNetworkContentType`
+ * @returns the content key encoded as a hex string
+ */
+export const getBeaconContentKey = (
+  contentType: BeaconLightClientNetworkContentType,
+  serializedKey: Uint8Array
+) => {
+  const prefix = Buffer.alloc(1, contentType)
+  return toHexString(prefix) + toHexString(serializedKey).slice(2)
 }
