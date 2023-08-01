@@ -1,0 +1,52 @@
+{
+  "optimistic_update": {
+    "attested_header": {
+      "beacon": {
+        "slot": "43",
+        "proposer_index": "5",
+        "parent_root": "0x78a59f3b0dd5eb6e46b9787c5c94c6d4935ebb562218c6678b21c9cfcaaaafd0",
+        "state_root": "0xd6554326fb3ee247389bf89954263e946c40d3645b98041860206f0fdea6aa8c",
+        "body_root": "0x81a425c4a6a77ab6ca0ac4793fdd575b0b3d19c042b30a1a7dbdb0e143ef4319"
+      }
+    },
+    "sync_aggregate": {
+      "sync_committee_bits": "0xffffffff",
+      "sync_committee_signature": "0xa1a9293423fc8ccd03dcf735e13f248352a088c57d979616c3de8646854bc985ffb77397c6eca73d54d849fb4a04694809e9c10ad724c0ccf7e4e048a533a6a2353567d420e033db3ce2dff18c4e878b308350b67217072c5e8e07034870ea9a"
+    },
+    "signature_slot": "44"
+  },
+  "finality_update": {
+    "attested_header": {
+      "beacon": {
+        "slot": "56",
+        "proposer_index": "1",
+        "parent_root": "0xa597b9fd8cd2c7acb37c40831f336490c0a3e69fa82e52a934514f2862f30ee6",
+        "state_root": "0xcd678e0630aec6b429663c13b574d984a9e24aae0a53220bdf63791d3d492cb2",
+        "body_root": "0xe01fdb64fb7316a55a1d747cd619179fc5b3fcb892eb30c44be8ba82332c9b96"
+      }
+    },
+    "finalized_header": {
+      "beacon": {
+        "slot": "40",
+        "proposer_index": "4",
+        "parent_root": "0xe8e6647b8be09f18d04e12d08c74b17b2c6b08651ff66c157d48ff172956fcd6",
+        "state_root": "0x2c1ae8eae696d430a32f8dafc6de4d9dc5b4b5e2e10935ff435db4b97b16e39f",
+        "body_root": "0xd03176bc13a6ed676bcb2e19d89a31c91725b31fb23fe34d26c533da5dc0dba2"
+      }
+    },
+    "finality_branch": [
+      "0x0500000000000000000000000000000000000000000000000000000000000000",
+      "0x10c726fac935bf9657cc7476d3cfa7bedec5983dcfb59e8a7df6d0a619e108d7",
+      "0xe011a915c42dec2737003f48dacc043bf8f44dae36531479dbb467877e49a438",
+      "0xa0d742709f5683b380d81a4246dfef339354aa58ae7c41eb5c85fcbaa354d88d",
+      "0x5f25e879c1319a80705a600798c5e4b0b71f3bd51aad4ee634f5729b4d03475e",
+      "0xff7b3dd14bb8be02fbed6b9a7f8c72c54f954fecc3b007b3c10ddc63414a34a8"
+    ],
+    "sync_aggregate": {
+      "sync_committee_bits": "0xffffffff",
+      "sync_committee_signature": "0x846925a6649ea9ecca2e8513457e51bfea605bcf24dad73670537e954cd04eed675214be62397b73e2279ffc998465940cedff6e2399c317a2ce8183458471a53605599076cc76c3a14c406314eabc5af0939d96d45a10b3ed9b574a872c9460"
+    },
+    "signature_slot": "57"
+  },
+  "version": "bellatrix"
+}

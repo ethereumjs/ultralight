@@ -11,7 +11,7 @@ See [Architecture](./ARCHITECTURE.md) for architectural concepts
 
 ## Routing Table Management
 
-The Portal Network module currently supports two overlay routing tables for use with tbe below two subnetworks:
+The Portal Network module currently supports two overlay routing tables for use with the below two subnetworks:
 - State Network
 - History Network
 
