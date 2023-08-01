@@ -26,7 +26,7 @@ import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import { CapacitorUDPTransportService, HybridTransportService } from '../transports/index.js'
-import LRU from 'lru-cache'
+import { LRUCache } from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
@@ -42,7 +42,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListeners: Map<ProtocolId, ReturnType<typeof setInterval>>
   private peerId: PeerId
   private supportsRendezvous: boolean
-  private unverifiedSessionCache: LRU<NodeId, Multiaddr>
+  private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -162,7 +162,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId as PeerId
     this.supportsRendezvous = false
-    this.unverifiedSessionCache = new LRU({ max: 2500 })
+    this.unverifiedSessionCache = new LRUCache({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
     this.refreshListeners = new Map()
     this.db = new DBManager(

@@ -52,7 +52,7 @@
     "ethereum-cryptography": "^1.1.2",
     "ethers": "^5.7.0",
     "isomorphic-ws": "^4.0.1",
-    "lru-cache": "^7.10.1",
+    "lru-cache": "^10.0.0",
     "memory-level": "^1.0.0",
     "prom-client": "^14.0.1",
     "strict-event-emitter-types": "^2.0.0",
