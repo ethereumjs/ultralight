@@ -39,6 +39,11 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
+    // TODO: We need to add special handling for LightClientUpdatesByRange since these shouldn't be stored
+    // in the DB as a range but individually
+    if (contentKey[0] === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
+      throw new Error('special handling for update ranges not supported yet')
+    }
     const value = await this.retrieve(toHexString(contentKey))
     return value ? fromHexString(value) : fromHexString('0x')
   }
@@ -159,13 +164,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
   public store = async (
     contentType: BeaconLightClientNetworkContentType,
-    hashKey: string,
+    contentKey: string,
     value: Uint8Array
   ): Promise<void> => {
-    await this.put(
-      this.protocolId,
-      getBeaconContentKey(contentType, fromHexString(hashKey)),
-      toHexString(value)
-    )
+    // TODO: Add special handling for the LightClientUpdate since we can't just dump a whole batch of them into the DB
+    if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
+      throw new Error('special handling for update ranges not supported yet')
+    }
+    await this.put(this.protocolId, contentKey, toHexString(value))
   }
 }

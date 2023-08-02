@@ -30,6 +30,7 @@ import LRU from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
+import { BeaconLightClientNetwork } from '../subprotocols/beacon/beacon.js'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
@@ -183,6 +184,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
+          break
+        case ProtocolId.BeaconLightClientNetwork:
+          this.protocols.set(protocol, new BeaconLightClientNetwork(this, opts.radius))
           break
       }
     }
