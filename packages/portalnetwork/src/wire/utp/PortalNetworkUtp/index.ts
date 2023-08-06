@@ -188,7 +188,7 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleStatePacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ: {
-        if (packet.header.ackNr === 0) {
+        if (packet.header.seqNr === request.socket.getSeqNr() - 1) {
           request.socket.setAckNr(packet.header.seqNr)
           break
         } else {
@@ -198,12 +198,17 @@ export class PortalNetworkUTP extends EventEmitter {
       case RequestCode.FOUNDCONTENT_WRITE:
         break
       case RequestCode.OFFER_WRITE:
-        if (request.socket.getSeqNr() === 1) {
+        request.socket.logger(`socket.seqNr: ${request.socket.getSeqNr()}`)
+        if (packet.header.seqNr === request.socket.finNr) {
+          break
+        }
+        if (packet.header.ackNr === request.socket.getSeqNr()) {
           request.socket.setAckNr(packet.header.seqNr - 1)
+          request.socket.setSeqNr(packet.header.ackNr + 1)
           request.socket.logger(
             `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`
           )
-          request.socket.setWriter(1)
+          request.socket.setWriter(request.socket.getSeqNr())
         }
         break
       case RequestCode.ACCEPT_READ:

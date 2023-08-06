@@ -264,14 +264,8 @@ export class UtpSocket extends EventEmitter {
   async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array> {
     this.logger(`Connection State: GotFin`)
     this.state = ConnectionState.GotFin
-    const _content = await this.reader!.run()
-    this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
-    this.seqNr = this.seqNr + 1
-    this.ackNr = packet.header.seqNr
-    this.sendAckPacket()
-    this._clearTimeout()
-    this.close()
-    return _content
+    this.finNr = packet.header.seqNr
+    this.logger(`Connection State: GotFin: ${this.finNr}`)
   }
 
   compare(): boolean {
