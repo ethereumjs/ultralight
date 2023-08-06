@@ -101,7 +101,7 @@ export class UtpSocket extends EventEmitter {
   }
 
   setReader(startingSeqNr: number) {
-    this.reader = new ContentReader(startingSeqNr)
+    this.reader = new ContentReader(startingSeqNr - 1)
   }
 
   _clearTimeout() {
