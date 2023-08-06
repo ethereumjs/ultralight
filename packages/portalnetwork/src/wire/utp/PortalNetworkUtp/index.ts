@@ -51,18 +51,15 @@ export class PortalNetworkUTP extends EventEmitter {
   getRequestKey(connId: number, peerId: string): string {
     const idA = connId + 1
     const idB = connId - 1
-    const keyA = createSocketKey(peerId, connId, idA)
-    const keyB = createSocketKey(peerId, idA, connId)
-    const keyC = createSocketKey(peerId, idB, connId)
-    const keyD = createSocketKey(peerId, connId, idB)
-    for (const key of [keyA, keyB, keyC, keyD]) {
+    const keyA = createSocketKey(peerId, connId)
+    const keyB = createSocketKey(peerId, idA)
+    const keyC = createSocketKey(peerId, idB)
+    for (const key of [keyA, keyB, keyC]) {
       if (this.openContentRequest.get(key) !== undefined) {
         return key
       }
     }
-    throw new Error(
-      `Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`
-    )
+    throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
   }
 
   createPortalNetworkUTPSocket(
@@ -93,10 +90,10 @@ export class PortalNetworkUTP extends EventEmitter {
 
   startingIdNrs(id: number): Record<RequestCode, { sndId: number; rcvId: number }> {
     return {
-      [RequestCode.FOUNDCONTENT_WRITE]: { sndId: id, rcvId: id + 1 },
-      [RequestCode.FINDCONTENT_READ]: { sndId: id + 1, rcvId: id },
-      [RequestCode.OFFER_WRITE]: { sndId: id + 1, rcvId: id },
-      [RequestCode.ACCEPT_READ]: { sndId: id, rcvId: id + 1 },
+      [RequestCode.FOUNDCONTENT_WRITE]: { sndId: id + 1, rcvId: id },
+      [RequestCode.FINDCONTENT_READ]: { sndId: id, rcvId: id + 1 },
+      [RequestCode.OFFER_WRITE]: { sndId: id, rcvId: id + 1 },
+      [RequestCode.ACCEPT_READ]: { sndId: id + 1, rcvId: id },
     }
   }
 
@@ -116,12 +113,13 @@ export class PortalNetworkUTP extends EventEmitter {
         rcvId,
         content
       ),
-      socketKey: createSocketKey(peerId, sndId, rcvId),
+      socketKey: createSocketKey(peerId, connectionId),
       content: params.contents ? params.contents[0] : undefined,
       contentKeys,
     })
     this.openContentRequest.set(newRequest.socketKey, newRequest)
     this.logger(`Opening request with key: ${newRequest.socketKey}`)
+    this.logger(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
     await newRequest.init()
     return newRequest
   }

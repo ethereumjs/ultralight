@@ -127,18 +127,22 @@ export class UtpSocket extends EventEmitter {
   ): Packet<T> {
     opts.pType === PacketType.ST_DATA && this.seqNr++
     const extension = 'bitmask' in opts ? 1 : 0
-    const params: ICreate<T> = {
+    const params = {
       ...opts,
       seqNr: this.seqNr,
       ackNr: this.ackNr,
+      connectionId: opts.connectionId ?? this.rcvConnectionId,
       extension,
     }
     return this.packetManager.createPacket<T>(params)
   }
 
-  async sendSynPacket(): Promise<void> {
-    const p = this.createPacket({ pType: PacketType.ST_SYN })
-    await this.sendPacket(p, PacketType.ST_SYN)
+  async sendSynPacket(pktId?: number): Promise<void> {
+    const p = this.createPacket({
+      pType: PacketType.ST_SYN,
+      connectionId: pktId ?? this.rcvConnectionId,
+    })
+    await this.sendPacket<PacketType.ST_SYN>(p)
     this.state = ConnectionState.SynSent
   }
   async sendAckPacket(bitmask?: Uint8Array): Promise<void> {

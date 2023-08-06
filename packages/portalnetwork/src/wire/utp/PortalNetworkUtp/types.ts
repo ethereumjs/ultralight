@@ -9,8 +9,8 @@ export enum RequestCode {
   'ACCEPT_READ' = 3,
 }
 
-export function createSocketKey(remoteAddr: string, sndId: number, rcvId: number) {
-  return `${remoteAddr.slice(0, 5)}-${sndId}-${rcvId}`
+export function createSocketKey(remoteAddr: string, id: number) {
+  return `${remoteAddr}-${id}`
 }
 export interface INewRequest {
   protocolId: ProtocolId
