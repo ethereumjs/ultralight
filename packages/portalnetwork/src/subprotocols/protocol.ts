@@ -84,6 +84,10 @@ export abstract class BaseProtocol extends EventEmitter {
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
+    const enr = this.findEnr(src.nodeId)
+    if (enr !== undefined) {
+      this.updateRoutingTable(enr)
+    }
     const id = message.id
     const protocol = message.protocol
     const request = message.request
@@ -341,6 +345,7 @@ export abstract class BaseProtocol extends EventEmitter {
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
               return []
             }
+            this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
             for await (const key of requestedKeys) {

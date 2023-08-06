@@ -132,20 +132,23 @@ export class PortalNetworkUTP extends EventEmitter {
       request.socket._clearTimeout()
       const packet = Packet.fromBuffer(packetBuffer)
       request.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
-
+      this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
+        `|| pktId: ${packet.header.connectionId}     ||`
+      )
+      this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
+        `|| seqNr: ${packet.header.seqNr}     ||`
+      )
+      this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
+        `|| ackNr: ${packet.header.ackNr}     ||`
+      )
       switch (packet.header.pType) {
         case PacketType.ST_SYN:
-          request.socket.logger(`Received ST_SYN   sndId: ${packet.header.connectionId}`)
           requestKey && (await this._handleSynPacket(request, packet))
           break
         case PacketType.ST_DATA:
-          request.socket.logger(
-            `Received ST_DATA to ${packet.header.connectionId}  seqNr: ${packet.header.seqNr}`
-          )
           requestKey && (await this._handleDataPacket(request, packet))
           break
         case PacketType.ST_STATE:
-          request.socket.logger(`Received ST_STATE ackNr: ${packet.header.ackNr}`)
           if (packet.header.extension === 1) {
             await this._handleSelectiveAckPacket(request, packet)
           } else {
@@ -153,10 +156,8 @@ export class PortalNetworkUTP extends EventEmitter {
           }
           break
         case PacketType.ST_RESET:
-          request.socket.logger(`Received ST_RESET`)
           break
         case PacketType.ST_FIN:
-          request.socket.logger(`Received ST_FIN   seqNr: ${packet.header.seqNr}`)
           requestKey && (await this._handleFinPacket(request, packet))
           break
         default:
@@ -175,10 +176,10 @@ export class PortalNetworkUTP extends EventEmitter {
   }
 
   async _handleSynPacket(request: ContentRequest, packet: SynPacket): Promise<void> {
+    this.logger(`SYN received to initiate stream for ${RequestCode[request.requestCode]} request`)
     switch (request.requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
       case RequestCode.ACCEPT_READ:
-        this.logger(`SYN received to initiate stream for ${request.requestCode} request`)
         await request.socket.handleSynPacket(packet.header.seqNr)
         break
       default:
@@ -284,7 +285,9 @@ export class PortalNetworkUTP extends EventEmitter {
       const decodedContentKey = decodeContentKey(toHexString(k))
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
-        `${idx + 1}/${keys.length} -- sending ${ContentType[k[0]]} to database`
+        `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
+          ContentType[k[0]]
+        } to database`
       )
       this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
     }

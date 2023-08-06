@@ -110,14 +110,15 @@ export class UtpSocket extends EventEmitter {
 
   async sendPacket<T extends PacketType>(packet: Packet<T>, type: PacketType): Promise<Buffer> {
     const msg = packet.encode()
-    const messageData: Record<PacketType, string> = {
-      0: `seqNr: ${packet.header.seqNr}`,
-      1: `seqNr: ${packet.header.seqNr}`,
-      2: `ackNr: ${packet.header.ackNr}`,
-      3: ``,
-      4: `rcvId: ${this.rcvConnectionId}`,
-    }
-    this.logger(`${PacketType[packet.header.pType]}   sent - ${messageData[type]}`)
+    this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
+      `|| pktId: ${packet.header.connectionId}`
+    )
+    this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
+      `|| seqNr: ${packet.header.seqNr}`
+    )
+    this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
+      `|| ackNr: ${packet.header.ackNr}`
+    )
     this.emit('send', this.remoteAddress, msg, this.protocolId, true)
     return msg
   }
@@ -226,7 +227,11 @@ export class UtpSocket extends EventEmitter {
 
   async handleDataPacket(packet: Packet<PacketType.ST_DATA>): Promise<void> {
     this._clearTimeout()
-    this.state = ConnectionState.Connected
+    if (this.state !== ConnectionState.GotFin) {
+      this.state = ConnectionState.Connected
+    } else {
+      this.logger(`Connection State: GotFin: ${this.finNr}`)
+    }
     let expected = true
     if (this.ackNrs.length > 1) {
       expected = this.ackNr + 1 === packet.header.seqNr
