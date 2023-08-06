@@ -78,7 +78,7 @@ tape('gossip test', async (t) => {
   t.equal(
     protocol1?.routingTable.getWithPending(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
-    )?.nodeId,
+    )?.value.nodeId,
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     'node1 added node2 to routing table'
   )

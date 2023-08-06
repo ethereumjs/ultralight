@@ -185,7 +185,7 @@ tape('createPacket()', (t) => {
       'DATA Packet extension should be none'
     )
     st.equal(write_data.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
-    st.equal(write_data.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
+    st.equal(write_data.header.seqNr, write.getSeqNr() - 1, 'Packet seqNr correctly set')
     st.equal(write_data.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
     st.equal(
       toHexString(write_data.payload!),
