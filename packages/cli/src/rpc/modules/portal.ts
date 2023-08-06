@@ -351,13 +351,14 @@ export class portal {
     this.logger(`historyRecursiveFindNodes request returned ${res}`)
     return res ?? ''
   }
-  async historyLocalContent(params: [string]): Promise<string> {
+  async historyLocalContent(params: [string]): Promise<string | undefined> {
     const [contentKey] = params
     this.logger(`Received historyLocalContent request for ${contentKey}`)
 
     const res = await this._history.findContentLocally(fromHexString(contentKey))
-    this.logger(`historyLocalContent request returned ${res.length} bytes`)
-    return toHexString(res)
+    this.logger.extend(`historyLocalContent`)(`request returned ${res.length} bytes`)
+    this.logger.extend(`historyLocalContent`)(`${toHexString(res)}`)
+    return res.length > 0 ? toHexString(res) : undefined
   }
   async historyFindContent(params: [string, string]) {
     const [enr, contentKey] = params
@@ -393,7 +394,7 @@ export class portal {
     res.selector === 0 && this.logger.extend('findContent')('utp')
     this.logger.extend('findContent')(content)
     return {
-      content: toHexString(content),
+      content: content.length > 0 ? toHexString(content) : '',
       utpTransfer: res.selector === 0,
     }
   }
