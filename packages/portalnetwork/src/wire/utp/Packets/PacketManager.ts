@@ -31,7 +31,7 @@ export class PacketManager {
       ...opts,
       version: 1,
       timestampMicroseconds: Bytes32TimeStamp(),
-      connectionId: this.rcvConnectionId,
+      connectionId: opts.connectionId ?? this.rcvConnectionId,
       timestampDifferenceMicroseconds: this.congestionControl.reply_micro,
       wndSize: Math.min(
         2 ** 32 - 1,

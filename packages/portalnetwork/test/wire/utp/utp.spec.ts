@@ -132,8 +132,8 @@ tape('uTP Reader/Writer tests', (t) => {
         extension: HeaderExtension.none,
         version: 1,
         seqNr: 100,
-        connectionId: socket.sndConnectionId,
-        ackNr: socket.ackNr + 98,
+        connectionId: socket.rcvConnectionId,
+        ackNr: socket.ackNr,
         timestampMicroseconds: packets.length * 200,
         timestampDifferenceMicroseconds: 200,
         wndSize: 512,
@@ -143,9 +143,18 @@ tape('uTP Reader/Writer tests', (t) => {
     packets.forEach((packet) => {
       socket.reader!.addPacket(packet)
     })
-    st.equal(packets.length, socket.reader.packets.length, 'Packets added to reader')
-    st.equal(packets.length, socket.reader.inOrder.length, 'Packets added in order')
-    const _compiled = await socket.handleFinPacket(finPacket)
+    st.equal(
+      packets.length,
+      socket.reader.packets.length,
+      `${packets.length} Packets added to reader`
+    )
+    st.equal(
+      packets.length,
+      socket.reader.inOrder.length,
+      `${packets.length} Packets added in order`
+    )
+    await socket.handleFinPacket(finPacket)
+    const _compiled = await socket.reader.run()
 
     st.deepEqual(Buffer.from(_compiled!), content, `Content Reader correctly recompiled content`)
     const _reader2 = new ContentReader(2)
@@ -173,25 +182,26 @@ tape('uTP Reader/Writer tests', (t) => {
       )
     })
 
+    const connectionId = 1234
     const _socket2 = uTP.createPortalNetworkUTPSocket(
       protocolId,
 
       RequestCode.FOUNDCONTENT_WRITE,
       _peerId.toString(),
-      5678,
-      1234,
+      uTP.startingIdNrs(connectionId)[RequestCode.FOUNDCONTENT_WRITE].sndId,
+      uTP.startingIdNrs(connectionId)[RequestCode.FOUNDCONTENT_WRITE].rcvId,
       content
     )
 
-    const socketKey = createSocketKey(peerId.toString(), 1234, 5678)
+    const socketKey = createSocketKey(peerId.toString(), connectionId)
     const contents = [encodeWithVariantPrefix(offerContents)]
     const offer_socket = uTP.createPortalNetworkUTPSocket(
       protocolId,
 
       RequestCode.OFFER_WRITE,
       peerId.toString(),
-      1234,
-      5678,
+      uTP.startingIdNrs(connectionId)[RequestCode.OFFER_WRITE].sndId,
+      uTP.startingIdNrs(connectionId)[RequestCode.OFFER_WRITE].rcvId,
       contents[0]
     )!
     const offer = new ContentRequest({
@@ -240,8 +250,8 @@ tape('PortalNetworkUTP test', (t) => {
       Buffer.from('test')
     )
     st.ok(socket, 'UTPSocket created by PortalNetworkUTP')
-    st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
+    st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
+    st.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
     st.equal(socket.remoteAddress, '0xPeerAddress', 'UTPSocket has correct peerId')
     st.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
     st.deepEqual(socket.content, Buffer.from('test'), 'UTPSocket has correct content')
@@ -258,8 +268,8 @@ tape('PortalNetworkUTP test', (t) => {
       socketIds[RequestCode.FINDCONTENT_READ].rcvId
     )
     st.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
-    st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
+    st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
+    st.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
 
     st.equal(
       socket.getSeqNr(),
@@ -281,8 +291,8 @@ tape('PortalNetworkUTP test', (t) => {
       Buffer.from('test')
     )
     st.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
-    st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
+    st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
+    st.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
 
     st.equal(
       socket.getSeqNr(),
@@ -297,8 +307,8 @@ tape('PortalNetworkUTP test', (t) => {
       socketIds[RequestCode.ACCEPT_READ].rcvId
     )
     st.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
-    st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
+    st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
+    st.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
     st.equal(
       socket.ackNr,
       startingNrs[RequestCode.ACCEPT_READ].ackNr,
@@ -318,11 +328,7 @@ tape('PortalNetworkUTP test', (t) => {
       contents: [fromHexString('0x1234')],
     }
     let contentRequest = await utp.handleNewRequest(params)
-    let requestKey = createSocketKey(
-      params.peerId,
-      socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
-      socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId
-    )
+    let requestKey = createSocketKey(params.peerId, connectionId)
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
@@ -368,11 +374,7 @@ tape('PortalNetworkUTP test', (t) => {
     )
     params = { ...params, requestCode: RequestCode.FINDCONTENT_READ, contents: undefined }
     contentRequest = await utp.handleNewRequest(params)
-    requestKey = createSocketKey(
-      params.peerId,
-      socketIds[RequestCode.FINDCONTENT_READ].sndId,
-      socketIds[RequestCode.FINDCONTENT_READ].rcvId
-    )
+    requestKey = createSocketKey(params.peerId, params.connectionId)
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
@@ -413,11 +415,7 @@ tape('PortalNetworkUTP test', (t) => {
       contents: [fromHexString('0x1234')],
     }
     contentRequest = await utp.handleNewRequest(params)
-    requestKey = createSocketKey(
-      params.peerId,
-      socketIds[RequestCode.OFFER_WRITE].sndId,
-      socketIds[RequestCode.OFFER_WRITE].rcvId
-    )
+    requestKey = createSocketKey(params.peerId, params.connectionId)
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
@@ -459,11 +457,7 @@ tape('PortalNetworkUTP test', (t) => {
     )
     params = { ...params, requestCode: RequestCode.ACCEPT_READ, contents: undefined }
     contentRequest = await utp.handleNewRequest(params)
-    requestKey = createSocketKey(
-      params.peerId,
-      socketIds[RequestCode.ACCEPT_READ].sndId,
-      socketIds[RequestCode.ACCEPT_READ].rcvId
-    )
+    requestKey = createSocketKey(params.peerId, params.connectionId)
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,

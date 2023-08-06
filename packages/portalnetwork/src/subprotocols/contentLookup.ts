@@ -112,14 +112,14 @@ export class ContentLookup {
                 continue
               }
               // Send a PING request to check liveness of any unknown nodes
-              if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
+              if (!this.protocol.routingTable.getWithPending(decodedEnr.nodeId)?.value) {
                 const ping = await this.protocol.sendPing(decodedEnr)
                 if (!ping) {
                   this.protocol.routingTable.evictNode(decodedEnr.nodeId)
                   continue
                 }
               }
-              if (!this.protocol.routingTable.getValue(decodedEnr.nodeId)) {
+              if (!this.protocol.routingTable.getWithPending(decodedEnr.nodeId)?.value) {
                 continue
               }
               // Calculate distance and add to list of lookup peers
