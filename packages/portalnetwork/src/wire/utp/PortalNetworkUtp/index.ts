@@ -289,7 +289,12 @@ export class PortalNetworkUTP extends EventEmitter {
           ContentType[k[0]]
         } to database`
       )
-      this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+      if (_content.length === 0) {
+        this.logger.extend(`FINISHED`)(`Missing content...`)
+        continue
+      } else {
+        this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+      }
     }
   }
 }
