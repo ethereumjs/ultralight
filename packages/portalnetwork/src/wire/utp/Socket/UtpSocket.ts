@@ -255,6 +255,13 @@ export class UtpSocket extends EventEmitter {
       // Update this.ackNr to last in-order seqNr received.
       const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
       this.ackNr = future.slice(future.findIndex((n, i, ackNrs) => ackNrs[i + 1] === undefined))[0]!
+      if (this.state === ConnectionState.GotFin) {
+        if (this.ackNr === this.finNr) {
+          this.logger(`All data packets received. Running compiler.`)
+          await this.sendAckPacket()
+          this.emit('done')
+        }
+      }
       // Send "Regular" ACK with the new this.ackNr
       return this.sendAckPacket()
     } else {
@@ -267,10 +274,45 @@ export class UtpSocket extends EventEmitter {
   }
 
   async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array> {
-    this.logger(`Connection State: GotFin`)
     this.state = ConnectionState.GotFin
+    this._clearTimeout()
     this.finNr = packet.header.seqNr
     this.logger(`Connection State: GotFin: ${this.finNr}`)
+    const expected = this.ackNr + 1 === packet.header.seqNr
+    if (expected) {
+      this.logger(`all data packets received.`)
+      this.seqNr = this.seqNr + 1
+      this.ackNr = packet.header.seqNr
+      const _content = await this.reader!.run()
+      this.reader = undefined
+      this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
+      this.close()
+      this.sendAckPacket()
+      return _content
+    } else {
+      // TODO: Else wait for all data packets.
+      return new Promise((res, _rej) => {
+        const panic = setTimeout(() => {
+          res(Uint8Array.from([]))
+        }, 5000)
+        this.once('done', async () => {
+          this.seqNr = this.seqNr + 1
+          this.ackNr = packet.header.seqNr
+          await this.sendAckPacket()
+          clearTimeout(panic)
+          let _content = await this.reader!.run()
+          this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
+          if (_content.length === 0) {
+            while (_content.length === 0) {
+              _content = await this.reader!.run()
+            }
+          }
+          this.close()
+          this._clearTimeout()
+          res(_content)
+        })
+      })
+    }
   }
 
   compare(): boolean {
