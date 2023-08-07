@@ -85,6 +85,6 @@ export class NodeLookup {
       const res = await this.protocol.sendPing(enr)
       if (res) this.protocol.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
     }
-    return this.protocol.routingTable.getValue(this.nodeSought)?.encodeTxt()
+    return this.protocol.routingTable.getWithPending(this.nodeSought)?.value.encodeTxt()
   }
 }

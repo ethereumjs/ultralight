@@ -51,18 +51,15 @@ export class PortalNetworkUTP extends EventEmitter {
   getRequestKey(connId: number, peerId: string): string {
     const idA = connId + 1
     const idB = connId - 1
-    const keyA = createSocketKey(peerId, connId, idA)
-    const keyB = createSocketKey(peerId, idA, connId)
-    const keyC = createSocketKey(peerId, idB, connId)
-    const keyD = createSocketKey(peerId, connId, idB)
-    for (const key of [keyA, keyB, keyC, keyD]) {
+    const keyA = createSocketKey(peerId, connId)
+    const keyB = createSocketKey(peerId, idA)
+    const keyC = createSocketKey(peerId, idB)
+    for (const key of [keyA, keyB, keyC]) {
       if (this.openContentRequest.get(key) !== undefined) {
         return key
       }
     }
-    throw new Error(
-      `Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC} or ${keyD}`
-    )
+    throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
   }
 
   createPortalNetworkUTPSocket(
@@ -93,10 +90,10 @@ export class PortalNetworkUTP extends EventEmitter {
 
   startingIdNrs(id: number): Record<RequestCode, { sndId: number; rcvId: number }> {
     return {
-      [RequestCode.FOUNDCONTENT_WRITE]: { sndId: id, rcvId: id + 1 },
-      [RequestCode.FINDCONTENT_READ]: { sndId: id + 1, rcvId: id },
-      [RequestCode.OFFER_WRITE]: { sndId: id + 1, rcvId: id },
-      [RequestCode.ACCEPT_READ]: { sndId: id, rcvId: id + 1 },
+      [RequestCode.FOUNDCONTENT_WRITE]: { sndId: id + 1, rcvId: id },
+      [RequestCode.FINDCONTENT_READ]: { sndId: id, rcvId: id + 1 },
+      [RequestCode.OFFER_WRITE]: { sndId: id, rcvId: id + 1 },
+      [RequestCode.ACCEPT_READ]: { sndId: id + 1, rcvId: id },
     }
   }
 
@@ -116,12 +113,13 @@ export class PortalNetworkUTP extends EventEmitter {
         rcvId,
         content
       ),
-      socketKey: createSocketKey(peerId, sndId, rcvId),
+      socketKey: createSocketKey(peerId, connectionId),
       content: params.contents ? params.contents[0] : undefined,
       contentKeys,
     })
     this.openContentRequest.set(newRequest.socketKey, newRequest)
     this.logger(`Opening request with key: ${newRequest.socketKey}`)
+    this.logger(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
     await newRequest.init()
     return newRequest
   }
@@ -134,20 +132,23 @@ export class PortalNetworkUTP extends EventEmitter {
       request.socket._clearTimeout()
       const packet = Packet.fromBuffer(packetBuffer)
       request.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
-
+      this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
+        `|| pktId: ${packet.header.connectionId}     ||`
+      )
+      this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
+        `|| seqNr: ${packet.header.seqNr}     ||`
+      )
+      this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
+        `|| ackNr: ${packet.header.ackNr}     ||`
+      )
       switch (packet.header.pType) {
         case PacketType.ST_SYN:
-          request.socket.logger(`Received ST_SYN   sndId: ${packet.header.connectionId}`)
           requestKey && (await this._handleSynPacket(request, packet))
           break
         case PacketType.ST_DATA:
-          request.socket.logger(
-            `Received ST_DATA to ${packet.header.connectionId}  seqNr: ${packet.header.seqNr}`
-          )
           requestKey && (await this._handleDataPacket(request, packet))
           break
         case PacketType.ST_STATE:
-          request.socket.logger(`Received ST_STATE ackNr: ${packet.header.ackNr}`)
           if (packet.header.extension === 1) {
             await this._handleSelectiveAckPacket(request, packet)
           } else {
@@ -155,10 +156,8 @@ export class PortalNetworkUTP extends EventEmitter {
           }
           break
         case PacketType.ST_RESET:
-          request.socket.logger(`Received ST_RESET`)
           break
         case PacketType.ST_FIN:
-          request.socket.logger(`Received ST_FIN   seqNr: ${packet.header.seqNr}`)
           requestKey && (await this._handleFinPacket(request, packet))
           break
         default:
@@ -177,10 +176,10 @@ export class PortalNetworkUTP extends EventEmitter {
   }
 
   async _handleSynPacket(request: ContentRequest, packet: SynPacket): Promise<void> {
+    this.logger(`SYN received to initiate stream for ${RequestCode[request.requestCode]} request`)
     switch (request.requestCode) {
       case RequestCode.FOUNDCONTENT_WRITE:
       case RequestCode.ACCEPT_READ:
-        this.logger(`SYN received to initiate stream for ${request.requestCode} request`)
         await request.socket.handleSynPacket(packet.header.seqNr)
         break
       default:
@@ -190,7 +189,7 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleStatePacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ: {
-        if (packet.header.ackNr === 0) {
+        if (packet.header.seqNr === request.socket.getSeqNr() - 1) {
           request.socket.setAckNr(packet.header.seqNr)
           break
         } else {
@@ -200,12 +199,17 @@ export class PortalNetworkUTP extends EventEmitter {
       case RequestCode.FOUNDCONTENT_WRITE:
         break
       case RequestCode.OFFER_WRITE:
-        if (request.socket.getSeqNr() === 1) {
+        request.socket.logger(`socket.seqNr: ${request.socket.getSeqNr()}`)
+        if (packet.header.seqNr === request.socket.finNr) {
+          break
+        }
+        if (packet.header.ackNr === request.socket.getSeqNr()) {
           request.socket.setAckNr(packet.header.seqNr - 1)
+          request.socket.setSeqNr(packet.header.ackNr + 1)
           request.socket.logger(
             `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`
           )
-          request.socket.setWriter(1)
+          request.socket.setWriter(request.socket.getSeqNr())
         }
         break
       case RequestCode.ACCEPT_READ:
@@ -281,9 +285,16 @@ export class PortalNetworkUTP extends EventEmitter {
       const decodedContentKey = decodeContentKey(toHexString(k))
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
-        `${idx + 1}/${keys.length} -- sending ${ContentType[k[0]]} to database`
+        `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
+          ContentType[k[0]]
+        } to database`
       )
-      this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+      if (_content.length === 0) {
+        this.logger.extend(`FINISHED`)(`Missing content...`)
+        continue
+      } else {
+        this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+      }
     }
   }
 }

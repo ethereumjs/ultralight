@@ -38,8 +38,8 @@ export const MAX_UDP_HEADER_LENGTH = 48
 export const DEF_HEADER_LENGTH = 20
 
 export const startingNrs: Record<RequestCode, { seqNr: number; ackNr: number }> = {
-  0: { seqNr: randUint16(), ackNr: 0 },
-  1: { seqNr: 0, ackNr: 1 },
-  2: { seqNr: 1, ackNr: randUint16() },
-  3: { seqNr: randUint16(), ackNr: 0 },
+  [RequestCode.FOUNDCONTENT_WRITE]: { seqNr: randUint16(), ackNr: 0 },
+  [RequestCode.FINDCONTENT_READ]: { seqNr: randUint16(), ackNr: 1 },
+  [RequestCode.OFFER_WRITE]: { seqNr: randUint16(), ackNr: 0 },
+  [RequestCode.ACCEPT_READ]: { seqNr: randUint16(), ackNr: 0 },
 }

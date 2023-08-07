@@ -79,7 +79,7 @@
 //         this.logger(
 //           `Received Rendezvous FIND request for ${shortId(dstId)} on ${protocolId} network`
 //         )
-//         let enr = protocol.routingTable.getValue(dstId)
+//         let enr = protocol.routingTable.getWithPending(dstId)
 //         if (!enr) {
 //           enr = this.client.discv5.getKadValue(dstId)
 //           if (!enr) {
@@ -108,7 +108,7 @@
 //         this.logger(
 //           `Received Rendezvous SYNC from requestor ${shortId(srcId)} for target ${shortId(dstId)}`
 //         )
-//         const srcEnr = protocol.routingTable.getValue(srcId)
+//         const srcEnr = protocol.routingTable.getWithPending(srcId)
 //         const payload = Buffer.concat([
 //           Uint8Array.from([2]),
 //           Buffer.from(protocolId.slice(2), 'hex'),
