@@ -22,11 +22,12 @@ import { BlockHeader } from '@ethereumjs/block'
 import { readFileSync } from 'fs'
 import { PortalNetwork, ProtocolId } from '../../../src/index.js'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
+import { concatBytes } from '@ethereumjs/util'
 tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = ContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([ContentType.BlockHeader]), fromHexString(blockHash)])
+      concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(blockHash))
     )
     let contentId = getContentId(ContentType.BlockHeader, blockHash)
     st.equals(
@@ -41,7 +42,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([ContentType.BlockBody]), fromHexString(blockHash)])
+      concatBytes(Uint8Array.from([ContentType.BlockBody]), fromHexString(blockHash))
     )
     contentId = getContentId(ContentType.BlockBody, blockHash)
     st.equals(
@@ -56,7 +57,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      Buffer.concat([Uint8Array.from([ContentType.Receipt]), fromHexString(blockHash)])
+      concatBytes(Uint8Array.from([ContentType.Receipt]), fromHexString(blockHash))
     )
     contentId = getContentId(ContentType.Receipt, blockHash)
     st.equals(
@@ -76,40 +77,76 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       {
         status: 1 as 0 | 1,
         cumulativeBlockGasUsed: BigInt(100),
-        bitvector: Buffer.alloc(256),
-        logs: [[Buffer.alloc(20), [Buffer.alloc(32), Buffer.alloc(32, 1)], Buffer.alloc(10)]],
+        bitvector: new Uint8Array(256),
+        logs: [
+          [
+            new Uint8Array(20),
+            [new Uint8Array(32), new Uint8Array(32).fill(1)],
+            new Uint8Array(10),
+          ],
+        ],
         txType: 2,
       },
       {
         status: 0 as 0 | 1,
         cumulativeBlockGasUsed: BigInt(1000),
-        bitvector: Buffer.alloc(256, 1),
-        logs: [[Buffer.alloc(20, 1), [Buffer.alloc(32, 1), Buffer.alloc(32, 1)], Buffer.alloc(10)]],
+        bitvector: new Uint8Array(256).fill(1),
+        logs: [
+          [
+            new Uint8Array(20).fill(1),
+            [new Uint8Array(32).fill(1), new Uint8Array(32).fill(1)],
+            new Uint8Array(10),
+          ],
+        ],
         txType: 0,
       },
       {
         status: 1 as 0 | 1,
         cumulativeBlockGasUsed: BigInt(100),
-        bitvector: Buffer.alloc(256),
-        logs: [[Buffer.alloc(20), [Buffer.alloc(32), Buffer.alloc(32, 1)], Buffer.alloc(10)]],
+        bitvector: new Uint8Array(256),
+        logs: [
+          [
+            new Uint8Array(20),
+            [new Uint8Array(32), new Uint8Array(32).fill(1)],
+            new Uint8Array(10),
+          ],
+        ],
       },
       {
         status: 0 as 0 | 1,
         cumulativeBlockGasUsed: BigInt(1000),
-        bitvector: Buffer.alloc(256, 1),
-        logs: [[Buffer.alloc(20, 1), [Buffer.alloc(32, 1), Buffer.alloc(32, 1)], Buffer.alloc(10)]],
+        bitvector: new Uint8Array(256).fill(1),
+        logs: [
+          [
+            new Uint8Array(20).fill(1),
+            [new Uint8Array(32).fill(1), new Uint8Array(32).fill(1)],
+            new Uint8Array(10),
+          ],
+        ],
       },
       {
         stateRoot: randomBytes(32),
         cumulativeBlockGasUsed: BigInt(100),
-        bitvector: Buffer.alloc(256),
-        logs: [[Buffer.alloc(20), [Buffer.alloc(32), Buffer.alloc(32, 1)], Buffer.alloc(10)]],
+        bitvector: new Uint8Array(256),
+        logs: [
+          [
+            new Uint8Array(20),
+            [new Uint8Array(32), new Uint8Array(32).fill(1)],
+            new Uint8Array(10),
+          ],
+        ],
       },
       {
         stateRoot: randomBytes(32),
         cumulativeBlockGasUsed: BigInt(1000),
-        bitvector: Buffer.alloc(256, 1),
-        logs: [[Buffer.alloc(20, 1), [Buffer.alloc(32, 1), Buffer.alloc(32, 1)], Buffer.alloc(10)]],
+        bitvector: new Uint8Array(256).fill(1),
+        logs: [
+          [
+            new Uint8Array(20).fill(1),
+            [new Uint8Array(32).fill(1), new Uint8Array(32).fill(1)],
+            new Uint8Array(10),
+          ],
+        ],
       },
     ]
     const serializedReceipts = [

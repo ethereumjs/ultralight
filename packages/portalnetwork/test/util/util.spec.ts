@@ -13,14 +13,12 @@ tape('utility method tests', async (t) => {
   t.ok(short === '82418...b2c41', 'correctly shortened node id')
 
   let randomNodeId = generateRandomNodeIdAtDistance(nodeId, 255)
-  t.ok(log2Distance(nodeId, randomNodeId) === 255, 'calculated random node ID at distance 255')
+  t.equal(log2Distance(nodeId, randomNodeId), 255, 'calculated random node ID at distance 255')
   randomNodeId = generateRandomNodeIdAtDistance(nodeId, 25)
-  t.ok(log2Distance(nodeId, randomNodeId) === 25, 'calculated random node id at distance 25')
+  t.equal(log2Distance(nodeId, randomNodeId), 25, 'calculated random node id at distance 25')
 
   const arrayOfUint8Arrays = [Uint8Array.from([1, 2, 3]), Uint8Array.from([1, 2])]
-  const arrayOfBuffers = [Buffer.from([1, 2, 3]), Buffer.from([1, 2, 3, 4, 5])]
   t.equal(arrayByteLength(arrayOfUint8Arrays), 5, 'computed correct length of nested Uint8Arrays')
-  t.equal(arrayByteLength(arrayOfBuffers), 8, 'computed correct length of nested Buffers')
   t.equal(await dirSize('./test/util/testDir'), 0.00002765655517578125)
 
   t.end()
