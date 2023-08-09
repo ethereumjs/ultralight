@@ -1,5 +1,6 @@
-import { ByteListType, ListCompositeType } from '@chainsafe/ssz'
+import { ByteListType, ContainerType, ListCompositeType, UintBigintType } from '@chainsafe/ssz'
 import { ForkName } from '@lodestar/params'
+import { Bytes32Type } from '../history/index.js'
 
 export const MainnetGenesisValidatorsRoot =
   '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95'
@@ -21,3 +22,11 @@ export enum Forks {
 
 // TODO - figure out what a theoretical maximum byte size for a LightClientUpdate is (the `ByteListType`) in the below ssz list
 export const LightClientUpdatesByRange = new ListCompositeType(new ByteListType(2 ** 18), 128)
+
+export const LightClientBootstrapKey = new ContainerType({ blockHash: Bytes32Type })
+export const LightClientUpdatesByRangeKey = new ContainerType({
+  startPeriod: new UintBigintType(8),
+  count: new UintBigintType(8),
+})
+export const LightClientFinalityUpdateKey = new ContainerType({ zero: new UintBigintType(8) })
+export const LightClientOptimisticUpdateKey = new ContainerType({ zero: new UintBigintType(8) })

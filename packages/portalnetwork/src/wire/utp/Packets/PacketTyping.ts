@@ -39,11 +39,13 @@ interface IHeaderInput<T extends PacketType> {
 interface IBasicHeaderInput<T extends PacketType> extends IHeaderInput<T> {
   pType: PacketType
   extension: HeaderExtension.none
+  connectionId: Uint16
 }
 export interface ISelectiveAckHeaderInput extends IHeaderInput<PacketType.ST_STATE> {
   pType: PacketType.ST_STATE
   extension: HeaderExtension.selectiveAck
   bitmask: Uint8Array
+  connectionId: Uint16
 }
 export type HeaderInput<T extends PacketType> = IBasicHeaderInput<T> | ISelectiveAckHeaderInput
 
@@ -73,21 +75,25 @@ export interface IPacket<T extends PacketType> {
   pType: T
   seqNr: number
   ackNr: number
+  connectionId: number
   payload?: Uint8Array
 }
 export interface IBasic<T extends PacketType> extends IPacket<T> {
   pType: T
   extension: HeaderExtension.none
+  connectionId: number
 }
 export interface ISelectiveAck extends IPacket<PacketType.ST_STATE> {
   pType: PacketType.ST_STATE
   extension: HeaderExtension.selectiveAck
   bitmask: Uint8Array
+  connectionId: number
 }
 export interface IData extends IPacket<PacketType.ST_DATA> {
   pType: PacketType.ST_DATA
   extension: HeaderExtension.none
   payload: Uint8Array
+  connectionId: number
 }
 export type ICreate<T extends PacketType> = IBasic<T> | ISelectiveAck | IData
 
@@ -105,6 +111,7 @@ export interface UtpSocketOptions {
 
 interface ICreatePacket<T> {
   pType: T
+  connectionId?: number
 }
 interface ICreateSelectiveAck extends ICreatePacket<PacketType.ST_STATE> {
   bitmask: Uint8Array

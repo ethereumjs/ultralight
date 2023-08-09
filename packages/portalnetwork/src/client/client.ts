@@ -194,7 +194,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
-      const enr = this.protocols.get(protocolId)?.routingTable.getValue(peerId)
+      const enr = this.protocols.get(protocolId)?.routingTable.getWithPending(peerId)?.value
       try {
         await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
         this.uTP.emit('Sent')
@@ -365,7 +365,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         // If ENR is not provided, look up ENR in protocol routing table by nodeId
         const protocol = this.protocols.get(protocolId)
         if (protocol) {
-          nodeAddr = protocol.routingTable.getValue(enr)
+          nodeAddr = protocol.routingTable.getWithPending(enr)?.value
           if (!nodeAddr) {
             // Check in unverified sessions cache if no ENR found in routing table
             nodeAddr = this.unverifiedSessionCache.get(enr)

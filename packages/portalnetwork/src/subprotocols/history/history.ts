@@ -98,7 +98,7 @@ export class HistoryProtocol extends BaseProtocol {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = this.routingTable.getValue(dstId)
+    const enr = this.routingTable.getWithPending(dstId)?.value
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return

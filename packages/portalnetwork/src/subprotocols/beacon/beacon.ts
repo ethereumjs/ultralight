@@ -7,11 +7,7 @@ import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
 import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
-import {
-  Forks,
-  MainnetGenesisValidatorsRoot,
-  BeaconLightClientNetworkContentType,
-} from './types.js'
+import { MainnetGenesisValidatorsRoot, BeaconLightClientNetworkContentType } from './types.js'
 import {
   ContentMessageType,
   FindContentMessage,
