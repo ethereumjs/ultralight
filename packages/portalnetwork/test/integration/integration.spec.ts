@@ -57,7 +57,9 @@ tape('gossip test', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr1,
-      multiaddr: initMa,
+      bindAddrs:{
+        ip4: initMa
+      },
       peerId: id1,
     },
   })
@@ -66,7 +68,9 @@ tape('gossip test', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr2,
-      multiaddr: initMa2,
+      bindAddrs: {
+        ip4: initMa2,
+      },
       peerId: id2,
     },
   })
@@ -157,7 +161,9 @@ tape('FindContent', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr1,
-      multiaddr: initMa,
+      bindAddrs: {
+        ip4: initMa,
+      },
       peerId: id1,
     },
   })
@@ -167,7 +173,9 @@ tape('FindContent', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr2,
-      multiaddr: initMa2,
+      bindAddrs: {
+        ip4: initMa2,
+      },
       peerId: id2,
     },
   })
@@ -235,7 +243,9 @@ tape('eth_getBlockByHash', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr1,
-      multiaddr: initMa,
+      bindAddrs: {
+        ip4: initMa,
+      },
       peerId: id1,
     },
   })
@@ -245,7 +255,9 @@ tape('eth_getBlockByHash', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr2,
-      multiaddr: initMa2,
+      bindAddrs: {
+        ip4: initMa2
+      },
       peerId: id2,
     },
   })
@@ -292,7 +304,9 @@ tape('eth_getBlockByNumber', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr1,
-      multiaddr: initMa,
+      bindAddrs: {
+        ip4: initMa
+      },
       peerId: id1,
     },
   })
@@ -302,7 +316,9 @@ tape('eth_getBlockByNumber', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr2,
-      multiaddr: initMa2,
+      bindAddrs: {
+        ip4: initMa2,
+      },
       peerId: id2,
     },
   })

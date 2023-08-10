@@ -9,7 +9,7 @@ import {
   IPacket,
   IWhoAreYouAuthdata,
 } from '@chainsafe/discv5/packet'
-import { ITransportEvents, ITransportService, SignableENR } from '@chainsafe/discv5'
+import { BaseENR, IPMode, ITransportEvents, ITransportService, SignableENR } from '@chainsafe/discv5'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import { createLightNode } from '@waku/create'
 import { bootstrap } from '@libp2p/bootstrap'
@@ -22,6 +22,7 @@ import { waitForRemotePeer } from '@waku/core'
 import { Fleet, getPredefinedBootstrapNodes } from '@waku/core/lib/predefined_bootstrap_nodes'
 import { IDecoder, LightNode, Protocols, SendResult } from '@waku/interfaces'
 import { WakuMessage } from '@waku/proto'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip'
 
 class ChatMessage extends DecodedMessage {
   constructor(proto: WakuMessage) {
@@ -54,7 +55,7 @@ export class WakuPortal
   implements ITransportService
 {
   private log: Debugger
-  public multiaddr: Multiaddr
+
   nodeId: string
   enr: SignableENR
   status: WakuStatus
@@ -62,7 +63,11 @@ export class WakuPortal
   sendCounter: number
   receiveCounter: number
   waku?: LightNode
-
+  ipMode: IPMode = {
+    ip4: true,
+    ip6: false
+  }
+  bindAddrs: Multiaddr[] = []
   contentTopic: string
   decoder: IDecoder<ChatMessage>
   constructor(multiaddr: Multiaddr, enr: SignableENR) {
@@ -70,7 +75,7 @@ export class WakuPortal
     super()
     this.log = debug('Portal').extend('WAKU')
     this.nodeId = enr.nodeId
-    this.multiaddr = multiaddr
+    this.bindAddrs = [multiaddr]
     this.enr = enr
     this.status = WakuStatus.None
     this.messages = []
@@ -147,5 +152,16 @@ export class WakuPortal
     const payload = Uint8Array.from(Buffer.from(message, 'ascii'))
     const encoder = new EncoderV0(this.contentTopic + toId)
     return this.waku?.lightPush.push(encoder, { payload })
+  }
+
+  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
+    const nodeAddr = this.bindAddrs[0].tuples()
+    return {
+      port: this.bindAddrs[0].nodeAddress().port,
+      ip: {
+        type: 4,
+        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
+      }
+    }
   }
 }

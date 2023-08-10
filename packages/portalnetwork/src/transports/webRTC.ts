@@ -4,6 +4,8 @@ import { RtcId, WebRTCPeer, NodeId, Offer } from '../index.js'
 import { multiaddr, Multiaddr } from '@multiformats/multiaddr'
 import { IPacket, encodePacket, decodePacket } from '@chainsafe/discv5/packet'
 import { WakuPortal } from './waku.js'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
+import { BaseENR } from '@chainsafe/discv5'
 
 type SocketMessage = {
   userId: string

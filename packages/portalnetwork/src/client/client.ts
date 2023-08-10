@@ -48,7 +48,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const defaultConfig: IDiscv5CreateOptions = {
       enr: {} as SignableENR,
       peerId: {} as Secp256k1PeerId,
-      multiaddr: multiaddr(),
+      bindAddrs: {
+        ip4: multiaddr(),
+      },
       config: {
         addrVotesToUpdateEnr: 5,
         enrUpdate: true,
@@ -82,11 +84,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       config.enr = opts.config.enr as SignableENR
     }
     let ma
-    if (opts.config?.multiaddr === undefined) {
+    if (opts.config?.bindAddrs?.ip4 === undefined) {
       if (opts.bindAddress) {
         ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
-        config.multiaddr = ma
+        config.bindAddrs.ip4 = ma
       } else {
         let ip = ''
         try {
@@ -96,10 +98,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         }
         ma = multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
-        config.multiaddr = ma
+        config.bindAddrs.ip4 = ma
       }
     } else {
-      ma = opts.config.multiaddr
+      ma = opts.config.bindAddrs.ip4
     }
 
     // Configure db size calculation

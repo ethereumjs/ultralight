@@ -2,7 +2,9 @@ import { EventEmitter } from 'events'
 import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { UDP } from '@frontall/capacitor-udp'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
-import { IRemoteInfo, ITransportService, TransportEventEmitter } from '@chainsafe/discv5/transport'
+import { IPMode, IRemoteInfo, ITransportService, TransportEventEmitter } from '@chainsafe/discv5/transport'
+import { BaseENR } from '@chainsafe/discv5'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip'
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
@@ -12,23 +14,27 @@ export class CapacitorUDPTransportService
   extends (EventEmitter as { new(): TransportEventEmitter })
   //eslint-disable-next-line prettier/prettier
   implements ITransportService {
-  public multiaddr: Multiaddr
+
   private socket!: {
     socketId: number
     ipv4: string
     ipv6: string
   }
   private srcId: string
-
+  bindAddrs: Multiaddr[] = []
+  ipMode: IPMode = {
+    ip4: true,
+    ip6: false
+  }
   public constructor(multiaddr: Multiaddr, srcId: string) {
     //eslint-disable-next-line constructor-super
     super()
-    this.multiaddr = multiaddr
+    this.bindAddrs = [multiaddr]
     this.srcId = srcId
   }
 
   public async start(): Promise<void> {
-    const opts = this.multiaddr.toOptions()
+    const opts = this.bindAddrs[0].toOptions()
     this.socket = await UDP.create()
     const port = Number.isInteger(opts.port) ? opts.port : 5050
     await UDP.bind({
@@ -69,6 +75,17 @@ export class CapacitorUDPTransportService
       this.emit('packet', multiaddr, packet)
     } catch (e) {
       this.emit('decodeError', e as any, multiaddr)
+    }
+  }
+
+  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
+    const nodeAddr = this.bindAddrs[0].tuples()
+    return {
+      port: this.bindAddrs[0].nodeAddress().port,
+      ip: {
+        type: 4,
+        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
+      }
     }
   }
 }

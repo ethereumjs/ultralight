@@ -16,7 +16,9 @@ tape('Test provider functionality', async (t) => {
     bindAddress: '0.0.0.0',
     transport: TransportLayer.NODE,
     config: {
-      multiaddr: ma,
+      bindAddrs: {
+        ip4: ma,
+      },
       enr: enr,
       peerId: peerId,
     },

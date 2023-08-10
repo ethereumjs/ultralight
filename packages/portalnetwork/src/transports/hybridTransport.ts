@@ -2,12 +2,13 @@ import debug, { Debugger } from 'debug'
 import { EventEmitter } from 'events'
 import { Multiaddr } from '@multiformats/multiaddr'
 import { IPacket } from '@chainsafe/discv5/packet'
-import { ITransportEvents, ITransportService } from '@chainsafe/discv5/lib/transport/types.js'
+import { IPMode, ITransportEvents, ITransportService } from '@chainsafe/discv5/lib/transport/types.js'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import { WebSocketTransportService } from '../index.js'
 import { WakuPortal } from './waku.js'
 import WebRTC from './webRTC.js'
-import { SignableENR } from '@chainsafe/discv5'
+import { BaseENR, SignableENR, ISocketAddr } from '@chainsafe/discv5'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
 
 interface IHybridTransportEvents extends ITransportEvents {
   multiAddr: (src: Multiaddr) => void
@@ -24,22 +25,28 @@ export class HybridTransportService
   implements ITransportService
 {
   private log: Debugger
-  public multiaddr: Multiaddr
+  ipMode: IPMode = {
+    ip4: true,
+    ip6: false
+  }
+  bindAddrs: Multiaddr[] = []
   public nodeId: string
   public webRTC: WebRTC
   public websocket: WebSocketTransportService
   public waku: WakuPortal
   public status: 'stopped' | 'rtconly' | 'hybrid'
   public rtcEnabled: Map<string, boolean>
+  private enr: SignableENR
   constructor(multiaddr: Multiaddr, enr: SignableENR, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
     this.log = debug('Portal').extend('HybridTransportService')
-    this.multiaddr = multiaddr
+    this.bindAddrs = [multiaddr]
     this.nodeId = enr.nodeId
+    this.enr = enr
     this.waku = new WakuPortal(multiaddr, enr)
     this.webRTC = new WebRTC(this.nodeId, new WakuPortal(multiaddr, enr))
-    this.websocket = new WebSocketTransportService(this.multiaddr, this.nodeId, proxyAddress)
+    this.websocket = new WebSocketTransportService(this.bindAddrs[0], this.nodeId, proxyAddress)
     this.status = 'stopped'
     this.rtcEnabled = new Map()
   }
@@ -135,5 +142,16 @@ export class HybridTransportService
   async connectWebRTC(nodeId: string) {
     this.log('Initiating RTC Connection with ' + nodeId)
     await this.webRTC.handleNewMember(nodeId)
+  }
+
+  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
+    const nodeAddr = this.bindAddrs[0].tuples()
+    return {
+      port: this.bindAddrs[0].nodeAddress().port,
+      ip: {
+        type: 4,
+        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
+      }
+    }
   }
 }

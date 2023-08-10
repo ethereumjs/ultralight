@@ -3,6 +3,7 @@ import { EventEmitter } from 'events'
 import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
 import {
+  IPMode,
   IRemoteInfo,
   ITransportEvents,
   ITransportService,
@@ -10,6 +11,8 @@ import {
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip'
+import { BaseENR } from '@chainsafe/discv5'
 const log = debug('discv5:transport')
 
 interface IWebSocketTransportEvents extends ITransportEvents {
@@ -31,7 +34,11 @@ export class WebSocketTransportService
   private socket: WebSocketAsPromised
   private srcId: string
   private log: Debugger
-
+  ipMode: IPMode = {
+    ip4: true,
+    ip6: false
+  }
+  bindAddrs: Multiaddr[] = []
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
@@ -80,7 +87,7 @@ export class WebSocketTransportService
     const encodedPacket = encodePacket(toId, packet)
     const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
     const encodedPort = new Uint8Array(2)
-    new DataView(new Uint8Array(2)).setUint16(0, opts.port)
+    new DataView(new Uint8Array(2).buffer).setUint16(0, opts.port)
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
       ...encodedPort,
@@ -103,6 +110,17 @@ export class WebSocketTransportService
       this.emit('packet', multiaddr, packet)
     } catch (e) {
       this.emit('decodeError', e as Error, multiaddr)
+    }
+  }
+
+  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
+    const nodeAddr = this.bindAddrs[0].tuples()
+    return {
+      port: this.bindAddrs[0].nodeAddress().port,
+      ip: {
+        type: 4,
+        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
+      }
     }
   }
 }
