@@ -37,7 +37,7 @@ export class CapacitorUDPTransportService
       port: port,
     })
     UDP.addListener('receive', (ret: any) => {
-      this.handleIncoming(Buffer.from(ret.buffer, 'base64'), {
+      this.handleIncoming(new Uint8Array(Buffer.from(ret.buffer, 'base64')), {
         family: 'IPv4',
         address: ret.remoteAddress,
         port: ret.remotePort,
@@ -60,12 +60,12 @@ export class CapacitorUDPTransportService
     })
   }
 
-  public handleIncoming = (data: Buffer, rinfo: IRemoteInfo): void => {
+  public handleIncoming = (data: Uint8Array, rinfo: IRemoteInfo): void => {
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
     )
     try {
-      const packet = decodePacket(this.srcId, data)
+      const packet = decodePacket(this.srcId, Buffer.from(data))
       this.emit('packet', multiaddr, packet)
     } catch (e) {
       this.emit('decodeError', e as any, multiaddr)

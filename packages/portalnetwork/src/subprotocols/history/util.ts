@@ -30,7 +30,7 @@ import { historicalEpochs } from './data/epochHashes.js'
  */
 export const getContentKey = (contentType: ContentType, hash: Uint8Array): string => {
   let encodedKey
-  const prefix = Buffer.alloc(1, contentType)
+  const prefix = new Uint8Array(1).fill(contentType)
   switch (contentType) {
     case ContentType.BlockHeader:
     case ContentType.BlockBody:
@@ -47,7 +47,7 @@ export const getContentKey = (contentType: ContentType, hash: Uint8Array): strin
   return encodedKey
 }
 export const getContentId = (contentType: ContentType, hash: string) => {
-  const encodedKey = fromHexString(getContentKey(contentType, Buffer.from(fromHexString(hash))))
+  const encodedKey = fromHexString(getContentKey(contentType, fromHexString(hash)))
 
   return toHexString(digest(encodedKey))
 }
@@ -62,9 +62,7 @@ export const decodeContentKey = (contentKey: string) => {
 
 export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
   const body = BlockBodyContentType.deserialize(sszBody)
-  const txsRlp = body.allTransactions.map((sszTx) =>
-    Buffer.from(sszTransactionType.deserialize(sszTx))
-  )
+  const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
   const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
   return { txsRlp, unclesRlp }
 }
@@ -89,7 +87,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     const decodedBody = decodeSszBlockBody(rawBody)
     const block = Block.fromValuesArray(
       [
-        rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBytes,
+        rlp.decode(rawHeader) as never as BlockHeaderBytes,
         decodedBody.txsRlp as TransactionsBytes,
         rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBytes,
       ] as BlockBytes,
@@ -98,9 +96,9 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     return block
   } else {
     const blockBuffer: BlockBytes = [
-      rlp.decode(Buffer.from(rawHeader)) as never as BlockHeaderBytes,
-      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as TransactionsBytes,
-      rlp.decode(Buffer.from(Uint8Array.from([]))) as never as UncleHeadersBytes,
+      rlp.decode(rawHeader) as never as BlockHeaderBytes,
+      rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
+      rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
     ] as BlockBytes
     const block = Block.fromValuesArray(blockBuffer, { setHardfork: true })
     return block
@@ -119,7 +117,7 @@ export const addRLPSerializedBlock = async (
   protocol: HistoryProtocol,
   witnesses?: Witnesses
 ) => {
-  const block = Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+  const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
@@ -147,7 +145,7 @@ export const addRLPSerializedBlock = async (
     ContentType.BlockBody,
     toHexString(header.hash()),
     sszEncodeBlockBody(
-      Block.fromRLPSerializedBlock(Buffer.from(fromHexString(rlpHex)), {
+      Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
         setHardfork: true,
       })
     )

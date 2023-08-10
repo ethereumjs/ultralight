@@ -235,20 +235,14 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
   const serializedBlock2 = fromHexString(testData[1000002].content_value)
   const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)
   const headerWithProof2 = BlockHeaderWithProof.deserialize(serializedBlock2)
-  const deserializedHeader = BlockHeader.fromRLPSerializedHeader(
-    Buffer.from(headerWithProof.header),
-    {
-      skipConsensusFormatValidation: true,
-      setHardfork: true,
-    }
-  )
-  const deserializedHeader2 = BlockHeader.fromRLPSerializedHeader(
-    Buffer.from(headerWithProof2.header),
-    {
-      skipConsensusFormatValidation: true,
-      setHardfork: true,
-    }
-  )
+  const deserializedHeader = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
+    skipConsensusFormatValidation: true,
+    setHardfork: true,
+  })
+  const deserializedHeader2 = BlockHeader.fromRLPSerializedHeader(headerWithProof2.header, {
+    skipConsensusFormatValidation: true,
+    setHardfork: true,
+  })
   const contentKey = getContentKey(ContentType.BlockHeader, deserializedHeader.hash())
   const epochHash = historicalEpochs[Math.floor(1000001 / 8192)]
   const actual_Epoch = EpochAccumulator.deserialize(fromHexString(actualEpoch))

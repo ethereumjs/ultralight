@@ -14,7 +14,7 @@ const testVectors = require('../../testData/testVectors.json')
 tape('ContentKey and ContentId', (t) => {
   t.test('block header', (st) => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.blockHeader
-    const contentKey = getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(blockHash)))
+    const contentKey = getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
     const contentId = getContentId(ContentType.BlockHeader, blockHash)
     const decoded = decodeContentKey(contentKey)
 
@@ -26,7 +26,7 @@ tape('ContentKey and ContentId', (t) => {
   })
   t.test('block body', (st) => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.blockBody
-    const contentKey = getContentKey(ContentType.BlockBody, Buffer.from(fromHexString(blockHash)))
+    const contentKey = getContentKey(ContentType.BlockBody, fromHexString(blockHash))
     const contentId = getContentId(ContentType.BlockBody, blockHash)
     const decoded = decodeContentKey(contentKey)
 
@@ -38,7 +38,7 @@ tape('ContentKey and ContentId', (t) => {
   })
   t.test('receipts', (st) => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.receipts
-    const contentKey = getContentKey(ContentType.Receipt, Buffer.from(fromHexString(blockHash)))
+    const contentKey = getContentKey(ContentType.Receipt, fromHexString(blockHash))
     const contentId = getContentId(ContentType.Receipt, blockHash)
     const decoded = decodeContentKey(contentKey)
 
@@ -50,10 +50,7 @@ tape('ContentKey and ContentId', (t) => {
   })
   t.test('epoch accumulator', (st) => {
     const { epochHash, contentKeyHex, contentIdHex } = testVectors.epochAccumulator
-    const contentKey = getContentKey(
-      ContentType.EpochAccumulator,
-      Buffer.from(fromHexString(epochHash))
-    )
+    const contentKey = getContentKey(ContentType.EpochAccumulator, fromHexString(epochHash))
     const contentId = getContentId(ContentType.EpochAccumulator, epochHash)
     const decoded = decodeContentKey(contentKey)
 

@@ -1,6 +1,7 @@
 import { digest } from '@chainsafe/as-sha256'
-import { NodeId } from '@chainsafe/discv5'
+import { NodeId, fromHex, toHex } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
+import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import { promises as fs } from 'fs'
 
 import * as path from 'path'
@@ -28,7 +29,7 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
     binaryDistance.push(Math.random() >= 0.5 ? 1 : 0)
   }
   const xorNumericDistance = BigInt(parseInt(binaryDistance.join(''), 2))
-  return BigInt.asUintN(32, BigInt(nodeId) ^ xorNumericDistance).toString(16)
+  return toHex(toBufferBE(toBigIntBE(fromHex(nodeId)) ^ xorNumericDistance, 32))
 }
 
 /**

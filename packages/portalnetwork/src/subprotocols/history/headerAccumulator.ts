@@ -94,12 +94,10 @@ export class AccumulatorManager {
    */
   public verifyInclusionProof = async (proof: any, blockHash: string) => {
     const header = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(
-        fromHexString(
-          await this._history.get(
-            this._history.protocolId,
-            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-          )
+      fromHexString(
+        await this._history.get(
+          this._history.protocolId,
+          getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
         )
       ),
       { setHardfork: true }
@@ -126,12 +124,9 @@ export class AccumulatorManager {
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
     }
-    const blockHeader = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(fromHexString(_blockHeader)),
-      {
-        setHardfork: true,
-      }
-    )
+    const blockHeader = BlockHeader.fromRLPSerializedHeader(fromHexString(_blockHeader), {
+      setHardfork: true,
+    })
     this._history.logger(`generating proof for block ${blockHeader.number}`)
     const gIndex = blockNumberToGindex(blockHeader.number)
     const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
@@ -163,12 +158,10 @@ export class AccumulatorManager {
   }
   public async getHeaderRecordFromBlockhash(blockHash: string) {
     const header = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(
-        fromHexString(
-          await this._history.get(
-            this._history.protocolId,
-            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-          )
+      fromHexString(
+        await this._history.get(
+          this._history.protocolId,
+          getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
         )
       ),
       { setHardfork: true }

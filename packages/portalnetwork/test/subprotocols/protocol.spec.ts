@@ -17,7 +17,7 @@ import {
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { BitArray } from '@chainsafe/ssz'
+import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
 
 tape('protocol wire message tests', async (t) => {
   const node = await PortalNetwork.create({
@@ -34,9 +34,9 @@ tape('protocol wire message tests', async (t) => {
         td.matchers.anything(),
         td.matchers.anything()
       )
-    ).thenResolve(Buffer.from('0x1234'))
-    const res = await baseProtocol.sendMessage('enr', Buffer.from([]), ProtocolId.HistoryNetwork)
-    st.deepEqual(res, Buffer.from('0x1234'), 'sendMessage should return the response')
+    ).thenResolve(fromHexString('0x1234'))
+    const res = await baseProtocol.sendMessage('enr', new Uint8Array(), ProtocolId.HistoryNetwork)
+    st.deepEqual(res, fromHexString('0x1234'), 'sendMessage should return the response')
     st.end()
   })
 
@@ -46,7 +46,7 @@ tape('protocol wire message tests', async (t) => {
     const remoteEnr =
       'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
     const decodedEnr = ENR.decodeTxt(remoteEnr)
-    const pongResponse = Buffer.from([
+    const pongResponse = Uint8Array.from([
       1, 5, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ])
@@ -82,7 +82,7 @@ tape('protocol wire message tests', async (t) => {
       'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
     const decodedEnr = ENR.decodeTxt(remoteEnr)
     protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-    const findNodesResponse = Buffer.from([
+    const findNodesResponse = Uint8Array.from([
       3, 1, 5, 0, 0, 0, 4, 0, 0, 0, 248, 132, 184, 64, 98, 28, 68, 73, 123, 43, 66, 88, 148, 220,
       175, 197, 99, 155, 158, 245, 113, 112, 19, 145, 242, 62, 9, 177, 46, 127, 179, 172, 15, 214,
       73, 120, 117, 10, 84, 236, 35, 36, 1, 7, 157, 133, 186, 53, 153, 250, 87, 144, 208, 228, 233,
@@ -121,7 +121,7 @@ tape('protocol wire message tests', async (t) => {
         td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
       )
     ).thenDo(() => st.pass('correctly handle findNodes message with no ENRs'))
-    td.when(node.discv5.enr.encode()).thenReturn(Buffer.from([0, 1, 2]))
+    td.when(node.discv5.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
     protocol.handleFindNodes(
       { socketAddr: multiaddr(), nodeId: 'abc' },
       1n,
@@ -153,7 +153,7 @@ tape('protocol wire message tests', async (t) => {
     const acceptResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 3])
     td.when(
       protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
-    ).thenResolve(Buffer.from(acceptResponse))
+    ).thenResolve(acceptResponse)
 
     protocol.handleNewRequest = td.func<any>()
     td.when(
@@ -167,14 +167,14 @@ tape('protocol wire message tests', async (t) => {
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([1])])
     st.deepEqual(
       (res as BitArray).uint8Array,
-      Buffer.from([1]),
+      Uint8Array.from([1]),
       'received valid ACCEPT response to OFFER'
     )
 
     const noWantResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 0])
     td.when(
       protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
-    ).thenResolve(Buffer.from(noWantResponse))
+    ).thenResolve(noWantResponse)
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([0])])
     st.equals(res, undefined, 'received undefined when no valid ACCEPT message received')
   })

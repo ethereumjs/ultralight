@@ -35,6 +35,7 @@ import {
   SingleProofInput,
 } from '@chainsafe/persistent-merkle-tree'
 import { Block, BlockHeader } from '@ethereumjs/block'
+import { bytesToInt } from '@ethereumjs/util'
 
 enum FoundContent {
   'UTP' = 0,
@@ -67,7 +68,7 @@ export class HistoryProtocol extends BaseProtocol {
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
-    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerProof.header), {
+    const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
       setHardfork: true,
     })
     const proof = headerProof.proof
@@ -110,13 +111,13 @@ export class HistoryProtocol extends BaseProtocol {
       value: findContentMsg,
     })
     this.logger.extend('FINDCONTENT')(`Sending to ${shortId(dstId)}`)
-    const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
+    const res = await this.sendMessage(enr, payload, this.protocolId)
     if (res.length === 0) {
       return undefined
     }
 
     try {
-      if (parseInt(res.slice(0, 1).toString('hex')) === MessageCodes.CONTENT) {
+      if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
@@ -126,7 +127,7 @@ export class HistoryProtocol extends BaseProtocol {
 
         switch (decoded.selector) {
           case FoundContent.UTP: {
-            const id = Buffer.from(decoded.value as Uint8Array).readUint16BE()
+            const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             await this.handleNewRequest({
               protocolId: this.protocolId,
@@ -143,11 +144,7 @@ export class HistoryProtocol extends BaseProtocol {
               `received ${ContentType[contentType]} content corresponding to ${contentHash}`
             )
             try {
-              await this.store(
-                contentType,
-                toHexString(Buffer.from(contentHash)),
-                decoded.value as Uint8Array
-              )
+              await this.store(contentType, contentHash, decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }

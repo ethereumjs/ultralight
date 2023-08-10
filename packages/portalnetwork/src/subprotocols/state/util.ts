@@ -1,5 +1,5 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
-import { Address, bigIntToBytes } from '@ethereumjs/util'
+import { Address, bigIntToBytes, concatBytes } from '@ethereumjs/util'
 import { toHexString } from '../../util/discv5.js'
 
 import {
@@ -115,7 +115,7 @@ export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>
       if (!opts.codeHash) {
         throw new Error('codeHash required')
       }
-      return sha256(Buffer.concat([opts.address.toBytes(), opts.codeHash]))
+      return sha256(concatBytes(opts.address.toBytes(), opts.codeHash))
     }
     default:
       throw new Error(`Content Type ${opts.contentType} not supported`)

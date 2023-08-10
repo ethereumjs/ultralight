@@ -53,7 +53,7 @@ export class NodeLookup {
         const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, this.nodeSought)
         for await (const enr of res.enrs) {
           if (!finished) {
-            const decodedEnr = ENR.decode(Buffer.from(enr))
+            const decodedEnr = ENR.decode(enr)
             if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
               return
             }

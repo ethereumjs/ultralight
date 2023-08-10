@@ -353,10 +353,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public sendPortalNetworkMessage = async (
     enr: ENR | string,
-    payload: Buffer,
+    payload: Uint8Array,
     protocolId: ProtocolId,
     utpMessage?: boolean
-  ): Promise<Buffer> => {
+  ): Promise<Uint8Array> => {
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
@@ -377,15 +377,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
       if (!nodeAddr) {
         this.logger(`${enr} has no reachable address.  Aborting request`)
-        return Buffer.from([])
+        return new Uint8Array()
       }
-      const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
+      const res = await this.discv5.sendTalkReq(
+        nodeAddr,
+        Buffer.from(payload),
+        fromHexString(messageProtocol)
+      )
       return res
     } catch (err: any) {
       if (protocolId === ProtocolId.UTPNetwork) {
         throw new Error(`Error sending TALKREQ message: ${err}`)
       } else {
-        return Buffer.from([])
+        return new Uint8Array()
       }
     }
   }

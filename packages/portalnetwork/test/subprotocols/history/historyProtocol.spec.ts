@@ -21,6 +21,7 @@ import {
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import * as RLP from '@ethereumjs/rlp'
+import { concatBytes } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')
@@ -51,9 +52,9 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
   protocol.sendMessage = td.func<any>()
   td.when(
     protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
-  ).thenResolve(Buffer.from(findContentResponse))
+  ).thenResolve(findContentResponse)
   const res = await protocol.sendFindContent(decodedEnr.nodeId, fromHexString(key))
-  t.deepEqual(res?.value, Buffer.from([97, 98, 99]), 'got correct response for content abc')
+  t.deepEqual(res?.value, Uint8Array.from([97, 98, 99]), 'got correct response for content abc')
 
   // TODO: Write good `handleFindContent` tests
 
@@ -61,7 +62,7 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
 
   await protocol.store(ContentType.BlockHeader, block1Hash, fromHexString(block1Rlp))
   const contentKey = ContentKeyType.serialize(
-    Buffer.concat([Uint8Array.from([ContentType.BlockHeader]), fromHexString(block1Hash)])
+    concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(block1Hash))
   )
   const header = await protocol.sendFindContent('0xabcd', contentKey)
   t.equal(header, undefined, 'received undefined for unknown peer')
@@ -103,7 +104,7 @@ tape('store -- Headers and Epoch Accumulators', async (t) => {
 
     const val = await node.db.get(ProtocolId.HistoryNetwork, contentKey)
     const headerWith = BlockHeaderWithProof.deserialize(fromHexString(val))
-    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWith.header), {
+    const header = BlockHeader.fromRLPSerializedHeader(headerWith.header, {
       setHardfork: true,
     })
     st.equal(header.number, 1n, 'retrieved block header based on content key')

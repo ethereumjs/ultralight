@@ -15,6 +15,7 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { ssz } from '@lodestar/types'
+import { bytesToInt } from '@ethereumjs/util'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -62,12 +63,12 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
-    const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
+    const res = await this.sendMessage(enr, payload, this.protocolId)
     if (res.length === 0) {
       return undefined
     }
     try {
-      if (parseInt(res.subarray(0, 1).toString('hex')) === MessageCodes.CONTENT) {
+      if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
