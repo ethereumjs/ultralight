@@ -50,7 +50,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
   public sendFindContent = async (
     dstId: string,
-    key: Uint8Array
+    key: Uint8Array,
   ): Promise<Union<Uint8Array | Uint8Array[]> | undefined> => {
     const enr = this.routingTable.getValue(dstId)
     if (!enr) {
@@ -80,7 +80,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             try {
               // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
               ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
-                decoded.value as Uint8Array
+                decoded.value as Uint8Array,
               )
             } catch (err) {
               this.logger(`received invalid content from ${shortId(dstId)}`)
@@ -89,7 +89,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             this.logger(
               `received ${
                 BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`
+              } content corresponding to ${contentHash}`,
             )
             await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
             break
@@ -97,7 +97,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             this.logger(
               `received ${
                 BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`
+              } content corresponding to ${contentHash}`,
             )
         }
         return decoded

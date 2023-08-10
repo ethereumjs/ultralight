@@ -32,8 +32,8 @@ tape('protocol wire message tests', async (t) => {
       baseProtocol.sendMessage(
         td.matchers.anything(),
         td.matchers.anything(),
-        td.matchers.anything()
-      )
+        td.matchers.anything(),
+      ),
     ).thenResolve(fromHexString('0x1234'))
     const res = await baseProtocol.sendMessage('enr', new Uint8Array(), ProtocolId.HistoryNetwork)
     st.deepEqual(res, fromHexString('0x1234'), 'sendMessage should return the response')
@@ -52,7 +52,7 @@ tape('protocol wire message tests', async (t) => {
     ])
     protocol.sendMessage = td.func<any>()
     td.when(
-      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
+      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
     ).thenResolve(pongResponse)
     const res = await protocol.sendPing(decodedEnr)
     st.equal(res?.enrSeq, 5n, 'received expected PONG response')
@@ -93,13 +93,13 @@ tape('protocol wire message tests', async (t) => {
     ])
     protocol.sendMessage = td.func<any>()
     td.when(
-      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
+      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
     ).thenResolve(findNodesResponse)
     let res = await protocol.sendFindNodes(decodedEnr.nodeId, [0, 1, 2])
     st.equals(res.total, 1, 'received 1 ENR from FINDNODES')
     res = await protocol.sendFindNodes(
       'c875efa288b97fce46c93adbeb05b25465acfe00121ec00f6db7f3bd883ac6f2',
-      []
+      [],
     )
     st.equals(res, undefined, 'received undefined when no valid NODES response received')
 
@@ -111,26 +111,26 @@ tape('protocol wire message tests', async (t) => {
       protocol.sendResponse(
         { socketAddr: multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
-        td.matchers.argThat((arg: Uint8Array) => arg.length > 3)
-      )
+        td.matchers.argThat((arg: Uint8Array) => arg.length > 3),
+      ),
     ).thenDo(() => st.pass('correctly handle findNodes message with ENRs'))
     td.when(
       protocol.sendResponse(
         { socketAddr: multiaddr(), nodeId: 'abc' },
         td.matchers.anything(),
-        td.matchers.argThat((arg: Uint8Array) => arg.length === 0)
-      )
+        td.matchers.argThat((arg: Uint8Array) => arg.length === 0),
+      ),
     ).thenDo(() => st.pass('correctly handle findNodes message with no ENRs'))
     td.when(node.discv5.enr.encode()).thenReturn(Uint8Array.from([0, 1, 2]))
     protocol.handleFindNodes(
       { socketAddr: multiaddr(), nodeId: 'abc' },
       1n,
-      findNodesMessageWithDistance
+      findNodesMessageWithDistance,
     )
     protocol.handleFindNodes(
       { socketAddr: multiaddr(), nodeId: 'abc' },
       1n,
-      findNodesMessageWithoutDistance
+      findNodesMessageWithoutDistance,
     )
   })
 
@@ -141,7 +141,7 @@ tape('protocol wire message tests', async (t) => {
     const protocol = baseProtocol as any
     let res = await protocol.sendOffer(
       'c875efa288b97fce46c93adbeb05b25465acfe00121ec00f6db7f3bd883ac6f2',
-      []
+      [],
     )
     st.equal(res, undefined, 'received undefined when no invalid ENR provided')
 
@@ -152,7 +152,7 @@ tape('protocol wire message tests', async (t) => {
     protocol.sendMessage = td.func<any>()
     const acceptResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 3])
     td.when(
-      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
+      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
     ).thenResolve(acceptResponse)
 
     protocol.handleNewRequest = td.func<any>()
@@ -162,18 +162,18 @@ tape('protocol wire message tests', async (t) => {
         peerId: td.matchers.contains('abc'),
         connectionId: td.matchers.anything(),
         contents: td.matchers.anything(),
-      })
+      }),
     ).thenResolve(ContentRequest.prototype)
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([1])])
     st.deepEqual(
       (res as BitArray).uint8Array,
       Uint8Array.from([1]),
-      'received valid ACCEPT response to OFFER'
+      'received valid ACCEPT response to OFFER',
     )
 
     const noWantResponse = Uint8Array.from([7, 229, 229, 6, 0, 0, 0, 0])
     td.when(
-      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything())
+      protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
     ).thenResolve(noWantResponse)
     res = await protocol.sendOffer(decodedEnr.nodeId, [Uint8Array.from([0])])
     st.equals(res, undefined, 'received undefined when no valid ACCEPT message received')
@@ -213,8 +213,8 @@ tape('handleFindNodes message handler tests', async (st) => {
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
         return msg.enrs.length === 1
-      })
-    )
+      }),
+    ),
   )
   st.pass('Nodes response contained no ENRs since should be nothing in table at distance 239')
 
@@ -232,8 +232,8 @@ tape('handleFindNodes message handler tests', async (st) => {
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
         return msg.enrs.length === 2
-      })
-    )
+      }),
+    ),
   )
   st.pass('Nodes response contained 2 ENRs since should be one node in each bucket')
   td.reset()
@@ -256,8 +256,8 @@ tape('handleFindNodes message handler tests', async (st) => {
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
         return msg.enrs.length === 3
-      })
-    )
+      }),
+    ),
   )
   st.pass('Nodes response contained 3 ENRs since one more ENR added to bucket 256')
 
@@ -272,10 +272,10 @@ tape('handleFindNodes message handler tests', async (st) => {
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
         return msg.enrs.length === 10
-      })
-    )
+      }),
+    ),
   )
   st.pass(
-    'Nodes response contained 10 ENRs even though requested nodes in 12 buckets since nodes max payload size met'
+    'Nodes response contained 10 ENRs even though requested nodes in 12 buckets since nodes max payload size met',
   )
 })

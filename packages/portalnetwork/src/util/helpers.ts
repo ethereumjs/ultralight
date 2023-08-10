@@ -147,7 +147,7 @@ export interface ExtendedTransactionResponse {}
  * @returns returns an ethers.providers.Block representation of the data
  */
 export const ethJsBlockToEthersBlockWithTxs = async (
-  block: ethJsBlock
+  block: ethJsBlock,
 ): Promise<ExtendedEthersBlockWithTransactions> => {
   debug.enable('ethJsBlockToEthersBlock')
   debug('ethJsBlockToEthersBlockWithTxns')('found a block')
@@ -265,7 +265,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
       nonce,
       baseFeePerGas,
     },
-    { ...options, setHardfork: true }
+    { ...options, setHardfork: true },
   )
 
   return blockHeader
@@ -281,7 +281,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
 export function blockFromRpc(
   blockParams: JsonRpcBlock,
   uncles: any[] = [],
-  options?: BlockOptions
+  options?: BlockOptions,
 ) {
   const header = blockHeaderFromRpc(blockParams, options)
 
@@ -297,6 +297,6 @@ export function blockFromRpc(
 
   return Block.fromBlockData(
     { header, transactions, uncleHeaders },
-    { ...options, setHardfork: true }
+    { ...options, setHardfork: true },
   )
 }

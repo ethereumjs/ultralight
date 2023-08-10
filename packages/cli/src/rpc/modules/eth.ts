@@ -46,7 +46,7 @@ export class eth {
     this.getBlockTransactionCountByHash = middleware(
       this.getBlockTransactionCountByHash.bind(this),
       1,
-      [[validators.hex, validators.blockHash]]
+      [[validators.hex, validators.blockHash]],
     )
 
     this.getUncleCountByBlockNumber = middleware(this.getUncleCountByBlockNumber.bind(this), 1, [
@@ -63,14 +63,14 @@ export class eth {
           fromBlock: validators.optional(validators.blockOption),
           toBlock: validators.optional(validators.blockOption),
           address: validators.optional(
-            validators.either(validators.array(validators.address), validators.address)
+            validators.either(validators.array(validators.address), validators.address),
           ),
           topics: validators.optional(
             validators.array(
               validators.optional(
-                validators.either(validators.hex, validators.array(validators.hex))
-              )
-            )
+                validators.either(validators.hex, validators.array(validators.hex)),
+              ),
+            ),
           ),
           blockHash: validators.optional(validators.blockHash),
         }),
@@ -96,18 +96,18 @@ export class eth {
   async getBlockByHash(params: [string, boolean]): Promise<Block> {
     const [blockHash, includeTransactions] = params
     this._client.logger(
-      `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
+      `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`,
     )
     await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
     const headerWithProof = await this._history.findContentLocally(
-      fromHexString(getContentKey(0, fromHexString(blockHash)))
+      fromHexString(getContentKey(0, fromHexString(blockHash))),
     )
     if (!headerWithProof) {
       throw new Error('Block not found')
     }
     const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
-      fromHexString(getContentKey(1, fromHexString(blockHash)))
+      fromHexString(getContentKey(1, fromHexString(blockHash))),
     )
     if (!body) {
       throw new Error('Block not found')
@@ -126,11 +126,11 @@ export class eth {
   async getBlockByNumber(params: [string, boolean]): Promise<Block> {
     const [blockNumber, includeTransactions] = params
     this.logger(
-      `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
+      `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`,
     )
     const block = await this._history.ETH.getBlockByNumber(
       parseInt(blockNumber),
-      includeTransactions
+      includeTransactions,
     )
     if (block === undefined) throw new Error('block not found')
     this.logger(block)
@@ -258,16 +258,16 @@ export class eth {
             (await this.getBlockByNumber([
               bigIntToHex(BigInt(i) + from.header.number),
               true,
-            ])) as Block
-        )
+            ])) as Block,
+        ),
       ) //@ts-ignore
       const logs = await getLogs(await blocks, addrs, formattedTopics)
       return await Promise.all(
         logs.map(
           (
-            { log, block, tx, txIndex, logIndex } //@ts-ignore
-          ) => jsonRpcLog(log, block, tx, txIndex, logIndex)
-        )
+            { log, block, tx, txIndex, logIndex }, //@ts-ignore
+          ) => jsonRpcLog(log, block, tx, txIndex, logIndex),
+        ),
       )
     } catch (error: any) {
       throw {

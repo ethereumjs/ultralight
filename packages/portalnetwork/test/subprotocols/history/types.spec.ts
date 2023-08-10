@@ -27,48 +27,48 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(blockHash))
+      concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(blockHash)),
     )
     let contentId = getContentId(ContentType.BlockHeader, blockHash)
     st.equals(
       toHexString(encodedKey),
       '0x00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
-      'blockheader content key equals expected output'
+      'blockheader content key equals expected output',
     )
     st.equals(
       contentId,
       '0x3e86b3767b57402ea72e369ae0496ce47cc15be685bec3b4726b9f316e3895fe',
-      'block header content ID matches'
+      'block header content ID matches',
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([ContentType.BlockBody]), fromHexString(blockHash))
+      concatBytes(Uint8Array.from([ContentType.BlockBody]), fromHexString(blockHash)),
     )
     contentId = getContentId(ContentType.BlockBody, blockHash)
     st.equals(
       toHexString(encodedKey),
       '0x01d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
-      'blockbody content key equals expected output'
+      'blockbody content key equals expected output',
     )
     st.equals(
       contentId,
       '0xebe414854629d60c58ddd5bf60fd72e41760a5f7a463fdcb169f13ee4a26786b',
-      'block body content ID matches'
+      'block body content ID matches',
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([ContentType.Receipt]), fromHexString(blockHash))
+      concatBytes(Uint8Array.from([ContentType.Receipt]), fromHexString(blockHash)),
     )
     contentId = getContentId(ContentType.Receipt, blockHash)
     st.equals(
       toHexString(encodedKey),
       '0x02d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
-      'receipt content key equals expected output'
+      'receipt content key equals expected output',
     )
     st.equals(
       contentId,
       '0xa888f4aafe9109d495ac4d4774a6277c1ada42035e3da5e10a04cc93247c04a4',
-      'receipt content ID matches'
+      'receipt content ID matches',
     )
     st.end()
   })
@@ -151,10 +151,10 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     ]
     const serializedReceipts = [
       fromHexString(
-        '0x02f9016d0164b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f866f864940000000000000000000000000000000000000000f842a00000000000000000000000000000000000000000000000000000000000000000a001010101010101010101010101010101010101010101010101010101010101018a00000000000000000000'
+        '0x02f9016d0164b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f866f864940000000000000000000000000000000000000000f842a00000000000000000000000000000000000000000000000000000000000000000a001010101010101010101010101010101010101010101010101010101010101018a00000000000000000000',
       ),
       fromHexString(
-        '0xf9016f008203e8b9010001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101f866f864940101010101010101010101010101010101010101f842a00101010101010101010101010101010101010101010101010101010101010101a001010101010101010101010101010101010101010101010101010101010101018a00000000000000000000'
+        '0xf9016f008203e8b9010001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101f866f864940101010101010101010101010101010101010101f842a00101010101010101010101010101010101010101010101010101010101010101a001010101010101010101010101010101010101010101010101010101010101018a00000000000000000000',
       ),
     ]
     const receipts = testReceiptData.map((r: any) => {
@@ -163,7 +163,7 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     const deserialized = Receipt.fromEncodedReceipt(serializedReceipts[0])
     st.deepEqual(
       receipts[0].encoded(), //@ts-ignore
-      Receipt.fromReceiptData(testReceiptData[0] as TxReceiptType).encoded()
+      Receipt.fromReceiptData(testReceiptData[0] as TxReceiptType).encoded(),
     )
     st.deepEqual(receipts[0].encoded(), serializedReceipts[0], 'Receipt decode test passed 1')
     st.deepEqual(deserialized.encoded(), receipts[0].encoded(), 'Receipt decode test passed 2')
@@ -180,22 +180,22 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     st.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[0]).logs,
       testReceiptData[0].logs,
-      'Decoded lgos from buffer'
+      'Decoded lgos from buffer',
     )
     st.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[0]).bitvector,
       testReceiptData[0].bitvector,
-      'Decoded bitvector from buffer'
+      'Decoded bitvector from buffer',
     )
     st.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[1]).logs,
       testReceiptData[1].logs,
-      'Decoded lgos from buffer'
+      'Decoded lgos from buffer',
     )
     st.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[1]).bitvector,
       testReceiptData[1].bitvector,
-      'Decoded bitvector from buffer'
+      'Decoded bitvector from buffer',
     )
 
     st.end()
@@ -208,7 +208,7 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
     encoding: 'hex',
   })
   const _historicalEpochs = HistoricalEpochsType.deserialize(
-    fromHexString(masterAccumulator).slice(4)
+    fromHexString(masterAccumulator).slice(4),
   )
   const MasterAccumulatorType = new ContainerType({
     historicalEpochs: HistoricalEpochsType,
@@ -219,12 +219,12 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
   t.deepEqual(
     fromHexString(masterAccumulator),
     serialized_container,
-    'Serialized Container matches MasterAccumulator'
+    'Serialized Container matches MasterAccumulator',
   )
 
   const actualEpoch = readFileSync(
     './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
-    { encoding: 'hex' }
+    { encoding: 'hex' },
   )
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
@@ -254,20 +254,20 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
       witnesses: headerWithProof.proof.value!,
       leaf: deserializedHeader.hash(),
     },
-    fromHexString(epochHash)
+    fromHexString(epochHash),
   )
   t.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
   t.equal(
     toHexString(EpochAccumulator.hashTreeRoot(actual_Epoch)),
     epochHash,
-    'stored epoch hash matches valid epoch'
+    'stored epoch hash matches valid epoch',
   )
   const total_difficulty = new UintBigintType(32).deserialize(headerWithProof.proof.value![0])
   const total_difficulty2 = new UintBigintType(32).deserialize(headerWithProof2.proof.value![0])
   t.equal(
     total_difficulty2 - total_difficulty,
     deserializedHeader2.difficulty,
-    'deserialized headers have valid difficulty'
+    'deserialized headers have valid difficulty',
   )
   t.equal(deserializedHeader.number, 1000001n, 'deserialized header number matches test vector')
   t.equal(contentKey, testData[1000001].content_key, 'generated expected content key')

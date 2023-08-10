@@ -104,7 +104,7 @@ export type rlpReceipt = [
   postStateOrStatus: Uint8Array,
   cumulativeGasUsed: Uint8Array,
   bitvector: Uint8Array,
-  logs: Log[]
+  logs: Log[],
 ]
 
 /**
@@ -133,7 +133,7 @@ export const HeaderRecordType = new ContainerType({
 export const HistoricalEpochType = Bytes32Type
 export const HistoricalEpochsType = new ListCompositeType(
   HistoricalEpochType,
-  MAX_HISTORICAL_EPOCHS
+  MAX_HISTORICAL_EPOCHS,
 )
 export const EpochAccumulator = new ListCompositeType(HeaderRecordType, EPOCH_SIZE)
 export const MasterAccumulatorType = new ContainerType({

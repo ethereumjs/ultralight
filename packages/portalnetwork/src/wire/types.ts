@@ -119,7 +119,7 @@ export type MessageTypeUnion = [
   | FindContentMessage
   | ContentMessage
   | OfferMessage
-  | AcceptMessage
+  | AcceptMessage,
 ]
 export const PortalWireMessageType = new UnionType([
   PingMessageType,

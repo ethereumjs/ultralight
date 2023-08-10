@@ -18,7 +18,7 @@ export class DBManager {
     logger: Debugger,
     currentSize: () => Promise<number>,
     sublevels: ProtocolId[] = [],
-    db?: AbstractLevel<string>
+    db?: AbstractLevel<string>,
   ) {
     //@ts-ignore Because level doesn't know how to get along with itself
     this.db = db ?? new MemoryLevel()

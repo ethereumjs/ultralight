@@ -84,7 +84,7 @@ export async function saveReceipts(block: Block): Promise<Uint8Array> {
       (r as PreByzantiumTxReceipt).stateRoot ?? intToBytes((r as PostByzantiumTxReceipt).status),
       bigIntToBytes(r.cumulativeBlockGasUsed),
       RLP.encode(r.logs),
-    ])
+    ]),
   )
 }
 
@@ -92,7 +92,7 @@ export async function getReceipts(
   encoded: string,
   body?: string,
   calcBloom?: boolean,
-  includeTxType?: true
+  includeTxType?: true,
 ): Promise<TxReceipt[] | TxReceiptWithType[]> {
   if (!encoded) return []
   let receipts = decodeReceipts(fromHexString(encoded))
@@ -115,7 +115,7 @@ export async function getReceipts(
 export async function getLogs(
   blocks: Block[],
   addresses?: Uint8Array[],
-  topics: (Uint8Array | Uint8Array[] | null)[] = []
+  topics: (Uint8Array | Uint8Array[] | null)[] = [],
 ): Promise<GetLogsReturn> {
   const returnedLogs: GetLogsReturn = []
   let returnedLogsSize = 0
@@ -133,7 +133,7 @@ export async function getLogs(
             tx: block!.transactions[receiptIndex],
             txIndex: receiptIndex,
             logIndex: logIndex++,
-          }))
+          })),
         )
     }
     if (addresses && addresses.length > 0) {

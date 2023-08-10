@@ -44,7 +44,7 @@ tape('message encoding should match test vectors', (t) => {
   t.isEqual(
     Buffer.from(payload).toString('hex'),
     testVector,
-    'nodes message with no ENRs encoded correctly'
+    'nodes message with no ENRs encoded correctly',
   )
 
   // Validate NODES message encoding
@@ -67,7 +67,7 @@ tape('message encoding should match test vectors', (t) => {
   t.isEqual(
     Buffer.from(payload).toString('hex'),
     testVector,
-    'nodes message with 2 ENRs encoded correctly'
+    'nodes message with 2 ENRs encoded correctly',
   )
 
   // Validate FINDCONTENT message encoding
@@ -80,7 +80,7 @@ tape('message encoding should match test vectors', (t) => {
   t.isEqual(
     Buffer.from(payload).toString('hex'),
     testVector,
-    'find content message encoded correctly'
+    'find content message encoded correctly',
   )
 
   // Validate CONTENT message encoding

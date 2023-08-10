@@ -18,12 +18,12 @@ import { bytesToHex, concatBytes } from '@ethereumjs/util'
 tape('utility functions', (t) => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
   const block1headerContentKey = ContentKeyType.serialize(
-    concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(block1Hash))
+    concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(block1Hash)),
   )
   t.equal(
     getContentId(ContentType.BlockHeader, block1Hash),
     serializedContentKeyToContentId(block1headerContentKey),
-    'produced same content id'
+    'produced same content id',
   )
   t.equal(blockNumberToGindex(1000n), 34768n, 'blockNumberToGindex returned correct gindex')
   t.equal(blockNumberToGindex(9192n), 34768n, 'blockNumberToGindex returned correct gindex')
@@ -32,22 +32,22 @@ tape('utility functions', (t) => {
   t.equal(
     toHexString(epochRootByBlocknumber(1000n)),
     '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
-    'epochRootByBlocknumber returned correct epoch root'
+    'epochRootByBlocknumber returned correct epoch root',
   )
   t.equal(
     toHexString(epochRootByIndex(0)),
     '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
-    'epochRootByIndex returned correct epoch root'
+    'epochRootByIndex returned correct epoch root',
   )
   t.equal(
     toHexString(epochRootByBlocknumber(9192n)),
     '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
-    'epochRootByBlocknumber returned correct epoch root'
+    'epochRootByBlocknumber returned correct epoch root',
   )
   t.equal(
     toHexString(epochRootByIndex(1)),
     '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
-    'epochRootByIndex returned correct epoch root'
+    'epochRootByIndex returned correct epoch root',
   )
 
   t.end()
@@ -65,7 +65,7 @@ tape('BlockBody ssz serialization/deserialization', (t) => {
   t.equal(
     bytesToHex(block.header.hash()),
     bytesToHex(reassembledBlock.header.hash()),
-    'was able to ssz serialize and deserialize a block'
+    'was able to ssz serialize and deserialize a block',
   )
   t.end()
 })

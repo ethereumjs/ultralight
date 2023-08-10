@@ -68,7 +68,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
       config.peerId = await peerIdFromKeys(
         fromHexString(prevPublicKey),
-        fromHexString(prevPrivateKey)
+        fromHexString(prevPrivateKey),
       )
 
       config.enr = SignableENR.decodeTxt(prevEnrString, createKeypairFromPeerId(config.peerId))
@@ -172,7 +172,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger,
       opts.dbSize,
       opts.supportedProtocols,
-      opts.db
+      opts.db,
     ) as DBManager
     opts.supportedProtocols = opts.supportedProtocols ?? []
     for (const protocol of opts.supportedProtocols) {
@@ -244,7 +244,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
         protocol.protocolId,
-        setInterval(() => protocol.bucketRefresh(), 30000)
+        setInterval(() => protocol.bucketRefresh(), 30000),
       )
     }
   }
@@ -316,7 +316,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const protocol = this.protocols.get(toHexString(message.protocol) as ProtocolId)
     if (!protocol) {
       this.logger(
-        `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`
+        `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`,
       )
       await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
 
@@ -340,7 +340,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     src: INodeAddress,
     srcId: NodeId,
     msg: ITalkReqMessage,
-    packetBuffer: Buffer
+    packetBuffer: Buffer,
   ) => {
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     await this.uTP.handleUtpPacket(packetBuffer, srcId)
@@ -357,7 +357,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     enr: ENR | string,
     payload: Uint8Array,
     protocolId: ProtocolId,
-    utpMessage?: boolean
+    utpMessage?: boolean,
   ): Promise<Uint8Array> => {
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
@@ -384,7 +384,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const res = await this.discv5.sendTalkReq(
         nodeAddr,
         Buffer.from(payload),
-        fromHexString(messageProtocol)
+        fromHexString(messageProtocol),
       )
       return res
     } catch (err: any) {
@@ -399,7 +399,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendPortalNetworkResponse = async (
     src: INodeAddress,
     requestId: bigint,
-    payload: Uint8Array
+    payload: Uint8Array,
   ) => {
     this.discv5.sendTalkResp(src, requestId, payload)
   }

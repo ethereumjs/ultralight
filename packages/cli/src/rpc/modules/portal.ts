@@ -160,7 +160,7 @@ export class portal {
     const [enrs] = params
     const encodedENRs = enrs.map((enr) => ENR.decodeTxt(enr))
     const shortEnrs = Object.fromEntries(
-      encodedENRs.map((enr, idx) => [idx, enr.nodeId.slice(0, 15) + '...'])
+      encodedENRs.map((enr, idx) => [idx, enr.nodeId.slice(0, 15) + '...']),
     )
     this.logger(`portal_historyAddEnrs request received for ${shortEnrs}`)
     const added: number[] = []
@@ -270,7 +270,7 @@ export class portal {
       await this._client.sendPortalNetworkResponse(
         { nodeId: enr.nodeId, socketAddr: enr.getLocationMultiaddr('udp')! },
         BigInt(requestId),
-        Buffer.from(pongMsg)
+        Buffer.from(pongMsg),
       )
     } catch {
       return false
@@ -335,7 +335,7 @@ export class portal {
           socketAddr: enr.getLocationMultiaddr('udp')!,
         },
         BigInt(requestId),
-        Uint8Array.from(encodedPayload)
+        Uint8Array.from(encodedPayload),
       )
 
       return enrs.length > 0 ? 1 : 0
@@ -387,7 +387,7 @@ export class portal {
                   clearTimeout(timeout)
                   resolve(value)
                 }
-              }
+              },
             )
           })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
@@ -414,7 +414,7 @@ export class portal {
     this._client.sendPortalNetworkResponse(
       { nodeId, socketAddr: enr?.getLocationMultiaddr('udp')! },
       enr!.seq,
-      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])
+      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]),
     )
     return '0x' + enr!.seq.toString(16)
   }
@@ -440,7 +440,7 @@ export class portal {
     await this._history.store(
       contentKey.contentType,
       contentKey.blockHash,
-      fromHexString(contentValueHex)
+      fromHexString(contentValueHex),
     )
     const res = await this._history.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
     return res
@@ -480,7 +480,7 @@ export class portal {
         socketAddr: _enr.getLocationMultiaddr('udp')!,
       },
       myEnr.seq,
-      Buffer.from(encodedPayload)
+      Buffer.from(encodedPayload),
     )
 
     return '0x' + myEnr.seq.toString(16)
@@ -496,7 +496,7 @@ export class portal {
       await this._history.store(
         contentKey[0] as ContentType,
         toHexString(contentKey.slice(1)),
-        content
+        content,
       )
       return true
     } catch {

@@ -2,7 +2,11 @@ import debug, { Debugger } from 'debug'
 import { EventEmitter } from 'events'
 import { Multiaddr } from '@multiformats/multiaddr'
 import { IPacket } from '@chainsafe/discv5/packet'
-import { IPMode, ITransportEvents, ITransportService } from '@chainsafe/discv5/lib/transport/types.js'
+import {
+  IPMode,
+  ITransportEvents,
+  ITransportService,
+} from '@chainsafe/discv5/lib/transport/types.js'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import { WebSocketTransportService } from '../index.js'
 import { WakuPortal } from './waku.js'
@@ -27,7 +31,7 @@ export class HybridTransportService
   private log: Debugger
   ipMode: IPMode = {
     ip4: true,
-    ip6: false
+    ip6: false,
   }
   bindAddrs: Multiaddr[] = []
   public nodeId: string
@@ -150,8 +154,8 @@ export class HybridTransportService
       port: this.bindAddrs[0].nodeAddress().port,
       ip: {
         type: 4,
-        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
-      }
+        octets: nodeAddr[0][1] ?? new Uint8Array([0, 0, 0, 0]),
+      },
     }
   }
 }

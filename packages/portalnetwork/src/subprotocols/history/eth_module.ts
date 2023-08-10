@@ -19,10 +19,10 @@ export class ETH {
   }
   public getBlockByHash = async (
     blockHash: string,
-    includeTransactions: boolean
+    includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     const headerContentKey = fromHexString(
-      getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
+      getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
     )
 
     const bodyContentKey = includeTransactions
@@ -45,7 +45,7 @@ export class ETH {
           BlockBodyContentType.serialize({
             allTransactions: [],
             sszUncles: Uint8Array.from([]),
-          })
+          }),
         )
         return block
       } else {
@@ -63,7 +63,7 @@ export class ETH {
 
   public getBlockByNumber = async (
     blockNumber: number | bigint,
-    includeTransactions: boolean
+    includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     let blockHash
     const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
@@ -73,7 +73,7 @@ export class ETH {
 
     if (result instanceof Uint8Array) {
       this.protocol.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-        `Found EpochAccumulator with header record for block ${blockNumber}`
+        `Found EpochAccumulator with header record for block ${blockNumber}`,
       )
       const epoch = EpochAccumulator.deserialize(result)
       blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)

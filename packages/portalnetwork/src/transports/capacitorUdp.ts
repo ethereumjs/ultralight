@@ -2,9 +2,14 @@ import { EventEmitter } from 'events'
 import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { UDP } from '@frontall/capacitor-udp'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
-import { IPMode, IRemoteInfo, ITransportService, TransportEventEmitter } from '@chainsafe/discv5/transport'
+import {
+  IPMode,
+  IRemoteInfo,
+  ITransportService,
+  TransportEventEmitter,
+} from '@chainsafe/discv5/transport'
 import { BaseENR } from '@chainsafe/discv5'
-import { SocketAddress } from '@chainsafe/discv5/lib/util/ip'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
@@ -24,7 +29,7 @@ export class CapacitorUDPTransportService
   bindAddrs: Multiaddr[] = []
   ipMode: IPMode = {
     ip4: true,
-    ip6: false
+    ip6: false,
   }
   public constructor(multiaddr: Multiaddr, srcId: string) {
     //eslint-disable-next-line constructor-super
@@ -68,7 +73,7 @@ export class CapacitorUDPTransportService
 
   public handleIncoming = (data: Uint8Array, rinfo: IRemoteInfo): void => {
     const multiaddr = ma(
-      `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
+      `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
     try {
       const packet = decodePacket(this.srcId, Buffer.from(data))
@@ -84,8 +89,8 @@ export class CapacitorUDPTransportService
       port: this.bindAddrs[0].nodeAddress().port,
       ip: {
         type: 4,
-        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
-      }
+        octets: nodeAddr[0][1] ?? new Uint8Array([0, 0, 0, 0]),
+      },
     }
   }
 }

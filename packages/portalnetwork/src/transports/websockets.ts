@@ -11,7 +11,7 @@ import {
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
-import { SocketAddress } from '@chainsafe/discv5/lib/util/ip'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
 import { BaseENR } from '@chainsafe/discv5'
 const log = debug('discv5:transport')
 
@@ -36,7 +36,7 @@ export class WebSocketTransportService
   private log: Debugger
   ipMode: IPMode = {
     ip4: true,
-    ip6: false
+    ip6: false,
   }
   bindAddrs: Multiaddr[] = []
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
@@ -99,10 +99,10 @@ export class WebSocketTransportService
   public handleIncoming = (data: Uint8Array): void => {
     const rinfoLength = parseInt(data.slice(0, 2).toString())
     const rinfo = JSON.parse(
-      new TextDecoder().decode(data.slice(2, rinfoLength + 2))
+      new TextDecoder().decode(data.slice(2, rinfoLength + 2)),
     ) as IRemoteInfo
     const multiaddr = ma(
-      `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
+      `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
     const packetBuf = Buffer.from(data.slice(2 + rinfoLength))
     try {
@@ -119,8 +119,8 @@ export class WebSocketTransportService
       port: this.bindAddrs[0].nodeAddress().port,
       ip: {
         type: 4,
-        octets: nodeAddr[0][1] ?? new Uint8Array([0,0,0,0])
-      }
+        octets: nodeAddr[0][1] ?? new Uint8Array([0, 0, 0, 0]),
+      },
     }
   }
 }

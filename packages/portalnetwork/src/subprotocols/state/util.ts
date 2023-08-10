@@ -107,8 +107,8 @@ export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>
       return Uint8Array.from(
         bigIntToBytes(
           BigInt(toHexString(sha256(opts.address.toBytes()))) +
-            (BigInt(toHexString(sha256(bigIntToBytes(opts.slot)))) % MODULO)
-        )
+            (BigInt(toHexString(sha256(bigIntToBytes(opts.slot)))) % MODULO),
+        ),
       )
     }
     case StateNetworkContentType.ContractByteCode: {

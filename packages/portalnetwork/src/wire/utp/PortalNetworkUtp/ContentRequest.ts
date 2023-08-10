@@ -57,7 +57,7 @@ export class ContentRequest {
     await this.socket.sendSynPacket(
       this.requestCode === RequestCode.OFFER_WRITE
         ? this.socket.sndConnectionId
-        : this.socket.rcvConnectionId
+        : this.socket.rcvConnectionId,
     )
     this.socket.state = ConnectionState.SynSent
   }

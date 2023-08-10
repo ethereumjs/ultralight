@@ -97,10 +97,10 @@ export class AccumulatorManager {
       fromHexString(
         await this._history.get(
           this._history.protocolId,
-          getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-        )
+          getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+        ),
       ),
-      { setHardfork: true }
+      { setHardfork: true },
     )
     try {
       const _proof: SingleProof = {
@@ -119,7 +119,7 @@ export class AccumulatorManager {
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.get(
       this._history.protocolId,
-      getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
+      getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
     )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
@@ -139,9 +139,9 @@ export class AccumulatorManager {
               this._history.protocolId,
               getContentKey(
                 ContentType.EpochAccumulator,
-                this.headerAccumulator.historicalEpochs[epochIdx - 1]
-              )
-            )
+                this.headerAccumulator.historicalEpochs[epochIdx - 1],
+              ),
+            ),
           )
     const epochView = EpochAccumulator.deserializeToView(epoch)
     const proof = createProof(epochView.node, {
@@ -161,10 +161,10 @@ export class AccumulatorManager {
       fromHexString(
         await this._history.get(
           this._history.protocolId,
-          getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-        )
+          getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+        ),
       ),
-      { setHardfork: true }
+      { setHardfork: true },
     )
     const epochIndex = Math.ceil(Number(header.number) / 8192)
     const listIndex = Number(header.number) % 8192
@@ -175,9 +175,9 @@ export class AccumulatorManager {
         fromHexString(
           await this._history.get(
             this._history.protocolId,
-            getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1])
-          )
-        )
+            getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1]),
+          ),
+        ),
       )
       return epoch[listIndex]
     }

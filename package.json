@@ -30,6 +30,6 @@
     "eslint-formatter-codeframe": "^7.32.1",
     "eslint-plugin-implicit-dependencies": "^1.1.1",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^4.2.1"
+    "eslint-plugin-prettier": "^5.0.0"
   }
 }

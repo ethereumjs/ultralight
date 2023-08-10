@@ -32,7 +32,7 @@ tape('Test provider functionality', async (t) => {
     return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
   }
   const block2 = await provider.getBlock(
-    '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9'
+    '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9',
   )
   t.equal(block2.number, 2, 'got block 2 from portal network')
   await (provider as any).portal.stop()

@@ -129,12 +129,12 @@ export const jsonRpcTx = (tx: TypedTransaction, block?: Block, txIndex?: number)
 export const jsonRpcBlock = async (
   block: Block,
   //   chain: Chain,
-  includeTransactions: boolean
+  includeTransactions: boolean,
 ): Promise<JsonRpcBlock> => {
   const json = block.toJSON()
   const header = json!.header!
   const transactions = block.transactions.map((tx, txIndex) =>
-    includeTransactions ? jsonRpcTx(tx, block, txIndex) : bytesToHex(tx.hash())
+    includeTransactions ? jsonRpcTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )
   //   const td = await chain.getTd(block.hash(), block.header.number)
   return {
@@ -170,7 +170,7 @@ export const jsonRpcLog = async (
   block?: Block,
   tx?: TypedTransaction,
   txIndex?: number,
-  logIndex?: number
+  logIndex?: number,
 ): Promise<JsonRpcLog> => ({
   removed: false, // TODO implement
   logIndex: logIndex !== undefined ? intToHex(logIndex) : null,
@@ -194,7 +194,7 @@ export const jsonRpcReceipt = async (
   tx: TypedTransaction,
   txIndex: number,
   logIndex: number,
-  contractAddress?: Address
+  contractAddress?: Address,
 ): Promise<JsonRpcReceipt> => ({
   transactionHash: bytesToHex(tx.hash()),
   transactionIndex: intToHex(txIndex),
@@ -207,7 +207,7 @@ export const jsonRpcReceipt = async (
   gasUsed: bigIntToHex(gasUsed),
   contractAddress: contractAddress?.toString() ?? null,
   logs: await Promise.all(
-    receipt.logs.map((l: Log, i: number) => jsonRpcLog(l, block, tx, txIndex, logIndex + i))
+    receipt.logs.map((l: Log, i: number) => jsonRpcLog(l, block, tx, txIndex, logIndex + i)),
   ),
   logsBloom: bytesToHex(receipt.bitvector),
   root:

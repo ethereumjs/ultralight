@@ -91,7 +91,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
         decodedBody.txsRlp as TransactionsBytes,
         rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBytes,
       ] as BlockBytes,
-      { setHardfork: true }
+      { setHardfork: true },
     )
     return block
   } else {
@@ -115,7 +115,7 @@ export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
   protocol: HistoryProtocol,
-  witnesses?: Witnesses
+  witnesses?: Witnesses,
 ) => {
   const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
@@ -147,8 +147,8 @@ export const addRLPSerializedBlock = async (
     sszEncodeBlockBody(
       Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
         setHardfork: true,
-      })
-    )
+      }),
+    ),
   )
 }
 

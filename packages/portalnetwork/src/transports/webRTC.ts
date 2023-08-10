@@ -137,7 +137,7 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
       if (dataChat1.type === 'handshake' && dataChat1.userId !== this.nodeId) {
         this.emit('handshake', dataChat1.userId, dataChat1.data)
         this.log.extend('DATACHANNEL').extend(channel.label.slice(0, 8)).extend('HANDSHAKE')(
-          `${dataChat1.userId.slice(0, 10)}: ${dataChat1.data.slice(0, 10)}`
+          `${dataChat1.userId.slice(0, 10)}: ${dataChat1.data.slice(0, 10)}`,
         )
         this.nodeIdToRtcId.set(dataChat1.userId, dataChat1.data)
       }
@@ -185,7 +185,7 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
 
     peer.rtcPeer.oniceconnectionstatechange = (event) => {
       this.log.extend(userId.slice(0, 8)).extend('ICE')(
-        'Connection State Change: ' + JSON.stringify(event)
+        'Connection State Change: ' + JSON.stringify(event),
       )
     }
     this.log.extend('HANDLE_NEW_MEMBER')(`Adding ${userId.slice(0, 10)} to RTC Routing Table`)
@@ -205,7 +205,7 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
 
   async handleOffer(message: { userId: string; data: string }) {
     this.log.extend('HANDLE_OFFER')(
-      `Creating new RTC Peer Connection with ${message.userId.slice(0, 10)} from OFFER message`
+      `Creating new RTC Peer Connection with ${message.userId.slice(0, 10)} from OFFER message`,
     )
     const peer = await this.newPeer()
     peer.rtcPeer.ondatachannel = (e) => {
@@ -266,12 +266,12 @@ export default class WebRTC extends EventEmitter implements IWebRTC {
 
   async handleAnswer(message: { userId: string; data: string }) {
     this.log.extend('HANDLE_ANSWER')(
-      `Setting remote description for ${message.userId.slice(0, 10)}`
+      `Setting remote description for ${message.userId.slice(0, 10)}`,
     )
     const peer = this.getPeer(message.userId)
     peer &&
       (await peer.rtcPeer.setRemoteDescription(
-        new RTCSessionDescription({ type: 'answer', sdp: message.data })
+        new RTCSessionDescription({ type: 'answer', sdp: message.data }),
       ))
   }
 

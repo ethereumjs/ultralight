@@ -78,7 +78,7 @@ export class NodeLookup {
       this.log(
         `finished node lookup for ${shortId(this.nodeSought)} and found ${
           newPeers.length
-        } new peers`
+        } new peers`,
       )
     for await (const enr of newPeers) {
       // Add all newly found peers to the subprotocol routing table

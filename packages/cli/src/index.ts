@@ -106,7 +106,7 @@ const main = async () => {
       allowUnverifiedSessions: true,
     },
     bindAddrs: {
-      ip4: initMa
+      ip4: initMa,
     },
   } as any
   const portal = await PortalNetwork.create({

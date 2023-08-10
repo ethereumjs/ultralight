@@ -29,7 +29,7 @@ const privateKeys = [
 const testBlockData = require('../testData/testBlocks.json')
 const epoch25 = readFileSync(
   './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
-  { encoding: 'hex' }
+  { encoding: 'hex' },
 )
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
   return Block.fromRLPSerializedBlock(fromHexString(testBlock.rlp), {
@@ -57,8 +57,8 @@ tape('gossip test', async (t) => {
     supportedProtocols: [ProtocolId.HistoryNetwork],
     config: {
       enr: enr1,
-      bindAddrs:{
-        ip4: initMa
+      bindAddrs: {
+        ip4: initMa,
       },
       peerId: id1,
     },
@@ -82,15 +82,15 @@ tape('gossip test', async (t) => {
   await protocol1?.sendPing(protocol2?.enr!.toENR())
   t.equal(
     protocol1?.routingTable.getWithPending(
-      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed'
+      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     )?.value.nodeId,
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
-    'node1 added node2 to routing table'
+    'node1 added node2 to routing table',
   )
   await protocol1.store(
     ContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    fromHexString(epoch25)
+    fromHexString(epoch25),
   )
   // await protocol2.store(
   //   ContentType.EpochAccumulator,
@@ -99,10 +99,10 @@ tape('gossip test', async (t) => {
   // )
   t.equal(
     await protocol1.retrieve(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
     '0x' + epoch25,
-    'epoch 25 added'
+    'epoch 25 added',
   )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
     const proof = await protocol1.generateInclusionProof(testBlock.header.number)
@@ -188,14 +188,14 @@ tape('FindContent', async (t) => {
   await protocol1.store(
     ContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    fromHexString(epoch25)
+    fromHexString(epoch25),
   )
   t.equal(
     await protocol1.retrieve(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
     '0x' + epoch25,
-    'epoch 25 added'
+    'epoch 25 added',
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
   await protocol1.sendPing(protocol2?.enr!.toENR())
@@ -203,8 +203,8 @@ tape('FindContent', async (t) => {
   await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
     fromHexString(
-      getContentKey(ContentType.BlockHeader, fromHexString(testBlockData[29].blockHash))
-    )
+      getContentKey(ContentType.BlockHeader, fromHexString(testBlockData[29].blockHash)),
+    ),
   )
   await new Promise((resolve) => {
     protocol2.on('ContentAdded', async (key, contentType, content) => {
@@ -216,7 +216,7 @@ tape('FindContent', async (t) => {
         t.equal(
           toHexString(header.hash()),
           testBlockData[29].blockHash,
-          'retrieved expected header'
+          'retrieved expected header',
         )
         node2.removeAllListeners()
         await node1.stop()
@@ -256,7 +256,7 @@ tape('eth_getBlockByHash', async (t) => {
     config: {
       enr: enr2,
       bindAddrs: {
-        ip4: initMa2
+        ip4: initMa2,
       },
       peerId: id2,
     },
@@ -269,14 +269,14 @@ tape('eth_getBlockByHash', async (t) => {
   await protocol1.store(
     ContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    fromHexString(epoch25)
+    fromHexString(epoch25),
   )
   t.equal(
     await protocol1.retrieve(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'
+      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
     '0x' + epoch25,
-    'epoch 25 added'
+    'epoch 25 added',
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
   await protocol1.sendPing(protocol2?.enr!.toENR())
@@ -305,7 +305,7 @@ tape('eth_getBlockByNumber', async (t) => {
     config: {
       enr: enr1,
       bindAddrs: {
-        ip4: initMa
+        ip4: initMa,
       },
       peerId: id1,
     },

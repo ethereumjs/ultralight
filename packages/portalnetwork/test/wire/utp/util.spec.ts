@@ -49,7 +49,7 @@ tape('uTP utils tests', (t) => {
     const encoded = encodeWithVariantPrefix(contents)
     st.ok(
       encoded.length > totalLength,
-      `Length should be greater with prefixes...${encoded.length} > ${totalLength}`
+      `Length should be greater with prefixes...${encoded.length} > ${totalLength}`,
     )
     const c = contents[0]
     const ci = attatchPrefix(c)
@@ -63,14 +63,14 @@ tape('uTP utils tests', (t) => {
     st.deepEqual(
       contents.length,
       decoded.length,
-      `decoded array is same length as original, ${contents.length} = ${decoded.length}`
+      `decoded array is same length as original, ${contents.length} = ${decoded.length}`,
     )
     st.deepEqual(
       contents[0],
       decoded[0],
       `first item matches, "${toHexString(contents[0]).slice(0, 5)}..." === "${toHexString(
-        decoded[0]
-      ).slice(0, 5)}..."`
+        decoded[0],
+      ).slice(0, 5)}..."`,
     )
     st.deepEqual(contents, decoded, `Whole content array successfully encoded/decoded`)
 

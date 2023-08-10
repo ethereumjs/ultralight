@@ -87,7 +87,7 @@ export class HistoryProtocol extends BaseProtocol {
     this.put(
       this.protocolId,
       getContentKey(ContentType.BlockHeader, fromHexString(contentHash)),
-      toHexString(value)
+      toHexString(value),
     )
   }
 
@@ -141,7 +141,7 @@ export class HistoryProtocol extends BaseProtocol {
           }
           case FoundContent.CONTENT:
             this.logger(
-              `received ${ContentType[contentType]} content corresponding to ${contentHash}`
+              `received ${ContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
               await this.store(contentType, contentHash, decoded.value as Uint8Array)
@@ -171,7 +171,7 @@ export class HistoryProtocol extends BaseProtocol {
   public store = async (
     contentType: ContentType,
     hashKey: string,
-    value: Uint8Array
+    value: Uint8Array,
   ): Promise<void> => {
     if (contentType === ContentType.BlockBody) {
       await this.addBlockBody(value, hashKey)
@@ -185,7 +185,7 @@ export class HistoryProtocol extends BaseProtocol {
       this.put(
         this.protocolId,
         getContentKey(contentType, fromHexString(hashKey)),
-        toHexString(value)
+        toHexString(value),
       )
     }
     this.emit('ContentAdded', hashKey, contentType, toHexString(value))
@@ -262,7 +262,7 @@ export class HistoryProtocol extends BaseProtocol {
   public verifyInclusionProof(
     witnesses: Uint8Array[],
     blockHash: string,
-    blockNumber: bigint
+    blockNumber: bigint,
   ): boolean {
     const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
     const proof: Proof = {
