@@ -4,7 +4,6 @@
   "workspaces": [
     "./packages/portalnetwork",
     "./packages/cli",
-    "./packages/browser-client",
     "./packages/proxy"
   ],
   "engines": {
