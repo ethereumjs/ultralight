@@ -18,7 +18,7 @@ import {
 import { createRequire } from 'module'
 import { EventEmitter } from 'events'
 import { SignableENR } from '@chainsafe/discv5'
-import { bytesToPrefixedHexString } from '@ethereumjs/util'
+import { bytesToHex } from '@ethereumjs/util'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -32,7 +32,7 @@ const epoch25 = readFileSync(
   { encoding: 'hex' }
 )
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
-  return Block.fromRLPSerializedBlock(Buffer.from(fromHexString(testBlock.rlp)), {
+  return Block.fromRLPSerializedBlock(fromHexString(testBlock.rlp), {
     setHardfork: true,
   })
 })
@@ -122,14 +122,11 @@ tape('gossip test', async (t) => {
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
-      const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
+      const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
         setHardfork: true,
       })
-      t.ok(
-        testHashStrings.includes(bytesToPrefixedHexString(header.hash())),
-        'node 2 found expected header'
-      )
-      if (bytesToPrefixedHexString(header.hash()) === testHashStrings[6]) {
+      t.ok(testHashStrings.includes(bytesToHex(header.hash())), 'node 2 found expected header')
+      if (bytesToHex(header.hash()) === testHashStrings[6]) {
         t.pass('found expected last header')
         node2.removeAllListeners()
         await node1.stop()
@@ -205,7 +202,7 @@ tape('FindContent', async (t) => {
     protocol2.on('ContentAdded', async (key, contentType, content) => {
       if (contentType === 0) {
         const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
-        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(headerWithProof.header), {
+        const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
           setHardfork: true,
         })
         t.equal(
