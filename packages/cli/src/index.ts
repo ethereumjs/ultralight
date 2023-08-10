@@ -105,7 +105,9 @@ const main = async () => {
       addrVotesToUpdateEnr: 5,
       allowUnverifiedSessions: true,
     },
-    multiaddr: initMa,
+    bindAddrs: {
+      ip4: initMa
+    },
   } as any
   const portal = await PortalNetwork.create({
     config: config,
