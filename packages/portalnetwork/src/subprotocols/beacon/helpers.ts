@@ -14,9 +14,9 @@ export const syncAggregateFromJson = (data: any) => {
   return {
     syncCommitteeBits: new BitArray(
       new Uint8Array(
-        Array.from(BigInt(data.sync_committee_bits).toString(2)).map((el) => parseInt(el))
+        Array.from(BigInt(data.sync_committee_bits).toString(2)).map((el) => parseInt(el)),
       ),
-      256 //  TODO: Fix this so Bitlength is equal to SYNC_COMMITTEE_SIZE - 512
+      256, //  TODO: Fix this so Bitlength is equal to SYNC_COMMITTEE_SIZE - 512
     ),
     syncCommitteeSignature: fromHexString(data.sync_committee_signature),
   }

@@ -29,7 +29,7 @@ tape('Header Record Proof tests', (t) => {
     './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
     {
       encoding: 'hex',
-    }
+    },
   )
   const block1000 = require('../../testData/testBlock1000.json')
   const headerRecord1000 = {
@@ -38,18 +38,15 @@ tape('Header Record Proof tests', (t) => {
   }
   const historicalEpochs = HistoricalEpochsType.deserialize(fromHexString(accumulator))
   const epoch = EpochAccumulator.deserialize(fromHexString(epoch_hex))
-  const header = BlockHeader.fromRLPSerializedHeader(
-    Buffer.from(fromHexString(block1000.rawHeader)),
-    {
-      hardforkByBlockNumber: true,
-    }
-  )
+  const header = BlockHeader.fromRLPSerializedHeader(fromHexString(block1000.rawHeader), {
+    setHardfork: true,
+  })
   t.test('Test Data is valid', (st) => {
     st.equal(historicalEpochs.length, 1897, 'Accumulator contains 1897 historical epochs')
     st.equal(
       toHexString(EpochAccumulator.hashTreeRoot(epoch)),
       toHexString(historicalEpochs[0]),
-      'Header Accumulator contains hash tree root of stored Epoch Accumulator'
+      'Header Accumulator contains hash tree root of stored Epoch Accumulator',
     )
     const hashes = [...epoch.values()].map((headerRecord) => {
       return toHexString(headerRecord.blockHash)
@@ -57,7 +54,7 @@ tape('Header Record Proof tests', (t) => {
     st.equal(
       toHexString(header.hash()),
       block1000.hash,
-      'Successfully created BlockHeader from stored bytes'
+      'Successfully created BlockHeader from stored bytes',
     )
     st.ok(hashes.includes(toHexString(header.hash())), 'Header is a part of EpochAccumulator')
     st.end()
@@ -72,7 +69,7 @@ tape('Header Record Proof tests', (t) => {
     st.equal(
       gIndex,
       EpochAccumulator.tree_getLeafGindices(1n, tree)[blockNumberToLeafIndex(1000n)],
-      'gIndex for Header Record calculated from block number'
+      'gIndex for Header Record calculated from block number',
     )
     st.equal(leaves.length, 8192, 'SSZ Merkle Tree created from serialized Epoch Accumulator bytes')
     st.deepEqual(
@@ -81,12 +78,12 @@ tape('Header Record Proof tests', (t) => {
         totalDifficulty: headerRecord.totalDifficulty,
       },
       headerRecord1000,
-      'HeaderRecord found located in Epoch Accumulator Tree by gIndex'
+      'HeaderRecord found located in Epoch Accumulator Tree by gIndex',
     )
     st.equal(
       toHexString(headerRecord.blockHash),
       toHexString(header.hash()),
-      'HeadeRecord blockHash matches blockHeader'
+      'HeadeRecord blockHash matches blockHeader',
     )
 
     const proof = createProof(tree, {
@@ -96,7 +93,7 @@ tape('Header Record Proof tests', (t) => {
     st.equal(
       toHexString(proof.leaf),
       headerRecord1000.blockHash,
-      'Successfully created a Proof for Header Record'
+      'Successfully created a Proof for Header Record',
     )
     st.equal(proof.witnesses.length, 15, 'proof is correct size')
     st.equal(proof.gindex, gIndex, 'Proof is for correct Index')
@@ -109,13 +106,13 @@ tape('Header Record Proof tests', (t) => {
     try {
       reconstructedEpoch = EpochAccumulator.createFromProof(
         proof,
-        EpochAccumulator.hashTreeRoot(epoch)
+        EpochAccumulator.hashTreeRoot(epoch),
       )
       const n = reconstructedEpoch.hashTreeRoot()
       st.deepEqual(
         n,
         EpochAccumulator.hashTreeRoot(epoch),
-        'Successfully reconstructed partial EpochAccumulator SSZ tree from Proof'
+        'Successfully reconstructed partial EpochAccumulator SSZ tree from Proof',
       )
       try {
         const leaf = reconstructedEpoch.get(1000)
@@ -123,7 +120,7 @@ tape('Header Record Proof tests', (t) => {
         st.equal(
           toHexString(leaf.hashTreeRoot()),
           toHexString(HeaderRecordType.hashTreeRoot(headerRecord)),
-          'Leaf contains correct Header Record'
+          'Leaf contains correct Header Record',
         )
       } catch {
         st.fail('SSZ Should have a leaf at the expected index')

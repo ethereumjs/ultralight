@@ -56,26 +56,26 @@ export class PeerActions {
   sendFindContent = async (type: string, enr: string) => {
     if (type === 'header') {
       const headerContentId = fromHexString(
-        getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(this.state.blockHash)))
+        getContentKey(ContentType.BlockHeader, fromHexString(this.state.blockHash)),
       )
       const header = await this.historyProtocol.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
-        headerContentId
+        headerContentId,
       )
       const block = reassembleBlock(header!.value as Uint8Array, undefined)
       return block //
     } else if (type === 'body') {
       const headerContentKey = fromHexString(
-        getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(this.state.blockHash)))
+        getContentKey(ContentType.BlockHeader, fromHexString(this.state.blockHash)),
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
       const bodyContentKey = fromHexString(
-        getContentKey(ContentType.BlockBody, Buffer.from(fromHexString(this.state.blockHash)))
+        getContentKey(ContentType.BlockBody, fromHexString(this.state.blockHash)),
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
     } else if (type === 'epoch') {
       const epochContentKey = fromHexString(
-        getContentKey(ContentType.EpochAccumulator, epochRootByIndex(this.state.epoch))
+        getContentKey(ContentType.EpochAccumulator, epochRootByIndex(this.state.epoch)),
       )
       this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)
     }

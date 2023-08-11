@@ -85,14 +85,14 @@ tape('uTP Reader/Writer tests', (t) => {
       peerId.toString(),
       DEFAULT_RAND_ID,
       DEFAULT_RAND_ID + 1,
-      content
+      content,
     )
     const _socket = uTP.createPortalNetworkUTPSocket(
       protocolId,
       RequestCode.FINDCONTENT_READ,
       _peerId.toString(),
       DEFAULT_RAND_ID + 1,
-      DEFAULT_RAND_ID
+      DEFAULT_RAND_ID,
     )
     socket.setSeqNr(2)
     socket.setWriter(2)
@@ -103,8 +103,8 @@ tape('uTP Reader/Writer tests', (t) => {
       Object.keys(chunks).length,
       Math.ceil(sampleSize / BUFFER_SIZE),
       `Content Writer divided 50000 bytes correctly into ${Math.ceil(
-        sampleSize / BUFFER_SIZE
-      )} chunks`
+        sampleSize / BUFFER_SIZE,
+      )} chunks`,
     )
     st.equal(compiled.length, content.length, `Compiled length matches content`)
     st.deepEqual(Buffer.from(compiled), content, `Content Reader correctly recompiled content`)
@@ -146,12 +146,12 @@ tape('uTP Reader/Writer tests', (t) => {
     st.equal(
       packets.length,
       socket.reader.packets.length,
-      `${packets.length} Packets added to reader`
+      `${packets.length} Packets added to reader`,
     )
     st.equal(
       packets.length,
       socket.reader.inOrder.length,
-      `${packets.length} Packets added in order`
+      `${packets.length} Packets added in order`,
     )
     await socket.handleFinPacket(finPacket)
     const _compiled = await socket.reader.run()
@@ -168,7 +168,7 @@ tape('uTP Reader/Writer tests', (t) => {
     st.deepEqual(
       Buffer.from(_compiled2),
       content,
-      `Content Reader correctly recompiled content with out of order packets`
+      `Content Reader correctly recompiled content with out of order packets`,
     )
 
     const offerContentHashes = Object.keys(blocks)
@@ -178,7 +178,7 @@ tape('uTP Reader/Writer tests', (t) => {
 
     const offerContentIds = offerContentHashes.map((hash) => {
       return ContentKeyType.serialize(
-        Buffer.concat([Uint8Array.from([ContentType.BlockBody]), fromHexString(hash)])
+        Buffer.concat([Uint8Array.from([ContentType.BlockBody]), fromHexString(hash)]),
       )
     })
 
@@ -190,7 +190,7 @@ tape('uTP Reader/Writer tests', (t) => {
       _peerId.toString(),
       uTP.startingIdNrs(connectionId)[RequestCode.FOUNDCONTENT_WRITE].sndId,
       uTP.startingIdNrs(connectionId)[RequestCode.FOUNDCONTENT_WRITE].rcvId,
-      content
+      content,
     )
 
     const socketKey = createSocketKey(peerId.toString(), connectionId)
@@ -202,7 +202,7 @@ tape('uTP Reader/Writer tests', (t) => {
       peerId.toString(),
       uTP.startingIdNrs(connectionId)[RequestCode.OFFER_WRITE].sndId,
       uTP.startingIdNrs(connectionId)[RequestCode.OFFER_WRITE].rcvId,
-      contents[0]
+      contents[0],
     )!
     const offer = new ContentRequest({
       protocolId: ProtocolId.HistoryNetwork,
@@ -216,12 +216,12 @@ tape('uTP Reader/Writer tests', (t) => {
     st.deepEqual(
       offer.contentKeys,
       offerContentIds,
-      'OFFER request constructed for proper contentKeys'
+      'OFFER request constructed for proper contentKeys',
     )
     st.deepEqual(
       dropPrefixes(offer.content!),
       offerContents,
-      'OFFER request constructed with propper content compression'
+      'OFFER request constructed with propper content compression',
     )
     _socket2.setSeqNr(2)
     _socket2.setWriter(2)
@@ -247,7 +247,7 @@ tape('PortalNetworkUTP test', (t) => {
       '0xPeerAddress',
       socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId,
-      Buffer.from('test')
+      Buffer.from('test'),
     )
     st.ok(socket, 'UTPSocket created by PortalNetworkUTP')
     st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
@@ -258,14 +258,14 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       socket.ackNr,
       startingNrs[RequestCode.FOUNDCONTENT_WRITE].ackNr,
-      'UTPSocket has correct ackNr'
+      'UTPSocket has correct ackNr',
     )
     socket = utp.createPortalNetworkUTPSocket(
       protocolId,
       RequestCode.FINDCONTENT_READ,
       '0xPeerAddress',
       socketIds[RequestCode.FINDCONTENT_READ].sndId,
-      socketIds[RequestCode.FINDCONTENT_READ].rcvId
+      socketIds[RequestCode.FINDCONTENT_READ].rcvId,
     )
     st.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
     st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
@@ -274,12 +274,12 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       socket.getSeqNr(),
       startingNrs[RequestCode.FINDCONTENT_READ].seqNr,
-      'UTPSocket has correct seqNr'
+      'UTPSocket has correct seqNr',
     )
     st.equal(
       socket.ackNr,
       startingNrs[RequestCode.FINDCONTENT_READ].ackNr,
-      'UTPSocket has correct ackNr'
+      'UTPSocket has correct ackNr',
     )
 
     socket = utp.createPortalNetworkUTPSocket(
@@ -288,7 +288,7 @@ tape('PortalNetworkUTP test', (t) => {
       '0xPeerAddress',
       socketIds[RequestCode.OFFER_WRITE].sndId,
       socketIds[RequestCode.OFFER_WRITE].rcvId,
-      Buffer.from('test')
+      Buffer.from('test'),
     )
     st.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
     st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
@@ -297,14 +297,14 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       socket.getSeqNr(),
       startingNrs[RequestCode.OFFER_WRITE].seqNr,
-      'UTPSocket has correct seqNr'
+      'UTPSocket has correct seqNr',
     )
     socket = utp.createPortalNetworkUTPSocket(
       protocolId,
       RequestCode.ACCEPT_READ,
       '0xPeerAddress',
       socketIds[RequestCode.ACCEPT_READ].sndId,
-      socketIds[RequestCode.ACCEPT_READ].rcvId
+      socketIds[RequestCode.ACCEPT_READ].rcvId,
     )
     st.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
     st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
@@ -312,7 +312,7 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       socket.ackNr,
       startingNrs[RequestCode.ACCEPT_READ].ackNr,
-      'UTPSocket has correct ackNr'
+      'UTPSocket has correct ackNr',
     )
     st.end()
   })
@@ -332,45 +332,45 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
-      'requestKey recoverd from packet info'
+      'requestKey recoverd from packet info',
     )
     st.ok(contentRequest, 'contentRequest created')
     st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     st.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId'
+      'contentRequest has correct protocolId',
     )
     st.equal(
       contentRequest.requestCode,
       RequestCode.FOUNDCONTENT_WRITE,
-      'contentRequest has correct requestCode'
+      'contentRequest has correct requestCode',
     )
     st.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
-      'contentRequest has correct contentKeys'
+      'contentRequest has correct contentKeys',
     )
     st.deepEqual(
       contentRequest.content,
       fromHexString('0x1234'),
-      'contentRequest has correct content'
+      'contentRequest has correct content',
     )
     st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
     st.equal(
       contentRequest.socket.type,
       UtpSocketType.WRITE,
-      'contentRequest has correct socket type'
+      'contentRequest has correct socket type',
     )
     st.deepEqual(
       contentRequest.socket.content,
       fromHexString('0x1234'),
-      'contentRequest socket has correct content'
+      'contentRequest socket has correct content',
     )
     utp.closeRequest(params.connectionId, params.peerId)
     st.notOk(
       utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest'
+      'contentRequest removed from openContentRequest',
     )
     params = { ...params, requestCode: RequestCode.FINDCONTENT_READ, contents: undefined }
     contentRequest = await utp.handleNewRequest(params)
@@ -378,36 +378,36 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
-      'requestKey recoverd from packet info'
+      'requestKey recoverd from packet info',
     )
     st.ok(contentRequest, 'contentRequest created')
     st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     st.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId'
+      'contentRequest has correct protocolId',
     )
     st.equal(
       contentRequest.requestCode,
       RequestCode.FINDCONTENT_READ,
-      'contentRequest has correct requestCode'
+      'contentRequest has correct requestCode',
     )
     st.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
-      'contentRequest has correct contentKeys'
+      'contentRequest has correct contentKeys',
     )
     st.equal(contentRequest.content, undefined, 'contentRequest has correct content')
     st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
     st.equal(
       contentRequest.socket.type,
       UtpSocketType.READ,
-      'contentRequest has correct socket type'
+      'contentRequest has correct socket type',
     )
     utp.closeRequest(params.connectionId, params.peerId)
     st.notOk(
       utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest'
+      'contentRequest removed from openContentRequest',
     )
     params = {
       ...params,
@@ -419,41 +419,41 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
-      'requestKey recoverd from packet info'
+      'requestKey recoverd from packet info',
     )
     st.ok(contentRequest, 'contentRequest created')
     st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     st.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId'
+      'contentRequest has correct protocolId',
     )
     st.equal(
       contentRequest.requestCode,
       RequestCode.OFFER_WRITE,
-      'contentRequest has correct requestCode'
+      'contentRequest has correct requestCode',
     )
     st.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
-      'contentRequest has correct contentKeys'
+      'contentRequest has correct contentKeys',
     )
     st.equal(contentRequest.content, params.contents![0], 'contentRequest has correct content')
     st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
     st.equal(
       contentRequest.socket.type,
       UtpSocketType.WRITE,
-      'contentRequest has correct socket type'
+      'contentRequest has correct socket type',
     )
     st.deepEqual(
       contentRequest.socket.content,
       params.contents![0],
-      'contentRequest socket has correct content'
+      'contentRequest socket has correct content',
     )
     utp.closeRequest(params.connectionId, params.peerId)
     st.notOk(
       utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest'
+      'contentRequest removed from openContentRequest',
     )
     params = { ...params, requestCode: RequestCode.ACCEPT_READ, contents: undefined }
     contentRequest = await utp.handleNewRequest(params)
@@ -461,36 +461,36 @@ tape('PortalNetworkUTP test', (t) => {
     st.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
-      'requestKey recoverd from packet info'
+      'requestKey recoverd from packet info',
     )
     st.ok(contentRequest, 'contentRequest created')
     st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     st.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId'
+      'contentRequest has correct protocolId',
     )
     st.equal(
       contentRequest.requestCode,
       RequestCode.ACCEPT_READ,
-      'contentRequest has correct requestCode'
+      'contentRequest has correct requestCode',
     )
     st.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
-      'contentRequest has correct contentKeys'
+      'contentRequest has correct contentKeys',
     )
     st.equal(contentRequest.content, undefined, 'contentRequest has correct content')
     st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
     st.equal(
       contentRequest.socket.type,
       UtpSocketType.READ,
-      'contentRequest has correct socket type'
+      'contentRequest has correct socket type',
     )
     utp.closeRequest(params.connectionId, params.peerId)
     st.notOk(
       utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest'
+      'contentRequest removed from openContentRequest',
     )
     st.end()
   })
@@ -506,7 +506,7 @@ tape('PortalNetworkUTP test', (t) => {
     const contents = [randomBytes(100), randomBytes(100), randomBytes(100)]
     const contentHashes = contents.map(() => toHexString(randomBytes(32)))
     const contentKeys = contentHashes.map((hash) =>
-      fromHexString(getContentKey(ContentType.BlockHeader, fromHexString(hash)))
+      fromHexString(getContentKey(ContentType.BlockHeader, fromHexString(hash))),
     )
     utp.on('Stream', (selector, hash, value) => {
       st.equal(selector, ContentType.BlockHeader, 'Stream selector correct')

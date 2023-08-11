@@ -26,7 +26,7 @@ import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import { CapacitorUDPTransportService, HybridTransportService } from '../transports/index.js'
-import LRU from 'lru-cache'
+import { LRUCache } from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
@@ -42,13 +42,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListeners: Map<ProtocolId, ReturnType<typeof setInterval>>
   private peerId: PeerId
   private supportsRendezvous: boolean
-  private unverifiedSessionCache: LRU<NodeId, Multiaddr>
+  private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
       enr: {} as SignableENR,
       peerId: {} as Secp256k1PeerId,
-      multiaddr: multiaddr(),
+      bindAddrs: {
+        ip4: multiaddr(),
+      },
       config: {
         addrVotesToUpdateEnr: 5,
         enrUpdate: true,
@@ -66,7 +68,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
       config.peerId = await peerIdFromKeys(
         fromHexString(prevPublicKey),
-        fromHexString(prevPrivateKey)
+        fromHexString(prevPrivateKey),
       )
 
       config.enr = SignableENR.decodeTxt(prevEnrString, createKeypairFromPeerId(config.peerId))
@@ -82,11 +84,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       config.enr = opts.config.enr as SignableENR
     }
     let ma
-    if (opts.config?.multiaddr === undefined) {
+    if (opts.config?.bindAddrs?.ip4 === undefined) {
       if (opts.bindAddress) {
         ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
-        config.multiaddr = ma
+        config.bindAddrs.ip4 = ma
       } else {
         let ip = ''
         try {
@@ -96,10 +98,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         }
         ma = multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
-        config.multiaddr = ma
+        config.bindAddrs.ip4 = ma
       }
     } else {
-      ma = opts.config.multiaddr
+      ma = opts.config.bindAddrs.ip4
     }
 
     // Configure db size calculation
@@ -162,7 +164,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId as PeerId
     this.supportsRendezvous = false
-    this.unverifiedSessionCache = new LRU({ max: 2500 })
+    this.unverifiedSessionCache = new LRUCache({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
     this.refreshListeners = new Map()
     this.db = new DBManager(
@@ -170,7 +172,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.logger,
       opts.dbSize,
       opts.supportedProtocols,
-      opts.db
+      opts.db,
     ) as DBManager
     opts.supportedProtocols = opts.supportedProtocols ?? []
     for (const protocol of opts.supportedProtocols) {
@@ -242,7 +244,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
         protocol.protocolId,
-        setInterval(() => protocol.bucketRefresh(), 30000)
+        setInterval(() => protocol.bucketRefresh(), 30000),
       )
     }
   }
@@ -314,7 +316,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const protocol = this.protocols.get(toHexString(message.protocol) as ProtocolId)
     if (!protocol) {
       this.logger(
-        `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`
+        `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`,
       )
       await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
 
@@ -338,7 +340,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     src: INodeAddress,
     srcId: NodeId,
     msg: ITalkReqMessage,
-    packetBuffer: Buffer
+    packetBuffer: Buffer,
   ) => {
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     await this.uTP.handleUtpPacket(packetBuffer, srcId)
@@ -353,10 +355,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public sendPortalNetworkMessage = async (
     enr: ENR | string,
-    payload: Buffer,
+    payload: Uint8Array,
     protocolId: ProtocolId,
-    utpMessage?: boolean
-  ): Promise<Buffer> => {
+    utpMessage?: boolean,
+  ): Promise<Uint8Array> => {
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
@@ -377,15 +379,19 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
       if (!nodeAddr) {
         this.logger(`${enr} has no reachable address.  Aborting request`)
-        return Buffer.from([])
+        return new Uint8Array()
       }
-      const res = await this.discv5.sendTalkReq(nodeAddr, payload, fromHexString(messageProtocol))
+      const res = await this.discv5.sendTalkReq(
+        nodeAddr,
+        Buffer.from(payload),
+        fromHexString(messageProtocol),
+      )
       return res
     } catch (err: any) {
       if (protocolId === ProtocolId.UTPNetwork) {
         throw new Error(`Error sending TALKREQ message: ${err}`)
       } else {
-        return Buffer.from([])
+        return new Uint8Array()
       }
     }
   }
@@ -393,7 +399,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public sendPortalNetworkResponse = async (
     src: INodeAddress,
     requestId: bigint,
-    payload: Uint8Array
+    payload: Uint8Array,
   ) => {
     this.discv5.sendTalkResp(src, requestId, payload)
   }

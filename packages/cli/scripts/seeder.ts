@@ -5,6 +5,7 @@ import { fromHexString, getContentKey, ContentType, ProtocolId, toHexString } fr
 import { createRequire } from 'module'
 import { readFileSync } from 'fs'
 import { Block } from '@ethereumjs/block'
+import { hexToBytes } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const { Client } = jayson
@@ -166,13 +167,14 @@ const main = async () => {
         clientInfo.peer1.enr,
         getContentKey(ContentType.BlockHeader, fromHexString(block[0])),
         toHexString(
-          Block.fromRLPSerializedBlock(Buffer.from((block[1] as any).rlp.slice(2), 'hex'), {
-            hardforkByBlockNumber: true,
+          Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
+            setHardfork: true,
           }).header.serialize()
         ),
-      ],
-    ])
-  }
+        toHexString(Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), { setHardfork: true}).header.serialize())
+      ,
+    ],
+  ])}
   // eth_getBlockByHash
   await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
   // eth_getBlockByNumber

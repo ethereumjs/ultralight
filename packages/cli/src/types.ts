@@ -1,6 +1,6 @@
 import { Block } from '@ethereumjs/block'
 import { JsonTx, TypedTransaction } from '@ethereumjs/tx'
-import { Address, bigIntToHex, bufferToHex, intToHex } from '@ethereumjs/util'
+import { Address, bigIntToHex, bytesToHex, intToHex, utf8ToBytes } from '@ethereumjs/util'
 
 export type TxReceipt = PreByzantiumTxReceipt | PostByzantiumTxReceipt
 
@@ -15,7 +15,7 @@ export interface BaseTxReceipt {
   /**
    * Bloom bitvector
    */
-  bitvector: Buffer
+  bitvector: Uint8Array
   /**
    * Logs emitted
    */
@@ -30,7 +30,7 @@ export interface PreByzantiumTxReceipt extends BaseTxReceipt {
   /**
    * Intermediary state root
    */
-  stateRoot: Buffer
+  stateRoot: Uint8Array
 }
 
 /**
@@ -44,7 +44,7 @@ export interface PostByzantiumTxReceipt extends BaseTxReceipt {
   status: 0 | 1
 }
 
-export type Log = [address: Buffer, topics: Buffer[], data: Buffer]
+export type Log = [address: Uint8Array, topics: Uint8Array[], data: Uint8Array]
 
 export type GetLogsParams = {
   fromBlock?: string // QUANTITY, block number or "earliest" or "latest" (default: "latest")
@@ -143,7 +143,7 @@ export type JsonRpcLog = {
 export const jsonRpcTx = (tx: TypedTransaction, block?: Block, txIndex?: number): JsonRpcTx => {
   const txJSON = tx.toJSON()
   return {
-    blockHash: block ? bufferToHex(block.hash()) : null,
+    blockHash: block ? bytesToHex(block.hash()) : null,
     blockNumber: block ? bigIntToHex(block.header.number) : null,
     from: tx.getSenderAddress().toString(),
     gas: txJSON.gasLimit!,
@@ -153,7 +153,7 @@ export const jsonRpcTx = (tx: TypedTransaction, block?: Block, txIndex?: number)
     type: intToHex(tx.type),
     accessList: txJSON.accessList,
     chainId: txJSON.chainId,
-    hash: bufferToHex(tx.hash()),
+    hash: bytesToHex(tx.hash()),
     input: txJSON.data!,
     nonce: txJSON.nonce!,
     to: tx.to?.toString() ?? null,
@@ -171,17 +171,17 @@ export const jsonRpcTx = (tx: TypedTransaction, block?: Block, txIndex?: number)
 export const jsonRpcBlock = async (
   block: Block,
   //   chain: Chain,
-  includeTransactions: boolean
+  includeTransactions: boolean,
 ): Promise<JsonRpcBlock> => {
   const json = block.toJSON()
   const header = json!.header!
   const transactions = block.transactions.map((tx, txIndex) =>
-    includeTransactions ? jsonRpcTx(tx, block, txIndex) : bufferToHex(tx.hash())
+    includeTransactions ? jsonRpcTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )
   //   const td = await chain.getTd(block.hash(), block.header.number)
   return {
     number: header.number!,
-    hash: bufferToHex(block.hash()),
+    hash: bytesToHex(block.hash()),
     parentHash: header.parentHash!,
     mixHash: header.mixHash,
     nonce: header.nonce!,
@@ -194,12 +194,12 @@ export const jsonRpcBlock = async (
     difficulty: header.difficulty!,
     // totalDifficulty: bigIntToHex(td),
     extraData: header.extraData!,
-    size: intToHex(Buffer.byteLength(JSON.stringify(json))),
+    size: intToHex(utf8ToBytes(JSON.stringify(json)).byteLength),
     gasLimit: header.gasLimit!,
     gasUsed: header.gasUsed!,
     timestamp: header.timestamp!,
     transactions,
-    uncles: block.uncleHeaders.map((uh) => bufferToHex(uh.hash())),
+    uncles: block.uncleHeaders.map((uh) => bytesToHex(uh.hash())),
     baseFeePerGas: header.baseFeePerGas,
   }
 }
@@ -212,17 +212,17 @@ export const jsonRpcLog = async (
   block?: Block,
   tx?: TypedTransaction,
   txIndex?: number,
-  logIndex?: number
+  logIndex?: number,
 ): Promise<JsonRpcLog> => ({
   removed: false, // TODO implement
   logIndex: logIndex !== undefined ? intToHex(logIndex) : null,
   transactionIndex: txIndex !== undefined ? intToHex(txIndex) : null,
-  transactionHash: tx ? bufferToHex(tx.hash()) : null,
-  blockHash: block ? bufferToHex(block.hash()) : null,
+  transactionHash: tx ? bytesToHex(tx.hash()) : null,
+  blockHash: block ? bytesToHex(block.hash()) : null,
   blockNumber: block ? bigIntToHex(block.header.number) : null,
-  address: bufferToHex(log[0]),
-  topics: log[1].map((t) => bufferToHex(t as Buffer)),
-  data: bufferToHex(log[2]),
+  address: bytesToHex(log[0]),
+  topics: log[1].map((t) => bytesToHex(t)),
+  data: bytesToHex(log[2]),
 })
 
 /**
@@ -236,11 +236,11 @@ export const jsonRpcReceipt = async (
   tx: TypedTransaction,
   txIndex: number,
   logIndex: number,
-  contractAddress?: Address
+  contractAddress?: Address,
 ): Promise<JsonRpcReceipt> => ({
-  transactionHash: bufferToHex(tx.hash()),
+  transactionHash: bytesToHex(tx.hash()),
   transactionIndex: intToHex(txIndex),
-  blockHash: bufferToHex(block.hash()),
+  blockHash: bytesToHex(block.hash()),
   blockNumber: bigIntToHex(block.header.number),
   from: tx.getSenderAddress().toString(),
   to: tx.to?.toString() ?? null,
@@ -249,13 +249,15 @@ export const jsonRpcReceipt = async (
   gasUsed: bigIntToHex(gasUsed),
   contractAddress: contractAddress?.toString() ?? null,
   logs: await Promise.all(
-    receipt.logs.map((l: Log, i: number) => jsonRpcLog(l, block, tx, txIndex, logIndex + i))
+    receipt.logs.map((l: Log, i: number) => jsonRpcLog(l, block, tx, txIndex, logIndex + i)),
   ),
-  logsBloom: bufferToHex(receipt.bitvector),
-  root: Buffer.isBuffer((receipt as PreByzantiumTxReceipt).stateRoot)
-    ? bufferToHex((receipt as PreByzantiumTxReceipt).stateRoot)
-    : undefined,
-  status: Buffer.isBuffer((receipt as PostByzantiumTxReceipt).status)
-    ? intToHex((receipt as PostByzantiumTxReceipt).status)
-    : undefined,
+  logsBloom: bytesToHex(receipt.bitvector),
+  root:
+    (receipt as PreByzantiumTxReceipt).stateRoot instanceof Uint8Array
+      ? bytesToHex((receipt as PreByzantiumTxReceipt).stateRoot)
+      : undefined,
+  status:
+    typeof (receipt as PostByzantiumTxReceipt).status === 'number'
+      ? intToHex((receipt as PostByzantiumTxReceipt).status)
+      : undefined,
 })

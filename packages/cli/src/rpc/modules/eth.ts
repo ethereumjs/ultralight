@@ -1,5 +1,5 @@
 import { Block } from '@ethereumjs/block'
-import { bigIntToHex, intToHex, toBuffer } from '@ethereumjs/util'
+import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
 import { Debugger } from 'debug'
 import {
   ProtocolId,
@@ -46,7 +46,7 @@ export class eth {
     this.getBlockTransactionCountByHash = middleware(
       this.getBlockTransactionCountByHash.bind(this),
       1,
-      [[validators.hex, validators.blockHash]]
+      [[validators.hex, validators.blockHash]],
     )
 
     this.getUncleCountByBlockNumber = middleware(this.getUncleCountByBlockNumber.bind(this), 1, [
@@ -63,14 +63,14 @@ export class eth {
           fromBlock: validators.optional(validators.blockOption),
           toBlock: validators.optional(validators.blockOption),
           address: validators.optional(
-            validators.either(validators.array(validators.address), validators.address)
+            validators.either(validators.array(validators.address), validators.address),
           ),
           topics: validators.optional(
             validators.array(
               validators.optional(
-                validators.either(validators.hex, validators.array(validators.hex))
-              )
-            )
+                validators.either(validators.hex, validators.array(validators.hex)),
+              ),
+            ),
           ),
           blockHash: validators.optional(validators.blockHash),
         }),
@@ -93,28 +93,28 @@ export class eth {
    *   1. a block hash
    *   2. boolean - if true returns the full transaction objects, if false only the hashes of the transactions.
    */
-  async getBlockByHash(params: [string, boolean]) {
+  async getBlockByHash(params: [string, boolean]): Promise<Block> {
     const [blockHash, includeTransactions] = params
     this._client.logger(
-      `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`
+      `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`,
     )
     await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
     const headerWithProof = await this._history.findContentLocally(
-      fromHexString(getContentKey(0, fromHexString(blockHash)))
+      fromHexString(getContentKey(0, fromHexString(blockHash))),
     )
     if (!headerWithProof) {
-      return 'Block not found'
+      throw new Error('Block not found')
     }
     const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
-      fromHexString(getContentKey(1, fromHexString(blockHash)))
+      fromHexString(getContentKey(1, fromHexString(blockHash))),
     )
     if (!body) {
-      return 'Block not found'
+      throw new Error('Block not found')
     }
     const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
-
-    return block ?? 'Block not found'
+    //@ts-ignore
+    return block
   }
 
   /**
@@ -123,17 +123,19 @@ export class eth {
    *   1. integer of a block number
    *   2. boolean - if true returns the full transaction objects, if false only the hashes of the transactions.
    */
-  async getBlockByNumber(params: [string, boolean]) {
+  async getBlockByNumber(params: [string, boolean]): Promise<Block> {
     const [blockNumber, includeTransactions] = params
     this.logger(
-      `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`
+      `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`,
     )
     const block = await this._history.ETH.getBlockByNumber(
       parseInt(blockNumber),
-      includeTransactions
+      includeTransactions,
     )
+    if (block === undefined) throw new Error('block not found')
     this.logger(block)
-    return block ?? 'Block not found'
+    //@ts-ignore
+    return block
   }
 
   /**
@@ -152,12 +154,12 @@ export class eth {
     if (blockOpt === 'latest') {
       throw new Error(`History Network does not support "latest" block`)
     } else if (blockOpt === 'earliest') {
-      block = (await this.getBlockByNumber(['0', true])) as Block
+      block = await this.getBlockByNumber(['0', true])
     } else {
-      block = (await this.getBlockByNumber([blockOpt, true])) as Block
-    }
+      block = await this.getBlockByNumber([blockOpt, true])
 
-    return block
+      return block
+    }
   }
 
   /**
@@ -167,7 +169,7 @@ export class eth {
   async getBlockTransactionCountByHash(params: [string]) {
     const [blockHash] = params
     try {
-      const block = (await this.getBlockByHash([blockHash, true])) as Block
+      const block = await this.getBlockByHash([blockHash, true])
       return intToHex(block.transactions.length)
     } catch (error) {
       throw {
@@ -184,7 +186,7 @@ export class eth {
    */
   async getUncleCountByBlockNumber(params: [string]) {
     const [blockNumber] = params
-    const block = (await this.getBlockByNumber([blockNumber, true])) as Block
+    const block = await this.getBlockByNumber([blockNumber, true])
     return block.uncleHeaders.length
   }
   /**
@@ -236,17 +238,17 @@ export class eth {
         if (t === null) {
           return null
         } else if (Array.isArray(t)) {
-          return t.map((x) => toBuffer(x))
+          return t.map((x) => toBytes(x))
         } else {
-          return toBuffer(t)
+          return toBytes(t)
         }
       })
       let addrs
       if (address) {
         if (Array.isArray(address)) {
-          addrs = address.map((a) => toBuffer(a))
+          addrs = address.map((a) => toBytes(a))
         } else {
-          addrs = [toBuffer(address)]
+          addrs = [toBytes(address)]
         }
       }
       const blocks = Promise.all(
@@ -256,14 +258,16 @@ export class eth {
             (await this.getBlockByNumber([
               bigIntToHex(BigInt(i) + from.header.number),
               true,
-            ])) as Block
-        )
-      )
+            ])) as Block,
+        ),
+      ) //@ts-ignore
       const logs = await getLogs(await blocks, addrs, formattedTopics)
       return await Promise.all(
-        logs.map(({ log, block, tx, txIndex, logIndex }) =>
-          jsonRpcLog(log, block, tx, txIndex, logIndex)
-        )
+        logs.map(
+          (
+            { log, block, tx, txIndex, logIndex }, //@ts-ignore
+          ) => jsonRpcLog(log, block, tx, txIndex, logIndex),
+        ),
       )
     } catch (error: any) {
       throw {

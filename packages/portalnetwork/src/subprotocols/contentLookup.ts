@@ -102,7 +102,7 @@ export class ContentLookup {
           this.logger(`received ${res.value.length} ENRs for closer nodes`)
           if (!finished) {
             for (const enr of res.value) {
-              const decodedEnr = ENR.decode(Buffer.from(enr as Uint8Array))
+              const decodedEnr = ENR.decode(enr as Uint8Array)
               // Disregard if nodes have been previously contacted during this lookup,
               // Or if nodes are currently being ignored for unresponsiveness.
               if (
@@ -128,7 +128,7 @@ export class ContentLookup {
               this.lookupPeers.map((peer) => peer.nodeId).includes(decodedEnr.nodeId) ||
                 this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
               this.lookupPeers = this.lookupPeers.sort(
-                (a, b) => Number(a.distance) - Number(b.distance)
+                (a, b) => Number(a.distance) - Number(b.distance),
               )
             }
           }

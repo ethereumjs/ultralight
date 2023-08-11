@@ -15,6 +15,7 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { ssz } from '@lodestar/types'
+import { bytesToInt } from '@ethereumjs/util'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -49,7 +50,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
   public sendFindContent = async (
     dstId: string,
-    key: Uint8Array
+    key: Uint8Array,
   ): Promise<Union<Uint8Array | Uint8Array[]> | undefined> => {
     const enr = this.routingTable.getValue(dstId)
     if (!enr) {
@@ -62,12 +63,12 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
-    const res = await this.sendMessage(enr, Buffer.from(payload), this.protocolId)
+    const res = await this.sendMessage(enr, payload, this.protocolId)
     if (res.length === 0) {
       return undefined
     }
     try {
-      if (parseInt(res.subarray(0, 1).toString('hex')) === MessageCodes.CONTENT) {
+      if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
@@ -79,7 +80,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             try {
               // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
               ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
-                decoded.value as Uint8Array
+                decoded.value as Uint8Array,
               )
             } catch (err) {
               this.logger(`received invalid content from ${shortId(dstId)}`)
@@ -88,7 +89,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             this.logger(
               `received ${
                 BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`
+              } content corresponding to ${contentHash}`,
             )
             await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
             break
@@ -96,7 +97,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             this.logger(
               `received ${
                 BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`
+              } content corresponding to ${contentHash}`,
             )
         }
         return decoded
