@@ -491,8 +491,7 @@ export abstract class BaseProtocol extends EventEmitter {
       const encodedEnrs = ENRs.map((enr) => {
         // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
         // contentId than this node
-        return enr.nodeId !== src.nodeId &&
-          distance(enr.nodeId, lookupKey) < distance(this.enr.nodeId, lookupKey)
+        return distance(enr.nodeId, lookupKey) <= distance(this.enr.nodeId, lookupKey)
           ? enr.encode()
           : undefined
       }).filter((enr) => enr !== undefined)
