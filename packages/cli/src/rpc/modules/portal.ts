@@ -177,6 +177,9 @@ export class portal {
   }
   async historyGetEnr(params: [string]): Promise<GetEnrResult> {
     const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
     this.logger.extend('portal_historyGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
     const enr = this._history.routingTable.getWithPending(nodeId)?.value
     if (enr) {
