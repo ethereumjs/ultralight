@@ -263,8 +263,8 @@ export abstract class BaseProtocol extends EventEmitter {
         enrs: [],
       }
 
-      payload.distances.every((distance) => {
-        if (distance === 0 && arrayByteLength(nodesPayload.enrs) < 1200) {
+      for (const distance of payload.distances) {
+        if (distance === 0) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
           nodesPayload.enrs.push(this.enr.toENR().encode())
@@ -275,14 +275,13 @@ export abstract class BaseProtocol extends EventEmitter {
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
 
-            if (arrayByteLength(nodesPayload.enrs) + enr.encode().length > 1200) return false
-            nodesPayload.total++
-            nodesPayload.enrs.push(enr.encode())
-            return true
+            if (arrayByteLength(nodesPayload.enrs) + enr.encode().length < 1200) {
+              nodesPayload.total++
+              nodesPayload.enrs.push(enr.encode())
+            }
           })
         }
-        return true
-      })
+      }
 
       const encodedPayload = PortalWireMessageType.serialize({
         selector: MessageCodes.NODES,
