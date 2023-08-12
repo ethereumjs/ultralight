@@ -177,7 +177,7 @@ tape('protocol wire message tests', async (t) => {
     st.equals(res, undefined, 'received undefined when no valid ACCEPT message received')
   })
 })
-tape.skip('handleFindNodes message handler tests', async (st) => {
+tape('handleFindNodes message handler tests', async (st) => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
