@@ -267,7 +267,7 @@ export abstract class BaseProtocol extends EventEmitter {
         this.logger.extend(`FINDNODES`)(
           `Gathering ENRs at distance ${distance} from ${shortId(src.nodeId)}`,
         )
-        if (distance === 0) {
+        if (distance === 0 || distance === 256) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
           nodesPayload.enrs.push(this.enr.toENR().encode())
