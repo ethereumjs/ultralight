@@ -207,9 +207,9 @@ export class portal {
     }
   }
   async historyDeleteEnr(params: [string]): Promise<boolean> {
-    this.logger(`portal_historyDeleteEnr request received.`)
     const [nodeId] = params
-    const remove = this._history.routingTable.removeById(nodeId.slice(2))
+    this.logger(`portal_historyDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
+    const remove = this._history.routingTable.removeById(nodeId)
     return remove !== undefined
   }
   async historyRoutingTableInfo(_params: []): Promise<any> {
