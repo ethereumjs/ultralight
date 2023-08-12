@@ -379,11 +379,14 @@ export class portal {
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
+    this.logger.extend('findContent')(`request returned type: ${res && res.selector}`)
     if (!res) {
       return ''
     }
-    const content: Uint8Array =
-      res.selector === 1
+    const content: Uint8Array | Uint8Array[] =
+      res.selector === 2
+        ? (res.value as Uint8Array[])
+        : res.selector === 1
         ? (res.value as Uint8Array)
         : await new Promise((resolve) => {
             const timeout = setTimeout(() => {
@@ -402,10 +405,12 @@ export class portal {
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
     res.selector === 0 && this.logger.extend('findContent')('utp')
     this.logger.extend('findContent')(content)
-    return {
-      content: content.length > 0 ? toHexString(content) : '',
-      utpTransfer: res.selector === 0,
-    }
+    return res.selector === 2
+      ? content
+      : {
+          content: content.length > 0 ? toHexString(content as Uint8Array) : '',
+          utpTransfer: res.selector === 0,
+        }
   }
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
