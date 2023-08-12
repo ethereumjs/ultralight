@@ -115,10 +115,7 @@ export const validators = {
         }
       }
       if (params[index].startsWith('0x')) {
-        return {
-          code: INVALID_PARAMS,
-          message: `invalid argument ${index}: NodeId should be without 0x prefix`,
-        }
+        params[index] = params[index].slice(2)
       }
     }
   },

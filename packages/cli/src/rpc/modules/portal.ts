@@ -66,11 +66,11 @@ export class portal {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
-    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.hex]])
+    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
-    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.hex]])
-    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.hex]])
+    this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
+    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
@@ -177,11 +177,17 @@ export class portal {
   }
   async historyGetEnr(params: [string]): Promise<GetEnrResult> {
     const [nodeId] = params
-    this.logger(`portal_historyGetEnr request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value
-    if (enr) {
-      return enr.encodeTxt()
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
     }
+    this.logger.extend('portal_historyGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
+    if (enr) {
+      const enrTxt = enr.encodeTxt()
+      this.logger.extend('portal_historyGetEnr')(enrTxt)
+      return enrTxt
+    }
+    this.logger.extend('portal_historyGetEnr')('ENR not found')
     return ''
   }
 
@@ -201,9 +207,9 @@ export class portal {
     }
   }
   async historyDeleteEnr(params: [string]): Promise<boolean> {
-    this.logger(`portal_historyDeleteEnr request received.`)
     const [nodeId] = params
-    const remove = this._history.routingTable.removeById(nodeId.slice(2))
+    this.logger(`portal_historyDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
+    const remove = this._history.routingTable.removeById(nodeId)
     return remove !== undefined
   }
   async historyRoutingTableInfo(_params: []): Promise<any> {
@@ -226,8 +232,11 @@ export class portal {
   }
   async historyLookupEnr(params: [string]) {
     const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value.encodeTxt()
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value.encodeTxt()
     this.logger(`Found: ${enr}`)
     return enr ?? ''
   }
