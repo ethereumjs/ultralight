@@ -177,11 +177,14 @@ export class portal {
   }
   async historyGetEnr(params: [string]): Promise<GetEnrResult> {
     const [nodeId] = params
-    this.logger(`portal_historyGetEnr request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._history.routingTable.getWithPending(nodeId.slice(2))?.value
+    this.logger.extend('portal_historyGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
     if (enr) {
-      return enr.encodeTxt()
+      const enrTxt = enr.encodeTxt()
+      this.logger.extend('portal_historyGetEnr')(enrTxt)
+      return enrTxt
     }
+    this.logger.extend('portal_historyGetEnr')('ENR not found')
     return ''
   }
 
