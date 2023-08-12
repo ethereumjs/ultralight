@@ -381,7 +381,7 @@ export class portal {
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    this.logger.extend('findContent')(`request returned type: ${res && res.selector}`)
+    this.logger.extend('findContent')(`request returned type: ${res ? res.selector : res}`)
     if (!res) {
       return []
     }
