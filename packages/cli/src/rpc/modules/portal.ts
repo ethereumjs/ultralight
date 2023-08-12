@@ -232,6 +232,9 @@ export class portal {
   }
   async historyLookupEnr(params: [string]) {
     const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
     const enr = this._history.routingTable.getWithPending(nodeId)?.value.encodeTxt()
     this.logger(`Found: ${enr}`)
