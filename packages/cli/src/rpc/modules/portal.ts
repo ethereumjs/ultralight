@@ -66,7 +66,7 @@ export class portal {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
-    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.hex]])
+    this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
     this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
