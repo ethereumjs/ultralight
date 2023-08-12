@@ -293,12 +293,7 @@ export class portal {
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
-    if (!this._history.routingTable.getWithPending(dstId)?.value) {
-      const pong = await this._history.sendPing(enr)
-      if (!pong) {
-        return ''
-      }
-    }
+
     const res = await this._history.sendFindNodes(dstId, distances)
     if (!res) {
       return []
