@@ -200,6 +200,7 @@ export class portal {
       if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
         return true
       }
+      this._client.discv5.addEnr(enr)
       this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
       return true
     } catch {
