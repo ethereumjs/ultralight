@@ -70,7 +70,7 @@ export class portal {
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
     this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
-    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.hex]])
+    this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
