@@ -381,7 +381,7 @@ export class portal {
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
     this.logger.extend('findContent')(`request returned type: ${res && res.selector}`)
     if (!res) {
-      return ''
+      return []
     }
     const content: Uint8Array | Uint8Array[] =
       res.selector === 2
