@@ -133,10 +133,7 @@ export const validators = {
         }
       }
       if (params[index] < 0 || params[index] > 255) {
-        return {
-          code: INVALID_PARAMS,
-          message: 'invalid argument ${index}: distance must be between 0 and 255.',
-        }
+        params[index] = Math.abs(params[index] % 256)
       }
     }
   },
