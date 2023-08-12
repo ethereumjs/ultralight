@@ -200,7 +200,7 @@ export class portal {
       if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
         return true
       }
-      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Disconnected)
+      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
       return true
     } catch {
       return false
