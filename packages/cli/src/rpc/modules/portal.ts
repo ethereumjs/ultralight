@@ -384,7 +384,7 @@ export class portal {
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
     this.logger.extend('findContent')(`request returned type: ${res ? res.selector : res}`)
     if (!res) {
-      return [enr]
+      return { enrs: [] }
     }
     const content: Uint8Array | Uint8Array[] =
       res.selector === 2
@@ -409,7 +409,7 @@ export class portal {
     res.selector === 0 && this.logger.extend('findContent')('utp')
     this.logger.extend('findContent')(content)
     return res.selector === 2
-      ? content
+      ? { enrs: content }
       : {
           content: content.length > 0 ? toHexString(content as Uint8Array) : '',
           utpTransfer: res.selector === 0,
