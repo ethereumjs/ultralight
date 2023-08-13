@@ -441,7 +441,11 @@ export class portal {
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
     this.logger.extend('historyRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
-    return res ?? { enrs: [] }
+    return !res
+      ? { enrs: [] }
+      : 'enrs' in res
+      ? { enrs: res.enrs.map(toHexString) }
+      : { content: toHexString(res.content), utpTransfer: res.utp }
   }
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params
