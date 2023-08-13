@@ -439,33 +439,21 @@ export class portal {
     const [contentKey] = params
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
-    return new Promise((resolve) => {
-      if (!res) {
-        resolve({ enrs: [] })
-      } else if (res instanceof Uint8Array) {
-        this._client.uTP.on('Stream', (contentType, hash, value) => {
-          if (contentType.toString(16) + hash.slice(2) === contentKey.slice(2)) {
-            resolve({
-              content: toHexString(value),
-              utpTransfer: true,
-            })
-          }
-        })
-        this._history.on(
-          'ContentAdded',
-          (contentKey: string, contentType: ContentType, content: string) => {
-            if (contentKey === contentKey) {
-              resolve({
-                content,
-                utpTransfer: false,
-              })
-            }
-          },
-        )
-      } else {
-        resolve({ enrs: res })
+    this._client.uTP.on('Stream', (contentType, hash, value) => {
+      if (contentType.toString(16) + hash.slice(2) === contentKey.slice(2)) {
+        return {
+          content: toHexString(value),
+          utpTransfer: true,
+        }
       }
     })
+    if (!res) {
+      return { enrs: [] }
+    } else if (res instanceof Uint8Array) {
+      return { content: toHexString(res), utpTransfer: false }
+    } else {
+      return { enrs: res }
+    }
   }
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params
