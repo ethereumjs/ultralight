@@ -437,8 +437,10 @@ export class portal {
   }
   async historyRecursiveFindContent(params: [string]) {
     const [contentKey] = params
+    this.logger.extend('historyRecursiveFindContent')(`request received for ${contentKey}`)
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
+    this.logger.extend('historyRecursiveFindContent')(`request returned ${res}`)
     return res ?? { enrs: [] }
   }
   async historyOffer(params: [string, string, string]) {
