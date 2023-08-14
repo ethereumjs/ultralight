@@ -68,7 +68,6 @@ export default function RoutingTableView() {
                 <Th>IP</Th>
                 <Th>PORT</Th>
                 <Th>NodeId</Th>
-                <Th>RTC</Th>
               </Tr>
             </Thead>
             <Tbody>
