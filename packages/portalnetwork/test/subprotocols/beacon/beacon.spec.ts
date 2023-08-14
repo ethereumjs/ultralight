@@ -112,7 +112,9 @@ tape.only('API tests', async (t) => {
     supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
     config: {
       enr: enr1,
-      multiaddr: initMa,
+      bindAddrs: {
+        ip4: initMa,
+      },
       peerId: id1,
     },
   })
@@ -126,49 +128,49 @@ tape.only('API tests', async (t) => {
   await protocol.store(
     BeaconLightClientNetworkContentType.LightClientBootstrap,
     bootstrap.content_key,
-    fromHexString(bootstrap.content_value)
+    fromHexString(bootstrap.content_value),
   )
   const retrievedBootstrap = await protocol.findContentLocally(fromHexString(bootstrap.content_key))
   t.equal(
     ssz.capella.LightClientBootstrap.deserialize(retrievedBootstrap!.slice(4)).header.beacon.slot,
     ssz.capella.LightClientBootstrap.deserialize(fromHexString(bootstrap.content_value).slice(4))
       .header.beacon.slot,
-    'successfully stored and retrieved bootstrap'
+    'successfully stored and retrieved bootstrap',
   )
 
   const finalityUpdate = specTestVectors.finalityUpdate['6718463']
   await protocol.store(
     BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
     finalityUpdate.content_key,
-    fromHexString(finalityUpdate.content_value)
+    fromHexString(finalityUpdate.content_value),
   )
   const retrievedFinalityUpdate = await protocol.findContentLocally(
-    fromHexString(finalityUpdate.content_key)
+    fromHexString(finalityUpdate.content_key),
   )
   t.equal(
     ssz.capella.LightClientFinalityUpdate.deserialize(retrievedFinalityUpdate!.slice(4))
       .attestedHeader.beacon.slot,
     ssz.capella.LightClientFinalityUpdate.deserialize(
-      fromHexString(finalityUpdate.content_value).slice(4)
+      fromHexString(finalityUpdate.content_value).slice(4),
     ).attestedHeader.beacon.slot,
-    'successfully stored and retrieved finality update'
+    'successfully stored and retrieved finality update',
   )
   const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
   await protocol.store(
     BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
     optimisticUpdate.content_key,
-    fromHexString(optimisticUpdate.content_value)
+    fromHexString(optimisticUpdate.content_value),
   )
   const retrievedOptimisticUpdate = await protocol.findContentLocally(
-    fromHexString(optimisticUpdate.content_key)
+    fromHexString(optimisticUpdate.content_key),
   )
   t.equal(
     ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))
       .attestedHeader.beacon.slot,
     ssz.capella.LightClientOptimisticUpdate.deserialize(
-      fromHexString(optimisticUpdate.content_value).slice(4)
+      fromHexString(optimisticUpdate.content_value).slice(4),
     ).attestedHeader.beacon.slot,
-    'successfully stored and retrieved optimistic update'
+    'successfully stored and retrieved optimistic update',
   )
   // TODO: Update this test once logic for handling light client updates is implemented
   const updatesByRange = specTestVectors.updateByRange['6684738']
@@ -176,7 +178,7 @@ tape.only('API tests', async (t) => {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
       updatesByRange.content_key,
-      fromHexString(optimisticUpdate.content_value)
+      fromHexString(optimisticUpdate.content_value),
     )
     t.fail('should throw')
   } catch {

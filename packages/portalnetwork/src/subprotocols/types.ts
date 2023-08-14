@@ -15,6 +15,12 @@ export enum ProtocolId {
 
 const BYTE_SIZE = 256
 
+export enum FoundContent {
+  'UTP' = 0,
+  'CONTENT' = 1,
+  'ENRS' = 2,
+}
+
 export class Bloom {
   bitvector: Uint8Array
 

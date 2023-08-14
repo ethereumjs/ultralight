@@ -1,25 +1,30 @@
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-import { readFileSync } from 'fs'
 import tape from 'tape'
 import {
   fromHexString,
-  HistoryProtocol,
   PortalNetwork,
   ProtocolId,
   TransportLayer,
   BeaconLightClientNetwork,
+  MainnetGenesisValidatorsRoot,
+  BeaconLightClientNetworkContentType,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 import { EventEmitter } from 'events'
 import { SignableENR } from '@chainsafe/discv5'
 import { bytesToHex } from '@ethereumjs/util'
+import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
+
+const specTestVectors = require('../subprotocols/beacon/specTestVectors.json')
+const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
+const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
 tape('gossip test', async (t) => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
@@ -52,8 +57,8 @@ tape('gossip test', async (t) => {
       peerId: id2,
     },
   })
-  node1.enableLog('*')
-  node2.enableLog('*')
+  node1.enableLog('*Portal*')
+  node2.enableLog('*Portal*')
 
   await node1.start()
   await node2.start()
@@ -72,6 +77,20 @@ tape('gossip test', async (t) => {
     'node1 added node2 to routing table',
   )
 
+  const bootstrap = specTestVectors.bootstrap['6718368']
+
+  await protocol1.store(
+    BeaconLightClientNetworkContentType.LightClientBootstrap,
+    bootstrap.content_key,
+    fromHexString(bootstrap.content_value),
+  )
+
+  const res = await protocol2.sendFindContent(
+    node1.discv5.enr.nodeId,
+    fromHexString(bootstrap.content_key),
+  )
+
+  console.log(res)
   await node1.stop()
   await node2.stop()
   t.end()

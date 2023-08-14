@@ -1,6 +1,6 @@
 import { Debugger } from 'debug'
 import { BaseProtocol } from '../protocol.js'
-import { ProtocolId } from '../types.js'
+import { FoundContent, ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
@@ -21,6 +21,7 @@ import {
 import { ssz } from '@lodestar/types'
 import { getBeaconContentKey } from './util.js'
 import { bytesToInt } from '@ethereumjs/util'
+import { RequestCode } from '../../wire/index.js'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -82,6 +83,21 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         this.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
+        switch (decoded.selector) {
+          case FoundContent.UTP: {
+            const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
+            this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
+            await this.handleNewRequest({
+              protocolId: this.protocolId,
+              contentKeys: [key],
+              peerId: dstId,
+              connectionId: id,
+              requestCode: RequestCode.FINDCONTENT_READ,
+              contents: [],
+            })
+            break
+          }
+        } /*
         const contentHash = toHexString(key)
         const forkhash = decoded.value.slice(0, 4) as Uint8Array
         const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
@@ -155,7 +171,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 BeaconLightClientNetworkContentType[decoded.selector]
               } content corresponding to ${contentHash}`,
             )
-        }
+        }*/
         return decoded
       }
     } catch (err: any) {

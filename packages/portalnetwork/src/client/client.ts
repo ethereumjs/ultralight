@@ -189,9 +189,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
           break
-        case ProtocolId.BeaconLightClientNetwork:
-          this.protocols.set(protocol, new BeaconLightClientNetwork(this, opts.radius))
-          break
       }
     }
 

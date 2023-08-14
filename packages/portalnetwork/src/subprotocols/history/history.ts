@@ -24,6 +24,7 @@ import {
   saveReceipts,
   decodeReceipts,
   PortalNetwork,
+  FoundContent,
 } from '../../index.js'
 
 import { BaseProtocol } from '../protocol.js'
@@ -37,11 +38,6 @@ import {
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToInt } from '@ethereumjs/util'
 
-enum FoundContent {
-  'UTP' = 0,
-  'CONTENT' = 1,
-  'ENRS' = 2,
-}
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId.HistoryNetwork
   protocolName = 'HistoryNetwork'
