@@ -22,6 +22,7 @@ import {
   toHexString,
   TxReceiptWithType,
   decodeReceipts,
+  ProtocolId,
 } from 'portalnetwork'
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
@@ -222,10 +223,11 @@ const DisplayBlock = () => {
         Buffer.from(
           fromHexString(
             await state.provider!.historyProtocol.get(
-              getContentKey(ContentType.Receipt, fromHexString(state.block!.hash))
-            )
-          )
-        )
+              ProtocolId.HistoryNetwork,
+              getContentKey(ContentType.Receipt, fromHexString(state.block!.hash)),
+            ),
+          ),
+        ),
       )
       if (receipts) {
         setReceipts(receipts as TxReceiptWithType[])
@@ -259,9 +261,7 @@ const DisplayBlock = () => {
           <Box width="100%" height="5%">
             <HStack justifyContent={'center'}>
               <Text>Block #</Text>
-              <Skeleton isLoaded={!state.isLoading}>
-                {state.block.number ?? (state.block as any).header.number.toString()}
-              </Skeleton>
+              <Skeleton isLoaded={!state.isLoading}>{state.block.number}</Skeleton>
               {validated && <CheckCircleIcon />}
             </HStack>
             {

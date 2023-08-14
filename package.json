@@ -4,7 +4,9 @@
   "workspaces": [
     "./packages/portalnetwork",
     "./packages/cli",
-    "./packages/proxy"
+    "./packages/proxy",
+    "./packages/browser-client"
+
   ],
   "engines": {
     "npm": ">=7",

@@ -86,8 +86,9 @@ export class WebSocketTransportService
     const opts = to.toOptions()
     const encodedPacket = encodePacket(toId, packet)
     const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
-    const encodedPort = new Uint8Array(2)
-    new DataView(new Uint8Array(2).buffer).setUint16(0, opts.port)
+    const port = new DataView(new Uint8Array(2).buffer)
+    port.setUint16(0, opts.port)
+    const encodedPort = new Uint8Array(port.buffer)
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
       ...encodedPort,

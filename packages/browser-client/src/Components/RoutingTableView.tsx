@@ -39,19 +39,6 @@ export default function RoutingTableView() {
     } catch (err) {}
   }
 
-  function rtcEnabled(enr: string) {
-    return (
-      (
-        (state.provider!.portal.discv5.sessionService.transport as any).rtcEnabled as Map<
-          string,
-          boolean
-        >
-      )
-        .get(ENR.decodeTxt(enr).getLocationMultiaddr('udp')!.toString())
-        ?.toString() === 'true'
-    )
-  }
-
   return (
     <PeerContext.Provider value={{ peerState: _state, peerDispatch: _dispatch }}>
       <VStack spacing={0} width={'100%'}>
@@ -108,8 +95,6 @@ export default function RoutingTableView() {
                           idx === state.hover
                             ? 'blue.100'
                             : state.peerIdx === idx
-                            ? 'red.100'
-                            : rtcEnabled(peer[1][3])
                             ? 'green.100'
                             : 'whiteAlpha.100'
                         }
@@ -126,7 +111,6 @@ export default function RoutingTableView() {
                         <Td>{peer[1][0]}</Td>
                         <Td>{peer[1][1]}</Td>
                         <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
-                        <Td>{rtcEnabled(peer[1][3]) && 'RTC'}</Td>
                       </Tr>
                     )
                   })}
