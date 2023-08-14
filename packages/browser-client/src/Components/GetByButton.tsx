@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { Box, MenuButton, Menu, MenuList, Button, MenuItem, HStack } from '@chakra-ui/react'
+import React, { useState } from 'react'
+import { MenuButton, Menu, MenuList, Button, MenuItem, HStack } from '@chakra-ui/react'
 import { ChevronDownIcon } from '@chakra-ui/icons'
 import GetBlockByNumber from './GetBlockByNumber'
 import GetEpoch from './GetEpoch'
@@ -11,7 +11,7 @@ export default function GetByButtons() {
     eth_getBlockByHash = 1,
     portal_getEpochByIndex = 2,
   }
-  const buttons: Record<GetBy, JSX.Element> = {
+  const buttons: Record<GetBy, React.JSX.Element> = {
     0: <GetBlockByNumber />,
     1: <GetBlockByHash />,
     2: <GetEpoch />,

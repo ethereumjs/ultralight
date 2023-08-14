@@ -18,7 +18,6 @@ import {
 import PeerButtons from './PeerButtons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerContext, peerInitialState, peerReducer } from '../peerReducer'
-import { ENR } from 'portalnetwork'
 
 export default function RoutingTableView() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
@@ -37,19 +36,6 @@ export default function RoutingTableView() {
       dispatch({ type: StateChange.SETSEARCHENR, payload: '' })
       dispatch({ type: StateChange.REFRESHPEERS })
     } catch (err) {}
-  }
-
-  function rtcEnabled(enr: string) {
-    return (
-      (
-        (state.provider!.portal.discv5.sessionService.transport as any).rtcEnabled as Map<
-          string,
-          boolean
-        >
-      )
-        .get(ENR.decodeTxt(enr).getLocationMultiaddr('udp')!.toString())
-        ?.toString() === 'true'
-    )
   }
 
   return (
@@ -81,7 +67,6 @@ export default function RoutingTableView() {
                 <Th>IP</Th>
                 <Th>PORT</Th>
                 <Th>NodeId</Th>
-                <Th>RTC</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -108,8 +93,6 @@ export default function RoutingTableView() {
                           idx === state.hover
                             ? 'blue.100'
                             : state.peerIdx === idx
-                            ? 'red.100'
-                            : rtcEnabled(peer[1][3])
                             ? 'green.100'
                             : 'whiteAlpha.100'
                         }
@@ -126,7 +109,6 @@ export default function RoutingTableView() {
                         <Td>{peer[1][0]}</Td>
                         <Td>{peer[1][1]}</Td>
                         <Td>{peer[1][2].slice(0, 15) + '...'}</Td>
-                        <Td>{rtcEnabled(peer[1][3]) && 'RTC'}</Td>
                       </Tr>
                     )
                   })}

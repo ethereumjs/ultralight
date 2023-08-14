@@ -1,12 +1,12 @@
 import { SearchIcon } from '@chakra-ui/icons'
-import { Button, FormControl, HStack, IconButton, Input } from '@chakra-ui/react'
+import { FormControl, HStack, IconButton, Input } from '@chakra-ui/react'
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 
 export default function GetBlockByHash() {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
   const [blockHash, setBlockhash] = useState(
-    '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9'
+    '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9',
   )
   async function eth_getBlockByHash(blockHash: string, includeTransactions: boolean) {
     try {

@@ -1,22 +1,6 @@
-import {
-  Menu,
-  MenuButton,
-  Button,
-  MenuList,
-  MenuOptionGroup,
-  MenuItemOption,
-  VStack,
-  Heading,
-  Box,
-  HStack,
-  Input,
-  Select,
-  Text,
-} from '@chakra-ui/react'
-// eslint-disable-next-line implicit-dependencies/no-implicit
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { VStack, Box, HStack, Input, Text } from '@chakra-ui/react'
+import React, { useContext, useEffect, useMemo, useState } from 'react'
 import DisplayTx from './DisplayTx'
-import React from 'react'
 import { AppContext, AppContextType } from '../globalReducer'
 import { ExtendedEthersBlockWithTransactions } from 'portalnetwork'
 

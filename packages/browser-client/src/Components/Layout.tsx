@@ -26,8 +26,8 @@ export default function Layout() {
   async function setSample() {
     const sampleBlock = await ethJsBlockToEthersBlockWithTxs(
       Block.fromRLPSerializedBlock(Buffer.from(fromHexString(bigblock[0].rlp)), {
-        hardforkByBlockNumber: true,
-      })
+        setHardfork: true,
+      }),
     )
     dispatch({ type: StateChange.SETBLOCK, payload: sampleBlock })
   }

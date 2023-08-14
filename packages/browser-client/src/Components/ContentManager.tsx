@@ -23,8 +23,8 @@ export default function ContentManager() {
             type: StateChange.SETBLOCK,
             payload: await ethJsBlockToEthersBlockWithTxs(
               Block.fromRLPSerializedBlock(Buffer.from(fromHexString(last[1].rlp)), {
-                hardforkByBlockNumber: true,
-              })
+                setHardfork: true,
+              }),
             ),
           })
         }

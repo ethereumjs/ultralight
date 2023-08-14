@@ -17,7 +17,14 @@ import {
 import { ChevronDownIcon, SearchIcon } from '@chakra-ui/icons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
-import { ENR, fromHexString, getContentId, getContentKey, ContentType } from 'portalnetwork'
+import {
+  ENR,
+  fromHexString,
+  getContentId,
+  getContentKey,
+  ContentType,
+  ProtocolId,
+} from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
 enum GetBy {
@@ -51,11 +58,11 @@ export function PortalButton(props: IPortalButton) {
       peerState,
       peerDispatch,
     },
-    state.provider!.historyProtocol
+    state.provider!.historyProtocol,
   )
   const [offer, setOffer] = useState<string[]>([])
   const [blockHash, setBlockhash] = useState<string>(
-    '0x2d33dc73755afbbbeb6ec4885f2923398901bf1ad94beb325a4c4ecad5bf0f1c'
+    '0x2d33dc73755afbbbeb6ec4885f2923398901bf1ad94beb325a4c4ecad5bf0f1c',
   )
   useEffect(() => {
     setInput(blockHash)
@@ -64,7 +71,7 @@ export function PortalButton(props: IPortalButton) {
   const addToOffer = async (type: ContentType) => {
     const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
     const contentId = getContentId(type, blockHash)
-    if (await state.provider?.historyProtocol.get(contentKey)) {
+    if (await state.provider?.historyProtocol.get(ProtocolId.HistoryNetwork, contentKey)) {
       setOffer([...offer, contentId])
     }
   }

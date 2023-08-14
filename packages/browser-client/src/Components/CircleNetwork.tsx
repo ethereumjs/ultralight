@@ -1,6 +1,6 @@
 import { ENR } from 'portalnetwork'
 import { lightblue } from '../App'
-
+import React from 'react'
 interface NetworkProps {
   peers: ENR[] | undefined
   distances: [number, string[]][]

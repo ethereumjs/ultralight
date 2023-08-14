@@ -4,10 +4,8 @@ import {
   ContentLookup,
   ContentType,
   EpochAccumulator,
-  epochRootByBlocknumber,
   epochRootByIndex,
   fromHexString,
-  getContentId,
   getContentKey,
   HistoryProtocol,
   MAX_HISTORICAL_EPOCHS,
@@ -25,11 +23,11 @@ export default function GetEpoch() {
   async function sendFindEpoch(): Promise<string> {
     const epochRootHash = await epochRootByIndex(epochIndex)
     const protocol = state.provider!.portal.protocols.get(
-      ProtocolId.HistoryNetwork
+      ProtocolId.HistoryNetwork,
     ) as HistoryProtocol
     const lookup = new ContentLookup(
       protocol,
-      fromHexString(getContentKey(ContentType.EpochAccumulator, epochRootHash))
+      fromHexString(getContentKey(ContentType.EpochAccumulator, epochRootHash)),
     )
     const epoch = await lookup.startLookup()
     if (epoch !== undefined) {
