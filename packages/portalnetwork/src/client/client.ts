@@ -10,7 +10,7 @@ import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ProtocolId, StateProtocol } from '../subprotocols/index.js'
+import { BeaconLightClientNetwork, ProtocolId, StateProtocol } from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
@@ -30,7 +30,6 @@ import { LRUCache } from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
-import { BeaconLightClientNetwork } from '../subprotocols/beacon/beacon.js'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
@@ -183,6 +182,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
         case ProtocolId.StateNetwork:
           this.protocols.set(protocol, new StateProtocol(this, opts.radius))
+          break
+        case ProtocolId.BeaconLightClientNetwork:
+          this.protocols.set(protocol, new BeaconLightClientNetwork(this, opts.radius))
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true
