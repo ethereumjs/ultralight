@@ -267,14 +267,14 @@ export abstract class BaseProtocol extends EventEmitter {
         this.logger.extend(`FINDNODES`)(
           `Gathering ENRs at distance ${distance} from ${shortId(src.nodeId)}`,
         )
-        if (distance === 0 || distance === 256) {
+        if (distance === 0) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
           nodesPayload.enrs.push(this.enr.toENR().encode())
         } else {
           for (const enr of this.routingTable.valuesOfDistance(distance)) {
             // Exclude ENR from response if it matches the requesting node
-            if (enr.nodeId === src.nodeId) return true
+            // if (enr.nodeId === src.nodeId) return true
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
 
