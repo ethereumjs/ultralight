@@ -16,12 +16,12 @@ export enum ProtocolId {
 const BYTE_SIZE = 256
 
 export class Bloom {
-  bitvector: Buffer
+  bitvector: Uint8Array
 
   /**
    * Represents a Bloom filter.
    */
-  constructor(bitvector?: Buffer) {
+  constructor(bitvector?: Uint8Array) {
     if (!bitvector) {
       this.bitvector = zeros(BYTE_SIZE)
     } else {
@@ -36,15 +36,15 @@ export class Bloom {
    * Adds an element to a bit vector of a 64 byte bloom filter.
    * @param e - The element to add
    */
-  add(e: Buffer) {
-    if (!Buffer.isBuffer(e)) {
-      throw new Error('Element should be buffer')
+  add(e: Uint8Array) {
+    if (!(e instanceof Uint8Array)) {
+      throw new Error('Element should be Uint8Array')
     }
-    e = Buffer.from(keccak256(e))
+    e = keccak256(e)
     const mask = 2047 // binary 11111111111
 
     for (let i = 0; i < 3; i++) {
-      const first2bytes = e.readUInt16BE(i * 2)
+      const first2bytes = new DataView(e).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
       const bitLoc = 1 << loc % 8
@@ -56,16 +56,16 @@ export class Bloom {
    * Checks if an element is in the bloom.
    * @param e - The element to check
    */
-  check(e: Buffer): boolean {
-    if (!Buffer.isBuffer(e)) {
-      throw new Error('Element should be Buffer')
+  check(e: Uint8Array): boolean {
+    if (!(e instanceof Uint8Array)) {
+      throw new Error('Element should be Uint8Array')
     }
-    e = Buffer.from(keccak256(e))
+    e = keccak256(e)
     const mask = 2047 // binary 11111111111
     let match = true
 
     for (let i = 0; i < 3 && match; i++) {
-      const first2bytes = e.readUInt16BE(i * 2)
+      const first2bytes = new DataView(e).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
       const bitLoc = 1 << loc % 8
@@ -79,8 +79,8 @@ export class Bloom {
    * Checks if multiple topics are in a bloom.
    * @returns `true` if every topic is in the bloom
    */
-  multiCheck(topics: Buffer[]): boolean {
-    return topics.every((t: Buffer) => this.check(t))
+  multiCheck(topics: Uint8Array[]): boolean {
+    return topics.every((t: Uint8Array) => this.check(t))
   }
 
   /**

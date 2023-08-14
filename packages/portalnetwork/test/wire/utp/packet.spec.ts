@@ -3,7 +3,7 @@ import tape from 'tape'
 import { Packet, PacketOptions, PacketType } from '../../../src/index.js'
 
 export const dataPacketTestPayload = fromHexString(
-  '0x010004d20e710cbf00000064000001f4007b15b3c190c9463327a10f8c5a48a02f956738979f317668d58cd0bd57c29aa4b60717f476a7ec41d650d04f62d38504ad29f27392b2b8b0f075a391234132e2bd4932c151b6cad2c5e3300e36149d1ba7d6511b9b6aa8a6e37ba1f8e9474fa5f772c4d43d62fd2a277dc3bd70a55337c96a988aa3ea2dcd9bd834ced9dc20814d454e6349eb5f82a5f481a06b27d77f2b02a3795f86fc264b17cc41b7d3ad20a401324909d2e896ddb3e79fe7ed87904564968196ae7becc332e6456cbaa1892e06cacf667f2d94787361de936157e4dd648895e990cec3e57a76c44fe4d41ad247f1dfcce7d242fa7d3575ce40b886e49096c0ed7738966500e23048297d2a9a7dbd17947824a4f5d73ff3a1dd20e7f7f4ff5a3787934ab4e8d8ded5a84113c9160be4d6b7908b40ccd9facf1631950db591e35b50fe285cfe5df141b6c7f5e65a0e434c3dd0d1a070c6f29ef7236770f218b70ceacc79cd0cb2826e0df8262eeb03c4a566221e776ea080ac7972ab71fdd8a3247c00d8fd198fe42673a974cdebb66d5ba77d99347866027b1770560619e3ebb9ad36f62e105a2cee87f276171a2b248df21d66b23dd19b745eecd59626eb98b9b357be872eb480711623fa702483cc2791a60280c5fc9f8ec6a6d0e75935d87512daa68fd9ab4340fddf027365c938336769339a8f8449d70c2cf7c55444f5e0c355'
+  '0x010004d20e710cbf00000064000001f4007b15b3c190c9463327a10f8c5a48a02f956738979f317668d58cd0bd57c29aa4b60717f476a7ec41d650d04f62d38504ad29f27392b2b8b0f075a391234132e2bd4932c151b6cad2c5e3300e36149d1ba7d6511b9b6aa8a6e37ba1f8e9474fa5f772c4d43d62fd2a277dc3bd70a55337c96a988aa3ea2dcd9bd834ced9dc20814d454e6349eb5f82a5f481a06b27d77f2b02a3795f86fc264b17cc41b7d3ad20a401324909d2e896ddb3e79fe7ed87904564968196ae7becc332e6456cbaa1892e06cacf667f2d94787361de936157e4dd648895e990cec3e57a76c44fe4d41ad247f1dfcce7d242fa7d3575ce40b886e49096c0ed7738966500e23048297d2a9a7dbd17947824a4f5d73ff3a1dd20e7f7f4ff5a3787934ab4e8d8ded5a84113c9160be4d6b7908b40ccd9facf1631950db591e35b50fe285cfe5df141b6c7f5e65a0e434c3dd0d1a070c6f29ef7236770f218b70ceacc79cd0cb2826e0df8262eeb03c4a566221e776ea080ac7972ab71fdd8a3247c00d8fd198fe42673a974cdebb66d5ba77d99347866027b1770560619e3ebb9ad36f62e105a2cee87f276171a2b248df21d66b23dd19b745eecd59626eb98b9b357be872eb480711623fa702483cc2791a60280c5fc9f8ec6a6d0e75935d87512daa68fd9ab4340fddf027365c938336769339a8f8449d70c2cf7c55444f5e0c355',
 )
 
 export type testParams = {
@@ -122,7 +122,7 @@ export function encodingTest(
   t: tape.Test,
   testData: PacketOptions<any>,
   expectedResult: string,
-  _selective?: boolean
+  _selective?: boolean,
 ) {
   const packetType = testData.header.pType
   t.test(`${PacketType[packetType]} packet encoding test.`, (st) => {
@@ -150,13 +150,13 @@ export function encodingTest(
         seqNr: testData.header.seqNr,
         ackNr: testData.header.ackNr,
       },
-      'Packet.fromOpts test passed'
+      'Packet.fromOpts test passed',
     )
     if ('bitmask' in testData.header) {
       st.deepEqual(
         (testPacket.header as any).bitmask,
         testData.header.bitmask,
-        'Packet.bitmask test passed'
+        'Packet.bitmask test passed',
       )
     }
     const encodedPacket = testPacket.encode()
@@ -167,13 +167,13 @@ export function encodingTest(
     st.equal(
       Object.entries(decodedHeader).toString(),
       Object.entries(testHeader).toString(),
-      `Packet.fromBuffer(expectedResult) successfully rebuilt Test Packet`
+      `Packet.fromBuffer(expectedResult) successfully rebuilt Test Packet`,
     )
     const decodedEncoded = Packet.fromBuffer(encodedPacket)
     st.equal(
       Object.entries(decodedEncoded.header).toString(),
       Object.entries(testHeader).toString(),
-      `Successfully encoded and decoded GENERTED ${PacketType[packetType]} packet`
+      `Successfully encoded and decoded GENERTED ${PacketType[packetType]} packet`,
     )
     // if (selective) {
     //   st.deepEqual(
@@ -190,7 +190,7 @@ export function encodingTest(
       st.equal(
         toHexString(Buffer.from(testData.payload!)),
         toHexString(Buffer.from(Uint8Array.from(decodedPacket.payload!))),
-        `Successfully encoded and decoded DATA Packet payload.`
+        `Successfully encoded and decoded DATA Packet payload.`,
       )
     }
 

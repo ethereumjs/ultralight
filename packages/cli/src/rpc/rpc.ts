@@ -12,7 +12,7 @@ export class RPCManager {
    */
   static getMethodNames(mod: Object): string[] {
     const methodNames = Object.getOwnPropertyNames((mod as any).prototype).filter(
-      (methodName: string) => methodName !== 'constructor'
+      (methodName: string) => methodName !== 'constructor',
     )
     return methodNames
   }

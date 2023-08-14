@@ -111,20 +111,20 @@ export class UtpSocket extends EventEmitter {
   async sendPacket<T extends PacketType>(packet: Packet<T>): Promise<Buffer> {
     const msg = packet.encode()
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
-      `|| pktId: ${packet.header.connectionId}`
+      `|| pktId: ${packet.header.connectionId}`,
     )
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
-      `|| seqNr: ${packet.header.seqNr}`
+      `|| seqNr: ${packet.header.seqNr}`,
     )
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
-      `|| ackNr: ${packet.header.ackNr}`
+      `|| ackNr: ${packet.header.ackNr}`,
     )
     this.emit('send', this.remoteAddress, msg, this.protocolId, true)
     return msg
   }
 
   createPacket<T extends PacketType>(
-    opts: ICreatePacketOpts<T> = {} as ICreatePacketOpts<T>
+    opts: ICreatePacketOpts<T> = {} as ICreatePacketOpts<T>,
   ): Packet<T> {
     const extension = 'bitmask' in opts ? 1 : 0
     const params = {
@@ -183,7 +183,7 @@ export class UtpSocket extends EventEmitter {
     await this.sendPacket<PacketType.ST_DATA>(packet)
     this.packetManager.congestionControl.outBuffer.set(
       packet.header.seqNr,
-      packet.header.timestampMicroseconds
+      packet.header.timestampMicroseconds,
     )
     this.updateWindow()
   }
@@ -246,7 +246,7 @@ export class UtpSocket extends EventEmitter {
       this.ackNrs[0] = packet.header.seqNr
     } else {
       this.logger(
-        `Setting AckNr[${packet.header.seqNr - this.ackNrs[0]}] to ${packet.header.seqNr}]`
+        `Setting AckNr[${packet.header.seqNr - this.ackNrs[0]}] to ${packet.header.seqNr}]`,
       )
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
@@ -336,7 +336,7 @@ export class UtpSocket extends EventEmitter {
         this.ackNrs.slice(1).length > 3
           ? this.ackNrs.slice(this.ackNrs.length - 3)?.toString()
           : this.ackNrs.slice(1)?.toString()
-      }`
+      }`,
     )
     this.logger(`AckNr's needed (${needed.length}/${
       Object.keys(this.writer!.dataChunks).length

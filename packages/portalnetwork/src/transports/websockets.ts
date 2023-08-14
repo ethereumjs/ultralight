@@ -3,14 +3,16 @@ import { EventEmitter } from 'events'
 import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
 import {
+  IPMode,
   IRemoteInfo,
   ITransportEvents,
   ITransportService,
 } from '@chainsafe/discv5/lib/transport/types.js'
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
-import { numberToBuffer } from '@chainsafe/discv5'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
+import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
+import { BaseENR } from '@chainsafe/discv5'
 const log = debug('discv5:transport')
 
 interface IWebSocketTransportEvents extends ITransportEvents {
@@ -32,7 +34,11 @@ export class WebSocketTransportService
   private socket: WebSocketAsPromised
   private srcId: string
   private log: Debugger
-
+  ipMode: IPMode = {
+    ip4: true,
+    ip6: false,
+  }
+  bindAddrs: Multiaddr[] = []
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
     //eslint-disable-next-line constructor-super
     super()
@@ -80,10 +86,12 @@ export class WebSocketTransportService
     const opts = to.toOptions()
     const encodedPacket = encodePacket(toId, packet)
     const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
-    const encodedPort = numberToBuffer(opts.port, 2)
+    const port = new DataView(new Uint8Array(2).buffer)
+    port.setUint16(0, opts.port)
+    const encodedPort = new Uint8Array(port.buffer)
     const encodedMessage = new Uint8Array([
       ...Uint8Array.from(encodedAddress),
-      ...Uint8Array.from(encodedPort),
+      ...encodedPort,
       ...Uint8Array.from(encodedPacket),
     ])
     this.socket.sendPacked(encodedMessage)
@@ -92,10 +100,10 @@ export class WebSocketTransportService
   public handleIncoming = (data: Uint8Array): void => {
     const rinfoLength = parseInt(data.slice(0, 2).toString())
     const rinfo = JSON.parse(
-      new TextDecoder().decode(data.slice(2, rinfoLength + 2))
+      new TextDecoder().decode(data.slice(2, rinfoLength + 2)),
     ) as IRemoteInfo
     const multiaddr = ma(
-      `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
+      `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
     const packetBuf = Buffer.from(data.slice(2 + rinfoLength))
     try {
@@ -103,6 +111,17 @@ export class WebSocketTransportService
       this.emit('packet', multiaddr, packet)
     } catch (e) {
       this.emit('decodeError', e as Error, multiaddr)
+    }
+  }
+
+  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
+    const nodeAddr = this.bindAddrs[0].tuples()
+    return {
+      port: this.bindAddrs[0].nodeAddress().port,
+      ip: {
+        type: 4,
+        octets: nodeAddr[0][1] ?? new Uint8Array([0, 0, 0, 0]),
+      },
     }
   }
 }

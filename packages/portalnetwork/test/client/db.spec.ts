@@ -49,28 +49,28 @@ tape('DBManager unit tests', async (t) => {
   t.equal(
     key0,
     historyPrefix + lookupKey,
-    'DBManager prefixed HistoryNetwork key with HistoryNetwork prefix'
+    'DBManager prefixed HistoryNetwork key with HistoryNetwork prefix',
   )
   t.equal(
     BigInt.asUintN(32, BigInt(self)) ^ BigInt.asUintN(32, BigInt(testId)),
     BigInt.asUintN(32, lookupD),
-    'XOR formula works'
+    'XOR formula works',
   )
   t.equal(
     BigInt.asUintN(32, lookupD) ^ BigInt.asUintN(32, BigInt(testId)),
     BigInt.asUintN(32, BigInt(self)),
-    'XOR formula works'
+    'XOR formula works',
   )
   t.equal(
     BigInt.asUintN(32, BigInt(self)) ^ BigInt.asUintN(32, lookupD),
     BigInt.asUintN(32, BigInt(testId)),
-    'XOR formula works'
+    'XOR formula works',
   )
   const val = await historyDb.get(lookupKey)
   t.equal(
     val,
     toHexString(testVal),
-    'HistoryNetwork content retrieved directly from history sublevel'
+    'HistoryNetwork content retrieved directly from history sublevel',
   )
   const res = await db.get(ProtocolId.HistoryNetwork, testKey)
   t.equal(res, toHexString(testVal), 'DBManager retrieved History Content from a content key')
@@ -101,7 +101,7 @@ tape('DBManager unit tests', async (t) => {
   const rest = (await historyDb?.keys().all())!.length
   t.ok(
     rest < 10000,
-    `pruning by 50% removed ${((10000 - rest) * 100) / 10000}% of sublevel content`
+    `pruning by 50% removed ${((10000 - rest) * 100) / 10000}% of sublevel content`,
   )
   t.equals((await db.db.keys().all()).length, 10000 + rest, 'Keys deleted only from sublevel')
   db.close()

@@ -53,7 +53,7 @@ export class NodeLookup {
         const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, this.nodeSought)
         for await (const enr of res.enrs) {
           if (!finished) {
-            const decodedEnr = ENR.decode(Buffer.from(enr))
+            const decodedEnr = ENR.decode(enr)
             if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
               return
             }
@@ -78,7 +78,7 @@ export class NodeLookup {
       this.log(
         `finished node lookup for ${shortId(this.nodeSought)} and found ${
           newPeers.length
-        } new peers`
+        } new peers`,
       )
     for await (const enr of newPeers) {
       // Add all newly found peers to the subprotocol routing table

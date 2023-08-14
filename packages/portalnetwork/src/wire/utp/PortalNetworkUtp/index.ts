@@ -68,7 +68,7 @@ export class PortalNetworkUTP extends EventEmitter {
     remoteAddress: string,
     sndId: number,
     rcvId: number,
-    content?: Uint8Array
+    content?: Uint8Array,
   ): UtpSocket {
     const socket: UtpSocket = new UtpSocket({
       protocolId,
@@ -111,7 +111,7 @@ export class PortalNetworkUTP extends EventEmitter {
         peerId,
         sndId,
         rcvId,
-        content
+        content,
       ),
       socketKey: createSocketKey(peerId, connectionId),
       content: params.contents ? params.contents[0] : undefined,
@@ -133,13 +133,13 @@ export class PortalNetworkUTP extends EventEmitter {
       const packet = Packet.fromBuffer(packetBuffer)
       request.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
       this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
-        `|| pktId: ${packet.header.connectionId}     ||`
+        `|| pktId: ${packet.header.connectionId}     ||`,
       )
       this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
-        `|| seqNr: ${packet.header.seqNr}     ||`
+        `|| seqNr: ${packet.header.seqNr}     ||`,
       )
       this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
-        `|| ackNr: ${packet.header.ackNr}     ||`
+        `|| ackNr: ${packet.header.ackNr}     ||`,
       )
       switch (packet.header.pType) {
         case PacketType.ST_SYN:
@@ -207,7 +207,7 @@ export class PortalNetworkUTP extends EventEmitter {
           request.socket.setAckNr(packet.header.seqNr - 1)
           request.socket.setSeqNr(packet.header.ackNr + 1)
           request.socket.logger(
-            `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`
+            `SYN-ACK received for OFFERACCEPT request with connectionId: ${packet.header.connectionId}.  Beginning DATA stream.`,
           )
           request.socket.setWriter(request.socket.getSeqNr())
         }
@@ -228,7 +228,7 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleSelectiveAckPacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     const ackNrs = PortalNetworkUTP.bitmaskToAckNrs(
       (packet.header as SelectiveAckHeader).selectiveAckExtension.bitmask,
-      request.socket.ackNr
+      request.socket.ackNr,
     )
     const acked = ackNrs.find((a) => !request.socket.ackNrs.includes(a))
     request.socket.logger(
@@ -236,7 +236,7 @@ export class PortalNetworkUTP extends EventEmitter {
         packet.header.ackNr
       }, and a bitmask referencing ackNrs: ${ackNrs}.  Packet acks DATA packet seqNr: ${acked}.  Receive socket still waits for seqNr: ${
         packet.header.ackNr + 1
-      }`
+      }`,
     )
     if (acked) {
       request.socket.updateRTT(packet.header.timestampMicroseconds, acked)
@@ -251,7 +251,7 @@ export class PortalNetworkUTP extends EventEmitter {
         }
         await request.socket.handleStatePacket(
           packet.header.ackNr,
-          packet.header.timestampMicroseconds
+          packet.header.timestampMicroseconds,
         )
         return
       default:
@@ -287,7 +287,7 @@ export class PortalNetworkUTP extends EventEmitter {
       this.logger.extend(`FINISHED`)(
         `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
           ContentType[k[0]]
-        } to database`
+        } to database`,
       )
       if (_content.length === 0) {
         this.logger.extend(`FINISHED`)(`Missing content...`)

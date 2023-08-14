@@ -38,7 +38,7 @@ tape('PacketManager', async (t) => {
         outBuffer: 0,
         writing: false,
       },
-      'should initialize congestionControl attributes'
+      'should initialize congestionControl attributes',
     )
     st.end()
   })

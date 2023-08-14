@@ -21,7 +21,7 @@ const main = async () => {
 
     for (let x = 1; x < args.blockHeight; x++) {
         const web3res = await web3.request('debug_getHeaderRlp', [x])
-        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(web3res.result)), { hardforkByBlockNumber: true})
+        const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(web3res.result)), { setHardfork: true})
         const res2 = await ultralight.request('portal_addBlockHeaderToHistory', [toHexString(header.hash()),web3res.result])
         console.log(x, res2)
     }

@@ -84,7 +84,7 @@ tape('createPacket()', (t) => {
     st.equal(
       write_syn.header.extension,
       HeaderExtension.none,
-      'SYN Packet extension should be none'
+      'SYN Packet extension should be none',
     )
     st.equal(write_syn.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
     st.equal(write_syn.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
@@ -101,7 +101,7 @@ tape('createPacket()', (t) => {
     st.equal(
       read_state.header.extension,
       HeaderExtension.none,
-      'STATE Packet extension should be none'
+      'STATE Packet extension should be none',
     )
     st.equal(read_state.header.connectionId, write.sndConnectionId, 'Packet sndId correctly set')
     st.equal(read_state.header.seqNr, read.getSeqNr(), 'Packet seqNr correctly set')
@@ -115,7 +115,7 @@ tape('createPacket()', (t) => {
     st.equal(
       write_state.header.extension,
       HeaderExtension.none,
-      'STATE Packet extension should be none'
+      'STATE Packet extension should be none',
     )
     st.equal(write_state.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
     st.equal(write_state.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
@@ -132,7 +132,7 @@ tape('createPacket()', (t) => {
     st.equal(
       write_fin.header.extension,
       HeaderExtension.none,
-      'FIN Packet extension should be none'
+      'FIN Packet extension should be none',
     )
     st.equal(write_fin.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
     st.equal(write_fin.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
@@ -149,7 +149,7 @@ tape('createPacket()', (t) => {
     st.equal(
       read_reset.header.extension,
       HeaderExtension.none,
-      'RESET Packet extension should be none'
+      'RESET Packet extension should be none',
     )
     st.equal(read_reset.header.connectionId, write.sndConnectionId, 'Packet sndId correctly set')
     st.equal(read_reset.header.seqNr, read.getSeqNr(), 'Packet seqNr correctly set')
@@ -162,7 +162,7 @@ tape('createPacket()', (t) => {
     st.equal(
       write_reset.header.extension,
       HeaderExtension.none,
-      'RESET Packet extension should be none'
+      'RESET Packet extension should be none',
     )
     st.equal(write_reset.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
     st.equal(write_reset.header.seqNr, write.getSeqNr(), 'Packet seqNr correctly set')
@@ -182,7 +182,7 @@ tape('createPacket()', (t) => {
     st.equal(
       write_data.header.extension,
       HeaderExtension.none,
-      'DATA Packet extension should be none'
+      'DATA Packet extension should be none',
     )
     st.equal(write_data.header.connectionId, read.sndConnectionId, 'Packet sndId correctly set')
     st.equal(write_data.header.seqNr, write.getSeqNr() - 1, 'Packet seqNr correctly set')
@@ -190,7 +190,7 @@ tape('createPacket()', (t) => {
     st.equal(
       toHexString(write_data.payload!),
       '0x1234',
-      'DATA Packet payload correctly set to undefined'
+      'DATA Packet payload correctly set to undefined',
     )
     st.equal(write_data.size, 20 + fromHexString('0x1234').length, 'DATA Packet size should be 20')
 
@@ -249,7 +249,7 @@ tape('handle()', async (t) => {
       t.equal(
         Packet.fromBuffer(msg).header.pType,
         expected,
-        'Packet type handled with correct response Packet type'
+        'Packet type handled with correct response Packet type',
       )
     })
     await testFunction.bind(socket)(...args)
@@ -262,14 +262,14 @@ tape('handle()', async (t) => {
     read,
     read.handleDataPacket,
     PacketType.ST_STATE,
-    write.createPacket({ pType: PacketType.ST_DATA, payload: fromHexString('0x1234') })
+    write.createPacket({ pType: PacketType.ST_DATA, payload: fromHexString('0x1234') }),
   )
   t.equal(read.state, ConnectionState.Connected, 'Socket state updated to CONNECTED')
   await test(
     read,
     read.handleFinPacket,
     PacketType.ST_STATE,
-    write.createPacket({ pType: PacketType.ST_FIN })
+    write.createPacket({ pType: PacketType.ST_FIN }),
   )
   t.equal(read.state, ConnectionState.GotFin, 'Socket state updated to GOT_FIN')
   await test(write, write.handleSynPacket, PacketType.ST_STATE)
@@ -295,7 +295,7 @@ tape('uTP Socket Tests', (t) => {
     s.ackNrs = [0, 1, 2, 3, 4, 6, 5]
     st.ok(
       s.compare(),
-      'socket.compare() returns true for matching but out of order ackNrs and dataNrs'
+      'socket.compare() returns true for matching but out of order ackNrs and dataNrs',
     )
     st.end()
   })
@@ -312,31 +312,31 @@ tape('uTP Socket Tests', (t) => {
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay,
-      'socket.rtt should not change if packet rtt_var remains 0.'
+      'socket.rtt should not change if packet rtt_var remains 0.',
     )
     s.packetManager.congestionControl.updateRTT(2092, 2)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay - 1,
-      'should correctly update RTT with from packet rtt value'
+      'should correctly update RTT with from packet rtt value',
     )
     s.packetManager.congestionControl.updateRTT(3108, 3)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay,
-      'should correctly update RTT with from packet rtt value'
+      'should correctly update RTT with from packet rtt value',
     )
     s.packetManager.congestionControl.updateRTT(4108, 4)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay + 1,
-      'should correctly update RTT with from packet rtt value'
+      'should correctly update RTT with from packet rtt value',
     )
     s.packetManager.congestionControl.updateRTT(5093, 5)
     st.deepEqual(
       s.packetManager.congestionControl.rtt,
       delay,
-      'should correctly update RTT with from packet rtt value'
+      'should correctly update RTT with from packet rtt value',
     )
     st.end()
   })

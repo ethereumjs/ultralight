@@ -6,16 +6,16 @@ import {
 } from '@ethersproject/abstract-provider'
 import { Block as ethJsBlock, BlockHeader } from '@ethereumjs/block'
 import { toHexString } from './index.js'
-import { FeeMarketEIP1559Transaction, Transaction } from '@ethereumjs/tx'
+import { FeeMarketEIP1559Transaction, LegacyTransaction, TypedTxData } from '@ethereumjs/tx'
 import debug from 'debug'
 
 /*** Temporary imports from @ethereumjs/block */
 import { TransactionFactory } from '@ethereumjs/tx'
-import { TypeOutput, setLengthLeft, toBuffer, toType } from '@ethereumjs/util'
+import { TypeOutput, setLengthLeft, toBytes, toType } from '@ethereumjs/util'
 
 import { Block, BlockOptions, JsonRpcBlock } from '@ethereumjs/block'
 
-import type { TxData, TypedTransaction } from '@ethereumjs/tx'
+import type { TypedTransaction } from '@ethereumjs/tx'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
 import { Log, TxReceiptType } from '../subprotocols/index.js'
 export interface ExtendedEthersBlock extends ethers.providers.Block {
@@ -47,8 +47,8 @@ export interface ExtendedTxReceipt extends TransactionReceipt {
 
 export async function getBlockReceipts(block: Block): Promise<TransactionReceipt[]> {
   const vm = await VM.create({
-    common: block._common,
-    hardforkByBlockNumber: true,
+    common: block.common,
+    setHardfork: true,
   })
   const receipts: TxReceiptType[] = []
   for (const tx of block.transactions) {
@@ -93,7 +93,7 @@ export async function getBlockReceipts(block: Block): Promise<TransactionReceipt
       confirmations: 0,
       effectiveGasPrice:
         block.transactions[idx].type === 0
-          ? BigNumber.from((block.transactions[idx] as Transaction).gasPrice)
+          ? BigNumber.from((block.transactions[idx] as LegacyTransaction).gasPrice)
           : BigNumber.from(0),
       byzantium: (r as PreByzantiumTxReceipt).stateRoot ? false : true,
       type: block.transactions[idx].type,
@@ -147,7 +147,7 @@ export interface ExtendedTransactionResponse {}
  * @returns returns an ethers.providers.Block representation of the data
  */
 export const ethJsBlockToEthersBlockWithTxs = async (
-  block: ethJsBlock
+  block: ethJsBlock,
 ): Promise<ExtendedEthersBlockWithTransactions> => {
   debug.enable('ethJsBlockToEthersBlock')
   debug('ethJsBlockToEthersBlockWithTxns')('found a block')
@@ -167,7 +167,7 @@ export const ethJsBlockToEthersBlockWithTxs = async (
       gasLimit: BigNumber.from(tx.gasLimit),
       data: toHexString(tx.data),
       value: ethers.BigNumber.from(tx.value),
-      gasPrice: tx.type === 0 ? BigNumber.from((tx as Transaction).gasPrice) : undefined,
+      gasPrice: tx.type === 0 ? BigNumber.from((tx as LegacyTransaction).gasPrice) : undefined,
       maxFeePerGas:
         tx.type === 2
           ? BigNumber.from((tx as FeeMarketEIP1559Transaction).maxFeePerGas)
@@ -212,7 +212,7 @@ export function normalizeTxParams(_txParams: any) {
   // strict byte length checking
   txParams.to =
     txParams.to !== null && txParams.to !== undefined
-      ? setLengthLeft(toBuffer(txParams.to), 20)
+      ? setLengthLeft(toBytes(txParams.to), 20)
       : null
 
   txParams.v = toType(txParams.v, TypeOutput.BigInt)!
@@ -265,7 +265,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
       nonce,
       baseFeePerGas,
     },
-    { ...options, hardforkByBlockNumber: true }
+    { ...options, setHardfork: true },
   )
 
   return blockHeader
@@ -281,15 +281,15 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
 export function blockFromRpc(
   blockParams: JsonRpcBlock,
   uncles: any[] = [],
-  options?: BlockOptions
+  options?: BlockOptions,
 ) {
   const header = blockHeaderFromRpc(blockParams, options)
 
   const transactions: TypedTransaction[] = []
-  const opts = { common: header._common, hardforkByBlockNumber: true }
+  const opts = { common: header.common, setHardfork: true }
   for (const _txParams of blockParams.transactions ?? []) {
     const txParams = normalizeTxParams(_txParams)
-    const tx = TransactionFactory.fromTxData(txParams as TxData, opts)
+    const tx = TransactionFactory.fromTxData(txParams as TypedTxData, opts)
     transactions.push(tx)
   }
 
@@ -297,6 +297,6 @@ export function blockFromRpc(
 
   return Block.fromBlockData(
     { header, transactions, uncleHeaders },
-    { ...options, hardforkByBlockNumber: true }
+    { ...options, setHardfork: true },
   )
 }

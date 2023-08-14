@@ -15,7 +15,7 @@ tape('Client unit tests', async (t) => {
     st.equal(
       node.discv5.enr.getLocationMultiaddr('udp')!.toOptions().host,
       '192.168.0.1',
-      'created portal network node with correct ip address'
+      'created portal network node with correct ip address',
     )
 
     node.discv5.start = td.func<any>()

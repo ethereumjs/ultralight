@@ -1,5 +1,5 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
-import { Address, bigIntToBuffer } from '@ethereumjs/util'
+import { Address, bigIntToBytes, concatBytes } from '@ethereumjs/util'
 import { toHexString } from '../../util/discv5.js'
 
 import {
@@ -44,7 +44,7 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
         throw new Error('stateRoot is required')
       }
       const key = AccountTrieProofKeyType.serialize({
-        address: opts.address.toBuffer(),
+        address: opts.address.toBytes(),
         stateRoot: opts.stateRoot,
       })
       return Uint8Array.from([opts.contentType, ...key])
@@ -54,7 +54,7 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
         throw new Error('required fields missing')
       }
       const key = ContractStorageTrieKeyType.serialize({
-        address: opts.address.toBuffer(),
+        address: opts.address.toBytes(),
         slot: opts.slot,
         stateRoot: opts.stateRoot,
       })
@@ -65,7 +65,7 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
         throw new Error('codeHash required')
       }
       const key = ContractByteCodeKeyType.serialize({
-        address: opts.address.toBuffer(),
+        address: opts.address.toBytes(),
         codeHash: opts.codeHash,
       })
       return Uint8Array.from([opts.contentType, ...key])
@@ -98,24 +98,24 @@ export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>
   }
   switch (opts.contentType) {
     case StateNetworkContentType.AccountTrieProof: {
-      return sha256(opts.address.toBuffer())
+      return sha256(opts.address.toBytes())
     }
     case StateNetworkContentType.ContractStorageTrieProof: {
       if (!opts.slot) {
         throw new Error('slot value required')
       }
       return Uint8Array.from(
-        bigIntToBuffer(
-          BigInt(toHexString(sha256(opts.address.toBuffer()))) +
-            (BigInt(toHexString(sha256(bigIntToBuffer(opts.slot)))) % MODULO)
-        )
+        bigIntToBytes(
+          BigInt(toHexString(sha256(opts.address.toBytes()))) +
+            (BigInt(toHexString(sha256(bigIntToBytes(opts.slot)))) % MODULO),
+        ),
       )
     }
     case StateNetworkContentType.ContractByteCode: {
       if (!opts.codeHash) {
         throw new Error('codeHash required')
       }
-      return sha256(Buffer.concat([opts.address.toBuffer(), opts.codeHash]))
+      return sha256(concatBytes(opts.address.toBytes(), opts.codeHash))
     }
     default:
       throw new Error(`Content Type ${opts.contentType} not supported`)

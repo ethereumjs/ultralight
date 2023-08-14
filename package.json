@@ -4,8 +4,9 @@
   "workspaces": [
     "./packages/portalnetwork",
     "./packages/cli",
-    "./packages/browser-client",
-    "./packages/proxy"
+    "./packages/proxy",
+    "./packages/browser-client"
+
   ],
   "engines": {
     "npm": ">=7",
@@ -21,7 +22,8 @@
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
     "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
     "clean": "bash ./scripts/clean-root.sh",
-    "tapeHotFix": "sed -i -e 's/js/ts/g' node_modules/tape/bin/import-or-require.js"
+    "tapeHotFix": "sed -i -e 's/js/ts/g' node_modules/tape/bin/import-or-require.js",
+    "ethjsHotFix": "sed -i  '/from \\S\\+\\.json'\\''/ s/;//;/from \\S\\+\\.json/ s/.*/& assert {type: \"json\"};/' node_modules/@ethereumjs/**/dist/esm/**/*.js"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.51.0",
@@ -30,6 +32,6 @@
     "eslint-formatter-codeframe": "^7.32.1",
     "eslint-plugin-implicit-dependencies": "^1.1.1",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^4.2.1"
+    "eslint-plugin-prettier": "^5.0.0"
   }
 }

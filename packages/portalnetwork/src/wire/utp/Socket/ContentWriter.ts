@@ -37,7 +37,7 @@ export default class ContentWriter extends EventEmitter {
       bytes = this.dataChunks[this.seqNr] ?? []
       !this.sentChunks.includes(this.seqNr) && this.sentChunks.push(this.seqNr)
       this.logger(
-        `Sending ST-DATA ${this.seqNr - this.startingSeqNr + 1}/${chunks} -- SeqNr: ${this.seqNr}`
+        `Sending ST-DATA ${this.seqNr - this.startingSeqNr + 1}/${chunks} -- SeqNr: ${this.seqNr}`,
       )
       this.seqNr = this.sentChunks.slice(-1)[0] + 1
 

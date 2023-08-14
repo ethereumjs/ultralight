@@ -10,7 +10,7 @@ tape('CongestionControl', async (t) => {
     st.equal(
       congestionControl.max_window,
       3 * DEFAULT_PACKET_SIZE,
-      'max_window initialized to 3 * DEFAULT_PACKET_SIZE'
+      'max_window initialized to 3 * DEFAULT_PACKET_SIZE',
     )
     st.equal(congestionControl.rtt, 1000, 'rtt initialized to 1000')
     st.equal(congestionControl.rtt_var, 0, 'rtt_var initialized to 0')
@@ -29,7 +29,7 @@ tape('CongestionControl', async (t) => {
     st.equal(
       await congestionControl.canSend(),
       true,
-      'canSend() returns true when cur_window < max_window'
+      'canSend() returns true when cur_window < max_window',
     )
     congestionControl.cur_window = congestionControl.max_window
     let updated = false
@@ -42,7 +42,7 @@ tape('CongestionControl', async (t) => {
     st.equal(
       await congestionControl.canSend(),
       true,
-      'canSend() waits for window to be open to return'
+      'canSend() waits for window to be open to return',
     )
 
     congestionControl.cur_window = congestionControl.max_window
@@ -80,7 +80,7 @@ tape('CongestionControl', async (t) => {
     st.equal(
       congestionControl.max_window,
       DEFAULT_PACKET_SIZE,
-      'max_window reset to DEFAULT_PACKET_SIZE'
+      'max_window reset to DEFAULT_PACKET_SIZE',
     )
     st.end()
   })
@@ -94,7 +94,7 @@ tape('CongestionControl', async (t) => {
       st.equal(
         congestionControl.cur_window,
         2 * DEFAULT_PACKET_SIZE,
-        'cur_window updated to 2 * DEFAULT_PACKET_SIZE'
+        'cur_window updated to 2 * DEFAULT_PACKET_SIZE',
       )
       st.end()
     })

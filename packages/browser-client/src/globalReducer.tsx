@@ -68,7 +68,7 @@ export interface AppStateAction {
 
 export const reducer: React.Reducer<AppState, AppStateAction | AsyncAction> = (
   state: AppState,
-  action: AppStateAction | AsyncAction
+  action: AppStateAction | AsyncAction,
 ) => {
   const _state = state
   const { type, payload } = action
@@ -145,7 +145,7 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
               addrVotesToUpdateEnr: 1,
             },
           },
-        }
+        },
       )
       await startUp(provider)
       dispatch({ type: StateChange.SETPORTAL, payload: provider })

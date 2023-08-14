@@ -38,7 +38,7 @@ export class ultralight {
 
     const [blockHash, rlpHex] = params
     const protocol = this._client.protocols.get(
-      ProtocolId.HistoryNetwork
+      ProtocolId.HistoryNetwork,
     ) as never as HistoryProtocol
     try {
       addRLPSerializedBlock(rlpHex, blockHash, protocol)

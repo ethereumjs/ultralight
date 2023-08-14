@@ -18,7 +18,7 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
   public static create = async (
     fallbackProviderUrl: string | ethers.providers.JsonRpcProvider,
     network = 1,
-    opts: Partial<PortalNetworkOpts>
+    opts: Partial<PortalNetworkOpts>,
   ) => {
     const portal = await PortalNetwork.create(opts)
     return new UltralightProvider(fallbackProviderUrl, network, portal)
@@ -26,11 +26,11 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
   constructor(
     fallbackProvider: string | ethers.providers.JsonRpcProvider,
     network = 1,
-    portal: PortalNetwork
+    portal: PortalNetwork,
   ) {
     super(
       typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider.connection,
-      network
+      network,
     )
     this.fallbackProvider =
       typeof fallbackProvider === 'string'

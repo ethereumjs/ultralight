@@ -94,15 +94,13 @@ export class AccumulatorManager {
    */
   public verifyInclusionProof = async (proof: any, blockHash: string) => {
     const header = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(
-        fromHexString(
-          await this._history.get(
-            this._history.protocolId,
-            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-          )
-        )
+      fromHexString(
+        await this._history.get(
+          this._history.protocolId,
+          getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+        ),
       ),
-      { hardforkByBlockNumber: true }
+      { setHardfork: true },
     )
     try {
       const _proof: SingleProof = {
@@ -121,17 +119,14 @@ export class AccumulatorManager {
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.get(
       this._history.protocolId,
-      getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
+      getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
     )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
     }
-    const blockHeader = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(fromHexString(_blockHeader)),
-      {
-        hardforkByBlockNumber: true,
-      }
-    )
+    const blockHeader = BlockHeader.fromRLPSerializedHeader(fromHexString(_blockHeader), {
+      setHardfork: true,
+    })
     this._history.logger(`generating proof for block ${blockHeader.number}`)
     const gIndex = blockNumberToGindex(blockHeader.number)
     const epochIdx = Math.ceil(Number(blockHeader.number) / 8192)
@@ -144,9 +139,9 @@ export class AccumulatorManager {
               this._history.protocolId,
               getContentKey(
                 ContentType.EpochAccumulator,
-                this.headerAccumulator.historicalEpochs[epochIdx - 1]
-              )
-            )
+                this.headerAccumulator.historicalEpochs[epochIdx - 1],
+              ),
+            ),
           )
     const epochView = EpochAccumulator.deserializeToView(epoch)
     const proof = createProof(epochView.node, {
@@ -163,15 +158,13 @@ export class AccumulatorManager {
   }
   public async getHeaderRecordFromBlockhash(blockHash: string) {
     const header = BlockHeader.fromRLPSerializedHeader(
-      Buffer.from(
-        fromHexString(
-          await this._history.get(
-            this._history.protocolId,
-            getContentKey(ContentType.BlockHeader, fromHexString(blockHash))
-          )
-        )
+      fromHexString(
+        await this._history.get(
+          this._history.protocolId,
+          getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+        ),
       ),
-      { hardforkByBlockNumber: true }
+      { setHardfork: true },
     )
     const epochIndex = Math.ceil(Number(header.number) / 8192)
     const listIndex = Number(header.number) % 8192
@@ -182,9 +175,9 @@ export class AccumulatorManager {
         fromHexString(
           await this._history.get(
             this._history.protocolId,
-            getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1])
-          )
-        )
+            getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1]),
+          ),
+        ),
       )
       return epoch[listIndex]
     }
