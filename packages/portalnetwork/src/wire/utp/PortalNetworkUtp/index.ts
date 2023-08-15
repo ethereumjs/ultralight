@@ -277,9 +277,9 @@ export class PortalNetworkUTP extends EventEmitter {
     if (request.requestCode === RequestCode.ACCEPT_READ) {
       contents = dropPrefixes(content)
     }
-    await this.returnContent(contents, keys)
+    await this.returnContent(request.protocolId, contents, keys)
   }
-  async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
+  async returnContent(protocol: ProtocolId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
     for (const [idx, k] of keys.entries()) {
       const decodedContentKey = decodeContentKey(toHexString(k))

@@ -91,7 +91,7 @@ tape('gossip test', async (t) => {
   )
 
   console.log(res)
-  await node1.stop()
-  await node2.stop()
-  t.end()
+  //await node1.stop()
+  //await node2.stop()
+  //t.end()
 })
