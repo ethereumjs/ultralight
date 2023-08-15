@@ -23,43 +23,53 @@ describe('utility functions', () => {
       fromHexString(block1Hash),
     ),
   )
-  assert.equal(
-    getContentId(HistoryNetworkContentType.BlockHeader, block1Hash),
-    serializedContentKeyToContentId(block1headerContentKey),
-    'produced same content id',
-  )
-  assert.equal(blockNumberToGindex(1000n), 34768n, 'blockNumberToGindex returned correct gindex')
-  assert.equal(blockNumberToGindex(9192n), 34768n, 'blockNumberToGindex returned correct gindex')
-  assert.equal(
-    blockNumberToLeafIndex(1000n),
-    2000,
-    'blockNumberToLeafIndex returned correct leaf index',
-  )
-  assert.equal(
-    blockNumberToLeafIndex(9192n),
-    2000,
-    'blockNumberToLeafIndex returned correct leaf index',
-  )
-  assert.equal(
-    toHexString(epochRootByBlocknumber(1000n)),
-    '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
-    'epochRootByBlocknumber returned correct epoch root',
-  )
-  assert.equal(
-    toHexString(epochRootByIndex(0)),
-    '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
-    'epochRootByIndex returned correct epoch root',
-  )
-  assert.equal(
-    toHexString(epochRootByBlocknumber(9192n)),
-    '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
-    'epochRootByBlocknumber returned correct epoch root',
-  )
-  assert.equal(
-    toHexString(epochRootByIndex(1)),
-    '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
-    'epochRootByIndex returned correct epoch root',
-  )
+  it('contentId functions', () => {
+    assert.equal(
+      getContentId(HistoryNetworkContentType.BlockHeader, block1Hash),
+      serializedContentKeyToContentId(block1headerContentKey),
+      'produced same content id',
+    )
+  })
+  it('blockNumberToGindex', () => {
+    assert.equal(blockNumberToGindex(1000n), 34768n, 'blockNumberToGindex returned correct gindex')
+    assert.equal(blockNumberToGindex(9192n), 34768n, 'blockNumberToGindex returned correct gindex')
+  })
+  it('blockNumberToLeafIndex', () => {
+    assert.equal(
+      blockNumberToLeafIndex(1000n),
+      2000,
+      'blockNumberToLeafIndex returned correct leaf index',
+    )
+    assert.equal(
+      blockNumberToLeafIndex(9192n),
+      2000,
+      'blockNumberToLeafIndex returned correct leaf index',
+    )
+  })
+  it('epochRootByBlocknumber', () => {
+    assert.equal(
+      toHexString(epochRootByBlocknumber(1000n)),
+      '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
+      'epochRootByBlocknumber returned correct epoch root',
+    )
+    assert.equal(
+      toHexString(epochRootByIndex(0)),
+      '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
+      'epochRootByIndex returned correct epoch root',
+    )
+  })
+  it('epochRootByIndex', () => {
+    assert.equal(
+      toHexString(epochRootByBlocknumber(9192n)),
+      '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
+      'epochRootByBlocknumber returned correct epoch root',
+    )
+    assert.equal(
+      toHexString(epochRootByIndex(1)),
+      '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
+      'epochRootByIndex returned correct epoch root',
+    )
+  })
 })
 
 describe('BlockBody ssz serialization/deserialization', () => {
@@ -71,9 +81,11 @@ describe('BlockBody ssz serialization/deserialization', () => {
   const encodedBody = sszEncodeBlockBody(block)
   const encodedHeader = block.header.serialize()
   const reassembledBlock = reassembleBlock(encodedHeader, encodedBody)
-  assert.equal(
-    bytesToHex(block.header.hash()),
-    bytesToHex(reassembledBlock.header.hash()),
-    'was able to ssz serialize and deserialize a block',
-  )
+  it('sszEncodeBlockBody', () => {
+    assert.equal(
+      bytesToHex(block.header.hash()),
+      bytesToHex(reassembledBlock.header.hash()),
+      'was able to ssz serialize and deserialize a block',
+    )
+  })
 })
