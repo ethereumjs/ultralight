@@ -1,6 +1,6 @@
 import { it, assert } from 'vitest'
 import { UltralightProvider } from '../../src/client/provider.js'
-import { TransportLayer } from '../../src/index.js'
+import { ProtocolId, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -22,6 +22,7 @@ it('Test provider functionality', async () => {
       enr: enr,
       peerId: peerId,
     },
+    supportedProtocols: [ProtocolId.HistoryNetwork],
   })
 
   const block = await provider.getBlock(5000)
