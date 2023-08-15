@@ -1,3 +1,7 @@
 import { describe, it, assert } from 'vitest'
 
-describe('Receipt Manager Tests', () => {})
+describe.todo('Receipt Manager Tests', () => {
+  it.todo('should be a real test someday', () => {
+    assert.isTrue(true)
+  })
+})
