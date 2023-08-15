@@ -22,7 +22,6 @@ import {
   RequestCode,
   UtpSocketKey,
   decodeHistoryNetworkContentKey,
-  decodeBeaconContentKey,
   BeaconLightClientNetworkContentType,
 } from '../../../index.js'
 import { EventEmitter } from 'events'
@@ -303,7 +302,6 @@ export class PortalNetworkUTP extends EventEmitter {
         break
       case ProtocolId.BeaconLightClientNetwork:
         for (const [idx, k] of keys.entries()) {
-          const decodedContentKey = decodeBeaconContentKey(k)
           const _content = contents[idx]
           this.logger.extend(`FINISHED`)(
             `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
@@ -314,7 +312,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit('Stream', k[0], decodedContentKey, _content)
+            this.emit('Stream', k[0], toHexString(k), _content)
           }
         }
         break

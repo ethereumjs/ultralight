@@ -9,6 +9,7 @@ import {
   BeaconLightClientNetwork,
   MainnetGenesisValidatorsRoot,
   BeaconLightClientNetworkContentType,
+  toHexString,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 import { EventEmitter } from 'events'
@@ -23,10 +24,8 @@ const privateKeys = [
 ]
 
 const specTestVectors = require('../subprotocols/beacon/specTestVectors.json')
-const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
-const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
-tape('gossip test', async (t) => {
+tape('Find Content tests', async (t) => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -84,14 +83,19 @@ tape('gossip test', async (t) => {
     bootstrap.content_key,
     fromHexString(bootstrap.content_value),
   )
-
-  const res = await protocol2.sendFindContent(
-    node1.discv5.enr.nodeId,
-    fromHexString(bootstrap.content_key),
-  )
-
-  console.log(res)
-  //await node1.stop()
-  //await node2.stop()
-  //t.end()
+  await new Promise((resolve) => {
+    node2.uTP.on('Stream', async () => {
+      const content = await protocol2.findContentLocally(fromHexString(bootstrap.content_key))
+      t.notOk(content === undefined, 'should retrieve content for bootstrap key')
+      t.equal(
+        toHexString(content!),
+        bootstrap.content_value,
+        'retrieved correct content for bootstrap',
+      )
+      await node1.stop()
+      await node2.stop()
+      resolve(undefined)
+    })
+    protocol2.sendFindContent(node1.discv5.enr.nodeId, fromHexString(bootstrap.content_key))
+  })
 })
