@@ -1,5 +1,5 @@
 import { ContainerType, fromHexString, toHexString, UintBigintType } from '@chainsafe/ssz'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import { randomBytes } from 'crypto'
 import {
   getContentId,
@@ -23,8 +23,8 @@ import { readFileSync } from 'fs'
 import { PortalNetwork, ProtocolId } from '../../../src/index.js'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { concatBytes } from '@ethereumjs/util'
-tape('History Subprotocol contentKey serialization/deserialization', (t) => {
-  t.test('content Key', (st) => {
+describe('History Subprotocol contentKey serialization/deserialization', () => {
+  it('content Key', () => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = ContentKeyType.serialize(
       concatBytes(
@@ -33,12 +33,12 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       ),
     )
     let contentId = getContentId(HistoryNetworkContentType.BlockHeader, blockHash)
-    st.equals(
+    assert.equal(
       toHexString(encodedKey),
       '0x00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'blockheader content key equals expected output',
     )
-    st.equals(
+    assert.equal(
       contentId,
       '0x3e86b3767b57402ea72e369ae0496ce47cc15be685bec3b4726b9f316e3895fe',
       'block header content ID matches',
@@ -48,12 +48,12 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockBody]), fromHexString(blockHash)),
     )
     contentId = getContentId(HistoryNetworkContentType.BlockBody, blockHash)
-    st.equals(
+    assert.equal(
       toHexString(encodedKey),
       '0x01d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'blockbody content key equals expected output',
     )
-    st.equals(
+    assert.equal(
       contentId,
       '0xebe414854629d60c58ddd5bf60fd72e41760a5f7a463fdcb169f13ee4a26786b',
       'block body content ID matches',
@@ -63,19 +63,18 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       concatBytes(Uint8Array.from([HistoryNetworkContentType.Receipt]), fromHexString(blockHash)),
     )
     contentId = getContentId(HistoryNetworkContentType.Receipt, blockHash)
-    st.equals(
+    assert.equal(
       toHexString(encodedKey),
       '0x02d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'receipt content key equals expected output',
     )
-    st.equals(
+    assert.equal(
       contentId,
       '0xa888f4aafe9109d495ac4d4774a6277c1ada42035e3da5e10a04cc93247c04a4',
       'receipt content ID matches',
     )
-    st.end()
   })
-  t.test('Receipt encoding decoding', (st) => {
+  it('Receipt encoding decoding', () => {
     const testReceiptData = [
       {
         status: 1 as 0 | 1,
@@ -164,49 +163,46 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
       return new Receipt(r)
     })
     const deserialized = Receipt.fromEncodedReceipt(serializedReceipts[0])
-    st.deepEqual(
+    assert.deepEqual(
       receipts[0].encoded(), //@ts-ignore
       Receipt.fromReceiptData(testReceiptData[0] as TxReceiptType).encoded(),
     )
-    st.deepEqual(receipts[0].encoded(), serializedReceipts[0], 'Receipt decode test passed 1')
-    st.deepEqual(deserialized.encoded(), receipts[0].encoded(), 'Receipt decode test passed 2')
+    assert.deepEqual(receipts[0].encoded(), serializedReceipts[0], 'Receipt decode test passed 1')
+    assert.deepEqual(deserialized.encoded(), receipts[0].encoded(), 'Receipt decode test passed 2')
 
     const _deserialized = Receipt.fromEncodedReceipt(serializedReceipts[1])
-    st.deepEqual(receipts[1].encoded(), serializedReceipts[1], 'Receipt decode test passed 3')
-    st.deepEqual(_deserialized.encoded(), receipts[1].encoded(), 'Receipt decode test passed 4')
+    assert.deepEqual(receipts[1].encoded(), serializedReceipts[1], 'Receipt decode test passed 3')
+    assert.deepEqual(_deserialized.encoded(), receipts[1].encoded(), 'Receipt decode test passed 4')
 
-    st.deepEqual(receipts[2].decoded(), testReceiptData[2], 'Receipt decode test passed 5')
-    st.deepEqual(receipts[3].decoded(), testReceiptData[3], 'Receipt decode test passed 6')
-    st.deepEqual(receipts[4].decoded(), testReceiptData[4], 'Receipt decode test passed 7')
-    st.deepEqual(receipts[5].decoded(), testReceiptData[5], 'Receipt decode test passed 8')
+    assert.deepEqual(receipts[2].decoded(), testReceiptData[2], 'Receipt decode test passed 5')
+    assert.deepEqual(receipts[3].decoded(), testReceiptData[3], 'Receipt decode test passed 6')
+    assert.deepEqual(receipts[4].decoded(), testReceiptData[4], 'Receipt decode test passed 7')
+    assert.deepEqual(receipts[5].decoded(), testReceiptData[5], 'Receipt decode test passed 8')
 
-    st.deepEqual(
+    assert.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[0]).logs,
       testReceiptData[0].logs,
       'Decoded lgos from buffer',
     )
-    st.deepEqual(
+    assert.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[0]).bitvector,
       testReceiptData[0].bitvector,
       'Decoded bitvector from buffer',
     )
-    st.deepEqual(
+    assert.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[1]).logs,
       testReceiptData[1].logs,
       'Decoded lgos from buffer',
     )
-    st.deepEqual(
+    assert.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[1]).bitvector,
       testReceiptData[1].bitvector,
       'Decoded bitvector from buffer',
     )
-
-    st.end()
   })
-  t.end()
 })
 
-tape('Header With Proof serialization/deserialization tests', async (t) => {
+describe('Header With Proof serialization/deserialization tests', async () => {
   const masterAccumulator = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
     encoding: 'hex',
   })
@@ -219,7 +215,7 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
   const serialized_container = MasterAccumulatorType.serialize({
     historicalEpochs: _historicalEpochs,
   })
-  t.deepEqual(
+  assert.deepEqual(
     fromHexString(masterAccumulator),
     serialized_container,
     'Serialized Container matches MasterAccumulator',
@@ -259,21 +255,24 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
     },
     fromHexString(epochHash),
   )
-  t.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
-  t.equal(
+  assert.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
+  assert.equal(
     toHexString(EpochAccumulator.hashTreeRoot(actual_Epoch)),
     epochHash,
     'stored epoch hash matches valid epoch',
   )
   const total_difficulty = new UintBigintType(32).deserialize(headerWithProof.proof.value![0])
   const total_difficulty2 = new UintBigintType(32).deserialize(headerWithProof2.proof.value![0])
-  t.equal(
+  assert.equal(
     total_difficulty2 - total_difficulty,
     deserializedHeader2.difficulty,
     'deserialized headers have valid difficulty',
   )
-  t.equal(deserializedHeader.number, 1000001n, 'deserialized header number matches test vector')
-  t.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
-  t.ok(history.validateHeader(serializedBlock1, toHexString(deserializedHeader.hash())))
-  t.end()
+  assert.equal(
+    deserializedHeader.number,
+    1000001n,
+    'deserialized header number matches test vector',
+  )
+  assert.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
+  assert.ok(history.validateHeader(serializedBlock1, toHexString(deserializedHeader.hash())))
 })

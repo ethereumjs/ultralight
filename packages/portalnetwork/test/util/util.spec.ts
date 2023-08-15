@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import {
   shortId,
   generateRandomNodeIdAtDistance,
@@ -6,20 +6,22 @@ import {
   dirSize,
 } from '../../src/util/index.js'
 import { log2Distance } from '@chainsafe/discv5'
-tape('utility method tests', async (t) => {
+describe('utility method tests', async () => {
   const nodeId = '82418605a77ea8c8f47802d71661d3812ff64e70fd2fc5f0ff57a113185b2c41'
 
   const short = shortId(nodeId)
-  t.ok(short === '82418...b2c41', 'correctly shortened node id')
+  assert.ok(short === '82418...b2c41', 'correctly shortened node id')
 
   let randomNodeId = generateRandomNodeIdAtDistance(nodeId, 255)
-  t.equal(log2Distance(nodeId, randomNodeId), 255, 'calculated random node ID at distance 255')
+  assert.equal(log2Distance(nodeId, randomNodeId), 255, 'calculated random node ID at distance 255')
   randomNodeId = generateRandomNodeIdAtDistance(nodeId, 25)
-  t.equal(log2Distance(nodeId, randomNodeId), 25, 'calculated random node id at distance 25')
+  assert.equal(log2Distance(nodeId, randomNodeId), 25, 'calculated random node id at distance 25')
 
   const arrayOfUint8Arrays = [Uint8Array.from([1, 2, 3]), Uint8Array.from([1, 2])]
-  t.equal(arrayByteLength(arrayOfUint8Arrays), 5, 'computed correct length of nested Uint8Arrays')
-  t.equal(await dirSize('./test/util/testDir'), 0.00002765655517578125)
-
-  t.end()
+  assert.equal(
+    arrayByteLength(arrayOfUint8Arrays),
+    5,
+    'computed correct length of nested Uint8Arrays',
+  )
+  assert.equal(await dirSize('./test/util/testDir'), 0.00002765655517578125)
 })

@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import { BlockHeader } from '@ethereumjs/block'
 import {
   blockNumberToGindex,
@@ -20,7 +20,7 @@ import { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposite.js'
 import { readFileSync } from 'fs'
 const require = createRequire(import.meta.url)
 
-tape('Header Record Proof tests', (t) => {
+describe('Header Record Proof tests', () => {
   const accumulatorRaw = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
     encoding: 'hex',
   })
@@ -41,9 +41,9 @@ tape('Header Record Proof tests', (t) => {
   const header = BlockHeader.fromRLPSerializedHeader(fromHexString(block1000.rawHeader), {
     setHardfork: true,
   })
-  t.test('Test Data is valid', (st) => {
-    st.equal(historicalEpochs.length, 1897, 'Accumulator contains 1897 historical epochs')
-    st.equal(
+  it('Test Data is valid', () => {
+    assert.equal(historicalEpochs.length, 1897, 'Accumulator contains 1897 historical epochs')
+    assert.equal(
       toHexString(EpochAccumulator.hashTreeRoot(epoch)),
       toHexString(historicalEpochs[0]),
       'Header Accumulator contains hash tree root of stored Epoch Accumulator',
@@ -51,28 +51,31 @@ tape('Header Record Proof tests', (t) => {
     const hashes = [...epoch.values()].map((headerRecord) => {
       return toHexString(headerRecord.blockHash)
     })
-    st.equal(
+    assert.equal(
       toHexString(header.hash()),
       block1000.hash,
       'Successfully created BlockHeader from stored bytes',
     )
-    st.ok(hashes.includes(toHexString(header.hash())), 'Header is a part of EpochAccumulator')
-    st.end()
+    assert.ok(hashes.includes(toHexString(header.hash())), 'Header is a part of EpochAccumulator')
   })
 
-  t.test('Epoch Accumulator can create proof for header record.', (st) => {
+  it('Epoch Accumulator can create proof for header record.', () => {
     const gIndex = blockNumberToGindex(1000n)
     const leaves = EpochAccumulator.deserialize(fromHexString(epoch_hex))
     const tree = EpochAccumulator.value_toTree(leaves)
     const headerRecord = leaves[1000]
-    st.equal(blockNumberToLeafIndex(1000n), 2000, 'Leaf index for block number is correct')
-    st.equal(
+    assert.equal(blockNumberToLeafIndex(1000n), 2000, 'Leaf index for block number is correct')
+    assert.equal(
       gIndex,
       EpochAccumulator.tree_getLeafGindices(1n, tree)[blockNumberToLeafIndex(1000n)],
       'gIndex for Header Record calculated from block number',
     )
-    st.equal(leaves.length, 8192, 'SSZ Merkle Tree created from serialized Epoch Accumulator bytes')
-    st.deepEqual(
+    assert.equal(
+      leaves.length,
+      8192,
+      'SSZ Merkle Tree created from serialized Epoch Accumulator bytes',
+    )
+    assert.deepEqual(
       {
         blockHash: toHexString(headerRecord.blockHash),
         totalDifficulty: headerRecord.totalDifficulty,
@@ -80,7 +83,7 @@ tape('Header Record Proof tests', (t) => {
       headerRecord1000,
       'HeaderRecord found located in Epoch Accumulator Tree by gIndex',
     )
-    st.equal(
+    assert.equal(
       toHexString(headerRecord.blockHash),
       toHexString(header.hash()),
       'HeadeRecord blockHash matches blockHeader',
@@ -90,13 +93,13 @@ tape('Header Record Proof tests', (t) => {
       type: ProofType.single,
       gindex: gIndex,
     }) as SingleProof
-    st.equal(
+    assert.equal(
       toHexString(proof.leaf),
       headerRecord1000.blockHash,
       'Successfully created a Proof for Header Record',
     )
-    st.equal(proof.witnesses.length, 15, 'proof is correct size')
-    st.equal(proof.gindex, gIndex, 'Proof is for correct Index')
+    assert.equal(proof.witnesses.length, 15, 'proof is correct size')
+    assert.equal(proof.gindex, gIndex, 'Proof is for correct Index')
     let reconstructedEpoch: ListCompositeTreeView<
       ContainerType<{
         blockHash: ByteVectorType
@@ -109,34 +112,30 @@ tape('Header Record Proof tests', (t) => {
         EpochAccumulator.hashTreeRoot(epoch),
       )
       const n = reconstructedEpoch.hashTreeRoot()
-      st.deepEqual(
+      assert.deepEqual(
         n,
         EpochAccumulator.hashTreeRoot(epoch),
         'Successfully reconstructed partial EpochAccumulator SSZ tree from Proof',
       )
       try {
         const leaf = reconstructedEpoch.get(1000)
-        st.pass('SSZ Tree has a leaf at the expected index')
-        st.equal(
+        assert.ok(true, 'SSZ Tree has a leaf at the expected index')
+        assert.equal(
           toHexString(leaf.hashTreeRoot()),
           toHexString(HeaderRecordType.hashTreeRoot(headerRecord)),
           'Leaf contains correct Header Record',
         )
       } catch {
-        st.fail('SSZ Should have a leaf at the expected index')
+        assert.fail('SSZ Should have a leaf at the expected index')
       }
       try {
         reconstructedEpoch.getAllReadonly()
-        st.fail('Reconstructed Tree contains leaves that it should not')
+        assert.fail('Reconstructed Tree contains leaves that it should not')
       } catch {
-        st.pass('Reconstructed Tree should not contain leaves without proof')
+        assert.ok(true, 'Reconstructed Tree should not contain leaves without proof')
       }
     } catch {
-      st.fail('Failed to reconstruct SSZ tree from proof')
+      assert.fail('Failed to reconstruct SSZ tree from proof')
     }
-
-    st.end()
   })
-
-  t.end()
 })

@@ -1,5 +1,5 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import { Packet, PacketOptions, PacketType } from '../../../src/index.js'
 
 export const dataPacketTestPayload = fromHexString(
@@ -119,15 +119,14 @@ export const packetTestData: Record<string, testParams> = {
 // 4. Compare test-data / created packet / decoded packet
 
 export function encodingTest(
-  t: tape.Test,
   testData: PacketOptions<any>,
   expectedResult: string,
   _selective?: boolean,
 ) {
   const packetType = testData.header.pType
-  t.test(`${PacketType[packetType]} packet encoding test.`, (st) => {
+  it(`${PacketType[packetType]} packet encoding test.`, () => {
     const testPacket = Packet.fromOpts(testData)
-    st.deepEqual(
+    assert.deepEqual(
       {
         pType: testPacket.header.pType,
         version: testPacket.header.version,
@@ -153,30 +152,30 @@ export function encodingTest(
       'Packet.fromOpts test passed',
     )
     if ('bitmask' in testData.header) {
-      st.deepEqual(
+      assert.deepEqual(
         (testPacket.header as any).bitmask,
         testData.header.bitmask,
         'Packet.bitmask test passed',
       )
     }
     const encodedPacket = testPacket.encode()
-    st.equal(toHexString(encodedPacket), expectedResult, 'Packet encoding test passed')
+    assert.equal(toHexString(encodedPacket), expectedResult, 'Packet encoding test passed')
     const testHeader = testPacket.header
     const decodedPacket = Packet.fromBuffer(Buffer.from(expectedResult.slice(2), 'hex'))
     const decodedHeader = decodedPacket.header
-    st.equal(
+    assert.equal(
       Object.entries(decodedHeader).toString(),
       Object.entries(testHeader).toString(),
       `Packet.fromBuffer(expectedResult) successfully rebuilt Test Packet`,
     )
     const decodedEncoded = Packet.fromBuffer(encodedPacket)
-    st.equal(
+    assert.equal(
       Object.entries(decodedEncoded.header).toString(),
       Object.entries(testHeader).toString(),
       `Successfully encoded and decoded GENERTED ${PacketType[packetType]} packet`,
     )
     // if (selective) {
-    //   st.deepEqual(
+    //   assert.deepEqual(
     //     Uint8Array.from((decodedHeader as SelectiveAckHeader).selectiveAckExtension.bitmask),
     //     Uint8Array.from((testHeader as SelectiveAckHeader).selectiveAckExtension.bitmask),
     //     `sucessfully encoded and decoded Selective Ack Bitmask`
@@ -184,28 +183,20 @@ export function encodingTest(
     //   const bm = new BitVectorType(32).deserialize(
     //     (decodedHeader as SelectiveAckHeader).selectiveAckExtension.bitmask
     //   )
-    //   st.equal(bm.bitLen, 32, 'Bitmask is 32 bits')
+    //   assert.equal(bm.bitLen, 32, 'Bitmask is 32 bits')
     // }
     if (packetType === PacketType.ST_DATA) {
-      st.equal(
+      assert.equal(
         toHexString(Buffer.from(testData.payload!)),
         toHexString(Buffer.from(Uint8Array.from(decodedPacket.payload!))),
         `Successfully encoded and decoded DATA Packet payload.`,
       )
     }
-
-    st.end()
   })
 }
 
-tape('uTP packet tests', (t) => {
-  // t.throws(() => {
-  //   Packet.fromOpts({
-  //     header: { seqNr: 1, ackNr: 1, timestampMicroseconds: Bytes32TimeStamp(), wndSize: 14508 },
-  //   })
-  // }, 'Packet.fromOpts should throw on invalid Packet Type')
+describe('uTP packet tests', () => {
   Object.values(packetTestData).map((packetData) => {
-    encodingTest(t, packetData.data, packetData.expectedResult, 'bitmask' in packetData.data.header)
+    encodingTest(packetData.data, packetData.expectedResult, 'bitmask' in packetData.data.header)
   })
-  t.end()
 })

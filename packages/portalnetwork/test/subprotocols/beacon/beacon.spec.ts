@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 import { fromHexString, toHexString } from '@chainsafe/ssz'
@@ -23,7 +23,7 @@ const specTestVectors = require('./specTestVectors.json')
 const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
 const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
-tape('portal network spec test vectors', (t) => {
+describe('portal network spec test vectors', () => {
   const serializedOptimistincUpdate = fromHexString(
     specTestVectors.optimisticUpdate['6718463'].content_value,
   )
@@ -32,19 +32,19 @@ tape('portal network spec test vectors', (t) => {
   )
   const forkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
 
-  t.equal(config.forkDigest2ForkName(forkDigest), 'capella', 'derived correct fork')
+  assert.equal(config.forkDigest2ForkName(forkDigest), 'capella', 'derived correct fork')
   const deserializedOptimisticUpdate = ssz.capella.LightClientOptimisticUpdate.deserialize(
     serializedOptimistincUpdate.slice(4),
   )
   const optimisticUpdateKey = LightClientOptimisticUpdateKey.deserialize(
     serializedOptimistincUpdateKey.slice(1),
   )
-  t.equal(
+  assert.equal(
     deserializedOptimisticUpdate.attestedHeader.beacon.slot,
     6718463,
     'deserialized optimistic update',
   )
-  t.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimstic update key')
+  assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimstic update key')
 
   const finalityUpdate = fromHexString(specTestVectors.finalityUpdate['6718463'].content_value)
   const finalityUpdateKey = fromHexString(
@@ -53,12 +53,12 @@ tape('portal network spec test vectors', (t) => {
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
     finalityUpdate.slice(4),
   )
-  t.equal(
+  assert.equal(
     deserializedFinalityUpdate.attestedHeader.beacon.slot,
     6718463,
     'deserialized finality update',
   )
-  t.equal(
+  assert.equal(
     LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).zero,
     0n,
     'deserialized finality update key',
@@ -69,8 +69,8 @@ tape('portal network spec test vectors', (t) => {
   )
   const bootstrapKey = fromHexString(bootstrap.content_key).slice(1)
 
-  t.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
-  t.equal(
+  assert.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
+  assert.equal(
     toHexString(LightClientBootstrapKey.deserialize(bootstrapKey).blockHash),
     '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
     'deserialized light client bootstrap key',
@@ -89,16 +89,15 @@ tape('portal network spec test vectors', (t) => {
     ssz[forkname].LightClientUpdate.deserialize(update.slice(4)).attestedHeader.beacon.slot
     numUpdatesDeserialized++
   }
-  t.equal(numUpdatesDeserialized, 4, 'deserialized LightClientUpdatesByRange')
-  t.equal(
+  assert.equal(numUpdatesDeserialized, 4, 'deserialized LightClientUpdatesByRange')
+  assert.equal(
     LightClientUpdatesByRangeKey.deserialize(updateByRangeKey).count,
     4n,
     'deserialized update by range key',
   )
-  t.end()
 })
 
-tape('API tests', async (t) => {
+describe('API tests', async () => {
   const privateKeys = [
     '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   ]
@@ -131,7 +130,7 @@ tape('API tests', async (t) => {
     fromHexString(bootstrap.content_value),
   )
   const retrievedBootstrap = await protocol.findContentLocally(fromHexString(bootstrap.content_key))
-  t.equal(
+  assert.equal(
     ssz.capella.LightClientBootstrap.deserialize(retrievedBootstrap!.slice(4)).header.beacon.slot,
     ssz.capella.LightClientBootstrap.deserialize(fromHexString(bootstrap.content_value).slice(4))
       .header.beacon.slot,
@@ -147,7 +146,7 @@ tape('API tests', async (t) => {
   const retrievedFinalityUpdate = await protocol.findContentLocally(
     fromHexString(finalityUpdate.content_key),
   )
-  t.equal(
+  assert.equal(
     ssz.capella.LightClientFinalityUpdate.deserialize(retrievedFinalityUpdate!.slice(4))
       .attestedHeader.beacon.slot,
     ssz.capella.LightClientFinalityUpdate.deserialize(
@@ -164,7 +163,7 @@ tape('API tests', async (t) => {
   const retrievedOptimisticUpdate = await protocol.findContentLocally(
     fromHexString(optimisticUpdate.content_key),
   )
-  t.equal(
+  assert.equal(
     ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))
       .attestedHeader.beacon.slot,
     ssz.capella.LightClientOptimisticUpdate.deserialize(
@@ -180,9 +179,8 @@ tape('API tests', async (t) => {
       updatesByRange.content_key,
       fromHexString(optimisticUpdate.content_value),
     )
-    t.fail('should throw')
+    assert.fail('should throw')
   } catch {
-    t.pass('throws when trying to store a batch of light client updates')
+    assert.ok(true, 'throws when trying to store a batch of light client updates')
   }
-  t.end()
 })

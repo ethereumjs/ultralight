@@ -1,6 +1,6 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { Block, BlockBytes, BlockHeader } from '@ethereumjs/block'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import * as td from 'testdouble'
 import { readFileSync } from 'fs'
 import {
@@ -26,7 +26,7 @@ import { concatBytes } from '@ethereumjs/util'
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')
 
-tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => {
+describe('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async () => {
   const block1Rlp = testBlocks.block1.blockRlp
   const block1Hash = testBlocks.block1.blockHash
   const node = await PortalNetwork.create({
@@ -54,7 +54,11 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
     protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
   ).thenResolve(findContentResponse)
   const res = await protocol.sendFindContent(decodedEnr.nodeId, fromHexString(key))
-  t.deepEqual(res?.value, Uint8Array.from([97, 98, 99]), 'got correct response for content abc')
+  assert.deepEqual(
+    res?.value,
+    Uint8Array.from([97, 98, 99]),
+    'got correct response for content abc',
+  )
 
   // TODO: Write good `handleFindContent` tests
 
@@ -68,11 +72,11 @@ tape('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async (t) => 
     ),
   )
   const header = await protocol.sendFindContent('0xabcd', contentKey)
-  t.equal(header, undefined, 'received undefined for unknown peer')
+  assert.equal(header, undefined, 'received undefined for unknown peer')
 })
 
-tape('store -- Headers and Epoch Accumulators', async (t) => {
-  t.test('Should store and retrieve block header from DB', async (st) => {
+describe('store -- Headers and Epoch Accumulators', async () => {
+  it('Should store and retrieve block header from DB', async () => {
     const epoch = readFileSync(
       './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
       { encoding: 'hex' },
@@ -82,7 +86,6 @@ tape('store -- Headers and Epoch Accumulators', async (t) => {
       supportedProtocols: [ProtocolId.HistoryNetwork],
     })
     const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    st.plan(1)
     const block1Rlp =
       '0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4'
     const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
@@ -113,11 +116,10 @@ tape('store -- Headers and Epoch Accumulators', async (t) => {
     const header = BlockHeader.fromRLPSerializedHeader(headerWith.header, {
       setHardfork: true,
     })
-    st.equal(header.number, 1n, 'retrieved block header based on content key')
-    st.end()
+    assert.equal(header.number, 1n, 'retrieved block header based on content key')
   })
 
-  t.test('Should store and retrieve an EpochAccumulator from DB', async (st) => {
+  it('Should store and retrieve an EpochAccumulator from DB', async () => {
     const node = await PortalNetwork.create({
       transport: TransportLayer.WEB,
       supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -133,11 +135,11 @@ tape('store -- Headers and Epoch Accumulators', async (t) => {
       fromHexString(epochAccumulator.serialized),
     )
     const fromDB = await protocol.retrieve(contentKey)
-    st.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
+    assert.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
   })
 })
 
-tape('store -- Block Bodies and Receipts', async (t) => {
+describe('store -- Block Bodies and Receipts', async () => {
   const node = await PortalNetwork.create({
     transport: TransportLayer.WEB,
     supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -154,7 +156,7 @@ tape('store -- Block Bodies and Receipts', async (t) => {
 
   await protocol.store(HistoryNetworkContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   const _epochHash = toHexString(epochRootByBlocknumber(207686n))
-  t.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
+  assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
   const proof = await protocol.generateInclusionProof(207686n)
   const headerWithProof = BlockHeaderWithProof.serialize({
     header: block.header.serialize(),
@@ -185,13 +187,16 @@ tape('store -- Block Bodies and Receipts', async (t) => {
     getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(serializedBlock.blockHash)),
   )
   const rebuilt = reassembleBlock(header, fromHexString(body!))
-  t.equal(rebuilt.header.number, block.header.number, 'reassembled block from components in DB')
+  assert.equal(
+    rebuilt.header.number,
+    block.header.number,
+    'reassembled block from components in DB',
+  )
   const receipt = await protocol.saveReceipts(block)
-  t.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
-  t.end()
+  assert.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
 })
 
-tape('Header Proof Tests', async (t) => {
+describe('Header Proof Tests', async () => {
   const _epoch1Hash = '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218'
   const _epochRaw = readFileSync(
     './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
@@ -204,32 +209,27 @@ tape('Header Proof Tests', async (t) => {
   })
   const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   // protocol.accumulator.replaceAccumulator(accumulator)
-  t.test(
-    'HistoryProtocol can create and verify proofs for a HeaderRecord from an EpochAccumulator',
-    async (st) => {
-      const _block1000 = require('../../testData/testBlock1000.json')
-      await protocol.store(
-        HistoryNetworkContentType.EpochAccumulator,
-        _epoch1Hash,
-        fromHexString(_epochRaw),
-      )
-      const proof = await protocol.generateInclusionProof(1000n)
-      const headerWith = BlockHeaderWithProof.serialize({
-        header: fromHexString(_block1000.rawHeader),
-        proof: {
-          selector: 1,
-          value: proof,
-        },
-      })
-      await protocol.store(HistoryNetworkContentType.BlockHeader, _block1000.hash, headerWith)
-      st.equal(proof.length, 15, 'Proof has correct size')
-      st.ok(
-        protocol.verifyInclusionProof(proof, _block1000.hash, 1000n),
-        'History Protocol verified an inclusion proof from a historical epoch.',
-      )
-      st.pass('TODO: fix this test')
-      st.end()
-    },
-  )
-  t.end()
+  it('HistoryProtocol can create and verify proofs for a HeaderRecord from an EpochAccumulator', async () => {
+    const _block1000 = require('../../testData/testBlock1000.json')
+    await protocol.store(
+      HistoryNetworkContentType.EpochAccumulator,
+      _epoch1Hash,
+      fromHexString(_epochRaw),
+    )
+    const proof = await protocol.generateInclusionProof(1000n)
+    const headerWith = BlockHeaderWithProof.serialize({
+      header: fromHexString(_block1000.rawHeader),
+      proof: {
+        selector: 1,
+        value: proof,
+      },
+    })
+    await protocol.store(HistoryNetworkContentType.BlockHeader, _block1000.hash, headerWith)
+    assert.equal(proof.length, 15, 'Proof has correct size')
+    assert.ok(
+      protocol.verifyInclusionProof(proof, _block1000.hash, 1000n),
+      'History Protocol verified an inclusion proof from a historical epoch.',
+    )
+    assert.ok(true, 'TODO: fix this test')
+  })
 })

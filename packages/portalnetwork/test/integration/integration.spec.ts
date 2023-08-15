@@ -2,7 +2,7 @@ import { Block, BlockHeader } from '@ethereumjs/block'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { readFileSync } from 'fs'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import {
   addRLPSerializedBlock,
   BlockHeaderWithProof,
@@ -43,7 +43,7 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
   return toHexString(testHash)
 })
 
-tape('gossip test', async (t) => {
+describe('gossip test', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -80,7 +80,7 @@ tape('gossip test', async (t) => {
   const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   await protocol1?.sendPing(protocol2?.enr!.toENR())
-  t.equal(
+  assert.equal(
     protocol1?.routingTable.getWithPending(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     )?.value.nodeId,
@@ -97,7 +97,7 @@ tape('gossip test', async (t) => {
   //   '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
   //   fromHexString(epoch25)
   // )
-  t.equal(
+  assert.equal(
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
@@ -106,7 +106,7 @@ tape('gossip test', async (t) => {
   )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
     const proof = await protocol1.generateInclusionProof(testBlock.header.number)
-    t.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
+    assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
     const headerWith = BlockHeaderWithProof.serialize({
       header: testBlock.header.serialize(),
       proof: {
@@ -124,7 +124,7 @@ tape('gossip test', async (t) => {
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
   const to = setTimeout(() => {
-    t.fail('timeout')
+    assert.fail('timeout')
     end.emit('end()')
   }, 10000)
   protocol2.on('ContentAdded', async (key, contentType, content) => {
@@ -133,9 +133,9 @@ tape('gossip test', async (t) => {
       const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
         setHardfork: true,
       })
-      t.ok(testHashStrings.includes(bytesToHex(header.hash())), 'node 2 found expected header')
+      assert.ok(testHashStrings.includes(bytesToHex(header.hash())), 'node 2 found expected header')
       if (bytesToHex(header.hash()) === testHashStrings[6]) {
-        t.pass('found expected last header')
+        assert.ok(true, 'found expected last header')
         node2.removeAllListeners()
         await node1.stop()
         await node2.stop()
@@ -151,7 +151,7 @@ tape('gossip test', async (t) => {
   })
 })
 
-tape('FindContent', async (t) => {
+describe('FindContent', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -194,7 +194,7 @@ tape('FindContent', async (t) => {
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     fromHexString(epoch25),
   )
-  t.equal(
+  assert.equal(
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
@@ -220,7 +220,7 @@ tape('FindContent', async (t) => {
         const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
           setHardfork: true,
         })
-        t.equal(
+        assert.equal(
           toHexString(header.hash()),
           testBlockData[29].blockHash,
           'retrieved expected header',
@@ -228,15 +228,13 @@ tape('FindContent', async (t) => {
         node2.removeAllListeners()
         await node1.stop()
         await node2.stop()
-        resolve(() => {
-          t.end()
-        })
+        resolve(() => {})
       }
     })
   })
 })
 
-tape('eth_getBlockByHash', async (t) => {
+describe('eth_getBlockByHash', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -278,7 +276,7 @@ tape('eth_getBlockByHash', async (t) => {
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     fromHexString(epoch25),
   )
-  t.equal(
+  assert.equal(
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
@@ -289,15 +287,17 @@ tape('eth_getBlockByHash', async (t) => {
   await protocol1.sendPing(protocol2?.enr!.toENR())
 
   const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
-  t.equal(toHexString(retrieved!.hash()), testBlockData[29].blockHash, 'retrieved expected header')
+  assert.equal(
+    toHexString(retrieved!.hash()),
+    testBlockData[29].blockHash,
+    'retrieved expected header',
+  )
 
   await node1.stop()
   await node2.stop()
-  t.end()
 })
 
-tape('eth_getBlockByNumber', async (t) => {
-  t.plan(1)
+describe('eth_getBlockByNumber', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -352,9 +352,8 @@ tape('eth_getBlockByNumber', async (t) => {
   await protocol1.sendPing(protocol2?.enr!.toENR())
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
 
-  t.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
+  assert.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
 
   await node1.stop()
   await node2.stop()
-  t.end()
 })

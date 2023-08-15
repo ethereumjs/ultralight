@@ -1,6 +1,6 @@
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import {
   fromHexString,
   PortalNetwork,
@@ -23,7 +23,7 @@ const privateKeys = [
 
 const specTestVectors = require('../subprotocols/beacon/specTestVectors.json')
 
-tape('Find Content tests', async (t) => {
+describe('Find Content tests', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -64,7 +64,7 @@ tape('Find Content tests', async (t) => {
     ProtocolId.BeaconLightClientNetwork,
   ) as BeaconLightClientNetwork
   await protocol1!.sendPing(protocol2?.enr!.toENR())
-  t.equal(
+  assert.equal(
     protocol1?.routingTable.getWithPending(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     )?.value.nodeId,
@@ -82,8 +82,8 @@ tape('Find Content tests', async (t) => {
   await new Promise((resolve) => {
     node2.uTP.on('Stream', async () => {
       const content = await protocol2.findContentLocally(fromHexString(bootstrap.content_key))
-      t.notOk(content === undefined, 'should retrieve content for bootstrap key')
-      t.equal(
+      assert.notOk(content === undefined, 'should retrieve content for bootstrap key')
+      assert.equal(
         toHexString(content!),
         bootstrap.content_value,
         'retrieved correct content for bootstrap',

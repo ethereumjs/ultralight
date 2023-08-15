@@ -1,5 +1,3 @@
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 
-tape('Receipt Manager Tests', (t) => {
-  t.end()
-})
+describe('Receipt Manager Tests', () => {})
