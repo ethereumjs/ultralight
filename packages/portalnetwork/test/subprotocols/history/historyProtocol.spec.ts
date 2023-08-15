@@ -50,15 +50,18 @@ describe('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async () 
   protocol.validateHeader = td.func<any>()
   // protocol.sendFindContent = td.func<any>()
   protocol.sendMessage = td.func<any>()
+
   td.when(
     protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
   ).thenResolve(findContentResponse)
   const res = await protocol.sendFindContent(decodedEnr.nodeId, fromHexString(key))
-  assert.deepEqual(
-    res?.value,
-    Uint8Array.from([97, 98, 99]),
-    'got correct response for content abc',
-  )
+  it('should send a FINDCONTENT message', () => {
+    assert.deepEqual(
+      res?.value,
+      Uint8Array.from([97, 98, 99]),
+      'got correct response for content abc',
+    )
+  })
 
   // TODO: Write good `handleFindContent` tests
 
@@ -72,7 +75,9 @@ describe('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async () 
     ),
   )
   const header = await protocol.sendFindContent('0xabcd', contentKey)
-  assert.equal(header, undefined, 'received undefined for unknown peer')
+  it('should send a FINDCONTENT message for a block header', () => {
+    assert.equal(header, undefined, 'received undefined for unknown peer')
+  })
 })
 
 describe('store -- Headers and Epoch Accumulators', async () => {
@@ -156,7 +161,10 @@ describe('store -- Block Bodies and Receipts', async () => {
 
   await protocol.store(HistoryNetworkContentType.EpochAccumulator, epochHash, fromHexString(epoch))
   const _epochHash = toHexString(epochRootByBlocknumber(207686n))
-  assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
+  it('Should store and retrieve a block body from DB', async () => {
+    assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
+  })
+
   const proof = await protocol.generateInclusionProof(207686n)
   const headerWithProof = BlockHeaderWithProof.serialize({
     header: block.header.serialize(),
@@ -187,13 +195,18 @@ describe('store -- Block Bodies and Receipts', async () => {
     getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(serializedBlock.blockHash)),
   )
   const rebuilt = reassembleBlock(header, fromHexString(body!))
-  assert.equal(
-    rebuilt.header.number,
-    block.header.number,
-    'reassembled block from components in DB',
-  )
+
+  it('Should store and retrieve a block body from DB', async () => {
+    assert.equal(
+      rebuilt.header.number,
+      block.header.number,
+      'reassembled block from components in DB',
+    )
+  })
   const receipt = await protocol.saveReceipts(block)
-  assert.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
+  it('Should store and retrieve block receipts from DB', async () => {
+    assert.equal(receipt[0].cumulativeBlockGasUsed, 43608n, 'correctly generated block receipts')
+  })
 })
 
 describe('Header Proof Tests', async () => {
