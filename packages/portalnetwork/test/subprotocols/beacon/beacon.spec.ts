@@ -23,7 +23,7 @@ const specTestVectors = require('./specTestVectors.json')
 const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
 const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
-describe('portal network spec test vectors', () => {
+it('portal network spec test vectors', () => {
   const serializedOptimistincUpdate = fromHexString(
     specTestVectors.optimisticUpdate['6718463'].content_value,
   )
@@ -185,7 +185,7 @@ describe('API tests', async () => {
   }
 })
 
-tape('API tests', async (t) => {
+it('API tests', async () => {
   const privateKeys = [
     '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   ]
@@ -218,7 +218,7 @@ tape('API tests', async (t) => {
     fromHexString(bootstrap.content_value),
   )
   const retrievedBootstrap = await protocol.findContentLocally(fromHexString(bootstrap.content_key))
-  t.equal(
+  assert.equal(
     ssz.capella.LightClientBootstrap.deserialize(retrievedBootstrap!.slice(4)).header.beacon.slot,
     ssz.capella.LightClientBootstrap.deserialize(fromHexString(bootstrap.content_value).slice(4))
       .header.beacon.slot,
@@ -234,7 +234,7 @@ tape('API tests', async (t) => {
   const retrievedFinalityUpdate = await protocol.findContentLocally(
     fromHexString(finalityUpdate.content_key),
   )
-  t.equal(
+  assert.equal(
     ssz.capella.LightClientFinalityUpdate.deserialize(retrievedFinalityUpdate!.slice(4))
       .attestedHeader.beacon.slot,
     ssz.capella.LightClientFinalityUpdate.deserialize(
@@ -251,7 +251,7 @@ tape('API tests', async (t) => {
   const retrievedOptimisticUpdate = await protocol.findContentLocally(
     fromHexString(optimisticUpdate.content_key),
   )
-  t.equal(
+  assert.equal(
     ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))
       .attestedHeader.beacon.slot,
     ssz.capella.LightClientOptimisticUpdate.deserialize(
@@ -267,9 +267,8 @@ tape('API tests', async (t) => {
       updatesByRange.content_key,
       fromHexString(optimisticUpdate.content_value),
     )
-    t.fail('should throw')
+    assert.fail('should throw')
   } catch {
-    t.pass('throws when trying to store a batch of light client updates')
+    assert.ok(true, 'throws when trying to store a batch of light client updates')
   }
-  t.end()
 })
