@@ -323,7 +323,6 @@ describe('PortalNetworkUTP test', () => {
   })
   it('handleNewRequest', async () => {
     const connectionId = randUint16()
-    const socketIds = utp.startingIdNrs(connectionId)
     let params: INewRequest = {
       protocolId: ProtocolId.HistoryNetwork,
       contentKeys: [randomBytes(33)],

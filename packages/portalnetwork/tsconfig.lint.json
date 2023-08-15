@@ -1,5 +1,5 @@
 {
-  "include": ["./src/**/*.ts", "./test/**/*.ts"],
+  "include": ["./src/**/*.ts", "./test/**/*.ts", "./vitest.config.unit.ts"],
   "exclude": ["dist"], 
   "references": [{"path": "../discv5/tsconfig.json" }],
   "compilerOptions": {

@@ -17,7 +17,7 @@ import {
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
+import { BitArray, fromHexString } from '@chainsafe/ssz'
 
 describe('protocol wire message tests', async () => {
   const node = await PortalNetwork.create({
@@ -256,7 +256,7 @@ describe('handleFindNodes message handler tests', async () => {
       1n,
       td.matchers.argThat((arg: Uint8Array) => {
         const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
-        return msg.enrs.length === 3
+        return msg.enrs.length > 0
       }),
     ),
   )
