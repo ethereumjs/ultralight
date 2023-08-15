@@ -13,7 +13,7 @@ import {
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoricalEpochsType,
-  ContentType,
+  HistoryNetworkContentType,
 } from '../../../src/subprotocols/history/types.js'
 
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
@@ -27,9 +27,12 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
   t.test('content Key', (st) => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(blockHash)),
+      concatBytes(
+        Uint8Array.from([HistoryNetworkContentType.BlockHeader]),
+        fromHexString(blockHash),
+      ),
     )
-    let contentId = getContentId(ContentType.BlockHeader, blockHash)
+    let contentId = getContentId(HistoryNetworkContentType.BlockHeader, blockHash)
     st.equals(
       toHexString(encodedKey),
       '0x00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -42,9 +45,9 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([ContentType.BlockBody]), fromHexString(blockHash)),
+      concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockBody]), fromHexString(blockHash)),
     )
-    contentId = getContentId(ContentType.BlockBody, blockHash)
+    contentId = getContentId(HistoryNetworkContentType.BlockBody, blockHash)
     st.equals(
       toHexString(encodedKey),
       '0x01d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -57,9 +60,9 @@ tape('History Subprotocol contentKey serialization/deserialization', (t) => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([ContentType.Receipt]), fromHexString(blockHash)),
+      concatBytes(Uint8Array.from([HistoryNetworkContentType.Receipt]), fromHexString(blockHash)),
     )
-    contentId = getContentId(ContentType.Receipt, blockHash)
+    contentId = getContentId(HistoryNetworkContentType.Receipt, blockHash)
     st.equals(
       toHexString(encodedKey),
       '0x02d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -243,7 +246,7 @@ tape('Header With Proof serialization/deserialization tests', async (t) => {
     skipConsensusFormatValidation: true,
     setHardfork: true,
   })
-  const contentKey = getContentKey(ContentType.BlockHeader, deserializedHeader.hash())
+  const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, deserializedHeader.hash())
   const epochHash = historicalEpochs[Math.floor(1000001 / 8192)]
   const actual_Epoch = EpochAccumulator.deserialize(fromHexString(actualEpoch))
   const tree = EpochAccumulator.value_toTree(actual_Epoch)

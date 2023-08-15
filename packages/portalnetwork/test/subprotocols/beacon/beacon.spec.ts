@@ -5,6 +5,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { ssz } from '@lodestar/types'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import {
+  BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
@@ -12,11 +13,17 @@ import {
   LightClientUpdatesByRangeKey,
   MainnetGenesisValidatorsRoot,
 } from '../../../src/subprotocols/beacon/types.js'
+import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { SignableENR } from '@chainsafe/discv5'
+import { multiaddr } from '@multiformats/multiaddr'
+import { PortalNetwork, ProtocolId, TransportLayer } from '../../../src/index.js'
+import type { BeaconLightClientNetwork } from '../../../src/subprotocols/beacon/index.js'
+
+const specTestVectors = require('./specTestVectors.json')
+const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
+const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
 tape('portal network spec test vectors', (t) => {
-  const specTestVectors = require('./specTestVectors.json')
-  const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
-  const config = createBeaconConfig(defaultChainConfig, genesisRoot)
   const serializedOptimistincUpdate = fromHexString(
     specTestVectors.optimisticUpdate['6718463'].content_value,
   )
@@ -88,5 +95,94 @@ tape('portal network spec test vectors', (t) => {
     4n,
     'deserialized update by range key',
   )
+  t.end()
+})
+
+tape('API tests', async (t) => {
+  const privateKeys = [
+    '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
+  ]
+  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const enr1 = SignableENR.createFromPeerId(id1)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  enr1.setLocationMultiaddr(initMa)
+
+  const node1 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+    config: {
+      enr: enr1,
+      bindAddrs: {
+        ip4: initMa,
+      },
+      peerId: id1,
+    },
+  })
+
+  const protocol = <BeaconLightClientNetwork>(
+    node1.protocols.get(ProtocolId.BeaconLightClientNetwork)
+  )
+
+  const bootstrap = specTestVectors.bootstrap['6718368']
+
+  await protocol.store(
+    BeaconLightClientNetworkContentType.LightClientBootstrap,
+    bootstrap.content_key,
+    fromHexString(bootstrap.content_value),
+  )
+  const retrievedBootstrap = await protocol.findContentLocally(fromHexString(bootstrap.content_key))
+  t.equal(
+    ssz.capella.LightClientBootstrap.deserialize(retrievedBootstrap!.slice(4)).header.beacon.slot,
+    ssz.capella.LightClientBootstrap.deserialize(fromHexString(bootstrap.content_value).slice(4))
+      .header.beacon.slot,
+    'successfully stored and retrieved bootstrap',
+  )
+
+  const finalityUpdate = specTestVectors.finalityUpdate['6718463']
+  await protocol.store(
+    BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+    finalityUpdate.content_key,
+    fromHexString(finalityUpdate.content_value),
+  )
+  const retrievedFinalityUpdate = await protocol.findContentLocally(
+    fromHexString(finalityUpdate.content_key),
+  )
+  t.equal(
+    ssz.capella.LightClientFinalityUpdate.deserialize(retrievedFinalityUpdate!.slice(4))
+      .attestedHeader.beacon.slot,
+    ssz.capella.LightClientFinalityUpdate.deserialize(
+      fromHexString(finalityUpdate.content_value).slice(4),
+    ).attestedHeader.beacon.slot,
+    'successfully stored and retrieved finality update',
+  )
+  const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
+  await protocol.store(
+    BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+    optimisticUpdate.content_key,
+    fromHexString(optimisticUpdate.content_value),
+  )
+  const retrievedOptimisticUpdate = await protocol.findContentLocally(
+    fromHexString(optimisticUpdate.content_key),
+  )
+  t.equal(
+    ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))
+      .attestedHeader.beacon.slot,
+    ssz.capella.LightClientOptimisticUpdate.deserialize(
+      fromHexString(optimisticUpdate.content_value).slice(4),
+    ).attestedHeader.beacon.slot,
+    'successfully stored and retrieved optimistic update',
+  )
+  // TODO: Update this test once logic for handling light client updates is implemented
+  const updatesByRange = specTestVectors.updateByRange['6684738']
+  try {
+    await protocol.store(
+      BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+      updatesByRange.content_key,
+      fromHexString(optimisticUpdate.content_value),
+    )
+    t.fail('should throw')
+  } catch {
+    t.pass('throws when trying to store a batch of light client updates')
+  }
   t.end()
 })

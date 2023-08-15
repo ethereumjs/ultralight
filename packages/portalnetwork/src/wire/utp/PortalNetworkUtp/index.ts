@@ -10,7 +10,7 @@ import {
   Bytes32TimeStamp,
   UtpSocketType,
   startingNrs,
-  ContentType,
+  HistoryNetworkContentType,
   ContentRequest,
   dropPrefixes,
   FinPacket,
@@ -21,7 +21,8 @@ import {
   INewRequest,
   RequestCode,
   UtpSocketKey,
-  decodeContentKey,
+  decodeHistoryNetworkContentKey,
+  BeaconLightClientNetworkContentType,
 } from '../../../index.js'
 import { EventEmitter } from 'events'
 
@@ -277,24 +278,44 @@ export class PortalNetworkUTP extends EventEmitter {
     if (request.requestCode === RequestCode.ACCEPT_READ) {
       contents = dropPrefixes(content)
     }
-    await this.returnContent(contents, keys)
+    await this.returnContent(request.protocolId, contents, keys)
   }
-  async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
+  async returnContent(protocol: ProtocolId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
-    for (const [idx, k] of keys.entries()) {
-      const decodedContentKey = decodeContentKey(toHexString(k))
-      const _content = contents[idx]
-      this.logger.extend(`FINISHED`)(
-        `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
-          ContentType[k[0]]
-        } to database`,
-      )
-      if (_content.length === 0) {
-        this.logger.extend(`FINISHED`)(`Missing content...`)
-        continue
-      } else {
-        this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
-      }
+    switch (protocol) {
+      case ProtocolId.HistoryNetwork:
+        for (const [idx, k] of keys.entries()) {
+          const decodedContentKey = decodeHistoryNetworkContentKey(toHexString(k))
+          const _content = contents[idx]
+          this.logger.extend(`FINISHED`)(
+            `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
+              HistoryNetworkContentType[k[0]]
+            } to database`,
+          )
+          if (_content.length === 0) {
+            this.logger.extend(`FINISHED`)(`Missing content...`)
+            continue
+          } else {
+            this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+          }
+        }
+        break
+      case ProtocolId.BeaconLightClientNetwork:
+        for (const [idx, k] of keys.entries()) {
+          const _content = contents[idx]
+          this.logger.extend(`FINISHED`)(
+            `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
+              BeaconLightClientNetworkContentType[k[0]]
+            } to database`,
+          )
+          if (_content.length === 0) {
+            this.logger.extend(`FINISHED`)(`Missing content...`)
+            continue
+          } else {
+            this.emit('Stream', k[0], toHexString(k), _content)
+          }
+        }
+        break
     }
   }
 }

@@ -5,7 +5,7 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  ContentType,
+  HistoryNetworkContentType,
   sszTransactionType,
   sszUnclesType,
   Witnesses,
@@ -28,15 +28,15 @@ import { historicalEpochs } from './data/epochHashes.js'
  * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getContentKey = (contentType: ContentType, hash: Uint8Array): string => {
+export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint8Array): string => {
   let encodedKey
   const prefix = new Uint8Array(1).fill(contentType)
   switch (contentType) {
-    case ContentType.BlockHeader:
-    case ContentType.BlockBody:
-    case ContentType.Receipt:
-    case ContentType.HeaderProof:
-    case ContentType.EpochAccumulator: {
+    case HistoryNetworkContentType.BlockHeader:
+    case HistoryNetworkContentType.BlockBody:
+    case HistoryNetworkContentType.Receipt:
+    case HistoryNetworkContentType.HeaderProof:
+    case HistoryNetworkContentType.EpochAccumulator: {
       if (!hash) throw new Error('block hash is required to generate contentId')
       encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
       break
@@ -46,12 +46,12 @@ export const getContentKey = (contentType: ContentType, hash: Uint8Array): strin
   }
   return encodedKey
 }
-export const getContentId = (contentType: ContentType, hash: string) => {
+export const getContentId = (contentType: HistoryNetworkContentType, hash: string) => {
   const encodedKey = fromHexString(getContentKey(contentType, fromHexString(hash)))
 
   return toHexString(digest(encodedKey))
 }
-export const decodeContentKey = (contentKey: string) => {
+export const decodeHistoryNetworkContentKey = (contentKey: string) => {
   const contentType = parseInt(contentKey.slice(0, 4))
   const blockHash = '0x' + contentKey.slice(4)
   return {
@@ -133,16 +133,24 @@ export const addRLPSerializedBlock = async (
     } catch {
       throw new Error('Header proof failed validation')
     }
-    await protocol.store(ContentType.BlockHeader, toHexString(header.hash()), headerProof)
+    await protocol.store(
+      HistoryNetworkContentType.BlockHeader,
+      toHexString(header.hash()),
+      headerProof,
+    )
   } else {
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
       proof: { selector: 0, value: null },
     })
-    await protocol.store(ContentType.BlockHeader, toHexString(header.hash()), headerProof)
+    await protocol.store(
+      HistoryNetworkContentType.BlockHeader,
+      toHexString(header.hash()),
+      headerProof,
+    )
   }
   await protocol.store(
-    ContentType.BlockBody,
+    HistoryNetworkContentType.BlockBody,
     toHexString(header.hash()),
     sszEncodeBlockBody(
       Block.fromRLPSerializedBlock(fromHexString(rlpHex), {

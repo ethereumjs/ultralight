@@ -8,7 +8,7 @@ import {
   epochRootByIndex,
   getContentId,
   ContentKeyType,
-  ContentType,
+  HistoryNetworkContentType,
   reassembleBlock,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
@@ -18,10 +18,13 @@ import { bytesToHex, concatBytes } from '@ethereumjs/util'
 tape('utility functions', (t) => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
   const block1headerContentKey = ContentKeyType.serialize(
-    concatBytes(Uint8Array.from([ContentType.BlockHeader]), fromHexString(block1Hash)),
+    concatBytes(
+      Uint8Array.from([HistoryNetworkContentType.BlockHeader]),
+      fromHexString(block1Hash),
+    ),
   )
   t.equal(
-    getContentId(ContentType.BlockHeader, block1Hash),
+    getContentId(HistoryNetworkContentType.BlockHeader, block1Hash),
     serializedContentKeyToContentId(block1headerContentKey),
     'produced same content id',
   )

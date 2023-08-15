@@ -5,7 +5,7 @@ import {
   fromHexString,
   getContentId,
   getContentKey,
-  ContentType,
+  HistoryNetworkContentType,
   ProtocolId,
   toHexString,
 } from 'portalnetwork'
@@ -46,7 +46,7 @@ const gossip = async () => {
   // GossipTest
 
     const headerKey = getContentKey(
-      ContentType.BlockHeader,
+      HistoryNetworkContentType.BlockHeader,
       testBlocks[0].hash()
     )
     const header = testBlocks[0].header.serialize()

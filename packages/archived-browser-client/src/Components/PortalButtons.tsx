@@ -17,7 +17,7 @@ import {
 import { ChevronDownIcon, SearchIcon } from '@chakra-ui/icons'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import { PeerActions } from '../peerActions'
-import { ENR, fromHexString, getContentId, getContentKey, ContentType } from 'portalnetwork'
+import { ENR, fromHexString, getContentId, getContentKey, HistoryNetworkContentType } from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
 enum GetBy {
@@ -61,7 +61,7 @@ export function PortalButton(props: IPortalButton) {
     setInput(blockHash)
   }, [blockHash])
 
-  const addToOffer = async (type: ContentType) => {
+  const addToOffer = async (type: HistoryNetworkContentType) => {
     const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
     const contentId = getContentId(type, blockHash)
     if (await state.provider?.historyProtocol.get(contentKey)) {
@@ -231,7 +231,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(ContentType.BlockHeader)
+                addToOffer(HistoryNetworkContentType.BlockHeader)
               }}
             >
               add_header_to_offer
@@ -241,7 +241,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(ContentType.BlockBody)
+                addToOffer(HistoryNetworkContentType.BlockBody)
               }}
             >
               add_block_body_to_offer
@@ -251,7 +251,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(ContentType.EpochAccumulator)
+                addToOffer(HistoryNetworkContentType.EpochAccumulator)
               }}
             >
               add_epoch_to_offer

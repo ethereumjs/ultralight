@@ -23,7 +23,7 @@ export const MAX_HEADER_LENGTH = 8192 // 2 ** 13
 export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 
 /* ----------------- Enums ----------- */
-export enum ContentType {
+export enum HistoryNetworkContentType {
   BlockHeader = 0,
   BlockBody = 1,
   Receipt = 2,
@@ -84,7 +84,7 @@ export type Leaf = Uint8Array
 export type Witnesses = Uint8Array[]
 export type GIndex = bigint
 export type ContentKey = {
-  selector: ContentType
+  selector: HistoryNetworkContentType
   blockHash: HashRoot
 }
 export type SszProof = {

@@ -5,7 +5,7 @@ import {
   fromHexString,
   getContentId,
   getContentKey,
-  ContentType,
+  HistoryNetworkContentType,
   ProtocolId,
   toHexString,
 } from 'portalnetwork'

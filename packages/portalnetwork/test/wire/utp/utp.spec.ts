@@ -12,7 +12,7 @@ import {
   getContentKey,
   HeaderExtension,
   ContentKeyType,
-  ContentType,
+  HistoryNetworkContentType,
   INewRequest,
   Packet,
   PacketType,
@@ -178,7 +178,10 @@ tape('uTP Reader/Writer tests', (t) => {
 
     const offerContentIds = offerContentHashes.map((hash) => {
       return ContentKeyType.serialize(
-        Buffer.concat([Uint8Array.from([ContentType.BlockBody]), fromHexString(hash)]),
+        Buffer.concat([
+          Uint8Array.from([HistoryNetworkContentType.BlockBody]),
+          fromHexString(hash),
+        ]),
       )
     })
 
@@ -506,14 +509,14 @@ tape('PortalNetworkUTP test', (t) => {
     const contents = [randomBytes(100), randomBytes(100), randomBytes(100)]
     const contentHashes = contents.map(() => toHexString(randomBytes(32)))
     const contentKeys = contentHashes.map((hash) =>
-      fromHexString(getContentKey(ContentType.BlockHeader, fromHexString(hash))),
+      fromHexString(getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))),
     )
     utp.on('Stream', (selector, hash, value) => {
-      st.equal(selector, ContentType.BlockHeader, 'Stream selector correct')
+      st.equal(selector, HistoryNetworkContentType.BlockHeader, 'Stream selector correct')
       st.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
       st.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
     })
-    await utp.returnContent(contents, contentKeys)
+    await utp.returnContent(ProtocolId.HistoryNetwork, contents, contentKeys)
     utp.removeAllListeners()
     st.end()
   })
