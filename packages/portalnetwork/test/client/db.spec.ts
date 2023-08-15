@@ -14,7 +14,7 @@ import { randomBytes } from 'ethers/lib/utils.js'
 import { bigIntToHex } from '@ethereumjs/util'
 import { distance } from '@chainsafe/discv5'
 
-describe('DBManager unit tests', async () => {
+it('DBManager unit tests', async () => {
   const size = async () => {
     return 500
   }

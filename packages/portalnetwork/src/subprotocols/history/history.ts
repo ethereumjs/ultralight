@@ -46,6 +46,7 @@ export class HistoryProtocol extends BaseProtocol {
   gossipManager: GossipManager
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
+    console.log(ProtocolId)
     this.protocolId = ProtocolId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.ETH = new ETH(this)

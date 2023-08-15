@@ -1,4 +1,4 @@
-import { describe, it, assert } from 'vitest'
+import { it, assert } from 'vitest'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
@@ -7,7 +7,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { SignableENR } from '@chainsafe/discv5'
 
-describe('Test provider functionality', async () => {
+it('Test provider functionality', async () => {
   const ma = multiaddr('/ip4/0.0.0.0/udp/1500')
   const peerId = await createSecp256k1PeerId()
   const enr = SignableENR.createFromPeerId(peerId)

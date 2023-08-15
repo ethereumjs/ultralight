@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
-import { addRLPSerializedBlock, HistoryProtocol, ProtocolId } from '../subprotocols/index.js'
+import { addRLPSerializedBlock, HistoryProtocol } from '../subprotocols/index.js'
+import { ProtocolId } from '../subprotocols/types.js'
 import { toHexString } from '../util/discv5.js'
 import {
   ethJsBlockToEthersBlock,
