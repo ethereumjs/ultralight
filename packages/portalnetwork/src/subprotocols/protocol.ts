@@ -32,7 +32,6 @@ import {
   INewRequest,
   ContentRequest,
   PortalNetwork,
-  ContentType,
 } from '../index.js'
 import { EventEmitter } from 'events'
 import { bytesToInt, concatBytes } from '@ethereumjs/util'
@@ -77,7 +76,7 @@ export abstract class BaseProtocol extends EventEmitter {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
-    client.uTP.on('Stream', async (contentType: ContentType, hash: string, value: Uint8Array) => {
+    client.uTP.on('Stream', async (contentType: number, hash: string, value: Uint8Array) => {
       await this.store(contentType, hash, value)
     })
   }

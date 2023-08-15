@@ -50,7 +50,7 @@ export class Bloom {
     const mask = 2047 // binary 11111111111
 
     for (let i = 0; i < 3; i++) {
-      const first2bytes = new DataView(e).getUint16(i * 2, false)
+      const first2bytes = new DataView(e.buffer).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
       const bitLoc = 1 << loc % 8
@@ -71,7 +71,7 @@ export class Bloom {
     let match = true
 
     for (let i = 0; i < 3 && match; i++) {
-      const first2bytes = new DataView(e).getUint16(i * 2, false)
+      const first2bytes = new DataView(e.buffer).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
       const bitLoc = 1 << loc % 8

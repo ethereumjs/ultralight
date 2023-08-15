@@ -8,7 +8,7 @@ import {
   getContentKey,
   HeaderProofInterface,
   HeaderRecord,
-  ContentType,
+  HistoryNetworkContentType,
   HistoryProtocol,
 } from '../index.js'
 import accumulator from './data/master.js'
@@ -97,7 +97,7 @@ export class AccumulatorManager {
       fromHexString(
         await this._history.get(
           this._history.protocolId,
-          getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+          getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
         ),
       ),
       { setHardfork: true },
@@ -119,7 +119,7 @@ export class AccumulatorManager {
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.get(
       this._history.protocolId,
-      getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+      getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
     )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
@@ -138,7 +138,7 @@ export class AccumulatorManager {
             await this._history.get(
               this._history.protocolId,
               getContentKey(
-                ContentType.EpochAccumulator,
+                HistoryNetworkContentType.EpochAccumulator,
                 this.headerAccumulator.historicalEpochs[epochIdx - 1],
               ),
             ),
@@ -161,7 +161,7 @@ export class AccumulatorManager {
       fromHexString(
         await this._history.get(
           this._history.protocolId,
-          getContentKey(ContentType.BlockHeader, fromHexString(blockHash)),
+          getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
         ),
       ),
       { setHardfork: true },

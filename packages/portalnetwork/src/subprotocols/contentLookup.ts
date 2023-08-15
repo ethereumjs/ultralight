@@ -2,7 +2,7 @@ import { ENR, distance, NodeId } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
-import { ContentType } from './history/types.js'
+import { HistoryNetworkContentType } from './history/types.js'
 import { BaseProtocol } from './protocol.js'
 
 type lookupPeer = {
@@ -72,7 +72,11 @@ export class ContentLookup {
           finished = true
           nearestPeer.hasContent = true
           return new Promise((resolve) => {
-            const utpDecoder = (contentKey: string, contentType: ContentType, content: string) => {
+            const utpDecoder = (
+              contentKey: string,
+              contentType: HistoryNetworkContentType,
+              content: string,
+            ) => {
               this.protocol.removeListener('ContentAdded', utpDecoder)
               resolve(fromHexString(content))
             }
