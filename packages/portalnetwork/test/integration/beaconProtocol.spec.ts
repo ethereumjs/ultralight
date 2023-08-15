@@ -56,8 +56,6 @@ tape('Find Content tests', async (t) => {
       peerId: id2,
     },
   })
-  node1.enableLog('*Portal*')
-  node2.enableLog('*Portal*')
 
   await node1.start()
   await node2.start()
