@@ -15,17 +15,18 @@ describe('utility method tests', async () => {
     assert.ok(short === '82418...b2c41', 'correctly shortened node id')
   })
 
-  let randomNodeId = generateRandomNodeIdAtDistance(nodeId, 255)
+  let randomNodeId: string
   it('should correctly generate random node id at distance', async () => {
+    randomNodeId = generateRandomNodeIdAtDistance(nodeId, 255)
     assert.equal(
       log2Distance(nodeId, randomNodeId),
       255,
       'calculated random node ID at distance 255',
     )
   })
-  randomNodeId = generateRandomNodeIdAtDistance(nodeId, 25)
 
   it('should correctly generate random node id at distance', async () => {
+    randomNodeId = generateRandomNodeIdAtDistance(nodeId, 25)
     assert.equal(log2Distance(nodeId, randomNodeId), 25, 'calculated random node id at distance 25')
   })
 
