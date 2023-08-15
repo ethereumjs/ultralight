@@ -9,7 +9,7 @@ import {
   toHexString,
   HistoryProtocol,
   PortalNetwork,
-  ContentType,
+  HistoryNetworkContentType,
   ContentLookup,
   NodeLookup,
   PingPongCustomDataType,
@@ -18,7 +18,7 @@ import {
   NodesMessage,
   ContentMessageType,
   AcceptMessage,
-  decodeContentKey,
+  decodeHistoryNetworkContentKey,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -391,7 +391,7 @@ export class portal {
             }, 2000)
             this._client.uTP.on(
               'Stream',
-              (_contentType: ContentType, hash: string, value: Uint8Array) => {
+              (_contentType: HistoryNetworkContentType, hash: string, value: Uint8Array) => {
                 if (hash.slice(2) === contentKey.slice(4)) {
                   clearTimeout(timeout)
                   resolve(value)
@@ -439,7 +439,7 @@ export class portal {
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params
     const enr = ENR.decodeTxt(enrHex)
-    const contentKey = decodeContentKey(contentKeyHex)
+    const contentKey = decodeHistoryNetworkContentKey(contentKeyHex)
     if (this._history.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
       const res = await this._history.sendPing(enr)
       if (res === undefined) {
@@ -503,7 +503,7 @@ export class portal {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
       await this._history.store(
-        contentKey[0] as ContentType,
+        contentKey[0] as HistoryNetworkContentType,
         toHexString(contentKey.slice(1)),
         content,
       )

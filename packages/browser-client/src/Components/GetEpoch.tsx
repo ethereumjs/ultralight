@@ -2,7 +2,7 @@ import { SearchIcon } from '@chakra-ui/icons'
 import { HStack, Input, useToast, IconButton } from '@chakra-ui/react'
 import {
   ContentLookup,
-  ContentType,
+  HistoryNetworkContentType,
   EpochAccumulator,
   epochRootByIndex,
   fromHexString,
@@ -27,7 +27,7 @@ export default function GetEpoch() {
     ) as HistoryProtocol
     const lookup = new ContentLookup(
       protocol,
-      fromHexString(getContentKey(ContentType.EpochAccumulator, epochRootHash)),
+      fromHexString(getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)),
     )
     const epoch = await lookup.startLookup()
     if (epoch !== undefined) {

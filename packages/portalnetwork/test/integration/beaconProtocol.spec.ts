@@ -7,15 +7,13 @@ import {
   ProtocolId,
   TransportLayer,
   BeaconLightClientNetwork,
-  MainnetGenesisValidatorsRoot,
   BeaconLightClientNetworkContentType,
   toHexString,
 } from '../../src/index.js'
 import { createRequire } from 'module'
-import { EventEmitter } from 'events'
+
 import { SignableENR } from '@chainsafe/discv5'
-import { bytesToHex } from '@ethereumjs/util'
-import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+
 const require = createRequire(import.meta.url)
 
 const privateKeys = [

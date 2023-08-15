@@ -1,4 +1,4 @@
-import { ContentType, ProtocolId, toHexString } from 'portalnetwork'
+import { HistoryNetworkContentType, ProtocolId, toHexString } from 'portalnetwork'
 
 const INVALID_PARAMS = -32602
 
@@ -153,7 +153,7 @@ export const validators = {
           message: `invalid argument ${index}: argument must be a number`,
         }
       }
-      if (Object.values(ContentType).includes(params[index])) {
+      if (Object.values(HistoryNetworkContentType).includes(params[index])) {
         return {
           code: INVALID_PARAMS,
           message: `invalid argument ${index}: unsupported content type.`,

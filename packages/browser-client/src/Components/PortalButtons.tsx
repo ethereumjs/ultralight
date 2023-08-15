@@ -22,7 +22,7 @@ import {
   fromHexString,
   getContentId,
   getContentKey,
-  ContentType,
+  HistoryNetworkContentType,
   ProtocolId,
 } from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
@@ -68,7 +68,7 @@ export function PortalButton(props: IPortalButton) {
     setInput(blockHash)
   }, [blockHash])
 
-  const addToOffer = async (type: ContentType) => {
+  const addToOffer = async (type: HistoryNetworkContentType) => {
     const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
     const contentId = getContentId(type, blockHash)
     if (await state.provider?.historyProtocol.get(ProtocolId.HistoryNetwork, contentKey)) {
@@ -238,7 +238,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(ContentType.BlockHeader)
+                addToOffer(HistoryNetworkContentType.BlockHeader)
               }}
             >
               add_header_to_offer
@@ -248,7 +248,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(ContentType.BlockBody)
+                addToOffer(HistoryNetworkContentType.BlockBody)
               }}
             >
               add_block_body_to_offer
@@ -258,7 +258,7 @@ export function PortalButton(props: IPortalButton) {
               width={'50%'}
               title="Add content to offer"
               onClick={() => {
-                addToOffer(ContentType.EpochAccumulator)
+                addToOffer(HistoryNetworkContentType.EpochAccumulator)
               }}
             >
               add_epoch_to_offer

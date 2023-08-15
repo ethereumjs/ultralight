@@ -18,7 +18,7 @@ import {
   ExtendedEthersBlockWithTransactions,
   fromHexString,
   getContentKey,
-  ContentType,
+  HistoryNetworkContentType,
   toHexString,
   TxReceiptWithType,
   decodeReceipts,
@@ -224,7 +224,7 @@ const DisplayBlock = () => {
           fromHexString(
             await state.provider!.historyProtocol.get(
               ProtocolId.HistoryNetwork,
-              getContentKey(ContentType.Receipt, fromHexString(state.block!.hash)),
+              getContentKey(HistoryNetworkContentType.Receipt, fromHexString(state.block!.hash)),
             ),
           ),
         ),
@@ -245,9 +245,15 @@ const DisplayBlock = () => {
       typeof (state.block as any).hash === 'string'
         ? (state.block as any).hash
         : toHexString((state.block as any).hash())
-    const header = getContentKey(ContentType.BlockHeader, Buffer.from(fromHexString(hash)))
+    const header = getContentKey(
+      HistoryNetworkContentType.BlockHeader,
+      Buffer.from(fromHexString(hash)),
+    )
 
-    const body = getContentKey(ContentType.BlockBody, Buffer.from(fromHexString(hash)))
+    const body = getContentKey(
+      HistoryNetworkContentType.BlockBody,
+      Buffer.from(fromHexString(hash)),
+    )
     setKeys({
       header,
       body,

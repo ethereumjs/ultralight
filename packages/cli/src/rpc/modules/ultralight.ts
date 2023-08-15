@@ -2,7 +2,7 @@ import { Debugger } from 'debug'
 import {
   ProtocolId,
   addRLPSerializedBlock,
-  ContentType,
+  HistoryNetworkContentType,
   fromHexString,
   HistoryProtocol,
   PortalNetwork,
@@ -53,7 +53,7 @@ export class ultralight {
     const [contentKey, value] = params
 
     const type: number = parseInt(contentKey.slice(0, 4))
-    this.logger(`ultralight_addContentToDB request received for ${ContentType[type]} ${contentKey}`)
+    this.logger(`ultralight_addContentToDB request received for ${HistoryNetworkContentType[type]} ${contentKey}`)
     try {
       this._history.store(type, '0x' + contentKey.slice(4), fromHexString(value))
       this.logger(`${type} value for 0x${contentKey.slice(4)} added to content DB`)

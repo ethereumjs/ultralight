@@ -682,7 +682,7 @@ Generates the Content ID used to calculate the distance between a node ID and th
 | :------ | :------ | :------ |
 | `chainId` | `number` | - |
 | `blockHash` | `string` | - |
-| `contentType` | `ContentType` | a number identifying the type of content (block header, block body, receipt) |
+| `contentType` | `HistoryNetworkContentType` | a number identifying the type of content (block header, block body, receipt) |
 
 #### Returns
 
