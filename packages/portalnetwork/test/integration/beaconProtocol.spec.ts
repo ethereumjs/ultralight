@@ -94,4 +94,6 @@ tape('Find Content tests', async (t) => {
     })
     protocol2.sendFindContent(node1.discv5.enr.nodeId, fromHexString(bootstrap.content_key))
   })
+
+  // TODO: Add tests for other content types
 })
