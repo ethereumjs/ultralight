@@ -189,95 +189,96 @@ describe('handleFindNodes message handler tests', async () => {
 
   const sortedEnrs: ENR[] = []
 
-  for (let x = 239; x < 257; x++) {
-    const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
+  it('test FindNodes', async () => {
+    for (let x = 239; x < 257; x++) {
+      const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
+      const peerId = await createSecp256k1PeerId()
+      const enr = SignableENR.createFromPeerId(peerId)
+      const remoteEnr = enr.toENR()
+      ;(remoteEnr as any).nodeId = id
+      sortedEnrs.push(remoteEnr)
+
+      protocol.routingTable.insertOrUpdate(remoteEnr, EntryStatus.Connected)
+    }
+    const newNode = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 0)
+    await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
+      distances: [239],
+    })
+    td.verify(
+      protocol.sendResponse(
+        { socketAddr: multiaddr(), nodeId: newNode },
+        1n,
+        td.matchers.argThat((arg: Uint8Array) => {
+          const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+          return msg.enrs.length === 1
+        }),
+      ),
+    )
+    assert.ok(
+      true,
+      'Nodes response contained no ENRs since should be nothing in table at distance 239',
+    )
+
+    td.reset()
+
+    protocol.sendResponse = td.func<sendResponse>()
+    await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
+      distances: [255, 256],
+    })
+
+    td.verify(
+      protocol.sendResponse(
+        { socketAddr: multiaddr(), nodeId: newNode },
+        1n,
+        td.matchers.argThat((arg: Uint8Array) => {
+          const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+          return msg.enrs.length === 2
+        }),
+      ),
+    )
+    assert.ok(true, 'Nodes response contained 2 ENRs since should be one node in each bucket')
+    td.reset()
+
+    const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
     const peerId = await createSecp256k1PeerId()
     const enr = SignableENR.createFromPeerId(peerId)
-    const remoteEnr = enr.toENR()
-    ;(remoteEnr as any).nodeId = id
-    sortedEnrs.push(remoteEnr)
+    enr.encode()
+    ;(enr as any)._nodeId = id
+    protocol.routingTable.insertOrUpdate(enr.toENR(), EntryStatus.Connected)
 
-    protocol.routingTable.insertOrUpdate(remoteEnr, EntryStatus.Connected)
-  }
-  const newNode = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 0)
-  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
-    distances: [239],
+    await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
+      distances: [255, 256],
+    })
+
+    td.verify(
+      protocol.sendResponse(
+        { socketAddr: multiaddr(), nodeId: newNode },
+        1n,
+        td.matchers.argThat((arg: Uint8Array) => {
+          const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+          return msg.enrs.length > 0
+        }),
+      ),
+    )
+    assert.ok(true, 'Nodes response contained 3 ENRs since one more ENR added to bucket 256')
+
+    await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
+      distances: [239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 255, 256],
+    })
+
+    td.verify(
+      protocol.sendResponse(
+        { socketAddr: multiaddr(), nodeId: newNode },
+        1n,
+        td.matchers.argThat((arg: Uint8Array) => {
+          const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
+          return msg.enrs.length === 10
+        }),
+      ),
+    )
+    assert.ok(
+      true,
+      'Nodes response contained 10 ENRs even though requested nodes in 12 buckets since nodes max payload size met',
+    )
   })
-
-  td.verify(
-    protocol.sendResponse(
-      { socketAddr: multiaddr(), nodeId: newNode },
-      1n,
-      td.matchers.argThat((arg: Uint8Array) => {
-        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
-        return msg.enrs.length === 1
-      }),
-    ),
-  )
-  assert.ok(
-    true,
-    'Nodes response contained no ENRs since should be nothing in table at distance 239',
-  )
-
-  td.reset()
-
-  protocol.sendResponse = td.func<sendResponse>()
-  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
-    distances: [255, 256],
-  })
-
-  td.verify(
-    protocol.sendResponse(
-      { socketAddr: multiaddr(), nodeId: newNode },
-      1n,
-      td.matchers.argThat((arg: Uint8Array) => {
-        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
-        return msg.enrs.length === 2
-      }),
-    ),
-  )
-  assert.ok(true, 'Nodes response contained 2 ENRs since should be one node in each bucket')
-  td.reset()
-
-  const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
-  const peerId = await createSecp256k1PeerId()
-  const enr = SignableENR.createFromPeerId(peerId)
-  enr.encode()
-  ;(enr as any)._nodeId = id
-  protocol.routingTable.insertOrUpdate(enr.toENR(), EntryStatus.Connected)
-
-  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
-    distances: [255, 256],
-  })
-
-  td.verify(
-    protocol.sendResponse(
-      { socketAddr: multiaddr(), nodeId: newNode },
-      1n,
-      td.matchers.argThat((arg: Uint8Array) => {
-        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
-        return msg.enrs.length > 0
-      }),
-    ),
-  )
-  assert.ok(true, 'Nodes response contained 3 ENRs since one more ENR added to bucket 256')
-
-  await (protocol as any).handleFindNodes({ socketAddr: multiaddr(), nodeId: newNode }, 1n, {
-    distances: [239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 255, 256],
-  })
-
-  td.verify(
-    protocol.sendResponse(
-      { socketAddr: multiaddr(), nodeId: newNode },
-      1n,
-      td.matchers.argThat((arg: Uint8Array) => {
-        const msg = PortalWireMessageType.deserialize(arg).value as NodesMessage
-        return msg.enrs.length === 10
-      }),
-    ),
-  )
-  assert.ok(
-    true,
-    'Nodes response contained 10 ENRs even though requested nodes in 12 buckets since nodes max payload size met',
-  )
 })
