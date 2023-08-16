@@ -1,6 +1,6 @@
 import { ContainerType, fromHexString, toHexString, UintBigintType } from '@chainsafe/ssz'
 import { describe, it, assert } from 'vitest'
-import { randomBytes } from 'crypto'
+import { randomBytes } from '@ethereumjs/util'
 import {
   getContentId,
   getContentKey,
@@ -174,10 +174,26 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
     assert.deepEqual(receipts[1].encoded(), serializedReceipts[1], 'Receipt decode test passed 3')
     assert.deepEqual(_deserialized.encoded(), receipts[1].encoded(), 'Receipt decode test passed 4')
 
-    assert.deepEqual(receipts[2].decoded(), testReceiptData[2], 'Receipt decode test passed 5')
-    assert.deepEqual(receipts[3].decoded(), testReceiptData[3], 'Receipt decode test passed 6')
-    assert.deepEqual(receipts[4].decoded(), testReceiptData[4], 'Receipt decode test passed 7')
-    assert.deepEqual(receipts[5].decoded(), testReceiptData[5], 'Receipt decode test passed 8')
+    assert.deepEqual(
+      receipts[2].decoded(),
+      testReceiptData[2] as TxReceiptType,
+      'Receipt decode test passed 5',
+    )
+    assert.deepEqual(
+      receipts[3].decoded(),
+      testReceiptData[3] as TxReceiptType,
+      'Receipt decode test passed 6',
+    )
+    assert.deepEqual(
+      receipts[4].decoded(),
+      testReceiptData[4] as TxReceiptType,
+      'Receipt decode test passed 7',
+    )
+    assert.deepEqual(
+      receipts[5].decoded(),
+      testReceiptData[5] as TxReceiptType,
+      'Receipt decode test passed 8',
+    )
 
     assert.deepEqual(
       Receipt.decodeReceiptBytes(serializedReceipts[0]).logs,
@@ -215,11 +231,13 @@ describe('Header With Proof serialization/deserialization tests', async () => {
   const serialized_container = MasterAccumulatorType.serialize({
     historicalEpochs: _historicalEpochs,
   })
-  assert.deepEqual(
-    fromHexString(masterAccumulator),
-    serialized_container,
-    'Serialized Container matches MasterAccumulator',
-  )
+  it('should serialize/deserialize', async () => {
+    assert.deepEqual(
+      fromHexString(masterAccumulator),
+      serialized_container,
+      'Serialized Container matches MasterAccumulator',
+    )
+  })
 
   const actualEpoch = readFileSync(
     './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
@@ -255,24 +273,32 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     },
     fromHexString(epochHash),
   )
-  assert.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
-  assert.equal(
-    toHexString(EpochAccumulator.hashTreeRoot(actual_Epoch)),
-    epochHash,
-    'stored epoch hash matches valid epoch',
-  )
+  it('should validate', async () => {
+    assert.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
+  })
+  it('should match epoch hash', async () => {
+    assert.equal(
+      toHexString(EpochAccumulator.hashTreeRoot(actual_Epoch)),
+      epochHash,
+      'stored epoch hash matches valid epoch',
+    )
+  })
   const total_difficulty = new UintBigintType(32).deserialize(headerWithProof.proof.value![0])
   const total_difficulty2 = new UintBigintType(32).deserialize(headerWithProof2.proof.value![0])
-  assert.equal(
-    total_difficulty2 - total_difficulty,
-    deserializedHeader2.difficulty,
-    'deserialized headers have valid difficulty',
-  )
-  assert.equal(
-    deserializedHeader.number,
-    1000001n,
-    'deserialized header number matches test vector',
-  )
-  assert.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
-  assert.ok(history.validateHeader(serializedBlock1, toHexString(deserializedHeader.hash())))
+  it('should calculate total difficulty', () => {
+    assert.equal(
+      total_difficulty2 - total_difficulty,
+      deserializedHeader2.difficulty,
+      'deserialized headers have valid difficulty',
+    )
+  })
+  it('should deserialize header', async () => {
+    assert.equal(
+      deserializedHeader.number,
+      1000001n,
+      'deserialized header number matches test vector',
+    )
+    assert.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
+    assert.ok(history.validateHeader(serializedBlock1, toHexString(deserializedHeader.hash())))
+  })
 })
