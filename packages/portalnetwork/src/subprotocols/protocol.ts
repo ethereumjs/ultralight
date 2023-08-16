@@ -223,15 +223,15 @@ export abstract class BaseProtocol extends EventEmitter {
         const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
         const enrs = decoded.enrs ?? []
         if (enrs.length > 0) {
-          const notIgnored = enrs.filter(
-            (enr) => !this.routingTable.isIgnored(ENR.decode(enr).nodeId),
-          )
-          const unknown = notIgnored.filter(
-            (enr) => !this.routingTable.getWithPending(ENR.decode(enr).nodeId)?.value,
-          )
+          const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
+          const unknown = this.routingTable
+            ? notIgnored.filter(
+                (e) => !this.routingTable.getWithPending(ENR.decode(e).nodeId)?.value,
+              )
+            : notIgnored
           // Ping node if not currently in subprotocol routing table
-          for (const enr of unknown) {
-            const decodedEnr = ENR.decode(enr)
+          for (const e of unknown) {
+            const decodedEnr = ENR.decode(e)
             const ping = await this.sendPing(decodedEnr)
             if (ping === undefined) {
               this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)

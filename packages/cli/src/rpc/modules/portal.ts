@@ -289,8 +289,9 @@ export class portal {
   }
   async historyFindNodes(params: [string, number[]]) {
     const [enr, distances] = params
-    this.logger(`findNodes request received with these distances ${distances.toString()}`)
     const dstId = ENR.decodeTxt(enr).nodeId
+    this.logger(`findNodes request received with these distances [${distances.toString()}]`)
+    this.logger(`sending findNodes request to ${shortId(dstId)}`)
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
