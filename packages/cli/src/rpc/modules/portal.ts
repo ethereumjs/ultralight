@@ -441,7 +441,8 @@ export class portal {
     this.logger.extend('historyRecursiveFindContent')(`request received for ${contentKey}`)
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
-    this.logger.extend('historyRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+
+    this.logger.extend('historyRecursiveFindContent')(`request returned ${res}`)
     return !res
       ? { enrs: [] }
       : 'enrs' in res
