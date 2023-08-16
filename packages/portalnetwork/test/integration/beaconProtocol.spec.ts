@@ -23,7 +23,7 @@ const privateKeys = [
 
 const specTestVectors = require('../subprotocols/beacon/specTestVectors.json')
 
-describe('Find Content tests', async () => {
+it('Find Content tests', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)

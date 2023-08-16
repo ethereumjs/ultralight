@@ -2,7 +2,7 @@ import { Block, BlockHeader } from '@ethereumjs/block'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { readFileSync } from 'fs'
-import { describe, it, assert } from 'vitest'
+import { it, it, assert } from 'vitest'
 import {
   addRLPSerializedBlock,
   BlockHeaderWithProof,
@@ -43,14 +43,14 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
   return toHexString(testHash)
 })
 
-describe('gossip test', async () => {
+it('gossip test', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5000`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5001`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
@@ -125,7 +125,6 @@ describe('gossip test', async () => {
   const end = new EventEmitter()
   const to = setTimeout(() => {
     assert.fail('timeout')
-    end.emit('end()')
   }, 10000)
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
@@ -149,9 +148,9 @@ describe('gossip test', async () => {
       resolve(true)
     })
   })
-})
+}, 10000)
 
-describe('FindContent', async () => {
+it('FindContent', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -234,7 +233,7 @@ describe('FindContent', async () => {
   })
 })
 
-describe('eth_getBlockByHash', async () => {
+it('eth_getBlockByHash', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -297,7 +296,7 @@ describe('eth_getBlockByHash', async () => {
   await node2.stop()
 })
 
-describe('eth_getBlockByNumber', async () => {
+it('eth_getBlockByNumber', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
