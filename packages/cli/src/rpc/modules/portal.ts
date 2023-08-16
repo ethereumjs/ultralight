@@ -302,7 +302,7 @@ export class portal {
     //   return ''
     // }
     // }
-    const res = await this._history.sendFindNodes(dstId, distances)
+    const res = await this._history.sendFindNodes(enr, distances)
     if (!res) {
       return []
     }

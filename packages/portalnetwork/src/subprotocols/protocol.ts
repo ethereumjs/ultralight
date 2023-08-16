@@ -197,7 +197,7 @@ export abstract class BaseProtocol extends EventEmitter {
   /**
    *
    * Sends a Portal Network FINDNODES request to a peer requesting other node ENRs
-   * @param dstId node id of peer
+   * @param dstId node id or enr of peer
    * @param distances distances as defined by subprotocol for node ENRs being requested
    * @param protocolId subprotocol id for message being
    * @returns a {@link `NodesMessage`} or undefined
@@ -211,7 +211,9 @@ export abstract class BaseProtocol extends EventEmitter {
     })
 
     try {
-      const enr = this.routingTable.getWithPending(dstId)?.value
+      const enr = dstId.startsWith('enr')
+        ? ENR.decodeTxt(dstId)
+        : this.routingTable.getWithPending(dstId)?.value
       if (!enr) {
         return
       }
@@ -239,7 +241,7 @@ export abstract class BaseProtocol extends EventEmitter {
             }
           }
           this.logger.extend(`NODES`)(
-            `Received ${enrs.length} ENRs from ${shortId(dstId)} with ${
+            `Received ${enrs.length} ENRs from ${shortId(enr.nodeId)} with ${
               enrs.length - notIgnored.length
             } ignored PeerIds and ${unknown.length} unknown.`,
           )
