@@ -245,23 +245,25 @@ describe('sendPacket()', async () => {
     })
     await testFunction.bind(socket)(...args)
   }
-  await test(read, read.sendSynPacket, PacketType.ST_SYN)
-  assert.equal(read.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
-  await test(read, read.sendSynAckPacket, PacketType.ST_STATE)
-  assert.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
-  await test(read, read.sendDataPacket, PacketType.ST_DATA, fromHexString('0x1234'))
-  assert.equal(read.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
-  await test(read, read.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
-  await test(read, read.sendFinPacket, PacketType.ST_FIN)
+  it('should send correct packet type', async () => {
+    await test(read, read.sendSynPacket, PacketType.ST_SYN)
+    assert.equal(read.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
+    await test(read, read.sendSynAckPacket, PacketType.ST_STATE)
+    assert.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+    await test(read, read.sendDataPacket, PacketType.ST_DATA, fromHexString('0x1234'))
+    assert.equal(read.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
+    await test(read, read.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
+    await test(read, read.sendFinPacket, PacketType.ST_FIN)
 
-  await test(write, write.sendSynPacket, PacketType.ST_SYN)
-  assert.equal(write.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
-  await test(write, write.sendSynAckPacket, PacketType.ST_STATE)
-  assert.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
-  await test(write, write.sendDataPacket, PacketType.ST_DATA), fromHexString('0x1234')
-  assert.equal(write.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
-  await test(write, write.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
-  await test(write, write.sendFinPacket, PacketType.ST_FIN)
+    await test(write, write.sendSynPacket, PacketType.ST_SYN)
+    assert.equal(write.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
+    await test(write, write.sendSynAckPacket, PacketType.ST_STATE)
+    assert.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+    await test(write, write.sendDataPacket, PacketType.ST_DATA), fromHexString('0x1234')
+    assert.equal(write.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
+    await test(write, write.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
+    await test(write, write.sendFinPacket, PacketType.ST_FIN)
+  })
 })
 
 describe('handle()', async () => {
@@ -283,29 +285,30 @@ describe('handle()', async () => {
     })
     await testFunction.bind(socket)(...args)
   }
-
-  await test(read, read.handleSynPacket, PacketType.ST_STATE)
-  assert.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
-  await test(read, read.handleStatePacket, PacketType.ST_STATE, 1)
-  await test(
-    read,
-    read.handleDataPacket,
-    PacketType.ST_STATE,
-    write.createPacket({ pType: PacketType.ST_DATA, payload: fromHexString('0x1234') }),
-  )
-  assert.equal(read.state, ConnectionState.Connected, 'Socket state updated to CONNECTED')
-  await test(
-    read,
-    read.handleFinPacket,
-    PacketType.ST_STATE,
-    write.createPacket({ pType: PacketType.ST_FIN }),
-  )
-  assert.equal(read.state, ConnectionState.GotFin, 'Socket state updated to GOT_FIN')
-  await test(write, write.handleSynPacket, PacketType.ST_STATE)
-  assert.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
-  write.finNr = 3
-  await write.handleStatePacket(3, 1000)
-  assert.equal(write.state, ConnectionState.Closed, 'Socket state updated to CLOSED')
+  it('should handle correct packet type', async () => {
+    await test(read, read.handleSynPacket, PacketType.ST_STATE)
+    assert.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+    await test(read, read.handleStatePacket, PacketType.ST_STATE, 1)
+    await test(
+      read,
+      read.handleDataPacket,
+      PacketType.ST_STATE,
+      write.createPacket({ pType: PacketType.ST_DATA, payload: fromHexString('0x1234') }),
+    )
+    assert.equal(read.state, ConnectionState.Connected, 'Socket state updated to CONNECTED')
+    await test(
+      read,
+      read.handleFinPacket,
+      PacketType.ST_STATE,
+      write.createPacket({ pType: PacketType.ST_FIN }),
+    )
+    assert.equal(read.state, ConnectionState.GotFin, 'Socket state updated to GOT_FIN')
+    await test(write, write.handleSynPacket, PacketType.ST_STATE)
+    assert.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
+    write.finNr = 3
+    await write.handleStatePacket(3, 1000)
+    assert.equal(write.state, ConnectionState.Closed, 'Socket state updated to CLOSED')
+  })
 })
 
 describe('uTP Socket Tests', () => {
