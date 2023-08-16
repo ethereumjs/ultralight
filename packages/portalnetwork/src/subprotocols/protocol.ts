@@ -209,19 +209,18 @@ export abstract class BaseProtocol extends EventEmitter {
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
     })
-
-    try {
-      const enr = dstId.startsWith('enr')
-        ? ENR.decodeTxt(dstId)
-        : this.routingTable.getWithPending(dstId)?.value
-      if (!enr) {
-        return
-      }
-      const res = await this.sendMessage(enr, payload, this.protocolId)
-      if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
-        this.metrics?.nodesMessagesReceived.inc()
-        const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
-        const enrs = decoded.enrs ?? []
+    const enr = dstId.startsWith('enr')
+      ? ENR.decodeTxt(dstId)
+      : this.routingTable.getWithPending(dstId)?.value
+    if (!enr) {
+      return
+    }
+    const res = await this.sendMessage(enr, payload, this.protocolId)
+    if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
+      this.metrics?.nodesMessagesReceived.inc()
+      const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
+      const enrs = decoded.enrs ?? []
+      try {
         if (enrs.length > 0) {
           const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
           const unknown = this.routingTable
@@ -246,11 +245,11 @@ export abstract class BaseProtocol extends EventEmitter {
             } ignored PeerIds and ${unknown.length} unknown.`,
           )
         }
-
-        return decoded
+      } catch (err: any) {
+        this.logger(`Error processing NODES message: ${err.toString()}`)
       }
-    } catch (err: any) {
-      this.logger(`Error sending FINDNODES to ${shortId(dstId)} - ${err}`)
+
+      return decoded
     }
   }
 
