@@ -454,11 +454,11 @@ export class portal {
       return { enrs: res.enrs.map(toHexString) }
     } else {
       this.logger.extend('historyRecursiveFindContent')(
-        `request returned { content: ${res.content}, utpTransfer: ${res.utp} }`,
+        `request returned { contentValue: ${res.content}, utpTransfer: ${res.utp} }`,
       )
 
       return {
-        content: toHexString(res.content),
+        contentValue: toHexString(res.content),
         utpTransfer: res.utp,
       }
     }
