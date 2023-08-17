@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { ProtocolId } from '../../../subprotocols/types.js'
+import { ProtocolId } from '../../../types.js'
 import { Packet } from './index.js'
 import { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 

@@ -1,4 +1,4 @@
-import { ProtocolId } from '../../../subprotocols'
+import { ProtocolId } from '../../../types.js'
 
 export type UtpSocketKey = string
 
