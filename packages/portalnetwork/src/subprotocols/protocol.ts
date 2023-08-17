@@ -514,8 +514,16 @@ export abstract class BaseProtocol extends EventEmitter {
           concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
         )
       } else {
+        const payload = ContentMessageType.serialize({
+          selector: 2,
+          value: [],
+        })
         this.logger(`Found no ENRs closer to content than us`)
-        this.sendResponse(src, requestId, Uint8Array.from([]))
+        this.sendResponse(
+          src,
+          requestId,
+          concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+        )
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
