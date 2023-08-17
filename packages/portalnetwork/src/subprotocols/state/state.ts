@@ -1,7 +1,7 @@
 import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import { BaseProtocol } from '../protocol.js'
-import { ProtocolId } from '../types.js'
+import { ProtocolId } from '../../types.js'
 
 export class StateProtocol extends BaseProtocol {
   protocolId: ProtocolId.StateNetwork
@@ -14,11 +14,11 @@ export class StateProtocol extends BaseProtocol {
     this.routingTable.setLogger(this.logger)
   }
 
-  public sendFindContent = async (dstId: string, key: Uint8Array) => {
+  public sendFindContent = async (_dstId: string, _key: Uint8Array) => {
     return undefined
   }
 
-  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
+  public findContentLocally = async (_contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     return undefined
   }
 

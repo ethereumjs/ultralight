@@ -8,19 +8,13 @@ import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
 import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
-import {
-  MainnetGenesisValidatorsRoot,
-  BeaconLightClientNetworkContentType,
-  LightClientUpdatesByRange,
-} from './types.js'
+import { MainnetGenesisValidatorsRoot, BeaconLightClientNetworkContentType } from './types.js'
 import {
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { ssz } from '@lodestar/types'
-import { getBeaconContentKey } from './util.js'
 import { bytesToInt } from '@ethereumjs/util'
 import { RequestCode } from '../../wire/index.js'
 

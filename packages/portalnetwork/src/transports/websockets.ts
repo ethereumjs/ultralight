@@ -114,7 +114,7 @@ export class WebSocketTransportService
     }
   }
 
-  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
+  getContactableAddr(_enr: BaseENR): SocketAddress | undefined {
     const nodeAddr = this.bindAddrs[0].tuples()
     return {
       port: this.bindAddrs[0].nodeAddress().port,

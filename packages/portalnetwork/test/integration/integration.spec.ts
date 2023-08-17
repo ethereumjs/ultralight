@@ -2,7 +2,7 @@ import { Block, BlockHeader } from '@ethereumjs/block'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { readFileSync } from 'fs'
-import { it, it, assert } from 'vitest'
+import { it, assert } from 'vitest'
 import {
   addRLPSerializedBlock,
   BlockHeaderWithProof,

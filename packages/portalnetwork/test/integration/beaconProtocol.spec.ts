@@ -1,6 +1,6 @@
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-import { describe, it, assert } from 'vitest'
+import { it, assert } from 'vitest'
 import {
   fromHexString,
   PortalNetwork,
