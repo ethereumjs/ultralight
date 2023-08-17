@@ -75,7 +75,7 @@ export class HistoryProtocol extends BaseProtocol {
       }
       try {
         this.verifyInclusionProof(proof.value, contentHash, header.number)
-      } catch () {
+      } catch {
         throw new Error('Received block header with invalid proof')
       }
     }
