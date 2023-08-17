@@ -86,9 +86,14 @@ export class ContentLookup {
               contentType: HistoryNetworkContentType,
               content: string,
             ) => {
-              this.logger(`this.contentKey: ${toHexString(this.contentKey)}`)
-              this.logger(`contentKey: ${contentKey}, contentType: ${contentType}.`)
-              if (contentKey === toHexString(this.contentKey)) {
+              this.logger(
+                `this.contentKey: ${contentType} +  ${toHexString(this.contentKey.slice(1))}`,
+              )
+              this.logger(`contentType: ${contentType} contentKey: ${contentKey}, .`)
+              if (
+                this.contentKey[0] === contentType &&
+                contentKey === toHexString(this.contentKey.slice(1))
+              ) {
                 this.protocol.removeListener('ContentAdded', utpDecoder)
                 resolve({ content: fromHexString(content), utp: true })
               }
