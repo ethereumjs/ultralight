@@ -1,22 +1,11 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import debug, { Debugger } from 'debug'
 import {
-  BlockHeaderWithProof,
-  blockNumberToGindex,
   ContentMessageType,
   decodeHistoryNetworkContentKey,
-  EpochAccumulator,
-  epochIndexByBlocknumber,
-  epochRootByBlocknumber,
-  epochRootByIndex,
-  ETH,
   FindContentMessage,
-  getContentKey,
-  GossipManager,
-  HistoryNetworkContentType,
   MessageCodes,
   PortalWireMessageType,
-  ProtocolId,
   reassembleBlock,
   RequestCode,
   shortId,
@@ -26,8 +15,18 @@ import {
   PortalNetwork,
   FoundContent,
 } from '../../index.js'
-
+import { ProtocolId } from '../../types.js'
+import { ETH } from './eth_module.js'
+import { GossipManager } from './gossip.js'
+import { BlockHeaderWithProof, EpochAccumulator, HistoryNetworkContentType } from './types.js'
 import { BaseProtocol } from '../protocol.js'
+import {
+  epochIndexByBlocknumber,
+  epochRootByBlocknumber,
+  epochRootByIndex,
+  blockNumberToGindex,
+  getContentKey,
+} from './util.js'
 import {
   createProof,
   Proof,
@@ -76,7 +75,8 @@ export class HistoryProtocol extends BaseProtocol {
       }
       try {
         this.verifyInclusionProof(proof.value, contentHash, header.number)
-      } catch {
+      } catch (e) {
+        console.log(e)
         throw new Error('Received block header with invalid proof')
       }
     }

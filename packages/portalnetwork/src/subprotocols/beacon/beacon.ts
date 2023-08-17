@@ -1,6 +1,7 @@
 import { Debugger } from 'debug'
 import { BaseProtocol } from '../protocol.js'
-import { FoundContent, ProtocolId } from '../types.js'
+import { FoundContent } from '../types.js'
+import { ProtocolId } from '../../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'

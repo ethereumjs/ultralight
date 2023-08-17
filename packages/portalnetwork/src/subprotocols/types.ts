@@ -1,17 +1,6 @@
+import { ByteVectorType } from '@chainsafe/ssz'
 import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
-
-// subprotocol IDs
-export enum ProtocolId {
-  StateNetwork = '0x500a',
-  HistoryNetwork = '0x500b',
-  TxGossipNetwork = '0x500c',
-  HeaderGossipNetwork = '0x500d',
-  CanonicalIndicesNetwork = '0x500e',
-  BeaconLightClientNetwork = '0x501a',
-  UTPNetwork = '0x757470',
-  Rendezvous = '0x72656e',
-}
 
 const BYTE_SIZE = 256
 
@@ -100,3 +89,6 @@ export class Bloom {
     }
   }
 }
+
+/** Common SSZ Type Aliases */
+export const Bytes32Type = new ByteVectorType(32, { typeName: 'Bytes32' })

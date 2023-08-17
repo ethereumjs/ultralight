@@ -9,6 +9,7 @@ import {
   VectorCompositeType,
 } from '@chainsafe/ssz'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
+import { Bytes32Type } from '../types.js'
 
 /* ----------------- Constants ----------- */
 // number of header records in a single epoch
@@ -115,7 +116,6 @@ export type TxReceiptWithType = PreByzantiumTxReceiptWithType | PostByzantiumTxR
 export type TxReceiptType = TxReceipt | TxReceiptWithType
 
 /* ----------------- SSZ Type Aliases ----------- */
-export const Bytes32Type = new ByteVectorType(32)
 export const HashRootType = Bytes32Type
 export const TotalDifficultyType = new UintBigintType(32)
 export const LeafType = Bytes32Type
