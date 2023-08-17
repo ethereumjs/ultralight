@@ -456,9 +456,8 @@ export class portal {
       this.logger.extend('historyRecursiveFindContent')(
         `request returned { content: ${toHexString(res.content)}, utpTransfer: ${res.utp} }`,
       )
-      const stored = await this._history.findContentLocally(fromHexString(contentKey))
       return {
-        content: toHexString(stored),
+        content: toHexString(res.content),
         utpTransfer: res.utp,
       }
     }
