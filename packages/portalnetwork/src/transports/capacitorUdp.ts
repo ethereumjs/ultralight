@@ -8,8 +8,7 @@ import {
   ITransportService,
   TransportEventEmitter,
 } from '@chainsafe/discv5/transport'
-import { BaseENR } from '@chainsafe/discv5'
-import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
+import { ENR, SocketAddress, getSocketAddressOnENR } from '@chainsafe/discv5'
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
@@ -83,14 +82,7 @@ export class CapacitorUDPTransportService
     }
   }
 
-  getContactableAddr(enr: BaseENR): SocketAddress | undefined {
-    const nodeAddr = this.bindAddrs[0].tuples()
-    return {
-      port: this.bindAddrs[0].nodeAddress().port,
-      ip: {
-        type: 4,
-        octets: nodeAddr[0][1] ?? new Uint8Array([0, 0, 0, 0]),
-      },
-    }
+  getContactableAddr(enr: ENR): SocketAddress | undefined {
+    return getSocketAddressOnENR(enr, this.ipMode)
   }
 }
