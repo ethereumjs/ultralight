@@ -11,8 +11,7 @@ import {
 import WebSocketAsPromised from 'websocket-as-promised'
 import WebSocket from 'isomorphic-ws'
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
-import { SocketAddress } from '@chainsafe/discv5/lib/util/ip.js'
-import { BaseENR } from '@chainsafe/discv5'
+import { ENR, SocketAddress, getSocketAddressOnENR } from '@chainsafe/discv5'
 const log = debug('discv5:transport')
 
 interface IWebSocketTransportEvents extends ITransportEvents {
@@ -114,14 +113,7 @@ export class WebSocketTransportService
     }
   }
 
-  getContactableAddr(_enr: BaseENR): SocketAddress | undefined {
-    const nodeAddr = this.bindAddrs[0].tuples()
-    return {
-      port: this.bindAddrs[0].nodeAddress().port,
-      ip: {
-        type: 4,
-        octets: nodeAddr[0][1] ?? new Uint8Array([0, 0, 0, 0]),
-      },
-    }
+  getContactableAddr(enr: ENR): SocketAddress | undefined {
+    return getSocketAddressOnENR(enr, this.ipMode)
   }
 }
