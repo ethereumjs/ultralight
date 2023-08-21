@@ -192,6 +192,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
       throw new Error('special handling for update ranges not supported yet')
     }
+    this.logger(
+      `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
+    )
     await this.put(this.protocolId, contentKey, toHexString(value))
   }
 }

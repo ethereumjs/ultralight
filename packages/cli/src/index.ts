@@ -115,10 +115,11 @@ const main = async () => {
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
+
   portal.enableLog('*ultralight*, *Portal*, *ultralight:RPC*')
   let metricsServer: http.Server | undefined
 
@@ -132,6 +133,7 @@ const main = async () => {
   }
   await portal.start()
 
+  // TODO - make this more intelligent
   const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
   if (args.bootnode) {
     protocol!.addBootNode(args.bootnode)
