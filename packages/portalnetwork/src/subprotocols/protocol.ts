@@ -203,6 +203,9 @@ export abstract class BaseProtocol extends EventEmitter {
    * @returns a {@link `NodesMessage`} or undefined
    */
   public sendFindNodes = async (dstId: string, distances: number[]) => {
+    if (!this.routingTable) {
+      return
+    }
     this.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances: distances }
     const payload = PortalWireMessageType.serialize({
@@ -218,7 +221,6 @@ export abstract class BaseProtocol extends EventEmitter {
         : this.routingTable.getValue(dstId)
     } catch (err: any) {
       this.logger(`Error decoding ENR: ${err.message}`)
-      enr = this.routingTable.getValue(dstId)
     }
     if (!enr) {
       return
