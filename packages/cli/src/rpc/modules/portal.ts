@@ -295,14 +295,6 @@ export class portal {
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
-    // if (!this._history.routingTable.getWithPending(dstId)?.value) {
-    // this._client.discv5.addEnr(enr)
-    // this._history.routingTable.insertOrUpdate(ENR.decodeTxt(enr), EntryStatus.Disconnected)
-    // const pong = await this._history.sendPing(enr)
-    // if (!pong) {
-    //   return ''
-    // }
-    // }
     const res = await this._history.sendFindNodes(enr, distances)
     if (!res) {
       return []
@@ -441,11 +433,10 @@ export class portal {
     this.logger.extend('historyRecursiveFindContent')(`request received for ${contentKey}`)
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
-
     this.logger.extend('historyRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
       this.logger.extend('historyRecursiveFindContent')(`request returned { enrs: [] }`)
-      return { enrs: [] }
+      return { context: '0x', utp: false }
     }
     if ('enrs' in res) {
       this.logger.extend('historyRecursiveFindContent')(
