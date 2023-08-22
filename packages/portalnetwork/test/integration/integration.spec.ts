@@ -125,7 +125,7 @@ it('gossip test', async () => {
   const end = new EventEmitter()
   const to = setTimeout(() => {
     assert.fail('timeout')
-  }, 20000)
+  }, 10000)
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
@@ -148,7 +148,7 @@ it('gossip test', async () => {
       resolve(true)
     })
   })
-}, 10000)
+}, 20000)
 
 it('FindContent', async () => {
   const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
