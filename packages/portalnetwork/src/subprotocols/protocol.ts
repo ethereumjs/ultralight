@@ -33,6 +33,7 @@ import {
   ContentRequest,
   PortalNetwork,
 } from '../index.js'
+import { FoundContent } from '../wire/types.js'
 import { EventEmitter } from 'events'
 import { bytesToInt, concatBytes } from '@ethereumjs/util'
 
@@ -197,7 +198,7 @@ export abstract class BaseProtocol extends EventEmitter {
   /**
    *
    * Sends a Portal Network FINDNODES request to a peer requesting other node ENRs
-   * @param dstId node id of peer
+   * @param dstId node id or enr of peer
    * @param distances distances as defined by subprotocol for node ENRs being requested
    * @param protocolId subprotocol id for message being
    * @returns a {@link `NodesMessage`} or undefined
@@ -209,27 +210,35 @@ export abstract class BaseProtocol extends EventEmitter {
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
     })
-
+    let enr
     try {
-      const enr = this.routingTable.getWithPending(dstId)?.value
-      if (!enr) {
-        return
-      }
-      const res = await this.sendMessage(enr, payload, this.protocolId)
-      if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
-        this.metrics?.nodesMessagesReceived.inc()
-        const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
-        const enrs = decoded.enrs ?? []
+      enr = dstId.startsWith('enr')
+        ? ENR.decodeTxt(dstId)
+        : this.routingTable.getWithPending(dstId)
+        ? this.routingTable.getWithPending(dstId)!.value
+        : this.routingTable.getValue(dstId)
+    } catch (err: any) {
+      // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
+    }
+    if (!enr) {
+      return
+    }
+    const res = await this.sendMessage(enr, payload, this.protocolId)
+    if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
+      this.metrics?.nodesMessagesReceived.inc()
+      const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
+      const enrs = decoded.enrs ?? []
+      try {
         if (enrs.length > 0) {
-          const notIgnored = enrs.filter(
-            (enr) => !this.routingTable.isIgnored(ENR.decode(enr).nodeId),
-          )
-          const unknown = notIgnored.filter(
-            (enr) => !this.routingTable.getWithPending(ENR.decode(enr).nodeId)?.value,
-          )
+          const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
+          const unknown = this.routingTable
+            ? notIgnored.filter(
+                (e) => !this.routingTable.getWithPending(ENR.decode(e).nodeId)?.value,
+              )
+            : notIgnored
           // Ping node if not currently in subprotocol routing table
-          for (const enr of unknown) {
-            const decodedEnr = ENR.decode(enr)
+          for (const e of unknown) {
+            const decodedEnr = ENR.decode(e)
             const ping = await this.sendPing(decodedEnr)
             if (ping === undefined) {
               this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)
@@ -239,16 +248,16 @@ export abstract class BaseProtocol extends EventEmitter {
             }
           }
           this.logger.extend(`NODES`)(
-            `Received ${enrs.length} ENRs from ${shortId(dstId)} with ${
+            `Received ${enrs.length} ENRs from ${shortId(enr.nodeId)} with ${
               enrs.length - notIgnored.length
             } ignored PeerIds and ${unknown.length} unknown.`,
           )
         }
-
-        return decoded
+      } catch (err: any) {
+        this.logger(`Error processing NODES message: ${err.toString()}`)
       }
-    } catch (err: any) {
-      this.logger(`Error sending FINDNODES to ${shortId(dstId)} - ${err}`)
+
+      return decoded
     }
   }
 
@@ -263,26 +272,28 @@ export abstract class BaseProtocol extends EventEmitter {
         enrs: [],
       }
 
-      payload.distances.every((distance) => {
-        if (distance === 0 && arrayByteLength(nodesPayload.enrs) < 1200) {
+      for (const distance of payload.distances) {
+        this.logger.extend(`FINDNODES`)(
+          `Gathering ENRs at distance ${distance} from ${shortId(src.nodeId)}`,
+        )
+        if (distance === 0) {
           // Send the client's ENR if a node at distance 0 is requested
           nodesPayload.total++
           nodesPayload.enrs.push(this.enr.toENR().encode())
         } else {
-          return this.routingTable.valuesOfDistance(distance).every((enr) => {
+          for (const enr of this.routingTable.valuesOfDistance(distance)) {
             // Exclude ENR from response if it matches the requesting node
-            if (enr.nodeId === src.nodeId) return true
+            // if (enr.nodeId === src.nodeId) return true
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
 
-            if (arrayByteLength(nodesPayload.enrs) + enr.encode().length > 1200) return false
-            nodesPayload.total++
-            nodesPayload.enrs.push(enr.encode())
-            return true
-          })
+            if (arrayByteLength(nodesPayload.enrs) + enr.encode().length < 1200) {
+              nodesPayload.total++
+              nodesPayload.enrs.push(enr.encode())
+            }
+          }
         }
-        return true
-      })
+      }
 
       const encodedPayload = PortalWireMessageType.serialize({
         selector: MessageCodes.NODES,
@@ -502,7 +513,7 @@ export abstract class BaseProtocol extends EventEmitter {
           encodedEnrs.pop()
         }
         const payload = ContentMessageType.serialize({
-          selector: 2,
+          selector: FoundContent.ENRS,
           value: encodedEnrs as Uint8Array[],
         })
         this.sendResponse(
@@ -511,14 +522,23 @@ export abstract class BaseProtocol extends EventEmitter {
           concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
         )
       } else {
+        const payload = ContentMessageType.serialize({
+          selector: FoundContent.ENRS,
+          value: [],
+        })
         this.logger(`Found no ENRs closer to content than us`)
-        this.sendResponse(src, requestId, Uint8Array.from([]))
+        this.sendResponse(
+          src,
+          requestId,
+          concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+        )
       }
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
           toHexString(decodedContentMessage.contentKey) +
-          value.slice(0, 10) +
+          ' ' +
+          toHexString(value.slice(0, 10)) +
           `...`,
       )
       const payload = ContentMessageType.serialize({
@@ -548,7 +568,7 @@ export abstract class BaseProtocol extends EventEmitter {
       const id = new Uint8Array(2)
       new DataView(id.buffer).setUint16(0, _id, false)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
-      const payload = ContentMessageType.serialize({ selector: 0, value: id })
+      const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
       this.sendResponse(
         src,
         requestId,

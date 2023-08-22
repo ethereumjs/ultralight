@@ -19,6 +19,7 @@ import {
   ContentMessageType,
   AcceptMessage,
   decodeHistoryNetworkContentKey,
+  FoundContent,
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
 } from 'portalnetwork'
@@ -217,7 +218,8 @@ export class portal {
       if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
         return true
       }
-      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Disconnected)
+      this._client.discv5.addEnr(enr)
+      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
       return true
     } catch {
       return false
@@ -305,18 +307,13 @@ export class portal {
   }
   async historyFindNodes(params: [string, number[]]) {
     const [enr, distances] = params
-    this.logger(`findNodes request received with these distances ${distances.toString()}`)
     const dstId = ENR.decodeTxt(enr).nodeId
+    this.logger(`findNodes request received with these distances [${distances.toString()}]`)
+    this.logger(`sending findNodes request to ${shortId(dstId)}`)
     if (!isValidId(dstId)) {
       return 'invalid node id'
     }
-    if (!this._history.routingTable.getWithPending(dstId)?.value) {
-      const pong = await this._history.sendPing(enr)
-      if (!pong) {
-        return ''
-      }
-    }
-    const res = await this._history.sendFindNodes(dstId, distances)
+    const res = await this._history.sendFindNodes(enr, distances)
     if (!res) {
       return []
     }
@@ -396,11 +393,16 @@ export class portal {
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
+    this.logger.extend('findContent')(
+      `request returned type: ${res ? FoundContent[res.selector] : res}`,
+    )
     if (!res) {
-      return ''
+      return { enrs: [] }
     }
-    const content: Uint8Array =
-      res.selector === 1
+    const content: Uint8Array | Uint8Array[] =
+      res.selector === FoundContent.ENRS
+        ? (res.value as Uint8Array[])
+        : res.selector === FoundContent.CONTENT
         ? (res.value as Uint8Array)
         : await new Promise((resolve) => {
             const timeout = setTimeout(() => {
@@ -417,12 +419,14 @@ export class portal {
             )
           })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === 0 && this.logger.extend('findContent')('utp')
+    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
     this.logger.extend('findContent')(content)
-    return {
-      content: content.length > 0 ? toHexString(content) : '',
-      utpTransfer: res.selector === 0,
-    }
+    return res.selector === FoundContent.ENRS
+      ? { enrs: content }
+      : {
+          content: content.length > 0 ? toHexString(content as Uint8Array) : '',
+          utpTransfer: res.selector === FoundContent.UTP,
+        }
   }
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
@@ -446,12 +450,28 @@ export class portal {
   }
   async historyRecursiveFindContent(params: [string]) {
     const [contentKey] = params
+    this.logger.extend('historyRecursiveFindContent')(`request received for ${contentKey}`)
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
-    if (res instanceof Uint8Array) {
-      return toHexString(res)
+    this.logger.extend('historyRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+    if (!res) {
+      this.logger.extend('historyRecursiveFindContent')(`request returned { enrs: [] }`)
+      return { content: '0x', utpTransfer: false }
     }
-    return res
+    if ('enrs' in res) {
+      this.logger.extend('historyRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
+      )
+      return { enrs: res.enrs.map(toHexString) }
+    } else {
+      this.logger.extend('historyRecursiveFindContent')(
+        `request returned { content: ${toHexString(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      return {
+        content: toHexString(res.content),
+        utpTransfer: res.utp,
+      }
+    }
   }
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params

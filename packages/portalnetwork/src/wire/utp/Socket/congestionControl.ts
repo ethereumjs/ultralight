@@ -66,6 +66,7 @@ export class CongestionControl extends EventEmitter {
     this.rtt = Math.floor(this.rtt + (rtt - this.rtt) / 8)
     this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
     clearTimeout(this.timeoutCounter)
+    this.logger(`timeout set to ${this.timeout}ms`)
     this.timeoutCounter = setTimeout(() => {
       this.throttle()
     }, this.timeout)

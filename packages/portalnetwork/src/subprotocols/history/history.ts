@@ -15,7 +15,7 @@ import {
   PortalNetwork,
   FoundContent,
 } from '../../index.js'
-import { ProtocolId } from '../../types.js'
+import { ProtocolId } from '../types.js'
 import { ETH } from './eth_module.js'
 import { GossipManager } from './gossip.js'
 import { BlockHeaderWithProof, EpochAccumulator, HistoryNetworkContentType } from './types.js'
@@ -196,7 +196,7 @@ export class HistoryProtocol extends BaseProtocol {
       const content = await this.get(this.protocolId, contentKey)
       return content
     } catch {
-      this.logger('Error retrieving content from DB')
+      this.logger(`Error retrieving ${contentKey} from DB`)
     }
   }
 
@@ -227,18 +227,21 @@ export class HistoryProtocol extends BaseProtocol {
       this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
+    const bodyContentKey = getContentKey(
+      HistoryNetworkContentType.BlockBody,
+      fromHexString(hashKey),
+    )
     if (block instanceof Block) {
-      const bodyContentKey = getContentKey(
-        HistoryNetworkContentType.BlockBody,
-        fromHexString(hashKey),
-      )
       this.put(this.protocolId, bodyContentKey, toHexString(value))
       if (block.transactions.length > 0) {
         await this.saveReceipts(block)
       }
     } else {
       this.logger(`Could not verify block content`)
-      // Don't store block body where we can't assemble a valid block
+      this.logger(`Adding anyway for testing...`)
+      this.put(this.protocolId, bodyContentKey, toHexString(value))
+      // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
+      // as it's against spec
       return
     }
   }

@@ -1,7 +1,6 @@
 import { Debugger } from 'debug'
 import { BaseProtocol } from '../protocol.js'
-import { FoundContent } from '../types.js'
-import { ProtocolId } from '../../types.js'
+import { ProtocolId } from '../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
@@ -20,7 +19,7 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { bytesToInt } from '@ethereumjs/util'
-import { RequestCode } from '../../wire/index.js'
+import { RequestCode, FoundContent } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -77,6 +76,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     if (res.length === 0) {
       return undefined
     }
+
     try {
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()

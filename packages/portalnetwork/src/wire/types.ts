@@ -16,6 +16,12 @@ export const PingPongCustomDataType = new ContainerType({
   radius: new UintBigintType(32),
 })
 
+export enum FoundContent {
+  'UTP' = 0,
+  'CONTENT' = 1,
+  'ENRS' = 2,
+}
+
 export type PingPongCustomData = Uint8Array
 
 // Wire Protocol Message Codes

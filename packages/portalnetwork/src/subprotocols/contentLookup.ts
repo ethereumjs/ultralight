@@ -11,6 +11,14 @@ type lookupPeer = {
   hasContent?: boolean
 }
 
+export type ContentLookupResponse =
+  | {
+      content: Uint8Array
+      utp: boolean
+    }
+  | { enrs: Uint8Array[] }
+  | undefined
+
 export class ContentLookup {
   private protocol: BaseProtocol
   private lookupPeers: lookupPeer[]
@@ -33,13 +41,13 @@ export class ContentLookup {
    * Queries the 5 nearest nodes in the history network routing table and recursively
    * requests peers closer to the content until either the content is found or there are no more peers to query
    */
-  public startLookup = async (): Promise<Uint8Array | Uint8Array[] | undefined> => {
+  public startLookup = async (): Promise<ContentLookupResponse> => {
     // Don't support content lookups for protocols that don't implement it (i.e. Canonical Indices)
     if (!this.protocol.sendFindContent) return
     this.protocol.metrics?.totalContentLookups.inc()
     try {
       const res = await this.protocol.get(this.protocol.protocolId, toHexString(this.contentKey))
-      return fromHexString(res)
+      return { content: fromHexString(res), utp: false }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
@@ -77,8 +85,17 @@ export class ContentLookup {
               contentType: HistoryNetworkContentType,
               content: string,
             ) => {
-              this.protocol.removeListener('ContentAdded', utpDecoder)
-              resolve(fromHexString(content))
+              this.logger(
+                `this.contentKey: ${contentType} +  ${toHexString(this.contentKey.slice(1))}`,
+              )
+              this.logger(`contentType: ${contentType} contentKey: ${contentKey}, .`)
+              if (
+                this.contentKey[0] === contentType &&
+                contentKey === toHexString(this.contentKey.slice(1))
+              ) {
+                this.protocol.removeListener('ContentAdded', utpDecoder)
+                resolve({ content: fromHexString(content), utp: true })
+              }
             }
             this.protocol.on('ContentAdded', utpDecoder)
           })
@@ -99,7 +116,7 @@ export class ContentLookup {
               this.protocol.sendOffer(peer, [this.contentKey])
             }
           }
-          return res.value
+          return { content: res.value as Uint8Array, utp: false }
         }
         case 2: {
           // findContent request returned ENRs of nodes closer to content
