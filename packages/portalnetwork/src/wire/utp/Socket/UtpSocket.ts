@@ -2,7 +2,6 @@ import {
   Packet,
   PacketType,
   ConnectionState,
-  ICreate,
   ICreatePacketOpts,
   UtpSocketOptions,
   UtpSocketType,

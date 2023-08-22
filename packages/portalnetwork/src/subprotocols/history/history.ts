@@ -209,7 +209,6 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public async addBlockBody(value: Uint8Array, hashKey: string) {
-    const bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return

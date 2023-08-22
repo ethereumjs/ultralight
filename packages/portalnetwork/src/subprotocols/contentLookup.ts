@@ -4,7 +4,6 @@ import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 import { HistoryNetworkContentType } from './history/types.js'
 import { BaseProtocol } from './protocol.js'
-import { Uint8 } from '@lodestar/types'
 
 type lookupPeer = {
   nodeId: NodeId

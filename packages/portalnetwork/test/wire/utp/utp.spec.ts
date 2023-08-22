@@ -321,7 +321,6 @@ tape('PortalNetworkUTP test', (t) => {
   })
   t.test('handleNewRequest', async (st) => {
     const connectionId = randUint16()
-    const socketIds = utp.startingIdNrs(connectionId)
     let params: INewRequest = {
       protocolId: ProtocolId.HistoryNetwork,
       contentKeys: [randomBytes(33)],

@@ -305,8 +305,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           value: JSON.stringify(peers),
         },
       ])
-    } catch (err) {
-      console.log('error', err)
+    } catch (err: any) {
+      this.logger.log('error: ', err.message)
     }
   }
 

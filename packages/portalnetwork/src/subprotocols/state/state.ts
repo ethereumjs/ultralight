@@ -14,11 +14,11 @@ export class StateProtocol extends BaseProtocol {
     this.routingTable.setLogger(this.logger)
   }
 
-  public sendFindContent = async (dstId: string, key: Uint8Array) => {
+  public sendFindContent = async (_dstId: string, _key: Uint8Array) => {
     return undefined
   }
 
-  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
+  public findContentLocally = async (_contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     return undefined
   }
 

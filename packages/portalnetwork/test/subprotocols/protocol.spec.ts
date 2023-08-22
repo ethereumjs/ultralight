@@ -17,7 +17,7 @@ import {
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
+import { BitArray, fromHexString } from '@chainsafe/ssz'
 
 tape('protocol wire message tests', async (t) => {
   const node = await PortalNetwork.create({
