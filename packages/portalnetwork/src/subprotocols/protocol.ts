@@ -203,9 +203,6 @@ export abstract class BaseProtocol extends EventEmitter {
    * @returns a {@link `NodesMessage`} or undefined
    */
   public sendFindNodes = async (dstId: string, distances: number[]) => {
-    if (this.routingTable === undefined) {
-      return
-    }
     this.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances: distances }
     const payload = PortalWireMessageType.serialize({
@@ -221,7 +218,6 @@ export abstract class BaseProtocol extends EventEmitter {
         : this.routingTable.getValue(dstId)
     } catch (err: any) {
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
-      // this.logger(`Error decoding ENR: ${err.message}`)
     }
     if (!enr) {
       return
