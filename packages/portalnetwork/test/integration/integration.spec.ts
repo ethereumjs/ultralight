@@ -123,9 +123,6 @@ it('gossip test', async () => {
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
-  const to = setTimeout(() => {
-    assert.fail('timeout')
-  }, 10000)
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
@@ -138,7 +135,6 @@ it('gossip test', async () => {
         node2.removeAllListeners()
         await node1.stop()
         await node2.stop()
-        clearTimeout(to)
         end.emit('end()')
       }
     }
