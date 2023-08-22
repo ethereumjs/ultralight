@@ -4,10 +4,16 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 const BYTE_SIZE = 256
 
-export enum FoundContent {
-  'UTP' = 0,
-  'CONTENT' = 1,
-  'ENRS' = 2,
+// subprotocol IDs
+export enum ProtocolId {
+  StateNetwork = '0x500a',
+  HistoryNetwork = '0x500b',
+  TxGossipNetwork = '0x500c',
+  HeaderGossipNetwork = '0x500d',
+  CanonicalIndicesNetwork = '0x500e',
+  BeaconLightClientNetwork = '0x501a',
+  UTPNetwork = '0x757470',
+  Rendezvous = '0x72656e',
 }
 
 export class Bloom {

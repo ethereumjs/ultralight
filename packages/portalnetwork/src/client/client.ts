@@ -10,7 +10,7 @@ import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { BeaconLightClientNetwork, StateProtocol } from '../subprotocols/index.js'
+import { BeaconLightClientNetwork, StateProtocol, ProtocolId } from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
@@ -21,7 +21,7 @@ import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
-import { ProtocolId } from '../types.js'
+
 import { BaseProtocol } from '../subprotocols/protocol.js'
 import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'

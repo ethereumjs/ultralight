@@ -15,7 +15,7 @@ import {
   PortalNetwork,
   FoundContent,
 } from '../../index.js'
-import { ProtocolId } from '../../types.js'
+import { ProtocolId } from '../types.js'
 import { ETH } from './eth_module.js'
 import { GossipManager } from './gossip.js'
 import { BlockHeaderWithProof, EpochAccumulator, HistoryNetworkContentType } from './types.js'

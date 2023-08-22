@@ -9,11 +9,12 @@ import {
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
   toHexString,
+  Uint8,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 
 import { SignableENR } from '@chainsafe/discv5'
-
+import { ssz } from '@lodestar/types'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -100,11 +101,11 @@ describe('Find Content tests', () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
     const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
     enr1.setLocationMultiaddr(initMa)
     const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
@@ -151,27 +152,26 @@ describe('Find Content tests', () => {
       fromHexString(optimisticUpdate.content_value),
     )
 
-    await new Promise((resolve) => {
-      node2.uTP.on('Stream', async () => {
-        const content = await protocol2.findContentLocally(
-          fromHexString(optimisticUpdate.content_key),
-        )
-        assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
-        assert.equal(
-          toHexString(content!),
-          optimisticUpdate.content_value,
-          'retrieved correct content for optimistic update',
-        )
-        await node1.stop()
-        await node2.stop()
-        resolve(undefined)
-      })
-      protocol2.sendFindContent(
-        node1.discv5.enr.nodeId,
-        fromHexString(optimisticUpdate.content_key),
-      )
-    })
-  })
+    const res = await protocol2.sendFindContent(
+      node1.discv5.enr.nodeId,
+      fromHexString(optimisticUpdate.content_key),
+    )
+
+    assert.equal(
+      toHexString(res!.value as Uint8Array),
+      optimisticUpdate.content_value,
+      'retrieved content for optimistic update from network',
+    )
+    const content = await protocol2.findContentLocally(fromHexString(optimisticUpdate.content_key))
+    assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
+    assert.equal(
+      toHexString(content!),
+      optimisticUpdate.content_value,
+      'retrieved correct content for optimistic update from local storage',
+    )
+    await node1.stop()
+    await node2.stop()
+  }, 10000)
 })
 
 // TODO: Add tests for other content types

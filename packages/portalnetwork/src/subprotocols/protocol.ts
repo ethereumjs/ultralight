@@ -32,8 +32,8 @@ import {
   INewRequest,
   ContentRequest,
   PortalNetwork,
-  FoundContent,
 } from '../index.js'
+import { FoundContent } from '../wire/types.js'
 import { EventEmitter } from 'events'
 import { bytesToInt, concatBytes } from '@ethereumjs/util'
 
@@ -218,6 +218,7 @@ export abstract class BaseProtocol extends EventEmitter {
         ? this.routingTable.getWithPending(dstId)!.value
         : this.routingTable.getValue(dstId)
     } catch (err: any) {
+      console.log(err)
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
     }
     if (!enr) {
@@ -537,11 +538,12 @@ export abstract class BaseProtocol extends EventEmitter {
       this.logger(
         'Found value for requested content ' +
           toHexString(decodedContentMessage.contentKey) +
-          value.slice(0, 10) +
+          ' ' +
+          toHexString(value.slice(0, 10)) +
           `...`,
       )
       const payload = ContentMessageType.serialize({
-        selector: FoundContent.CONTENT,
+        selector: 1,
         value: value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)

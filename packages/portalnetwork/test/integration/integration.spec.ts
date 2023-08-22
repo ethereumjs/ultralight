@@ -212,25 +212,7 @@ it('FindContent', async () => {
   const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
     setHardfork: true,
   })
-  await new Promise((resolve) => {
-    protocol2.on('ContentAdded', async (key, contentType, content) => {
-      if (contentType === 0) {
-        const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
-        const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
-          setHardfork: true,
-        })
-        assert.equal(
-          toHexString(header.hash()),
-          testBlockData[29].blockHash,
-          'retrieved expected header',
-        )
-        node2.removeAllListeners()
-        await node1.stop()
-        await node2.stop()
-        resolve(() => {})
-      }
-    })
-  })
+
   assert.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
   node2.removeAllListeners()
   await node1.stop()
