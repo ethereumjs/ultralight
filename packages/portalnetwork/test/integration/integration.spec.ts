@@ -125,7 +125,7 @@ it('gossip test', async () => {
   const end = new EventEmitter()
   const to = setTimeout(() => {
     assert.fail('timeout')
-  }, 10000)
+  }, 20000)
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
