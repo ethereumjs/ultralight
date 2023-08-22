@@ -204,7 +204,7 @@ tape('FindContent', async (t) => {
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
   await protocol1.sendPing(protocol2?.enr!.toENR())
 
-  await protocol2.sendFindContent(
+  const res = await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
     fromHexString(
       getContentKey(
@@ -213,27 +213,15 @@ tape('FindContent', async (t) => {
       ),
     ),
   )
-  await new Promise((resolve) => {
-    protocol2.on('ContentAdded', async (key, contentType, content) => {
-      if (contentType === 0) {
-        const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
-        const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
-          setHardfork: true,
-        })
-        t.equal(
-          toHexString(header.hash()),
-          testBlockData[29].blockHash,
-          'retrieved expected header',
-        )
-        node2.removeAllListeners()
-        await node1.stop()
-        await node2.stop()
-        resolve(() => {
-          t.end()
-        })
-      }
-    })
+  const headerWithProof = BlockHeaderWithProof.deserialize(res!.value as Uint8Array)
+  const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
+    setHardfork: true,
   })
+  t.equal(toHexString(header.hash()), testBlockData[29].blockHash, 'retrieved expected header')
+  node2.removeAllListeners()
+  await node1.stop()
+  await node2.stop()
+  t.end()
 })
 
 tape('eth_getBlockByHash', async (t) => {
