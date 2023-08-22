@@ -216,19 +216,31 @@ export class portal {
   async historyRoutingTableInfo(_params: []): Promise<any> {
     this.logger(`portal_historyRoutingTableInfo request received.`)
     let localNodeId = ''
-    let buckets: string[][] = []
+    let buckets: ENR[][] = []
     const table = this._history.routingTable
     try {
       localNodeId = table.localId
-      buckets = table.buckets
-        .map((bucket) => bucket.values().map((value) => value.nodeId))
-        .reverse()
+      buckets = table.buckets.map((bucket) => bucket.values()).reverse()
     } catch (err) {
       localNodeId = (err as any).message
     }
+    const peers = Object.fromEntries(
+      [...buckets.entries()]
+        .filter(([_, b]) => b.length > 0)
+        .map(([_, b]) => {
+          return [
+            _,
+            b.map((enr) => {
+              return {
+                enr: enr.encodeTxt(),
+              }
+            }),
+          ]
+        }),
+    )
     return {
       localNodeId: localNodeId,
-      buckets: Object.fromEntries([...buckets.entries()].filter(([_, b]) => b.length > 0)),
+      buckets: peers,
     }
   }
   async historyLookupEnr(params: [string]) {
