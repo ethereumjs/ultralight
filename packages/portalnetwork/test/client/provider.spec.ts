@@ -1,13 +1,13 @@
-import tape from 'tape'
+import { it, assert } from 'vitest'
 import { UltralightProvider } from '../../src/client/provider.js'
-import { TransportLayer } from '../../src/index.js'
+import { ProtocolId, TransportLayer } from '../../src/index.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { multiaddr } from '@multiformats/multiaddr'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { SignableENR } from '@chainsafe/discv5'
 
-tape('Test provider functionality', async (t) => {
+it('Test provider functionality', async () => {
   const ma = multiaddr('/ip4/0.0.0.0/udp/1500')
   const peerId = await createSecp256k1PeerId()
   const enr = SignableENR.createFromPeerId(peerId)
@@ -22,10 +22,11 @@ tape('Test provider functionality', async (t) => {
       enr: enr,
       peerId: peerId,
     },
+    supportedProtocols: [ProtocolId.HistoryNetwork],
   })
 
   const block = await provider.getBlock(5000)
-  t.ok(block.number === 5000, 'retrieved block from fallback provider')
+  assert.ok(block.number === 5000, 'retrieved block from fallback provider')
 
   // Stub getBlockByHash for unit testing
   provider.historyProtocol.ETH.getBlockByHash = async (_hash: string) => {
@@ -34,9 +35,8 @@ tape('Test provider functionality', async (t) => {
   const block2 = await provider.getBlock(
     '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9',
   )
-  t.equal(block2.number, 2, 'got block 2 from portal network')
+  assert.equal(block2.number, 2, 'got block 2 from portal network')
   await (provider as any).portal.stop()
 
-  t.equal(1, (await provider.detectNetwork()).chainId, 'parent class methods work as expected')
-  t.end()
+  assert.equal(1, (await provider.detectNetwork()).chainId, 'parent class methods work as expected')
 })

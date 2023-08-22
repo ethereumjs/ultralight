@@ -4,7 +4,7 @@ import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
 import { fromHexString, serializedContentKeyToContentId } from '../index.js'
-import { ProtocolId } from '../subprotocols/index.js'
+import { ProtocolId } from '../index.js'
 
 export class DBManager {
   nodeId: string

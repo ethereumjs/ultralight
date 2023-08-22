@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { it, assert } from 'vitest'
 import {
   getContentId,
   getContentKey,
@@ -14,7 +14,7 @@ import { randomBytes } from 'ethers/lib/utils.js'
 import { bigIntToHex } from '@ethereumjs/util'
 import { distance } from '@chainsafe/discv5'
 
-tape('DBManager unit tests', async (t) => {
+it('DBManager unit tests', async () => {
   const size = async () => {
     return 500
   }
@@ -28,17 +28,17 @@ tape('DBManager unit tests', async (t) => {
   await db.open()
   const historyDb = db.sublevels.get(ProtocolId.HistoryNetwork)!
   const utpNetwork = db.sublevels.get(ProtocolId.UTPNetwork)
-  t.equal(db.db.status, 'open', 'Main database is open')
-  t.equal(historyDb.status, 'open', 'History Sublevel open')
-  t.equal(utpNetwork, undefined, 'Unsupported Network not open')
-  t.equal(db.nodeId, self.slice(2), 'db nodeId set correctly')
+  assert.equal(db.db.status, 'open', 'Main database is open')
+  assert.equal(historyDb.status, 'open', 'History Sublevel open')
+  assert.equal(utpNetwork, undefined, 'Unsupported Network not open')
+  assert.equal(db.nodeId, self.slice(2), 'db nodeId set correctly')
 
   const testHash = randomBytes(32)
   const testVal = randomBytes(48)
   const testKey = getContentKey(HistoryNetworkContentType.BlockHeader, testHash)
   const testId = getContentId(HistoryNetworkContentType.BlockHeader, toHexString(testHash))
   const _testId = serializedContentKeyToContentId(fromHexString(testKey))
-  t.equal(_testId, testId, 'testIds match')
+  assert.equal(_testId, testId, 'testIds match')
 
   db.put(ProtocolId.HistoryNetwork, testKey, toHexString(testVal))
   const lookupD = BigInt.asUintN(32, distance(self.slice(2), testId.slice(2)))
@@ -46,34 +46,34 @@ tape('DBManager unit tests', async (t) => {
 
   const historyPrefix = '!0x500b!'
   const key0 = [...(await db.db.keys().all())][0]
-  t.equal(
+  assert.equal(
     key0,
     historyPrefix + lookupKey,
     'DBManager prefixed HistoryNetwork key with HistoryNetwork prefix',
   )
-  t.equal(
+  assert.equal(
     BigInt.asUintN(32, BigInt(self)) ^ BigInt.asUintN(32, BigInt(testId)),
     BigInt.asUintN(32, lookupD),
     'XOR formula works',
   )
-  t.equal(
+  assert.equal(
     BigInt.asUintN(32, lookupD) ^ BigInt.asUintN(32, BigInt(testId)),
     BigInt.asUintN(32, BigInt(self)),
     'XOR formula works',
   )
-  t.equal(
+  assert.equal(
     BigInt.asUintN(32, BigInt(self)) ^ BigInt.asUintN(32, lookupD),
     BigInt.asUintN(32, BigInt(testId)),
     'XOR formula works',
   )
   const val = await historyDb.get(lookupKey)
-  t.equal(
+  assert.equal(
     val,
     toHexString(testVal),
     'HistoryNetwork content retrieved directly from history sublevel',
   )
   const res = await db.get(ProtocolId.HistoryNetwork, testKey)
-  t.equal(res, toHexString(testVal), 'DBManager retrieved History Content from a content key')
+  assert.equal(res, toHexString(testVal), 'DBManager retrieved History Content from a content key')
 
   for (let i = 0; i < 10000; i++) {
     let testKey = toHexString(randomBytes(33))
@@ -90,8 +90,8 @@ tape('DBManager unit tests', async (t) => {
     db.put(ProtocolId.HistoryNetwork, testKey, toHexString(testVal))
   }
 
-  t.equal((await db.db.keys().all()).length, 20000, '20000 total keys')
-  t.equal((await historyDb.keys().all())?.length, 10000, '10000 history sublevel keys')
+  assert.equal((await db.db.keys().all()).length, 20000, '20000 total keys')
+  assert.equal((await historyDb.keys().all())?.length, 10000, '10000 history sublevel keys')
 
   const oldRadius = 2n ** 256n
   const newRadius = oldRadius / 2n
@@ -99,11 +99,10 @@ tape('DBManager unit tests', async (t) => {
     historyDb!.del(key)
   }
   const rest = (await historyDb?.keys().all())!.length
-  t.ok(
+  assert.ok(
     rest < 10000,
     `pruning by 50% removed ${((10000 - rest) * 100) / 10000}% of sublevel content`,
   )
-  t.equals((await db.db.keys().all()).length, 10000 + rest, 'Keys deleted only from sublevel')
+  assert.equal((await db.db.keys().all()).length, 10000 + rest, 'Keys deleted only from sublevel')
   db.close()
-  t.end()
 })

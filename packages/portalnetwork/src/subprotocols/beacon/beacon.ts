@@ -1,6 +1,7 @@
 import { Debugger } from 'debug'
 import { BaseProtocol } from '../protocol.js'
-import { FoundContent, ProtocolId } from '../types.js'
+import { FoundContent } from '../types.js'
+import { ProtocolId } from '../../types.js'
 import { PortalNetwork } from '../../client/client.js'
 import debug from 'debug'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
@@ -18,11 +19,9 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { ssz } from '@lodestar/types'
-import { getBeaconContentKey } from './util.js'
 import { bytesToInt } from '@ethereumjs/util'
 import { RequestCode } from '../../wire/index.js'
-
+import { ssz } from '@lodestar/types'
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
   beaconConfig: BeaconConfig
@@ -97,83 +96,88 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             })
             break
           }
-        } /*
-        const contentHash = toHexString(key)
-        const forkhash = decoded.value.slice(0, 4) as Uint8Array
-        const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
-        switch (decoded.selector) {
-          case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
-            try {
-              // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
-              ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
-                (decoded.value as Uint8Array).slice(4),
-              )
-            } catch (err) {
-              this.logger(`received invalid content from ${shortId(dstId)}`)
-              break
+          case FoundContent.CONTENT: {
+            const contentKey = toHexString(key)
+            const forkhash = decoded.value.slice(0, 4) as Uint8Array
+            const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
+            switch (key[0]) {
+              case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+                try {
+                  // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
+                  ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+                    (decoded.value as Uint8Array).slice(4),
+                  )
+                } catch (err) {
+                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  break
+                }
+                this.logger(
+                  `received ${
+                    BeaconLightClientNetworkContentType[decoded.selector]
+                  } content corresponding to ${contentKey}`,
+                )
+                await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                break
+              case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+                try {
+                  ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
+                    (decoded.value as Uint8Array).slice(4),
+                  )
+                } catch (err) {
+                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  break
+                }
+                this.logger(
+                  `received ${
+                    BeaconLightClientNetworkContentType[decoded.selector]
+                  } content corresponding to ${contentKey}`,
+                )
+                await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                break
+              case BeaconLightClientNetworkContentType.LightClientBootstrap:
+                try {
+                  ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
+                    (decoded.value as Uint8Array).slice(4),
+                  )
+                } catch (err) {
+                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  break
+                }
+                this.logger(
+                  `received ${
+                    BeaconLightClientNetworkContentType[decoded.selector]
+                  } content corresponding to ${contentKey}`,
+                )
+                await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                break
+              case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+                try {
+                  LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
+                } catch (err) {
+                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  break
+                }
+                this.logger(
+                  `received ${
+                    BeaconLightClientNetworkContentType[decoded.selector]
+                  } content corresponding to ${contentKey}`,
+                )
+                await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                break
+
+              default:
+                this.logger(
+                  `received ${
+                    BeaconLightClientNetworkContentType[decoded.selector]
+                  } content corresponding to ${contentKey}`,
+                )
+                break
             }
-            this.logger(
-              `received ${
-                BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`,
-            )
-            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
-            break
-          case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
-            try {
-              ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
-                (decoded.value as Uint8Array).slice(4),
-              )
-            } catch (err) {
-              this.logger(`received invalid content from ${shortId(dstId)}`)
-              break
-            }
-            this.logger(
-              `received ${
-                BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`,
-            )
-            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
-            break
-          case BeaconLightClientNetworkContentType.LightClientBootstrap:
-            try {
-              ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
-                (decoded.value as Uint8Array).slice(4),
-              )
-            } catch (err) {
-              this.logger(`received invalid content from ${shortId(dstId)}`)
-              break
-            }
-            this.logger(
-              `received ${
-                BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`,
-            )
-            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
-            break
-          case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
-            try {
-              LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
-            } catch (err) {
-              this.logger(`received invalid content from ${shortId(dstId)}`)
-              break
-            }
-            this.logger(
-              `received ${
-                BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`,
-            )
-            await this.store(decoded.selector, contentHash, decoded.value as Uint8Array)
-            break
-          default:
-            this.logger(
-              `received ${
-                BeaconLightClientNetworkContentType[decoded.selector]
-              } content corresponding to ${contentHash}`,
-            )
-        }*/
+          }
+        }
         return decoded
       }
+      // TODO Should we do anything other than ignore responses to FINDCONTENT messages that isn't a CONTENT response?
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
     }
@@ -188,6 +192,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
       throw new Error('special handling for update ranges not supported yet')
     }
+    this.logger(
+      `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
+    )
     await this.put(this.protocolId, contentKey, toHexString(value))
   }
 }

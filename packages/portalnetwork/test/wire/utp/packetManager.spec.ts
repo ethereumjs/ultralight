@@ -1,5 +1,5 @@
 import debug from 'debug'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 
 import { DEFAULT_PACKET_SIZE, PacketManager } from '../../../src/index.js'
 
@@ -9,11 +9,11 @@ const data = {
   logger: debug('test'),
 }
 
-tape('PacketManager', async (t) => {
-  t.test('class constructor', (st) => {
+describe('PacketManager', async () => {
+  it('class constructor', () => {
     const packetManager = new PacketManager(data.rcvConnectionId, data.sndConnectionId, data.logger)
-    st.ok(packetManager, 'should create a PacketManager instance')
-    st.ok(packetManager.congestionControl, 'should have a congestionControl instance')
+    assert.ok(packetManager, 'should create a PacketManager instance')
+    assert.ok(packetManager.congestionControl, 'should have a congestionControl instance')
     const ccAttr = {
       cur_window: packetManager.congestionControl.cur_window,
       max_window: packetManager.congestionControl.max_window,
@@ -25,7 +25,7 @@ tape('PacketManager', async (t) => {
       outBuffer: packetManager.congestionControl.outBuffer.size,
       writing: packetManager.congestionControl.writing,
     }
-    st.deepEqual(
+    assert.deepEqual(
       ccAttr,
       {
         cur_window: 0,
@@ -40,8 +40,5 @@ tape('PacketManager', async (t) => {
       },
       'should initialize congestionControl attributes',
     )
-    st.end()
   })
-
-  t.end()
 })

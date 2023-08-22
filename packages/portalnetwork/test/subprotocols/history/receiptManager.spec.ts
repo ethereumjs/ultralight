@@ -1,5 +1,7 @@
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 
-tape('Receipt Manager Tests', (t) => {
-  t.end()
+describe.todo('Receipt Manager Tests', () => {
+  it.todo('should be a real test someday', () => {
+    assert.isTrue(true)
+  })
 })

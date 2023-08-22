@@ -11,10 +11,8 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "docs": "typedoc src/index.ts",
-    "tape": "NODE_OPTIONS='--loader ts-node/esm --experimental-json-modules' tape",
-    "test": "npm run tape -- 'test/!(integration)/**/*.spec.ts'",
-    "test:all": "npm run tape -- 'test/**/*.spec.ts'",
-    "test:integration": "npm run tape -- 'test/integration/**/*.spec.ts'",
+    "test": "npx vitest run test/* -c=./vitest.config.unit.ts",
+    "test:integration": "npx vitest run ./test/integration/*.spec.ts",
     "coverage": "c8 npm run test",
     "coverage:all": "c8 npm run test:all",
     "lint": "../../config/cli/lint.sh",
@@ -60,17 +58,17 @@
     "@ethereumjs/tx": "5.0.0",
     "@ethereumjs/util": "9.0.0",
     "@types/debug": "^4.1.7",
-    "@types/tape": "^4.13.2",
     "@types/ws": "^7.4.7",
+    "@vitest/ui": "^0.34.1",
     "c8": "^7.12.0",
     "eslint": "^8.6.0",
     "prettier": "^2.5.1",
-    "tape": "^5.5.3",
     "testdouble": "^3.16.3",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
     "typedoc": "^0.24.0",
     "typedoc-plugin-markdown": "^3.11.3",
-    "typescript": "^4.4.2"
+    "typescript": "^4.4.2",
+    "vitest": "^0.34.1"
   }
 }
