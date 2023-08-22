@@ -228,7 +228,7 @@ export class portal {
     }
     return {
       localNodeId: localNodeId,
-      buckets: buckets,
+      buckets: Object.fromEntries([...buckets.entries()].filter(([_, b]) => b.length > 0)),
     }
   }
   async historyLookupEnr(params: [string]) {
