@@ -132,8 +132,14 @@ export const validators = {
           message: `invalid argument ${index}: argument must be a number`,
         }
       }
-      if (params[index] < 0 || params[index] > 255) {
-        params[index] = Math.abs(params[index] % 256)
+      if (params[index] < 0 || params[index] > 256) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be a number`,
+        }
+      }
+      if (params[index] === 256) {
+        params[index] = 0
       }
     }
   },
