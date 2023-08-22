@@ -15,15 +15,13 @@
   "scripts": {
     "preinstall": "npm run checkNpmVersion",
     "checkNpmVersion": "bash ./scripts/check-npm-version.sh",
-    "postinstall": "npm run tapeHotFix && npm run build --workspaces --if-present",
+    "postinstall": "npm run build --workspaces --if-present",
     "start-proxy": "npm run start -w=proxy -- --nat=localhost",
     "start-browser-client": "npm run start-testnet -w=browser-client",
     "start-cli": "npm run dev -w=cli",
     "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
     "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
-    "clean": "bash ./scripts/clean-root.sh",
-    "tapeHotFix": "sed -i -e 's/js/ts/g' node_modules/tape/bin/import-or-require.js",
-    "ethjsHotFix": "sed -i  '/from \\S\\+\\.json'\\''/ s/;//;/from \\S\\+\\.json/ s/.*/& assert {type: \"json\"};/' node_modules/@ethereumjs/**/dist/esm/**/*.js"
+    "clean": "bash ./scripts/clean-root.sh"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.51.0",

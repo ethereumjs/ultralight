@@ -2,7 +2,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
-import tape from 'tape'
+import { describe, it, assert } from 'vitest'
 import {
   BUFFER_SIZE,
   ContentRequest,
@@ -73,12 +73,12 @@ const peerId = await createSecp256k1PeerId()
 const _peerId = await createSecp256k1PeerId()
 const DEFAULT_RAND_ID = 1234
 
-tape('uTP Reader/Writer tests', (t) => {
+describe('uTP Reader/Writer tests', () => {
   const protocolId = ProtocolId.HistoryNetwork
   const content = randomBytes(sampleSize)
   const logger = debug('uTP-')
   const uTP = new PortalNetworkUTP(logger)
-  t.test('Content Write/Read', async (st) => {
+  it('Content Write/Read', async () => {
     const socket = uTP.createPortalNetworkUTPSocket(
       protocolId,
       RequestCode.FOUNDCONTENT_WRITE,
@@ -99,15 +99,15 @@ tape('uTP Reader/Writer tests', (t) => {
     _socket.setReader(2)
     const chunks = socket.writer!.chunk()
     const compiled = await _socket.reader!.compile(Object.values(chunks))
-    st.equal(
+    assert.equal(
       Object.keys(chunks).length,
       Math.ceil(sampleSize / BUFFER_SIZE),
       `Content Writer divided 50000 bytes correctly into ${Math.ceil(
         sampleSize / BUFFER_SIZE,
       )} chunks`,
     )
-    st.equal(compiled.length, content.length, `Compiled length matches content`)
-    st.deepEqual(Buffer.from(compiled), content, `Content Reader correctly recompiled content`)
+    assert.equal(compiled.length, content.length, `Compiled length matches content`)
+    assert.deepEqual(Buffer.from(compiled), content, `Content Reader correctly recompiled content`)
 
     const packets = Object.values(chunks).map((chunk, idx) => {
       const packet = Packet.fromOpts<PacketType.ST_DATA>({
@@ -143,12 +143,12 @@ tape('uTP Reader/Writer tests', (t) => {
     packets.forEach((packet) => {
       socket.reader!.addPacket(packet)
     })
-    st.equal(
+    assert.equal(
       packets.length,
       socket.reader.packets.length,
       `${packets.length} Packets added to reader`,
     )
-    st.equal(
+    assert.equal(
       packets.length,
       socket.reader.inOrder.length,
       `${packets.length} Packets added in order`,
@@ -156,16 +156,20 @@ tape('uTP Reader/Writer tests', (t) => {
     await socket.handleFinPacket(finPacket)
     const _compiled = await socket.reader.run()
 
-    st.deepEqual(Buffer.from(_compiled!), content, `Content Reader correctly recompiled content`)
+    assert.deepEqual(
+      Buffer.from(_compiled!),
+      content,
+      `Content Reader correctly recompiled content`,
+    )
     const _reader2 = new ContentReader(2)
     packets.reverse().forEach((packet) => {
       _reader2.addPacket(packet)
     })
-    st.equal(_reader2.packets.length, packets.length, 'Packets added to reader')
-    st.equal(_reader2.inOrder.length, 1, 'Packets were added out of order')
+    assert.equal(_reader2.packets.length, packets.length, 'Packets added to reader')
+    assert.equal(_reader2.inOrder.length, 1, 'Packets were added out of order')
     const _compiled2 = await _reader2.run()
 
-    st.deepEqual(
+    assert.deepEqual(
       Buffer.from(_compiled2),
       content,
       `Content Reader correctly recompiled content with out of order packets`,
@@ -216,34 +220,33 @@ tape('uTP Reader/Writer tests', (t) => {
       contentKeys: offerContentIds,
     })
 
-    st.deepEqual(
+    assert.deepEqual(
       offer.contentKeys,
       offerContentIds,
       'OFFER request constructed for proper contentKeys',
     )
-    st.deepEqual(
+    assert.deepEqual(
       dropPrefixes(offer.content!),
       offerContents,
       'OFFER request constructed with propper content compression',
     )
     _socket2.setSeqNr(2)
     _socket2.setWriter(2)
-    st.doesNotThrow(async () => {
+    assert.doesNotThrow(async () => {
       await _socket2.writer!.start()
     }, 'writer.start() does not throw')
-    st.end()
   })
 })
 
-tape('PortalNetworkUTP test', (t) => {
+describe('PortalNetworkUTP test', () => {
   const logger = debug('log')
   const utp = new PortalNetworkUTP(logger)
-  t.test('createPortalNetworkUTPSocket', async (st) => {
+  it('createPortalNetworkUTPSocket', async () => {
     const protocolId = ProtocolId.HistoryNetwork
     // connectionId comes from discv5 talkResp message
     const connectionId = randUint16()
     const socketIds = utp.startingIdNrs(connectionId)
-    st.ok(utp, 'PortalNetworkUTP created')
+    assert.ok(utp, 'PortalNetworkUTP created')
     let socket = utp.createPortalNetworkUTPSocket(
       protocolId,
       RequestCode.FOUNDCONTENT_WRITE,
@@ -252,13 +255,13 @@ tape('PortalNetworkUTP test', (t) => {
       socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId,
       Buffer.from('test'),
     )
-    st.ok(socket, 'UTPSocket created by PortalNetworkUTP')
-    st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
-    st.equal(socket.remoteAddress, '0xPeerAddress', 'UTPSocket has correct peerId')
-    st.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
-    st.deepEqual(socket.content, Buffer.from('test'), 'UTPSocket has correct content')
-    st.equal(
+    assert.ok(socket, 'UTPSocket created by PortalNetworkUTP')
+    assert.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
+    assert.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
+    assert.equal(socket.remoteAddress, '0xPeerAddress', 'UTPSocket has correct peerId')
+    assert.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
+    assert.deepEqual(socket.content, Buffer.from('test'), 'UTPSocket has correct content')
+    assert.equal(
       socket.ackNr,
       startingNrs[RequestCode.FOUNDCONTENT_WRITE].ackNr,
       'UTPSocket has correct ackNr',
@@ -270,16 +273,16 @@ tape('PortalNetworkUTP test', (t) => {
       socketIds[RequestCode.FINDCONTENT_READ].sndId,
       socketIds[RequestCode.FINDCONTENT_READ].rcvId,
     )
-    st.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
-    st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
+    assert.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
+    assert.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
+    assert.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
 
-    st.equal(
+    assert.equal(
       socket.getSeqNr(),
       startingNrs[RequestCode.FINDCONTENT_READ].seqNr,
       'UTPSocket has correct seqNr',
     )
-    st.equal(
+    assert.equal(
       socket.ackNr,
       startingNrs[RequestCode.FINDCONTENT_READ].ackNr,
       'UTPSocket has correct ackNr',
@@ -293,11 +296,11 @@ tape('PortalNetworkUTP test', (t) => {
       socketIds[RequestCode.OFFER_WRITE].rcvId,
       Buffer.from('test'),
     )
-    st.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
-    st.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
+    assert.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
+    assert.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
+    assert.equal(socket.rcvConnectionId, connectionId + 1, 'UTPSocket has correct rcvConnectionId')
 
-    st.equal(
+    assert.equal(
       socket.getSeqNr(),
       startingNrs[RequestCode.OFFER_WRITE].seqNr,
       'UTPSocket has correct seqNr',
@@ -309,17 +312,16 @@ tape('PortalNetworkUTP test', (t) => {
       socketIds[RequestCode.ACCEPT_READ].sndId,
       socketIds[RequestCode.ACCEPT_READ].rcvId,
     )
-    st.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
-    st.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
-    st.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
-    st.equal(
+    assert.equal(socket.type, UtpSocketType.READ, 'UTPSocket has correct requestCode')
+    assert.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
+    assert.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
+    assert.equal(
       socket.ackNr,
       startingNrs[RequestCode.ACCEPT_READ].ackNr,
       'UTPSocket has correct ackNr',
     )
-    st.end()
   })
-  t.test('handleNewRequest', async (st) => {
+  it('handleNewRequest', async () => {
     const connectionId = randUint16()
     let params: INewRequest = {
       protocolId: ProtocolId.HistoryNetwork,
@@ -331,83 +333,83 @@ tape('PortalNetworkUTP test', (t) => {
     }
     let contentRequest = await utp.handleNewRequest(params)
     let requestKey = createSocketKey(params.peerId, connectionId)
-    st.equal(
+    assert.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
       'requestKey recoverd from packet info',
     )
-    st.ok(contentRequest, 'contentRequest created')
-    st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    st.equal(
+    assert.ok(contentRequest, 'contentRequest created')
+    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
+    assert.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
       'contentRequest has correct protocolId',
     )
-    st.equal(
+    assert.equal(
       contentRequest.requestCode,
       RequestCode.FOUNDCONTENT_WRITE,
       'contentRequest has correct requestCode',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
       'contentRequest has correct contentKeys',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.content,
       fromHexString('0x1234'),
       'contentRequest has correct content',
     )
-    st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    st.equal(
+    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
+    assert.equal(
       contentRequest.socket.type,
       UtpSocketType.WRITE,
       'contentRequest has correct socket type',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.socket.content,
       fromHexString('0x1234'),
       'contentRequest socket has correct content',
     )
     utp.closeRequest(params.connectionId, params.peerId)
-    st.notOk(
+    assert.notOk(
       utp.openContentRequest.get(requestKey),
       'contentRequest removed from openContentRequest',
     )
     params = { ...params, requestCode: RequestCode.FINDCONTENT_READ, contents: undefined }
     contentRequest = await utp.handleNewRequest(params)
     requestKey = createSocketKey(params.peerId, params.connectionId)
-    st.equal(
+    assert.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
       'requestKey recoverd from packet info',
     )
-    st.ok(contentRequest, 'contentRequest created')
-    st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    st.equal(
+    assert.ok(contentRequest, 'contentRequest created')
+    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
+    assert.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
       'contentRequest has correct protocolId',
     )
-    st.equal(
+    assert.equal(
       contentRequest.requestCode,
       RequestCode.FINDCONTENT_READ,
       'contentRequest has correct requestCode',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
       'contentRequest has correct contentKeys',
     )
-    st.equal(contentRequest.content, undefined, 'contentRequest has correct content')
-    st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    st.equal(
+    assert.equal(contentRequest.content, undefined, 'contentRequest has correct content')
+    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
+    assert.equal(
       contentRequest.socket.type,
       UtpSocketType.READ,
       'contentRequest has correct socket type',
     )
     utp.closeRequest(params.connectionId, params.peerId)
-    st.notOk(
+    assert.notOk(
       utp.openContentRequest.get(requestKey),
       'contentRequest removed from openContentRequest',
     )
@@ -418,106 +420,102 @@ tape('PortalNetworkUTP test', (t) => {
     }
     contentRequest = await utp.handleNewRequest(params)
     requestKey = createSocketKey(params.peerId, params.connectionId)
-    st.equal(
+    assert.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
       'requestKey recoverd from packet info',
     )
-    st.ok(contentRequest, 'contentRequest created')
-    st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    st.equal(
+    assert.ok(contentRequest, 'contentRequest created')
+    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
+    assert.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
       'contentRequest has correct protocolId',
     )
-    st.equal(
+    assert.equal(
       contentRequest.requestCode,
       RequestCode.OFFER_WRITE,
       'contentRequest has correct requestCode',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
       'contentRequest has correct contentKeys',
     )
-    st.equal(contentRequest.content, params.contents![0], 'contentRequest has correct content')
-    st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    st.equal(
+    assert.equal(contentRequest.content, params.contents![0], 'contentRequest has correct content')
+    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
+    assert.equal(
       contentRequest.socket.type,
       UtpSocketType.WRITE,
       'contentRequest has correct socket type',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.socket.content,
       params.contents![0],
       'contentRequest socket has correct content',
     )
     utp.closeRequest(params.connectionId, params.peerId)
-    st.notOk(
+    assert.notOk(
       utp.openContentRequest.get(requestKey),
       'contentRequest removed from openContentRequest',
     )
     params = { ...params, requestCode: RequestCode.ACCEPT_READ, contents: undefined }
     contentRequest = await utp.handleNewRequest(params)
     requestKey = createSocketKey(params.peerId, params.connectionId)
-    st.equal(
+    assert.equal(
       utp.getRequestKey(params.connectionId, params.peerId),
       requestKey,
       'requestKey recoverd from packet info',
     )
-    st.ok(contentRequest, 'contentRequest created')
-    st.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    st.equal(
+    assert.ok(contentRequest, 'contentRequest created')
+    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
+    assert.equal(
       contentRequest.protocolId,
       ProtocolId.HistoryNetwork,
       'contentRequest has correct protocolId',
     )
-    st.equal(
+    assert.equal(
       contentRequest.requestCode,
       RequestCode.ACCEPT_READ,
       'contentRequest has correct requestCode',
     )
-    st.deepEqual(
+    assert.deepEqual(
       contentRequest.contentKeys,
       params.contentKeys,
       'contentRequest has correct contentKeys',
     )
-    st.equal(contentRequest.content, undefined, 'contentRequest has correct content')
-    st.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    st.equal(
+    assert.equal(contentRequest.content, undefined, 'contentRequest has correct content')
+    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
+    assert.equal(
       contentRequest.socket.type,
       UtpSocketType.READ,
       'contentRequest has correct socket type',
     )
     utp.closeRequest(params.connectionId, params.peerId)
-    st.notOk(
+    assert.notOk(
       utp.openContentRequest.get(requestKey),
       'contentRequest removed from openContentRequest',
     )
-    st.end()
   })
-  t.test('send', async (st) => {
+  it('send', async () => {
     const peerId = '0xpeerId'
     const msg = Buffer.from([1, 2, 3])
     const sent = utp.send(peerId, msg, ProtocolId.HistoryNetwork)
     utp.emit('Sent')
-    st.ok(await sent, 'send method returns true when sent event is emitted')
-    st.end()
+    assert.ok(await sent, 'send method returns true when sent event is emitted')
   })
-  t.test('return content', async (st) => {
+  it('return content', async () => {
     const contents = [randomBytes(100), randomBytes(100), randomBytes(100)]
     const contentHashes = contents.map(() => toHexString(randomBytes(32)))
     const contentKeys = contentHashes.map((hash) =>
       fromHexString(getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))),
     )
     utp.on('Stream', (selector, hash, value) => {
-      st.equal(selector, HistoryNetworkContentType.BlockHeader, 'Stream selector correct')
-      st.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
-      st.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
+      assert.equal(selector, HistoryNetworkContentType.BlockHeader, 'Stream selector correct')
+      assert.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
+      assert.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
     })
     await utp.returnContent(ProtocolId.HistoryNetwork, contents, contentKeys)
     utp.removeAllListeners()
-    st.end()
   })
-  t.end()
 })

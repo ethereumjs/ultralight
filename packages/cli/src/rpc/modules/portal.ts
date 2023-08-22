@@ -20,6 +20,8 @@ import {
   AcceptMessage,
   decodeHistoryNetworkContentKey,
   FoundContent,
+  BeaconLightClientNetwork,
+  BeaconLightClientNetworkContentType,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -48,6 +50,8 @@ const methods = [
   'portal_historyStore',
   'portal_historyLocalContent',
   'portal_historyGossip',
+  'portal_beaconSendFindContent',
+  'portal_beaconStore',
 
   // not included in portal-network-specs
   'portal_historyAddEnrs',
@@ -58,11 +62,15 @@ const methods = [
 export class portal {
   private _client: PortalNetwork
   private _history: HistoryProtocol
+  private _beacon: BeaconLightClientNetwork
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
     this._history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    this._beacon = this._client.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
@@ -131,6 +139,15 @@ export class portal {
     ])
     this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
       [validators.contentKey],
+      [validators.hex],
+    ])
+    this.beaconSendFindContent = middleware(this.beaconSendFindContent.bind(this), 2, [
+      [validators.dstId],
+      [validators.hex],
+    ])
+
+    this.beaconStore = middleware(this.beaconStore.bind(this), 2, [
+      [validators.hex],
       [validators.hex],
     ])
   }
@@ -524,6 +541,29 @@ export class portal {
     try {
       await this._history.store(
         contentKey[0] as HistoryNetworkContentType,
+        toHexString(contentKey.slice(1)),
+        content,
+      )
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async beaconSendFindContent(params: [string, string]) {
+    const [nodeId, contentKey] = params
+    console.log(nodeId)
+    const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
+    console.log(res)
+    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value
+    return res && enr && '0x' + enr.seq.toString(16)
+  }
+
+  async beaconStore(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => fromHexString(param))
+    try {
+      await this._beacon.store(
+        contentKey[0] as BeaconLightClientNetworkContentType,
         toHexString(contentKey.slice(1)),
         content,
       )

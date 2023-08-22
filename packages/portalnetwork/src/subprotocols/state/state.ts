@@ -1,7 +1,7 @@
 import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import { BaseProtocol } from '../protocol.js'
-import { ProtocolId } from '../types.js'
+import { ProtocolId } from '../../types.js'
 
 export class StateProtocol extends BaseProtocol {
   protocolId: ProtocolId.StateNetwork
