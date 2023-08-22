@@ -209,9 +209,17 @@ export abstract class BaseProtocol extends EventEmitter {
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
     })
-    const enr = dstId.startsWith('enr')
-      ? ENR.decodeTxt(dstId)
-      : this.routingTable.getWithPending(dstId)?.value
+    let enr
+    try {
+      enr = dstId.startsWith('enr')
+        ? ENR.decodeTxt(dstId)
+        : this.routingTable.getWithPending(dstId)
+        ? this.routingTable.getWithPending(dstId)!.value
+        : this.routingTable.getValue(dstId)
+    } catch (err: any) {
+      this.logger(`Error decoding ENR: ${err.message}`)
+      enr = this.routingTable.getValue(dstId)
+    }
     if (!enr) {
       return
     }
