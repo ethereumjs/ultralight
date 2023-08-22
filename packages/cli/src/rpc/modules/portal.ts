@@ -19,6 +19,7 @@ import {
   ContentMessageType,
   AcceptMessage,
   decodeHistoryNetworkContentKey,
+  FoundContent,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -375,14 +376,16 @@ export class portal {
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    this.logger.extend('findContent')(`request returned type: ${res ? res.selector : res}`)
+    this.logger.extend('findContent')(
+      `request returned type: ${res ? FoundContent[res.selector] : res}`,
+    )
     if (!res) {
       return { enrs: [] }
     }
     const content: Uint8Array | Uint8Array[] =
-      res.selector === 2
+      res.selector === FoundContent.ENRS
         ? (res.value as Uint8Array[])
-        : res.selector === 1
+        : res.selector === FoundContent.CONTENT
         ? (res.value as Uint8Array)
         : await new Promise((resolve) => {
             const timeout = setTimeout(() => {
@@ -399,13 +402,13 @@ export class portal {
             )
           })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === 0 && this.logger.extend('findContent')('utp')
+    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
     this.logger.extend('findContent')(content)
-    return res.selector === 2
+    return res.selector === FoundContent.ENRS
       ? { enrs: content }
       : {
           content: content.length > 0 ? toHexString(content as Uint8Array) : '',
-          utpTransfer: res.selector === 0,
+          utpTransfer: res.selector === FoundContent.UTP,
         }
   }
   async historySendFindContent(params: [string, string]) {

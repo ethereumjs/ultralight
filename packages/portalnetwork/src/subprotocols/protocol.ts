@@ -32,6 +32,7 @@ import {
   INewRequest,
   ContentRequest,
   PortalNetwork,
+  FoundContent,
 } from '../index.js'
 import { EventEmitter } from 'events'
 import { bytesToInt, concatBytes } from '@ethereumjs/util'
@@ -512,7 +513,7 @@ export abstract class BaseProtocol extends EventEmitter {
           encodedEnrs.pop()
         }
         const payload = ContentMessageType.serialize({
-          selector: 2,
+          selector: FoundContent.ENRS,
           value: encodedEnrs as Uint8Array[],
         })
         this.sendResponse(
@@ -522,7 +523,7 @@ export abstract class BaseProtocol extends EventEmitter {
         )
       } else {
         const payload = ContentMessageType.serialize({
-          selector: 2,
+          selector: FoundContent.ENRS,
           value: [],
         })
         this.logger(`Found no ENRs closer to content than us`)
@@ -540,7 +541,7 @@ export abstract class BaseProtocol extends EventEmitter {
           `...`,
       )
       const payload = ContentMessageType.serialize({
-        selector: 1,
+        selector: FoundContent.CONTENT,
         value: value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
@@ -566,7 +567,7 @@ export abstract class BaseProtocol extends EventEmitter {
       const id = new Uint8Array(2)
       new DataView(id.buffer).setUint16(0, _id, false)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
-      const payload = ContentMessageType.serialize({ selector: 0, value: id })
+      const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
       this.sendResponse(
         src,
         requestId,

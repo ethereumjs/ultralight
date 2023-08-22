@@ -240,7 +240,8 @@ export class HistoryProtocol extends BaseProtocol {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
       this.put(this.protocolId, bodyContentKey, toHexString(value))
-      // Don't store block body where we can't assemble a valid block
+      // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
+      // as it's against spec
       return
     }
   }
