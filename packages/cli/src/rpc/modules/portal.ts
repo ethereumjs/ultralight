@@ -436,7 +436,7 @@ export class portal {
     this.logger.extend('historyRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
       this.logger.extend('historyRecursiveFindContent')(`request returned { enrs: [] }`)
-      return { context: '0x', utp: false }
+      return { content: '0x', utp: false }
     }
     if ('enrs' in res) {
       this.logger.extend('historyRecursiveFindContent')(
