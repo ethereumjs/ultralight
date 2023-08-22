@@ -218,7 +218,6 @@ export abstract class BaseProtocol extends EventEmitter {
         ? this.routingTable.getWithPending(dstId)!.value
         : this.routingTable.getValue(dstId)
     } catch (err: any) {
-      console.log(err)
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
     }
     if (!enr) {
