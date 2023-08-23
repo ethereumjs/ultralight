@@ -81,18 +81,26 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
-        const decoded = ContentMessageType.deserialize(res.subarray(1))
+        let decoded = ContentMessageType.deserialize(res.subarray(1))
         switch (decoded.selector) {
           case FoundContent.UTP: {
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            await this.handleNewRequest({
-              protocolId: this.protocolId,
-              contentKeys: [key],
-              peerId: dstId,
-              connectionId: id,
-              requestCode: RequestCode.FINDCONTENT_READ,
-              contents: [],
+            decoded = await new Promise((resolve, reject) => {
+              this.handleNewRequest({
+                protocolId: this.protocolId,
+                contentKeys: [key],
+                peerId: dstId,
+                connectionId: id,
+                requestCode: RequestCode.FINDCONTENT_READ,
+                contents: [],
+              })
+              // TODO: Figure out how to clear this listener
+              this.on('ContentAdded', (contentKey, contentType, value) => {
+                if (contentKey === toHexString(key)) {
+                  resolve(value)
+                }
+              })
             })
             break
           }
@@ -196,5 +204,6 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
     )
     await this.put(this.protocolId, contentKey, toHexString(value))
+    this.emit('ContentAdded', contentKey, contentType, toHexString(value))
   }
 }
