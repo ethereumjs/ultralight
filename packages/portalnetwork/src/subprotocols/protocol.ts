@@ -219,6 +219,7 @@ export abstract class BaseProtocol extends EventEmitter {
         : this.routingTable.getValue(dstId)
     } catch (err: any) {
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
+      console.trace(err)
     }
     if (!enr) {
       return
@@ -283,7 +284,7 @@ export abstract class BaseProtocol extends EventEmitter {
         } else {
           for (const enr of this.routingTable.valuesOfDistance(distance)) {
             // Exclude ENR from response if it matches the requesting node
-            // if (enr.nodeId === src.nodeId) return true
+            if (enr.nodeId === src.nodeId) continue
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
 
