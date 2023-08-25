@@ -294,16 +294,24 @@ it('API tests', async () => {
     ).attestedHeader.beacon.slot,
     'successfully stored and retrieved optimistic update',
   )
-  // TODO: Update this test once logic for handling light client updates is implemented
+
   const updatesByRange = specTestVectors.updateByRange['6684738']
   try {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
       updatesByRange.content_key,
-      fromHexString(optimisticUpdate.content_value),
+      fromHexString(updatesByRange.content_value),
     )
     assert.fail('should throw')
   } catch {
     assert.ok(true, 'throws when trying to store a batch of light client updates')
   }
+  await protocol.storeUpdateRange(fromHexString(updatesByRange.content_value))
+  const storedUpdate = await protocol.findContentLocally(fromHexString('0x040330'))
+  const deserializedUpdate = ssz.capella.LightClientUpdate.deserialize(storedUpdate!.slice(4))
+  assert.equal(
+    deserializedUpdate.attestedHeader.beacon.slot,
+    6684738,
+    'retrieved light client update period number from db',
+  )
 })

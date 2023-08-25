@@ -18,9 +18,11 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { bytesToInt } from '@ethereumjs/util'
+import { bytesToInt, intToHex, padToEven } from '@ethereumjs/util'
 import { RequestCode, FoundContent } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
+import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
+import { computeSyncPeriodAtSlot } from './util.js'
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
   beaconConfig: BeaconConfig
@@ -170,7 +172,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                     BeaconLightClientNetworkContentType[decoded.selector]
                   } content corresponding to ${contentKey}`,
                 )
-                await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                await this.storeUpdateRange(decoded.value as Uint8Array)
                 break
 
               default:
@@ -196,14 +198,43 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     contentKey: string,
     value: Uint8Array,
   ): Promise<void> => {
-    // TODO: Add special handling for the LightClientUpdate since we can't just dump a whole batch of them into the DB
     if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
-      throw new Error('special handling for update ranges not supported yet')
+      throw new Error('call storeUpdateRange to store LightClientUpdatesByRange')
     }
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
     )
     await this.put(this.protocolId, contentKey, toHexString(value))
     this.emit('ContentAdded', contentKey, contentType, toHexString(value))
+  }
+
+  public storeUpdateRange = async (range: Uint8Array) => {
+    const deserializedRange = LightClientUpdatesByRange.deserialize(range)
+    for (const update of deserializedRange) {
+      await this.store(
+        BeaconLightClientNetworkContentType.LightClientUpdate,
+        this.computeLightClientUpdateKey(update),
+        update,
+      )
+    }
+  }
+
+  /**
+   *
+   * @param update An ssz serialized LightClientUpdate as a Uint8Array
+   * @returns the hex prefixed string version of the Light Client Update storage key (0x04 + hexidecimal representation of the sync committee period)
+   */
+  public computeLightClientUpdateKey = (update: Uint8Array) => {
+    const forkhash = update.slice(0, 4) as Uint8Array
+    const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
+    //@ts-ignore - typescript won't let me set `forkname` to a value from of the Forks type
+    const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
+      update.slice(4),
+    ) as LightClientUpdate
+    return (
+      '0x0' +
+      BeaconLightClientNetworkContentType.LightClientUpdate +
+      padToEven(computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot).toString(16))
+    )
   }
 }
