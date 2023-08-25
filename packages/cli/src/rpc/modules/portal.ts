@@ -52,6 +52,7 @@ const methods = [
   'portal_historyGossip',
   'portal_beaconSendFindContent',
   'portal_beaconStore',
+  'portal_beaconLocalContent',
 
   // not included in portal-network-specs
   'portal_historyAddEnrs',
@@ -150,6 +151,8 @@ export class portal {
       [validators.hex],
       [validators.hex],
     ])
+
+    this.beaconLocalContent = middleware(this.beaconLocalContent.bind(this), 1, [[validators.hex]])
   }
   async methods() {
     return methods
@@ -554,9 +557,8 @@ export class portal {
     const [nodeId, contentKey] = params
     console.log(nodeId)
     const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
-    console.log(res)
-    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value
-    return res && enr && '0x' + enr.seq.toString(16)
+    if (res !== undefined && res.selector === 1) return toHexString(res.value as Uint8Array)
+    return '0x'
   }
 
   async beaconStore(params: [string, string]) {
@@ -571,5 +573,12 @@ export class portal {
     } catch {
       return false
     }
+  }
+
+  async beaconLocalContent(params: [string]) {
+    const [contentKey] = params
+    const content = await this._beacon.findContentLocally(fromHexString(contentKey))
+    if (content !== undefined) return toHexString(content)
+    else return '0x'
   }
 }

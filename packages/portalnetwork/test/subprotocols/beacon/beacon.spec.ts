@@ -186,7 +186,7 @@ describe('API tests', async () => {
   })
   const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
   await protocol.store(
-    BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+    BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
     optimisticUpdate.content_key,
     fromHexString(optimisticUpdate.content_value),
   )
