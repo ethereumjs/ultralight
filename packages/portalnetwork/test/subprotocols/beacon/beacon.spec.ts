@@ -314,4 +314,14 @@ it('API tests', async () => {
     6684738,
     'retrieved light client update period number from db',
   )
+
+  const range = await protocol.constructLightClientRange(816, 4)
+  const retrievedRange = await LightClientUpdatesByRange.deserialize(range)
+  const update1 = ssz.capella.LightClientUpdate.deserialize(retrievedRange[0].slice(4))
+  assert.equal(
+    update1.attestedHeader.beacon.slot,
+    6684738,
+    'put the correct update in the correct position in the range',
+  )
+  assert.equal(toHexString(range), updatesByRange.content_value)
 })

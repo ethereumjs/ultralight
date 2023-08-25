@@ -18,7 +18,7 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { bytesToInt, intToHex, padToEven } from '@ethereumjs/util'
+import { bytesToInt, padToEven } from '@ethereumjs/util'
 import { RequestCode, FoundContent } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
@@ -221,20 +221,44 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
   /**
    *
-   * @param update An ssz serialized LightClientUpdate as a Uint8Array
-   * @returns the hex prefixed string version of the Light Client Update storage key (0x04 + hexidecimal representation of the sync committee period)
+   * @param update An ssz serialized LightClientUpdate as a Uint8Array for a given sync period
+   * or the number corresponding to the sync period update desired
+   * @returns the hex prefixed string version of the Light Client Update storage key
+   * (0x04 + hexidecimal representation of the sync committee period)
    */
-  public computeLightClientUpdateKey = (update: Uint8Array) => {
-    const forkhash = update.slice(0, 4) as Uint8Array
-    const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
-    //@ts-ignore - typescript won't let me set `forkname` to a value from of the Forks type
-    const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
-      update.slice(4),
-    ) as LightClientUpdate
+  public computeLightClientUpdateKey = (input: Uint8Array | number) => {
+    let period
+    if (typeof input === 'number') {
+      period = input
+    } else {
+      const forkhash = input.slice(0, 4) as Uint8Array
+      const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
+      //@ts-ignore - typescript won't let me set `forkname` to a value from of the Forks type
+      const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
+        input.slice(4),
+      ) as LightClientUpdate
+      period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
+    }
     return (
-      '0x0' +
-      BeaconLightClientNetworkContentType.LightClientUpdate +
-      padToEven(computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot).toString(16))
+      '0x0' + BeaconLightClientNetworkContentType.LightClientUpdate + padToEven(period.toString(16))
     )
+  }
+
+  public constructLightClientRange = async (start: number, count: number) => {
+    if (count > 128) {
+      throw new Error('cannot request more than 128 updates')
+    }
+    const range = []
+    for (let x = start; x < start + count; x++) {
+      const update = await this.findContentLocally(
+        fromHexString(this.computeLightClientUpdateKey(x)),
+      )
+      if (update === undefined) {
+        // TODO: Decide what to do about updates not found in DB
+        throw new Error('update not found in DB')
+      }
+      range.push(update)
+    }
+    return LightClientUpdatesByRange.serialize(range)
   }
 }
