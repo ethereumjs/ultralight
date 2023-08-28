@@ -9,12 +9,11 @@ import {
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
   toHexString,
-  Uint8,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 
 import { SignableENR } from '@chainsafe/discv5'
-import { ssz } from '@lodestar/types'
+
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -168,6 +167,83 @@ describe('Find Content tests', () => {
       toHexString(content!),
       optimisticUpdate.content_value,
       'retrieved correct content for optimistic update from local storage',
+    )
+    await node1.stop()
+    await node2.stop()
+  }, 10000)
+
+  it('should find LightClientUpdatesByRange update', async () => {
+    const updatesByRange = specTestVectors.updateByRange['6684738']
+    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3004`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3005`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+
+    node1.enableLog('*Portal*')
+    node2.enableLog('*Portal*')
+    await node1.start()
+    await node2.start()
+    const protocol1 = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const protocol2 = node2.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    await protocol1!.sendPing(protocol2?.enr!.toENR())
+    assert.equal(
+      protocol1?.routingTable.getWithPending(
+        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      )?.value.nodeId,
+      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      'node1 added node2 to routing table',
+    )
+    await protocol1.storeUpdateRange(fromHexString(updatesByRange.content_value))
+
+    const res = await protocol2.sendFindContent(
+      node1.discv5.enr.nodeId,
+      fromHexString(updatesByRange.content_key),
+    )
+
+    assert.equal(
+      toHexString(res!.value as Uint8Array),
+      updatesByRange.content_value,
+      'retrieved content for light client updates by range from network',
+    )
+    const content = await protocol2.findContentLocally(fromHexString(updatesByRange.content_key))
+    assert.notOk(
+      content === undefined,
+      'should retrieve content for Light Client Update by Range key',
+    )
+    assert.equal(
+      toHexString(content!),
+      updatesByRange.content_value,
+      'retrieved correct content for Light Client Update by Range from local storage',
     )
     await node1.stop()
     await node2.stop()

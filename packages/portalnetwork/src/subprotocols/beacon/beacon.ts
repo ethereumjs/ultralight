@@ -11,6 +11,7 @@ import {
   MainnetGenesisValidatorsRoot,
   BeaconLightClientNetworkContentType,
   LightClientUpdatesByRange,
+  LightClientUpdatesByRangeKey,
 } from './types.js'
 import {
   ContentMessageType,
@@ -41,13 +42,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
-    // TODO: We need to add special handling for LightClientUpdatesByRange since these shouldn't be stored
-    // in the DB as a range but individually
+    let value
     if (contentKey[0] === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
-      throw new Error('special handling for update ranges not supported yet')
+      value = await this.constructLightClientRange(contentKey.slice(1))
+    } else {
+      value = fromHexString((await this.retrieve(toHexString(contentKey))) ?? '0x')
     }
-    const value = await this.retrieve(toHexString(contentKey))
-    return value ? fromHexString(value) : fromHexString('0x')
+    return value
   }
 
   public async retrieve(contentKey: string): Promise<string | undefined> {
@@ -100,7 +101,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey, contentType, value) => {
                 if (contentKey === toHexString(key)) {
-                  resolve(value)
+                  resolve({ selector: 0, value: fromHexString(value) })
                 }
               })
             })
@@ -199,7 +200,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     value: Uint8Array,
   ): Promise<void> => {
     if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
-      throw new Error('call storeUpdateRange to store LightClientUpdatesByRange')
+      await this.storeUpdateRange(value)
     }
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
@@ -208,6 +209,11 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     this.emit('ContentAdded', contentKey, contentType, toHexString(value))
   }
 
+  /**
+   * Specialized store method for the LightClientUpdatesByRange object since this object is not stored
+   * directly in the DB but constructed from one or more Light Client Updates which are stored directly
+   * @param range an SSZ serialized LightClientUpdatesByRange object as defined in the Portal Network Specs
+   */
   public storeUpdateRange = async (range: Uint8Array) => {
     const deserializedRange = LightClientUpdatesByRange.deserialize(range)
     for (const update of deserializedRange) {
@@ -244,20 +250,28 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     )
   }
 
-  public constructLightClientRange = async (start: number, count: number) => {
-    if (count > 128) {
+  /**
+   * Internal helper called by `findContentLocally` to construct the LightClientUpdatesByRange object as defined in the
+   * Portal Network Specs
+   * @param contentKey a raw LightClientUpdatesByRange key as defined in the Portal Network Specs (not the content key equivalent)
+   * @returns an SSZ serialized LightClientUpdatesByRange object as a Uint8Array
+   */
+  private constructLightClientRange = async (contentKey: Uint8Array) => {
+    const rangeKey = LightClientUpdatesByRangeKey.deserialize(contentKey)
+
+    if (rangeKey.count > 128) {
       throw new Error('cannot request more than 128 updates')
     }
+    const count = Number(rangeKey.count)
+    const start = Number(rangeKey.startPeriod)
     const range = []
     for (let x = start; x < start + count; x++) {
-      const update = await this.findContentLocally(
-        fromHexString(this.computeLightClientUpdateKey(x)),
-      )
+      const update = await this.retrieve(this.computeLightClientUpdateKey(x))
       if (update === undefined) {
         // TODO: Decide what to do about updates not found in DB
         throw new Error('update not found in DB')
       }
-      range.push(update)
+      range.push(fromHexString(update))
     }
     return LightClientUpdatesByRange.serialize(range)
   }
