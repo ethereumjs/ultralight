@@ -19,11 +19,12 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { bytesToInt, padToEven } from '@ethereumjs/util'
-import { RequestCode, FoundContent } from '../../wire/index.js'
+import { bytesToInt, concatBytes, padToEven } from '@ethereumjs/util'
+import { RequestCode, FoundContent, randUint16, MAX_PACKET_SIZE } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
 import { computeSyncPeriodAtSlot } from './util.js'
+import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
   beaconConfig: BeaconConfig
@@ -89,7 +90,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           case FoundContent.UTP: {
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            decoded = await new Promise((resolve, reject) => {
+            decoded = await new Promise((resolve, _reject) => {
               this.handleNewRequest({
                 protocolId: this.protocolId,
                 contentKeys: [key],
@@ -107,90 +108,157 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             })
             break
           }
-          case FoundContent.CONTENT: {
-            const contentKey = toHexString(key)
-            const forkhash = decoded.value.slice(0, 4) as Uint8Array
-            const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
-            switch (key[0]) {
-              case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
-                try {
-                  // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
-                  ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
-                    (decoded.value as Uint8Array).slice(4),
+          case FoundContent.CONTENT:
+            {
+              const contentKey = toHexString(key)
+              const forkhash = decoded.value.slice(0, 4) as Uint8Array
+              const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
+              switch (key[0]) {
+                case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+                  try {
+                    // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
+                    ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+                      (decoded.value as Uint8Array).slice(4),
+                    )
+                  } catch (err) {
+                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    break
+                  }
+                  this.logger(
+                    `received ${
+                      BeaconLightClientNetworkContentType[decoded.selector]
+                    } content corresponding to ${contentKey}`,
                   )
-                } catch (err) {
-                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  await this.store(key[0], contentKey, decoded.value as Uint8Array)
                   break
-                }
-                this.logger(
-                  `received ${
-                    BeaconLightClientNetworkContentType[decoded.selector]
-                  } content corresponding to ${contentKey}`,
-                )
-                await this.store(key[0], contentKey, decoded.value as Uint8Array)
-                break
-              case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
-                try {
-                  ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
-                    (decoded.value as Uint8Array).slice(4),
+                case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+                  try {
+                    ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
+                      (decoded.value as Uint8Array).slice(4),
+                    )
+                  } catch (err) {
+                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    break
+                  }
+                  this.logger(
+                    `received ${
+                      BeaconLightClientNetworkContentType[decoded.selector]
+                    } content corresponding to ${contentKey}`,
                   )
-                } catch (err) {
-                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  await this.store(key[0], contentKey, decoded.value as Uint8Array)
                   break
-                }
-                this.logger(
-                  `received ${
-                    BeaconLightClientNetworkContentType[decoded.selector]
-                  } content corresponding to ${contentKey}`,
-                )
-                await this.store(key[0], contentKey, decoded.value as Uint8Array)
-                break
-              case BeaconLightClientNetworkContentType.LightClientBootstrap:
-                try {
-                  ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
-                    (decoded.value as Uint8Array).slice(4),
+                case BeaconLightClientNetworkContentType.LightClientBootstrap:
+                  try {
+                    ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
+                      (decoded.value as Uint8Array).slice(4),
+                    )
+                  } catch (err) {
+                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    break
+                  }
+                  this.logger(
+                    `received ${
+                      BeaconLightClientNetworkContentType[decoded.selector]
+                    } content corresponding to ${contentKey}`,
                   )
-                } catch (err) {
-                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                  await this.store(key[0], contentKey, decoded.value as Uint8Array)
                   break
-                }
-                this.logger(
-                  `received ${
-                    BeaconLightClientNetworkContentType[decoded.selector]
-                  } content corresponding to ${contentKey}`,
-                )
-                await this.store(key[0], contentKey, decoded.value as Uint8Array)
-                break
-              case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
-                try {
-                  LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
-                } catch (err) {
-                  this.logger(`received invalid content from ${shortId(dstId)}`)
+                case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+                  try {
+                    LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
+                  } catch (err) {
+                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    break
+                  }
+                  this.logger(
+                    `received ${
+                      BeaconLightClientNetworkContentType[decoded.selector]
+                    } content corresponding to ${contentKey}`,
+                  )
+                  await this.storeUpdateRange(decoded.value as Uint8Array)
                   break
-                }
-                this.logger(
-                  `received ${
-                    BeaconLightClientNetworkContentType[decoded.selector]
-                  } content corresponding to ${contentKey}`,
-                )
-                await this.storeUpdateRange(decoded.value as Uint8Array)
-                break
 
-              default:
-                this.logger(
-                  `received ${
-                    BeaconLightClientNetworkContentType[decoded.selector]
-                  } content corresponding to ${contentKey}`,
-                )
-                break
+                default:
+                  this.logger(
+                    `received ${
+                      BeaconLightClientNetworkContentType[decoded.selector]
+                    } content corresponding to ${contentKey}`,
+                  )
+                  break
+              }
             }
-          }
+            break
+          case FoundContent.ENRS:
+            // We should never get ENRs for content on the Beacon Light Client Network since all nodes
+            // are expected to maintain all of the data (basically just light client updates)
+            break
         }
         return decoded
       }
       // TODO Should we do anything other than ignore responses to FINDCONTENT messages that isn't a CONTENT response?
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+    }
+  }
+
+  protected override handleFindContent = async (
+    src: INodeAddress,
+    requestId: bigint,
+    protocol: Uint8Array,
+    decodedContentMessage: FindContentMessage,
+  ) => {
+    this.metrics?.contentMessagesSent.inc()
+
+    this.logger(
+      `Received handleFindContent request for contentKey: ${toHexString(
+        decodedContentMessage.contentKey,
+      )}`,
+    )
+
+    const value = await this.findContentLocally(decodedContentMessage.contentKey)
+    if (!value || value.length === 0) {
+      this.sendResponse(src, requestId, new Uint8Array())
+    } else if (value && value.length < MAX_PACKET_SIZE) {
+      this.logger(
+        'Found value for requested content ' +
+          toHexString(decodedContentMessage.contentKey) +
+          ' ' +
+          toHexString(value.slice(0, 10)) +
+          `...`,
+      )
+      const payload = ContentMessageType.serialize({
+        selector: 1,
+        value: value,
+      })
+      this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
+      this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
+    } else {
+      this.logger.extend('FOUNDCONTENT')(
+        'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
+      )
+      const _id = randUint16()
+      await this.handleNewRequest({
+        protocolId: this.protocolId,
+        contentKeys: [decodedContentMessage.contentKey],
+        peerId: src.nodeId,
+        connectionId: _id,
+        requestCode: RequestCode.FOUNDCONTENT_WRITE,
+        contents: [value],
+      })
+
+      const id = new Uint8Array(2)
+      new DataView(id.buffer).setUint16(0, _id, false)
+      this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
+      const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
+      this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
     }
   }
 

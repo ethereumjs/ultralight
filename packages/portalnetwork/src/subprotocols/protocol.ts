@@ -478,7 +478,7 @@ export abstract class BaseProtocol extends EventEmitter {
     )
   }
 
-  private handleFindContent = async (
+  protected handleFindContent = async (
     src: INodeAddress,
     requestId: bigint,
     protocol: Uint8Array,
