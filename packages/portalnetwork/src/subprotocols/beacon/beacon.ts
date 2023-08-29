@@ -12,6 +12,7 @@ import {
   BeaconLightClientNetworkContentType,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
+  MainnetGenesisTime,
 } from './types.js'
 import {
   ContentMessageType,
@@ -25,11 +26,16 @@ import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
 import { computeSyncPeriodAtSlot } from './util.js'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { Lightclient } from '@lodestar/light-client'
+import { UltralightTransport } from './ultralightTransport.js'
+
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
   beaconConfig: BeaconConfig
   protocolName = 'BeaconLightClientNetwork'
   logger: Debugger
+  lightClient: Lightclient | undefined
+
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
 
@@ -40,6 +46,23 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
     this.routingTable.setLogger(this.logger)
+  }
+
+  /**
+   * Initializes an Lodestar light client using a trusted beacon block root
+   * @param blockRoot trusted beacon block root within the weak subjectivity period for retrieving
+   * the `lightClientBootStrap`
+   */
+  public initializeLightClient = async (blockRoot: string) => {
+    this.lightClient = await Lightclient.initializeFromCheckpointRoot({
+      config: this.beaconConfig,
+      genesisData: {
+        genesisValidatorsRoot: MainnetGenesisValidatorsRoot,
+        genesisTime: MainnetGenesisTime,
+      },
+      transport: new UltralightTransport(this),
+      checkpointRoot: fromHexString(blockRoot),
+    })
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {

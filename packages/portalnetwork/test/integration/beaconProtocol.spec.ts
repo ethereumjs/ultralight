@@ -205,8 +205,6 @@ describe('Find Content tests', () => {
       },
     })
 
-    node1.enableLog('*Portal*')
-    node2.enableLog('*Portal*')
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -250,4 +248,68 @@ describe('Find Content tests', () => {
   }, 10000)
 })
 
-// TODO: Add tests for other content types
+describe('beacon light client sync tests', () => {
+  it('should initialize light client', async () => {
+    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3009`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3010`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+
+    node2.enableLog('*')
+    await node1.start()
+    await node2.start()
+    const protocol1 = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const protocol2 = node2.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    await protocol1!.sendPing(protocol2?.enr!.toENR())
+    assert.equal(
+      protocol1?.routingTable.getWithPending(
+        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      )?.value.nodeId,
+      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      'node1 added node2 to routing table',
+    )
+
+    const bootstrap = specTestVectors.bootstrap['6718368']
+
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      bootstrap.content_key,
+      fromHexString(bootstrap.content_value),
+    )
+
+    await protocol2.initializeLightClient(
+      '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
+    )
+    assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized but not started')
+  })
+})

@@ -5,6 +5,8 @@ import { Bytes32Type } from '../types.js'
 export const MainnetGenesisValidatorsRoot =
   '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95'
 
+export const MainnetGenesisTime = 1621504614
+
 export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 
 export enum BeaconLightClientNetworkContentType {
