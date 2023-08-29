@@ -350,7 +350,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   private constructLightClientRange = async (contentKey: Uint8Array) => {
     const rangeKey = LightClientUpdatesByRangeKey.deserialize(contentKey)
 
-    if (rangeKey.count > 128) {
+    if (rangeKey.count > 128n) {
       throw new Error('cannot request more than 128 updates')
     }
     const count = Number(rangeKey.count)
