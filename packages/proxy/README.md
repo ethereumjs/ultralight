@@ -9,6 +9,7 @@ A simple NodeJS websocket-to-UDP proxy to allow browser clients to connect to a 
 When a client application first opens a web socket connection to the proxy, the proxy assigns a UDP port to that connection and relays any packets received on the websocket connection to the mapped UDP port and vice versa.
 
 #### Websocket -> UDP forwarding
+
 All messages sent by the websocket client begin with the below prefix:
 - 4 bytes containing the numeric parts of an IPv4 address (e.g. [192, 168, 0, 1])
 - 2 bytes containing a Uint16 (2 byte unsigned integer) representing the port number
@@ -21,14 +22,17 @@ The proxy strips this prefix from the message payload and forwards the remaining
 #### UDP -> Websocket forwarding
 
 Any message received at a UDP port is forwarded to the corresponding websocket client unmodified.
+
 ## Usage
 
 To run a proxy on a local network, run `npm run start`.  
 
 ### Websocket configuration
+
 By default, the proxy only listens for websocket connections on `localhost`/`127.0.0.1`.  To have your proxy listen for websocket connections on a specified IP address, pass the `--nat=ip` parameter and the `--ip=[your IP address here]`
 
 ### UDP socket configuration
+
 To make your proxy listen for UDP packets on a public facing IP address, run `npm run start --nat=extip` and the proxy will get its public IP address from [Ipify](https://www.ipify.org/) and route all UDP traffic via the external IP address.
 
 ### Persistent Ports

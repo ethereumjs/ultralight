@@ -547,7 +547,7 @@ Takes an RLP encoded block as a hex string and adds the block header and block b
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `rlpHex` | `string` | RLP encoded block as hex string |
-| `blockHash` | `string` | block hash as 0x prefixed hext string |
+| `blockHash` | `string` | block hash as 0x prefixed hex string |
 | `protocol` | `HistoryProtocol` | - |
 
 #### Returns

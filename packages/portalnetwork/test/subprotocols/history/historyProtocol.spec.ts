@@ -26,7 +26,7 @@ import { concatBytes } from '@ethereumjs/util'
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')
 
-describe('history Protocol FINDCONTENT/FOUDNCONTENT message handlers', async () => {
+describe('history Protocol FINDCONTENT/FOUNDCONTENT message handlers', async () => {
   const block1Rlp = testBlocks.block1.blockRlp
   const block1Hash = testBlocks.block1.blockHash
   const node = await PortalNetwork.create({
@@ -140,7 +140,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
       fromHexString(epochAccumulator.serialized),
     )
     const fromDB = await protocol.retrieve(contentKey)
-    assert.equal(fromDB, epochAccumulator.serialized, 'Retrive EpochAccumulator test passed.')
+    assert.equal(fromDB, epochAccumulator.serialized, 'Retrieve EpochAccumulator test passed.')
   })
 })
 
