@@ -345,7 +345,8 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   /**
    * Internal helper called by `findContentLocally` to construct the LightClientUpdatesByRange object as defined in the
    * Portal Network Specs
-   * @param contentKey a raw LightClientUpdatesByRange key as defined in the Portal Network Specs (not the content key equivalent)
+   * @param contentKey a raw LightClientUpdatesByRange key as defined in the Portal Network Specs (not the content key prefixed with
+   * the content type of 1)
    * @returns an SSZ serialized LightClientUpdatesByRange object as a Uint8Array
    */
   private constructLightClientRange = async (contentKey: Uint8Array) => {
