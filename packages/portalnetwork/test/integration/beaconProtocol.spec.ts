@@ -310,6 +310,5 @@ describe('beacon light client sync tests', () => {
       '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
     )
     assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized but not started')
-    protocol2.lightClient?.start()
   })
 })
