@@ -6,6 +6,8 @@ import {
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
 } from './types.js'
+import { EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SLOTS_PER_EPOCH } from '@lodestar/params'
+import { Epoch, Slot, SyncPeriod } from '@lodestar/types'
 
 export const attestedHeaderFromJson = (data: any) => {
   return {
@@ -71,3 +73,29 @@ export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
       throw new Error(`unknown content type ${selector}`)
   }
 }
+
+/******** Borrowed directly from Lodestar **************/
+// Copied from here - https://github.com/ChainSafe/lodestar/blob/unstable/packages/light-client/src/utils/clock.ts
+// Borrowed from Lodestar since we don't want to have to import all of the Lodestar dependency tree for a few helper functions
+// TODO: Remove if we ever decide to fully incorporate the Lodestar light client into our code base
+/**
+ * Return the epoch number at the given slot.
+ */
+export function computeEpochAtSlot(slot: Slot): Epoch {
+  return Math.floor(slot / SLOTS_PER_EPOCH)
+}
+
+/**
+ * Return the sync committee period at epoch
+ */
+export function computeSyncPeriodAtEpoch(epoch: Epoch): SyncPeriod {
+  return Math.floor(epoch / EPOCHS_PER_SYNC_COMMITTEE_PERIOD)
+}
+
+/**
+ * Return the sync committee period at slot
+ */
+export function computeSyncPeriodAtSlot(slot: Slot): SyncPeriod {
+  return computeSyncPeriodAtEpoch(computeEpochAtSlot(slot))
+}
+/************************ ****************************/

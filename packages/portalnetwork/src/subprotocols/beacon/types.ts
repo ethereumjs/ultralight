@@ -12,6 +12,7 @@ export enum BeaconLightClientNetworkContentType {
   LightClientUpdatesByRange = 1,
   LightClientFinalityUpdate = 2,
   LightClientOptimisticUpdate = 3,
+  LightClientUpdate = 4, // Added for convenience, not part of the Portal Network Spec
 }
 
 export enum Forks {

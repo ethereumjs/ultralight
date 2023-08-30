@@ -186,7 +186,7 @@ describe('API tests', async () => {
   })
   const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
   await protocol.store(
-    BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+    BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
     optimisticUpdate.content_key,
     fromHexString(optimisticUpdate.content_value),
   )
@@ -294,16 +294,35 @@ it('API tests', async () => {
     ).attestedHeader.beacon.slot,
     'successfully stored and retrieved optimistic update',
   )
-  // TODO: Update this test once logic for handling light client updates is implemented
+
   const updatesByRange = specTestVectors.updateByRange['6684738']
   try {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
       updatesByRange.content_key,
-      fromHexString(optimisticUpdate.content_value),
+      fromHexString(updatesByRange.content_value),
     )
     assert.fail('should throw')
   } catch {
     assert.ok(true, 'throws when trying to store a batch of light client updates')
   }
+
+  await protocol.storeUpdateRange(fromHexString(updatesByRange.content_value))
+  const storedUpdate = await protocol.findContentLocally(fromHexString('0x040330'))
+  const deserializedUpdate = ssz.capella.LightClientUpdate.deserialize(storedUpdate!.slice(4))
+  assert.equal(
+    deserializedUpdate.attestedHeader.beacon.slot,
+    6684738,
+    'retrieved light client update period number from db',
+  )
+
+  const range = await protocol.findContentLocally(fromHexString(updatesByRange.content_key))
+  const retrievedRange = await LightClientUpdatesByRange.deserialize(range!)
+  const update1 = ssz.capella.LightClientUpdate.deserialize(retrievedRange[0].slice(4))
+  assert.equal(
+    update1.attestedHeader.beacon.slot,
+    6684738,
+    'put the correct update in the correct position in the range',
+  )
+  assert.equal(toHexString(range!), updatesByRange.content_value)
 })
