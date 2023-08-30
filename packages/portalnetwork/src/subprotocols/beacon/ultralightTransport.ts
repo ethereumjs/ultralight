@@ -5,6 +5,7 @@ import { BeaconLightClientNetwork } from './beacon.js'
 import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
+  LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from './types.js'
@@ -53,14 +54,65 @@ export class UltralightTransport implements LightClientTransport {
     }
     throw new Error(`range starting with period ${startPeriod} could not be retrieved`)
   }
-  getOptimisticUpdate(): Promise<{
+  async getOptimisticUpdate(): Promise<{
     version: ForkName
     data: allForks.LightClientOptimisticUpdate
   }> {
-    throw new Error('Method not implemented.')
+    let optimisticUpdate, forkname
+
+    this.protocol.logger('requesting latest LightClientOptimisticUpdate')
+    // Try to get optimistic update from Portal Network
+    const decoded = await this.protocol.sendFindContent(
+      this.protocol.routingTable.random()!.nodeId,
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+        LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
+      ),
+    )
+    if (decoded !== undefined) {
+      const forkhash = decoded.value.slice(0, 4) as Uint8Array
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as ForkName
+      optimisticUpdate = (ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+        (decoded.value as Uint8Array).slice(4),
+      )
+      // TODO: Compare this update to the current optimistic update found in the DB and see which is better
+      return {
+        version: forkname,
+        data: optimisticUpdate,
+      }
+    }
+    // TODO: Determine best method for finding "best" update
+    throw new Error('optimistic update could not be retrieved')
   }
-  getFinalityUpdate(): Promise<{ version: ForkName; data: allForks.LightClientFinalityUpdate }> {
-    throw new Error('Method not implemented.')
+  async getFinalityUpdate(): Promise<{
+    version: ForkName
+    data: allForks.LightClientFinalityUpdate
+  }> {
+    let finalityUpdate, forkname
+
+    this.protocol.logger('requesting latest LightClientFinalityUpdate')
+    // Try to get finality update from Portal Network
+    const decoded = await this.protocol.sendFindContent(
+      this.protocol.routingTable.random()!.nodeId,
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+        LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
+      ),
+    )
+    if (decoded !== undefined) {
+      const forkhash = decoded.value.slice(0, 4) as Uint8Array
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as ForkName
+      finalityUpdate = (ssz as any)[forkname].LightClientfinalityUpdate.deserialize(
+        (decoded.value as Uint8Array).slice(4),
+      )
+      // TODO: Compare this update to the current finality update found in the DB and see which is better
+      return {
+        version: forkname,
+        data: finalityUpdate,
+      }
+    }
+    // TODO: Determine best method for finding "best" update
+    throw new Error('LightClientFinalityUpdate could not be retrieved')
   }
   async getBootstrap(
     blockRoot: string,
@@ -96,12 +148,14 @@ export class UltralightTransport implements LightClientTransport {
     }
   }
 
+  // These methods are not currently implemented because we will handle gossiped updates using the Portal Network
+  // OFFER/ACCEPT handlers.  If we add additional channels (e.g. listening to libp2p gossip), we can implement these.
   onOptimisticUpdate(
-    handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
+    _handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
   ): void {
     throw new Error('Method not implemented.')
   }
-  onFinalityUpdate(handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
+  onFinalityUpdate(_handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
     throw new Error('Method not implemented.')
   }
 }

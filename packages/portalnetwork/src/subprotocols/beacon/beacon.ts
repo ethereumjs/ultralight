@@ -18,6 +18,7 @@ import {
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
+  OfferMessage,
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { bytesToInt, concatBytes, padToEven } from '@ethereumjs/util'
@@ -365,5 +366,69 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       range.push(fromHexString(update))
     }
     return LightClientUpdatesByRange.serialize(range)
+  }
+
+  /**
+   * We override the BaseProtocol `handleOffer` since content gossip for the Beacon Light client network
+   * assumes that all node have all of hthe
+   * @param src OFFERing node's address
+   * @param requestId request ID passed in OFFER message
+   * @param msg OFFER message containing a list of offered content keys
+   */
+  override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+    this.logger.extend('OFFER')(
+      `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`,
+    )
+    try {
+      if (msg.contentKeys.length > 0) {
+        let offerAccepted = false
+
+        const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
+
+        for (let x = 0; x < msg.contentKeys.length; x++) {
+          const key = msg.contentKeys[x]
+          switch (key[0]) {
+            case BeaconLightClientNetworkContentType.LightClientBootstrap: {
+              try {
+                // TODO: Verify the offered bootstrap isn't too old before accepting
+                await this.get(ProtocolId.BeaconLightClientNetwork, toHexString(key))
+                this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
+              } catch (err) {
+                offerAccepted = true
+                contentIds[x] = true
+                this.logger.extend('OFFER')(
+                  `Found some interesting content from ${shortId(src.nodeId)}`,
+                )
+              }
+              break
+            }
+            case BeaconLightClientNetworkContentType.LightClientFinalityUpdate: {
+              break
+            }
+            case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate: {
+              break
+            }
+            case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
+              break
+            }
+          }
+        }
+        if (offerAccepted) {
+          this.logger(`Accepting an OFFER`)
+          const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
+          this.logger(toHexString(msg.contentKeys[0]))
+          this.sendAccept(src, requestId, contentIds, desiredKeys)
+        } else {
+          this.logger(`Declining an OFFER since no interesting content`)
+          this.sendResponse(src, requestId, new Uint8Array())
+        }
+      } else {
+        this.logger(`Offer Message Has No Content`)
+        // Send empty response if something goes wrong parsing content keys
+        this.sendResponse(src, requestId, new Uint8Array())
+      }
+    } catch {
+      this.logger(`Error Processing OFFER msg`)
+    }
   }
 }
