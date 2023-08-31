@@ -16,6 +16,7 @@ import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-facto
 import { execSync } from 'child_process'
 import { RPCManager } from './rpc/rpc.js'
 import { SignableENR } from '@chainsafe/discv5'
+import { Enr } from './rpc/schema/types.js'
 
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
@@ -137,13 +138,13 @@ const main = async () => {
 
   // TODO - make this more intelligent
   const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
-  if (isValidEnr(args.bootnode)) {
+  if (args.bootnode && isValidEnr(args.bootnode)) {
     addBootNode(protocol, args.bootnode)
   }
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
     const bootnodes = bootnodeData.split('\n')
-    bootnodes.forEach((enr) => {
+    bootnodes.forEach((enr: Enr) => {
       if (isValidEnr(enr)) {
         addBootNode(protocol, enr)
       }
