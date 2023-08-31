@@ -1,4 +1,5 @@
 import { HistoryNetworkContentType, ProtocolId, toHexString } from 'portalnetwork'
+import { isValidEnr } from '../util.js'
 
 const INVALID_PARAMS = -32602
 
@@ -224,10 +225,10 @@ export const validators = {
           message: `invalid argument ${index}: enr must be string`,
         }
       }
-      if (params[index].substr(0, 3) !== 'enr') {
+      if (isValidEnr(params[index])) {
         return {
           code: INVALID_PARAMS,
-          message: `invalid argument ${index}: string must start with 'enr:'`,
+          message: `invalid argument ${index}: string must start with 'enr:-'`,
         }
       }
     }

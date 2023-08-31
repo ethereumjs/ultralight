@@ -10,6 +10,7 @@ import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { setupMetrics } from './metrics.js'
+import { isValidEnr, addBootNode } from './util.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { execSync } from 'child_process'
@@ -77,19 +78,6 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
   res.end(await register.metrics())
 }
 
-const hasBootnodeENRPrefix = (enr) => {
-  if (enr && enr.startsWith('enr:-')) {
-    return true
-  }
-  return false
-}
-
-const addBootNode = (protocol, enr) => {
-  try {
-    protocol!.addBootNode(enr)
-  } catch {}
-}
-
 const main = async () => {
   const cmd = 'hostname -i'
   const pubIp = execSync(cmd).toString().split(':')
@@ -149,14 +137,14 @@ const main = async () => {
 
   // TODO - make this more intelligent
   const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
-  if (hasBootnodeENRPrefix(args.bootnode)) {
+  if (isValidEnr(args.bootnode)) {
     addBootNode(protocol, args.bootnode)
   }
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
     const bootnodes = bootnodeData.split('\n')
     bootnodes.forEach((enr) => {
-      if (hasBootnodeENRPrefix(enr)) {
+      if (isValidEnr(enr)) {
         addBootNode(protocol, enr)
       }
     })
