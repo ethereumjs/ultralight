@@ -10,7 +10,7 @@ import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { setupMetrics } from './metrics.js'
-import { isValidEnr, addBootNode } from './util.js'
+import { addBootNode } from './util.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { execSync } from 'child_process'
@@ -137,7 +137,7 @@ const main = async () => {
   await portal.start()
 
   // TODO - make this more intelligent
-  let bootnodes: Array<Enr> = [];
+  const bootnodes: Array<Enr> = []
   if (args.bootnode) {
     bootnodes.push(args.bootnode)
   }
@@ -149,14 +149,11 @@ const main = async () => {
     }
   }
   try {
-    portal.protocols.forEach(
-      async (value, key, map) => {
-        for (const bootnode of bootnodes) {
-          await addBootNode(key, value, bootnode)
-        }
+    portal.protocols.forEach(async (value, key, _) => {
+      for (const bootnode of bootnodes) {
+        await addBootNode(key, value, bootnode)
       }
-    );
-
+    })
   } catch (error: any) {
     throw new Error(`${error.message ?? error}`)
   }

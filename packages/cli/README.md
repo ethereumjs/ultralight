@@ -219,5 +219,12 @@ npx vitest run
 ```
 > If you encounter an error then first run `npm run clean`
 
+### Contributing
+
+Run the following from monorepo root to show linting errors and fix them to pass CI tests:
+```bash
+npm run lint
+```
+
 ## Note
 This requires Node version 16 or above

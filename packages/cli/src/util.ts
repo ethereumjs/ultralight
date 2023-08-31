@@ -14,9 +14,9 @@ export const hasValidBase64URLChars = (enr: Enr) => {
   const str = extractBase64URLCharsFromEnr(enr)
   const validBase64Chars = /^[A-Za-z0-9_-]+$/i
   if (str && validBase64Chars.test(str)) {
-    return true;
+    return true
   }
-  return false;
+  return false
 }
 
 /**
