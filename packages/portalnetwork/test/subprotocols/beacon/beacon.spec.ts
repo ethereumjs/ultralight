@@ -52,7 +52,7 @@ describe('portal network spec test vectors', () => {
   })
 
   it('deserializes optimistic update key', () => {
-    assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimstic update key')
+    assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimistic update key')
   })
 
   const finalityUpdate = fromHexString(specTestVectors.finalityUpdate['6718463'].content_value)

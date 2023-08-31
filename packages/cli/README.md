@@ -197,6 +197,34 @@ The Ultralight client exposes a minimal JSON-RPC interface that allows for some 
 - `ultralight_addBlockToHistory` - Add a block header and body to database
 - `ultralight_addContentToDB` - Add any content to database
   
+### Troubleshooting
+
+#### Freezes during installation of dependencies
+
+If it freezes during installation of dependencies when you run `npm install` from the monorepo root then run `npm run clean` from the monorepo root and try running `npm install` again.
+
+#### Error `env: python: No such file or directory` on macOS
+
+If you are on fresh Macbook or similar then whilst you may have the `python3` binary in your PATH, you may not also have `python` in your PATH, so when you run `npm install` from the monorepo root it may give you error `env: python: No such file or directory`. In that case it is necessary to create a symlink by running the following:
+```bash
+ln -s /Library/Developer/CommandLineTools/usr/bin/python3 /usr/local/bin/python
+```
+
+### Testing
+
+Run the following from the monorepo root
+```bash
+npm install
+npx vitest run
+```
+> If you encounter an error then first run `npm run clean`
+
+### Contributing
+
+Run the following from monorepo root to show linting errors and fix them to pass CI tests:
+```bash
+npm run lint
+```
 
 ## Note
 This requires Node version 16 or above

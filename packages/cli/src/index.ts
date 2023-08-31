@@ -10,11 +10,14 @@ import http from 'http'
 import * as PromClient from 'prom-client'
 import debug from 'debug'
 import { setupMetrics } from './metrics.js'
+import { addBootNode } from './util.js'
 import { Level } from 'level'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { execSync } from 'child_process'
 import { RPCManager } from './rpc/rpc.js'
 import { SignableENR } from '@chainsafe/discv5'
+import { Enr } from './rpc/schema/types.js'
+
 const args: any = yargs(hideBin(process.argv))
   .option('pk', {
     describe: 'base64 string encoded protobuf serialized private key',
@@ -134,20 +137,25 @@ const main = async () => {
   await portal.start()
 
   // TODO - make this more intelligent
-  const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
+  const bootnodes: Array<Enr> = []
   if (args.bootnode) {
-    protocol!.addBootNode(args.bootnode)
+    bootnodes.push(args.bootnode)
   }
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
-    const bootnodes = bootnodeData.split('\n')
-    bootnodes.forEach((enr) => {
-      if (enr.startsWith('enr:-')) {
-        try {
-          protocol!.addBootNode(enr)
-        } catch {}
+    const bootnodeList = bootnodeData.split('\n')
+    for (const bootnode of bootnodeList) {
+      bootnodes.push(bootnode)
+    }
+  }
+  try {
+    portal.protocols.forEach(async (value, key, _) => {
+      for (const bootnode of bootnodes) {
+        await addBootNode(key, value, bootnode)
       }
     })
+  } catch (error: any) {
+    throw new Error(`${error.message ?? error}`)
   }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
