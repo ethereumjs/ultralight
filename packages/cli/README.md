@@ -208,16 +208,19 @@ npm info run esbuild@0.18.20 postinstall { code: 0, signal: null }
 npm timing build:run:postinstall:node_modules/esbuild Completed in 695ms
 (##################) ⠏ reify:typescript: timing build:run:postinstall:node_modules/esbuild Completed in 695ms
 ```
+
 To overcome this it was necessary to remove the dependencies that were installed in project root
 ```
 rm -rf node_modules/
 ```
+
 Then instead of installing dependencies from the project root, it was necessary to instead install them first in packages/browser-client, and then in this packages/cli folder, because if you install dependencies in packages/cli folder first, then it might output the following error:
 ```bash
 ...
 [webpack-cli] Failed to load '/Users/me/ultralight/packages/browser-client/webpack.config.js' config
 [webpack-cli] Error: Cannot find module 'html-webpack-plugin'
 ```
+
 Also, if you use the NPM version 9.6.7 that comes pre-installed with Node.js 18.7.1 LTS, or you switch to NPM 8.6.0 with `npm install -g npm@8.6.0` then that might cause it to freeze when you run `npm install` in packages/browser-client and show the following error:
 ```bash
 npm info run esbuild@0.18.20 postinstall { code: 0, signal: null }
@@ -236,11 +239,6 @@ npm WARN EBADENGINE   current: { node: 'v18.17.1', npm: '7.24.2' }
 ...
 ```
 
-# so i remove package-lock.json in project root
-
-rm -rf package-lock.json
-npm install
-
 So then it is necessary to first remove dependences from the project root with `rm -rf node_modules/` and then switch to packages/browser-client and downgrade to NPM 7.24.2 before installing the dependencies. The following was run and compiled successfully:
 ```bash
 cd packages/browser-client
@@ -253,6 +251,7 @@ Another issue that you may encounter if you are on a fresh Macbook M2 or similar
 ln -s /Library/Developer/CommandLineTools/usr/bin/python3 /usr/local/bin/python
 npm install
 ```
+
 After installing dependences in packages/browser-client, switch to packages/cli, and install dependencies there too, and then run the Ultralight CLI tests and they should all pass:
 ```bash
 cd ../cli
