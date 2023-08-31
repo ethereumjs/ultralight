@@ -62,10 +62,10 @@ const main = async () => {
   const peer3 = Client.http({ port: args.rpcPort + 3 })
   const clients = [ultralight, peer1, peer2, peer3]
   const clientInfo: Record<Clients, TestClient> = {
-    ultralight: { client: ultralight, enr: 'enr:-IS4QFV_wTNknw7qiCGAbHf6LxB-xPQCktyrCEZX-b-7PikMOIKkBg-frHRBkfwhI3XaYo_T-HxBYmOOQGNwThkBBHYDgmlkgnY0gmlwhKRc9_OJc2VjcDI1NmsxoQKHPt5CQ0D66ueTtSUqwGjfhscU_LiwS28QvJ0GgJFd-YN1ZHCCE4k', nodeId: '' },
-    peer1: { client: peer1, enr: 'enr:-IS4QDpUz2hQBNt0DECFm8Zy58Hi59PF_7sw780X3qA0vzJEB2IEd5RtVdPUYZUbeg4f0LMradgwpyIhYUeSxz2Tfa8DgmlkgnY0gmlwhKRc9_OJc2VjcDI1NmsxoQJd4NAVKOXfbdxyjSOUJzmA4rjtg43EDeEJu1f8YRhb_4N1ZHCCE4o', nodeId: '' },
-    peer2: { client: peer2, enr: 'enr:-IS4QGG6moBhLW1oXz84NaKEHaRcim64qzFn1hAG80yQyVGNLoKqzJe887kEjthr7rJCNlt6vdVMKMNoUC9OCeNK-EMDgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQLJhXByb3LmxHQaqgLDtIGUmpANXaBbFw3ybZWzGqb9-IN1ZHCCE4k', nodeId: '' },
-    peer3: { client: peer3, enr: 'enr:-IS4QA5hpJikeDFf1DD1_Le6_ylgrLGpdwn3SRaneGu9hY2HUI7peHep0f28UUMzbC0PvlWjN8zSfnqMG07WVcCyBhADgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQJMpHmGj1xSP1O-Mffk_jYIHVcg6tY5_CjmWVg1gJEsPIN1ZHCCE4o', nodeId: '' },
+    ultralight: { client: ultralight, enr: '', nodeId: '' },
+    peer1: { client: peer1, enr: '', nodeId: '' },
+    peer2: { client: peer2, enr: '', nodeId: '' },
+    peer3: { client: peer3, enr: '', nodeId: '' },
   }
   const blockData = require(args.sourceFile)
   const blocks = Object.entries(blockData)
