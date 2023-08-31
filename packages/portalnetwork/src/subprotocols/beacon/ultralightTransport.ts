@@ -24,7 +24,7 @@ export class UltralightTransport implements LightClientTransport {
   ): Promise<{ version: ForkName; data: allForks.LightClientUpdate }[]> {
     const range = []
     this.protocol.logger(
-      `requesting lightClientUpdate range starting with period ${startPeriod} and count ${count}`,
+      `requesting lightClientUpdatesByRange starting with period ${startPeriod} and count ${count}`,
     )
     while (range.length === 0) {
       const decoded = await this.protocol.sendFindContent(
