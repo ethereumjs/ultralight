@@ -9,12 +9,10 @@ import {
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
   toHexString,
-  Uint8,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 
 import { SignableENR } from '@chainsafe/discv5'
-import { ssz } from '@lodestar/types'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
