@@ -13,6 +13,7 @@ import {
 import { createRequire } from 'module'
 
 import { SignableENR } from '@chainsafe/discv5'
+
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
