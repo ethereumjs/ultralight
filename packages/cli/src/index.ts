@@ -149,11 +149,14 @@ const main = async () => {
     }
   }
   try {
-    for (const protocol of portal.protocols) {
-      for (const bootnode of bootnodes) {
-        addBootNode(protocol, bootnode)
+    portal.protocols.forEach(
+      async (value, key, map) => {
+        for (const bootnode of bootnodes) {
+          await addBootNode(key, value, bootnode)
+        }
       }
-    }
+    );
+
   } catch (error: any) {
     throw new Error(`${error.message ?? error}`)
   }
