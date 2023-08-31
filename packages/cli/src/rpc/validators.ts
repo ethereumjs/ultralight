@@ -228,9 +228,7 @@ export const validators = {
       if (isValidEnr(params[index])) {
         return {
           code: INVALID_PARAMS,
-          message: `invalid argument ${index}: string must be compliant with \
-            EIP-778 by starting with 'enr:' and encoded using valid characters \
-            of the Base64URL encoding scheme`,
+          message: `invalid argument ${index}: string must be compliant with EIP-778 by starting with "enr:" and encoded using valid characters of the Base64URL encoding scheme`,
         }
       }
     }
