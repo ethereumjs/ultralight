@@ -1,7 +1,6 @@
 name: Docker Build Job
 
-on:
-  workflow_dispatch
+on: workflow_dispatch
 
 jobs:
   docker:
