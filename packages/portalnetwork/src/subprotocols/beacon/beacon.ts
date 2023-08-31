@@ -55,6 +55,11 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    * the `lightClientBootStrap`
    */
   public initializeLightClient = async (blockRoot: string) => {
+    const lcLogger = this.logger.extend('LightClient')
+    const lcLoggerError = lcLogger.extend('ERROR')
+    const lcLoggerWarn = lcLogger.extend('WARN')
+    const lcLoggerInfo = lcLogger.extend('INFO')
+    const lcLoggerDebug = lcLogger.extend('DEBUG')
     this.lightClient = await Lightclient.initializeFromCheckpointRoot({
       config: this.beaconConfig,
       genesisData: {
@@ -63,6 +68,24 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       },
       transport: new UltralightTransport(this),
       checkpointRoot: fromHexString(blockRoot),
+      logger: {
+        error: (msg, context) => {
+          msg && lcLoggerError(msg)
+          context && lcLoggerError(context)
+        },
+        warn: (msg, context) => {
+          msg && lcLoggerWarn(msg)
+          context && lcLoggerWarn(context)
+        },
+        info: (msg, context) => {
+          msg && lcLoggerInfo(msg)
+          context && lcLoggerInfo(context)
+        },
+        debug: (msg, context) => {
+          msg && lcLoggerDebug(msg)
+          context && lcLoggerDebug(context)
+        },
+      },
     })
   }
 
