@@ -1,6 +1,6 @@
 {
   "include": ["./src/**/*.ts", "./test/**/*.ts", "./vitest.config.unit.ts"],
-  "exclude": ["dist"], 
+  "exclude": ["./dist"], 
   "references": [{"path": "../discv5/tsconfig.json" }],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */

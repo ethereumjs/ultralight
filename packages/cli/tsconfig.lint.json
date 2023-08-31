@@ -1,7 +1,7 @@
 {
-  "include": ["./src"],
+  "include": ["./src/**/*.ts", "./test/**/*.ts", "./vitest.config.unit.ts"],
   "exclude": ["./dist"],
- // "references": [{"path": "../portalnetwork/tsconfig.json" }, {"path": "../discv5/tsconfig.json" }],
+  "references": [{"path": "../portalnetwork/tsconfig.json" }, {"path": "../discv5/tsconfig.json" }],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 
