@@ -137,18 +137,21 @@ const main = async () => {
   await portal.start()
 
   // TODO - make this more intelligent
-  const protocol = portal.protocols.get(ProtocolId.HistoryNetwork)
+  let validBootnodes: Array<Enr> = [];
   if (args.bootnode && isValidEnr(args.bootnode)) {
-    addBootNode(protocol, args.bootnode)
+    validBootnodes.push(args.bootnode)
   }
   if (args.bootnodeList) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
     const bootnodes = bootnodeData.split('\n')
-    bootnodes.forEach((enr: Enr) => {
-      if (isValidEnr(enr)) {
-        addBootNode(protocol, enr)
-      }
-    })
+    for (const bootnode of bootnodes) {
+      if (isValidEnr(bootnode)) validBootnodes.push(bootnode)
+    }
+  }
+  for (const protocol of portal.protocols) {
+    for (const bootnode of validBootnodes) {
+      addBootNode(protocol, bootnode)
+    }
   }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
