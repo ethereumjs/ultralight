@@ -5,7 +5,7 @@ A partially complete Typescript library for interacting with the Portal Network
 
 See [API](./docs/modules.md) for more details
 
-See [Architecture](./ARCHITECTURE.md) for architectural concepts
+See [Architecture](./diagrams/ARCHITECTURE.md) for architectural concepts
 
 ## Routing Table Management
 
@@ -32,6 +32,7 @@ Each time `portal.addBootNode` is called, Ultralight will try to connect to the 
 Content for the history network is stored in the DB as key/value pairs consisting of the below:
 - `key` -- hex string encoded representation of the History Network `content-id` (e.g. `0xfac2ca64257e97b691a0ff405c4f8d62ab52a6e0f0d2f92e25022ca12a56a881` is the `content-id` for the header for Block 1 on mainnet)
 - `value` -- hex string encoded representation of the RLP serialized content (block header, block body, receipt)
+
 # Acknowledgements
 
 [Chainsafe's `discv5` implementation](https://github.com/ChainSafe/discv5) without which none of this would be possible

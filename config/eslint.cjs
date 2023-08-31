@@ -5,9 +5,6 @@ module.exports = {
     es2020: true,
     node: true,
   },
-  parserOptions: {
-
-  },
   ignorePatterns: [
     'node_modules/',
     'dist/',
@@ -23,7 +20,6 @@ module.exports = {
   extends: ['eslint:recommended', 'plugin:node/recommended'],
   rules: {
     "node/file-extension-in-import": [
-
       {
           "tryExtensions": [".js", ".json", ".node"],
 
