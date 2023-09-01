@@ -7,11 +7,7 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
+
     steps:
       -
         name: Set up QEMU
@@ -31,8 +27,5 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: localhost:5000/ethereumjs/ultralight:latest
-      -
-        name: Inspect
-        run: |
-          docker buildx imagetools inspect localhost:5000/name/app:latest         
+          tags: ethereumjs/ultralight:latest
+  
