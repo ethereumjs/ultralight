@@ -1,10 +1,17 @@
 name: Docker Build Job
 
-on: workflow_dispatch
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       -
         name: Set up QEMU
@@ -23,5 +30,10 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v4
         with:
-          push: false
-          tags: ultralight:latest
+          context: .
+          push: true
+          tags: localhost:5000/ethereumjs/ultralight:latest
+      -
+        name: Inspect
+        run: |
+          docker buildx imagetools inspect localhost:5000/name/app:latest         
