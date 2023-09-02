@@ -9,10 +9,18 @@ import {
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
   toHexString,
+  getBeaconContentKey,
+  LightClientBootstrapKey,
+  LightClientUpdatesByRange,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 
 import { SignableENR } from '@chainsafe/discv5'
+import { ssz } from '@lodestar/types'
+
+import { ForkName } from '@lodestar/params'
+import { concatBytes } from '@ethereumjs/util'
+import { RunStatusCode } from '@lodestar/light-client'
 
 const require = createRequire(import.meta.url)
 
@@ -281,8 +289,6 @@ describe('beacon light client sync tests', () => {
       },
     })
 
-    node1.enableLog('*Portal:BeaconLightClientNetwork*')
-    node2.enableLog('*Portal:BeaconLightClientNetwork*')
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -315,6 +321,7 @@ describe('beacon light client sync tests', () => {
   })
   it.only('should start syncing the lightclient', async () => {
     vi.useFakeTimers()
+    vi.setSystemTime(1693430999000)
     const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3009`)
@@ -346,8 +353,9 @@ describe('beacon light client sync tests', () => {
       },
     })
 
-    node1.enableLog('*Portal:BeaconLightClientNetwork*')
-    node2.enableLog('*Portal:BeaconLightClientNetwork*')
+    node1.enableLog('*Portal*')
+    node2.enableLog('*Portal*')
+
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -365,19 +373,55 @@ describe('beacon light client sync tests', () => {
       'node1 added node2 to routing table',
     )
 
-    const bootstrap = specTestVectors.bootstrap['6718368']
+    const bootstrapJSON = require('./testdata/bootstrap.json').data
+    const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJSON)
+    const range = require('./testdata/lcUpdateRange.json')
+    const capellaForkDigest = protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella)
+    const update1 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[0].data),
+      ),
+    )
+    const update2 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[1].data),
+      ),
+    )
+    const update3 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[2].data),
+      ),
+    )
 
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
-      bootstrap.content_key,
-      fromHexString(bootstrap.content_value),
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientBootstrap,
+        LightClientBootstrapKey.serialize({
+          blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
+        }),
+      ),
+      concatBytes(capellaForkDigest, ssz.capella.LightClientBootstrap.serialize(bootstrap)),
     )
 
-    const updatesByRange = specTestVectors.updateByRange['6684738']
-    await protocol1.storeUpdateRange(fromHexString(updatesByRange.content_value))
+    const updatesByRange = LightClientUpdatesByRange.serialize([update1, update2, update3])
+
+    await protocol1.storeUpdateRange(updatesByRange)
+
     await protocol2.initializeLightClient(
-      '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
+      '0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b',
+    )
+
+    protocol2.on('ContentAdded', (contentType, contentKey) =>
+      console.log('content!@', contentType, contentKey),
     )
     await protocol2.lightClient?.start()
-  })
+
+    while (protocol2.lightClient?.status !== RunStatusCode.started) {
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+  }, 20000)
 })

@@ -25,7 +25,7 @@ import { bytesToInt, concatBytes, padToEven } from '@ethereumjs/util'
 import { RequestCode, FoundContent, randUint16, MAX_PACKET_SIZE } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
-import { computeSyncPeriodAtSlot } from './util.js'
+import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { Lightclient } from '@lodestar/light-client'
 import { UltralightTransport } from './ultralightTransport.js'
@@ -56,6 +56,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    */
   public initializeLightClient = async (blockRoot: string) => {
     const lcLogger = this.logger.extend('LightClient')
+
     const lcLoggerError = lcLogger.extend('ERROR')
     const lcLoggerWarn = lcLogger.extend('WARN')
     const lcLoggerInfo = lcLogger.extend('INFO')
@@ -69,9 +70,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       transport: new UltralightTransport(this),
       checkpointRoot: fromHexString(blockRoot),
       logger: {
-        error: (msg, context) => {
+        error: (msg, context, error) => {
           msg && lcLoggerError(msg)
           context && lcLoggerError(context)
+          error && lcLoggerError(error)
         },
         warn: (msg, context) => {
           msg && lcLoggerWarn(msg)

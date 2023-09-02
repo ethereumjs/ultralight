@@ -38,15 +38,13 @@ export class UltralightTransport implements LightClientTransport {
         ),
       )
       if (decoded !== undefined) {
-        const forkhash = decoded.value.slice(0, 4) as Uint8Array
-        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
-        const updateRange = LightClientUpdatesByRange.deserialize(
-          (decoded.value as Uint8Array).slice(4),
-        )
-        for (const update in updateRange) {
+        const updateRange = LightClientUpdatesByRange.deserialize(decoded.value as Uint8Array)
+        for (const update of updateRange) {
+          const forkhash = update.slice(0, 4)
+          const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
           range.push({
             version: forkname as ForkName,
-            data: (ssz as any)[forkname].LightClientUpdate.deserialize(update),
+            data: (ssz as any)[forkname].LightClientUpdate.deserialize(update.slice(4)),
           })
         }
         return range
