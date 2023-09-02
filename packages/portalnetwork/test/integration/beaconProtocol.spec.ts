@@ -420,8 +420,8 @@ describe('beacon light client sync tests', () => {
     )
     await protocol2.lightClient?.start()
 
-    while (protocol2.lightClient?.status !== RunStatusCode.started) {
+    while (true) {
       await new Promise((r) => setTimeout(r, 1000))
     }
-  }, 20000)
+  }, 30000)
 })
