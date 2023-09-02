@@ -320,8 +320,8 @@ describe('beacon light client sync tests', () => {
     assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized but not started')
   })
   it.only('should start syncing the lightclient', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(1693430999000)
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(1693431998000)
     const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3009`)
