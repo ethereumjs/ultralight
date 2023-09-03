@@ -412,7 +412,7 @@ export class portal {
               resolve(Uint8Array.from([]))
             }, 2000)
             this._client.uTP.on(
-              'Stream',
+              ProtocolId.HistoryNetwork,
               (_contentType: HistoryNetworkContentType, hash: string, value: Uint8Array) => {
                 if (hash.slice(2) === contentKey.slice(4)) {
                   clearTimeout(timeout)
