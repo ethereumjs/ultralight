@@ -510,7 +510,7 @@ describe('PortalNetworkUTP test', () => {
     const contentKeys = contentHashes.map((hash) =>
       fromHexString(getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))),
     )
-    utp.on('Stream', (selector, hash, value) => {
+    utp.on(ProtocolId.HistoryNetwork, (selector, hash, value) => {
       assert.equal(selector, HistoryNetworkContentType.BlockHeader, 'Stream selector correct')
       assert.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
       assert.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
