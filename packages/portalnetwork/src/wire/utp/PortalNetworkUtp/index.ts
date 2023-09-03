@@ -296,7 +296,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit('Stream', k[0], decodedContentKey.blockHash, _content)
+            this.emit(ProtocolId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
           }
         }
         break
@@ -312,7 +312,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit('Stream', k[0], toHexString(k), _content)
+            this.emit(ProtocolId.BeaconLightClientNetwork, k[0], toHexString(k), _content)
           }
         }
         break
