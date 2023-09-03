@@ -282,8 +282,6 @@ export abstract class BaseProtocol extends EventEmitter {
           nodesPayload.enrs.push(this.enr.toENR().encode())
         } else {
           for (const enr of this.routingTable.valuesOfDistance(distance)) {
-            // Exclude ENR from response if it matches the requesting node
-            if (enr.nodeId === src.nodeId) continue
             // Break from loop if total size of NODES payload would exceed 1200 bytes
             // TODO: Decide what to do about case where we have more ENRs we could send
 
