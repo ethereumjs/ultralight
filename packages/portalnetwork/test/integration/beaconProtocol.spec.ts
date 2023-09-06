@@ -320,16 +320,25 @@ describe('beacon light client sync tests', () => {
     )
     assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized but not started')
   })
-  it.only('should sync the lightclient to current sync period', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
+  it('should sync the lightclient to current sync period', async () => {
+    /**
+     * This test simulates the syncing process for a Lodestar light client using only data seeded from the portal network.  Below are the steps:
+     * 1) Store a LightClientBootstrap corresponding to sync period 879 and block root 0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b in client 1.
+     * 2) Store Light Client Updates corresponding to sync periods 879, 880, and 881 in client 1.
+     * 3) Store a LightClientOptimisticUpdate corresponding to sync period 881 in client 1.
+     * 4) Initialize the Lodestar light client in client 2 using trusted block root 0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b.
+     * 5) The light client will use the Ultralight Transport to request the bootstrap and then the light client update range for the 3 periods, validate them,
+     * and then get the latest optimistic update which brings it to the head of the chain.
+     */
+    vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1693431998000)
     const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3009`)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30011`)
     enr1.setLocationMultiaddr(initMa)
     const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3010`)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3012`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
@@ -353,9 +362,6 @@ describe('beacon light client sync tests', () => {
         peerId: id2,
       },
     })
-
-    node1.enableLog('*:LightClient:*')
-    node2.enableLog('*:LightClient:*')
 
     await node1.start()
     await node2.start()
