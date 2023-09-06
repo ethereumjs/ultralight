@@ -63,7 +63,7 @@ export class UltralightTransport implements LightClientTransport {
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
       ),
     )
@@ -149,7 +149,7 @@ export class UltralightTransport implements LightClientTransport {
   // These methods are not currently implemented because we will handle gossiped updates using the Portal Network
   // OFFER/ACCEPT handlers.  If we add additional channels (e.g. listening to libp2p gossip), we can implement these.
   onOptimisticUpdate(
-    _handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
+    handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
   ): void {
     throw new Error('Method not implemented.')
   }

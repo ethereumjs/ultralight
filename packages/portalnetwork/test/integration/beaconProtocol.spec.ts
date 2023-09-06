@@ -12,6 +12,7 @@ import {
   getBeaconContentKey,
   LightClientBootstrapKey,
   LightClientUpdatesByRange,
+  LightClientOptimisticUpdateKey,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 
@@ -20,7 +21,6 @@ import { ssz } from '@lodestar/types'
 
 import { ForkName } from '@lodestar/params'
 import { concatBytes } from '@ethereumjs/util'
-import { RunStatusCode } from '@lodestar/light-client'
 
 const require = createRequire(import.meta.url)
 
@@ -353,8 +353,8 @@ describe('beacon light client sync tests', () => {
       },
     })
 
-    node1.enableLog('*Portal*')
-    node2.enableLog('*Portal*')
+    node1.enableLog('*:Portal:*')
+    node2.enableLog('*:Portal:*')
 
     await node1.start()
     await node2.start()
@@ -396,6 +396,9 @@ describe('beacon light client sync tests', () => {
       ),
     )
 
+    const optimisticUpdateJson = require('./testdata/optimisticUpdate.json')
+    const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
+
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       getBeaconContentKey(
@@ -410,6 +413,18 @@ describe('beacon light client sync tests', () => {
     const updatesByRange = LightClientUpdatesByRange.serialize([update1, update2, update3])
 
     await protocol1.storeUpdateRange(updatesByRange)
+
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
+      ),
+      concatBytes(
+        capellaForkDigest,
+        ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate),
+      ),
+    )
 
     await protocol2.initializeLightClient(
       '0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b',
