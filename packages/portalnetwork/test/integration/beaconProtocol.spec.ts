@@ -89,7 +89,7 @@ describe('Find Content tests', () => {
       fromHexString(bootstrap.content_value),
     )
     await new Promise((resolve) => {
-      node2.uTP.on('Stream', async () => {
+      node2.uTP.on(ProtocolId.BeaconLightClientNetwork, async () => {
         const content = await protocol2.findContentLocally(fromHexString(bootstrap.content_key))
         assert.notOk(content === undefined, 'should retrieve content for bootstrap key')
         assert.equal(
