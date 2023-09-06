@@ -7,12 +7,11 @@ import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
 import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 import {
-  MainnetGenesisValidatorsRoot,
   BeaconLightClientNetworkContentType,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
-  MainnetGenesisTime,
 } from './types.js'
 import {
   ContentMessageType,
@@ -40,7 +39,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
 
-    const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot)
+    const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
     this.protocolId = ProtocolId.BeaconLightClientNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5))
@@ -69,10 +68,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     const lcLoggerDebug = lcLogger.extend('DEBUG')
     this.lightClient = await Lightclient.initializeFromCheckpointRoot({
       config: this.beaconConfig,
-      genesisData: {
-        genesisValidatorsRoot: MainnetGenesisValidatorsRoot,
-        genesisTime: MainnetGenesisTime,
-      },
+      genesisData: genesisData.mainnet,
       transport: new UltralightTransport(this),
       checkpointRoot: fromHexString(blockRoot),
       logger: {

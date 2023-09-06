@@ -4,17 +4,17 @@ const require = createRequire(import.meta.url)
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { ssz } from '@lodestar/types'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 import {
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
-  MainnetGenesisValidatorsRoot,
 } from '../../../src/subprotocols/beacon/types.js'
 
 const specTestVectors = require('./specTestVectors.json')
-const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
+const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root
 const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
 describe('Beacon network type tests using portal network spec test vectors', () => {

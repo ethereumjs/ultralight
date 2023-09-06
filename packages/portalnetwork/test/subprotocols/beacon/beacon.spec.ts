@@ -11,7 +11,6 @@ import {
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
-  MainnetGenesisValidatorsRoot,
 } from '../../../src/subprotocols/beacon/types.js'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { SignableENR } from '@chainsafe/discv5'
@@ -19,9 +18,10 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { PortalNetwork, ProtocolId, TransportLayer } from '../../../src/index.js'
 import type { BeaconLightClientNetwork } from '../../../src/subprotocols/beacon/index.js'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 
 const specTestVectors = require('./specTestVectors.json')
-const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot) // Genesis Validators Root
+const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root
 const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
 describe('portal network spec test vectors', () => {
