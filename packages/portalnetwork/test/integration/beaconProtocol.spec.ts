@@ -21,6 +21,7 @@ import { ssz } from '@lodestar/types'
 
 import { ForkName } from '@lodestar/params'
 import { concatBytes } from '@ethereumjs/util'
+import { RunStatusCode } from '@lodestar/light-client'
 
 const require = createRequire(import.meta.url)
 
@@ -319,7 +320,7 @@ describe('beacon light client sync tests', () => {
     )
     assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized but not started')
   })
-  it.only('should start syncing the lightclient', async () => {
+  it.only('should sync the lightclient to current sync period', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.setSystemTime(1693431998000)
     const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
@@ -353,8 +354,8 @@ describe('beacon light client sync tests', () => {
       },
     })
 
-    node1.enableLog('*:Portal:*')
-    node2.enableLog('*:Portal:*')
+    node1.enableLog('*:LightClient:*')
+    node2.enableLog('*:LightClient:*')
 
     await node1.start()
     await node2.start()
@@ -430,13 +431,15 @@ describe('beacon light client sync tests', () => {
       '0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b',
     )
 
-    protocol2.on('ContentAdded', (contentType, contentKey) =>
-      console.log('content!@', contentType, contentKey),
-    )
     await protocol2.lightClient?.start()
 
-    while (true) {
+    while (protocol2.lightClient?.status !== RunStatusCode.started) {
       await new Promise((r) => setTimeout(r, 1000))
     }
+    assert.equal(
+      protocol2.lightClient.status,
+      RunStatusCode.started,
+      'light client synced to latest epoch successfully',
+    )
   }, 30000)
 })

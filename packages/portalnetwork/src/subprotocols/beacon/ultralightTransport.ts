@@ -146,14 +146,34 @@ export class UltralightTransport implements LightClientTransport {
     }
   }
 
-  // These methods are not currently implemented because we will handle gossiped updates using the Portal Network
-  // OFFER/ACCEPT handlers.  If we add additional channels (e.g. listening to libp2p gossip), we can implement these.
   onOptimisticUpdate(
     handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
   ): void {
-    throw new Error('Method not implemented.')
+    this.protocol.on('ContentAdded', (contentKey, contentType, content) => {
+      if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
+        const value = fromHexString(content)
+        const forkhash = value.slice(0, 4) as Uint8Array
+        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
+        handler(
+          (ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+            (value as Uint8Array).slice(4),
+          ),
+        )
+      }
+    })
   }
-  onFinalityUpdate(_handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
-    throw new Error('Method not implemented.')
+  onFinalityUpdate(handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
+    this.protocol.on('ContentAdded', (contentKey, contentType, content) => {
+      if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
+        const value = fromHexString(content)
+        const forkhash = value.slice(0, 4) as Uint8Array
+        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
+        handler(
+          (ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
+            (value as Uint8Array).slice(4),
+          ),
+        )
+      }
+    })
   }
 }
