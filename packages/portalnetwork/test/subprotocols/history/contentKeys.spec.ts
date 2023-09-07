@@ -1,12 +1,12 @@
 import { describe, it, assert } from 'vitest'
 import {
   decodeHistoryNetworkContentKey,
-  fromHexString,
   getContentId,
   getContentKey,
   HistoryNetworkContentType,
 } from '../../../src/index.js'
 import { createRequire } from 'module'
+import { hexToBytes } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const testVectors = require('../../testData/testVectors.json')
@@ -14,10 +14,7 @@ const testVectors = require('../../testData/testVectors.json')
 describe('ContentKey and ContentId', () => {
   it('block header', () => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.blockHeader
-    const contentKey = getContentKey(
-      HistoryNetworkContentType.BlockHeader,
-      fromHexString(blockHash),
-    )
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
     const contentId = getContentId(HistoryNetworkContentType.BlockHeader, blockHash)
     const decoded = decodeHistoryNetworkContentKey(contentKey)
 
@@ -32,7 +29,7 @@ describe('ContentKey and ContentId', () => {
   })
   it('block body', () => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.blockBody
-    const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(blockHash))
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash))
     const contentId = getContentId(HistoryNetworkContentType.BlockBody, blockHash)
     const decoded = decodeHistoryNetworkContentKey(contentKey)
 
@@ -47,7 +44,7 @@ describe('ContentKey and ContentId', () => {
   })
   it('receipts', () => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.receipts
-    const contentKey = getContentKey(HistoryNetworkContentType.Receipt, fromHexString(blockHash))
+    const contentKey = getContentKey(HistoryNetworkContentType.Receipt, hexToBytes(blockHash))
     const contentId = getContentId(HistoryNetworkContentType.Receipt, blockHash)
     const decoded = decodeHistoryNetworkContentKey(contentKey)
 
@@ -64,7 +61,7 @@ describe('ContentKey and ContentId', () => {
     const { epochHash, contentKeyHex, contentIdHex } = testVectors.epochAccumulator
     const contentKey = getContentKey(
       HistoryNetworkContentType.EpochAccumulator,
-      fromHexString(epochHash),
+      hexToBytes(epochHash),
     )
     const contentId = getContentId(HistoryNetworkContentType.EpochAccumulator, epochHash)
     const decoded = decodeHistoryNetworkContentKey(contentKey)

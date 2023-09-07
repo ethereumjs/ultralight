@@ -7,38 +7,35 @@ import {
   HeaderRecordType,
   HistoricalEpochsType,
 } from '../../../src/index.js'
-import {
-  ByteVectorType,
-  ContainerType,
-  fromHexString,
-  toHexString,
-  UintBigintType,
-} from '@chainsafe/ssz'
+import { ByteVectorType, ContainerType, toHexString, UintBigintType } from '@chainsafe/ssz'
 import { createRequire } from 'module'
 import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
 import { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposite.js'
 import { readFileSync } from 'fs'
+import { hexToBytes } from '@ethereumjs/util'
 const require = createRequire(import.meta.url)
 
 describe('Header Record Proof tests', () => {
   const accumulatorRaw = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
     encoding: 'hex',
   })
-  const accumulator = accumulatorRaw.slice(8)
-  const epoch_hex = readFileSync(
-    './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-    {
-      encoding: 'hex',
-    },
-  )
+  const accumulator = '0x' + accumulatorRaw.slice(8)
+  const epoch_hex =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+      {
+        encoding: 'hex',
+      },
+    )
   const block1000 = require('../../testData/testBlock1000.json')
   const headerRecord1000 = {
     blockHash: '0x5b4590a9905fa1c9cc273f32e6dc63b4c512f0ee14edc6fa41c26b416a7b5d58',
     totalDifficulty: 22019797038325n,
   }
-  const historicalEpochs = HistoricalEpochsType.deserialize(fromHexString(accumulator))
-  const epoch = EpochAccumulator.deserialize(fromHexString(epoch_hex))
-  const header = BlockHeader.fromRLPSerializedHeader(fromHexString(block1000.rawHeader), {
+  const historicalEpochs = HistoricalEpochsType.deserialize(hexToBytes(accumulator))
+  const epoch = EpochAccumulator.deserialize(hexToBytes(epoch_hex))
+  const header = BlockHeader.fromRLPSerializedHeader(hexToBytes(block1000.rawHeader), {
     setHardfork: true,
   })
   it('Test Data is valid', () => {
@@ -61,7 +58,7 @@ describe('Header Record Proof tests', () => {
 
   it('Epoch Accumulator can create proof for header record.', () => {
     const gIndex = blockNumberToGindex(1000n)
-    const leaves = EpochAccumulator.deserialize(fromHexString(epoch_hex))
+    const leaves = EpochAccumulator.deserialize(hexToBytes(epoch_hex))
     const tree = EpochAccumulator.value_toTree(leaves)
     const headerRecord = leaves[1000]
     assert.equal(blockNumberToLeafIndex(1000n), 2000, 'Leaf index for block number is correct')

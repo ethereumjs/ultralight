@@ -2,7 +2,6 @@ import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { describe, it, assert, vi } from 'vitest'
 import {
-  fromHexString,
   PortalNetwork,
   ProtocolId,
   TransportLayer,
@@ -20,7 +19,7 @@ import { SignableENR } from '@chainsafe/discv5'
 import { ssz } from '@lodestar/types'
 
 import { ForkName } from '@lodestar/params'
-import { concatBytes } from '@ethereumjs/util'
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { RunStatusCode } from '@lodestar/light-client'
 
 const require = createRequire(import.meta.url)
@@ -34,11 +33,11 @@ const specTestVectors = require('../subprotocols/beacon/specTestVectors.json')
 
 describe('Find Content tests', () => {
   it('should find bootstrap content', async () => {
-    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
     enr2.setLocationMultiaddr(initMa2)
@@ -87,11 +86,11 @@ describe('Find Content tests', () => {
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrap.content_key,
-      fromHexString(bootstrap.content_value),
+      hexToBytes(bootstrap.content_value),
     )
     await new Promise((resolve) => {
       node2.uTP.on(ProtocolId.BeaconLightClientNetwork, async () => {
-        const content = await protocol2.findContentLocally(fromHexString(bootstrap.content_key))
+        const content = await protocol2.findContentLocally(hexToBytes(bootstrap.content_key))
         assert.notOk(content === undefined, 'should retrieve content for bootstrap key')
         assert.equal(
           toHexString(content!),
@@ -102,16 +101,16 @@ describe('Find Content tests', () => {
         await node2.stop()
         resolve(undefined)
       })
-      protocol2.sendFindContent(node1.discv5.enr.nodeId, fromHexString(bootstrap.content_key))
+      protocol2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
     })
   })
   it('should find optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
     enr2.setLocationMultiaddr(initMa2)
@@ -146,6 +145,29 @@ describe('Find Content tests', () => {
     const protocol2 = node2.protocols.get(
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
+
+    // Stub out light client
+    protocol1.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
+    protocol2.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
+
     await protocol1!.sendPing(protocol2?.enr!.toENR())
     assert.equal(
       protocol1?.routingTable.getWithPending(
@@ -157,12 +179,15 @@ describe('Find Content tests', () => {
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       optimisticUpdate.content_key,
-      fromHexString(optimisticUpdate.content_value),
+      hexToBytes(optimisticUpdate.content_value),
     )
 
     const res = await protocol2.sendFindContent(
       node1.discv5.enr.nodeId,
-      fromHexString(optimisticUpdate.content_key),
+      concatBytes(
+        new Uint8Array([3]),
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
     )
 
     assert.equal(
@@ -170,7 +195,13 @@ describe('Find Content tests', () => {
       optimisticUpdate.content_value,
       'retrieved content for optimistic update from network',
     )
-    const content = await protocol2.findContentLocally(fromHexString(optimisticUpdate.content_key))
+    const content = await protocol2.findContentLocally(
+      concatBytes(
+        new Uint8Array([3]),
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
+    )
+
     assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
     assert.equal(
       toHexString(content!),
@@ -183,11 +214,11 @@ describe('Find Content tests', () => {
 
   it('should find LightClientUpdatesByRange update', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
-    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3004`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3005`)
     enr2.setLocationMultiaddr(initMa2)
@@ -230,11 +261,11 @@ describe('Find Content tests', () => {
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
       'node1 added node2 to routing table',
     )
-    await protocol1.storeUpdateRange(fromHexString(updatesByRange.content_value))
+    await protocol1.storeUpdateRange(hexToBytes(updatesByRange.content_value))
 
     const res = await protocol2.sendFindContent(
       node1.discv5.enr.nodeId,
-      fromHexString(updatesByRange.content_key),
+      hexToBytes(updatesByRange.content_key),
     )
 
     assert.equal(
@@ -242,7 +273,7 @@ describe('Find Content tests', () => {
       updatesByRange.content_value,
       'retrieved content for light client updates by range from network',
     )
-    const content = await protocol2.findContentLocally(fromHexString(updatesByRange.content_key))
+    const content = await protocol2.findContentLocally(hexToBytes(updatesByRange.content_key))
     assert.notOk(
       content === undefined,
       'should retrieve content for Light Client Update by Range key',
@@ -259,11 +290,11 @@ describe('Find Content tests', () => {
 
 describe('beacon light client sync tests', () => {
   it('should initialize light client', async () => {
-    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3009`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3010`)
     enr2.setLocationMultiaddr(initMa2)
@@ -312,7 +343,7 @@ describe('beacon light client sync tests', () => {
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrap.content_key,
-      fromHexString(bootstrap.content_value),
+      hexToBytes(bootstrap.content_value),
     )
 
     await protocol2.initializeLightClient(
@@ -332,11 +363,11 @@ describe('beacon light client sync tests', () => {
      */
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1693431998000)
-    const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30011`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3012`)
     enr2.setLocationMultiaddr(initMa2)
@@ -425,7 +456,8 @@ describe('beacon light client sync tests', () => {
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-        LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
+        // FIXME
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 0n }),
       ),
       concatBytes(
         capellaForkDigest,

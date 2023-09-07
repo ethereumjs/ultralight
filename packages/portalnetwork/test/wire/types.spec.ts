@@ -6,8 +6,8 @@ import {
   PingPongCustomDataType,
 } from '../../src/wire/types.js'
 import { ENR } from '@chainsafe/discv5'
-import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
-import { concatBytes } from '@ethereumjs/util'
+import { BitArray, toHexString } from '@chainsafe/ssz'
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
 
 describe('message encoding should match test vectors', () => {
   // Validate PING/PONG message encoding
@@ -73,7 +73,7 @@ describe('message encoding should match test vectors', () => {
   })
 
   // Validate FINDCONTENT message encoding
-  const contentKey = fromHexString('0x706f7274616c')
+  const contentKey = hexToBytes('0x706f7274616c')
 
   it('should encode FINDCONTENT message correctly', () => {
     payload = PortalWireMessageType.serialize({
@@ -98,7 +98,7 @@ describe('message encoding should match test vectors', () => {
 
   // Validate OFFER message encoding
   it('should encode OFFER message correctly', () => {
-    const contentKeys = [fromHexString('0x010203')]
+    const contentKeys = [hexToBytes('0x010203')]
     payload = PortalWireMessageType.serialize({
       selector: MessageCodes.OFFER,
       value: { contentKeys: contentKeys },

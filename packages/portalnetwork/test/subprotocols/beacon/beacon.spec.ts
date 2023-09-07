@@ -1,7 +1,7 @@
 import { describe, it, assert } from 'vitest'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { ssz } from '@lodestar/types'
 
 import {
@@ -19,16 +19,19 @@ import { PortalNetwork, ProtocolId, TransportLayer } from '../../../src/index.js
 import type { BeaconLightClientNetwork } from '../../../src/subprotocols/beacon/index.js'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
 
 const specTestVectors = require('./specTestVectors.json')
-const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root
-const config = createBeaconConfig(defaultChainConfig, genesisRoot)
+const config = createBeaconConfig(
+  defaultChainConfig,
+  hexToBytes(genesisData.mainnet.genesisValidatorsRoot),
+)
 
 describe('portal network spec test vectors', () => {
-  const serializedOptimistincUpdate = fromHexString(
+  const serializedOptimistincUpdate = hexToBytes(
     specTestVectors.optimisticUpdate['6718463'].content_value,
   )
-  const serializedOptimistincUpdateKey = fromHexString(
+  const serializedOptimistincUpdateKey = hexToBytes(
     specTestVectors.optimisticUpdate['6718463'].content_key,
   )
   const forkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
@@ -53,13 +56,17 @@ describe('portal network spec test vectors', () => {
   })
 
   it('deserializes optimistic update key', () => {
-    assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimistic update key')
+    assert.equal(
+      optimisticUpdateKey.optimisticSlot,
+      0n,
+      'correctly deserialized optimistic update key',
+    )
   })
 
-  const finalityUpdate = fromHexString(specTestVectors.finalityUpdate['6718463'].content_value)
-  const finalityUpdateKey = fromHexString(
-    specTestVectors.finalityUpdate['6718463'].content_key,
-  ).slice(1)
+  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_value)
+  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_key).slice(
+    1,
+  )
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
     finalityUpdate.slice(4),
   )
@@ -74,16 +81,16 @@ describe('portal network spec test vectors', () => {
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).zero,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalizedSlot,
       0n,
       'deserialized finality update key',
     )
   })
   const bootstrap = specTestVectors.bootstrap['6718368']
   const deserializedBootstrap = ssz.capella.LightClientBootstrap.deserialize(
-    fromHexString(bootstrap.content_value).slice(4),
+    hexToBytes(bootstrap.content_value).slice(4),
   )
-  const bootstrapKey = fromHexString(bootstrap.content_key).slice(1)
+  const bootstrapKey = hexToBytes(bootstrap.content_key).slice(1)
   it('deserializes bootstrap', () => {
     assert.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
   })
@@ -95,10 +102,8 @@ describe('portal network spec test vectors', () => {
       'deserialized light client bootstrap key',
     )
   })
-  const updateByRange = fromHexString(specTestVectors.updateByRange['6684738'].content_value)
-  const updateByRangeKey = fromHexString(
-    specTestVectors.updateByRange['6684738'].content_key,
-  ).slice(1)
+  const updateByRange = hexToBytes(specTestVectors.updateByRange['6684738'].content_value)
+  const updateByRangeKey = hexToBytes(specTestVectors.updateByRange['6684738'].content_key).slice(1)
   const deserializedRange = LightClientUpdatesByRange.deserialize(updateByRange)
 
   let numUpdatesDeserialized = 0
@@ -126,7 +131,7 @@ describe('API tests', async () => {
   const privateKeys = [
     '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   ]
-  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
@@ -153,15 +158,13 @@ describe('API tests', async () => {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrap.content_key,
-      fromHexString(bootstrap.content_value),
+      hexToBytes(bootstrap.content_value),
     )
-    const retrievedBootstrap = await protocol.findContentLocally(
-      fromHexString(bootstrap.content_key),
-    )
+    const retrievedBootstrap = await protocol.findContentLocally(hexToBytes(bootstrap.content_key))
 
     assert.equal(
       ssz.capella.LightClientBootstrap.deserialize(retrievedBootstrap!.slice(4)).header.beacon.slot,
-      ssz.capella.LightClientBootstrap.deserialize(fromHexString(bootstrap.content_value).slice(4))
+      ssz.capella.LightClientBootstrap.deserialize(hexToBytes(bootstrap.content_value).slice(4))
         .header.beacon.slot,
       'successfully stored and retrieved bootstrap',
     )
@@ -172,17 +175,31 @@ describe('API tests', async () => {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
       finalityUpdate.content_key,
-      fromHexString(finalityUpdate.content_value),
+      hexToBytes(finalityUpdate.content_value),
     )
+
+    protocol.lightClient = {
+      //@ts-ignore
+      getFinalized: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
     const retrievedFinalityUpdate = await protocol.findContentLocally(
-      fromHexString(finalityUpdate.content_key),
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
+        LightClientFinalityUpdateKey.serialize({ finalizedSlot: 6718463n }),
+      ),
     )
 
     assert.equal(
       ssz.capella.LightClientFinalityUpdate.deserialize(retrievedFinalityUpdate!.slice(4))
         .attestedHeader.beacon.slot,
       ssz.capella.LightClientFinalityUpdate.deserialize(
-        fromHexString(finalityUpdate.content_value).slice(4),
+        hexToBytes(finalityUpdate.content_value).slice(4),
       ).attestedHeader.beacon.slot,
       'successfully stored and retrieved finality update',
     )
@@ -193,17 +210,31 @@ describe('API tests', async () => {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       optimisticUpdate.content_key,
-      fromHexString(optimisticUpdate.content_value),
+      hexToBytes(optimisticUpdate.content_value),
     )
+
+    protocol.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
     const retrievedOptimisticUpdate = await protocol.findContentLocally(
-      fromHexString(optimisticUpdate.content_key),
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
     )
 
     assert.equal(
       ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))
         .attestedHeader.beacon.slot,
       ssz.capella.LightClientOptimisticUpdate.deserialize(
-        fromHexString(optimisticUpdate.content_value).slice(4),
+        hexToBytes(optimisticUpdate.content_value).slice(4),
       ).attestedHeader.beacon.slot,
       'successfully stored and retrieved optimistic update',
     )
@@ -211,8 +242,8 @@ describe('API tests', async () => {
 
   it('stores a LightClientUpdate locally', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
-    await protocol.storeUpdateRange(fromHexString(updatesByRange.content_value))
-    const storedUpdate = await protocol.findContentLocally(fromHexString('0x040330'))
+    await protocol.storeUpdateRange(hexToBytes(updatesByRange.content_value))
+    const storedUpdate = await protocol.findContentLocally(hexToBytes('0x040330'))
     const deserializedUpdate = ssz.capella.LightClientUpdate.deserialize(storedUpdate!.slice(4))
     assert.equal(
       deserializedUpdate.attestedHeader.beacon.slot,
@@ -220,7 +251,7 @@ describe('API tests', async () => {
       'retrieved a single light client update by period number from db',
     )
 
-    const range = await protocol.findContentLocally(fromHexString(updatesByRange.content_key))
+    const range = await protocol.findContentLocally(hexToBytes(updatesByRange.content_key))
     const retrievedRange = await LightClientUpdatesByRange.deserialize(range!)
     const update1 = ssz.capella.LightClientUpdate.deserialize(retrievedRange[0].slice(4))
     assert.equal(
@@ -236,11 +267,11 @@ describe('API tests', async () => {
     await protocol.store(
       BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
       updatesByRange.content_key,
-      fromHexString(updatesByRange.content_value),
+      hexToBytes(updatesByRange.content_value),
     )
 
     const reconstructedRange = await protocol['constructLightClientRange'](
-      fromHexString(updatesByRange.content_key).slice(1),
+      hexToBytes(updatesByRange.content_key).slice(1),
     )
     assert.equal(
       toHexString(reconstructedRange).slice(0, 20),
