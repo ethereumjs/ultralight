@@ -7,8 +7,8 @@ import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { shortId } from '../../util/util.js'
 import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 import {
-  MainnetGenesisValidatorsRoot,
   BeaconLightClientNetworkContentType,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
@@ -17,24 +17,32 @@ import {
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
+  OfferMessage,
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { bytesToInt, concatBytes, padToEven } from '@ethereumjs/util'
 import { RequestCode, FoundContent, randUint16, MAX_PACKET_SIZE } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
-import { computeSyncPeriodAtSlot } from './util.js'
+import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { Lightclient } from '@lodestar/light-client'
+import { UltralightTransport } from './ultralightTransport.js'
+
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
   beaconConfig: BeaconConfig
   protocolName = 'BeaconLightClientNetwork'
   logger: Debugger
+  lightClient: Lightclient | undefined
+
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
 
-    const genesisRoot = fromHexString(MainnetGenesisValidatorsRoot)
+    // This config is used to identify the Beacon Chain fork any given light client update is from
+    const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
+
     this.protocolId = ProtocolId.BeaconLightClientNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5))
       .extend('Portal')
@@ -46,6 +54,48 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         await this.store(contentType, hash, value)
       },
     )
+  }
+
+  /**
+   * Initializes an Lodestar light client using a trusted beacon block root
+   * @param blockRoot trusted beacon block root within the weak subjectivity period for retrieving
+   * the `lightClientBootStrap`
+   */
+  public initializeLightClient = async (blockRoot: string) => {
+    // Setup the Lodestar light client logger using our debug logger
+    const lcLogger = this.logger.extend('LightClient')
+
+    const lcLoggerError = lcLogger.extend('ERROR')
+    const lcLoggerWarn = lcLogger.extend('WARN')
+    const lcLoggerInfo = lcLogger.extend('INFO')
+    const lcLoggerDebug = lcLogger.extend('DEBUG')
+
+    // This call instantiates a Lodestar light client that will sync the Beacon Chain using the light client sync process
+    this.lightClient = await Lightclient.initializeFromCheckpointRoot({
+      config: this.beaconConfig,
+      genesisData: genesisData.mainnet,
+      transport: new UltralightTransport(this),
+      checkpointRoot: fromHexString(blockRoot),
+      logger: {
+        error: (msg, context, error) => {
+          msg && lcLoggerError(msg)
+          context && lcLoggerError(context)
+          error && lcLoggerError(error)
+        },
+        warn: (msg, context) => {
+          msg && lcLoggerWarn(msg)
+          context && lcLoggerWarn(context)
+        },
+        info: (msg, context) => {
+          msg && lcLoggerInfo(msg)
+          context && lcLoggerInfo(context)
+        },
+        debug: (msg, context) => {
+          msg && lcLoggerDebug(msg)
+          context && lcLoggerDebug(context)
+        },
+      },
+    })
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
@@ -268,6 +318,12 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     }
   }
 
+  /**
+   * The generalized `store` method used to put data into the DB
+   * @param contentType the content type being stored (defined in @link { BeaconLightClientNetworkContentType })
+   * @param contentKey the network level content key formatted as a prefixed hex string
+   * @param value the Uint8Array corresponding to the SSZ serialized value being stored
+   */
   public store = async (
     contentType: BeaconLightClientNetworkContentType,
     contentKey: string,
@@ -275,6 +331,8 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   ): Promise<void> => {
     if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
       await this.storeUpdateRange(value)
+      // We need to call `storeUpdateRange` to ensure we store each individual
+      // light client update separately so we can construct any range
     }
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
@@ -286,7 +344,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   /**
    * Specialized store method for the LightClientUpdatesByRange object since this object is not stored
    * directly in the DB but constructed from one or more Light Client Updates which are stored directly
-   * @param range an SSZ serialized LightClientUpdatesByRange object as defined in the Portal Network Specs
+   * @param range - an SSZ serialized LightClientUpdatesByRange object as defined in the Portal Network Specs
    */
   public storeUpdateRange = async (range: Uint8Array) => {
     const deserializedRange = LightClientUpdatesByRange.deserialize(range)
@@ -299,8 +357,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     }
   }
 
+  // TODO: Move this to util and detach from
   /**
-   *
+   * This is a helper method for computing the key used to store individual LightClientUpdates in the DB
    * @param update An ssz serialized LightClientUpdate as a Uint8Array for a given sync period
    * or the number corresponding to the sync period update desired
    * @returns the hex prefixed string version of the Light Client Update storage key
@@ -327,13 +386,14 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   /**
    * Internal helper called by `findContentLocally` to construct the LightClientUpdatesByRange object as defined in the
    * Portal Network Specs
-   * @param contentKey a raw LightClientUpdatesByRange key as defined in the Portal Network Specs (not the content key equivalent)
+   * @param contentKey a raw LightClientUpdatesByRange key as defined in the Portal Network Specs (not the content key prefixed with
+   * the content type of 1)
    * @returns an SSZ serialized LightClientUpdatesByRange object as a Uint8Array
    */
   private constructLightClientRange = async (contentKey: Uint8Array) => {
     const rangeKey = LightClientUpdatesByRangeKey.deserialize(contentKey)
 
-    if (rangeKey.count > 128) {
+    if (rangeKey.count > 128n) {
       throw new Error('cannot request more than 128 updates')
     }
     const count = Number(rangeKey.count)
@@ -348,5 +408,69 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       range.push(fromHexString(update))
     }
     return LightClientUpdatesByRange.serialize(range)
+  }
+
+  /**
+   * We override the BaseProtocol `handleOffer` since content gossip for the Beacon Light client network
+   * assumes that all node have all of hthe
+   * @param src OFFERing node's address
+   * @param requestId request ID passed in OFFER message
+   * @param msg OFFER message containing a list of offered content keys
+   */
+  override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+    this.logger.extend('OFFER')(
+      `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`,
+    )
+    try {
+      if (msg.contentKeys.length > 0) {
+        let offerAccepted = false
+
+        const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
+
+        for (let x = 0; x < msg.contentKeys.length; x++) {
+          const key = msg.contentKeys[x]
+          switch (key[0]) {
+            case BeaconLightClientNetworkContentType.LightClientBootstrap: {
+              try {
+                // TODO: Verify the offered bootstrap isn't too old before accepting
+                await this.get(ProtocolId.BeaconLightClientNetwork, toHexString(key))
+                this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
+              } catch (err) {
+                offerAccepted = true
+                contentIds[x] = true
+                this.logger.extend('OFFER')(
+                  `Found some interesting content from ${shortId(src.nodeId)}`,
+                )
+              }
+              break
+            }
+            case BeaconLightClientNetworkContentType.LightClientFinalityUpdate: {
+              break
+            }
+            case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate: {
+              break
+            }
+            case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
+              break
+            }
+          }
+        }
+        if (offerAccepted) {
+          this.logger(`Accepting an OFFER`)
+          const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
+          this.logger(toHexString(msg.contentKeys[0]))
+          this.sendAccept(src, requestId, contentIds, desiredKeys)
+        } else {
+          this.logger(`Declining an OFFER since no interesting content`)
+          this.sendResponse(src, requestId, new Uint8Array())
+        }
+      } else {
+        this.logger(`Offer Message Has No Content`)
+        // Send empty response if something goes wrong parsing content keys
+        this.sendResponse(src, requestId, new Uint8Array())
+      }
+    } catch {
+      this.logger(`Error Processing OFFER msg`)
+    }
   }
 }

@@ -386,7 +386,7 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  protected handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`,
     )
@@ -436,7 +436,7 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private sendAccept = async (
+  protected sendAccept = async (
     src: INodeAddress,
     requestId: bigint,
     desiredContentAccepts: boolean[],
