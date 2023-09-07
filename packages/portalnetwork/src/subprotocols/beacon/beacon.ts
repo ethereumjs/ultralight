@@ -39,8 +39,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
 
+    // This config is used to identify the Beacon Chain fork any given light client update is from
     const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
+
     this.protocolId = ProtocolId.BeaconLightClientNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5))
       .extend('Portal')
@@ -60,12 +62,15 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    * the `lightClientBootStrap`
    */
   public initializeLightClient = async (blockRoot: string) => {
+    // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')
 
     const lcLoggerError = lcLogger.extend('ERROR')
     const lcLoggerWarn = lcLogger.extend('WARN')
     const lcLoggerInfo = lcLogger.extend('INFO')
     const lcLoggerDebug = lcLogger.extend('DEBUG')
+
+    // This call instantiates a Lodestar light client that will sync the Beacon Chain using the light client sync process
     this.lightClient = await Lightclient.initializeFromCheckpointRoot({
       config: this.beaconConfig,
       genesisData: genesisData.mainnet,
@@ -313,6 +318,12 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     }
   }
 
+  /**
+   * The generalized `store` method used to put data into the DB
+   * @param contentType the content type being stored (defined in @link { BeaconLightClientNetworkContentType })
+   * @param contentKey the network level content key formatted as a prefixed hex string
+   * @param value the Uint8Array corresponding to the SSZ serialized value being stored
+   */
   public store = async (
     contentType: BeaconLightClientNetworkContentType,
     contentKey: string,
@@ -320,6 +331,8 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   ): Promise<void> => {
     if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
       await this.storeUpdateRange(value)
+      // We need to call `storeUpdateRange` to ensure we store each individual
+      // light client update separately so we can construct any range
     }
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
@@ -331,7 +344,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   /**
    * Specialized store method for the LightClientUpdatesByRange object since this object is not stored
    * directly in the DB but constructed from one or more Light Client Updates which are stored directly
-   * @param range an SSZ serialized LightClientUpdatesByRange object as defined in the Portal Network Specs
+   * @param range - an SSZ serialized LightClientUpdatesByRange object as defined in the Portal Network Specs
    */
   public storeUpdateRange = async (range: Uint8Array) => {
     const deserializedRange = LightClientUpdatesByRange.deserialize(range)
@@ -344,8 +357,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     }
   }
 
+  // TODO: Move this to util and detach from
   /**
-   *
+   * This is a helper method for computing the key used to store individual LightClientUpdates in the DB
    * @param update An ssz serialized LightClientUpdate as a Uint8Array for a given sync period
    * or the number corresponding to the sync period update desired
    * @returns the hex prefixed string version of the Light Client Update storage key
