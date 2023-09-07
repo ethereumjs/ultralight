@@ -216,9 +216,11 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
 })
 
 describe('Header With Proof serialization/deserialization tests', async () => {
-  const masterAccumulator = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
-    encoding: 'hex',
-  })
+  const masterAccumulator =
+    '0x' +
+    readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
+      encoding: 'hex',
+    })
   const _historicalEpochs = HistoricalEpochsType.deserialize(hexToBytes(masterAccumulator).slice(4))
   const MasterAccumulatorType = new ContainerType({
     historicalEpochs: HistoricalEpochsType,
@@ -234,10 +236,12 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     )
   })
 
-  const actualEpoch = readFileSync(
-    './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
-    { encoding: 'hex' },
-  )
+  const actualEpoch =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
+      { encoding: 'hex' },
+    )
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     supportedProtocols: [ProtocolId.HistoryNetwork],

@@ -19,13 +19,15 @@ describe('Header Record Proof tests', () => {
   const accumulatorRaw = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
     encoding: 'hex',
   })
-  const accumulator = accumulatorRaw.slice(8)
-  const epoch_hex = readFileSync(
-    './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-    {
-      encoding: 'hex',
-    },
-  )
+  const accumulator = '0x' + accumulatorRaw.slice(8)
+  const epoch_hex =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+      {
+        encoding: 'hex',
+      },
+    )
   const block1000 = require('../../testData/testBlock1000.json')
   const headerRecord1000 = {
     blockHash: '0x5b4590a9905fa1c9cc273f32e6dc63b4c512f0ee14edc6fa41c26b416a7b5d58',

@@ -26,10 +26,12 @@ const privateKeys = [
 ]
 
 const testBlockData = require('../testData/testBlocks.json')
-const epoch25 = readFileSync(
-  './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
-  { encoding: 'hex' },
-)
+const epoch25 =
+  '0x' +
+  readFileSync(
+    './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
+    { encoding: 'hex' },
+  )
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
   return Block.fromRLPSerializedBlock(hexToBytes(testBlock.rlp), {
     setHardfork: true,

@@ -78,10 +78,12 @@ describe('history Protocol FINDCONTENT/FOUNDCONTENT message handlers', async () 
 
 describe('store -- Headers and Epoch Accumulators', async () => {
   it('Should store and retrieve block header from DB', async () => {
-    const epoch = readFileSync(
-      './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-      { encoding: 'hex' },
-    )
+    const epoch =
+      '0x' +
+      readFileSync(
+        './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+        { encoding: 'hex' },
+      )
     const node = await PortalNetwork.create({
       transport: TransportLayer.WEB,
       supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -146,10 +148,12 @@ describe('store -- Block Bodies and Receipts', async () => {
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(hexToBytes(serializedBlock.blockRlp))
   const block = Block.fromValuesArray(blockRlp as BlockBytes, { setHardfork: true })
-  const epoch = readFileSync(
-    './test/subprotocols/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
-    { encoding: 'hex' },
-  )
+  const epoch =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
+      { encoding: 'hex' },
+    )
   const epochHash = '0x987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa'
 
   await protocol.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
@@ -201,10 +205,12 @@ describe('store -- Block Bodies and Receipts', async () => {
 
 describe('Header Proof Tests', async () => {
   const _epoch1Hash = '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218'
-  const _epochRaw = readFileSync(
-    './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-    { encoding: 'hex' },
-  )
+  const _epochRaw =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+      { encoding: 'hex' },
+    )
   const _epoch1 = EpochAccumulator.deserialize(hexToBytes(_epochRaw))
   const node = await PortalNetwork.create({
     transport: TransportLayer.WEB,
