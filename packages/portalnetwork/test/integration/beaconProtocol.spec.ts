@@ -104,7 +104,7 @@ describe('Find Content tests', () => {
       protocol2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
     })
   })
-  it.only('should find optimistic update', async () => {
+  it('should find optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
@@ -145,6 +145,29 @@ describe('Find Content tests', () => {
     const protocol2 = node2.protocols.get(
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
+
+    // Stub out light client
+    protocol1.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
+    protocol2.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
+
     await protocol1!.sendPing(protocol2?.enr!.toENR())
     assert.equal(
       protocol1?.routingTable.getWithPending(
@@ -161,7 +184,10 @@ describe('Find Content tests', () => {
 
     const res = await protocol2.sendFindContent(
       node1.discv5.enr.nodeId,
-      hexToBytes(optimisticUpdate.content_key),
+      concatBytes(
+        new Uint8Array([3]),
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
     )
 
     assert.equal(
@@ -169,7 +195,13 @@ describe('Find Content tests', () => {
       optimisticUpdate.content_value,
       'retrieved content for optimistic update from network',
     )
-    const content = await protocol2.findContentLocally(hexToBytes(optimisticUpdate.content_key))
+    const content = await protocol2.findContentLocally(
+      concatBytes(
+        new Uint8Array([3]),
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
+    )
+
     assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
     assert.equal(
       toHexString(content!),

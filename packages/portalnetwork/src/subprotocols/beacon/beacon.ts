@@ -111,7 +111,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
         if (
           this.lightClient !== undefined &&
-          key.optimisticSlot !== BigInt(this.lightClient.getHead().beacon.slot)
+          key.optimisticSlot === BigInt(this.lightClient.getHead().beacon.slot)
         ) {
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
@@ -136,6 +136,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       default:
         value = await this.retrieve(toHexString(contentKey))
     }
+
     return value instanceof Uint8Array ? value : hexToBytes(value ?? '0x')
   }
 
