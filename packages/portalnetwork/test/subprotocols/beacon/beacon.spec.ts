@@ -56,7 +56,11 @@ describe('portal network spec test vectors', () => {
   })
 
   it('deserializes optimistic update key', () => {
-    assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimistic update key')
+    assert.equal(
+      optimisticUpdateKey.optimisticSlot,
+      0n,
+      'correctly deserialized optimistic update key',
+    )
   })
 
   const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_value)
@@ -77,7 +81,7 @@ describe('portal network spec test vectors', () => {
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).zero,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalizedSlot,
       0n,
       'deserialized finality update key',
     )

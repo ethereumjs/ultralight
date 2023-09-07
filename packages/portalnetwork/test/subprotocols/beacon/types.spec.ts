@@ -47,7 +47,11 @@ describe('Beacon network type tests using portal network spec test vectors', () 
   })
 
   it('deserializes optimistic update key', () => {
-    assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimstic update key')
+    assert.equal(
+      optimisticUpdateKey.optimisticSlot,
+      0n,
+      'correctly deserialized optimstic update key',
+    )
   })
 
   const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_value)
@@ -68,7 +72,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).zero,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalizedSlot,
       0n,
       'deserialized finality update key',
     )
