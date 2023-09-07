@@ -102,7 +102,7 @@ it('gossip test', async () => {
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
-    '0x' + epoch25,
+    epoch25,
     'epoch 25 added',
   )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
@@ -194,7 +194,7 @@ it('FindContent', async () => {
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
-    '0x' + epoch25,
+    epoch25,
     'epoch 25 added',
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
@@ -263,7 +263,7 @@ it('eth_getBlockByHash', async () => {
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
-    '0x' + epoch25,
+    epoch25,
     'epoch 25 added',
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
