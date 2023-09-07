@@ -740,4 +740,13 @@ export abstract class BaseProtocol extends EventEmitter {
     }
     return accepted
   }
+
+  public async retrieve(contentKey: string): Promise<string | undefined> {
+    try {
+      const content = await this.get(this.protocolId, contentKey)
+      return content
+    } catch {
+      this.logger('Error retrieving content from DB')
+    }
+  }
 }

@@ -197,15 +197,6 @@ export class HistoryProtocol extends BaseProtocol {
     this.logger(`${HistoryNetworkContentType[contentType]} added for ${hashKey}`)
   }
 
-  public async retrieve(contentKey: string): Promise<string | undefined> {
-    try {
-      const content = await this.get(this.protocolId, contentKey)
-      return content
-    } catch {
-      this.logger(`Error retrieving ${contentKey} from DB`)
-    }
-  }
-
   public async saveReceipts(block: Block) {
     this.logger.extend('BLOCK_BODY')(`added for block #${block.header.number}`)
     const receipts = await saveReceipts(block)

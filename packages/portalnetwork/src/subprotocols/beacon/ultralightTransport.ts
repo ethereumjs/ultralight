@@ -1,16 +1,19 @@
 import { LightClientTransport } from '@lodestar/light-client/transport'
+import { getCurrentSlot } from '@lodestar/light-client/utils'
 import { ForkName } from '@lodestar/params'
 import { allForks, ssz } from '@lodestar/types'
 import { BeaconLightClientNetwork } from './beacon.js'
 import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
+  LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from './types.js'
 import { fromHexString } from '@chainsafe/ssz'
 import { concatBytes } from '@ethereumjs/util'
+import { genesisData } from '@lodestar/config/networks'
 
 export class UltralightTransport implements LightClientTransport {
   protocol: BeaconLightClientNetwork
@@ -64,7 +67,11 @@ export class UltralightTransport implements LightClientTransport {
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
-        LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
+        LightClientOptimisticUpdateKey.serialize({
+          optimisticSlot: BigInt(
+            getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
+          ),
+        }),
       ),
     )
     if (decoded !== undefined) {
@@ -73,13 +80,15 @@ export class UltralightTransport implements LightClientTransport {
       optimisticUpdate = (ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
         (decoded.value as Uint8Array).slice(4),
       )
-      // TODO: Compare this update to the current optimistic update found in the DB and see which is better
+
       return {
         version: forkname,
         data: optimisticUpdate,
       }
     }
-    // TODO: Determine best method for finding "best" update
+    // TODO: Determine if there is a better process for handling where no update is retrieved
+    // since Portal Network only returns optimistic updates by slot (maybe backstep one slot at a time until one
+    // is retrieved?)
     throw new Error('optimistic update could not be retrieved')
   }
   async getFinalityUpdate(): Promise<{
@@ -93,8 +102,8 @@ export class UltralightTransport implements LightClientTransport {
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
-        LightClientOptimisticUpdateKey.serialize({ zero: 0n }),
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
+        LightClientFinalityUpdateKey.serialize({ finalizedSlot: 0n }),
       ),
     )
     if (decoded !== undefined) {
@@ -103,7 +112,7 @@ export class UltralightTransport implements LightClientTransport {
       finalityUpdate = (ssz as any)[forkname].LightClientfinalityUpdate.deserialize(
         (decoded.value as Uint8Array).slice(4),
       )
-      // TODO: Compare this update to the current finality update found in the DB and see which is better
+
       return {
         version: forkname,
         data: finalityUpdate,

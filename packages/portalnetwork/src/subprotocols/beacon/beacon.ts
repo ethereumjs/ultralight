@@ -20,7 +20,7 @@ import {
   OfferMessage,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { bytesToInt, concatBytes, padToEven } from '@ethereumjs/util'
+import { bytesToInt, concatBytes, intToHex, padToEven } from '@ethereumjs/util'
 import { RequestCode, FoundContent, randUint16, MAX_PACKET_SIZE } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
@@ -100,21 +100,27 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     let value
-    if (contentKey[0] === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
-      value = await this.constructLightClientRange(contentKey.slice(1))
-    } else {
-      value = fromHexString((await this.retrieve(toHexString(contentKey))) ?? '0x')
-    }
-    return value
-  }
 
-  public async retrieve(contentKey: string): Promise<string | undefined> {
-    try {
-      const content = await this.get(this.protocolId, contentKey)
-      return content
-    } catch {
-      this.logger('Error retrieving content from DB')
+    switch (contentKey[0]) {
+      case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+        value = await this.constructLightClientRange(contentKey.slice(1))
+        break
+      case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+        // We only store the most recent optimistic update so we don't use the full content key here
+        value = await this.retrieve(
+          intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+        )
+        break
+      case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+        // We only store the most recent finality update so we don't use the full content key here
+        value = await this.retrieve(
+          intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+        )
+        break
+      default:
+        value = await this.retrieve(toHexString(contentKey))
     }
+    return value instanceof Uint8Array ? value : fromHexString(value ?? '0x')
   }
 
   public sendFindContent = async (
@@ -329,15 +335,37 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     contentKey: string,
     value: Uint8Array,
   ): Promise<void> => {
-    if (contentType === BeaconLightClientNetworkContentType.LightClientUpdatesByRange) {
-      await this.storeUpdateRange(value)
-      // We need to call `storeUpdateRange` to ensure we store each individual
-      // light client update separately so we can construct any range
+    switch (contentType) {
+      case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+        // We need to call `storeUpdateRange` to ensure we store each individual
+        // light client update separately so we can construct any range
+        await this.storeUpdateRange(value)
+        break
+      case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+        // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
+        // optimistic update and this ensures we don't accidentally store multiple
+        await this.put(
+          this.protocolId,
+          intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+          toHexString(value),
+        )
+        break
+      case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+        // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
+        // finality update and this ensures we don't accidentally store multiple
+        await this.put(
+          this.protocolId,
+          intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+          toHexString(value),
+        )
+        break
+      default:
+        await this.put(this.protocolId, contentKey, toHexString(value))
     }
+
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
     )
-    await this.put(this.protocolId, contentKey, toHexString(value))
     this.emit('ContentAdded', contentKey, contentType, toHexString(value))
   }
 
@@ -357,7 +385,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     }
   }
 
-  // TODO: Move this to util and detach from
+  // TODO: Move this to util and detach from the protocol
   /**
    * This is a helper method for computing the key used to store individual LightClientUpdates in the DB
    * @param update An ssz serialized LightClientUpdate as a Uint8Array for a given sync period
