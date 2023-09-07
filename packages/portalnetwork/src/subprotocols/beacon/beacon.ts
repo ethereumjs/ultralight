@@ -124,7 +124,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
         if (
           this.lightClient !== undefined &&
-          key.finalizedSlot !== BigInt(this.lightClient.getFinalized().beacon.slot)
+          key.finalizedSlot === BigInt(this.lightClient.getFinalized().beacon.slot)
         ) {
           // We only store the most recent finality update so only retrieve the optimistic update if the slot
           // in the key matches the current finalized slot known to our light client

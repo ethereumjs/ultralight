@@ -19,7 +19,7 @@ import { PortalNetwork, ProtocolId, TransportLayer } from '../../../src/index.js
 import type { BeaconLightClientNetwork } from '../../../src/subprotocols/beacon/index.js'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
-import { hexToBytes } from '@ethereumjs/util'
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
 
 const specTestVectors = require('./specTestVectors.json')
 const config = createBeaconConfig(
@@ -177,8 +177,22 @@ describe('API tests', async () => {
       finalityUpdate.content_key,
       hexToBytes(finalityUpdate.content_value),
     )
+
+    protocol.lightClient = {
+      //@ts-ignore
+      getFinalized: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
     const retrievedFinalityUpdate = await protocol.findContentLocally(
-      hexToBytes(finalityUpdate.content_key),
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
+        LightClientFinalityUpdateKey.serialize({ finalizedSlot: 6718463n }),
+      ),
     )
 
     assert.equal(
@@ -198,8 +212,22 @@ describe('API tests', async () => {
       optimisticUpdate.content_key,
       hexToBytes(optimisticUpdate.content_value),
     )
+
+    protocol.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
     const retrievedOptimisticUpdate = await protocol.findContentLocally(
-      hexToBytes(optimisticUpdate.content_key),
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
     )
 
     assert.equal(
