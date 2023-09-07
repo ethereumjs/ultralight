@@ -29,5 +29,9 @@ export const LightClientUpdatesByRangeKey = new ContainerType({
   startPeriod: new UintBigintType(8),
   count: new UintBigintType(8),
 })
-export const LightClientFinalityUpdateKey = new ContainerType({ zero: new UintBigintType(8) })
-export const LightClientOptimisticUpdateKey = new ContainerType({ zero: new UintBigintType(8) })
+export const LightClientFinalityUpdateKey = new ContainerType({
+  finalizedSlot: new UintBigintType(8),
+})
+export const LightClientOptimisticUpdateKey = new ContainerType({
+  optimisticSlot: new UintBigintType(8),
+})
