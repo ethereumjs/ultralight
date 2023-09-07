@@ -6,12 +6,12 @@ import {
   UtpSocket,
   UtpSocketType,
   HeaderExtension,
-  fromHexString,
   toHexString,
   Packet,
   ConnectionState,
   ProtocolId,
 } from '../../../src/index.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 const sampleSize = 50000
 const content = randomBytes(sampleSize)
@@ -201,7 +201,7 @@ describe('createPacket()', () => {
   it('DATA', () => {
     const write_data = write.createPacket({
       pType: PacketType.ST_DATA,
-      payload: fromHexString('0x1234'),
+      payload: hexToBytes('0x1234'),
     })
     assert.equal(
       write_data.header.pType,
@@ -222,11 +222,7 @@ describe('createPacket()', () => {
       '0x1234',
       'DATA Packet payload correctly set to undefined',
     )
-    assert.equal(
-      write_data.size,
-      20 + fromHexString('0x1234').length,
-      'DATA Packet size should be 20',
-    )
+    assert.equal(write_data.size, 20 + hexToBytes('0x1234').length, 'DATA Packet size should be 20')
   })
 })
 
@@ -250,7 +246,7 @@ describe('sendPacket()', async () => {
     assert.equal(read.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
     await test(read, read.sendSynAckPacket, PacketType.ST_STATE)
     assert.equal(read.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
-    await test(read, read.sendDataPacket, PacketType.ST_DATA, fromHexString('0x1234'))
+    await test(read, read.sendDataPacket, PacketType.ST_DATA, hexToBytes('0x1234'))
     assert.equal(read.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
     await test(read, read.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
     await test(read, read.sendFinPacket, PacketType.ST_FIN)
@@ -259,7 +255,7 @@ describe('sendPacket()', async () => {
     assert.equal(write.state, ConnectionState.SynSent, 'Socket state correctly set to SYN_SENT')
     await test(write, write.sendSynAckPacket, PacketType.ST_STATE)
     assert.equal(write.state, ConnectionState.SynRecv, 'Socket state correctly set to SYN_RECV')
-    await test(write, write.sendDataPacket, PacketType.ST_DATA), fromHexString('0x1234')
+    await test(write, write.sendDataPacket, PacketType.ST_DATA), hexToBytes('0x1234')
     assert.equal(write.state, ConnectionState.Connected, 'Socket state correctly set to CONNECTED')
     await test(write, write.sendAckPacket, PacketType.ST_STATE, Uint8Array.from([1, 0, 0, 128]))
     await test(write, write.sendFinPacket, PacketType.ST_FIN)
@@ -293,7 +289,7 @@ describe('handle()', async () => {
       read,
       read.handleDataPacket,
       PacketType.ST_STATE,
-      write.createPacket({ pType: PacketType.ST_DATA, payload: fromHexString('0x1234') }),
+      write.createPacket({ pType: PacketType.ST_DATA, payload: hexToBytes('0x1234') }),
     )
     assert.equal(read.state, ConnectionState.Connected, 'Socket state updated to CONNECTED')
     await test(

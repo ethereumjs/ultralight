@@ -1,4 +1,3 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import debug, { Debugger } from 'debug'
 import {
   ContentMessageType,
@@ -14,6 +13,7 @@ import {
   decodeReceipts,
   PortalNetwork,
   FoundContent,
+  toHexString,
 } from '../../index.js'
 import { ProtocolId } from '../types.js'
 import { ETH } from './eth_module.js'
@@ -35,7 +35,7 @@ import {
   SingleProofInput,
 } from '@chainsafe/persistent-merkle-tree'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToInt } from '@ethereumjs/util'
+import { bytesToInt, hexToBytes } from '@ethereumjs/util'
 
 export class HistoryProtocol extends BaseProtocol {
   protocolId: ProtocolId.HistoryNetwork
@@ -64,7 +64,7 @@ export class HistoryProtocol extends BaseProtocol {
    */
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const value = await this.retrieve(toHexString(contentKey))
-    return value ? fromHexString(value) : fromHexString('0x')
+    return value ? hexToBytes(value) : hexToBytes('0x')
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
@@ -87,7 +87,7 @@ export class HistoryProtocol extends BaseProtocol {
     }
     this.put(
       this.protocolId,
-      getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(contentHash)),
+      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
       toHexString(value),
     )
   }
@@ -183,11 +183,7 @@ export class HistoryProtocol extends BaseProtocol {
         this.logger(`Error validating header: ${(err as any).message}`)
       }
     } else {
-      this.put(
-        this.protocolId,
-        getContentKey(contentType, fromHexString(hashKey)),
-        toHexString(value),
-      )
+      this.put(this.protocolId, getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
     }
     this.emit('ContentAdded', hashKey, contentType, toHexString(value))
     if (this.routingTable.values().length > 0) {
@@ -205,7 +201,7 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public async addBlockBody(value: Uint8Array, hashKey: string) {
-    const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(hashKey))
+    const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
@@ -214,20 +210,17 @@ export class HistoryProtocol extends BaseProtocol {
     try {
       const headerContentKey = getContentKey(
         HistoryNetworkContentType.BlockHeader,
-        fromHexString(hashKey),
+        hexToBytes(hashKey),
       )
       const headerWith = await this.retrieve(headerContentKey)
-      const hexHeader = BlockHeaderWithProof.deserialize(fromHexString(headerWith!)).header
+      const hexHeader = BlockHeaderWithProof.deserialize(hexToBytes(headerWith!)).header
       // Verify we can construct a valid block from the header and body provided
       block = reassembleBlock(hexHeader, value)
     } catch {
       this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
-    const bodyContentKey = getContentKey(
-      HistoryNetworkContentType.BlockBody,
-      fromHexString(hashKey),
-    )
+    const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (block instanceof Block) {
       this.put(this.protocolId, bodyContentKey, toHexString(value))
       if (block.transactions.length > 0) {
@@ -249,7 +242,7 @@ export class HistoryProtocol extends BaseProtocol {
       getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash),
     )
     try {
-      const accumulator = EpochAccumulator.deserialize(fromHexString(epoch!))
+      const accumulator = EpochAccumulator.deserialize(hexToBytes(epoch!))
       const tree = EpochAccumulator.value_toTree(accumulator)
       const proofInput: SingleProofInput = {
         type: ProofType.single,
@@ -272,7 +265,7 @@ export class HistoryProtocol extends BaseProtocol {
       type: ProofType.single,
       gindex: blockNumberToGindex(blockNumber),
       witnesses: witnesses,
-      leaf: fromHexString(blockHash),
+      leaf: hexToBytes(blockHash),
     }
     EpochAccumulator.createFromProof(proof, target)
     return true

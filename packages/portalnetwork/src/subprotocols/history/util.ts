@@ -1,5 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import {
   BlockBodyContent,
   BlockBodyContentType,
@@ -20,6 +20,7 @@ import {
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
 import { historicalEpochs } from './data/epochHashes.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -47,7 +48,7 @@ export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint
   return encodedKey
 }
 export const getContentId = (contentType: HistoryNetworkContentType, hash: string) => {
-  const encodedKey = fromHexString(getContentKey(contentType, fromHexString(hash)))
+  const encodedKey = hexToBytes(getContentKey(contentType, hexToBytes(hash)))
 
   return toHexString(digest(encodedKey))
 }
@@ -117,7 +118,7 @@ export const addRLPSerializedBlock = async (
   protocol: HistoryProtocol,
   witnesses?: Witnesses,
 ) => {
-  const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
+  const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
@@ -153,7 +154,7 @@ export const addRLPSerializedBlock = async (
     HistoryNetworkContentType.BlockBody,
     toHexString(header.hash()),
     sszEncodeBlockBody(
-      Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
+      Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
         setHardfork: true,
       }),
     ),
@@ -166,7 +167,7 @@ export const addRLPSerializedBlock = async (
 
 export const blockNumberToGindex = (blockNumber: bigint): bigint => {
   const randArray = new Array(8192).fill({
-    blockHash: fromHexString('0xa66afd523336ddf6e71567e366c7ef98aa529644915c30a3802eac73c2c2f3a6'),
+    blockHash: hexToBytes('0xa66afd523336ddf6e71567e366c7ef98aa529644915c30a3802eac73c2c2f3a6'),
     totalDifficulty: 1n,
   })
   const epochAcc = EpochAccumulator.value_toTree(randArray)
@@ -182,7 +183,7 @@ export const blockNumberToLeafIndex = (blockNumber: bigint) => {
   return (Number(blockNumber) % 8192) * 2
 }
 export const epochRootByIndex = (index: number) => {
-  return fromHexString(historicalEpochs[index])
+  return hexToBytes(historicalEpochs[index])
 }
 export const epochRootByBlocknumber = (blockNumber: bigint) => {
   return epochRootByIndex(epochIndexByBlocknumber(blockNumber))

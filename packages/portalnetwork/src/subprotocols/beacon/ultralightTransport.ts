@@ -11,8 +11,8 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from './types.js'
-import { fromHexString } from '@chainsafe/ssz'
-import { concatBytes } from '@ethereumjs/util'
+
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 
 export class UltralightTransport implements LightClientTransport {
@@ -135,7 +135,7 @@ export class UltralightTransport implements LightClientTransport {
         peer.nodeId,
         concatBytes(
           new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
-          LightClientBootstrapKey.serialize({ blockHash: fromHexString(blockRoot) }),
+          LightClientBootstrapKey.serialize({ blockHash: hexToBytes(blockRoot) }),
         ),
       )
       if (decoded !== undefined) {
@@ -160,7 +160,7 @@ export class UltralightTransport implements LightClientTransport {
   ): void {
     this.protocol.on('ContentAdded', (contentKey, contentType, content) => {
       if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
-        const value = fromHexString(content)
+        const value = hexToBytes(content)
         const forkhash = value.slice(0, 4) as Uint8Array
         const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
         handler(
@@ -174,7 +174,7 @@ export class UltralightTransport implements LightClientTransport {
   onFinalityUpdate(handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
     this.protocol.on('ContentAdded', (contentKey, contentType, content) => {
       if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
-        const value = fromHexString(content)
+        const value = hexToBytes(content)
         const forkhash = value.slice(0, 4) as Uint8Array
         const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
         handler(

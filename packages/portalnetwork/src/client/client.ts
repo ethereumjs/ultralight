@@ -9,7 +9,7 @@ import {
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { BeaconLightClientNetwork, StateProtocol, ProtocolId } from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
@@ -30,6 +30,7 @@ import { LRUCache } from 'lru-cache'
 import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
+import { hexToBytes } from '@ethereumjs/util'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   discv5: Discv5
@@ -66,10 +67,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const prevPrivateKey = await opts.db.get('privateKey')
       const prevPublicKey = await opts.db.get('publicKey')
 
-      config.peerId = await peerIdFromKeys(
-        fromHexString(prevPublicKey),
-        fromHexString(prevPrivateKey),
-      )
+      config.peerId = await peerIdFromKeys(hexToBytes(prevPublicKey), hexToBytes(prevPrivateKey))
 
       config.enr = SignableENR.decodeTxt(prevEnrString, createKeypairFromPeerId(config.peerId))
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
@@ -387,7 +385,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const res = await this.discv5.sendTalkReq(
         nodeAddr,
         Buffer.from(payload),
-        fromHexString(messageProtocol),
+        hexToBytes(messageProtocol),
       )
       return res
     } catch (err: any) {

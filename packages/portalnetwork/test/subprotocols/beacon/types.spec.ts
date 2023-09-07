@@ -1,7 +1,7 @@
 import { describe, it, assert } from 'vitest'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { ssz } from '@lodestar/types'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
@@ -12,16 +12,17 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from '../../../src/subprotocols/beacon/types.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 const specTestVectors = require('./specTestVectors.json')
-const genesisRoot = fromHexString(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root
+const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root
 const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
 describe('Beacon network type tests using portal network spec test vectors', () => {
-  const serializedOptimistincUpdate = fromHexString(
+  const serializedOptimistincUpdate = hexToBytes(
     specTestVectors.optimisticUpdate['6718463'].content_value,
   )
-  const serializedOptimistincUpdateKey = fromHexString(
+  const serializedOptimistincUpdateKey = hexToBytes(
     specTestVectors.optimisticUpdate['6718463'].content_key,
   )
   const forkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
@@ -49,10 +50,10 @@ describe('Beacon network type tests using portal network spec test vectors', () 
     assert.equal(optimisticUpdateKey.zero, 0n, 'correctly deserialized optimstic update key')
   })
 
-  const finalityUpdate = fromHexString(specTestVectors.finalityUpdate['6718463'].content_value)
-  const finalityUpdateKey = fromHexString(
-    specTestVectors.finalityUpdate['6718463'].content_key,
-  ).slice(1)
+  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_value)
+  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_key).slice(
+    1,
+  )
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
     finalityUpdate.slice(4),
   )
@@ -74,9 +75,9 @@ describe('Beacon network type tests using portal network spec test vectors', () 
   })
   const bootstrap = specTestVectors.bootstrap['6718368']
   const deserializedBootstrap = ssz.capella.LightClientBootstrap.deserialize(
-    fromHexString(bootstrap.content_value).slice(4),
+    hexToBytes(bootstrap.content_value).slice(4),
   )
-  const bootstrapKey = fromHexString(bootstrap.content_key).slice(1)
+  const bootstrapKey = hexToBytes(bootstrap.content_key).slice(1)
   it('deserializes bootstrap', () => {
     assert.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
   })
@@ -88,10 +89,8 @@ describe('Beacon network type tests using portal network spec test vectors', () 
       'deserialized light client bootstrap key',
     )
   })
-  const updateByRange = fromHexString(specTestVectors.updateByRange['6684738'].content_value)
-  const updateByRangeKey = fromHexString(
-    specTestVectors.updateByRange['6684738'].content_key,
-  ).slice(1)
+  const updateByRange = hexToBytes(specTestVectors.updateByRange['6684738'].content_value)
+  const updateByRangeKey = hexToBytes(specTestVectors.updateByRange['6684738'].content_key).slice(1)
   const deserializedRange = LightClientUpdatesByRange.deserialize(updateByRange)
 
   let numUpdatesDeserialized = 0

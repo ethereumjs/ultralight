@@ -6,12 +6,11 @@ import {
   ProtocolId,
   toHexString,
   DBManager,
-  fromHexString,
   serializedContentKeyToContentId,
 } from '../../src/index.js'
 import debug from 'debug'
 import { randomBytes } from 'ethers/lib/utils.js'
-import { bigIntToHex } from '@ethereumjs/util'
+import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
 import { distance } from '@chainsafe/discv5'
 
 it('DBManager unit tests', async () => {
@@ -37,7 +36,7 @@ it('DBManager unit tests', async () => {
   const testVal = randomBytes(48)
   const testKey = getContentKey(HistoryNetworkContentType.BlockHeader, testHash)
   const testId = getContentId(HistoryNetworkContentType.BlockHeader, toHexString(testHash))
-  const _testId = serializedContentKeyToContentId(fromHexString(testKey))
+  const _testId = serializedContentKeyToContentId(hexToBytes(testKey))
   assert.equal(_testId, testId, 'testIds match')
 
   db.put(ProtocolId.HistoryNetwork, testKey, toHexString(testVal))

@@ -1,5 +1,5 @@
 import { createProof, SingleProof, ProofType } from '@chainsafe/persistent-merkle-tree'
-import { fromHexString } from '@chainsafe/ssz'
+
 import { BlockHeader } from '@ethereumjs/block'
 import {
   blockNumberToGindex,
@@ -12,9 +12,10 @@ import {
   HistoryProtocol,
 } from '../index.js'
 import accumulator from './data/master.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 const mainnetHistoricalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
-  return fromHexString(hash)
+  return hexToBytes(hash)
 })
 
 export interface AccumulatorOpts {
@@ -94,10 +95,10 @@ export class AccumulatorManager {
    */
   public verifyInclusionProof = async (proof: any, blockHash: string) => {
     const header = BlockHeader.fromRLPSerializedHeader(
-      fromHexString(
+      hexToBytes(
         await this._history.get(
           this._history.protocolId,
-          getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
+          getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
         ),
       ),
       { setHardfork: true },
@@ -119,12 +120,12 @@ export class AccumulatorManager {
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.get(
       this._history.protocolId,
-      getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
+      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
     )
     if (_blockHeader === undefined) {
       throw new Error('Cannot create proof for unknown header')
     }
-    const blockHeader = BlockHeader.fromRLPSerializedHeader(fromHexString(_blockHeader), {
+    const blockHeader = BlockHeader.fromRLPSerializedHeader(hexToBytes(_blockHeader), {
       setHardfork: true,
     })
     this._history.logger(`generating proof for block ${blockHeader.number}`)
@@ -134,7 +135,7 @@ export class AccumulatorManager {
     const epoch =
       this.headerAccumulator.historicalEpochs.length < epochIdx
         ? EpochAccumulator.serialize(this.headerAccumulator.currentEpoch.slice(0, listIdx))
-        : fromHexString(
+        : hexToBytes(
             await this._history.get(
               this._history.protocolId,
               getContentKey(
@@ -158,10 +159,10 @@ export class AccumulatorManager {
   }
   public async getHeaderRecordFromBlockhash(blockHash: string) {
     const header = BlockHeader.fromRLPSerializedHeader(
-      fromHexString(
+      hexToBytes(
         await this._history.get(
           this._history.protocolId,
-          getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
+          getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
         ),
       ),
       { setHardfork: true },
@@ -172,7 +173,7 @@ export class AccumulatorManager {
       return this.headerAccumulator.currentEpoch[listIndex]
     } else {
       const epoch = EpochAccumulator.deserialize(
-        fromHexString(
+        hexToBytes(
           await this._history.get(
             this._history.protocolId,
             getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1]),

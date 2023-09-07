@@ -1,9 +1,10 @@
 import { ENR, distance, NodeId } from '@chainsafe/discv5'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 import { HistoryNetworkContentType } from './history/types.js'
 import { BaseProtocol } from './protocol.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 type lookupPeer = {
   nodeId: NodeId
@@ -47,7 +48,7 @@ export class ContentLookup {
     this.protocol.metrics?.totalContentLookups.inc()
     try {
       const res = await this.protocol.get(this.protocol.protocolId, toHexString(this.contentKey))
-      return { content: fromHexString(res), utp: false }
+      return { content: hexToBytes(res), utp: false }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
@@ -94,7 +95,7 @@ export class ContentLookup {
                 contentKey === toHexString(this.contentKey.slice(1))
               ) {
                 this.protocol.removeListener('ContentAdded', utpDecoder)
-                resolve({ content: fromHexString(content), utp: true })
+                resolve({ content: hexToBytes(content), utp: true })
               }
             }
             this.protocol.on('ContentAdded', utpDecoder)

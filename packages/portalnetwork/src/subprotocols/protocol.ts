@@ -1,7 +1,7 @@
 import { distance, ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
 import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'
+import { toHexString, BitArray } from '@chainsafe/ssz'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { Debugger } from 'debug'
 import {
@@ -35,7 +35,7 @@ import {
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
 import { EventEmitter } from 'events'
-import { bytesToInt, concatBytes } from '@ethereumjs/util'
+import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
 
 export abstract class BaseProtocol extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
@@ -359,7 +359,7 @@ export abstract class BaseProtocol extends EventEmitter {
             for await (const key of requestedKeys) {
               let value = Uint8Array.from([])
               try {
-                value = fromHexString(await this.get(this.protocolId, toHexString(key)))
+                value = hexToBytes(await this.get(this.protocolId, toHexString(key)))
                 requestedData.push(value)
               } catch (err: any) {
                 this.logger(`Error retrieving content -- ${err.toString()}`)
