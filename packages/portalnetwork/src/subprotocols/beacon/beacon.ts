@@ -481,7 +481,6 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    * Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
    * @param dstId node ID of a peer
    * @param contentKeys content keys being offered as specified by the subprotocol
-   * @param protocolId network ID of subprotocol being used
    */
   public override sendOffer = async (dstId: string, contentKeys: Uint8Array[]) => {
     if (contentKeys.length > 0) {
