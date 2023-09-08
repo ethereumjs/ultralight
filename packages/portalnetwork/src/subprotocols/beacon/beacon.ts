@@ -489,12 +489,40 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               }
               break
             }
-            case BeaconLightClientNetworkContentType.LightClientFinalityUpdate: {
+            case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+              {
+                const slot = LightClientFinalityUpdateKey.deserialize(key.slice(1)).finalizedSlot
+                if (
+                  this.lightClient !== undefined &&
+                  slot > this.lightClient.getFinalized().beacon.slot
+                ) {
+                  offerAccepted = true
+                  contentIds[x] = true
+                  this.logger.extend('OFFER')(
+                    `Found a newer Finalized Update from ${shortId(
+                      src.nodeId,
+                    )} corresponding to slot ${slot}`,
+                  )
+                }
+              }
               break
-            }
-            case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate: {
+            case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+              {
+                const slot = LightClientOptimisticUpdateKey.deserialize(key.slice(1)).optimisticSlot
+                if (
+                  this.lightClient !== undefined &&
+                  slot > this.lightClient.getHead().beacon.slot
+                ) {
+                  offerAccepted = true
+                  contentIds[x] = true
+                  this.logger.extend('OFFER')(
+                    `Found a newer Optimstic Update from ${shortId(
+                      src.nodeId,
+                    )} corresponding to slot ${slot}`,
+                  )
+                }
+              }
               break
-            }
             case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
               break
             }
