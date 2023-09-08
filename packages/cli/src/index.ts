@@ -119,8 +119,7 @@ const main = async () => {
   } as any
   let networks: ProtocolId[] = []
   if (args.networks) {
-    console.log(args.networks)
-    for (const network of args.network) {
+    for (const network of args.networks) {
       switch (network) {
         case 'history':
           networks.push(ProtocolId.HistoryNetwork)
