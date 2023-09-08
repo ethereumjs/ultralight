@@ -226,9 +226,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                     break
                   }
                   this.logger(
-                    `received ${
-                      BeaconLightClientNetworkContentType[decoded.selector]
-                    } content corresponding to ${contentKey}`,
+                    `received LightClientOptimisticUpdate content corresponding to ${contentKey}`,
                   )
                   await this.store(key[0], contentKey, decoded.value as Uint8Array)
                   break
@@ -242,9 +240,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                     break
                   }
                   this.logger(
-                    `received ${
-                      BeaconLightClientNetworkContentType[decoded.selector]
-                    } content corresponding to ${contentKey}`,
+                    `received LightClientFinalityUpdate content corresponding to ${contentKey}`,
                   )
                   await this.store(key[0], contentKey, decoded.value as Uint8Array)
                   break
@@ -258,9 +254,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                     break
                   }
                   this.logger(
-                    `received ${
-                      BeaconLightClientNetworkContentType[decoded.selector]
-                    } content corresponding to ${contentKey}`,
+                    `received LightClientBootstrap content corresponding to ${contentKey}`,
                   )
                   await this.store(key[0], contentKey, decoded.value as Uint8Array)
                   break
@@ -272,19 +266,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                     break
                   }
                   this.logger(
-                    `received ${
-                      BeaconLightClientNetworkContentType[decoded.selector]
-                    } content corresponding to ${contentKey}`,
+                    `received LightClientUpdatesByRange content corresponding to ${contentKey}`,
                   )
                   await this.storeUpdateRange(decoded.value as Uint8Array)
                   break
 
                 default:
-                  this.logger(
-                    `received ${
-                      BeaconLightClientNetworkContentType[decoded.selector]
-                    } content corresponding to ${contentKey}`,
-                  )
+                  this.logger(`received unexpected content type corresponding to ${contentKey}`)
                   break
               }
             }
