@@ -60,17 +60,20 @@ export class UltralightTransport implements LightClientTransport {
     data: allForks.LightClientOptimisticUpdate
   }> {
     let optimisticUpdate, forkname
+    const currentSlot = BigInt(
+      getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
+    )
+    this.protocol.logger(`requesting LightClientOptimisticUpdate for ${currentSlot.toString(10)}`)
+    // Try to get optimistic update from Portal Network.  We request an update corresponding to the current slot
+    // (i.e. tip of the chain) - 1 as the attested header in the optimistic update "should" be only one slot behind
+    // the tip if consensus is working properly and on happy path
 
-    this.protocol.logger('requesting latest LightClientOptimisticUpdate')
-    // Try to get optimistic update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({
-          optimisticSlot: BigInt(
-            getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
-          ),
+          optimisticSlot: currentSlot - 1n,
         }),
       ),
     )
