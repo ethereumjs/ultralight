@@ -288,6 +288,7 @@ describe('Find Content tests', () => {
   }, 10000)
 })
 
+describe('OFFER/ACCEPT tests', () => {})
 describe('beacon light client sync tests', () => {
   it('should initialize light client', async () => {
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
