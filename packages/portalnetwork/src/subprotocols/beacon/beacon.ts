@@ -457,7 +457,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
   /**
    * We override the BaseProtocol `handleOffer` since content gossip for the Beacon Light client network
-   * assumes that all node have all of hthe
+   * assumes that all node have all of the content
    * @param src OFFERing node's address
    * @param requestId request ID passed in OFFER message
    * @param msg OFFER message containing a list of offered content keys
@@ -490,9 +490,31 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               break
             }
             case BeaconLightClientNetworkContentType.LightClientFinalityUpdate: {
+              const decodedKey = LightClientFinalityUpdateKey.deserialize(key.slice(1))
+              if (
+                this.lightClient !== undefined &&
+                decodedKey.finalizedSlot > BigInt(this.lightClient?.getFinalized().beacon.slot)
+              ) {
+                offerAccepted = true
+                contentIds[x] = true
+                this.logger.extend('OFFER')(
+                  `Found a newer LightClientFinalityUpdate from ${shortId(src.nodeId)}`,
+                )
+              }
               break
             }
             case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate: {
+              const decodedKey = LightClientOptimisticUpdateKey.deserialize(key.slice(1))
+              if (
+                this.lightClient !== undefined &&
+                decodedKey.optimisticSlot > BigInt(this.lightClient?.getHead().beacon.slot)
+              ) {
+                offerAccepted = true
+                contentIds[x] = true
+                this.logger.extend('OFFER')(
+                  `Found a newer LightClientOptimisticUpdate from ${shortId(src.nodeId)}`,
+                )
+              }
               break
             }
             case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
