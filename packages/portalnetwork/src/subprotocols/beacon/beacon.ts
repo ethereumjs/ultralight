@@ -526,7 +526,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               let value = Uint8Array.from([])
               try {
                 // We use `findContentLocally` instead of `get` so the content keys for
-                // optimistic and finality updates
+                // optimistic and finality updates are handled correctly
                 value = (await this.findContentLocally(key)) as Uint8Array
                 requestedData.push(value)
               } catch (err: any) {
