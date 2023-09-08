@@ -19,7 +19,7 @@ import { SignableENR } from '@chainsafe/discv5'
 import { ssz } from '@lodestar/types'
 
 import { ForkName } from '@lodestar/params'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
 import { RunStatusCode } from '@lodestar/light-client'
 
 const require = createRequire(import.meta.url)
@@ -288,7 +288,225 @@ describe('Find Content tests', () => {
   }, 10000)
 })
 
-describe('OFFER/ACCEPT tests', () => {})
+describe('OFFER/ACCEPT tests', () => {
+  it('offers optimistic updates to another node', async () => {
+    const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30022`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30023`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+    node1.enableLog('*')
+    await node1.start()
+    await node2.start()
+    const protocol1 = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const protocol2 = node2.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+
+    // Stub out light client and set the light client's head slot value to equal our optimistic update slot
+    protocol1.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
+
+    // We set the light client's stubbed head slot to node1's light client's head minus 1
+    protocol2.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718462,
+          },
+        }
+      },
+    }
+
+    await protocol1!.sendPing(protocol2?.enr!.toENR())
+    assert.equal(
+      protocol1?.routingTable.getWithPending(
+        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      )?.value.nodeId,
+      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      'node1 added node2 to routing table',
+    )
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      ),
+      hexToBytes(optimisticUpdate.content_value),
+    )
+
+    await new Promise((resolve) => {
+      protocol2.on('ContentAdded', (contentKey, contentType) => {
+        if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)
+          // Update the light client stub to report the new "optimistic head"
+          protocol2.lightClient = {
+            //@ts-ignore
+            getHead: () => {
+              return {
+                beacon: {
+                  slot: 6718463,
+                },
+              }
+            },
+          }
+        resolve(undefined)
+      })
+    })
+    const content = await protocol2.findContentLocally(
+      hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+          LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+        ),
+      ),
+    )
+
+    assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
+    assert.equal(
+      toHexString(content!),
+      optimisticUpdate.content_value,
+      'retrieved correct content for optimistic update from local storage',
+    )
+    await node1.stop()
+    await node2.stop()
+  }, 10000)
+  it('offers a stale optimistic update to another node that is declined', async () => {
+    const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30022`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30023`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+    node1.enableLog('*')
+    await node1.start()
+    await node2.start()
+    const protocol1 = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const protocol2 = node2.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+
+    // Stub out light client and set the light client's head slot value to equal our optimistic update slot
+    protocol1.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718463,
+          },
+        }
+      },
+    }
+
+    // We set the light client's stubbed head slot to node1's light client's head + 1
+    protocol2.lightClient = {
+      //@ts-ignore
+      getHead: () => {
+        return {
+          beacon: {
+            slot: 6718464,
+          },
+        }
+      },
+    }
+
+    await protocol1!.sendPing(protocol2?.enr!.toENR())
+    assert.equal(
+      protocol1?.routingTable.getWithPending(
+        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      )?.value.nodeId,
+      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      'node1 added node2 to routing table',
+    )
+
+    const staleOptimisticUpdateContentKey = getBeaconContentKey(
+      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+    )
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      staleOptimisticUpdateContentKey,
+      hexToBytes(optimisticUpdate.content_value),
+    )
+
+    const acceptedOffers = await protocol1.sendOffer(protocol2.enr.nodeId, [
+      hexToBytes(staleOptimisticUpdateContentKey),
+    ])
+    assert.deepStrictEqual(acceptedOffers, undefined, 'no content was accepted by node 2')
+    const content = await protocol2.retrieve(
+      intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+    )
+
+    assert.equal(content, undefined, 'should not retrieve content for stale optimistic update key')
+
+    await node1.stop()
+    await node2.stop()
+  }, 10000)
+})
+
 describe('beacon light client sync tests', () => {
   it('should initialize light client', async () => {
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
