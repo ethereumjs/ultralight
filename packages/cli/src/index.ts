@@ -70,6 +70,11 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'web3 JSON RPC HTTP endpoint for local Ethereum node for sourcing chain data',
     string: true,
     optional: true,
+  })
+  .option('networks', {
+    describe: 'subprotocols to enable',
+    array: true,
+    optional: true,
   }).argv
 
 const register = new PromClient.Registry()
@@ -112,13 +117,29 @@ const main = async () => {
       ip4: initMa,
     },
   } as any
+  let networks: ProtocolId[] = []
+  if (args.networks) {
+    console.log(args.networks)
+    for (const network of args.network) {
+      switch (network) {
+        case 'history':
+          networks.push(ProtocolId.HistoryNetwork)
+          break
+        case 'beacon':
+          networks.push(ProtocolId.BeaconLightClientNetwork)
+          break
+      }
+    }
+  } else {
+    networks = [ProtocolId.HistoryNetwork]
+  }
   const portal = await PortalNetwork.create({
     config: config,
     radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
-    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+    supportedProtocols: networks,
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
@@ -136,7 +157,6 @@ const main = async () => {
   }
   await portal.start()
 
-  // TODO - make this more intelligent
   const bootnodes: Array<Enr> = []
   if (args.bootnode) {
     bootnodes.push(args.bootnode)
