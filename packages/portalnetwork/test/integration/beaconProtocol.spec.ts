@@ -146,7 +146,7 @@ describe('Find Content tests', () => {
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
 
-    // Stub out light client
+    // Stub out light client to make sure the content gets stored
     protocol1.lightClient = {
       //@ts-ignore
       getHead: () => {
@@ -362,7 +362,7 @@ describe('beacon light client sync tests', () => {
      * and then get the latest optimistic update which brings it to the head of the chain.
      */
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
-    vi.setSystemTime(1693431998000)
+    vi.setSystemTime(1693431998000) // sets the system time to a timestamp within sync period 881
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30011`)
@@ -456,7 +456,8 @@ describe('beacon light client sync tests', () => {
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-        // FIXME
+        // It doesn't matter what slot we set here since we don't store by slot anyway and rely on the lightClient to
+        // tell us which slot is the latest known optimistic slot
         LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 0n }),
       ),
       concatBytes(
