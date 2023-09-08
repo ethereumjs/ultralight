@@ -566,7 +566,7 @@ export class portal {
     try {
       await this._beacon.store(
         contentKey[0] as BeaconLightClientNetworkContentType,
-        toHexString(contentKey.slice(1)),
+        toHexString(contentKey),
         content,
       )
       return true

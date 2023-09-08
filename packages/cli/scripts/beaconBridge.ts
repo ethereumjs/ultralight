@@ -29,8 +29,8 @@ const main = async () => {
     console.log('Retrieving bootstrap and updates from Beacon node...')
     const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson((await (await fetch(beaconNode + 'eth/v1/beacon/light_client/optimistic_update')).json()).data)
     const currentPeriod = computeSyncPeriodAtSlot(optimisticUpdate.signatureSlot)
-    const oldPeriod = (currentPeriod - 6)
-    const updatesByRange = (await (await fetch(beaconNode + `eth/v1/beacon/light_client/updates?start_period=${oldPeriod}&count=6`)).json())
+    const oldPeriod = (currentPeriod -  6)
+    const updatesByRange = (await (await fetch(beaconNode + `eth/v1/beacon/light_client/updates?start_period=${oldPeriod}&count=7`)).json())
     const range: Uint8Array[] = []
     for (const update of updatesByRange) {
         range.push(concatBytes(

@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
+import { BeaconLightClientNetwork, PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -75,6 +75,11 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'subprotocols to enable',
     array: true,
     optional: true,
+  })
+  .option('trustedBlockRoot', {
+    describe: 'a trusted blockroot to start light client syncing of the beacon chain',
+    string: true,
+    optional: true,
   }).argv
 
 const register = new PromClient.Registry()
@@ -132,6 +137,9 @@ const main = async () => {
   } else {
     networks = [ProtocolId.HistoryNetwork]
   }
+  if (args.trustedBlockRoot !== undefined) {
+    networks.push(ProtocolId.BeaconLightClientNetwork)
+  }
   const portal = await PortalNetwork.create({
     config: config,
     radius: 2n ** 256n - 1n,
@@ -168,6 +176,11 @@ const main = async () => {
     }
   }
   try {
+    for (const protocol of portal.protocols) {
+      for (const bootnode of bootnodes) {
+        await addBootNode(protocol[0], protocol[1], bootnode)
+      }
+    }
     portal.protocols.forEach(async (value, key, _) => {
       for (const bootnode of bootnodes) {
         await addBootNode(key, value, bootnode)
@@ -208,6 +221,14 @@ const main = async () => {
     server.http().listen(args.rpcPort)
 
     log(`Started JSON RPC Server address=http://${ip}:${args.rpcPort}`)
+
+    if (args.trustedBlockRoot !== undefined) {
+      const beaconProtocol = portal.protocols.get(
+        ProtocolId.BeaconLightClientNetwork,
+      ) as BeaconLightClientNetwork
+      await beaconProtocol.initializeLightClient(args.trustedBlockRoot)
+      beaconProtocol.lightClient?.start()
+    }
   }
 
   process.on('SIGINT', async () => {
