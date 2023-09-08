@@ -16,6 +16,7 @@ import {
   LightClientUpdatesByRangeKey,
 } from './types.js'
 import {
+  AcceptMessage,
   ContentMessageType,
   FindContentMessage,
   MessageCodes,
@@ -23,7 +24,13 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { bytesToInt, concatBytes, hexToBytes, intToHex, padToEven } from '@ethereumjs/util'
-import { RequestCode, FoundContent, randUint16, MAX_PACKET_SIZE } from '../../wire/index.js'
+import {
+  RequestCode,
+  FoundContent,
+  randUint16,
+  MAX_PACKET_SIZE,
+  encodeWithVariantPrefix,
+} from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
@@ -56,6 +63,15 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         await this.store(contentType, hash, value)
       },
     )
+    this.on('ContentAdded', async (contentKey) => {
+      // Gossip new content to 5 random nodes in routing table
+      for (let x = 0; x < 5; x++) {
+        const peer = this.routingTable.random()
+        if (peer !== undefined) {
+          await this.sendOffer(peer.nodeId, [hexToBytes(contentKey)])
+        }
+      }
+    })
   }
 
   /**
@@ -105,7 +121,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     let key
     switch (contentKey[0]) {
       case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
-        value = await this.constructLightClientRange(contentKey.slice(1))
+        try {
+          value = await this.constructLightClientRange(contentKey.slice(1))
+        } catch {
+          // We catch here in case we don't have all of the updates requested by the range
+          // in which case we shouldn't return any content
+          value = new Uint8Array()
+        }
         break
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
@@ -453,6 +475,83 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       range.push(hexToBytes(update))
     }
     return LightClientUpdatesByRange.serialize(range)
+  }
+
+  /**
+   * Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
+   * @param dstId node ID of a peer
+   * @param contentKeys content keys being offered as specified by the subprotocol
+   * @param protocolId network ID of subprotocol being used
+   */
+  public override sendOffer = async (dstId: string, contentKeys: Uint8Array[]) => {
+    if (contentKeys.length > 0) {
+      this.metrics?.offerMessagesSent.inc()
+      const offerMsg: OfferMessage = {
+        contentKeys,
+      }
+      const payload = PortalWireMessageType.serialize({
+        selector: MessageCodes.OFFER,
+        value: offerMsg,
+      })
+      const enr = this.routingTable.getWithPending(dstId)?.value
+      if (!enr) {
+        this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
+        return
+      }
+      this.logger.extend(`OFFER`)(
+        `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`,
+      )
+      const res = await this.sendMessage(enr, payload, this.protocolId)
+      this.logger.extend(`OFFER`)(`Response from ${shortId(dstId)}`)
+      if (res.length > 0) {
+        try {
+          const decoded = PortalWireMessageType.deserialize(res)
+          if (decoded.selector === MessageCodes.ACCEPT) {
+            this.metrics?.acceptMessagesReceived.inc()
+            const msg = decoded.value as AcceptMessage
+            const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
+            // Initiate uTP streams with serving of requested content
+            const requestedKeys: Uint8Array[] = contentKeys.filter(
+              (n, idx) => msg.contentKeys.get(idx) === true,
+            )
+            if (requestedKeys.length === 0) {
+              // Don't start uTP stream if no content ACCEPTed
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
+              return []
+            }
+            this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
+
+            const requestedData: Uint8Array[] = []
+            for await (const key of requestedKeys) {
+              let value = Uint8Array.from([])
+              try {
+                // We use `findContentLocally` instead of `get` so the content keys for
+                // optimistic and finality updates
+                value = (await this.findContentLocally(key)) as Uint8Array
+                requestedData.push(value)
+              } catch (err: any) {
+                this.logger(`Error retrieving content -- ${err.toString()}`)
+                requestedData.push(value)
+              }
+            }
+
+            const contents = encodeWithVariantPrefix(requestedData)
+            await this.handleNewRequest({
+              protocolId: this.protocolId,
+              contentKeys: requestedKeys,
+              peerId: dstId,
+              connectionId: id,
+              requestCode: RequestCode.OFFER_WRITE,
+              contents: [contents],
+            })
+
+            return msg.contentKeys
+          }
+        } catch (err: any) {
+          this.logger(`Error sending to ${shortId(dstId)} - ${err.message}`)
+        }
+      }
+    }
   }
 
   /**
