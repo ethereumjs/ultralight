@@ -140,6 +140,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
+        } else if (this.lightClient === undefined) {
+          value = await this.retrieve(
+            intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+          )
         }
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
@@ -153,7 +157,12 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
+        } else if (this.lightClient === undefined) {
+          value = await this.retrieve(
+            intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+          )
         }
+
         break
       default:
         value = await this.retrieve(toHexString(contentKey))

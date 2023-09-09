@@ -151,7 +151,7 @@ const main = async () => {
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*ultralight*, *Portal*, *ultralight:RPC*')
+  portal.enableLog('*ultralight*, *LightClient*, -OFFER, -ACCEPT, *ultralight:RPC*')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
