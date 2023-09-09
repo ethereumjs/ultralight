@@ -272,6 +272,9 @@ export class PortalNetworkUTP extends EventEmitter {
     request.socket.close()
   }
   async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
+    if (request.socket.type === UtpSocketType.WRITE) {
+      return
+    }
     const keys = request.contentKeys
     const content = await request.socket.handleFinPacket(packet)
     let contents = [content]
