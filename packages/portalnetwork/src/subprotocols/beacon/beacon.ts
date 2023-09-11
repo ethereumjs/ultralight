@@ -23,7 +23,14 @@ import {
   OfferMessage,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { bytesToInt, concatBytes, hexToBytes, intToHex, padToEven } from '@ethereumjs/util'
+import {
+  bytesToHex,
+  bytesToInt,
+  concatBytes,
+  hexToBytes,
+  intToHex,
+  padToEven,
+} from '@ethereumjs/util'
 import {
   RequestCode,
   FoundContent,
@@ -32,11 +39,14 @@ import {
   encodeWithVariantPrefix,
 } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
+import type { BeaconBlockHeader } from '@lodestar/types/phase0'
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
-import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
+import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { Lightclient } from '@lodestar/light-client'
 import { UltralightTransport } from './ultralightTransport.js'
+import { NodeId } from '@chainsafe/discv5'
+import { getBeaconContentKey } from './util.js'
 
 export class BeaconLightClientNetwork extends BaseProtocol {
   protocolId: ProtocolId.BeaconLightClientNetwork
@@ -44,10 +54,11 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   protocolName = 'BeaconLightClientNetwork'
   logger: Debugger
   lightClient: Lightclient | undefined
-
+  portal: PortalNetwork
+  bootstrapFinder: Map<NodeId, BeaconBlockHeader[] | {}>
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
-
+    this.portal = client
     // This config is used to identify the Beacon Chain fork any given light client update is from
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
@@ -57,6 +68,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
     this.routingTable.setLogger(this.logger)
+    this.bootstrapFinder = new Map()
     client.uTP.on(
       ProtocolId.BeaconLightClientNetwork,
       async (contentType: number, hash: string, value: Uint8Array) => {
@@ -75,8 +87,37 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         }
       }
     })
+
+    this.portal.on('NodeAdded', this.getBootStrapVote)
   }
 
+  private getBootStrapVote = async (nodeId: string, protocol: ProtocolId) => {
+    if (protocol === ProtocolId.BeaconLightClientNetwork) {
+      if (this.bootstrapFinder.has(nodeId)) return
+      this.bootstrapFinder.set(nodeId, {} as any)
+      const currentPeriod = BigInt(
+        computeSyncPeriodAtSlot(getCurrentSlot(this.beaconConfig, genesisData.mainnet.genesisTime)),
+      )
+      const rangeKey = hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+          LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
+        ),
+      )
+      const range = await this.sendFindContent(nodeId, rangeKey)
+      if (range !== undefined && range.value.length === 4) {
+        const updates = LightClientUpdatesByRange.deserialize(range.value as Uint8Array)
+
+        const headers: BeaconBlockHeader[] = []
+        for (const update of updates) {
+          const fork = this.beaconConfig.forkDigest2ForkName(bytesToHex(update.slice(0, 4)))
+          const decoded = (ssz as any)[fork].LightClientUpdate(update.slice(4)) as LightClientUpdate
+          headers.push(decoded.finalizedHeader.beacon)
+        }
+        this.bootstrapFinder.set(nodeId, headers)
+      }
+    }
+  }
   /**
    * Initializes a Lodestar light client using a trusted beacon block root
    * @param blockRoot trusted beacon block root within the weak subjectivity period for retrieving
