@@ -33,7 +33,7 @@ jobs:
       - run: npm install -w=portalnetwork -w=cli --ignore-scripts
         working-directory: ${{ github.workspace }}
 
-      - run: npm build -w=portalnetwork -w=cli --ignore-scripts
+      - run: npm run build -w=portalnetwork -w=cli
         working-directory: ${{ github.workspace }}
 
       
