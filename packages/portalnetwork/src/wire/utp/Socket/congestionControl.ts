@@ -62,7 +62,7 @@ export class CongestionControl extends EventEmitter {
     const rtt = timestamp - sentTime
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
     const delta = this.rtt - rtt
-    this.rtt_var = this.rtt_var + Math.floor((delta - this.rtt_var) / 4)
+    this.rtt_var = this.rtt_var + Math.abs(Math.floor((delta - this.rtt_var) / 4))
     this.rtt = Math.floor(this.rtt + (rtt - this.rtt) / 8)
     this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
     clearTimeout(this.timeoutCounter)
