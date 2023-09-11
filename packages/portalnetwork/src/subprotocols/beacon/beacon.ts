@@ -67,7 +67,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
         const peer = this.routingTable.random()
-        if (peer !== undefined) {
+        if (
+          peer !== undefined &&
+          !this.routingTable.contentKeyKnownToPeer(peer.nodeId, contentKey)
+        ) {
           await this.sendOffer(peer.nodeId, [hexToBytes(contentKey)])
         }
       }
