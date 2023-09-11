@@ -30,10 +30,12 @@ jobs:
           cache: 'npm'
       - run: npm i -g @mapbox/node-pre-gyp
 
-      - run: npm pkg set workspaces='["./packages/portalnetwork", "./packages/cli"]' --json
-      
-      - run: npm i
+      - run: npm install -w=portalnetwork -w=cli --ignore-scripts
         working-directory: ${{ github.workspace }}
+
+      - run: npm build -w=portalnetwork -w=cli --ignore-scripts
+        working-directory: ${{ github.workspace }}
+
       
       - run: npx ts-node --esm scripts/devnet.ts --numNodes=10 --ip=127.0.0.1 &
 
