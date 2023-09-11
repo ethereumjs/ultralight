@@ -142,6 +142,7 @@ export class UtpSocket extends EventEmitter {
       pType: PacketType.ST_SYN,
       connectionId: pktId ?? this.rcvConnectionId,
     })
+    // this.setAckNr(p.header.seqNr)
     await this.sendPacket<PacketType.ST_SYN>(p)
     this.state = ConnectionState.SynSent
   }
@@ -282,12 +283,12 @@ export class UtpSocket extends EventEmitter {
       this.logger(`all data packets received.`)
       this.seqNr = this.seqNr + 1
       this.ackNr = packet.header.seqNr
-      const _content = await this.reader!.run()
+      const _content = await this.reader?.run()
       this.reader = undefined
-      this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
+      this.logger(`Packet payloads compiled into ${_content?.length} bytes.  Sending FIN-ACK`)
       this.close()
       this.sendAckPacket()
-      return _content
+      return _content ?? Uint8Array.from([])
     } else {
       // TODO: Else wait for all data packets.
       return new Promise((res, _rej) => {

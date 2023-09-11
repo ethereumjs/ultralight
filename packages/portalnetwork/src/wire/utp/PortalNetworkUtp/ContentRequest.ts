@@ -54,11 +54,7 @@ export class ContentRequest {
   }
 
   async sendSyn(): Promise<void> {
-    await this.socket.sendSynPacket(
-      this.requestCode === RequestCode.OFFER_WRITE
-        ? this.socket.sndConnectionId
-        : this.socket.rcvConnectionId,
-    )
+    await this.socket.sendSynPacket(this.socket.sndConnectionId)
     this.socket.state = ConnectionState.SynSent
   }
 }
