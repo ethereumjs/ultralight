@@ -30,7 +30,7 @@ jobs:
           cache: 'npm'
     
       - run: npm pkg set workspaces='["./packages/portalnetwork", "./packages/cli"]' --json
-      
+      - run: cat package.json
       - run: npm i
         working-directory: ${{ github.workspace }}
 
