@@ -141,6 +141,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
         } else if (this.lightClient === undefined) {
+          // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
@@ -158,6 +159,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
         } else if (this.lightClient === undefined) {
+          // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
