@@ -190,14 +190,14 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleStatePacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ: {
-        if (packet.header.ackNr === request.socket.getSeqNr() - 1) {
+        if (packet.header.ackNr === request.socket.getSeqNr()) {
           request.socket.setAckNr(packet.header.seqNr)
           break
         } else {
           throw new Error(
-            `READ socket should not get acks unless p.ackNr: ${
+            `FINDCONTENT_READ socket should not get acks unless p.ackNr: ${
               packet.header.ackNr
-            } === socket.getSeqNr() - 1: ${request.socket.getSeqNr() - 1}`,
+            } === socket.getSeqNr(): ${request.socket.getSeqNr()}`,
           )
         }
       }
