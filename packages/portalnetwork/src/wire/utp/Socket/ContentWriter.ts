@@ -44,6 +44,12 @@ export default class ContentWriter extends EventEmitter {
       await this.send(PacketType.ST_DATA, bytes)
       return
     }
+    if (this.sentChunks.length === chunks) {
+      this.logger(`Sending ST-FIN`)
+      this.writing = false
+      await this.send(PacketType.ST_FIN)
+      return
+    }
     this.writing = false
     await this.send(PacketType.ST_FIN)
     return
