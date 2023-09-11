@@ -67,7 +67,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
         const peer = this.routingTable.random()
-        if (peer !== undefined) {
+        if (
+          peer !== undefined &&
+          !this.routingTable.contentKeyKnownToPeer(peer.nodeId, contentKey)
+        ) {
           await this.sendOffer(peer.nodeId, [hexToBytes(contentKey)])
         }
       }
@@ -75,7 +78,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   }
 
   /**
-   * Initializes an Lodestar light client using a trusted beacon block root
+   * Initializes a Lodestar light client using a trusted beacon block root
    * @param blockRoot trusted beacon block root within the weak subjectivity period for retrieving
    * the `lightClientBootStrap`
    */
@@ -140,6 +143,11 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
+        } else if (this.lightClient === undefined) {
+          // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
+          value = await this.retrieve(
+            intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+          )
         }
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
@@ -153,7 +161,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
+        } else if (this.lightClient === undefined) {
+          // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
+          value = await this.retrieve(
+            intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+          )
         }
+
         break
       default:
         value = await this.retrieve(toHexString(contentKey))

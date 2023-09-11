@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
+import { BeaconLightClientNetwork, PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -70,6 +70,16 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'web3 JSON RPC HTTP endpoint for local Ethereum node for sourcing chain data',
     string: true,
     optional: true,
+  })
+  .option('networks', {
+    describe: 'subprotocols to enable',
+    array: true,
+    optional: true,
+  })
+  .option('trustedBlockRoot', {
+    describe: 'a trusted blockroot to start light client syncing of the beacon chain',
+    string: true,
+    optional: true,
   }).argv
 
 const register = new PromClient.Registry()
@@ -112,18 +122,36 @@ const main = async () => {
       ip4: initMa,
     },
   } as any
+  let networks: ProtocolId[] = []
+  if (args.networks) {
+    for (const network of args.networks) {
+      switch (network) {
+        case 'history':
+          networks.push(ProtocolId.HistoryNetwork)
+          break
+        case 'beacon':
+          networks.push(ProtocolId.BeaconLightClientNetwork)
+          break
+      }
+    }
+  } else {
+    networks = [ProtocolId.HistoryNetwork]
+  }
+  if (args.trustedBlockRoot !== undefined) {
+    networks.push(ProtocolId.BeaconLightClientNetwork)
+  }
   const portal = await PortalNetwork.create({
     config: config,
     radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
-    supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+    supportedProtocols: networks,
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*ultralight*, *Portal*, *ultralight:RPC*')
+  portal.enableLog('*ultralight*, *LightClient*, -OFFER, -ACCEPT, *ultralight:RPC*')
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
@@ -136,7 +164,6 @@ const main = async () => {
   }
   await portal.start()
 
-  // TODO - make this more intelligent
   const bootnodes: Array<Enr> = []
   if (args.bootnode) {
     bootnodes.push(args.bootnode)
@@ -149,6 +176,11 @@ const main = async () => {
     }
   }
   try {
+    for (const protocol of portal.protocols) {
+      for (const bootnode of bootnodes) {
+        await addBootNode(protocol[0], protocol[1], bootnode)
+      }
+    }
     portal.protocols.forEach(async (value, key, _) => {
       for (const bootnode of bootnodes) {
         await addBootNode(key, value, bootnode)
@@ -189,6 +221,14 @@ const main = async () => {
     server.http().listen(args.rpcPort)
 
     log(`Started JSON RPC Server address=http://${ip}:${args.rpcPort}`)
+
+    if (args.trustedBlockRoot !== undefined) {
+      const beaconProtocol = portal.protocols.get(
+        ProtocolId.BeaconLightClientNetwork,
+      ) as BeaconLightClientNetwork
+      await beaconProtocol.initializeLightClient(args.trustedBlockRoot)
+      beaconProtocol.lightClient?.start()
+    }
   }
 
   process.on('SIGINT', async () => {

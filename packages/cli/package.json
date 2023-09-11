@@ -37,7 +37,11 @@
     "level": "^8.0.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
-    "yargs": "^17.3.0"
+    "yargs": "^17.3.0",
+    "@lodestar/config": "^1.9.2",
+    "@lodestar/light-client": "^1.11.0",
+    "@lodestar/params": "^1.9.2",
+    "@lodestar/types": "^1.9.2"
   },
   "scripts": {
     "start": "ts-node --esm src/index.ts",
