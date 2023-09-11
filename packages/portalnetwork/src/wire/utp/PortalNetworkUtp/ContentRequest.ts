@@ -54,7 +54,7 @@ export class ContentRequest {
   }
 
   async sendSyn(): Promise<void> {
-    await this.socket.sendSynPacket(this.socket.sndConnectionId)
+    await this.socket.sendSynPacket()
     this.socket.state = ConnectionState.SynSent
   }
 }
