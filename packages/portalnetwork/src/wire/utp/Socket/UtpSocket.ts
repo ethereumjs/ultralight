@@ -142,7 +142,6 @@ export class UtpSocket extends EventEmitter {
       pType: PacketType.ST_SYN,
       connectionId: pktId ?? this.rcvConnectionId,
     })
-    // this.setSeqNr(p.header.seqNr)
     await this.sendPacket<PacketType.ST_SYN>(p)
     this.state = ConnectionState.SynSent
   }
