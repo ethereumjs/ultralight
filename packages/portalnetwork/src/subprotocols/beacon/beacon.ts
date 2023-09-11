@@ -78,7 +78,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   }
 
   /**
-   * Initializes an Lodestar light client using a trusted beacon block root
+   * Initializes a Lodestar light client using a trusted beacon block root
    * @param blockRoot trusted beacon block root within the weak subjectivity period for retrieving
    * the `lightClientBootStrap`
    */
