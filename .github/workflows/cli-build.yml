@@ -28,6 +28,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+
+      - run: npm pkg set workspaces='["./packages/portalnetwork", "./packages/cli"]' --json
       - run: npm i
         working-directory: ${{ github.workspace }}
 
