@@ -681,6 +681,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           const key = msg.contentKeys[x]
           switch (key[0]) {
             case BeaconLightClientNetworkContentType.LightClientBootstrap: {
+              /*  DON'T ACCEPT AN OFFERED BOOTSTRAP - we don't trust these for now
               try {
                 // TODO: Verify the offered bootstrap isn't too old before accepting
                 await this.get(ProtocolId.BeaconLightClientNetwork, toHexString(key))
@@ -691,7 +692,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 this.logger.extend('OFFER')(
                   `Found some interesting content from ${shortId(src.nodeId)}`,
                 )
-              }
+              }*/
               break
             }
             case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
