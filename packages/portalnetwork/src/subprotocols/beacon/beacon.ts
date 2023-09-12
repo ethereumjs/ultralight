@@ -56,11 +56,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   protocolName = 'BeaconLightClientNetwork'
   logger: Debugger
   lightClient: Lightclient | undefined
-  portal: PortalNetwork
   bootstrapFinder: Map<NodeId, string[] | {}>
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
-    this.portal = client
     // This config is used to identify the Beacon Chain fork any given light client update is from
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
@@ -77,7 +75,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         await this.store(contentType, hash, value)
       },
     )
-    this.on('ContentAdded', async (contentKey) => {
+    this.portal.on('ContentAdded', async (contentKey) => {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
         const peer = this.routingTable.random()
@@ -518,7 +516,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
     )
-    this.emit('ContentAdded', contentKey, contentType, toHexString(value))
+    this.portal.emit('ContentAdded', contentKey, contentType, toHexString(value))
   }
 
   /**

@@ -504,6 +504,75 @@ describe('OFFER/ACCEPT tests', () => {
     await node1.stop()
     await node2.stop()
   }, 10000)
+
+  it('gossips a bootstrap to another node', async () => {
+    const json = require('./testdata/bootstrap.json').data
+    const bootstrap = ssz.capella.LightClientBootstrap.fromJson(json)
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+    await node1.start()
+    await node2.start()
+    const protocol1 = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const protocol2 = node2.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+
+    node1.enableLog('*Portal*')
+
+    await protocol1!.sendPing(protocol2?.enr!.toENR())
+
+    const bootstrapKey = getBeaconContentKey(
+      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      LightClientBootstrapKey.serialize({ blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon) }),
+    )
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      bootstrapKey,
+      concatBytes(protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella), ssz.capella.LightClientBootstrap.serialize(bootstrap),
+      ))
+
+    const acceptedOffers = await protocol1.sendOffer(protocol2.enr.nodeId, [
+      hexToBytes(bootstrapKey),
+    ])
+
+    await new Promise(resolve => {
+      node2.on('ContentAdded', (key) => {
+        assert.equal(key, bootstrapKey, 'successfully gossipped bootstrap')
+        resolve(undefined)
+      })
+    })
+
+  }, 20000)
 })
 
 describe('beacon light client sync tests', () => {
