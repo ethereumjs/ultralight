@@ -10,10 +10,12 @@ import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/
 import { genesisData } from '@lodestar/config/networks'
 import {
   BeaconLightClientNetworkContentType,
+  LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
+  MIN_BOOTSTRAP_VOTES,
 } from './types.js'
 import {
   AcceptMessage,
@@ -39,7 +41,7 @@ import {
   encodeWithVariantPrefix,
 } from '../../wire/index.js'
 import { ssz } from '@lodestar/types'
-import type { BeaconBlockHeader } from '@lodestar/types/phase0'
+
 import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
 import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
@@ -55,7 +57,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   logger: Debugger
   lightClient: Lightclient | undefined
   portal: PortalNetwork
-  bootstrapFinder: Map<NodeId, BeaconBlockHeader[] | {}>
+  bootstrapFinder: Map<NodeId, string[] | {}>
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
     this.portal = client
@@ -105,19 +107,81 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         ),
       )
       const range = await this.sendFindContent(nodeId, rangeKey)
-      if (range !== undefined && range.value.length === 4) {
+      if (range === undefined) return // If we don't get a range, exit early
+      if (range.value.length === 4) {
         const updates = LightClientUpdatesByRange.deserialize(range.value as Uint8Array)
 
-        const headers: BeaconBlockHeader[] = []
+        const roots: string[] = []
         for (const update of updates) {
           const fork = this.beaconConfig.forkDigest2ForkName(bytesToHex(update.slice(0, 4)))
           const decoded = (ssz as any)[fork].LightClientUpdate(update.slice(4)) as LightClientUpdate
-          headers.push(decoded.finalizedHeader.beacon)
+          roots.push(
+            toHexString(ssz.phase0.BeaconBlockHeader.hashTreeRoot(decoded.finalizedHeader.beacon)),
+          )
         }
-        this.bootstrapFinder.set(nodeId, headers)
+        this.bootstrapFinder.set(nodeId, roots)
+        const votes = Array.from(this.bootstrapFinder.entries()).filter(
+          (el) => el[1] instanceof Array,
+        )
+        if (votes.length >= MIN_BOOTSTRAP_VOTES) {
+          // If we have enough votes, determine target bootstrap
+          const tally = new Map<string, number>()
+          // Turn votes into a list of roots to tally up the total votes for each root
+          const roots = Array.from(this.bootstrapFinder.values()).flat() as string[]
+          for (const root of roots) {
+            const count = tally.get(root)
+            if (count !== undefined) {
+              tally.set(root, count + 1)
+            } else {
+              tally.set(root, 1)
+            }
+          }
+          // Sort the roots by the number of votes for each root
+          const results = Array.from(tally.entries()).sort((a, b) => a[1] - b[1])
+
+          for (let x = 0; x < votes.length; x++) {
+            // If we go through all of the possible checkpoint roots that receive a simple majority
+            // vote by the polled nodes, stop looking and clear out votes.
+            if (results[x][1] < Math.floor(MIN_BOOTSTRAP_VOTES / 2 + 1)) break
+            const bootstrapKey = getBeaconContentKey(
+              BeaconLightClientNetworkContentType.LightClientBootstrap,
+              LightClientBootstrapKey.serialize({ blockHash: hexToBytes(results[x][0]) }),
+            )
+
+            for (const vote of votes) {
+              const res = await this.sendFindContent(vote[0], hexToBytes(bootstrapKey))
+              if (res !== undefined) {
+                try {
+                  const fork = this.beaconConfig.forkDigest2ForkName(
+                    (res.value as Uint8Array).slice(0, 4),
+                  )
+                  // Verify bootstrap is valid
+                  ;(ssz as any)[fork].LightClientBootstrap.deserialize(
+                    res.value as Uint8Array,
+                  ).slice(4)
+                  await this.store(
+                    BeaconLightClientNetworkContentType.LightClientBootstrap,
+                    bootstrapKey,
+                    res.value as Uint8Array,
+                  )
+                  this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+                  return
+                } catch {
+                  continue
+                }
+              }
+            }
+          }
+          // If we get here, we didn't find a bootstrap that received a vote from a plurality
+          // of nodes so purge their votes and start over
+          for (const peer of this.bootstrapFinder.keys()) {
+            this.bootstrapFinder.set(peer, {})
+          }
+        }
       }
     }
   }
+
   /**
    * Initializes a Lodestar light client using a trusted beacon block root
    * @param blockRoot trusted beacon block root within the weak subjectivity period for retrieving

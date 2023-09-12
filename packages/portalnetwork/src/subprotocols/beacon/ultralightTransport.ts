@@ -14,6 +14,7 @@ import {
 
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
+import { getBeaconContentKey } from './util.js'
 
 export class UltralightTransport implements LightClientTransport {
   protocol: BeaconLightClientNetwork
@@ -127,31 +128,48 @@ export class UltralightTransport implements LightClientTransport {
   async getBootstrap(
     blockRoot: string,
   ): Promise<{ version: ForkName; data: allForks.LightClientBootstrap }> {
-    const peers = this.protocol.routingTable.nearest(this.protocol.enr.nodeId, 5)
-
-    let bootstrap, forkname
-
-    this.protocol.logger(`requesting lightClientBootstrap for trusted block root ${blockRoot}`)
-    // Try to get bootstrap from Portal Network
-    for (const peer of peers) {
-      const decoded = await this.protocol.sendFindContent(
-        peer.nodeId,
-        concatBytes(
-          new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+    let forkname, bootstrap
+    const localBootstrap = await this.protocol.findContentLocally(
+      hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientBootstrap,
           LightClientBootstrapKey.serialize({ blockHash: hexToBytes(blockRoot) }),
         ),
-      )
-      if (decoded !== undefined) {
-        const forkhash = decoded.value.slice(0, 4) as Uint8Array
-        forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
-        bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(
-          (decoded.value as Uint8Array).slice(4),
+      ),
+    )
+    if (localBootstrap !== undefined) {
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(localBootstrap.slice(0, 4))
+      bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
+    } else {
+      const peers = this.protocol.routingTable.nearest(this.protocol.enr.nodeId, 5)
+
+      let forkname
+
+      this.protocol.logger(`requesting lightClientBootstrap for trusted block root ${blockRoot}`)
+      // Try to get bootstrap from Portal Network
+      for (const peer of peers) {
+        const decoded = await this.protocol.sendFindContent(
+          peer.nodeId,
+          concatBytes(
+            new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+            LightClientBootstrapKey.serialize({ blockHash: hexToBytes(blockRoot) }),
+          ),
         )
-        break
+        if (decoded !== undefined) {
+          const forkhash = decoded.value.slice(0, 4) as Uint8Array
+          forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
+          bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(
+            (decoded.value as Uint8Array).slice(4),
+          )
+          break
+        }
       }
     }
 
-    // TODO: Add some sort of fallback for getting bootstrap from elsewhere if not found on Portal Network
+    if (bootstrap === undefined) {
+      throw new Error('could not retrieve bootstrap from Portal Network')
+    }
+
     return {
       version: forkname as ForkName,
       data: bootstrap,
