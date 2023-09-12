@@ -138,6 +138,7 @@ export class UltralightTransport implements LightClientTransport {
       ),
     )
     if (localBootstrap !== undefined) {
+      this.protocol.logger('Found LightClientBootstrap locally.  Initializing light client...')
       forkname = this.protocol.beaconConfig.forkDigest2ForkName(localBootstrap.slice(0, 4))
       bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
     } else {

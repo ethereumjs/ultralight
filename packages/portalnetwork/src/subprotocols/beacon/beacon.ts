@@ -100,12 +100,15 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       const currentPeriod = BigInt(
         computeSyncPeriodAtSlot(getCurrentSlot(this.beaconConfig, genesisData.mainnet.genesisTime)),
       )
+
+      // Request the range of Light Client Updates extending back 4 sync periods
       const rangeKey = hexToBytes(
         getBeaconContentKey(
           BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
           LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
         ),
       )
+      this.logger.extend('BOOTSTRAP')(`Requesting recent LightClientUpdates from ${shortId(nodeId)}`)
       const range = await this.sendFindContent(nodeId, rangeKey)
       if (range === undefined) return // If we don't get a range, exit early
       if (range.value.length === 4) {
@@ -123,6 +126,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         const votes = Array.from(this.bootstrapFinder.entries()).filter(
           (el) => el[1] instanceof Array,
         )
+          this.logger.extend('BOOTSTRAP')(`currently have ${votes.length} votes for bootstrap candidates`)
         if (votes.length >= MIN_BOOTSTRAP_VOTES) {
           // If we have enough votes, determine target bootstrap
           const tally = new Map<string, number>()
@@ -159,12 +163,14 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   ;(ssz as any)[fork].LightClientBootstrap.deserialize(
                     res.value as Uint8Array,
                   ).slice(4)
+                  this.logger.extend('BOOTSTRAP')(`Found a valid bootstrap - ${results[x][0]}`)
                   await this.store(
                     BeaconLightClientNetworkContentType.LightClientBootstrap,
                     bootstrapKey,
                     res.value as Uint8Array,
                   )
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+                  this.logger.extend('BOOTSTRAP')(`Terminating Light Client bootstrap process`)
                   return
                 } catch {
                   continue
@@ -681,7 +687,6 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           const key = msg.contentKeys[x]
           switch (key[0]) {
             case BeaconLightClientNetworkContentType.LightClientBootstrap: {
-              /*  DON'T ACCEPT AN OFFERED BOOTSTRAP - we don't trust these for now
               try {
                 // TODO: Verify the offered bootstrap isn't too old before accepting
                 await this.get(ProtocolId.BeaconLightClientNetwork, toHexString(key))
@@ -692,7 +697,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 this.logger.extend('OFFER')(
                   `Found some interesting content from ${shortId(src.nodeId)}`,
                 )
-              }*/
+              }
               break
             }
             case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
@@ -730,6 +735,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               }
               break
             case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
+              // TODO: See if any of the updates in the range are missing and either ACCEPT or send FINDCONTENT for the missing range
               break
             }
           }
