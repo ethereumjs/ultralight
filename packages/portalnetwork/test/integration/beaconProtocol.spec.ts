@@ -12,6 +12,7 @@ import {
   LightClientBootstrapKey,
   LightClientUpdatesByRange,
   LightClientOptimisticUpdateKey,
+  LightClientUpdatesByRangeKey,
 } from '../../src/index.js'
 import { createRequire } from 'module'
 
@@ -21,6 +22,7 @@ import { ssz } from '@lodestar/types'
 import { ForkName } from '@lodestar/params'
 import { concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
 import { RunStatusCode } from '@lodestar/light-client'
+import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 
 const require = createRequire(import.meta.url)
 
@@ -506,8 +508,8 @@ describe('OFFER/ACCEPT tests', () => {
   }, 10000)
 
   it('gossips a bootstrap to another node', async () => {
-    const json = require('./testdata/bootstrap.json').data
-    const bootstrap = ssz.capella.LightClientBootstrap.fromJson(json)
+    const bootstrapJson = require('./testdata/bootstrap2.json').data
+    const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
@@ -561,7 +563,7 @@ describe('OFFER/ACCEPT tests', () => {
       concatBytes(protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella), ssz.capella.LightClientBootstrap.serialize(bootstrap),
       ))
 
-    const acceptedOffers = await protocol1.sendOffer(protocol2.enr.nodeId, [
+    await protocol1.sendOffer(protocol2.enr.nodeId, [
       hexToBytes(bootstrapKey),
     ])
 
@@ -773,4 +775,105 @@ describe('beacon light client sync tests', () => {
       'light client synced to latest epoch successfully',
     )
   }, 30000)
+
+  it.only('finds a bootstrap using peer voting', async () => {
+ //   vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
+ //   vi.setSystemTime(1694443751000)
+    const range = require('./testdata/range.json')
+    const bootstrapJson = require('./testdata/bootstrap2.json').data
+    const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
+
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+})
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+    await node1.start()
+    await node2.start()
+    const protocol1 = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const protocol2 = node2.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+
+    const capellaForkDigest = protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella)
+
+    const update1 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[0].data),
+      ),
+    )
+    const update2 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[1].data),
+      ),
+    )
+    const update3 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[2].data),
+      ),
+    )
+    const update4 = concatBytes(
+      capellaForkDigest,
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(range[3].data),
+      ),
+    )
+    node1.enableLog('*BeaconLightClient*')
+    node2.enableLog('*BeaconLightClient*')
+    await protocol1!.sendPing(protocol2?.enr!.toENR())
+
+    const rangeKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)), count: 3n}))
+    const bootstrapKey = getBeaconContentKey(
+      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      LightClientBootstrapKey.serialize({ blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon) }),
+    )
+    await protocol1.store(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, rangeKey, LightClientUpdatesByRange.serialize([update1, update2, update3, update4]) )
+  //  await protocol2.store(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, rangeKey, LightClientUpdatesByRange.serialize([update1, update2, update3, update4]) )
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      bootstrapKey,
+      concatBytes(protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella), ssz.capella.LightClientBootstrap.serialize(bootstrap),
+      ))
+/*
+    await protocol1.sendOffer(protocol2.enr.nodeId, [
+      hexToBytes(bootstrapKey),
+    ])
+*/
+    await new Promise(resolve => {
+      node2.on('ContentAdded', (key, contentType) => {
+        console.error(key, contentType)
+      })
+    })
+
+  }, 20000)
 })
