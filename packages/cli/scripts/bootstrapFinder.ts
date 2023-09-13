@@ -18,17 +18,9 @@ const main = async () => {
     const beaconNode = 'https://lodestar-mainnet.chainsafe.io/'
     const ultralights: jayson.HttpClient[] = []
     for (let x = 0; x < 10; x++) {
-        ultralights.push(Client.http({ host: '127.0.0.1', port: 8545 + x}))
-        const peerEnr = await ultralights[x].request('discv5_nodeInfo', [])
-        console.log(peerEnr)
-        if (x > 0) {
-        for (let y = 0; y < x; y++){
-            const res = await ultralights[x-1].request('portal_beaconAddBootNode',[peerEnr.result.enr])
-            console.log(res)
-        }
+        ultralights.push(Client.http({ host: '127.0.0.1', port: 8545 + x }))
     }
-    }
-    
+
 
     console.log('Retrieving bootstrap and updates from Beacon node...')
     let optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson((await (await fetch(beaconNode + 'eth/v1/beacon/light_client/optimistic_update')).json()).data)
@@ -36,7 +28,7 @@ const main = async () => {
     const currentPeriod = computeSyncPeriodAtSlot(optimisticUpdate.signatureSlot)
     const oldPeriod = (currentPeriod - 3)
     const updatesByRange = (await (await fetch(beaconNode + `eth/v1/beacon/light_client/updates?start_period=${oldPeriod}&count=4`)).json())
-    console.log(updatesByRange)
+
     const range: Uint8Array[] = []
     for (const update of updatesByRange) {
         range.push(concatBytes(
@@ -52,7 +44,7 @@ const main = async () => {
         const bootstrapSlot = updatesByRange[x].data.finalized_header.beacon.slot
         const bootstrapRoot = (await (await fetch(beaconNode + `eth/v1/beacon/blocks/${bootstrapSlot}/root`)).json()).data.root
         const bootstrap = ssz.capella.LightClientBootstrap.fromJson((await (await fetch(beaconNode + `eth/v1/beacon/light_client/bootstrap/${bootstrapRoot}`)).json()).data)
-        await ultralights[Math.floor(Math.random()*5)].request('portal_beaconStore', [getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientBootstrap, LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) })), toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientBootstrap.serialize(bootstrap)))])
+        await ultralights[Math.floor(Math.random() * 5)].request('portal_beaconStore', [getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientBootstrap, LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) })), toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientBootstrap.serialize(bootstrap)))])
         console.log(`Retrieved bootstrap for finalized checkpoint ${bootstrapRoot} from sync period ${oldPeriod + x} and seeding to network...`)
     }
 
@@ -61,6 +53,15 @@ const main = async () => {
     }
     console.log(`Seeded light client updates for range ${oldPeriod}-${oldPeriod + 4} into Portal Network`)
 
+    for (let x = 0; x < 10; x++) {
+        const peerEnr = await ultralights[x].request('discv5_nodeInfo', [])
+        if (x > 0) {
+            for (let y = 0; y < x; y++) {
+                const res = await ultralights[x - 1].request('portal_beaconAddBootNode', [peerEnr.result.enr])
+                console.log(res)
+            }
+        }
+    }
     const res3 = await ultralights[0].request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate)))])
     console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.signatureSlot}`, res3)
 
@@ -73,7 +74,7 @@ const main = async () => {
         let optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson((await (await fetch(beaconNode + 'eth/v1/beacon/light_client/optimistic_update')).json()).data)
         let optimisticUpdateKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate, LightClientOptimisticUpdateKey.serialize({ optimisticSlot: BigInt(optimisticUpdate.attestedHeader.beacon.slot) }))
         const res = await ultralights[0].request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate)))])
-     console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.signatureSlot}`, res)
+        console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.signatureSlot}`, res)
     }
 }
 

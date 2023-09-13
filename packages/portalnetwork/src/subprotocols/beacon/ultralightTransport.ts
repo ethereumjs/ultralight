@@ -11,38 +11,45 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from './types.js'
-
+import { Debugger } from 'debug'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 import { getBeaconContentKey } from './util.js'
+import { toHexString } from '@chainsafe/ssz'
 
 export class UltralightTransport implements LightClientTransport {
   protocol: BeaconLightClientNetwork
-
+  logger: Debugger
   constructor(protocol: BeaconLightClientNetwork) {
     this.protocol = protocol
+    this.logger = protocol.logger.extend('LightClientTransport')
   }
   async getUpdates(
     startPeriod: number,
     count: number,
   ): Promise<{ version: ForkName; data: allForks.LightClientUpdate }[]> {
     const range = []
-    this.protocol.logger(
+    this.logger(
       `requesting lightClientUpdatesByRange starting with period ${startPeriod} and count ${count}`,
     )
     while (range.length === 0) {
-      const decoded = await this.protocol.sendFindContent(
-        this.protocol.routingTable.random()!.nodeId,
-        concatBytes(
-          new Uint8Array([BeaconLightClientNetworkContentType.LightClientUpdatesByRange]),
-          LightClientUpdatesByRangeKey.serialize({
-            startPeriod: BigInt(startPeriod),
-            count: BigInt(count),
-          }),
-        ),
-      )
+      const rangeKey = hexToBytes(getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+        LightClientUpdatesByRangeKey.serialize({
+          startPeriod: BigInt(startPeriod),
+          count: BigInt(count),
+        })
+      ))
+      let decoded
+      decoded = await this.protocol.findContentLocally(rangeKey)
+      if (decoded === undefined) {
+        decoded = await this.protocol.sendFindContent(
+          this.protocol.routingTable.random()!.nodeId,
+          rangeKey
+        )
+        decoded = decoded !== undefined ? decoded.value : undefined
+      }
       if (decoded !== undefined) {
-        const updateRange = LightClientUpdatesByRange.deserialize(decoded.value as Uint8Array)
+        const updateRange = LightClientUpdatesByRange.deserialize(decoded as Uint8Array)
         for (const update of updateRange) {
           const forkhash = update.slice(0, 4)
           const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
@@ -64,7 +71,7 @@ export class UltralightTransport implements LightClientTransport {
     const currentSlot = BigInt(
       getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
     )
-    this.protocol.logger(`requesting LightClientOptimisticUpdate for ${currentSlot.toString(10)}`)
+    this.logger(`requesting LightClientOptimisticUpdate for ${currentSlot.toString(10)}`)
     // Try to get optimistic update from Portal Network.  We request an update corresponding to the current slot
     // (i.e. tip of the chain) - 1 as the attested header in the optimistic update "should" be only one slot behind
     // the tip if consensus is working properly and on happy path
@@ -101,7 +108,7 @@ export class UltralightTransport implements LightClientTransport {
   }> {
     let finalityUpdate, forkname
 
-    this.protocol.logger('requesting latest LightClientFinalityUpdate')
+    this.logger('requesting latest LightClientFinalityUpdate')
     // Try to get finality update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
@@ -138,15 +145,21 @@ export class UltralightTransport implements LightClientTransport {
       ),
     )
     if (localBootstrap !== undefined) {
-      this.protocol.logger('Found LightClientBootstrap locally.  Initializing light client...')
-      forkname = this.protocol.beaconConfig.forkDigest2ForkName(localBootstrap.slice(0, 4))
-      bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
+      this.logger('Found LightClientBootstrap locally.  Initializing light client...')
+      try {
+        forkname = this.protocol.beaconConfig.forkDigest2ForkName(localBootstrap.slice(0, 4))
+        bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
+      } catch (err) {
+        this.logger('bootstrap error')
+        this.logger(err)
+        throw err
+      }
     } else {
       const peers = this.protocol.routingTable.nearest(this.protocol.enr.nodeId, 5)
 
       let forkname
 
-      this.protocol.logger(`requesting lightClientBootstrap for trusted block root ${blockRoot}`)
+      this.logger(`requesting lightClientBootstrap for trusted block root ${blockRoot}`)
       // Try to get bootstrap from Portal Network
       for (const peer of peers) {
         const decoded = await this.protocol.sendFindContent(

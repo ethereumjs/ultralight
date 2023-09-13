@@ -864,11 +864,7 @@ describe('beacon light client sync tests', () => {
       bootstrapKey,
       concatBytes(protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella), ssz.capella.LightClientBootstrap.serialize(bootstrap),
       ))
-/*
-    await protocol1.sendOffer(protocol2.enr.nodeId, [
-      hexToBytes(bootstrapKey),
-    ])
-*/
+
     await new Promise(resolve => {
       node2.on('ContentAdded', (key, contentType) => {
         console.error(key, contentType)
