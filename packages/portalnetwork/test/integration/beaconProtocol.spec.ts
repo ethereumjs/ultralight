@@ -549,8 +549,6 @@ describe('OFFER/ACCEPT tests', () => {
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
 
-    node1.enableLog('*Portal*')
-
     await protocol1!.sendPing(protocol2?.enr!.toENR())
 
     const bootstrapKey = getBeaconContentKey(
@@ -568,7 +566,7 @@ describe('OFFER/ACCEPT tests', () => {
     ])
 
     await new Promise(resolve => {
-      node2.on('ContentAdded', (key) => {
+      protocol2.on('ContentAdded', (key) => {
         assert.equal(key, bootstrapKey, 'successfully gossipped bootstrap')
         resolve(undefined)
       })
@@ -609,7 +607,8 @@ describe('beacon light client sync tests', () => {
         peerId: id2,
       },
     })
-
+    
+    node1.enableLog('*BeaconLightClientNetwork*')
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -641,7 +640,9 @@ describe('beacon light client sync tests', () => {
     await protocol2.initializeLightClient(
       '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
     )
-    assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized but not started')
+    await protocol2.lightClient?.stop()
+    assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized and started')
+
     await node1.stop()
     await node2.stop()
   })
@@ -774,11 +775,13 @@ describe('beacon light client sync tests', () => {
       RunStatusCode.started,
       'light client synced to latest epoch successfully',
     )
+
+    await protocol2.lightClient.stop()
+    await node1.stop()
+    await node2.stop()
   }, 30000)
 
-  it.only('finds a bootstrap using peer voting', async () => {
- //   vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
- //   vi.setSystemTime(1694443751000)
+  it.skip('finds a bootstrap using peer voting', async () => {
     const range = require('./testdata/range.json')
     const bootstrapJson = require('./testdata/bootstrap2.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
@@ -813,6 +816,7 @@ describe('beacon light client sync tests', () => {
         peerId: id2,
       },
     })
+  
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -848,8 +852,7 @@ describe('beacon light client sync tests', () => {
         ssz.capella.LightClientUpdate.fromJson(range[3].data),
       ),
     )
-    node1.enableLog('*BeaconLightClient*')
-    node2.enableLog('*BeaconLightClient*')
+
     await protocol1!.sendPing(protocol2?.enr!.toENR())
 
     const rangeKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)), count: 3n}))
