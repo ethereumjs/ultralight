@@ -553,25 +553,27 @@ describe('OFFER/ACCEPT tests', () => {
 
     const bootstrapKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
-      LightClientBootstrapKey.serialize({ blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon) }),
+      LightClientBootstrapKey.serialize({
+        blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
+      }),
     )
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrapKey,
-      concatBytes(protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella), ssz.capella.LightClientBootstrap.serialize(bootstrap),
-      ))
+      concatBytes(
+        protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella),
+        ssz.capella.LightClientBootstrap.serialize(bootstrap),
+      ),
+    )
 
-    await protocol1.sendOffer(protocol2.enr.nodeId, [
-      hexToBytes(bootstrapKey),
-    ])
+    await protocol1.sendOffer(protocol2.enr.nodeId, [hexToBytes(bootstrapKey)])
 
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       protocol2.on('ContentAdded', (key) => {
         assert.equal(key, bootstrapKey, 'successfully gossipped bootstrap')
         resolve(undefined)
       })
     })
-
   }, 20000)
 })
 
@@ -607,7 +609,7 @@ describe('beacon light client sync tests', () => {
         peerId: id2,
       },
     })
-    
+
     node1.enableLog('*BeaconLightClientNetwork*')
     await node1.start()
     await node2.start()
@@ -804,7 +806,7 @@ describe('beacon light client sync tests', () => {
         },
         peerId: id1,
       },
-})
+    })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
@@ -816,7 +818,7 @@ describe('beacon light client sync tests', () => {
         peerId: id2,
       },
     })
-  
+
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -855,24 +857,38 @@ describe('beacon light client sync tests', () => {
 
     await protocol1!.sendPing(protocol2?.enr!.toENR())
 
-    const rangeKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)), count: 3n}))
+    const rangeKey = getBeaconContentKey(
+      BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+      LightClientUpdatesByRangeKey.serialize({
+        startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)),
+        count: 3n,
+      }),
+    )
     const bootstrapKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
-      LightClientBootstrapKey.serialize({ blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon) }),
+      LightClientBootstrapKey.serialize({
+        blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
+      }),
     )
-    await protocol1.store(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, rangeKey, LightClientUpdatesByRange.serialize([update1, update2, update3, update4]) )
-  //  await protocol2.store(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, rangeKey, LightClientUpdatesByRange.serialize([update1, update2, update3, update4]) )
+    await protocol1.store(
+      BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+      rangeKey,
+      LightClientUpdatesByRange.serialize([update1, update2, update3, update4]),
+    )
+    //  await protocol2.store(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, rangeKey, LightClientUpdatesByRange.serialize([update1, update2, update3, update4]) )
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrapKey,
-      concatBytes(protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella), ssz.capella.LightClientBootstrap.serialize(bootstrap),
-      ))
+      concatBytes(
+        protocol1.beaconConfig.forkName2ForkDigest(ForkName.capella),
+        ssz.capella.LightClientBootstrap.serialize(bootstrap),
+      ),
+    )
 
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       node2.on('ContentAdded', (key, contentType) => {
         console.error(key, contentType)
       })
     })
-
   }, 20000)
 })

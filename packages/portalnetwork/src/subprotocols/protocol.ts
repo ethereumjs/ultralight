@@ -596,7 +596,6 @@ export abstract class BaseProtocol extends EventEmitter {
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
       }
       this.portal.emit('NodeAdded', enr.nodeId, this.protocolId)
-      
     } catch (err) {
       this.logger(`Something went wrong: ${(err as any).message}`)
       try {

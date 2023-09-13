@@ -33,18 +33,21 @@ export class UltralightTransport implements LightClientTransport {
       `requesting lightClientUpdatesByRange starting with period ${startPeriod} and count ${count}`,
     )
     while (range.length === 0) {
-      const rangeKey = hexToBytes(getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
-        LightClientUpdatesByRangeKey.serialize({
-          startPeriod: BigInt(startPeriod),
-          count: BigInt(count),
-        })
-      ))
+      const rangeKey = hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+          LightClientUpdatesByRangeKey.serialize({
+            startPeriod: BigInt(startPeriod),
+            count: BigInt(count),
+          }),
+        ),
+      )
       let decoded
       decoded = await this.protocol.findContentLocally(rangeKey)
       if (decoded === undefined) {
         decoded = await this.protocol.sendFindContent(
           this.protocol.routingTable.random()!.nodeId,
-          rangeKey
+          rangeKey,
         )
         decoded = decoded !== undefined ? decoded.value : undefined
       }
@@ -152,7 +155,6 @@ export class UltralightTransport implements LightClientTransport {
       } catch (err) {
         this.logger('Error loading local bootstrap error')
         this.logger(err)
-        throw err
       }
     } else {
       const peers = this.protocol.routingTable.nearest(this.protocol.enr.nodeId, 5)

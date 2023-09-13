@@ -58,7 +58,7 @@ const methods = [
   'portal_historyAddEnrs',
   'portal_historyAddBootNode',
   'portal_historyNodeInfo',
-  'portal_beaconAddBootNode'
+  'portal_beaconAddBootNode',
 ]
 
 export class portal {

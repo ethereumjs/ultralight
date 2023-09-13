@@ -99,7 +99,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         }
         this.bootstrapFinder.set(nodeId, {} as any)
         const currentPeriod = BigInt(
-          computeSyncPeriodAtSlot(getCurrentSlot(this.beaconConfig, genesisData.mainnet.genesisTime)),
+          computeSyncPeriodAtSlot(
+            getCurrentSlot(this.beaconConfig, genesisData.mainnet.genesisTime),
+          ),
         )
 
         // Request the range of Light Client Updates extending back 4 sync periods
@@ -109,7 +111,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
           ),
         )
-        this.logger.extend('BOOTSTRAP')(`Requesting recent LightClientUpdates from ${shortId(nodeId)}`)
+        this.logger.extend('BOOTSTRAP')(
+          `Requesting recent LightClientUpdates from ${shortId(nodeId)}`,
+        )
         const range = await this.sendFindContent(nodeId, rangeKey)
         if (range === undefined) return // If we don't get a range, exit early
 
@@ -118,7 +122,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         const roots: string[] = []
         for (const update of updates) {
           const fork = this.beaconConfig.forkDigest2ForkName(bytesToHex(update.slice(0, 4)))
-          const decoded = (ssz as any)[fork].LightClientUpdate.deserialize(update.slice(4)) as LightClientUpdate
+          const decoded = (ssz as any)[fork].LightClientUpdate.deserialize(
+            update.slice(4),
+          ) as LightClientUpdate
           roots.push(
             toHexString(ssz.phase0.BeaconBlockHeader.hashTreeRoot(decoded.finalizedHeader.beacon)),
           )
@@ -127,7 +133,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         const votes = Array.from(this.bootstrapFinder.entries()).filter(
           (el) => el[1] instanceof Array,
         )
-        this.logger.extend('BOOTSTRAP')(`currently have ${votes.length} votes for bootstrap candidates`)
+        this.logger.extend('BOOTSTRAP')(
+          `currently have ${votes.length} votes for bootstrap candidates`,
+        )
         if (votes.length >= MIN_BOOTSTRAP_VOTES) {
           // If we have enough votes, determine target bootstrap
           const tally = new Map<string, number>()
@@ -151,7 +159,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               BeaconLightClientNetworkContentType.LightClientBootstrap,
               LightClientBootstrapKey.serialize({ blockHash: hexToBytes(results[x][0]) }),
             )
-            this.logger.extend('BOOTSTRAP')(`found a consensus bootstrap candidate ${results[x][0]}`)
+            this.logger.extend('BOOTSTRAP')(
+              `found a consensus bootstrap candidate ${results[x][0]}`,
+            )
             for (const vote of votes) {
               const res = await this.sendFindContent(vote[0], hexToBytes(bootstrapKey))
               if (res !== undefined) {
@@ -159,10 +169,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   const fork = this.beaconConfig.forkDigest2ForkName(
                     (res.value as Uint8Array).slice(0, 4),
                   )
-                    // Verify bootstrap is valid
-                    ; (ssz as any)[fork].LightClientBootstrap.deserialize(
-                      (res.value as Uint8Array).slice(4),
-                    )
+                  // Verify bootstrap is valid
+                  ;(ssz as any)[fork].LightClientBootstrap.deserialize(
+                    (res.value as Uint8Array).slice(4),
+                  )
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
                   await this.store(
                     BeaconLightClientNetworkContentType.LightClientBootstrap,
@@ -187,10 +197,8 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             this.bootstrapFinder.set(peer, {})
           }
         }
-
       }
-    }
-    catch (err) {
+    } catch (err) {
       this.logger.extend('BOOTSTRAP')(err)
     }
   }
@@ -352,7 +360,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
                   try {
                     // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
-                    ; (ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+                    ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
@@ -366,7 +374,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   break
                 case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
                   try {
-                    ; (ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
+                    ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
@@ -380,7 +388,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   break
                 case BeaconLightClientNetworkContentType.LightClientBootstrap:
                   try {
-                    ; (ssz as any)[forkname].LightClientBootstrap.deserialize(
+                    ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
@@ -444,10 +452,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     } else if (value && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
-        toHexString(decodedContentMessage.contentKey) +
-        ' ' +
-        toHexString(value.slice(0, 10)) +
-        `...`,
+          toHexString(decodedContentMessage.contentKey) +
+          ' ' +
+          toHexString(value.slice(0, 10)) +
+          `...`,
       )
       const payload = ContentMessageType.serialize({
         selector: 1,

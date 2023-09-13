@@ -150,8 +150,10 @@ const main = async () => {
     dataDir: args.datadir,
   })
   portal.discv5.enableLogs()
-  
-  portal.enableLog('*BOOTSTRAP,*LightClientTransport,*LightClient:DEBUG,*LightClient:INFO,*LightClient:WARN,*LightClient:ERROR,-FINDNODES,-ACCEPT,-OFFER,-FOUNDCONTENT')
+
+  portal.enableLog(
+    '*BOOTSTRAP,*LightClientTransport,*LightClient:DEBUG,*LightClient:INFO,*LightClient:WARN,*LightClient:ERROR,-FINDNODES,-ACCEPT,-OFFER,-FOUNDCONTENT',
+  )
 
   let metricsServer: http.Server | undefined
 
