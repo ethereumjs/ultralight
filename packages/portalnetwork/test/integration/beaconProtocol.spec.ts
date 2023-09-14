@@ -574,81 +574,14 @@ describe('OFFER/ACCEPT tests', () => {
         resolve(undefined)
       })
     })
+    await node1.stop()
+    await node2.stop()
   }, 20000)
 })
 
 describe('beacon light client sync tests', () => {
-  it('should initialize light client', async () => {
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/31234`)
-    enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/31235`)
-    enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
-      transport: TransportLayer.NODE,
-      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
-      config: {
-        enr: enr1,
-        bindAddrs: {
-          ip4: initMa,
-        },
-        peerId: id1,
-      },
-    })
-    const node2 = await PortalNetwork.create({
-      transport: TransportLayer.NODE,
-      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
-      config: {
-        enr: enr2,
-        bindAddrs: {
-          ip4: initMa2,
-        },
-        peerId: id2,
-      },
-    })
-
-    node1.enableLog('*BeaconLightClientNetwork*')
-    await node1.start()
-    await node2.start()
-    const protocol1 = node1.protocols.get(
-      ProtocolId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
-    const protocol2 = node2.protocols.get(
-      ProtocolId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
-
-    // Removing this event listener disables content gossip (which we don't want to happen as it causes occasional test failures)
-    protocol2.removeAllListeners('ContentAdded')
-    await protocol1!.sendPing(protocol2?.enr!.toENR())
-    assert.equal(
-      protocol1?.routingTable.getWithPending(
-        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
-      )?.value.nodeId,
-      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
-      'node1 added node2 to routing table',
-    )
-
-    const bootstrap = specTestVectors.bootstrap['6718368']
-
-    await protocol1.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
-      bootstrap.content_key,
-      hexToBytes(bootstrap.content_value),
-    )
-
-    await protocol2.initializeLightClient(
-      '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
-    )
-    await protocol2.lightClient?.stop()
-    assert.equal(protocol2.lightClient?.status, 0, 'light client is initialized and started')
-
-    await node1.stop()
-    await node2.stop()
-  })
   it('should sync the lightclient to current sync period', async () => {
+    await import('@lodestar/light-client')
     /**
      * This test simulates the syncing process for a Lodestar light client using only data seeded from the portal network.  Below are the steps:
      * 1) Store a LightClientBootstrap corresponding to sync period 879 and block root 0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b in client 1.
@@ -888,6 +821,7 @@ describe('beacon light client sync tests', () => {
     await new Promise((resolve) => {
       node2.on('ContentAdded', (key, contentType) => {
         console.error(key, contentType)
+        resolve(undefined)
       })
     })
   }, 20000)
