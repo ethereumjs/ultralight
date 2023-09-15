@@ -33,10 +33,6 @@ jobs:
 
       - run: npm i
         working-directory: ${{ github.workspace }}
-
-      - run: npm run build --workspaces --if-present
-        working-directory: ${{ github.workspace }}
-
       
       - run: npx ts-node --esm scripts/devnet.ts --numNodes=10 --ip=127.0.0.1 &
 

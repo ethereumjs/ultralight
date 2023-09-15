@@ -34,9 +34,6 @@ jobs:
       - run: npm i
         working-directory: ${{ github.workspace }}
 
-      - run: npm run build --workspaces --if-present
-        working-directory: ${{ github.workspace }}
-
       - run: npm run lint
       - run: npm run test
 
