@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+    
+      - run: npm i -g @mapbox/node-pre-gyp
+
       - run: npm i
         working-directory: ${{ github.workspace }}
 
