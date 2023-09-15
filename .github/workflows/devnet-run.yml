@@ -31,7 +31,7 @@ jobs:
 
       - run: npm i -g @mapbox/node-pre-gyp
 
-      - run: npm pkg set workspaces='["./", "./packages/portalnetwork", "./packages/cli"]' --json
+      - run: npm pkg set workspaces='["./packages/portalnetwork", "./packages/cli"]' --json
       - run: npm install --workspaces --ignore-scripts
         working-directory: ${{ github.workspace }}
 
