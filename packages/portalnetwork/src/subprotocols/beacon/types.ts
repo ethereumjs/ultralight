@@ -4,6 +4,8 @@ import { Bytes32Type } from '../types.js'
 
 export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 
+export const MIN_BOOTSTRAP_VOTES = 5
+
 export enum BeaconLightClientNetworkContentType {
   LightClientBootstrap = 0,
   LightClientUpdatesByRange = 1,

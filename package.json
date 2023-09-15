@@ -6,7 +6,6 @@
     "./packages/cli",
     "./packages/proxy",
     "./packages/browser-client"
-
   ],
   "engines": {
     "npm": ">=7",

@@ -27,6 +27,10 @@ const args: any = yargs(hideBin(process.argv))
         describe: 'starting port number',
         number: true,
         default: 8545
+    }).option('networks', {
+      describe: 'supported subnetworks',
+      array: true,
+      optional: true
     }).argv
 
 const main = async () => {
@@ -47,6 +51,7 @@ const main = async () => {
           `--rpcPort=${8545 + idx}`,
           `--metrics=true`,
           `--metricsPort=${18545 + idx}`,
+          args.networks ? `--networks=${(args.networks as Array<string>).join(' ')}` : ''
         ],
         { stdio: ['pipe', 'pipe', process.stderr] }
       )
@@ -62,6 +67,7 @@ const main = async () => {
           `--rpcPort=${8545 + x}`,
           `--metrics=true`,
           `--metricsPort=${18545 + x}`,
+          args.networks ? `--networks=${(args.networks as Array<string>).join(' ')}` : ''
         ],
         { stdio: ['pipe', 'pipe', process.stderr] }
       )
@@ -83,7 +89,7 @@ const main = async () => {
     process.on('SIGINT', async () => {
         console.log('Caught close signal, shutting down...')
         children.forEach((child) => child.kill())
-        clearInterval(interval)
+        clearInterval(interval as NodeJS.Timeout)
       })
 }
 
