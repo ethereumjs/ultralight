@@ -8,7 +8,7 @@ RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 RUN jq -r '.workspaces |= .[0:2]' package.json > package.json
 COPY package*.json ./
-RUN npm ci --ignore-scripts --omit-dev
+RUN npm i --ignore-scripts --omit-dev
 
 COPY . .
 
