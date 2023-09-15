@@ -31,12 +31,8 @@ jobs:
     
       - run: npm i -g @mapbox/node-pre-gyp
 
-      - run: npm pkg set workspaces='["./", "./packages/portalnetwork", "./packages/cli"]' --json
-      - run: npm install --workspaces --ignore-scripts
+      - run: npm i
         working-directory: ${{ github.workspace }}
-
-      - run: npm install
-        working-directory: ${{ github.workspace }}/node_modules/bcrypto
 
       - run: npm run build --workspaces --if-present
         working-directory: ${{ github.workspace }}

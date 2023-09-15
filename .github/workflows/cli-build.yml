@@ -29,13 +29,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - run: npm pkg set workspaces='["./", "./packages/portalnetwork", "./packages/cli"]' --json
-      - run: npm install --workspaces --ignore-scripts
+      - run: npm i
         working-directory: ${{ github.workspace }}
 
       - run: npm run build --workspaces --if-present
         working-directory: ${{ github.workspace }}
-
 
       - run: npm run lint
       - run: npm run test
