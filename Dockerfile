@@ -1,6 +1,6 @@
 FROM node:18-alpine as BUILD_IMAGE
 
-RUN apk update && apk add --no-cache bash && rm -rf /var/cache/apk/*
+RUN apk update && apk add --no-cache bash g++ make git python3 && rm -rf /var/cache/apk/*
 RUN apk add --virtual .build-deps alpine-sdk jq
 
 RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
@@ -9,9 +9,10 @@ WORKDIR /ultralight
 
 RUN jq -r '.workspaces |= .[0:2]' package.json > package.json
 COPY package*.json ./
+COPY . .
 RUN npm i --omit-dev
 
-COPY . .
+
 FROM node:18-alpine
 WORKDIR /ultralight
 RUN apk update && apk add --no-cache bash && rm -rf /var/cache/apk/*
