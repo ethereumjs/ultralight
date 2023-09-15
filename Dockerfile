@@ -9,7 +9,7 @@ WORKDIR /ultralight
 
 RUN jq -r '.workspaces |= .[0:2]' package.json > package.json
 COPY package*.json ./
-RUN npm i --ignore-scripts --omit-dev
+RUN npm i --omit-dev
 
 COPY . .
 FROM node:18-alpine
