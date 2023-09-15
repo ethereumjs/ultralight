@@ -1,4 +1,4 @@
-FROM node:16-alpine as BUILD_IMAGE
+FROM node:18-alpine as BUILD_IMAGE
 WORKDIR /app
 RUN apk update && apk add --no-cache bash && rm -rf /var/cache/apk/*
 RUN apk add --virtual .build-deps alpine-sdk jq
@@ -12,7 +12,7 @@ RUN npm ci --ignore-scripts --omit-dev
 
 COPY . .
 
-FROM node:16-alpine
+FROM node:18-alpine
 WORKDIR /app
 RUN apk update && apk add --no-cache bash && rm -rf /var/cache/apk/*
 COPY --from=BUILD_IMAGE /app/node_modules ./node_modules
