@@ -58,6 +58,7 @@ export abstract class BaseProtocol extends EventEmitter {
   put: (protocol: ProtocolId, contentKey: string, content: string) => void
   get: (protocol: ProtocolId, contentKey: string) => Promise<string>
   _prune: (protocol: ProtocolId, radius: bigint) => Promise<void>
+  portal: PortalNetwork
   constructor(client: PortalNetwork, radius?: bigint) {
     super()
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
@@ -71,6 +72,7 @@ export abstract class BaseProtocol extends EventEmitter {
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
+    this.portal = client
     this.metrics = client.metrics
     if (this.metrics) {
       this.metrics.knownHistoryNodes.collect = () => {
@@ -494,6 +496,7 @@ export abstract class BaseProtocol extends EventEmitter {
     if (!value || value.length === 0) {
       // Discv5 calls for maximum of 16 nodes per NODES message
       const ENRs = this.routingTable.nearest(lookupKey, 16)
+
       const encodedEnrs = ENRs.map((enr) => {
         // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
         // contentId than this node
@@ -592,6 +595,7 @@ export abstract class BaseProtocol extends EventEmitter {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
       }
+      this.portal.emit('NodeAdded', enr.nodeId, this.protocolId)
     } catch (err) {
       this.logger(`Something went wrong: ${(err as any).message}`)
       try {
@@ -602,6 +606,7 @@ export abstract class BaseProtocol extends EventEmitter {
           const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
           this.routingTable.updateRadius(enr.nodeId, decodedPayload.radius)
         }
+        this.portal.emit('NodeAdded', enr.nodeId, this.protocolId)
       } catch (e) {
         this.logger(`Something went wrong : ${(e as any).message}`)
       }
