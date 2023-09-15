@@ -3,6 +3,7 @@ import {
   bytesToBigInt,
   bytesToInt,
   equalsBytes,
+  hexToBytes,
   intToBytes,
   NestedUint8Array,
   utf8ToBytes,
@@ -10,9 +11,9 @@ import {
 import * as RLP from '@ethereumjs/rlp'
 import type { Block } from '@ethereumjs/block'
 import { Bloom, Log, TxReceiptType, TxReceiptWithType, reassembleBlock } from '../index.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { TxReceipt, PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
 import { TypedTransaction } from '@ethereumjs/tx'
+import { toHexString } from '@chainsafe/ssz'
 
 type rlpReceipt = [postStateOrStatus: Uint8Array, cumulativeGasUsed: Uint8Array, logs: Log[]]
 
@@ -95,7 +96,7 @@ export async function getReceipts(
   includeTxType?: true,
 ): Promise<TxReceipt[] | TxReceiptWithType[]> {
   if (!encoded) return []
-  let receipts = decodeReceipts(fromHexString(encoded))
+  let receipts = decodeReceipts(hexToBytes(encoded))
   if (calcBloom) {
     receipts = receipts.map((r) => {
       r.bitvector = logsBloom(r.logs).bitvector
@@ -103,7 +104,7 @@ export async function getReceipts(
     })
   }
   if (includeTxType && body) {
-    const block = reassembleBlock(fromHexString(encoded), fromHexString(body))
+    const block = reassembleBlock(hexToBytes(encoded), hexToBytes(body))
     receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
       r.txType = block.transactions[i].type
       return r

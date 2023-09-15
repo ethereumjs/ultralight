@@ -1,9 +1,9 @@
 import { NodeId, distance } from '@chainsafe/discv5'
-import { bigIntToHex } from '@ethereumjs/util'
+import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
 import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
-import { fromHexString, serializedContentKeyToContentId } from '../index.js'
+import { serializedContentKeyToContentId } from '../index.js'
 import { ProtocolId } from '../index.js'
 
 export class DBManager {
@@ -57,7 +57,7 @@ export class DBManager {
     return db.del(databaseKey)
   }
   databaseKey(key: string) {
-    const contentId = serializedContentKeyToContentId(fromHexString(key))
+    const contentId = serializedContentKeyToContentId(hexToBytes(key))
     const d = BigInt.asUintN(32, distance(contentId.slice(2), this.nodeId))
     return bigIntToHex(d)
   }

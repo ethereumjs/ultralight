@@ -4,7 +4,6 @@ import { describe, it, assert } from 'vitest'
 import * as td from 'testdouble'
 import { readFileSync } from 'fs'
 import {
-  fromHexString,
   PortalNetwork,
   toHexString,
   ProtocolId,
@@ -21,7 +20,7 @@ import {
 } from '../../../src/index.js'
 import { createRequire } from 'module'
 import * as RLP from '@ethereumjs/rlp'
-import { concatBytes } from '@ethereumjs/util'
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')
@@ -42,7 +41,7 @@ describe('history Protocol FINDCONTENT/FOUNDCONTENT message handlers', async () 
   protocol.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
   const key = getContentKey(
     HistoryNetworkContentType.BlockBody,
-    fromHexString('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'),
+    hexToBytes('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'),
   )
 
   const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
@@ -54,7 +53,7 @@ describe('history Protocol FINDCONTENT/FOUNDCONTENT message handlers', async () 
   td.when(
     protocol.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
   ).thenResolve(findContentResponse)
-  const res = await protocol.sendFindContent(decodedEnr.nodeId, fromHexString(key))
+  const res = await protocol.sendFindContent(decodedEnr.nodeId, hexToBytes(key))
   it('should send a FINDCONTENT message', () => {
     assert.deepEqual(
       res?.value,
@@ -67,12 +66,9 @@ describe('history Protocol FINDCONTENT/FOUNDCONTENT message handlers', async () 
 
   td.reset()
 
-  await protocol.store(HistoryNetworkContentType.BlockHeader, block1Hash, fromHexString(block1Rlp))
+  await protocol.store(HistoryNetworkContentType.BlockHeader, block1Hash, hexToBytes(block1Rlp))
   const contentKey = ContentKeyType.serialize(
-    concatBytes(
-      Uint8Array.from([HistoryNetworkContentType.BlockHeader]),
-      fromHexString(block1Hash),
-    ),
+    concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockHeader]), hexToBytes(block1Hash)),
   )
   const header = await protocol.sendFindContent('0xabcd', contentKey)
   it('should send a FINDCONTENT message for a block header', () => {
@@ -82,10 +78,12 @@ describe('history Protocol FINDCONTENT/FOUNDCONTENT message handlers', async () 
 
 describe('store -- Headers and Epoch Accumulators', async () => {
   it('Should store and retrieve block header from DB', async () => {
-    const epoch = readFileSync(
-      './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-      { encoding: 'hex' },
-    )
+    const epoch =
+      '0x' +
+      readFileSync(
+        './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+        { encoding: 'hex' },
+      )
     const node = await PortalNetwork.create({
       transport: TransportLayer.WEB,
       supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -97,27 +95,24 @@ describe('store -- Headers and Epoch Accumulators', async () => {
     await protocol.store(
       HistoryNetworkContentType.EpochAccumulator,
       '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
-      fromHexString(epoch),
+      hexToBytes(epoch),
     )
     const proof = await protocol.generateInclusionProof(1n)
     await protocol.store(
       HistoryNetworkContentType.BlockHeader,
       block1Hash,
       BlockHeaderWithProof.serialize({
-        header: fromHexString(block1Rlp),
+        header: hexToBytes(block1Rlp),
         proof: {
           selector: 1,
           value: proof,
         },
       }),
     )
-    const contentKey = getContentKey(
-      HistoryNetworkContentType.BlockHeader,
-      fromHexString(block1Hash),
-    )
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(block1Hash))
 
     const val = await node.db.get(ProtocolId.HistoryNetwork, contentKey)
-    const headerWith = BlockHeaderWithProof.deserialize(fromHexString(val))
+    const headerWith = BlockHeaderWithProof.deserialize(hexToBytes(val))
     const header = BlockHeader.fromRLPSerializedHeader(headerWith.header, {
       setHardfork: true,
     })
@@ -131,13 +126,13 @@ describe('store -- Headers and Epoch Accumulators', async () => {
     })
     const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
     const epochAccumulator = require('../../testData/testEpoch.json')
-    const rebuilt = EpochAccumulator.deserialize(fromHexString(epochAccumulator.serialized))
+    const rebuilt = EpochAccumulator.deserialize(hexToBytes(epochAccumulator.serialized))
     const hashRoot = EpochAccumulator.hashTreeRoot(rebuilt)
     const contentKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, hashRoot)
     await protocol.store(
       HistoryNetworkContentType.EpochAccumulator,
       toHexString(hashRoot),
-      fromHexString(epochAccumulator.serialized),
+      hexToBytes(epochAccumulator.serialized),
     )
     const fromDB = await protocol.retrieve(contentKey)
     assert.equal(fromDB, epochAccumulator.serialized, 'Retrieve EpochAccumulator test passed.')
@@ -151,15 +146,17 @@ describe('store -- Block Bodies and Receipts', async () => {
   })
   const protocol = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const serializedBlock = testBlocks.block207686
-  const blockRlp = RLP.decode(fromHexString(serializedBlock.blockRlp))
+  const blockRlp = RLP.decode(hexToBytes(serializedBlock.blockRlp))
   const block = Block.fromValuesArray(blockRlp as BlockBytes, { setHardfork: true })
-  const epoch = readFileSync(
-    './test/subprotocols/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
-    { encoding: 'hex' },
-  )
+  const epoch =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
+      { encoding: 'hex' },
+    )
   const epochHash = '0x987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa'
 
-  await protocol.store(HistoryNetworkContentType.EpochAccumulator, epochHash, fromHexString(epoch))
+  await protocol.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
   const _epochHash = toHexString(epochRootByBlocknumber(207686n))
   it('Should store and retrieve a block body from DB', async () => {
     assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
@@ -180,21 +177,18 @@ describe('store -- Block Bodies and Receipts', async () => {
     sszEncodeBlockBody(block),
   )
   const header = BlockHeaderWithProof.deserialize(
-    fromHexString(
+    hexToBytes(
       await protocol.get(
         ProtocolId.HistoryNetwork,
-        getContentKey(
-          HistoryNetworkContentType.BlockHeader,
-          fromHexString(serializedBlock.blockHash),
-        ),
+        getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(serializedBlock.blockHash)),
       ),
     ),
   ).header
   const body = await protocol.get(
     ProtocolId.HistoryNetwork,
-    getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(serializedBlock.blockHash)),
+    getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(serializedBlock.blockHash)),
   )
-  const rebuilt = reassembleBlock(header, fromHexString(body!))
+  const rebuilt = reassembleBlock(header, hexToBytes(body!))
 
   it('Should store and retrieve a block body from DB', async () => {
     assert.equal(
@@ -211,11 +205,13 @@ describe('store -- Block Bodies and Receipts', async () => {
 
 describe('Header Proof Tests', async () => {
   const _epoch1Hash = '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218'
-  const _epochRaw = readFileSync(
-    './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-    { encoding: 'hex' },
-  )
-  const _epoch1 = EpochAccumulator.deserialize(fromHexString(_epochRaw))
+  const _epochRaw =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+      { encoding: 'hex' },
+    )
+  const _epoch1 = EpochAccumulator.deserialize(hexToBytes(_epochRaw))
   const node = await PortalNetwork.create({
     transport: TransportLayer.WEB,
     supportedProtocols: [ProtocolId.HistoryNetwork],
@@ -227,11 +223,11 @@ describe('Header Proof Tests', async () => {
     await protocol.store(
       HistoryNetworkContentType.EpochAccumulator,
       _epoch1Hash,
-      fromHexString(_epochRaw),
+      hexToBytes(_epochRaw),
     )
     const proof = await protocol.generateInclusionProof(1000n)
     const headerWith = BlockHeaderWithProof.serialize({
-      header: fromHexString(_block1000.rawHeader),
+      header: hexToBytes(_block1000.rawHeader),
       proof: {
         selector: 1,
         value: proof,

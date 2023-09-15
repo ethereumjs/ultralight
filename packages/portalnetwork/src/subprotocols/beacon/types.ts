@@ -2,10 +2,9 @@ import { ByteListType, ContainerType, ListCompositeType, UintBigintType } from '
 import { ForkName } from '@lodestar/params'
 import { Bytes32Type } from '../types.js'
 
-export const MainnetGenesisValidatorsRoot =
-  '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95'
-
 export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
+
+export const MIN_BOOTSTRAP_VOTES = 5
 
 export enum BeaconLightClientNetworkContentType {
   LightClientBootstrap = 0,
@@ -32,5 +31,9 @@ export const LightClientUpdatesByRangeKey = new ContainerType({
   startPeriod: new UintBigintType(8),
   count: new UintBigintType(8),
 })
-export const LightClientFinalityUpdateKey = new ContainerType({ zero: new UintBigintType(8) })
-export const LightClientOptimisticUpdateKey = new ContainerType({ zero: new UintBigintType(8) })
+export const LightClientFinalityUpdateKey = new ContainerType({
+  finalizedSlot: new UintBigintType(8),
+})
+export const LightClientOptimisticUpdateKey = new ContainerType({
+  optimisticSlot: new UintBigintType(8),
+})

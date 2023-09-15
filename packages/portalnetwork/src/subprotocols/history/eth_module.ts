@@ -1,4 +1,4 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import {
   EpochAccumulator,
@@ -11,6 +11,7 @@ import {
   BlockHeaderWithProof,
 } from './index.js'
 import { ContentLookup, ContentLookupResponse } from '../index.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 export class ETH {
   protocol: HistoryProtocol
@@ -21,12 +22,12 @@ export class ETH {
     blockHash: string,
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
-    const headerContentKey = fromHexString(
-      getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash)),
+    const headerContentKey = hexToBytes(
+      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
     )
 
     const bodyContentKey = includeTransactions
-      ? fromHexString(getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(blockHash)))
+      ? hexToBytes(getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash)))
       : undefined
     let lookupResponse: ContentLookupResponse
     let header: any
@@ -71,7 +72,7 @@ export class ETH {
     let blockHash
     const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
     const lookupKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)
-    const epoch_lookup = new ContentLookup(this.protocol, fromHexString(lookupKey))
+    const epoch_lookup = new ContentLookup(this.protocol, hexToBytes(lookupKey))
     const result = await epoch_lookup.startLookup()
 
     if (result && 'content' in result) {

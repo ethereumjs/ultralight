@@ -17,7 +17,8 @@ import {
 } from '../../src/index.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { BitArray, fromHexString } from '@chainsafe/ssz'
+import { BitArray } from '@chainsafe/ssz'
+import { hexToBytes } from '@ethereumjs/util'
 
 describe('protocol wire message tests', async () => {
   const node = await PortalNetwork.create({
@@ -34,9 +35,9 @@ describe('protocol wire message tests', async () => {
         td.matchers.anything(),
         td.matchers.anything(),
       ),
-    ).thenResolve(fromHexString('0x1234'))
+    ).thenResolve(hexToBytes('0x1234'))
     const res = await baseProtocol.sendMessage('enr', new Uint8Array(), ProtocolId.HistoryNetwork)
-    assert.deepEqual(res, fromHexString('0x1234'), 'sendMessage should return the response')
+    assert.deepEqual(res, hexToBytes('0x1234'), 'sendMessage should return the response')
   })
 
   it('PING/PONG message handlers', async () => {

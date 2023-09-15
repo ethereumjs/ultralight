@@ -2,11 +2,11 @@
   "name": "ultralight",
   "private": true,
   "workspaces": [
+    "./",
     "./packages/portalnetwork",
     "./packages/cli",
     "./packages/proxy",
     "./packages/browser-client"
-
   ],
   "engines": {
     "npm": ">=7",

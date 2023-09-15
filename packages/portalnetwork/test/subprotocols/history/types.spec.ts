@@ -1,6 +1,6 @@
-import { ContainerType, fromHexString, toHexString, UintBigintType } from '@chainsafe/ssz'
+import { ContainerType, toHexString, UintBigintType } from '@chainsafe/ssz'
 import { describe, it, assert } from 'vitest'
-import { randomBytes } from '@ethereumjs/util'
+import { hexToBytes, randomBytes } from '@ethereumjs/util'
 import {
   getContentId,
   getContentKey,
@@ -27,10 +27,7 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
   it('content Key', () => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     let encodedKey = ContentKeyType.serialize(
-      concatBytes(
-        Uint8Array.from([HistoryNetworkContentType.BlockHeader]),
-        fromHexString(blockHash),
-      ),
+      concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockHeader]), hexToBytes(blockHash)),
     )
     let contentId = getContentId(HistoryNetworkContentType.BlockHeader, blockHash)
     assert.equal(
@@ -45,7 +42,7 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockBody]), fromHexString(blockHash)),
+      concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockBody]), hexToBytes(blockHash)),
     )
     contentId = getContentId(HistoryNetworkContentType.BlockBody, blockHash)
     assert.equal(
@@ -60,7 +57,7 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
     encodedKey = ContentKeyType.serialize(
-      concatBytes(Uint8Array.from([HistoryNetworkContentType.Receipt]), fromHexString(blockHash)),
+      concatBytes(Uint8Array.from([HistoryNetworkContentType.Receipt]), hexToBytes(blockHash)),
     )
     contentId = getContentId(HistoryNetworkContentType.Receipt, blockHash)
     assert.equal(
@@ -152,10 +149,10 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
       },
     ]
     const serializedReceipts = [
-      fromHexString(
+      hexToBytes(
         '0x02f9016d0164b9010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f866f864940000000000000000000000000000000000000000f842a00000000000000000000000000000000000000000000000000000000000000000a001010101010101010101010101010101010101010101010101010101010101018a00000000000000000000',
       ),
-      fromHexString(
+      hexToBytes(
         '0xf9016f008203e8b9010001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101f866f864940101010101010101010101010101010101010101f842a00101010101010101010101010101010101010101010101010101010101010101a001010101010101010101010101010101010101010101010101010101010101018a00000000000000000000',
       ),
     ]
@@ -219,12 +216,12 @@ describe('History Subprotocol contentKey serialization/deserialization', () => {
 })
 
 describe('Header With Proof serialization/deserialization tests', async () => {
-  const masterAccumulator = readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
-    encoding: 'hex',
-  })
-  const _historicalEpochs = HistoricalEpochsType.deserialize(
-    fromHexString(masterAccumulator).slice(4),
-  )
+  const masterAccumulator =
+    '0x' +
+    readFileSync('./src/subprotocols/history/data/merge_macc.bin', {
+      encoding: 'hex',
+    })
+  const _historicalEpochs = HistoricalEpochsType.deserialize(hexToBytes(masterAccumulator).slice(4))
   const MasterAccumulatorType = new ContainerType({
     historicalEpochs: HistoricalEpochsType,
   })
@@ -233,23 +230,25 @@ describe('Header With Proof serialization/deserialization tests', async () => {
   })
   it('should serialize/deserialize', async () => {
     assert.deepEqual(
-      fromHexString(masterAccumulator),
+      hexToBytes(masterAccumulator),
       serialized_container,
       'Serialized Container matches MasterAccumulator',
     )
   })
 
-  const actualEpoch = readFileSync(
-    './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
-    { encoding: 'hex' },
-  )
+  const actualEpoch =
+    '0x' +
+    readFileSync(
+      './test/subprotocols/history/testData/0x03cddbda3fd6f764602c06803ff083dbfc73f2bb396df17a31e5457329b9a0f38d.portalcontent',
+      { encoding: 'hex' },
+    )
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     supportedProtocols: [ProtocolId.HistoryNetwork],
   })
   const history = node.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  const serializedBlock1 = fromHexString(testData[1000001].content_value)
-  const serializedBlock2 = fromHexString(testData[1000002].content_value)
+  const serializedBlock1 = hexToBytes(testData[1000001].content_value)
+  const serializedBlock2 = hexToBytes(testData[1000002].content_value)
   const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)
   const headerWithProof2 = BlockHeaderWithProof.deserialize(serializedBlock2)
   const deserializedHeader = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
@@ -262,7 +261,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
   })
   const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, deserializedHeader.hash())
   const epochHash = historicalEpochs[Math.floor(1000001 / 8192)]
-  const actual_Epoch = EpochAccumulator.deserialize(fromHexString(actualEpoch))
+  const actual_Epoch = EpochAccumulator.deserialize(hexToBytes(actualEpoch))
   const tree = EpochAccumulator.value_toTree(actual_Epoch)
   const proof = EpochAccumulator.createFromProof(
     {
@@ -271,7 +270,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
       witnesses: headerWithProof.proof.value!,
       leaf: deserializedHeader.hash(),
     },
-    fromHexString(epochHash),
+    hexToBytes(epochHash),
   )
   it('should validate', async () => {
     assert.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)

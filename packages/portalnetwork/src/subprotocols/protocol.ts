@@ -1,7 +1,7 @@
 import { distance, ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
 import { ITalkReqMessage } from '@chainsafe/discv5/message'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { toHexString, fromHexString, BitArray } from '@chainsafe/ssz'
+import { toHexString, BitArray } from '@chainsafe/ssz'
 import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { Debugger } from 'debug'
 import {
@@ -35,7 +35,7 @@ import {
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
 import { EventEmitter } from 'events'
-import { bytesToInt, concatBytes } from '@ethereumjs/util'
+import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
 
 export abstract class BaseProtocol extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
@@ -58,6 +58,7 @@ export abstract class BaseProtocol extends EventEmitter {
   put: (protocol: ProtocolId, contentKey: string, content: string) => void
   get: (protocol: ProtocolId, contentKey: string) => Promise<string>
   _prune: (protocol: ProtocolId, radius: bigint) => Promise<void>
+  portal: PortalNetwork
   constructor(client: PortalNetwork, radius?: bigint) {
     super()
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
@@ -71,15 +72,13 @@ export abstract class BaseProtocol extends EventEmitter {
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
+    this.portal = client
     this.metrics = client.metrics
     if (this.metrics) {
       this.metrics.knownHistoryNodes.collect = () => {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
-    client.uTP.on('Stream', async (contentType: number, hash: string, value: Uint8Array) => {
-      await this.store(contentType, hash, value)
-    })
   }
 
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
@@ -362,7 +361,7 @@ export abstract class BaseProtocol extends EventEmitter {
             for await (const key of requestedKeys) {
               let value = Uint8Array.from([])
               try {
-                value = fromHexString(await this.get(this.protocolId, toHexString(key)))
+                value = hexToBytes(await this.get(this.protocolId, toHexString(key)))
                 requestedData.push(value)
               } catch (err: any) {
                 this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -389,7 +388,7 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  protected handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`,
     )
@@ -439,7 +438,7 @@ export abstract class BaseProtocol extends EventEmitter {
     }
   }
 
-  private sendAccept = async (
+  protected sendAccept = async (
     src: INodeAddress,
     requestId: bigint,
     desiredContentAccepts: boolean[],
@@ -497,6 +496,7 @@ export abstract class BaseProtocol extends EventEmitter {
     if (!value || value.length === 0) {
       // Discv5 calls for maximum of 16 nodes per NODES message
       const ENRs = this.routingTable.nearest(lookupKey, 16)
+
       const encodedEnrs = ENRs.map((enr) => {
         // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
         // contentId than this node
@@ -595,6 +595,7 @@ export abstract class BaseProtocol extends EventEmitter {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
       }
+      this.portal.emit('NodeAdded', enr.nodeId, this.protocolId)
     } catch (err) {
       this.logger(`Something went wrong: ${(err as any).message}`)
       try {
@@ -605,6 +606,7 @@ export abstract class BaseProtocol extends EventEmitter {
           const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
           this.routingTable.updateRadius(enr.nodeId, decodedPayload.radius)
         }
+        this.portal.emit('NodeAdded', enr.nodeId, this.protocolId)
       } catch (e) {
         this.logger(`Something went wrong : ${(e as any).message}`)
       }
@@ -742,5 +744,14 @@ export abstract class BaseProtocol extends EventEmitter {
       }
     }
     return accepted
+  }
+
+  public async retrieve(contentKey: string): Promise<string | undefined> {
+    try {
+      const content = await this.get(this.protocolId, contentKey)
+      return content
+    } catch {
+      this.logger('Error retrieving content from DB')
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
@@ -24,6 +24,7 @@ import {
   UtpSocketType,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Socket/ContentReader.js'
+import { hexToBytes } from '@ethereumjs/util'
 
 const blocks = {
   '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220': {
@@ -177,15 +178,12 @@ describe('uTP Reader/Writer tests', () => {
 
     const offerContentHashes = Object.keys(blocks)
     const offerContents = Object.values(blocks).map((block) => {
-      return fromHexString(block.rlp)
+      return hexToBytes(block.rlp)
     })
 
     const offerContentIds = offerContentHashes.map((hash) => {
       return ContentKeyType.serialize(
-        Buffer.concat([
-          Uint8Array.from([HistoryNetworkContentType.BlockBody]),
-          fromHexString(hash),
-        ]),
+        Buffer.concat([Uint8Array.from([HistoryNetworkContentType.BlockBody]), hexToBytes(hash)]),
       )
     })
 
@@ -329,7 +327,7 @@ describe('PortalNetworkUTP test', () => {
       peerId: '0xPeerAddress',
       connectionId,
       requestCode: RequestCode.FOUNDCONTENT_WRITE,
-      contents: [fromHexString('0x1234')],
+      contents: [hexToBytes('0x1234')],
     }
     let contentRequest = await utp.handleNewRequest(params)
     let requestKey = createSocketKey(params.peerId, connectionId)
@@ -357,7 +355,7 @@ describe('PortalNetworkUTP test', () => {
     )
     assert.deepEqual(
       contentRequest.content,
-      fromHexString('0x1234'),
+      hexToBytes('0x1234'),
       'contentRequest has correct content',
     )
     assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
@@ -368,7 +366,7 @@ describe('PortalNetworkUTP test', () => {
     )
     assert.deepEqual(
       contentRequest.socket.content,
-      fromHexString('0x1234'),
+      hexToBytes('0x1234'),
       'contentRequest socket has correct content',
     )
     utp.closeRequest(params.connectionId, params.peerId)
@@ -416,7 +414,7 @@ describe('PortalNetworkUTP test', () => {
     params = {
       ...params,
       requestCode: RequestCode.OFFER_WRITE,
-      contents: [fromHexString('0x1234')],
+      contents: [hexToBytes('0x1234')],
     }
     contentRequest = await utp.handleNewRequest(params)
     requestKey = createSocketKey(params.peerId, params.connectionId)
@@ -508,9 +506,9 @@ describe('PortalNetworkUTP test', () => {
     const contents = [randomBytes(100), randomBytes(100), randomBytes(100)]
     const contentHashes = contents.map(() => toHexString(randomBytes(32)))
     const contentKeys = contentHashes.map((hash) =>
-      fromHexString(getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))),
+      hexToBytes(getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(hash))),
     )
-    utp.on('Stream', (selector, hash, value) => {
+    utp.on(ProtocolId.HistoryNetwork, (selector, hash, value) => {
       assert.equal(selector, HistoryNetworkContentType.BlockHeader, 'Stream selector correct')
       assert.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
       assert.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')

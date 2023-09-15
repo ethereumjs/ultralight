@@ -6,7 +6,6 @@ import { it, assert } from 'vitest'
 import {
   addRLPSerializedBlock,
   BlockHeaderWithProof,
-  fromHexString,
   getContentKey,
   HistoryNetworkContentType,
   HistoryProtocol,
@@ -18,7 +17,7 @@ import {
 import { createRequire } from 'module'
 import { EventEmitter } from 'events'
 import { SignableENR } from '@chainsafe/discv5'
-import { bytesToHex } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -27,12 +26,14 @@ const privateKeys = [
 ]
 
 const testBlockData = require('../testData/testBlocks.json')
-const epoch25 = readFileSync(
-  './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
-  { encoding: 'hex' },
-)
+const epoch25 =
+  '0x' +
+  readFileSync(
+    './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
+    { encoding: 'hex' },
+  )
 const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
-  return Block.fromRLPSerializedBlock(fromHexString(testBlock.rlp), {
+  return Block.fromRLPSerializedBlock(hexToBytes(testBlock.rlp), {
     setHardfork: true,
   })
 })
@@ -44,11 +45,11 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
 })
 
 it('gossip test', async () => {
-  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5000`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5001`)
   enr2.setLocationMultiaddr(initMa2)
@@ -90,18 +91,18 @@ it('gossip test', async () => {
   await protocol1.store(
     HistoryNetworkContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    fromHexString(epoch25),
+    hexToBytes(epoch25),
   )
   // await protocol2.store(
   //   HistoryNetworkContentType.EpochAccumulator,
   //   '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-  //   fromHexString(epoch25)
+  //   hexToBytes(epoch25)
   // )
   assert.equal(
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
-    '0x' + epoch25,
+    epoch25,
     'epoch 25 added',
   )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
@@ -125,7 +126,7 @@ it('gossip test', async () => {
   const end = new EventEmitter()
   protocol2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
-      const headerWithProof = BlockHeaderWithProof.deserialize(fromHexString(content))
+      const headerWithProof = BlockHeaderWithProof.deserialize(hexToBytes(content))
       const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
         setHardfork: true,
       })
@@ -147,11 +148,11 @@ it('gossip test', async () => {
 }, 20000)
 
 it('FindContent', async () => {
-  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
@@ -187,13 +188,13 @@ it('FindContent', async () => {
   await protocol1.store(
     HistoryNetworkContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    fromHexString(epoch25),
+    hexToBytes(epoch25),
   )
   assert.equal(
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
-    '0x' + epoch25,
+    epoch25,
     'epoch 25 added',
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
@@ -201,11 +202,8 @@ it('FindContent', async () => {
 
   const res = await protocol2.sendFindContent(
     node1.discv5.enr.nodeId,
-    fromHexString(
-      getContentKey(
-        HistoryNetworkContentType.BlockHeader,
-        fromHexString(testBlockData[29].blockHash),
-      ),
+    hexToBytes(
+      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(testBlockData[29].blockHash)),
     ),
   )
   const headerWithProof = BlockHeaderWithProof.deserialize(res!.value as Uint8Array)
@@ -220,11 +218,11 @@ it('FindContent', async () => {
 })
 
 it('eth_getBlockByHash', async () => {
-  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
@@ -259,13 +257,13 @@ it('eth_getBlockByHash', async () => {
   await protocol1.store(
     HistoryNetworkContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    fromHexString(epoch25),
+    hexToBytes(epoch25),
   )
   assert.equal(
     await protocol1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
-    '0x' + epoch25,
+    epoch25,
     'epoch 25 added',
   )
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
@@ -283,11 +281,11 @@ it('eth_getBlockByHash', async () => {
 })
 
 it('eth_getBlockByNumber', async () => {
-  const id1 = await createFromProtobuf(fromHexString(privateKeys[0]))
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(fromHexString(privateKeys[1]))
+  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
   enr2.setLocationMultiaddr(initMa2)
@@ -331,8 +329,8 @@ it('eth_getBlockByNumber', async () => {
   const blockRlp = block1000.raw
   const blockHash = block1000.hash
 
-  await protocol1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, fromHexString(epoch))
-  await protocol2.store(HistoryNetworkContentType.EpochAccumulator, epochHash, fromHexString(epoch))
+  await protocol1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
+  await protocol2.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
   await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
   await protocol1.sendPing(protocol2?.enr!.toENR())
   const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
