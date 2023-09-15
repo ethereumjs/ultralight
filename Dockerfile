@@ -4,8 +4,6 @@ RUN apk update && apk add --no-cache bash g++ make git python3 && rm -rf /var/ca
 
 RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
-WORKDIR /ultralight
-
 RUN npm i --omit-dev
 
 COPY . .
