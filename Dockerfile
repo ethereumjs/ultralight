@@ -22,4 +22,4 @@ COPY --from=BUILD_IMAGE /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 ENV bindAddress=
 ENV rpcPort=
 ENV pk=
-ENTRYPOINT ["node /ultralight/packages/cli/dist/index.js"]
+ENTRYPOINT ["node /packages/cli/dist/index.js"]
