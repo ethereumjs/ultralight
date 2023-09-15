@@ -2,6 +2,7 @@
   "name": "ultralight",
   "private": true,
   "workspaces": [
+    "./",
     "./packages/portalnetwork",
     "./packages/cli",
     "./packages/proxy",
