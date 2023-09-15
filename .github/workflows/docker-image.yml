@@ -28,5 +28,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: acolytec3/ultralight:latest
+          tags: ghcr.io/acolytec3/ultralight:latest
   
