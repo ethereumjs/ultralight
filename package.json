@@ -13,8 +13,6 @@
     "node": ">=18"
   },
   "scripts": {
-    "preinstall": "npm run checkNpmVersion",
-    "checkNpmVersion": "bash ./scripts/check-npm-version.sh",
     "postinstall": "npm run build --workspaces --if-present",
     "start-proxy": "npm run start -w=proxy -- --nat=localhost",
     "start-browser-client": "npm run start-testnet -w=browser-client",
