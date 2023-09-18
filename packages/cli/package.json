@@ -21,7 +21,7 @@
     "vitest": "^0.34.1"
   },
   "dependencies": {
-    "@chainsafe/discv5": "5.0.1",
+    "@chainsafe/discv5": "5.1.1",
     "@chainsafe/ssz": "^0.11.1",
     "@ethereumjs/block": "5.0.0",
     "@ethereumjs/rlp": "5.0.0",

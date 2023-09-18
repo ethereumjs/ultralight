@@ -12,6 +12,7 @@ COPY package*.json ./
 COPY . .
 RUN npm i --omit-dev
 
+LABEL org.opencontainers.image.source=https://github.com/acolytec3/ultralight
 
 FROM node:18-alpine
 WORKDIR /ultralight
@@ -20,7 +21,8 @@ COPY --from=BUILD_IMAGE /ultralight/node_modules ./node_modules
 COPY --from=BUILD_IMAGE /ultralight/packages/portalnetwork ./packages/portalnetwork
 COPY --from=BUILD_IMAGE /ultralight/packages/cli ./packages/cli
 COPY --from=BUILD_IMAGE /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
-ENV bindAddress=
-ENV rpcPort=
-ENV pk=
-ENTRYPOINT ["node /packages/cli/dist/index.js"]
+ENV BINDADDRESS=
+ENV RPCPORT=
+ENV PK=
+
+ENTRYPOINT node packages/cli/dist/index.js --bindAddress=BINDADDRESS --rpcPort=RPCPORT
