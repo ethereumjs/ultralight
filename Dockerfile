@@ -12,6 +12,7 @@ COPY package*.json ./
 COPY . .
 RUN npm i --omit-dev
 
+LABEL org.opencontainers.image.source=https://github.com/ethereumjs/ultralight
 
 FROM node:18-alpine
 WORKDIR /ultralight
