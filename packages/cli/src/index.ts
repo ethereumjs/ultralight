@@ -90,9 +90,10 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 }
 
 const main = async () => {
-  const cmd = 'hostname -i'
+  const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
-  const ip = args.bindAddress ?? pubIp[0].trim()
+  const ip = args.bindAddress ? args.bindAddress.split(':')[0] : pubIp[0].trim()
+  const bindPort = args.bindAddress ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
@@ -102,7 +103,7 @@ const main = async () => {
     id = await createFromProtobuf(fromHexString(args.pk))
   }
   const enr = SignableENR.createFromPeerId(id)
-  const initMa: any = multiaddr(`/ip4/${ip}/udp/${args.rpcPort}`)
+  const initMa: any = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
 
   const metrics = setupMetrics()
@@ -151,7 +152,7 @@ const main = async () => {
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*')
+  portal.enableLog('ultralight,*Portal*')
 
   let metricsServer: http.Server | undefined
 
@@ -161,8 +162,15 @@ const main = async () => {
       register.registerMetric(entry[1])
     })
     metricsServer?.listen(args.metricsPort)
-    log(`Started Metrics Server address=http://${ip}:${args.metricsPort}`)
+    log(`Started Metrics Server address=http://${args.rpcAddr ?? '127.0.0.1'}:${args.metricsPort}`)
   }
+
+  process.on('uncaughtException', (err) => {
+    // Hack to catch uncaught exceptions that are thrown in async events/functions and aren't caught in
+    // main process (notably a seeming new discv5 bug where certain RPC failures aren't properly handled)
+    log(`Uncaught error: ${err.message}`)
+    log(err)
+  })
   await portal.start()
 
   const bootnodes: Array<Enr> = []
@@ -214,9 +222,9 @@ const main = async () => {
         }
       },
     })
-    server.http().listen(args.rpcPort)
+    server.http().listen(args.rpcPort ?? 8545, args.rpcAddr ?? '127.0.0.1')
 
-    log(`Started JSON RPC Server address=http://${ip}:${args.rpcPort}`)
+    log(`Started JSON RPC Server address=http://${args.rpcAddr ?? '127.0.0.1'}:${args.rpcPort}`)
 
     if (args.trustedBlockRoot !== undefined) {
       const beaconProtocol = portal.protocols.get(
