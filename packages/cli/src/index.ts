@@ -183,7 +183,7 @@ const main = async () => {
       }
     }
   } catch (error: any) {
-    throw new Error(`${error.message ?? error}`)
+    log(`${error.message ?? error}`)
   }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
