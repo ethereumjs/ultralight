@@ -91,8 +91,8 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   const cmd = 'hostname -i'
-  const pubIp = execSync(cmd).toString().split(':')
-  const ip = args.rpcAddr ?? pubIp[0].trim()
+  const pubIp = execSync(cmd).toString().split(' ')
+  const ip = args.bindAddress ?? pubIp[0].trim()
   const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
@@ -151,9 +151,7 @@ const main = async () => {
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog(
-    '*BOOTSTRAP,*LightClientTransport,*LightClient:DEBUG,*LightClient:INFO,*LightClient:WARN,*LightClient:ERROR,-FINDNODES,-ACCEPT,-OFFER,-FOUNDCONTENT',
-  )
+  portal.enableLog('*')
 
   let metricsServer: http.Server | undefined
 
@@ -184,13 +182,8 @@ const main = async () => {
         await addBootNode(protocol[0], protocol[1], bootnode)
       }
     }
-    portal.protocols.forEach(async (value, key, _) => {
-      for (const bootnode of bootnodes) {
-        await addBootNode(key, value, bootnode)
-      }
-    })
   } catch (error: any) {
-    throw new Error(`${error.message ?? error}`)
+    log(`${error.message ?? error}`)
   }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
