@@ -35,7 +35,7 @@ jobs:
         working-directory: ${{ github.workspace }}
       
       - run: npx ts-node --esm scripts/devnet.ts --numNodes=10 --ip=127.0.0.1 &
-
+      - run: curl -d {"id":"1","jsonrpc":"2.0","method":"portal_beaconLocalContent","params":["0xb4e2502455def072118cf5849d2243f6bc3cd9a834290fdbb55619fd4e593663"]} http://127.0.0.1:8545 -s -S -v -H "Content-Type: application/json" -H "Accept: application/json, */*"
       - run: |
-          sleep 10 &&
+          sleep 20 &&
           npx ts-node --esm scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10
