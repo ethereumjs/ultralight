@@ -56,10 +56,10 @@ type TestClient = {
 const numBlocks = 4
 
 const main = async () => {
-  const ultralight = Client.http({ port: args.rpcPort })
-  const peer1 = Client.http({ port: args.rpcPort + 1 })
-  const peer2 = Client.http({ port: args.rpcPort + 2 })
-  const peer3 = Client.http({ port: args.rpcPort + 3 })
+  const ultralight = Client.http({ port: args.rpcPort, host: '127.0.0.1' })
+  const peer1 = Client.http({ port: args.rpcPort + 1, host: '127.0.0.1' })
+  const peer2 = Client.http({ port: args.rpcPort + 2, host: '127.0.0.1' })
+  const peer3 = Client.http({ port: args.rpcPort + 3, host: '127.0.0.1' })
   const clients = [ultralight, peer1, peer2, peer3]
   const clientInfo: Record<Clients, TestClient> = {
     ultralight: { client: ultralight, enr: '', nodeId: '' },
@@ -183,4 +183,4 @@ const main = async () => {
   await testRes([clients[2]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
 
-main()
+main().catch(err => console.log(err))
