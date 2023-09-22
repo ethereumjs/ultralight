@@ -103,7 +103,7 @@ const main = async () => {
     id = await createFromProtobuf(fromHexString(args.pk))
   }
   const enr = SignableENR.createFromPeerId(id)
-  const initMa: any = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
+  const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
 
   const metrics = setupMetrics()
@@ -222,7 +222,9 @@ const main = async () => {
         }
       },
     })
-    server.http().listen(args.rpcPort ?? 8545, args.rpcAddr ?? '127.0.0.1')
+    const rpcAddr = args.rpcAddr ?? ip
+    const rpcPort = args.rpcPort ?? 8545
+    server.http().listen(rpcPort, rpcAddr)
 
     log(`Started JSON RPC Server address=http://${args.rpcAddr ?? '127.0.0.1'}:${args.rpcPort}`)
 
@@ -246,6 +248,6 @@ const main = async () => {
 }
 
 main().catch((err) => {
-  console.log('Encountered an error', err)
-  console.log('Shutting down...')
+  console.error('Encountered an error', err)
+  console.error('Shutting down...')
 })
