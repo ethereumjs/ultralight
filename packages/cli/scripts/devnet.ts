@@ -26,7 +26,7 @@ const args: any = yargs(hideBin(process.argv))
     }).option('port', {
         describe: 'starting port number',
         number: true,
-        default: 8545
+        default: 9000
     }).option('networks', {
       describe: 'supported subnetworks',
       array: true,
@@ -37,6 +37,7 @@ const main = async () => {
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
   const ip = args.ip ?? pubIp[0]
+
   let children: ChildProcessByStdio<any, any, null>[] = []
   const file = require.resolve(process.cwd() + '/dist/index.js')
   if (args.pks) {
@@ -46,11 +47,13 @@ const main = async () => {
         process.execPath,
         [
           file,
+          `--rpc`,
           `--rpcAddr=${ip}`,
           `--pk=${key}`,
           `--rpcPort=${8545 + idx}`,
           `--metrics=true`,
           `--metricsPort=${18545 + idx}`,
+          `--bindAddress-${ip}:${args.port + idx}`,
           args.networks ? `--networks=${(args.networks as Array<string>).join(' ')}` : ''
         ],
         { stdio: ['pipe', 'pipe', process.stderr] }
@@ -67,6 +70,7 @@ const main = async () => {
           `--rpcPort=${8545 + x}`,
           `--metrics=true`,
           `--metricsPort=${18545 + x}`,
+          `--bindAddress=${ip}:${args.port + x}`,
           args.networks ? `--networks=${(args.networks as Array<string>).join(' ')}` : ''
         ],
         { stdio: ['pipe', 'pipe', process.stderr] }
