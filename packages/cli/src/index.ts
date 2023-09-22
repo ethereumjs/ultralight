@@ -154,6 +154,7 @@ const main = async () => {
 
   portal.enableLog('ultralight,*Portal*')
 
+  const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
@@ -161,8 +162,8 @@ const main = async () => {
     Object.entries(metrics).forEach((entry) => {
       register.registerMetric(entry[1])
     })
-    metricsServer?.listen(args.metricsPort)
-    log(`Started Metrics Server address=http://${args.rpcAddr ?? '127.0.0.1'}:${args.metricsPort}`)
+    metricsServer?.listen(args.metricsPort, rpcAddr)
+    log(`Started Metrics Server address=http://${rpcAddr}:${args.metricsPort}`)
   }
 
   process.on('uncaughtException', (err) => {
@@ -222,11 +223,10 @@ const main = async () => {
         }
       },
     })
-    const rpcAddr = args.rpcAddr ?? ip
     const rpcPort = args.rpcPort ?? 8545
     server.http().listen(rpcPort, rpcAddr)
 
-    log(`Started JSON RPC Server address=http://${args.rpcAddr ?? '127.0.0.1'}:${args.rpcPort}`)
+    log(`Started JSON RPC Server address=http://${rpcAddr}:${rpcPort}`)
 
     if (args.trustedBlockRoot !== undefined) {
       const beaconProtocol = portal.protocols.get(

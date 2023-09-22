@@ -37,7 +37,7 @@ const main = async () => {
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
   const ip = args.ip ?? pubIp[0]
-  console.log(ip)
+
   let children: ChildProcessByStdio<any, any, null>[] = []
   const file = require.resolve(process.cwd() + '/dist/index.js')
   if (args.pks) {
