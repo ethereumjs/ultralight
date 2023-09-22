@@ -8,7 +8,6 @@
     "node": "^18"
   },
   "devDependencies": {
-    "@types/cors": "2.8.14",
     "@types/debug": "^4.1.7",
     "@types/node": "18.11.18",
     "@types/tape": "^4.13.2",
@@ -18,7 +17,6 @@
     "prettier": "^2.5.1",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
-    "tsx": "^3.12.7",
     "typescript": "^4.9.4",
     "vitest": "^0.34.1"
   },
@@ -36,7 +34,6 @@
     "@multiformats/multiaddr": "^11.0.0",
     "debug": "^4.3.3",
     "jayson": "^4.0.0",
-    "json-bigint": "^1.0.0",
     "level": "^8.0.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
@@ -44,16 +41,10 @@
     "@lodestar/config": "^1.9.2",
     "@lodestar/light-client": "^1.11.0",
     "@lodestar/params": "^1.9.2",
-    "@lodestar/types": "^1.9.2",
-    "@trpc/server": "10.38.3",
-    "cors":"2.8.5",
-    "zod": "^3.0.0",
-    "ws":"^8.14.1"
+    "@lodestar/types": "^1.9.2"
   },
   "scripts": {
     "start": "ts-node --esm src/index.ts",
-    "server:dev": "tsx watch src/server.ts",
-    "server:start": "node dist/server.js",
     "devnet": "npx ts-node --esm scripts/devnet.ts ",
     "dev": "npx nodemon --esm src/index.ts -- --bindAddress=127.0.0.1:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data'",
     "build": "tsc && cp bootnodes.txt ./dist",
