@@ -91,8 +91,9 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   const cmd = 'hostname -I'
-  const pubIp = execSync(cmd).toString().split(' ')
-  const ip = args.bindAddress ? args.bindAddress.split(':')[0] : pubIp[0].trim()
+  const ip = args.bindAddress
+    ? args.bindAddress.split(':')[0]
+    : execSync(cmd).toString().split(' ')[0].trim()
   const bindPort = args.bindAddress ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
   let id: PeerId
