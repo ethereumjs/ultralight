@@ -40,13 +40,12 @@ const main = async () => {
     }>()
     .create()
   const publicProcedure = t.procedure
-  const cmd = 'hostname -i'
-  const pubIp = execSync(cmd).toString().split(':')
+  const cmd = 'hostname -I'
+  const pubIp = execSync(cmd).toString().split(' ')[0]
   console.log('pubIp', pubIp)
-  const ip = '192.168.86.29'
   const id = await createSecp256k1PeerId()
   const enr = SignableENR.createFromPeerId(id)
-  const initMa: any = multiaddr(`/ip4/${ip}/udp/8546`)
+  const initMa: any = multiaddr(`/ip4/${pubIp}/udp/8546`)
   enr.setLocationMultiaddr(initMa)
   const config = {
     enr: enr,
