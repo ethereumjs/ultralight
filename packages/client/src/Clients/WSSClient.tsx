@@ -73,14 +73,16 @@ export function WSSClient() {
       routingTable: _peers,
     })
   }
-
-  // const nodeInfo = trpc.self.useQuery().data
-  // dispatch({
-  //   type: 'NODE_INFO',
-  //   ...nodeInfo,
-  // })
-  
+  const node = trpc.self.useMutation()
+  const getSelf = async () => { 
+    const nodeInfo = await node.mutateAsync()
+    dispatch({
+      type: 'NODE_INFO',
+      ...nodeInfo,
+    })
+  }
   useEffect(() => {
+    getSelf()
     getLocalRoutingTable()
     pingBootNodes()
   }, [])

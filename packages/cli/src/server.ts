@@ -110,7 +110,7 @@ const main = async () => {
     .meta({
       description: 'Get ENR, NodeId, Client Tag, and MultiAddress',
     })
-    .query(() => {
+    .mutation(() => {
       return {
         enr: portal.discv5.enr.encodeTxt(),
         nodeId: portal.discv5.enr.nodeId,

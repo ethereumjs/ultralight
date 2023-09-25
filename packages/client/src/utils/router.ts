@@ -30,7 +30,7 @@ const onTalkReq = publicProcedure.subscription(({ input }) => {
   })
 })
 
-const self = publicProcedure.query(() => {
+const self = publicProcedure.mutation(() => {
   return {
     enr: '',
     nodeId: '',
