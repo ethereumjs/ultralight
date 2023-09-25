@@ -15,7 +15,6 @@ import { Debugger } from 'debug'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 import { getBeaconContentKey } from './util.js'
-import { toHexString } from '@chainsafe/ssz'
 
 export class UltralightTransport implements LightClientTransport {
   protocol: BeaconLightClientNetwork
@@ -84,7 +83,7 @@ export class UltralightTransport implements LightClientTransport {
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({
-          optimisticSlot: currentSlot - 1n,
+          optimisticSlot: currentSlot,
         }),
       ),
     )
@@ -111,13 +110,16 @@ export class UltralightTransport implements LightClientTransport {
   }> {
     let finalityUpdate, forkname
 
-    this.logger('requesting latest LightClientFinalityUpdate')
+    const currentSlot = BigInt(
+      getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
+    )
+    this.logger(`requesting LightClientFinalityUpdate for ${currentSlot.toString(10)}`)
     // Try to get finality update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ finalizedSlot: 0n }),
+        LightClientFinalityUpdateKey.serialize({ finalizedSlot: currentSlot }),
       ),
     )
     if (decoded !== undefined) {
