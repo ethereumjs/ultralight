@@ -27,6 +27,7 @@ import {
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
 import SelectTx from './SelectTx'
+import { bytesToBigInt } from '@ethereumjs/util'
 
 const DisplayBlock = () => {
   const { state, dispatch } = useContext(AppContext as React.Context<AppContextType>)
@@ -98,7 +99,7 @@ const DisplayBlock = () => {
               ) : k === 'extraData' ? (
                 <HStack width="100%">
                   <Text paddingY={0} fontSize={'x-small'} width="50%">
-                    {Buffer.from(fromHexString(v)).toString()}
+                    {v}
                   </Text>
                   <Text paddingY={0} fontSize={'x-small'}>
                     {v}
@@ -181,13 +182,13 @@ const DisplayBlock = () => {
                       ? 'Undefineded for unknown reasons'
                       : typeof value
                     : key === 'coinbase'
-                    ? toHexString((value as any).buf as Buffer)
+                    ? toHexString((value as any).buf as Uint8Array)
                     : typeof value === 'string'
                     ? value
                     : typeof value === 'bigint'
                     ? value
                     : key === 'nonce'
-                    ? BigInt('0x' + (value as Buffer).toString('hex'))
+                    ? bytesToBigInt(value as Uint8Array)
                     : '0x' + (value as any).toString('hex')
                 return key === 'cache' ? (
                   <Box key={key}></Box>
@@ -220,12 +221,10 @@ const DisplayBlock = () => {
   async function init() {
     try {
       const receipts = decodeReceipts(
-        Buffer.from(
-          fromHexString(
-            await state.provider!.historyProtocol.get(
-              ProtocolId.HistoryNetwork,
-              getContentKey(HistoryNetworkContentType.Receipt, fromHexString(state.block!.hash)),
-            ),
+        fromHexString(
+          await state.provider!.historyProtocol.get(
+            ProtocolId.HistoryNetwork,
+            getContentKey(HistoryNetworkContentType.Receipt, fromHexString(state.block!.hash)),
           ),
         ),
       )
@@ -245,15 +244,9 @@ const DisplayBlock = () => {
       typeof (state.block as any).hash === 'string'
         ? (state.block as any).hash
         : toHexString((state.block as any).hash())
-    const header = getContentKey(
-      HistoryNetworkContentType.BlockHeader,
-      Buffer.from(fromHexString(hash)),
-    )
+    const header = getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))
 
-    const body = getContentKey(
-      HistoryNetworkContentType.BlockBody,
-      Buffer.from(fromHexString(hash)),
-    )
+    const body = getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(hash))
     setKeys({
       header,
       body,

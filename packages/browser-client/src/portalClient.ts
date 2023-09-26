@@ -1,5 +1,4 @@
 import { Capacitor } from '@capacitor/core'
-import { ethers } from 'ethers'
 import {
   ENR,
   log2Distance,

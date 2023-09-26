@@ -69,7 +69,7 @@ export function PortalButton(props: IPortalButton) {
   }, [blockHash])
 
   const addToOffer = async (type: HistoryNetworkContentType) => {
-    const contentKey = getContentKey(type, Buffer.from(fromHexString(blockHash)))
+    const contentKey = getContentKey(type, fromHexString(blockHash))
     const contentId = getContentId(type, blockHash)
     if (await state.provider?.historyProtocol.get(ProtocolId.HistoryNetwork, contentKey)) {
       setOffer([...offer, contentId])
