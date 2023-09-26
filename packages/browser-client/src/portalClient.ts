@@ -8,6 +8,7 @@ import {
   fromHexString,
   TransportLayer,
   UltralightProvider,
+  ProtocolId,
 } from 'portalnetwork'
 import { AppState } from './globalReducer'
 import bns from './bootnodes.json'
@@ -64,16 +65,18 @@ export const startUp = async (provider: UltralightProvider) => {
 }
 export async function createNodeFromScratch(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+    ? await UltralightProvider.create('', 1, {
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.MOBILE,
+        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
       })
-    : await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+    : await UltralightProvider.create('', 1, {
         proxyAddress: state.proxy,
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.WEB,
+        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
       })
   await startUp(provider)
   return provider
@@ -81,18 +84,20 @@ export async function createNodeFromScratch(state: AppState): Promise<Ultralight
 
 export async function createNodeFromStorage(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+    ? await UltralightProvider.create('', 1, {
         bootnodes: bns,
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.MOBILE,
+        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
       })
-    : await UltralightProvider.create(new ethers.providers.CloudflareProvider(), 1, {
+    : await UltralightProvider.create('', 1, {
         proxyAddress: state.proxy,
         bootnodes: bns,
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.WEB,
+        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
       })
   await startUp(provider)
   return provider
