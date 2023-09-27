@@ -23,6 +23,7 @@ import {
   UtpSocketKey,
   decodeHistoryNetworkContentKey,
   BeaconLightClientNetworkContentType,
+  ConnectionState,
 } from '../../../index.js'
 import { EventEmitter } from 'events'
 
@@ -190,7 +191,7 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleStatePacket(request: ContentRequest, packet: StatePacket): Promise<void> {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ: {
-        if (packet.header.seqNr === request.socket.getSeqNr() - 1) {
+        if (request.socket.state === ConnectionState.SynSent) {
           request.socket.setAckNr(packet.header.seqNr)
           break
         } else {
