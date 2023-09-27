@@ -5,6 +5,7 @@ import {
   NodeId,
   ENR,
   createKeypairFromPeerId,
+  createPeerIdFromKeypair,
 } from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
@@ -27,7 +28,7 @@ import { HistoryProtocol } from '../subprotocols/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import { LRUCache } from 'lru-cache'
-import { dirSize, MEGABYTE } from '../util/index.js'
+import { dirSize, MEGABYTE, shortId } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
 import { hexToBytes } from '@ethereumjs/util'
@@ -205,24 +206,22 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.uTP.closeRequest(msg.readUInt16BE(2), peerId)
       }
     })
-    // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
-    //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
-    // }
-    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, _verified) => {
+
+    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
 
-      // if (!verified || !enr.getLocationMultiaddr('udp')) {
-      //   // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
-      //   // corresponding to the node's observed IP/Port so that we can send outbound messages to
-      //   // those nodes later on if needed.  This is currently used by uTP when responding to
-      //   // FINDCONTENT requests from nodes with invalid ENRs.
-      //   const peerId = await createPeerIdFromKeypair(enr.keypair)
-      //   this.unverifiedSessionCache.set(
-      //     enr.nodeId,
-      //     multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
-      //   )
-      //   this.logger(this.unverifiedSessionCache.get(enr.nodeId))
-      // }
+      if (!verified || !enr.getLocationMultiaddr('udp')) {
+        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
+        // corresponding to the node's observed IP/Port so that we can send outbound messages to
+        // those nodes later on if needed.  This is currently used by uTP when responding to
+        // FINDCONTENT requests from nodes with invalid ENRs.
+        const peerId = await createPeerIdFromKeypair(enr.keypair)
+        this.unverifiedSessionCache.set(
+          enr.nodeId,
+          multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString()),
+        )
+        this.logger(`adding ${shortId(enr.nodeId)} to unverifiedSessionsCache`)
+      }
     })
 
     if (opts.metrics) {
@@ -369,15 +368,28 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const protocol = this.protocols.get(protocolId)
         if (protocol) {
           nodeAddr = protocol.routingTable.getWithPending(enr)?.value
+          this.logger(`Did we find an ENR for ${shortId(enr)}: ${nodeAddr !== undefined}`)
           if (!nodeAddr) {
             // Check in unverified sessions cache if no ENR found in routing table
             nodeAddr = this.unverifiedSessionCache.get(enr)
+            this.logger(
+              `Did we find an ENR for ${shortId(enr)} in the unverified cache: ${
+                nodeAddr !== undefined
+              }`,
+            )
           }
         }
       } else {
         // Assume enr is of type ENR and send request as is
+        this.logger(`sending message to ${shortId(enr.nodeId)}`)
         nodeAddr = enr
+        const addr = this.unverifiedSessionCache.get(enr.nodeId)
+        if (addr !== undefined) {
+          this.logger(`${enr.nodeId}'s ENR is unverified`)
+          nodeAddr = addr
+        }
       }
+
       if (!nodeAddr) {
         this.logger(`${enr} has no reachable address.  Aborting request`)
         return new Uint8Array()
