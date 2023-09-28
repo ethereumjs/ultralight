@@ -130,23 +130,19 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
   CREATENODEFROMBINDADDRESS:
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
-      const provider = await UltralightProvider.create(
-        new ethers.providers.CloudflareProvider(),
-        1,
-        {
-          supportedProtocols: [ProtocolId.HistoryNetwork],
-          proxyAddress: action.payload.state.proxy,
-          db: action.payload.state.LDB as any,
-          transport: TransportLayer.WEB,
-          //@ts-ignore
+      const provider = await UltralightProvider.create('', 1, {
+        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+        proxyAddress: action.payload.state.proxy,
+        db: action.payload.state.LDB as any,
+        transport: TransportLayer.WEB,
+        //@ts-ignore
+        config: {
           config: {
-            config: {
-              enrUpdate: true,
-              addrVotesToUpdateEnr: 1,
-            },
+            enrUpdate: true,
+            addrVotesToUpdateEnr: 1,
           },
         },
-      )
+      })
       await startUp(provider)
       dispatch({ type: StateChange.SETPORTAL, payload: provider })
     },

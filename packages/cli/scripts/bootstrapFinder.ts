@@ -33,7 +33,7 @@ const main = async () => {
     const range: Uint8Array[] = []
     for (const update of updatesByRange.response!) {
         range.push(concatBytes(
-            beaconConfig.forkName2ForkDigest(update.version as ForkLightClient),
+            beaconConfig.forkName2ForkDigest(update.version as ForkLightClient), //@ts-ignore
             (ssz.allForksLightClient[update.version] as allForks.AllForksLightClientSSZTypes).LightClientUpdate.serialize(update.data),
         ))
     }
@@ -43,7 +43,7 @@ const main = async () => {
         const bootstrapSlot = updatesByRange.response![x].data.finalizedHeader.beacon.slot
 
         const bootstrapRoot = toHexString((await (api.beacon.getBlockRoot(bootstrapSlot))).response!.data.root)
-        const bootstrap = (await api.lightclient.getBootstrap(bootstrapRoot)).response!
+        const bootstrap = (await api.lightclient.getBootstrap(bootstrapRoot)).response! //@ts-ignore
         await ultralights[Math.floor(Math.random() * 10)].request('portal_beaconStore', [getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientBootstrap, LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) })), toHexString(concatBytes(beaconConfig.forkName2ForkDigest(bootstrap.version), (ssz.allForksLightClient[bootstrap.version] as allForks.AllForksLightClientSSZTypes).LightClientBootstrap.serialize(bootstrap.data)))])
         console.log(`Retrieved bootstrap for finalized checkpoint ${bootstrapRoot} from sync period ${oldPeriod + x} and seeding to network...`)
     }
@@ -61,7 +61,7 @@ const main = async () => {
                 console.log(res)
             }
         }
-    }
+    } //@ts-ignore
     const res3 = await ultralights[0].request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(beaconConfig.forkName2ForkDigest(optimisticUpdate.version), (ssz.allForksLightClient[optimisticUpdate.version] as allForks.AllForksLightClientSSZTypes).LightClientOptimisticUpdate.serialize(optimisticUpdate.data)))])
     console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.data.signatureSlot}`, res3)
 
@@ -73,7 +73,7 @@ const main = async () => {
         await new Promise(resolve => setTimeout(() => resolve(undefined), 13000))
         let optimisticUpdate = (await api.lightclient.getOptimisticUpdate()).response!
         console.log('new update')
-        let optimisticUpdateKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate, LightClientOptimisticUpdateKey.serialize({ optimisticSlot: BigInt(optimisticUpdate.data.attestedHeader.beacon.slot) })) 
+        let optimisticUpdateKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate, LightClientOptimisticUpdateKey.serialize({ optimisticSlot: BigInt(optimisticUpdate.data.attestedHeader.beacon.slot) })) //@ts-ignore
         const res = await ultralights[0].request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(beaconConfig.forkName2ForkDigest(optimisticUpdate.version), (ssz.allForksLightClient[optimisticUpdate.version] as allForks.AllForksLightClientSSZTypes) .LightClientOptimisticUpdate.serialize(optimisticUpdate.data)))])
         console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.data.signatureSlot}`, res)
     }
