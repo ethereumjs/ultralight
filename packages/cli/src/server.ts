@@ -85,6 +85,9 @@ const main = async () => {
   ;(portal.discv5 as Discv5EventEmitter).on('talkRespReceived', (msg: any) => {
     ee.emit('talkRespReceived', msg)
   })
+  history.on('ContentAdded', (...args: any) => {
+    ee.emit('ContentAdded', args)
+  })
 
   //  WSS Client Methods
 
@@ -117,6 +120,22 @@ const main = async () => {
         ee.on('talkRespReceived', talkResp)
         return () => {
           ee.off('talkRespReceived', talkResp)
+        }
+      })
+    })
+  const onContentAdded = publicProcedure
+    .meta({
+      description: 'Subscribe to ContentAdded listener',
+    })
+    .subscription(() => {
+      return observable((emit) => {
+        const contentAdded = (...args: any) => {
+          console.log(args)
+          emit.next(args)
+        }
+        ee.on('ContentAdded', contentAdded)
+        return () => {
+          ee.off('talkReqReceived', contentAdded)
         }
       })
     })
@@ -326,6 +345,7 @@ const main = async () => {
   const appRouter = router({
     onTalkReq,
     onTalkResp,
+    onContentAdded,
     self,
     local_routingTable,
     ping,
