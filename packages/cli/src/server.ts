@@ -82,6 +82,9 @@ const main = async () => {
   ;(portal.discv5 as Discv5EventEmitter).on('talkReqReceived', (msg: any) => {
     ee.emit('talkReqReceived', msg)
   })
+  ;(portal.discv5 as Discv5EventEmitter).on('talkRespReceived', (msg: any) => {
+    ee.emit('talkRespReceived', msg)
+  })
 
   //  WSS Client Methods
 
@@ -98,6 +101,22 @@ const main = async () => {
         ee.on('talkReqReceived', talkReq)
         return () => {
           ee.off('talkReqReceived', talkReq)
+        }
+      })
+    })
+  const onTalkResp = publicProcedure
+    .meta({
+      description: 'Subscribe to Discv5 TalkResp listener',
+    })
+    .subscription(() => {
+      return observable((emit) => {
+        const talkResp = (msg: any) => {
+          console.log(msg)
+          emit.next(msg)
+        }
+        ee.on('talkRespReceived', talkResp)
+        return () => {
+          ee.off('talkRespReceived', talkResp)
         }
       })
     })
@@ -306,6 +325,7 @@ const main = async () => {
 
   const appRouter = router({
     onTalkReq,
+    onTalkResp,
     self,
     local_routingTable,
     ping,
