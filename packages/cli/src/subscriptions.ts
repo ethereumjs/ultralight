@@ -83,10 +83,27 @@ export const subscriptions = async (
         }
       })
     })
+  const onNodeAdded = publicProcedure
+    .meta({
+      description: 'Subscribe to NodeAdded listener',
+    })
+    .subscription(() => {
+      return observable((emit) => {
+        const contentAdded = (...args: any) => {
+          console.log(args)
+          emit.next(args)
+        }
+        ee.on('ContentAdded', contentAdded)
+        return () => {
+          ee.off('talkReqReceived', contentAdded)
+        }
+      })
+    })
 
   return {
     onTalkReq,
     onTalkResp,
     onContentAdded,
+    onNodeAdded,
   }
 }
