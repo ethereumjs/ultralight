@@ -19,6 +19,7 @@ import ws from 'ws'
 
 // eslint-disable-next-line node/file-extension-in-import
 import { applyWSSHandler } from '@trpc/server/adapters/ws'
+import { subscriptions } from './subscriptions.js'
 const bootnodes = [
   'enr:-I24QDy_atpK3KlPjl6X5yIrK7FosdHI1cW0I0MeiaIVuYg3AEEH9tRSTyFb2k6lpUiFsqxt8uTW3jVMUzoSlQf5OXYBY4d0IDAuMS4wgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg',
   'enr:-I24QIdQtNSyUNcoyR4R7pWLfGj0YuX550Qld0HuInYo_b7JE9CIzmi2TF9hPg-OFL3kebYgLjnPkRu17niXB6xKQugBY4d0IDAuMS4wgmlkgnY0gmlwhJO2oc6Jc2VjcDI1NmsxoQJal-rNlNBoOMikJ7PcGk1h6Mlt_XtTWihHwOKmFVE-GoN1ZHCCIyg',
@@ -91,54 +92,11 @@ const main = async () => {
 
   //  WSS Client Methods
 
-  const onTalkReq = publicProcedure
-    .meta({
-      description: 'Subscribe to Discv5 TalkReq listener',
-    })
-    .subscription(() => {
-      return observable((emit) => {
-        const talkReq = (msg: any) => {
-          console.log(msg)
-          emit.next(msg)
-        }
-        ee.on('talkReqReceived', talkReq)
-        return () => {
-          ee.off('talkReqReceived', talkReq)
-        }
-      })
-    })
-  const onTalkResp = publicProcedure
-    .meta({
-      description: 'Subscribe to Discv5 TalkResp listener',
-    })
-    .subscription(() => {
-      return observable((emit) => {
-        const talkResp = (msg: any) => {
-          console.log(msg)
-          emit.next(msg)
-        }
-        ee.on('talkRespReceived', talkResp)
-        return () => {
-          ee.off('talkRespReceived', talkResp)
-        }
-      })
-    })
-  const onContentAdded = publicProcedure
-    .meta({
-      description: 'Subscribe to ContentAdded listener',
-    })
-    .subscription(() => {
-      return observable((emit) => {
-        const contentAdded = (...args: any) => {
-          console.log(args)
-          emit.next(args)
-        }
-        ee.on('ContentAdded', contentAdded)
-        return () => {
-          ee.off('talkReqReceived', contentAdded)
-        }
-      })
-    })
+  const { onTalkReq, onTalkResp, onContentAdded } = await subscriptions(
+    portal,
+    history,
+    publicProcedure,
+  )
 
   /**
    * {@link discv5_nodeInfo}
