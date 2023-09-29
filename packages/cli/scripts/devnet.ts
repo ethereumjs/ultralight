@@ -33,15 +33,19 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'supported subnetworks',
     array: true,
     optional: true
-  }).argv
+  }).option('connectNodes', {
+    describe: 'connet all nodes on network start',
+    boolean: true,
+    default: true
+  }).strict().argv
 
 const main = async () => {
   console.log(`starting ${args.numNodes} nodes`)
 
+  const networks = args.networks && (args.networks as Array<string>).map(network => `--networks=${network}`)
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
   const ip = args.ip ?? pubIp[0]
-
   let children: ChildProcessByStdio<any, any, null>[] = []
   const file = require.resolve(process.cwd() + '/dist/index.js')
   if (args.pks) {
@@ -58,7 +62,7 @@ const main = async () => {
           `--metrics=true`,
           `--metricsPort=${18545 + idx}`,
           `--bindAddress-${ip}:${args.port + idx}`,
-          args.networks ? `--networks=${(args.networks as Array<string>).join(' ')}` : ''
+          ...networks
         ],
         { stdio: ['pipe', 'pipe', process.stderr] }
       )
@@ -75,7 +79,7 @@ const main = async () => {
           `--metrics=true`,
           `--metricsPort=${18545 + x}`,
           `--bindAddress=${ip}:${args.port + x}`,
-          args.networks ? `--networks=${(args.networks as Array<string>).join(' ')}` : ''
+          ...networks
         ],
         { stdio: ['pipe', 'pipe', process.stderr] }
       )
@@ -84,7 +88,7 @@ const main = async () => {
   }
 
   // Wait for nodes to start up
-  await new Promise(resolve => setTimeout(() => resolve, 3000))
+  await new Promise(resolve => setTimeout(() => { resolve(undefined) }, 3000))
 
   if (args.promConfig) {
     const targets: any[] = []
@@ -96,22 +100,28 @@ const main = async () => {
     fs.writeFileSync('./targets.json', JSON.stringify(targetBlob, null, 2))
   }
 
-  const ultralights: jayson.HttpClient[] = []
-  for (let x = 0; x < 10; x++) {
-    ultralights.push(Client.http({ host: '127.0.0.1', port: 8545 + x }))
-  }
+  // Connect nodes to other nodes in the network via `addBootNode`
+  if (args.connectNodes) {
+    console.log('connecting nodes')
+    const ultralights: jayson.HttpClient[] = []
+    for (let x = 0; x < 10; x++) {
+      ultralights.push(Client.http({ host: '127.0.0.1', port: 8545 + x }))
+    }
 
-  for (let x = 0; x < args.numNodes; x++) {
-    const peerEnr = await ultralights[x].request('discv5_nodeInfo', [])
-    for (let y = 0; y < args.numNodes; y++) {
-      if (y === x) continue
-      await ultralights[y].request('portal_beaconAddBootNode', [peerEnr.result.enr])
+    for (let x = 0; x < args.numNodes; x++) {
+      const peerEnr = await ultralights[x].request('discv5_nodeInfo', [])
+      for (let y = 0; y < args.numNodes; y++) {
+        if (y === x) continue
+        for (const network of args.networks) {
+          const res = await ultralights[y].request(`portal_${network}AddBootNode`, [peerEnr.result.enr])
+        }
+
+      }
     }
   }
-
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
-    
+
     children.forEach((child) => child.kill())
   })
 }

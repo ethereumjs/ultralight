@@ -172,10 +172,11 @@ export class portal {
   }
   async historyAddBootNode(params: [string]): Promise<boolean> {
     const [enr] = params
-    this.logger(`portal_historyAddEnrs request received for ${enr.slice(0, 10)}...`)
+    this.logger(`portal_historyAddBootNode request received for ${enr.slice(0, 10)}...`)
     try {
       await this._history.addBootNode(enr)
-    } catch {
+    } catch (err) {
+      this.logger(err)
       return false
     }
     return true
@@ -591,7 +592,8 @@ export class portal {
     this.logger(`portal_beaconAddBootNode request received for ${enr.slice(0, 10)}...`)
     try {
       await this._beacon.addBootNode(enr)
-    } catch {
+    } catch (err) {
+      this.logger(err)
       return false
     }
     return true
