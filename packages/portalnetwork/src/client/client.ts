@@ -134,7 +134,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         break
     }
 
-    return new PortalNetwork({
+    const portal = new PortalNetwork({
       config: config,
       radius: 2n ** 256n,
       bootnodes,
@@ -143,6 +143,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
     })
+
+    if (opts.trustedBlockRoot !== undefined) {
+      const beacon = portal.protocols.get(
+        ProtocolId.BeaconLightClientNetwork,
+      ) as BeaconLightClientNetwork
+      await beacon.initializeLightClient(opts.trustedBlockRoot)
+    }
+
+    return portal
   }
 
   /**

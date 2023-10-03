@@ -31,6 +31,7 @@ export interface PortalNetworkOpts {
   config: Partial<IDiscv5CreateOptions>
   dataDir?: string
   dbSize(): Promise<number>
+  trustedBlockRoot?: string
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>
