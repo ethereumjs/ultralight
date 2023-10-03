@@ -17,10 +17,15 @@ import { execSync } from 'child_process'
 import { RPCManager } from './rpc/rpc.js'
 import { SignableENR } from '@chainsafe/discv5'
 import { Enr } from './rpc/schema/types.js'
+import { ClientOpts } from './types.js'
 
-const args: any = yargs(hideBin(process.argv))
+const args: ClientOpts = yargs(hideBin(process.argv))
+  .parserConfiguration({
+    'dot-notation': false,
+  })
   .option('pk', {
     describe: 'base64 string encoded protobuf serialized private key',
+    optional: true,
     string: true,
   })
   .option('bootnode', {
@@ -80,7 +85,9 @@ const args: any = yargs(hideBin(process.argv))
     describe: 'a trusted blockroot to start light client syncing of the beacon chain',
     string: true,
     optional: true,
-  }).argv
+  })
+  .strict()
+  .parseSync().argv as unknown as ClientOpts
 
 const register = new PromClient.Registry()
 
@@ -123,6 +130,7 @@ const main = async () => {
     bindAddrs: {
       ip4: initMa,
     },
+    trustedBlockRoot: args.trustedBlockRoot,
   } as any
   let networks: ProtocolId[] = []
   if (args.networks) {
@@ -150,7 +158,7 @@ const main = async () => {
     db,
     metrics,
     supportedProtocols: networks,
-    dataDir: args.datadir,
+    dataDir: args.dataDir,
   })
   portal.discv5.enableLogs()
 
