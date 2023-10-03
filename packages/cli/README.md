@@ -40,8 +40,12 @@ Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a termina
 - Run `npm run devnet -- --numNodes=3`
   - This will start 3 nodes with JSON-RPC server addresses `[8545, 8546, 8547]`
 - To specify a port number to, include a `--port` variable
-  - `num run devnet -- --numNodes=5 --port=9009`
+  - `npm run devnet -- --numNodes=5 --port=9009`
   - This will start 5 nodes with JSON-RPC server addresses `[9009, 9010, 9011, 9012, 9013]`
+- To specify which subnetworks to support, include one or more `--networks` parameters
+  - `npm run devnet -- --numNodes=5 --port=9009 --networks=history --networks=beacon`
+
+Note, all nodes are connected to each other as bootnodes for each network by default.  To turn off this behavior, pass `--connectNodes=false`.
 
 ### Using the Devnet
 #### command-line:

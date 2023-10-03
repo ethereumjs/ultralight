@@ -139,6 +139,7 @@ const main = async () => {
   } else {
     networks = [ProtocolId.HistoryNetwork]
   }
+
   if (args.trustedBlockRoot !== undefined) {
     networks.push(ProtocolId.BeaconLightClientNetwork)
   }
