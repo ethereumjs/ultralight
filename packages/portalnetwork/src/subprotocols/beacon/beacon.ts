@@ -68,7 +68,6 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
     this.routingTable.setLogger(this.logger)
-    this.bootstrapFinder = new Map()
     client.uTP.on(
       ProtocolId.BeaconLightClientNetwork,
       async (contentType: number, hash: string, value: Uint8Array) => {
@@ -88,6 +87,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       }
     })
 
+    this.bootstrapFinder = new Map()
     this.portal.on('NodeAdded', this.getBootStrapVote)
   }
 
@@ -209,6 +209,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    * the `lightClientBootStrap`
    */
   public initializeLightClient = async (blockRoot: string) => {
+    // Disable bootstrap finder mechanism if currently running
+    this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')
 
