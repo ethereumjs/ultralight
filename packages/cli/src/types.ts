@@ -261,3 +261,19 @@ export const jsonRpcReceipt = async (
       ? intToHex((receipt as PostByzantiumTxReceipt).status)
       : undefined,
 })
+
+export interface ClientOpts {
+  pk?: string
+  bootnode?: string
+  bindAddress?: string
+  bootnodeList?: string
+  rpc: boolean
+  rpcPort: number
+  rpcAddr?: string
+  metrics: boolean
+  metricsPort: number
+  dataDir?: string
+  web3?: string
+  networks?: (string | number)[]
+  trustedBlockRoot?: string
+}
