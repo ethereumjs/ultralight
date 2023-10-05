@@ -736,7 +736,7 @@ export abstract class BaseProtocol extends EventEmitter {
                 peerId: peer.nodeId,
                 connectionId: id,
                 requestCode: RequestCode.OFFER_WRITE,
-                contents: [content],
+                contents: [encodeWithVariantPrefix([content])],
               })
             }
           }
