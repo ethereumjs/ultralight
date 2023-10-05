@@ -42,13 +42,14 @@ export default function Ping(props: { ping: any; pong: any; }) {
     }, 1000)
   }
   const setEnr = (enr: string) => {
-    if (enr.startsWith('enr:'.slice(0, enr.length))) {
+    if (enr.startsWith('enr:')) {
       setToPing(enr)
     }
   }
 
   const handleChangePeer = (event: SelectChangeEvent) => {
     setPeer(event.target.value as string)
+    setToPing(event.target.value as string)
   }
 
   return (
@@ -56,24 +57,24 @@ export default function Ping(props: { ping: any; pong: any; }) {
       {open && alert === 'fail' ? (
         <Alert severity="warning">
           <AlertTitle>Fail</AlertTitle>
-          Ping Pong Failed<strong></strong>
+          Ping Pong Failed<strong>{toPing.slice(0,16)}...</strong>
         </Alert>
       ) : open && alert === 'success' ? (
         <Alert severity="success">
           <AlertTitle>Pong</AlertTitle>
-          Ping Pong Success<strong>check it out!</strong>
+          Ping Pong Success<strong>{toPing.slice(0,16)}...</strong>
         </Alert>
       ) : (
         open && (
           <Alert severity="info">
             <AlertTitle>Pinging</AlertTitle>
-            Pinging -- <strong></strong>
+            Pinging -- <strong>* {toPing.slice(0,16)}...</strong>
           </Alert>
         )
       )}
       <ListItemButton onClick={handleClick}>
         <ListItemIcon>{pong ? <CheckmarkIcon /> : <SendIcon />}</ListItemIcon>
-        <ListItemText primary="Send Ping" />
+        <ListItemText primary="Send Ping" secondary={toPing.slice(0,16)} />
       </ListItemButton>
       <ListItemButton sx={{ pl: 4 }}>
         <TextField
