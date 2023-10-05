@@ -36,8 +36,8 @@ const args: any = yargs(hideBin(process.argv))
   }).option('connectNodes', {
     describe: 'connet all nodes on network start',
     boolean: true,
-    default: true
-  }).strict().argv
+    default: false
+  }).strict().argv as DevnetOpts
 
 const main = async () => {
   console.log(`starting ${args.numNodes} nodes`)
