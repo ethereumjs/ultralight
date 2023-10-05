@@ -540,6 +540,7 @@ export class portal {
   }
   async historyGossip(params: [string, string]) {
     const [contentKey, content] = params
+    this.logger(`historyGossip request received for ${contentKey}`)
     const res = await this._history.gossipContent(fromHexString(contentKey), fromHexString(content))
     return res
   }
