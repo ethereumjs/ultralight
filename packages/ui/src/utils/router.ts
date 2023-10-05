@@ -30,6 +30,84 @@ const onTalkReq = publicProcedure.subscription(({ input }) => {
   })
 })
 
+const onTalkResp = publicProcedure.subscription(({ input }) => {
+  const ee = new EventEmitter()
+  return observable((emit) => {
+    const talkResp = (msg: any) => {
+      console.log(msg)
+      emit.next(msg)
+    }
+    ee.on('talkRespReceived', (msg: any) => {
+      console.log('talkResponseReceived')
+      talkResp(msg)
+    })
+    return () => {
+      ee.off('talkRespReceived', () => {
+        console.log('off talkResponse')
+        talkResp
+      })
+    }
+  })
+})
+
+const onContentAdded = publicProcedure.subscription(({ input }) => {
+  const ee = new EventEmitter()
+  return observable((emit) => {
+    const contentAdded = (msg: any) => {
+      console.log(msg)
+      emit.next(msg)
+    }
+    ee.on('ContentAdded', (msg: any) => {
+      console.log('contentAdded')
+      contentAdded(msg)
+    })
+    return () => {
+      ee.off('ContentAdded', () => {
+        console.log('off ContentAdded')
+        contentAdded
+      })
+    }
+  })
+})
+const onNodeAdded = publicProcedure.subscription(({ input }) => {
+  const ee = new EventEmitter()
+  return observable((emit) => {
+    const nodeAdded = (msg: any) => {
+      console.log(msg)
+      emit.next(msg)
+    }
+    ee.on('NodeAdded', (msg: any) => {
+      console.log('nodeAdded')
+      nodeAdded(msg)
+    })
+    return () => {
+      ee.off('NodeAdded', () => {
+        console.log('off NodeAdded')
+        nodeAdded
+      })
+    }
+  })
+})
+const onUtp = publicProcedure.subscription(({ input }) => {
+  const ee = new EventEmitter()
+  return observable((emit) => {
+    const utp = (msg: any) => {
+      console.log(msg)
+      emit.next(msg)
+    }
+    ee.on('utpEvent', (msg: any) => {
+      console.log('utpEvent', msg)
+      utp(msg)
+    })
+    return () => {
+      ee.off('utpEvent', () => {
+        console.log('off utpEvent')
+        utp
+      })
+    }
+  })
+})
+
 const self = publicProcedure.mutation(() => {
   return {
     enr: '',
@@ -97,6 +175,10 @@ const pingBootNodeHTTP = publicProcedure.mutation(async () => {
 
 export const appRouter = router({
   onTalkReq,
+  onTalkResp,
+  onContentAdded,
+  onNodeAdded,
+  onUtp,
   self,
   local_routingTable,
   ping,
