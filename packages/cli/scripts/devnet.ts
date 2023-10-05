@@ -108,7 +108,7 @@ const main = async () => {
     console.log('connecting nodes')
     const ultralights: jayson.HttpClient[] = []
     for (let x = 0; x < 10; x++) {
-      ultralights.push(Client.http({ host: '127.0.0.1', port: 8545 + x }))
+      ultralights.push(Client.http({ host: ip, port: 8545 + x }))
     }
 
     for (let x = 0; x < args.numNodes; x++) {
