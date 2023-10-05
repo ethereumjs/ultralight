@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import { spawn, ChildProcessByStdio, execSync } from 'child_process'
 import { createRequire } from 'module'
 import jayson from 'jayson/promise/index.js'
+import { DevnetOpts } from '../src/types.js'
 
 const { Client } = jayson
 const require = createRequire(import.meta.url)
@@ -16,6 +17,7 @@ const args: any = yargs(hideBin(process.argv))
   }).option('numNodes', {
     describe: 'number of random nodes to start',
     number: true,
+    default: 1,
     optional: true,
   }).option('ip', {
     describe: 'ip addr',
@@ -32,12 +34,13 @@ const args: any = yargs(hideBin(process.argv))
   }).option('networks', {
     describe: 'supported subnetworks',
     array: true,
+    default: ['history', 'beacon'],
     optional: true
   }).option('connectNodes', {
     describe: 'connet all nodes on network start',
     boolean: true,
-    default: true
-  }).strict().argv
+    default: false
+  }).strict().argv as DevnetOpts
 
 const main = async () => {
   console.log(`starting ${args.numNodes} nodes`)
@@ -105,7 +108,7 @@ const main = async () => {
     console.log('connecting nodes')
     const ultralights: jayson.HttpClient[] = []
     for (let x = 0; x < 10; x++) {
-      ultralights.push(Client.http({ host: '127.0.0.1', port: 8545 + x }))
+      ultralights.push(Client.http({ host: ip, port: 8545 + x }))
     }
 
     for (let x = 0; x < args.numNodes; x++) {

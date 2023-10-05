@@ -49,6 +49,7 @@ const args: ClientOpts = yargs(hideBin(process.argv))
   })
   .option('rpcPort', {
     describe: 'HTTP-RPC server listening port',
+    number: true,
     default: 8545,
   })
   .option('rpcAddr', {
@@ -86,8 +87,7 @@ const args: ClientOpts = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
-  .strict()
-  .parseSync().argv as unknown as ClientOpts
+  .strict().argv as ClientOpts
 
 const register = new PromClient.Registry()
 
@@ -233,10 +233,9 @@ const main = async () => {
         }
       },
     })
-    const rpcPort = args.rpcPort ?? 8545
-    server.http().listen(rpcPort, rpcAddr)
+    server.http().listen(args.rpcPort, rpcAddr)
 
-    log(`Started JSON RPC Server address=http://${rpcAddr}:${rpcPort}`)
+    log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
 
     if (args.trustedBlockRoot !== undefined) {
       const beaconProtocol = portal.protocols.get(
