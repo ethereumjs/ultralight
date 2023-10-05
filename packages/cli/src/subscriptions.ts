@@ -32,6 +32,9 @@ export const subscriptions = async (
   ;(portal as any).on('NodeAdded', (...args: any) => {
     ee.emit('NodeAdded', args)
   })
+  portal.uTP.on('send', (...args) => {
+    ee.emit('uTPEvent', args)
+  })
 
   //  WSS Client Methods
 
@@ -90,12 +93,28 @@ export const subscriptions = async (
     .subscription(() => {
       return observable((emit) => {
         const contentAdded = (...args: any) => {
-          console.log(args)
+          console.log('onNodeAdded', args)
           emit.next(args)
         }
         ee.on('ContentAdded', contentAdded)
         return () => {
           ee.off('talkReqReceived', contentAdded)
+        }
+      })
+    })
+  const onUtp = publicProcedure
+    .meta({
+      description: 'Subscribe to uTP event listener',
+    })
+    .subscription(() => {
+      return observable((emit) => {
+        const utpEvent = (...args: any) => {
+          console.log('onUtp', args)
+          emit.next(args)
+        }
+        ee.on('utpEvent', utpEvent)
+        return () => {
+          ee.off('utpEvent', utpEvent)
         }
       })
     })
@@ -105,5 +124,6 @@ export const subscriptions = async (
     onTalkResp,
     onContentAdded,
     onNodeAdded,
+    onUtp,
   }
 }
