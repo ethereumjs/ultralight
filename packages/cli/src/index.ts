@@ -233,10 +233,9 @@ const main = async () => {
         }
       },
     })
-    const rpcPort = args.rpcPort ?? 8545
-    server.http().listen(rpcPort, rpcAddr)
+    server.http().listen(args.rpcPort, rpcAddr)
 
-    log(`Started JSON RPC Server address=http://${rpcAddr}:${rpcPort}`)
+    log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
 
     if (args.trustedBlockRoot !== undefined) {
       const beaconProtocol = portal.protocols.get(
