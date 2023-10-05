@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import { spawn, ChildProcessByStdio, execSync } from 'child_process'
 import { createRequire } from 'module'
 import jayson from 'jayson/promise/index.js'
+import { DevnetOpts } from '../src/types.js'
 
 const { Client } = jayson
 const require = createRequire(import.meta.url)

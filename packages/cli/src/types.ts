@@ -277,3 +277,13 @@ export interface ClientOpts {
   networks?: (string | number)[]
   trustedBlockRoot?: string
 }
+
+export interface DevnetOpts {
+  pks?: string
+  numNodes: number
+  ip?: string
+  promConfig?: boolean
+  port: number
+  networks: string[]
+  connectNodes: boolean
+}
