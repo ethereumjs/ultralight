@@ -16,6 +16,7 @@ const args: any = yargs(hideBin(process.argv))
   }).option('numNodes', {
     describe: 'number of random nodes to start',
     number: true,
+    default: 1,
     optional: true,
   }).option('ip', {
     describe: 'ip addr',
@@ -32,6 +33,7 @@ const args: any = yargs(hideBin(process.argv))
   }).option('networks', {
     describe: 'supported subnetworks',
     array: true,
+    default: ['history', 'beacon'],
     optional: true
   }).option('connectNodes', {
     describe: 'connet all nodes on network start',
