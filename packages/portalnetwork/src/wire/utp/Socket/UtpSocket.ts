@@ -83,7 +83,7 @@ export class UtpSocket extends EventEmitter {
 
   setWriter(seqNr: number) {
     this.setSeqNr(seqNr)
-    this.writer = new ContentWriter(this.content, seqNr + 1, this.logger)
+    this.writer = new ContentWriter(this.content, seqNr, this.logger)
     this.writer.on('send', async (packetType: PacketType, bytes?: Uint8Array) => {
       if (packetType === PacketType.ST_DATA && bytes) {
         await this.sendDataPacket(bytes)
@@ -152,8 +152,6 @@ export class UtpSocket extends EventEmitter {
     await this.sendPacket<PacketType.ST_STATE>(packet)
   }
   async sendSynAckPacket(): Promise<void> {
-    this.state = ConnectionState.SynRecv
-    this.logger(`Connection State: SynRecv`)
     await this.sendAckPacket()
   }
   async sendResetPacket() {
@@ -188,6 +186,8 @@ export class UtpSocket extends EventEmitter {
   }
 
   async handleSynPacket(seqNr: number): Promise<void> {
+    this.setState(ConnectionState.SynRecv)
+    this.logger(`Connection State: SynRecv`)
     this.setAckNr(seqNr)
     this.type === UtpSocketType.READ ? this.setReader(2) : this.setWriter(seqNr - 1)
     await this.sendSynAckPacket()
@@ -217,8 +217,8 @@ export class UtpSocket extends EventEmitter {
       this.packetManager.updateWindow()
       this.logProgress()
       if (this.compare()) {
-        this.logger(`all data packets acked`)
-        return this.sendFinPacket()
+        await this.sendFinPacket()
+        return
       }
       this.writer!.write()
     }

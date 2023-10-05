@@ -31,6 +31,7 @@ export default class ContentWriter extends EventEmitter {
   }
 
   async write(): Promise<void> {
+    if (!this.writing) return
     const chunks = Object.keys(this.dataChunks).length
     let bytes: Uint8Array
     if (this.sentChunks.length < chunks) {
@@ -45,7 +46,6 @@ export default class ContentWriter extends EventEmitter {
       return
     }
     this.writing = false
-    await this.send(PacketType.ST_FIN)
     return
   }
 
