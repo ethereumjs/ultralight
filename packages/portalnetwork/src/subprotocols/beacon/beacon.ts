@@ -12,6 +12,7 @@ import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
+  LightClientForkName,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
@@ -121,8 +122,10 @@ export class BeaconLightClientNetwork extends BaseProtocol {
 
         const roots: string[] = []
         for (const update of updates) {
-          const fork = this.beaconConfig.forkDigest2ForkName(bytesToHex(update.slice(0, 4)))
-          const decoded = (ssz as any)[fork].LightClientUpdate.deserialize(
+          const fork = this.beaconConfig.forkDigest2ForkName(
+            bytesToHex(update.slice(0, 4)),
+          ) as LightClientForkName
+          const decoded = ssz[fork].LightClientUpdate.deserialize(
             update.slice(4),
           ) as LightClientUpdate
           roots.push(
@@ -168,11 +171,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
                     (res.value as Uint8Array).slice(0, 4),
-                  )
+                  ) as LightClientForkName
                   // Verify bootstrap is valid
-                  ;(ssz as any)[fork].LightClientBootstrap.deserialize(
-                    (res.value as Uint8Array).slice(4),
-                  )
+                  ssz[fork].LightClientBootstrap.deserialize((res.value as Uint8Array).slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
                   await this.store(
                     BeaconLightClientNetworkContentType.LightClientBootstrap,
@@ -358,12 +359,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             {
               const contentKey = toHexString(key)
               const forkhash = decoded.value.slice(0, 4) as Uint8Array
-              const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
+              const forkname = this.beaconConfig.forkDigest2ForkName(
+                forkhash,
+              ) as LightClientForkName
               switch (key[0]) {
                 case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
                   try {
-                    // TODO: Figure out how to use Forks type to limit selector in ssz[forkname] below and make typescript happy
-                    ;(ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+                    ssz[forkname].LightClientOptimisticUpdate.deserialize(
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
@@ -377,7 +379,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   break
                 case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
                   try {
-                    ;(ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
+                    ssz[forkname].LightClientFinalityUpdate.deserialize(
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
@@ -391,7 +393,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   break
                 case BeaconLightClientNetworkContentType.LightClientBootstrap:
                   try {
-                    ;(ssz as any)[forkname].LightClientBootstrap.deserialize(
+                    ssz[forkname].LightClientBootstrap.deserialize(
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
@@ -571,7 +573,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       period = input
     } else {
       const forkhash = input.slice(0, 4) as Uint8Array
-      const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as any
+      const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
       //@ts-ignore - typescript won't let me set `forkname` to a value from of the Forks type
       const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
         input.slice(4),

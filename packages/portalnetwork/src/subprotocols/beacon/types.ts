@@ -14,11 +14,7 @@ export enum BeaconLightClientNetworkContentType {
   LightClientUpdate = 4, // Added for convenience, not part of the Portal Network Spec
 }
 
-export enum Forks {
-  altair = ForkName.altair,
-  capella = ForkName.capella,
-  deneb = ForkName.deneb,
-}
+export type LightClientForkName = Exclude<ForkName, 'phase0' | 'bellatrix'> // ForkName subset that excludes forks that have no light client changes
 
 // TODO - figure out what a theoretical maximum byte size for a LightClientUpdate is (the `ByteListType`) in the below ssz list
 export const LightClientUpdatesByRange = new ListCompositeType(new ByteListType(2 ** 18), 128)
