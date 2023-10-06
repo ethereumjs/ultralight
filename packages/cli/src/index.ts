@@ -162,7 +162,9 @@ const main = async () => {
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('ultralight,*Portal*')
+  portal.enableLog(
+    'ultralight,-uTP,-FINDNODES,*LightClient:DEBUG,*LightClient:INFO,*BeaconLightClientProtocol',
+  )
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined

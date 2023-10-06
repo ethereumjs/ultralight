@@ -7,6 +7,7 @@ import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
+  LightClientForkName,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
@@ -54,10 +55,12 @@ export class UltralightTransport implements LightClientTransport {
         const updateRange = LightClientUpdatesByRange.deserialize(decoded as Uint8Array)
         for (const update of updateRange) {
           const forkhash = update.slice(0, 4)
-          const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
+          const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
+            forkhash,
+          ) as LightClientForkName
           range.push({
             version: forkname as ForkName,
-            data: (ssz as any)[forkname].LightClientUpdate.deserialize(update.slice(4)),
+            data: ssz[forkname].LightClientUpdate.deserialize(update.slice(4)),
           })
         }
         return range
@@ -89,8 +92,8 @@ export class UltralightTransport implements LightClientTransport {
     )
     if (decoded !== undefined) {
       const forkhash = decoded.value.slice(0, 4) as Uint8Array
-      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as ForkName
-      optimisticUpdate = (ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      optimisticUpdate = ssz[forkname].LightClientOptimisticUpdate.deserialize(
         (decoded.value as Uint8Array).slice(4),
       )
 
@@ -124,8 +127,8 @@ export class UltralightTransport implements LightClientTransport {
     )
     if (decoded !== undefined) {
       const forkhash = decoded.value.slice(0, 4) as Uint8Array
-      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as ForkName
-      finalityUpdate = (ssz as any)[forkname].LightClientfinalityUpdate.deserialize(
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      finalityUpdate = ssz[forkname].LightClientFinalityUpdate.deserialize(
         (decoded.value as Uint8Array).slice(4),
       )
 
@@ -152,8 +155,10 @@ export class UltralightTransport implements LightClientTransport {
     if (localBootstrap !== undefined && localBootstrap.length !== 0) {
       this.logger('Found LightClientBootstrap locally.  Initializing light client...')
       try {
-        forkname = this.protocol.beaconConfig.forkDigest2ForkName(localBootstrap.slice(0, 4))
-        bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
+        forkname = this.protocol.beaconConfig.forkDigest2ForkName(
+          localBootstrap.slice(0, 4),
+        ) as LightClientForkName
+        bootstrap = ssz[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
       } catch (err) {
         this.logger('Error loading local bootstrap error')
         this.logger(err)
@@ -175,8 +180,8 @@ export class UltralightTransport implements LightClientTransport {
         )
         if (decoded !== undefined) {
           const forkhash = decoded.value.slice(0, 4) as Uint8Array
-          forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
-          bootstrap = (ssz as any)[forkname].LightClientBootstrap.deserialize(
+          forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+          bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
             (decoded.value as Uint8Array).slice(4),
           )
           break
@@ -201,11 +206,11 @@ export class UltralightTransport implements LightClientTransport {
       if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
         const value = hexToBytes(content)
         const forkhash = value.slice(0, 4) as Uint8Array
-        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
+        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
+          forkhash,
+        ) as LightClientForkName
         handler(
-          (ssz as any)[forkname].LightClientOptimisticUpdate.deserialize(
-            (value as Uint8Array).slice(4),
-          ),
+          ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
         )
       }
     })
@@ -215,12 +220,10 @@ export class UltralightTransport implements LightClientTransport {
       if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
         const value = hexToBytes(content)
         const forkhash = value.slice(0, 4) as Uint8Array
-        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as any
-        handler(
-          (ssz as any)[forkname].LightClientFinalityUpdate.deserialize(
-            (value as Uint8Array).slice(4),
-          ),
-        )
+        const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
+          forkhash,
+        ) as LightClientForkName
+        handler(ssz[forkname].LightClientFinalityUpdate.deserialize((value as Uint8Array).slice(4)))
       }
     })
   }
