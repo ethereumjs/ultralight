@@ -9,7 +9,7 @@
   "scripts": {
     "start-local": "BINDADDRESS=true webpack serve",
     "start-testnet": "webpack serve",
-    "build": "webpack",
+    "build-browser-client": "webpack",
     "mobile-dev": "CAP_ENV=liveReload npx cap run android",
     "build-debug-apk": "npx cap run android",
     "start-electron": "electron .",

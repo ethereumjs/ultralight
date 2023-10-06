@@ -1,11 +1,11 @@
 {
-  "name": "@examples/minimal-react-client",
+  "name": "ui",
   "private": true,
   "version": "10.38.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build-ui": "tsc && vite build",
     "lint": "eslint --cache --ext \".js,.ts,.tsx\" --report-unused-disable-directives src",
     "start": "vite preview"
   },
