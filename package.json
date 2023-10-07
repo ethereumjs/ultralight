@@ -7,7 +7,7 @@
     "./packages/cli",
     "./packages/proxy",
     "./packages/browser-client",
-    "./packages/client"
+    "./packages/ui"
   ],
   "engines": {
     "npm": ">=7",
