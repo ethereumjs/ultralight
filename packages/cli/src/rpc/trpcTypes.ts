@@ -14,10 +14,10 @@ export const z_hexString = (bytes?: number) => {
 
 export const z_kBucket = z.array(z_bytes(32))
 export const z_kBucketArray = z.array(z_kBucket)
-export const z_DataRadius = z_bytes(32)
+export const z_DataRadius = z_hexString(32)
 export const z_nodeId = z_hexString(32)
 export const z_Enr = z.string().startsWith('enr:')
-export const z_EnrSeq = z_uint(64)
+export const z_EnrSeq = z_hexString()
 export const z_ipAddr = z.string()
 export const z_socketAddr = z.string()
 export const z_udpPort = z_uint(16)
@@ -79,10 +79,10 @@ export const z_historyStoreParams = z.object({
   contentKey: z_ContentKey,
   content: z_Content,
 })
-
-export const z_historyLocalContentParams = z_hexString()
-
-export const z_historyPingParams = z.array(z_Enr).length(1)
+export const z_historyLocalContentParams = z.object({
+  contentKey: z_ContentKey,
+})
+export const z_historyPingParams = z.object({ enr: z.array(z_Enr).length(1) })
 export const z_historyFindNodesParams = z.object({
   enr: z_Enr,
   distances: z.array(z_distance),
@@ -107,6 +107,12 @@ export const z_historyGossipParams = z.object({
   contentKey: z_ContentKey,
   content: z_Content,
 })
+
+export const ui_port = z.object({ port: z.number() })
+
+export const z_ui = (params: z.AnyZodObject) => {
+  return ui_port.merge(params)
+}
 
 export const z_historyStoreResult = z.boolean()
 export const z_historyLocalContentResult = z_Content
