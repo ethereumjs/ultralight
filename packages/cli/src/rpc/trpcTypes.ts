@@ -82,7 +82,7 @@ export const z_historyStoreParams = z.object({
 export const z_historyLocalContentParams = z.object({
   contentKey: z_ContentKey,
 })
-export const z_historyPingParams = z.object({ enr: z.array(z_Enr).length(1) })
+export const z_historyPingParams = z.object({ enr: z_Enr })
 export const z_historyFindNodesParams = z.object({
   enr: z_Enr,
   distances: z.array(z_distance),
@@ -114,12 +114,24 @@ export const z_ui = (params: z.AnyZodObject) => {
   return ui_port.merge(params)
 }
 
+export const z_historyJSONContent = z.object({
+  content: z.string(),
+})
+
 export const z_historyStoreResult = z.boolean()
 export const z_historyLocalContentResult = z_Content
 export const z_historyPingResult = z.union([z_PongMessage, z.undefined()])
 export const z_historyFindNodesResult = z_NodesMessage
-export const z_historyFindContentResult = z.union([z_ContentMessage, z_ContentNodes])
+export const z_historyFindContentResult = z.union([
+  z_ContentMessage,
+  z_ContentNodes,
+  z_historyJSONContent,
+  z.undefined(),
+])
 export const z_historyRecursiveFindContentResult = z_historyFindContentResult
 export const z_historyOfferResult = z_OfferResult
-export const z_historySendOfferResult = z_SendOfferResult
+export const z_historySendOfferResult = z.object({
+  result: z.union([z_SendOfferResult, z.undefined()]),
+  response: z.union([z_OfferResult, z.undefined()]),
+})
 export const z_historyGossipResult = z.number()

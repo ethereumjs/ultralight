@@ -1,6 +1,7 @@
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
+  ContentLookup,
   EpochAccumulator,
   HistoryProtocol,
   PortalNetwork,
@@ -15,6 +16,28 @@ import { z } from 'zod'
 import { BlockHeader } from '@ethereumjs/block'
 import { RLP } from '@ethereumjs/rlp'
 import { TransactionFactory } from '@ethereumjs/tx'
+import {
+  z_Enr,
+  z_historyFindContentParams,
+  z_historyFindContentResult,
+  z_historyGossipParams,
+  z_historyGossipResult,
+  z_historyJSONContent,
+  z_historyLocalContentParams,
+  z_historyLocalContentResult,
+  z_historyOfferParams,
+  z_historyOfferResult,
+  z_historyPingParams,
+  z_historyPingResult,
+  z_historyRecursiveFindContentParams,
+  z_historyRecursiveFindContentResult,
+  z_historySendOfferParams,
+  z_historySendOfferResult,
+  z_historyStoreParams,
+  z_historyStoreResult,
+} from './rpc/trpcTypes.js'
+import { toJSON } from './util.js'
+import { BitArray } from '@chainsafe/ssz'
 const bootnodes = [
   'enr:-I24QDy_atpK3KlPjl6X5yIrK7FosdHI1cW0I0MeiaIVuYg3AEEH9tRSTyFb2k6lpUiFsqxt8uTW3jVMUzoSlQf5OXYBY4d0IDAuMS4wgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg',
   'enr:-I24QIdQtNSyUNcoyR4R7pWLfGj0YuX550Qld0HuInYo_b7JE9CIzmi2TF9hPg-OFL3kebYgLjnPkRu17niXB6xKQugBY4d0IDAuMS4wgmlkgnY0gmlwhJO2oc6Jc2VjcDI1NmsxoQJal-rNlNBoOMikJ7PcGk1h6Mlt_XtTWihHwOKmFVE-GoN1ZHCCIyg',
@@ -69,15 +92,15 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     .meta({
       description: 'Send Ping to ENR',
     })
-    .input(
-      z.object({
-        enr: z.string(),
-      }),
-    )
+    .input(z_historyPingParams)
+    .output(z_historyPingResult)
     .mutation(async ({ input }) => {
       const _pong = await history.sendPing(input.enr)
       const pong = _pong
-        ? { customPayload: toHexString(_pong.customPayload), enrSeq: Number(_pong.enrSeq) }
+        ? {
+            enrSeq: '0x' + _pong.enrSeq.toString(16),
+            dataRadius: toHexString(_pong.customPayload),
+          }
         : undefined
       return pong
     })
@@ -86,6 +109,12 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     .meta({
       description: 'Ping all BootNodes',
     })
+    .output(
+      z.object({
+        enrs: z.array(z_Enr),
+        pongs: z.array(z_historyPingResult),
+      }),
+    )
     .mutation(async () => {
       const pongs = []
       for await (const [idx, enr] of bootnodes.entries()) {
@@ -98,30 +127,21 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
           ? {
               tag: `${idx < 3 ? 'trin' : idx < 7 ? 'fluffy' : 'ultralight'}`,
               enr: `${enr.slice(0, 12)}`,
-              customPayload: BigInt(toHexString(_pong.customPayload)).toString(2).length,
-              enrSeq: Number(_pong.enrSeq),
+              dataRadius: toHexString(_pong.customPayload),
+              enrSeq: '0x' + _pong.enrSeq.toString(16),
             }
-          : {
-              tag: ``,
-              enr: ``,
-              customPayload: '',
-              enrSeq: -1,
-            }
+          : undefined
         pongs.push(pong)
       }
-      return pongs
+      return { enrs: bootnodes, pongs }
     })
 
   const browser_historyStore = publicProcedure
     .meta({
       description: 'Store Content',
     })
-    .input(
-      z.object({
-        contentKey: z.string(),
-        content: z.string(),
-      }),
-    )
+    .input(z_historyStoreParams)
+    .output(z_historyStoreResult)
     .mutation(async ({ input }) => {
       const key = fromHexString(input.contentKey)
       try {
@@ -129,70 +149,121 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       } catch {
         return false
       }
-      return true
+      const stored = await history.findContentLocally(key)
+      return stored.length > 0
     })
+
   const browser_historyLocalContent = publicProcedure
     .meta({
       description: 'Get Local Content',
     })
-    .input(
-      z.object({
-        contentKey: z.string(),
-      }),
-    )
+    .input(z_historyLocalContentParams)
+    .output(z_historyLocalContentResult)
     .mutation(async ({ input }) => {
       const contentKey = fromHexString(input.contentKey)
       const res = await history.findContentLocally(contentKey)
-      console.log({
-        method: 'browser_historyLocalContent',
-        contentKey: input.contentKey,
-        res,
-      })
-      const contentType = contentKey[0]
-      let content = {}
-      switch (contentType) {
+      return toJSON(contentKey, res)
+    })
+
+  const browser_historyFindContent = publicProcedure
+    .meta({
+      description: 'Find Content',
+    })
+    .input(z_historyFindContentParams)
+    .output(z_historyFindContentResult)
+    .mutation(async ({ input }) => {
+      const contentKey = fromHexString(input.contentKey)
+      const res = await history.sendFindContent(input.enr, contentKey)
+      if (!res) return undefined
+
+      switch (res?.selector) {
         case 0: {
-          const blockHeaderWithProof = BlockHeaderWithProof.deserialize(res)
-          const header = BlockHeader.fromRLPSerializedHeader(blockHeaderWithProof.header, {
-            setHardfork: true,
-          }).toJSON()
-          const proof =
-            blockHeaderWithProof.proof.selector === 0
-              ? []
-              : blockHeaderWithProof.proof.value?.map((p) => toHexString(p))
-          content = { header, proof }
-          break
+          return { content: toJSON(contentKey, <Uint8Array>res.value) }
         }
         case 1: {
-          const blockBody = BlockBodyContentType.deserialize(res)
-          const transactions = blockBody.allTransactions.map((tx) =>
-            TransactionFactory.fromSerializedData(tx).toJSON(),
-          )
-          const unclesRlp = toHexString(sszUnclesType.deserialize(blockBody.sszUncles))
-          content = {
-            transactions,
-            uncles: {
-              rlp: unclesRlp,
-              count: RLP.decode(unclesRlp).length.toString(),
-            },
-          }
-          break
-        }
-        case 2: {
-          const receipt = sszReceiptType.deserialize(res)
-          content = receipt
-          break
-        }
-        case 3: {
-          const epochAccumulator = EpochAccumulator.deserialize(res)
-          content = epochAccumulator
-          break
+          return { enrs: (<Uint8Array[]>res.value).map(toHexString) }
         }
         default: {
-          content = {}
+          return undefined
         }
       }
-      return JSON.stringify(content)
+    })
+
+  const browser_historyRecursiveFindContent = publicProcedure
+    .meta({
+      description: 'Recursive Find Content',
+    })
+    .input(z_historyRecursiveFindContentParams)
+    .output(z_historyRecursiveFindContentResult)
+    .mutation(async ({ input }) => {
+      const contentKey = fromHexString(input.contentKey)
+      const lookup = new ContentLookup(history, contentKey)
+      const res = await lookup.startLookup()
+      return !res
+        ? undefined
+        : 'content' in res
+        ? { content: toJSON(contentKey, res.content), utpTransfer: res.utp }
+        : { enrs: res.enrs.map(toHexString) }
+    })
+
+  const browser_historyOffer = publicProcedure
+    .meta({
+      description: 'Offer Content',
+    })
+    .input(z_historyOfferParams)
+    .output(z_historyOfferResult)
+    .mutation(async ({ input }) => {
+      const contentKey = fromHexString(input.contentKey)
+      await history.store(
+        contentKey[0],
+        toHexString(contentKey.slice(1)),
+        fromHexString(input.content),
+      )
+      const res = await history.sendOffer(input.enr, [contentKey])
+      if (!res) return undefined
+      if (res instanceof BitArray) {
+        return res.toBoolArray()
+      } else {
+        return []
+      }
+    })
+
+  const browser_historySendOffer = publicProcedure
+    .meta({
+      description: 'Send Offer',
+    })
+    .input(z_historySendOfferParams)
+    .output(z_historySendOfferResult)
+    .mutation(async ({ input }) => {
+      const res = await history.sendOffer(input.nodeId, input.contentKeys.map(fromHexString))
+      if (!res) {
+        return {
+          result: undefined,
+          response: undefined,
+        }
+      } else {
+        const enr = history.routingTable.getWithPending(input.nodeId)?.value
+        const result = enr ? '0x' + enr.seq.toString(16) : undefined
+        if (res instanceof BitArray) {
+          return { result, response: res.toBoolArray() }
+        } else {
+          return { result, response: [] }
+        }
+      }
+    })
+
+  const browser_historyGossip = publicProcedure
+    .meta({
+      description: 'Gossip Content',
+    })
+    .input(z_historyGossipParams)
+    .output(z_historyGossipResult)
+    .mutation(async ({ input }) => {
+      const res = await history.gossipContent(
+        fromHexString(input.contentKey),
+        fromHexString(input.content),
+      )
+      return res
     })
 
   return {
@@ -202,5 +273,10 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     pingBootNodes,
     browser_historyStore,
     browser_historyLocalContent,
+    browser_historyFindContent,
+    browser_historyRecursiveFindContent,
+    browser_historyOffer,
+    browser_historySendOffer,
+    browser_historyGossip,
   }
 }
