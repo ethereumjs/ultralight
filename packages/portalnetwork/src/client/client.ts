@@ -148,6 +148,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const beacon = portal.protocols.get(
         ProtocolId.BeaconLightClientNetwork,
       ) as BeaconLightClientNetwork
+      if (beacon === undefined) {
+        portal.protocols.set(
+          ProtocolId.BeaconLightClientNetwork,
+          new BeaconLightClientNetwork(portal),
+        )
+      }
       await beacon.initializeLightClient(opts.trustedBlockRoot)
     }
 

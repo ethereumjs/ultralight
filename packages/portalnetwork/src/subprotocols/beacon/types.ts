@@ -33,3 +33,8 @@ export const LightClientFinalityUpdateKey = new ContainerType({
 export const LightClientOptimisticUpdateKey = new ContainerType({
   optimisticSlot: new UintBigintType(8),
 })
+
+export enum SyncStrategy {
+  TrustedBlockRoot,
+  PollNetwork,
+}
