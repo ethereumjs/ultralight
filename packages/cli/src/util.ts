@@ -1,5 +1,17 @@
+import { BlockHeader } from '@ethereumjs/block'
+import { RLP } from '@ethereumjs/rlp'
+import { TransactionFactory } from '@ethereumjs/tx'
 import { Enr } from './rpc/schema/types.js'
-import { BaseProtocol, ProtocolId } from 'portalnetwork'
+import {
+  BaseProtocol,
+  BlockBodyContentType,
+  BlockHeaderWithProof,
+  EpochAccumulator,
+  ProtocolId,
+  sszReceiptType,
+  sszUnclesType,
+  toHexString,
+} from 'portalnetwork'
 
 export const hasValidEnrPrefix = (enr: Enr) => {
   return enr.startsWith('enr:')
@@ -50,4 +62,52 @@ export const addBootNode = async (protocolId: ProtocolId, baseProtocol: BaseProt
     throw new Error(`Error adding bootnode ${enr} to protocol \
       ${protocolId}: ${error.message ?? error}`)
   }
+}
+
+export const toJSON = (contentKey: Uint8Array, res: Uint8Array) => {
+  const contentType = contentKey[0]
+  let content = {}
+  switch (contentType) {
+    case 0: {
+      const blockHeaderWithProof = BlockHeaderWithProof.deserialize(res)
+      const header = BlockHeader.fromRLPSerializedHeader(blockHeaderWithProof.header, {
+        setHardfork: true,
+      }).toJSON()
+      const proof =
+        blockHeaderWithProof.proof.selector === 0
+          ? []
+          : blockHeaderWithProof.proof.value?.map((p) => toHexString(p))
+      content = { header, proof }
+      break
+    }
+    case 1: {
+      const blockBody = BlockBodyContentType.deserialize(res)
+      const transactions = blockBody.allTransactions.map((tx) =>
+        TransactionFactory.fromSerializedData(tx).toJSON(),
+      )
+      const unclesRlp = toHexString(sszUnclesType.deserialize(blockBody.sszUncles))
+      content = {
+        transactions,
+        uncles: {
+          rlp: unclesRlp,
+          count: RLP.decode(unclesRlp).length.toString(),
+        },
+      }
+      break
+    }
+    case 2: {
+      const receipt = sszReceiptType.deserialize(res)
+      content = receipt
+      break
+    }
+    case 3: {
+      const epochAccumulator = EpochAccumulator.deserialize(res)
+      content = epochAccumulator
+      break
+    }
+    default: {
+      content = {}
+    }
+  }
+  return JSON.stringify(content)
 }
