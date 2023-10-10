@@ -38,6 +38,7 @@ import { peerIdFromKeys } from '@libp2p/peer-id'
 import { hexToBytes } from '@ethereumjs/util'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
+  tickerTape: boolean
   discv5: Discv5
   protocols: Map<ProtocolId, BaseProtocol>
   uTP: PortalNetworkUTP
@@ -161,7 +162,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   constructor(opts: PortalNetworkOpts) {
     // eslint-disable-next-line constructor-super
     super()
-
+    this.tickerTape = opts.tickerTape ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
