@@ -26,6 +26,7 @@ import {
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
+import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
   'portal_historyRoutingTableInfo',
@@ -162,6 +163,24 @@ export class portal {
       [validators.hex],
     ])
   }
+
+  async sendPortalNetworkResponse(
+    nodeId: string,
+    socketAddr: Multiaddr,
+    requestId: bigint,
+    payload: Uint8Array,
+  ) {
+    // ;(this._client as any).emit('SendTalkResp', nodeId, requestId, toHexString(payload))
+    this._client.sendPortalNetworkResponse(
+      {
+        nodeId,
+        socketAddr,
+      },
+      BigInt(requestId),
+      payload,
+    )
+  }
+
   async methods() {
     return methods
   }
@@ -307,10 +326,11 @@ export class portal {
     })
     this.logger.extend('PONG')(`Sent to ${shortId(enr.nodeId)}`)
     try {
-      await this._client.sendPortalNetworkResponse(
-        { nodeId: enr.nodeId, socketAddr: enr.getLocationMultiaddr('udp')! },
+      await this.sendPortalNetworkResponse(
+        enr.nodeId,
+        enr.getLocationMultiaddr('udp')!,
         BigInt(requestId),
-        Buffer.from(pongMsg),
+        pongMsg,
       )
     } catch {
       return false
@@ -364,13 +384,11 @@ export class portal {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this._client.sendPortalNetworkResponse(
-        {
-          nodeId: dstId,
-          socketAddr: enr.getLocationMultiaddr('udp')!,
-        },
+      this.sendPortalNetworkResponse(
+        dstId,
+        enr.getLocationMultiaddr('udp')!,
         BigInt(requestId),
-        Uint8Array.from(encodedPayload),
+        encodedPayload,
       )
 
       return enrs.length > 0 ? 1 : 0
@@ -453,10 +471,11 @@ export class portal {
       value: fromHexString(content),
     })
     const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    this._client.sendPortalNetworkResponse(
-      { nodeId, socketAddr: enr?.getLocationMultiaddr('udp')! },
+    this.sendPortalNetworkResponse(
+      nodeId,
+      enr?.getLocationMultiaddr('udp')!,
       enr!.seq,
-      Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)]),
+      Uint8Array.from(Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])),
     )
     return '0x' + enr!.seq.toString(16)
   }
@@ -532,13 +551,11 @@ export class portal {
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    this._client.sendPortalNetworkResponse(
-      {
-        nodeId: _enr.nodeId,
-        socketAddr: _enr.getLocationMultiaddr('udp')!,
-      },
+    this.sendPortalNetworkResponse(
+      _enr.nodeId,
+      _enr.getLocationMultiaddr('udp')!,
       myEnr.seq,
-      Buffer.from(encodedPayload),
+      encodedPayload,
     )
 
     return '0x' + myEnr.seq.toString(16)
