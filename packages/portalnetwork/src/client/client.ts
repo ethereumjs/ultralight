@@ -379,7 +379,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      let nodeAddr
+      let nodeAddr: ENR | undefined
       if (typeof enr === 'string') {
         // If ENR is not provided, look up ENR in protocol routing table by nodeId
         const protocol = this.protocols.get(protocolId)
@@ -387,7 +387,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           nodeAddr = protocol.routingTable.getWithPending(enr)?.value
           if (!nodeAddr) {
             // Check in unverified sessions cache if no ENR found in routing table
-            nodeAddr = this.unverifiedSessionCache.get(enr)
+            // nodeAddr = this.unverifiedSessionCache.get(enr)
           }
         }
       } else {
