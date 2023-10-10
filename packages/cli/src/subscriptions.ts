@@ -1,9 +1,10 @@
-import { Discv5EventEmitter } from '@chainsafe/discv5'
+import { Discv5EventEmitter, ENR, NodeId } from '@chainsafe/discv5'
+import { Multiaddr } from '@multiformats/multiaddr'
+
 import { initTRPC } from '@trpc/server'
 // eslint-disable-next-line node/file-extension-in-import
 import { observable } from '@trpc/server/observable'
 import debug from 'debug'
-import { EventEmitter } from 'events'
 import {
   HistoryProtocol,
   MessageCodes,
@@ -14,6 +15,26 @@ import {
   fromHexString,
   toHexString,
 } from 'portalnetwork'
+
+/** A representation of an unsigned contactable node. */
+export interface INodeAddress {
+  /** The destination socket address. */
+  socketAddr: Multiaddr
+  /** The destination Node Id. */
+  nodeId: NodeId
+}
+
+export interface ITalkReqMessage {
+  type: 5
+  id: bigint
+  protocol: Buffer
+  request: Buffer
+}
+export interface ITalkRespMessage {
+  type: 6
+  id: bigint
+  response: Buffer
+}
 
 const _portalEvents = [
   'onTalkReq',
@@ -60,7 +81,7 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const talkReq = (src: any, sourceId: any, message: any) => {
+        const talkReq = (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
           if (toHexString(message.protocol) === ProtocolId.UTPNetwork) {
             emit.next({
               nodeId: '0x' + src.nodeId,
@@ -89,7 +110,7 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const talkResp = (src: any, msg: any) => {
+        const talkResp = (src: INodeAddress, sourceId: ENR | null, msg: ITalkRespMessage) => {
           const source = {
             addr: src.socketAddr.toString(),
             nodeId: '0x' + src.nodeId,
@@ -153,13 +174,16 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const utpEvent = (...args: any) => {
-          console.log('onUtp', args)
-          emit.next(args)
+        const utpEvent = (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
+          emit.next({
+            peerId,
+            protocolId,
+            msg: toHexString(msg),
+          })
         }
-        portal.uTP.on('send', utpEvent)
+        portal.uTP.on('Send', utpEvent)
         return () => {
-          portal.uTP.off('send', utpEvent)
+          portal.uTP.off('Send', utpEvent)
         }
       })
     })
