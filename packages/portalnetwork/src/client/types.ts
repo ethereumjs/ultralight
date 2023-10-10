@@ -10,6 +10,8 @@ export interface IPortalNetworkEvents {
   NodeRemoved: (nodeId: NodeId, protocolId: ProtocolId) => void
   ContentAdded: (key: string, contentType: number, content: string) => void
   Verified: (key: string, verified: boolean) => void
+  SendTalkReq: (nodeId: string, requestId: string, payload: string) => void
+  SendTalkResp: (nodeId: string, requestId: string, payload: string) => void
 }
 
 export enum TransportLayer {

@@ -404,6 +404,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         Buffer.from(payload),
         hexToBytes(messageProtocol),
       )
+      this.tickerTape &&
+        this.emit('SendTalkReq', nodeAddr.nodeId, toHexString(res), toHexString(payload))
       return res
     } catch (err: any) {
       if (protocolId === ProtocolId.UTPNetwork) {
@@ -419,6 +421,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     requestId: bigint,
     payload: Uint8Array,
   ) => {
+    this.tickerTape &&
+      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), toHexString(payload))
     this.discv5.sendTalkResp(src, requestId, payload)
   }
 }
