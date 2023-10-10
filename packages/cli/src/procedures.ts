@@ -1,28 +1,19 @@
 import {
-  BlockBodyContentType,
-  BlockHeaderWithProof,
   ContentLookup,
-  EpochAccumulator,
   HistoryProtocol,
   PortalNetwork,
   ProtocolId,
   fromHexString,
-  sszReceiptType,
-  sszUnclesType,
   toHexString,
 } from 'portalnetwork'
 import { PublicProcudure } from './subscriptions.js'
 import { z } from 'zod'
-import { BlockHeader } from '@ethereumjs/block'
-import { RLP } from '@ethereumjs/rlp'
-import { TransactionFactory } from '@ethereumjs/tx'
 import {
   z_Enr,
   z_historyFindContentParams,
   z_historyFindContentResult,
   z_historyGossipParams,
   z_historyGossipResult,
-  z_historyJSONContent,
   z_historyLocalContentParams,
   z_historyLocalContentResult,
   z_historyOfferParams,
