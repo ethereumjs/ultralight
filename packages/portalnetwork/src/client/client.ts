@@ -10,7 +10,12 @@ import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
 import debug, { Debugger } from 'debug'
 import { toHexString } from '@chainsafe/ssz'
-import { BeaconLightClientNetwork, StateProtocol, ProtocolId } from '../subprotocols/index.js'
+import {
+  BeaconLightClientNetwork,
+  StateProtocol,
+  ProtocolId,
+  SyncStrategy,
+} from '../subprotocols/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
@@ -142,20 +147,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       supportedProtocols: opts.supportedProtocols ?? [ProtocolId.HistoryNetwork],
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
+      trustedBlockRoot: opts.trustedBlockRoot,
     })
-
-    if (opts.trustedBlockRoot !== undefined) {
-      const beacon = portal.protocols.get(
-        ProtocolId.BeaconLightClientNetwork,
-      ) as BeaconLightClientNetwork
-      if (beacon === undefined) {
-        portal.protocols.set(
-          ProtocolId.BeaconLightClientNetwork,
-          new BeaconLightClientNetwork(portal),
-        )
-      }
-      await beacon.initializeLightClient(opts.trustedBlockRoot)
-    }
 
     return portal
   }
@@ -197,7 +190,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.protocols.set(protocol, new StateProtocol(this, opts.radius))
           break
         case ProtocolId.BeaconLightClientNetwork:
-          this.protocols.set(protocol, new BeaconLightClientNetwork(this, opts.radius))
+          {
+            const syncStrategy = opts.trustedBlockRoot
+              ? SyncStrategy.TrustedBlockRoot
+              : SyncStrategy.PollNetwork
+            this.protocols.set(
+              protocol,
+              new BeaconLightClientNetwork(this, opts.radius, opts.trustedBlockRoot, syncStrategy),
+            )
+          }
           break
         case ProtocolId.Rendezvous:
           this.supportsRendezvous = true

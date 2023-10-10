@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { BeaconLightClientNetwork, PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -166,12 +166,14 @@ const main = async () => {
     metrics,
     supportedProtocols: networks,
     dataDir: args.dataDir,
+    trustedBlockRoot: args.trustedBlockRoot,
   })
   portal.discv5.enableLogs()
 
   portal.enableLog(
     'ultralight,-uTP,-FINDNODES,*LightClient:DEBUG,*LightClient:INFO,*BeaconLightClientNetwork',
   )
+
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
 
@@ -238,14 +240,6 @@ const main = async () => {
     server.http().listen(args.rpcPort, rpcAddr)
 
     log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
-
-    if (args.trustedBlockRoot !== undefined) {
-      const beaconProtocol = portal.protocols.get(
-        ProtocolId.BeaconLightClientNetwork,
-      ) as BeaconLightClientNetwork
-      await beaconProtocol.initializeLightClient(args.trustedBlockRoot)
-      beaconProtocol.lightClient?.start()
-    }
   }
 
   process.on('SIGINT', async () => {

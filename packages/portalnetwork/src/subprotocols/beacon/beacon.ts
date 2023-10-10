@@ -59,7 +59,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   logger: Debugger
   lightClient: Lightclient | undefined
   bootstrapFinder: Map<NodeId, string[] | {}>
-  syncStrategy: SyncStrategy
+  syncStrategy: SyncStrategy = SyncStrategy.PollNetwork
   trustedBlockRoot: string | undefined
   constructor(
     client: PortalNetwork,
@@ -97,8 +97,8 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     })
 
     // If a sync strategy is not provided, determine sync strategy based on existence of trusted block root
-    this.syncStrategy =
-      sync ?? trustedBlockRoot ? SyncStrategy.TrustedBlockRoot : SyncStrategy.PollNetwork
+    if (sync !== undefined) this.syncStrategy = sync
+    else if (trustedBlockRoot !== undefined) this.syncStrategy = SyncStrategy.TrustedBlockRoot
     switch (this.syncStrategy) {
       case SyncStrategy.PollNetwork:
         this.bootstrapFinder = new Map()
@@ -277,7 +277,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    */
   public initializeLightClient = async (blockRoot: string) => {
     // Disable bootstrap finder mechanism if currently running
-    this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+    if (this.syncStrategy === SyncStrategy.PollNetwork)
+      this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+    else this.portal.removeListener('NodeAdded', this.getBootstrap)
 
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')

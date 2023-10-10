@@ -19,7 +19,7 @@ import { PortalNetwork, ProtocolId, TransportLayer } from '../../../src/index.js
 import type { BeaconLightClientNetwork } from '../../../src/subprotocols/beacon/index.js'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 
 const specTestVectors = require('./specTestVectors.json')
 const config = createBeaconConfig(
@@ -279,8 +279,59 @@ describe('API tests', async () => {
       'stored and reconstructed a LightClientUpdatesByRange object',
     )
   })
+})
 
-  it('initializes the light client at startup when a trusted block root is provided', async () => {
+describe('constructor/initialization tests', async () => {
+  const privateKeys = [
+    '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
+  ]
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+  const enr1 = SignableENR.createFromPeerId(id1)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  enr1.setLocationMultiaddr(initMa)
+
+  it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const beacon = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const listeners = beacon.portal.listeners('NodeAdded')
+    assert.equal(listeners.length, 1, 'bootstrap vote listener is running')
+    assert.equal(listeners[0], beacon['getBootStrapVote'])
+  })
+
+  it('starts with a sync strategy of `trustedBootStrap` when a trusted block root is provided', async () => {
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+      trustedBlockRoot: bytesToHex(randomBytes(32)),
+    })
+    const beacon = node1.protocols.get(
+      ProtocolId.BeaconLightClientNetwork,
+    ) as BeaconLightClientNetwork
+    const listeners = beacon.portal.listeners('NodeAdded')
+    assert.equal(listeners.length, 1, 'bootstrap listener is running')
+    assert.equal(listeners[0], beacon['getBootstrap'])
+  })
+
+  it('initializes the light client `initializeLightClient` is provided', async () => {
     vi.mock('@lodestar/light-client', () => {
       return {
         Lightclient: {
@@ -311,30 +362,12 @@ describe('API tests', async () => {
     const beacon = node1.protocols.get(
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
+
+    await beacon.initializeLightClient(trustedBlockRoot)
     assert.equal((beacon.lightClient as any).checkpointRoot, trustedBlockRoot)
     expect(beacon.lightClient!.start).toHaveBeenCalled()
     const listeners = beacon.portal.listeners('NodeAdded')
     assert.equal(listeners.length, 0, 'bootstrap listener is not running')
     vi.resetAllMocks()
-  })
-
-  it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
-    const node1 = await PortalNetwork.create({
-      transport: TransportLayer.NODE,
-      supportedProtocols: [ProtocolId.BeaconLightClientNetwork],
-      config: {
-        enr: enr1,
-        bindAddrs: {
-          ip4: initMa,
-        },
-        peerId: id1,
-      },
-    })
-    const beacon = node1.protocols.get(
-      ProtocolId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
-    const listeners = beacon.portal.listeners('NodeAdded')
-    assert.equal(listeners.length, 1, 'bootstrap listener is running')
-    assert.equal(listeners[0], beacon['getBootStrapVote'])
   })
 })
