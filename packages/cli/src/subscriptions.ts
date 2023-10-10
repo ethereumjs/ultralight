@@ -3,7 +3,15 @@ import { initTRPC } from '@trpc/server'
 // eslint-disable-next-line node/file-extension-in-import
 import { observable } from '@trpc/server/observable'
 import { EventEmitter } from 'events'
-import { HistoryProtocol, PortalNetwork } from 'portalnetwork'
+import {
+  HistoryProtocol,
+  MessageCodes,
+  PortalNetwork,
+  PortalWireMessageType,
+  ProtocolId,
+  fromHexString,
+  toHexString,
+} from 'portalnetwork'
 
 const t = initTRPC
   .context()
@@ -12,7 +20,7 @@ const t = initTRPC
   }>()
   .create()
 const pubProcedure = t.procedure
-type PublicProcudure = typeof pubProcedure
+export type PublicProcudure = typeof pubProcedure
 
 export const subscriptions = async (
   portal: PortalNetwork,
@@ -20,20 +28,44 @@ export const subscriptions = async (
   publicProcedure: PublicProcudure,
 ) => {
   const ee = new EventEmitter()
-  ;(portal.discv5 as Discv5EventEmitter).on('talkReqReceived', (msg: any) => {
-    ee.emit('talkReqReceived', msg)
-  })
-  ;(portal.discv5 as Discv5EventEmitter).on('talkRespReceived', (msg: any) => {
-    ee.emit('talkRespReceived', msg)
-  })
+  ;(portal.discv5 as Discv5EventEmitter).on(
+    'talkReqReceived',
+    (src: any, sourceId: any, message: any) => {
+      ee.emit('talkReqReceived', { src, sourceId, message })
+    },
+  )
+  ;(portal.discv5 as Discv5EventEmitter).on(
+    'talkRespReceived',
+    (src: any, srcId: any, msg: any) => {
+      const source = {
+        addr: src.socketAddr.toString(),
+        nodeId: '0x' + src.nodeId,
+        // enr: srcId.encodeTxt(),
+      }
+      const message = {
+        id: msg.id.toString(),
+        response: toHexString(msg.response),
+      }
+      ee.emit('talkRespReceived', {
+        source,
+        message,
+      })
+    },
+  )
   history.on('ContentAdded', (...args: any) => {
-    ee.emit('ContentAdded', args)
+    ee.emit('ContentAdded', ...args)
   })
   ;(portal as any).on('NodeAdded', (...args: any) => {
     ee.emit('NodeAdded', args)
   })
   portal.uTP.on('send', (...args) => {
     ee.emit('uTPEvent', args)
+  })
+  ;(portal as any).on('SendTalkReq', (...args: any) => {
+    ee.emit('SendTalkReq', ...args)
+  })
+  ;(portal as any).on('SendTalkResp', (...args: any) => {
+    ee.emit('SendTalkResp', ...args)
   })
 
   //  WSS Client Methods
@@ -44,9 +76,22 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const talkReq = (msg: any) => {
-          console.log(msg)
-          emit.next(msg)
+        const talkReq = (args: { src: any; sourceId: any; message: any }) => {
+          if (toHexString(args.message.protocol) === ProtocolId.UTPNetwork) {
+            emit.next({
+              nodeId: '0x' + args.src.nodeId,
+              topic: 'UTP',
+              message: toHexString(args.message.request),
+            })
+          } else {
+            const deserialized = PortalWireMessageType.deserialize(args.message.request)
+            const messageType = deserialized.selector
+            emit.next({
+              nodeId: '0x' + args.src.nodeId,
+              topic: MessageCodes[messageType],
+              message: deserialized.value.toString(),
+            })
+          }
         }
         ee.on('talkReqReceived', talkReq)
         return () => {
@@ -60,9 +105,20 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const talkResp = (msg: any) => {
-          console.log(msg)
-          emit.next(msg)
+        const talkResp = (args: { source: any; message: any }) => {
+          try {
+            const deserialized = PortalWireMessageType.deserialize(
+              fromHexString(args.message.response),
+            )
+            const messageType = deserialized.selector
+            emit.next({
+              nodeId: args.source.nodeId,
+              topic: MessageCodes[messageType],
+              message: deserialized.value.toString(),
+            })
+          } catch {
+            console.log('TalkResp ERROR', args)
+          }
         }
         ee.on('talkRespReceived', talkResp)
         return () => {
@@ -76,13 +132,13 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const contentAdded = (...args: any) => {
-          console.log(args)
-          emit.next(args)
+        const contentAdded = (key: string, contentType: number, content: string) => {
+          console.log('onContentAdded', { key, contentType, content })
+          emit.next({ key, contentType, content })
         }
         ee.on('ContentAdded', contentAdded)
         return () => {
-          ee.off('talkReqReceived', contentAdded)
+          ee.off('ContentAdded', contentAdded)
         }
       })
     })
@@ -92,13 +148,13 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const contentAdded = (...args: any) => {
-          console.log('onNodeAdded', args)
+        const nodeAdded = (...args: any) => {
+          // console.log('onNodeAdded', args)
           emit.next(args)
         }
-        ee.on('ContentAdded', contentAdded)
+        ee.on('NodeAdded', nodeAdded)
         return () => {
-          ee.off('talkReqReceived', contentAdded)
+          ee.off('NodeAdded', nodeAdded)
         }
       })
     })
@@ -118,10 +174,72 @@ export const subscriptions = async (
         }
       })
     })
+  const onSendTalkReq = publicProcedure
+    .meta({
+      description: 'Subscribe to send talk req listener',
+    })
+    .subscription(() => {
+      return observable((emit) => {
+        const sendReq = (...args: any) => {
+          const [nodeId, res, payload] = args
+          const deserialized = PortalWireMessageType.deserialize(fromHexString(payload))
+          const messageType = deserialized.selector
+          console.log('SendTalkReq', {
+            topic: MessageCodes[messageType],
+            nodeId,
+            res,
+            payload,
+          })
+          emit.next({
+            nodeId: '0x' + nodeId,
+            topic: MessageCodes[messageType],
+            message: deserialized.value.toString(),
+          })
+        }
+        ee.on('SendTalkReq', sendReq)
+        return () => {
+          ee.off('SendTalkReq', sendReq)
+        }
+      })
+    })
+  const onSendTalkResp = publicProcedure
+    .meta({
+      description: 'Subscribe to send talk resp listener',
+    })
+    .subscription(() => {
+      return observable((emit) => {
+        const sendResp = (...args: any) => {
+          try {
+            const [nodeId, requestId, payload] = args
+            const deserialized = PortalWireMessageType.deserialize(fromHexString(payload))
+            const messageType = deserialized.selector
+            console.log('SendTalkResp', {
+              topic: MessageCodes[messageType],
+              nodeId,
+              requestId,
+              payload,
+            })
+            emit.next({
+              nodeId: '0x' + nodeId,
+              topic: MessageCodes[messageType],
+              message: deserialized.value.toString(),
+            })
+          } catch {
+            console.log('SendTalkResp ERROR', args)
+          }
+        }
+        ee.on('SendTalkResp', sendResp)
+        return () => {
+          ee.off('SendTalkResp', sendResp)
+        }
+      })
+    })
 
   return {
     onTalkReq,
     onTalkResp,
+    onSendTalkReq,
+    onSendTalkResp,
     onContentAdded,
     onNodeAdded,
     onUtp,
