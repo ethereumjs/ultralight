@@ -77,7 +77,11 @@ export class ContentLookup {
       switch (res.selector) {
         case 0: {
           // findContent returned uTP connection ID
-          this.logger(`received uTP connection ID from ${shortId(nearestPeer!.nodeId)}`)
+          this.logger(
+            `received uTP connection ID from ${shortId(
+              this.protocol.routingTable.getValue(nearestPeer!.nodeId)!,
+            )}`,
+          )
           finished = true
           nearestPeer.hasContent = true
           return new Promise((resolve) => {
