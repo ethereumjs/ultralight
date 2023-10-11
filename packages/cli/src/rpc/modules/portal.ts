@@ -59,6 +59,7 @@ const methods = [
   'portal_historyAddBootNode',
   'portal_historyNodeInfo',
   'portal_beaconAddBootNode',
+  `portal_beaconStartLightClient`,
 ]
 
 export class portal {
@@ -156,6 +157,10 @@ export class portal {
     this.beaconLocalContent = middleware(this.beaconLocalContent.bind(this), 1, [[validators.hex]])
 
     this.beaconAddBootNode = middleware(this.beaconAddBootNode.bind(this), 1, [[validators.enr]])
+
+    this.beaconStartLightClient = middleware(this.beaconStartLightClient.bind(this), 1, [
+      [validators.hex],
+    ])
   }
   async methods() {
     return methods
@@ -598,5 +603,16 @@ export class portal {
       return false
     }
     return true
+  }
+
+  async beaconStartLightClient(params: [string]): Promise<boolean | string> {
+    const [bootstrapHash] = params
+    this.logger(`portal_beaconStartLightClient request received for ${bootstrapHash}`)
+    try {
+      await this._beacon.initializeLightClient(bootstrapHash)
+      return true
+    } catch (err: any) {
+      return err.message
+    }
   }
 }

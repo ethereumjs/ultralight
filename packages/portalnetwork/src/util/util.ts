@@ -15,10 +15,11 @@ export const MEGABYTE = 1048576
 export const shortId = (nodeId: string | ENR) => {
   if (typeof nodeId === 'string')
     return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
-  const nodeType = nodeId.kvs.has('c') ? bytesToUtf8(nodeId.kvs.get('c')!) : ''
+  const nodeType = nodeId.kvs.get('c')
+  const nodeTypeString =
+    nodeType !== undefined && nodeType.length > 0 ? `${bytesToUtf8(nodeType)}:` : undefined
   return (
-    nodeType +
-    ':' +
+    nodeTypeString +
     nodeId.nodeId.slice(0, 5) +
     '...' +
     nodeId.nodeId.slice(nodeId.nodeId.length - 5)
