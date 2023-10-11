@@ -24,7 +24,7 @@ export class CongestionControl extends EventEmitter {
   constructor() {
     super()
     this.writing = false
-    this.logger = debug('utp:congestionControl')
+    this.logger = debug('uTP:congestionControl')
     this.max_window = DEFAULT_PACKET_SIZE * 3
     this.cur_window = 0
     this.reply_micro = 0
@@ -45,7 +45,7 @@ export class CongestionControl extends EventEmitter {
       this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
       return new Promise((resolve, reject) => {
         // Abort canSend promise if DATA packets not acked in a timely manner
-        const abort = setTimeout(() => reject(false), 3000)
+        const abort = setTimeout(() => reject(false), 10000)
         this.once('canSend', () => {
           clearTimeout(abort)
           resolve(true)
@@ -59,12 +59,12 @@ export class CongestionControl extends EventEmitter {
     if (!sentTime) {
       return
     }
-    const rtt = timestamp - sentTime
+    const packetRtt = timestamp - sentTime
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
-    const delta = this.rtt - rtt
-    this.rtt_var = this.rtt_var + (Math.abs(delta) - this.rtt_var) / 4
-    this.rtt = Math.floor(this.rtt + (rtt - this.rtt) / 8)
-    this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
+    const delta = this.rtt - packetRtt
+    this.rtt_var = this.rtt_var + Math.floor((Math.abs(delta) - this.rtt_var) / 4)
+    this.rtt = Math.floor(this.rtt + (packetRtt - this.rtt) / 8)
+    this.timeout = Math.max(this.rtt + this.rtt_var * 4, 500)
     clearTimeout(this.timeoutCounter)
     this.logger(`timeout set to ${this.timeout}ms`)
     this.timeoutCounter = setTimeout(() => {
