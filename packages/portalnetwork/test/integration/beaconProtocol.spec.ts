@@ -717,6 +717,8 @@ describe('beacon light client sync tests', () => {
   }, 30000)
 
   it.skip('finds a bootstrap using peer voting', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
+    vi.setSystemTime(1694217167000)
     const range = require('./testdata/range.json')
     const bootstrapJson = require('./testdata/bootstrap2.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
@@ -751,7 +753,8 @@ describe('beacon light client sync tests', () => {
         peerId: id2,
       },
     })
-
+    node1.enableLog('*BeaconLightClientNetwork,-uTP')
+    //   node2.enableLog('*')
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -788,8 +791,6 @@ describe('beacon light client sync tests', () => {
       ),
     )
 
-    await protocol1!.sendPing(protocol2?.enr!.toENR())
-
     const rangeKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
       LightClientUpdatesByRangeKey.serialize({
@@ -808,7 +809,7 @@ describe('beacon light client sync tests', () => {
       rangeKey,
       LightClientUpdatesByRange.serialize([update1, update2, update3, update4]),
     )
-    //  await protocol2.store(BeaconLightClientNetworkContentType.LightClientUpdatesByRange, rangeKey, LightClientUpdatesByRange.serialize([update1, update2, update3, update4]) )
+
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrapKey,
@@ -819,10 +820,12 @@ describe('beacon light client sync tests', () => {
     )
 
     await new Promise((resolve) => {
-      node2.on('ContentAdded', (key, contentType) => {
-        console.error(key, contentType)
-        resolve(undefined)
+      protocol2.portal.on('NodeAdded', (_nodeId) => {
+        if (protocol2['bootstrapFinder'].values.length > 0) {
+          resolve('undefined)')
+        }
       })
+      protocol2!.addBootNode(protocol1?.enr!.encodeTxt())
     })
-  }, 20000)
+  }, 30000)
 })
