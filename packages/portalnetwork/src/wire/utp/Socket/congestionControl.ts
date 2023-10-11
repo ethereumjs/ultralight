@@ -24,7 +24,7 @@ export class CongestionControl extends EventEmitter {
   constructor() {
     super()
     this.writing = false
-    this.logger = debug('utp:congestionControl')
+    this.logger = debug('uTP:congestionControl')
     this.max_window = DEFAULT_PACKET_SIZE * 3
     this.cur_window = 0
     this.reply_micro = 0
@@ -59,12 +59,12 @@ export class CongestionControl extends EventEmitter {
     if (!sentTime) {
       return
     }
-    const rtt = timestamp - sentTime
+    const packetRtt = timestamp - sentTime
     // Updates Round Trip Time (Time between sending DATA packet and receiving ACK packet)
-    const delta = this.rtt - rtt
-    this.rtt_var = this.rtt_var + (Math.abs(delta) - this.rtt_var) / 4
-    this.rtt = Math.floor(this.rtt + (rtt - this.rtt) / 8)
-    this.timeout = this.rtt + this.rtt_var * 4 > 500 ? this.rtt + this.rtt_var * 4 : 500
+    const delta = this.rtt - packetRtt
+    this.rtt_var = this.rtt_var + Math.floor((Math.abs(delta) - this.rtt_var) / 4)
+    this.rtt = Math.floor(this.rtt + (packetRtt - this.rtt) / 8)
+    this.timeout = Math.max(this.rtt + this.rtt_var * 4, 500)
     clearTimeout(this.timeoutCounter)
     this.logger(`timeout set to ${this.timeout}ms`)
     this.timeoutCounter = setTimeout(() => {
@@ -103,6 +103,14 @@ export class CongestionControl extends EventEmitter {
     const scaledGain = MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor
     const new_max = this.max_window + scaledGain > 0 ? this.max_window + scaledGain : 0
     this.max_window = new_max
+    /**
+     * From BEP29 uTP spec
+     * If max_window becomes less than 0, it is set to 0. A window size of zero means that
+     * the socket may not send any packets. In this state, the socket will trigger a timeout
+     * and force the window size to one packet size, and send one packet.
+     * See the section on timeouts for more information.
+     */
+    if (this.max_window === 0) this.max_window = DEFAULT_PACKET_SIZE
   }
   updateWindow() {
     const inFlight = this.outBuffer.size

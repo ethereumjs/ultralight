@@ -1,6 +1,7 @@
 import { digest } from '@chainsafe/as-sha256'
-import { NodeId, fromHex, toHex } from '@chainsafe/discv5'
+import { ENR, NodeId, fromHex, toHex } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
+import { bytesToUtf8 } from '@ethereumjs/util'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import { promises as fs } from 'fs'
 
@@ -11,8 +12,18 @@ export const MEGABYTE = 1048576
 /**
  *  Shortens a Node ID to a readable length
  */
-export const shortId = (nodeId: string) => {
-  return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
+export const shortId = (nodeId: string | ENR) => {
+  if (typeof nodeId === 'string')
+    return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
+  const nodeType = nodeId.kvs.get('c')
+  const nodeTypeString =
+    nodeType !== undefined && nodeType.length > 0 ? `${bytesToUtf8(nodeType)}:` : undefined
+  return (
+    nodeTypeString +
+    nodeId.nodeId.slice(0, 5) +
+    '...' +
+    nodeId.nodeId.slice(nodeId.nodeId.length - 5)
+  )
 }
 
 /**

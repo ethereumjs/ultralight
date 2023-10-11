@@ -148,10 +148,10 @@ export abstract class BaseProtocol extends EventEmitter {
           customPayload: PingPongCustomDataType.serialize({ radius: BigInt(this.nodeRadius) }),
         },
       })
-      this.logger.extend(`PING`)(`Sent to ${shortId(enr.nodeId)}`)
+      this.logger.extend(`PING`)(`Sent to ${shortId(enr)}`)
       const res = await this.sendMessage(enr, pingMsg, this.protocolId)
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.PONG) {
-        this.logger.extend('PONG')(`Received from ${shortId(enr.nodeId)}`)
+        this.logger.extend('PONG')(`Received from ${shortId(enr)}`)
         const decoded = PortalWireMessageType.deserialize(res)
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
@@ -240,14 +240,14 @@ export abstract class BaseProtocol extends EventEmitter {
             const decodedEnr = ENR.decode(e)
             const ping = await this.sendPing(decodedEnr)
             if (ping === undefined) {
-              this.logger(`New connection failed with:  ${shortId(decodedEnr.nodeId)}`)
+              this.logger(`New connection failed with:  ${shortId(decodedEnr)}`)
               this.routingTable.evictNode(decodedEnr.nodeId)
             } else {
-              this.logger(`New connection with:  ${shortId(decodedEnr.nodeId)}`)
+              this.logger(`New connection with:  ${shortId(decodedEnr)}`)
             }
           }
           this.logger.extend(`NODES`)(
-            `Received ${enrs.length} ENRs from ${shortId(enr.nodeId)} with ${
+            `Received ${enrs.length} ENRs from ${shortId(enr)} with ${
               enrs.length - notIgnored.length
             } ignored PeerIds and ${unknown.length} unknown.`,
           )

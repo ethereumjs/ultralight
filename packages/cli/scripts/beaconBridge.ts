@@ -53,7 +53,8 @@ const main = async () => {
     console.log(`Pushed light client updates for range ${oldPeriod}-${oldPeriod + 6} into Portal Network`, res2)
     const res3 = await ultralight.request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate)))])
     console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.signatureSlot}`, res3)
-
+    const res4 = await ultralight.request('portal_beaconStartLightClient',[bootstrapRoot])
+    console.log(`Starting light client sync with bootstrap ${bootstrapRoot}`)
     process.on('SIGTERM', () => {
         console.log('Caught interrupt signal.  Shuttind down...')
         process.exit(0)
