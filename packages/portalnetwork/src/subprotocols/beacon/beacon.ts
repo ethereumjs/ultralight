@@ -17,6 +17,7 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
   MIN_BOOTSTRAP_VOTES,
+  SyncStrategy,
 } from './types.js'
 import {
   AcceptMessage,
@@ -58,7 +59,14 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   logger: Debugger
   lightClient: Lightclient | undefined
   bootstrapFinder: Map<NodeId, string[] | {}>
-  constructor(client: PortalNetwork, nodeRadius?: bigint) {
+  syncStrategy: SyncStrategy = SyncStrategy.PollNetwork
+  trustedBlockRoot: string | undefined
+  constructor(
+    client: PortalNetwork,
+    nodeRadius?: bigint,
+    trustedBlockRoot?: string,
+    sync?: SyncStrategy,
+  ) {
     super(client, nodeRadius)
     // This config is used to identify the Beacon Chain fork any given light client update is from
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot)
@@ -88,13 +96,71 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       }
     })
 
-    this.bootstrapFinder = new Map()
-    this.portal.on('NodeAdded', this.getBootStrapVote)
+    // If a sync strategy is not provided, determine sync strategy based on existence of trusted block root
+    if (sync !== undefined) this.syncStrategy = sync
+    else if (trustedBlockRoot !== undefined) this.syncStrategy = SyncStrategy.TrustedBlockRoot
+    switch (this.syncStrategy) {
+      case SyncStrategy.PollNetwork:
+        this.bootstrapFinder = new Map()
+        this.portal.on('NodeAdded', this.getBootStrapVote)
+        break
+      case SyncStrategy.TrustedBlockRoot:
+        if (trustedBlockRoot === undefined)
+          throw new Error('must provided trusted block root with SyncStrategy.TrustedBlockRoot')
+        this.bootstrapFinder = new Map()
+        this.trustedBlockRoot = trustedBlockRoot
+        this.portal.on('NodeAdded', this.getBootstrap)
+        break
+    }
   }
 
+  /**
+   * This is the private method employed by the sync strategy whereby we try to find
+   * the `LightClientBootstrap` corresponding to the `trustedBlockRoot` provided when the
+   * BeaconLightClientNetwork was instantiated
+   * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
+   * @param protocol the protocol ID for the node just discovered
+   */
+  private getBootstrap = async (nodeId: string, protocol: ProtocolId) => {
+    // We check the protocol ID because NodeAdded is emitted regardless of protocol
+    if (protocol !== ProtocolId.BeaconLightClientNetwork) return
+    const decoded = await this.sendFindContent(
+      nodeId,
+      concatBytes(
+        new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+        LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot!) }),
+      ),
+    )
+    if (decoded !== undefined) {
+      const forkhash = decoded.value.slice(0, 4) as Uint8Array
+      const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
+        (decoded.value as Uint8Array).slice(4),
+      )
+      const headerHash = bytesToHex(
+        ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
+      )
+      if (headerHash === this.trustedBlockRoot) {
+        void this.initializeLightClient(headerHash)
+        this.portal.removeListener('NodeAdded', this.getBootstrap)
+      }
+    }
+  }
+
+  /**
+   * This is the private method employed by the sync strategy whereby we try to identify a
+   * reliable starting point for starting our CL Light Client sync by polling newly found
+   * Portal Network nodes for their last three Light Client updates (corresponding to the
+   * 3 most recent sync periods).  Once we reach a minimum number of acceptable of votes, we
+   * determine a trusted block root based on the finalized header root with the most "votes"
+   * (i.e. appearances in peer responses) and try to start our sync from that point.
+   * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
+   * @param protocol the protocol ID for the node just discovered
+   */
   private getBootStrapVote = async (nodeId: string, protocol: ProtocolId) => {
     try {
       if (protocol === ProtocolId.BeaconLightClientNetwork) {
+        // We check the protocol ID because NodeAdded is emitted regardless of protocol
         if (this.bootstrapFinder.has(nodeId)) {
           return
         }
@@ -211,7 +277,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    */
   public initializeLightClient = async (blockRoot: string) => {
     // Disable bootstrap finder mechanism if currently running
-    this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+    if (this.syncStrategy === SyncStrategy.PollNetwork)
+      this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+    else this.portal.removeListener('NodeAdded', this.getBootstrap)
 
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')

@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { BeaconLightClientNetwork, PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
+import { PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -114,6 +114,13 @@ const main = async () => {
   const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
 
+  process.on('uncaughtException', (err) => {
+    // Hack to catch uncaught exceptions that are thrown in async events/functions and aren't caught in
+    // main process (notably a seeming new discv5 bug where certain RPC failures aren't properly handled)
+    log(`Uncaught error: ${err.message}`)
+    log(err)
+  })
+
   const metrics = setupMetrics()
   let db
   if (args.dataDir) {
@@ -159,11 +166,12 @@ const main = async () => {
     metrics,
     supportedProtocols: networks,
     dataDir: args.dataDir,
+    trustedBlockRoot: args.trustedBlockRoot,
   })
   portal.discv5.enableLogs()
 
   portal.enableLog(
-    'ultralight,-uTP,-FINDNODES,*LightClient:DEBUG,*LightClient:INFO,*BeaconLightClientProtocol',
+    'ultralight,-uTP,-FINDNODES,*LightClient:DEBUG,*LightClient:INFO,*BeaconLightClientNetwork',
   )
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
@@ -178,12 +186,6 @@ const main = async () => {
     log(`Started Metrics Server address=http://${rpcAddr}:${args.metricsPort}`)
   }
 
-  process.on('uncaughtException', (err) => {
-    // Hack to catch uncaught exceptions that are thrown in async events/functions and aren't caught in
-    // main process (notably a seeming new discv5 bug where certain RPC failures aren't properly handled)
-    log(`Uncaught error: ${err.message}`)
-    log(err)
-  })
   await portal.start()
 
   const bootnodes: Array<Enr> = []
@@ -238,14 +240,6 @@ const main = async () => {
     server.http().listen(args.rpcPort, rpcAddr)
 
     log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
-
-    if (args.trustedBlockRoot !== undefined) {
-      const beaconProtocol = portal.protocols.get(
-        ProtocolId.BeaconLightClientNetwork,
-      ) as BeaconLightClientNetwork
-      await beaconProtocol.initializeLightClient(args.trustedBlockRoot)
-      beaconProtocol.lightClient?.start()
-    }
   }
 
   process.on('SIGINT', async () => {
