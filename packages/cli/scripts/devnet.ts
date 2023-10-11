@@ -91,7 +91,7 @@ const main = async () => {
   }
 
   // Wait for nodes to start up
-  await new Promise(resolve => setTimeout(() => { resolve(undefined) }, 3000))
+  await new Promise(resolve => setTimeout(() => { resolve(undefined) }, 10000))
 
   if (args.promConfig) {
     const targets: any[] = []
@@ -125,7 +125,9 @@ const main = async () => {
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
 
-    children.forEach((child) => child.kill())
+    for (const child of children) {
+      await child.kill()
+    }
   })
 }
 
