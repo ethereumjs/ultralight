@@ -45,7 +45,7 @@ export class CongestionControl extends EventEmitter {
       this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
       return new Promise((resolve, reject) => {
         // Abort canSend promise if DATA packets not acked in a timely manner
-        const abort = setTimeout(() => reject(false), 10000)
+        const abort = setTimeout(() => reject(false), 3000)
         this.once('canSend', () => {
           clearTimeout(abort)
           resolve(true)
@@ -103,6 +103,14 @@ export class CongestionControl extends EventEmitter {
     const scaledGain = MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor
     const new_max = this.max_window + scaledGain > 0 ? this.max_window + scaledGain : 0
     this.max_window = new_max
+    /**
+     * From BEP29 uTP spec
+     * If max_window becomes less than 0, it is set to 0. A window size of zero means that
+     * the socket may not send any packets. In this state, the socket will trigger a timeout
+     * and force the window size to one packet size, and send one packet.
+     * See the section on timeouts for more information.
+     */
+    if (this.max_window === 0) this.max_window = DEFAULT_PACKET_SIZE
   }
   updateWindow() {
     const inFlight = this.outBuffer.size
