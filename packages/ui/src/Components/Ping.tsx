@@ -12,13 +12,18 @@ import {
   MenuItem,
   Alert,
   AlertTitle,
+  Box,
+  Button,
+  CircularProgress,
+  Fade,
+  Typography,
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 import { CheckmarkIcon } from 'react-hot-toast'
-import React from 'react'
-import { ClientContext } from '../Contexts/ClientContext';
+import React, { useEffect } from 'react'
+import { ClientContext } from '../Contexts/ClientContext'
 
-export default function Ping(props: { ping: any; pong: any; }) {
+export default function Ping(props: { ping: any; pong: any }) {
   const state = React.useContext(ClientContext)
   const { ping, pong } = props
   const [open, setOpen] = React.useState(false)
@@ -28,7 +33,13 @@ export default function Ping(props: { ping: any; pong: any; }) {
   const handleClick = () => {
     ping(toPing)
     setAlert('open')
-    setOpen(true)
+  }
+  const setEnr = (enr: string) => {
+    setToPing(enr)
+  }
+
+  useEffect(() => {
+    if (!open) return
     setTimeout(() => {
       if (pong) {
         setAlert('success')
@@ -40,42 +51,91 @@ export default function Ping(props: { ping: any; pong: any; }) {
         setAlert('closed')
       }, 2000)
     }, 1000)
-  }
-  const setEnr = (enr: string) => {
-    if (enr.startsWith('enr:')) {
-      setToPing(enr)
-    }
-  }
+  }, [open])
 
   const handleChangePeer = (event: SelectChangeEvent) => {
     setPeer(event.target.value as string)
     setToPing(event.target.value as string)
   }
+  const [query, setQuery] = React.useState('idle')
+  const timerRef = React.useRef<number>()
+
+  React.useEffect(
+    () => () => {
+      clearTimeout(timerRef.current)
+    },
+    [],
+  )
+
+  const handleClickQuery = () => {
+    ping(toPing)
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
+
+    if (query !== 'idle') {
+      setQuery('idle')
+      return
+    }
+
+    setQuery('progress')
+    timerRef.current = window.setTimeout(() => {
+      if (pong) {
+        setQuery('success')
+      } else {
+        setQuery('fail')
+      }
+    }, 2000)
+  }
+
+  useEffect(() => {
+    if (query === 'success' || query === 'fail') {
+      timerRef.current = window.setTimeout(() => {
+        setQuery('idle')
+      }, 2000)
+    }
+  }, [query])
 
   return (
     <List disablePadding>
       {open && alert === 'fail' ? (
         <Alert severity="warning">
           <AlertTitle>Fail</AlertTitle>
-          Ping Pong Failed<strong>{toPing.slice(0,16)}...</strong>
+          Ping Pong Failed<strong>{toPing.slice(0, 16)}...</strong>
         </Alert>
       ) : open && alert === 'success' ? (
         <Alert severity="success">
           <AlertTitle>Pong</AlertTitle>
-          Ping Pong Success<strong>{toPing.slice(0,16)}...</strong>
+          Ping Pong Success<strong>{toPing.slice(0, 16)}...</strong>
         </Alert>
       ) : (
         open && (
           <Alert severity="info">
             <AlertTitle>Pinging</AlertTitle>
-            Pinging -- <strong>* {toPing.slice(0,16)}...</strong>
+            Pinging -- <strong>* {toPing.slice(0, 16)}...</strong>
           </Alert>
         )
       )}
-      <ListItemButton onClick={handleClick}>
-        <ListItemIcon>{pong ? <CheckmarkIcon /> : <SendIcon />}</ListItemIcon>
-        <ListItemText primary="Send Ping" secondary={toPing.slice(0,16)} />
-      </ListItemButton>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box sx={{ height: 40 }}>
+          {query === 'success' ? (
+            <Typography>Pong Received!</Typography>
+          ) : (
+            <Fade
+              in={query === 'progress'}
+              style={{
+                transitionDelay: query === 'progress' ? '800ms' : '0ms',
+              }}
+              unmountOnExit
+            >
+              <CircularProgress />
+            </Fade>
+          )}
+        </Box>
+        <Button onClick={handleClickQuery} sx={{ m: 2 }}>
+          {query !== 'idle' ? 'Reset' : 'Send Ping'}
+        </Button>
+      </Box>
       <ListItemButton sx={{ pl: 4 }}>
         <TextField
           fullWidth
@@ -94,9 +154,12 @@ export default function Ping(props: { ping: any; pong: any; }) {
             label="Peer"
             onChange={handleChangePeer}
           >
-            {Object.values(state.ROUTING_TABLE).map(([tag, enr, nodeid, ma, b]) => (
+            <MenuItem key={'emtpy'} value={''}>
+              {' '}
+            </MenuItem>
+            {Object.values(state.ROUTING_TABLE).map(([tag, enr, nodeId, ma, b]) => (
               <MenuItem key={enr} value={enr}>
-                {enr}
+                0x{nodeId}
               </MenuItem>
             ))}
           </Select>
@@ -104,12 +167,10 @@ export default function Ping(props: { ping: any; pong: any; }) {
       </ListItem>
       {pong && (
         <ListItem>
-          <ListItemText>customPayload</ListItemText>
-          <ListItemText>
-            {pong.customPayload.slice(0, 5)}...{pong.customPayload.slice(-5)}
-          </ListItemText>
-          <ListItemText>enrSeq:</ListItemText>
-          <ListItemText>{pong.enrSeq}</ListItemText>
+          <ListItemText
+            primary="PONG received"
+            secondary={`dataRadius: ${pong.dataRadius}\nenrSeq: ${pong.enrSeq}`}
+          />
         </ListItem>
       )}
     </List>
