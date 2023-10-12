@@ -135,6 +135,10 @@ export abstract class BaseProtocol extends EventEmitter {
     if (!(enr instanceof ENR)) {
       enr = ENR.decodeTxt(enr)
     }
+    if (enr.nodeId === this.portal.discv5.enr.nodeId) {
+      // Don't ping ourselves
+      return undefined
+    }
     // 3000ms tolerance for ping timeout
     setTimeout(() => {
       return undefined
