@@ -1,10 +1,6 @@
 import {
-  List,
-  ListItem,
   ListItemText,
-  ListSubheader,
   Paper,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -15,37 +11,9 @@ import {
 import { RPCMethod } from './RPC'
 import React from 'react'
 import { RPCContext } from '../Contexts/RPCContext'
-import { decodeTxt } from '../utils/enr'
-import { bytesToHex, bytesToUtf8 } from '@ethereumjs/util'
 
 export default function RPCParams(props: { method: RPCMethod }) {
   const state = React.useContext(RPCContext)
-
-  const EnrDetails = () => {
-    try {
-      const values = decodeTxt(state.ENR)
-      return (
-        <Stack direction={'row'}>
-          <Paper sx={{ width: '50%', overflow: 'hidden' }}></Paper>
-          <List sx={{ maxWidth: '50%' }} dense>
-            <ListSubheader>ENR Details</ListSubheader>
-            <ListItemText primary={'client tag'} secondary={bytesToUtf8(values.kvs.c)} />
-            <ListItemText
-              primary={'ip'}
-              secondary={values.kvs.ip.toString().replaceAll(',', '.')}
-            />
-            <ListItemText primary={'udp'} secondary={parseInt(bytesToHex(values.kvs.udp))} />
-            <ListItemText primary={'id'} secondary={bytesToHex(values.kvs.id)} />
-            <ListItemText primary={'signature'} secondary={values.signature} />
-            <ListItemText primary={'seq'} secondary={values.seq} />
-            <ListItemText primary={'secp256k1'} secondary={bytesToHex(values.kvs.secp256k1)} />
-          </List>
-        </Stack>
-      )
-    } catch {
-      return <></>
-    }
-  }
 
   const params = (method: RPCMethod) => {
     switch (method) {
@@ -145,7 +113,6 @@ export default function RPCParams(props: { method: RPCMethod }) {
           </TableBody>
         </Table>
       </TableContainer>
-      {'enr' in params(props.method) && <EnrDetails />}
     </Paper>
   )
 }

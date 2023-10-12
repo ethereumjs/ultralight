@@ -11,6 +11,10 @@ interface IRPCInitialState {
   DISTANCES: number[]
   BLOCK_HASH: string
   BLOCK_NUMBER: string
+  CURRENT_LOG: {
+    request: string | undefined
+    response: string | undefined
+  }
 }
 
 export const RPCInitialState: IRPCInitialState = {
@@ -22,6 +26,10 @@ export const RPCInitialState: IRPCInitialState = {
   DISTANCES: [],
   BLOCK_HASH: '',
   BLOCK_NUMBER: '',
+  CURRENT_LOG: {
+    request: undefined,
+    response: undefined,
+  },
 }
 export const RPCContext = createContext(RPCInitialState)
 
@@ -75,11 +83,27 @@ export function RPCReducer(state: any, action: any) {
         BLOCK_NUMBER: action.blockNumber,
       }
     }
+    case 'CURRENT_REQUEST': {
+      return {
+        ...state,
+        CURRENT_LOG: {
+          ...state.CURRENT_LOG,
+          request: action.request,
+        },
+      }
+    }
+    case 'CURRENT_RESPONSE': {
+      return {
+        ...state,
+        CURRENT_LOG: {
+          ...state.CURRENT_LOG,
+          response: action.response,
+        },
+      }
+    }
     default: {
       throw Error('Unknown action: ' + action.type)
     }
-
-
   }
 }
 

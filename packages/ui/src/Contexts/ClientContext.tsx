@@ -61,10 +61,7 @@ interface IClientInitialState {
       added: string
     }
   }
-  CURRENT_LOG: {
-    request: string | undefined
-    response: string | undefined
-  }
+
   RPC: TMutations
 }
 
@@ -86,10 +83,7 @@ export const ClientInitialState: IClientInitialState = {
   SENT_LOGS: {},
   CONTENT_STORE: {},
   RPC: mutations,
-  CURRENT_LOG: {
-    request: undefined,
-    response: undefined,
-  },
+
 }
 export const ClientContext = createContext(ClientInitialState)
 
@@ -242,24 +236,6 @@ export function ClientReducer(state: any, action: any) {
             type: action.content.type,
             added: action.content.added,
           },
-        },
-      }
-    }
-    case 'CURRENT_REQUEST': {
-      return {
-        ...state,
-        CURRENT_LOG: {
-          ...state.CURRENT_LOG,
-          request: action.request,
-        },
-      }
-    }
-    case 'CURRENT_RESPONSE': {
-      return {
-        ...state,
-        CURRENT_LOG: {
-          ...state.CURRENT_LOG,
-          response: action.response,
         },
       }
     }
