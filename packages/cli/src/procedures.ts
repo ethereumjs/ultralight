@@ -1,4 +1,5 @@
 import {
+  ENR,
   ContentLookup,
   HistoryProtocol,
   PortalNetwork,
@@ -29,7 +30,7 @@ import {
 } from './rpc/trpcTypes.js'
 import { toJSON } from './util.js'
 import { BitArray } from '@chainsafe/ssz'
-const bootnodes = [
+const bootnodeENRs = [
   'enr:-I24QDy_atpK3KlPjl6X5yIrK7FosdHI1cW0I0MeiaIVuYg3AEEH9tRSTyFb2k6lpUiFsqxt8uTW3jVMUzoSlQf5OXYBY4d0IDAuMS4wgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg',
   'enr:-I24QIdQtNSyUNcoyR4R7pWLfGj0YuX550Qld0HuInYo_b7JE9CIzmi2TF9hPg-OFL3kebYgLjnPkRu17niXB6xKQugBY4d0IDAuMS4wgmlkgnY0gmlwhJO2oc6Jc2VjcDI1NmsxoQJal-rNlNBoOMikJ7PcGk1h6Mlt_XtTWihHwOKmFVE-GoN1ZHCCIyg',
   'enr:-I24QI_QC3IsdxHUX_jk8udbQ4U2bv-Gncsdg9GzgaPU95ayHdAwnH7mY22A6ggd_aZegFiBBOAPamkP2pyHbjNH61sBY4d0IDAuMS4wgmlkgnY0gmlwhJ31OTWJc2VjcDI1NmsxoQMo_DLYhV1nqAVC1ayEIwrhoFCcHvWuhC_J-w-n_4aHP4N1ZHCCIyg',
@@ -42,6 +43,17 @@ const bootnodes = [
   'enr:-IS4QGG6moBhLW1oXz84NaKEHaRcim64qzFn1hAG80yQyVGNLoKqzJe887kEjthr7rJCNlt6vdVMKMNoUC9OCeNK-EMDgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQLJhXByb3LmxHQaqgLDtIGUmpANXaBbFw3ybZWzGqb9-IN1ZHCCE4k',
   'enr:-IS4QA5hpJikeDFf1DD1_Le6_ylgrLGpdwn3SRaneGu9hY2HUI7peHep0f28UUMzbC0PvlWjN8zSfnqMG07WVcCyBhADgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQJMpHmGj1xSP1O-Mffk_jYIHVcg6tY5_CjmWVg1gJEsPIN1ZHCCE4o',
 ]
+const bootnodes = bootnodeENRs.map((b) => {
+  const enr = ENR.decodeTxt(b)
+  const tag = enr.kvs.get('c')
+  const c = tag ? tag.toString() : ''
+  const nodeId = enr.nodeId
+  return {
+    enr: b,
+    nodeId,
+    c,
+  }
+})
 export const websocketProcedures = (portal: PortalNetwork, publicProcedure: PublicProcudure) => {
   const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
 
@@ -101,30 +113,19 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       description: 'Ping all BootNodes',
     })
     .output(
-      z.object({
-        enrs: z.array(z_Enr),
-        pongs: z.array(z_historyPingResult),
-      }),
+      z.array(
+        z.object({
+          enr: z_Enr,
+          nodeId: z.string(),
+          c: z.string(),
+        }),
+      ),
     )
     .mutation(async () => {
-      const pongs = []
-      for await (const [idx, enr] of bootnodes.entries()) {
-        const _pong = await history.sendPing(enr)
-        console.log({
-          enr: `${idx < 3 ? 'trin' : idx < 7 ? 'fluffy' : 'ultralight'}: ${enr.slice(0, 12)}`,
-          _pong,
-        })
-        const pong = _pong
-          ? {
-              tag: `${idx < 3 ? 'trin' : idx < 7 ? 'fluffy' : 'ultralight'}`,
-              enr: `${enr.slice(0, 12)}`,
-              dataRadius: toHexString(_pong.customPayload),
-              enrSeq: '0x' + _pong.enrSeq.toString(16),
-            }
-          : undefined
-        pongs.push(pong)
+      for (const enr of bootnodes) {
+        history.sendPing(enr.enr)
       }
-      return { enrs: bootnodes, pongs }
+      return bootnodes
     })
 
   const browser_historyStore = publicProcedure
@@ -257,6 +258,95 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       return res
     })
 
+  const browser_ethGetBlockByHash = publicProcedure
+    .meta({
+      description: 'Get Block By Hash',
+    })
+    .input(
+      z.object({
+        blockHash: z.string(),
+        includeTransactions: z.boolean(),
+      }),
+    )
+    .output(
+      z.union([
+        z.undefined(),
+        z.object({
+          number: z.string(),
+          hash: z.string(),
+          parentHash: z.string(),
+          nonce: z.string(),
+          sha3Uncles: z.string(),
+          logsBloom: z.string(),
+          transactionsRoot: z.string(),
+          stateRoot: z.string(),
+          receiptsRoot: z.string(),
+          miner: z.string(),
+          difficulty: z.string(),
+          totalDifficulty: z.string(),
+          extraData: z.string(),
+          size: z.string(),
+          gasLimit: z.string(),
+          gasUsed: z.string(),
+          timestamp: z.string(),
+          transactions: z.array(z.string()),
+          uncles: z.array(z.string()),
+        }),
+        z.string(),
+      ]),
+    )
+    .mutation(async ({ input }) => {
+      const block = await history.ETH.getBlockByHash(input.blockHash, input.includeTransactions)
+      if (!block) return undefined
+      return JSON.stringify(block.toJSON())
+    })
+
+  const browser_ethGetBlockByNumber = publicProcedure
+    .meta({
+      description: 'Get Block By Number',
+    })
+    .input(
+      z.object({
+        blockNumber: z.string(),
+        includeTransactions: z.boolean(),
+      }),
+    )
+    .output(
+      z.union([
+        z.undefined(),
+        z.object({
+          number: z.string(),
+          hash: z.string(),
+          parentHash: z.string(),
+          nonce: z.string(),
+          sha3Uncles: z.string(),
+          logsBloom: z.string(),
+          transactionsRoot: z.string(),
+          stateRoot: z.string(),
+          receiptsRoot: z.string(),
+          miner: z.string(),
+          difficulty: z.string(),
+          totalDifficulty: z.string(),
+          extraData: z.string(),
+          size: z.string(),
+          gasLimit: z.string(),
+          gasUsed: z.string(),
+          timestamp: z.string(),
+          transactions: z.array(z.string()),
+          uncles: z.array(z.string()),
+        }),
+        z.string(),
+      ]),
+    )
+    .mutation(async ({ input }) => {
+      const block = await history.ETH.getBlockByNumber(
+        BigInt(input.blockNumber),
+        input.includeTransactions,
+      )
+      if (!block) return undefined
+      return JSON.stringify(block.toJSON())
+    })
+
   return {
     browser_nodeInfo,
     local_routingTable,
@@ -269,5 +359,7 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     browser_historyOffer,
     browser_historySendOffer,
     browser_historyGossip,
+    browser_ethGetBlockByHash,
+    browser_ethGetBlockByNumber,
   }
 }
