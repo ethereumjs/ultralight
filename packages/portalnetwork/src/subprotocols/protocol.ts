@@ -140,13 +140,13 @@ export abstract class BaseProtocol extends EventEmitter {
       return undefined
     }
     // 3000ms tolerance for ping timeout
-    setTimeout(() => {
-      return undefined
-    }, 3000)
     if (!enr.nodeId) {
       this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
+    const timeout = setTimeout(() => {
+      return undefined
+    }, 3000)
     try {
       const pingMsg = PortalWireMessageType.serialize({
         selector: MessageCodes.PING,
@@ -163,13 +163,16 @@ export abstract class BaseProtocol extends EventEmitter {
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
         this.updateRoutingTable(enr, pongMessage.customPayload)
+        clearTimeout(timeout)
         return pongMessage
       } else {
+        clearTimeout(timeout)
         this.routingTable.evictNode(enr.nodeId)
       }
     } catch (err: any) {
       this.logger(`Error during PING request: ${err.toString()}`)
       enr.nodeId && this.routingTable.evictNode(enr.nodeId)
+      clearTimeout(timeout)
       return
     }
   }
