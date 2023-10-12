@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWSClient, wsLink } from '@trpc/client'
-import { useEffect, useReducer, useState } from 'react'
+import { useState } from 'react'
 import { trpc } from './utils/trpc'
 import ClientTabs from './Components/Tabs'
 
@@ -12,9 +12,6 @@ export function App() {
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
-        // httpBatchLink({
-        //   url: 'http://localhost:8546',
-        // }),
         wsLink({
           client: wsClient,
         }),
