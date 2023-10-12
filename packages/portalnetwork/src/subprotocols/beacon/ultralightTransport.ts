@@ -86,7 +86,7 @@ export class UltralightTransport implements LightClientTransport {
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({
-          optimisticSlot: currentSlot,
+          signatureSlot: currentSlot,
         }),
       ),
     )
@@ -122,7 +122,7 @@ export class UltralightTransport implements LightClientTransport {
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ finalizedSlot: currentSlot }),
+        LightClientFinalityUpdateKey.serialize({ signatureSlot: currentSlot }),
       ),
     )
     if (decoded !== undefined) {
