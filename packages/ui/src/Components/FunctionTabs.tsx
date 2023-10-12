@@ -9,7 +9,22 @@ import GetBeacon from './getChainTip'
 import Ping from './Ping'
 import NodeInfo from './NodeInfo'
 import BootNodeResponses from './BootNodes'
-import { ClientContext } from '../Contexts/ClientContext'
+import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
+import {
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Tooltip,
+  ListItemText,
+  Button,
+} from '@mui/material'
+import ContentStore from './ContentStore'
+import MessageLogs from './MessageLogs'
+import RPC from './RPC'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -17,7 +32,7 @@ interface TabPanelProps {
   value: number
 }
 
-function TabPanel(props: TabPanelProps) {
+export function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props
 
   return (
@@ -28,11 +43,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`vertical-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   )
 }
@@ -48,7 +59,8 @@ export default function FunctionTabs(props: { ping: any; pong: any }) {
   const state = React.useContext(ClientContext)
   const { ping, pong } = props
   const [value, setValue] = React.useState(0)
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+
+  const handleChange = (_: any, newValue: number) => {
     setValue(newValue)
   }
 
@@ -59,7 +71,7 @@ export default function FunctionTabs(props: { ping: any; pong: any }) {
         variant="scrollable"
         value={value}
         onChange={handleChange}
-        aria-label="Vertical tabs example"
+        aria-label="Client Tabs"
         sx={{ borderRight: 1, borderColor: 'divider' }}
       >
         <Tab label={`Peers (${Object.keys(state.ROUTING_TABLE).length})`} {...a11yProps(0)} />
@@ -68,7 +80,9 @@ export default function FunctionTabs(props: { ping: any; pong: any }) {
         <Tab label="StateRoot" {...a11yProps(3)} />
         <Tab label="GetBlockBy" {...a11yProps(4)} />
         <Tab label="ContentLookup" {...a11yProps(5)} />
-        <Tab label="Node Info" {...a11yProps(6)} />
+        <Tab label="PeerLogs" {...a11yProps(6)} />
+        <Tab label="Store Content" {...a11yProps(7)} />
+        <Tab label="RPC Interface" {...a11yProps(8)} />
       </Tabs>
       <TabPanel value={value} index={0}>
         <NodeInfo />
@@ -89,6 +103,13 @@ export default function FunctionTabs(props: { ping: any; pong: any }) {
         <LookupContent />
       </TabPanel>
       <TabPanel value={value} index={6}>
+        <MessageLogs />
+      </TabPanel>
+      <TabPanel value={value} index={7}>
+        <ContentStore />
+      </TabPanel>
+      <TabPanel value={value} index={8}>
+        <RPC />
       </TabPanel>
     </Box>
   )
