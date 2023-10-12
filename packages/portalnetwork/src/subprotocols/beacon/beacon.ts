@@ -336,7 +336,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
         if (
           this.lightClient !== undefined &&
-          key.optimisticSlot === BigInt(this.lightClient.getHead().beacon.slot)
+          key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot)
         ) {
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
@@ -354,7 +354,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
         if (
           this.lightClient !== undefined &&
-          key.finalizedSlot === BigInt(this.lightClient.getFinalized().beacon.slot)
+          key.signatureSlot === BigInt(this.lightClient.getFinalized().beacon.slot)
         ) {
           // We only store the most recent finality update so only retrieve the optimistic update if the slot
           // in the key matches the current finalized slot known to our light client
@@ -792,7 +792,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             }
             case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
               {
-                const slot = LightClientFinalityUpdateKey.deserialize(key.slice(1)).finalizedSlot
+                const slot = LightClientFinalityUpdateKey.deserialize(key.slice(1)).signatureSlot
                 if (
                   this.lightClient !== undefined &&
                   slot > this.lightClient.getFinalized().beacon.slot
@@ -809,7 +809,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               break
             case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
               {
-                const slot = LightClientOptimisticUpdateKey.deserialize(key.slice(1)).optimisticSlot
+                const slot = LightClientOptimisticUpdateKey.deserialize(key.slice(1)).signatureSlot
                 if (
                   this.lightClient !== undefined &&
                   slot > this.lightClient.getHead().beacon.slot

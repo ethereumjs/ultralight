@@ -28,10 +28,10 @@ export const LightClientUpdatesByRangeKey = new ContainerType({
   count: new UintBigintType(8),
 })
 export const LightClientFinalityUpdateKey = new ContainerType({
-  finalizedSlot: new UintBigintType(8),
+  signatureSlot: new UintBigintType(8),
 })
 export const LightClientOptimisticUpdateKey = new ContainerType({
-  optimisticSlot: new UintBigintType(8),
+  signatureSlot: new UintBigintType(8),
 })
 
 export enum SyncStrategy {

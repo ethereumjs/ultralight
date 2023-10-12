@@ -6,6 +6,7 @@ import { ssz } from '@lodestar/types'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import {
+  BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
@@ -25,6 +26,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
   const serializedOptimistincUpdateKey = hexToBytes(
     specTestVectors.optimisticUpdate['6718463'].content_key,
   )
+  BeaconLightClientNetworkContentType.LightClientOptimisticUpdate
   const forkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
 
   it('derives correct fork from fork digest in test vectors', () => {
@@ -48,7 +50,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
 
   it('deserializes optimistic update key', () => {
     assert.equal(
-      optimisticUpdateKey.optimisticSlot,
+      optimisticUpdateKey.signatureSlot,
       0n,
       'correctly deserialized optimstic update key',
     )
@@ -72,11 +74,12 @@ describe('Beacon network type tests using portal network spec test vectors', () 
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalizedSlot,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).signatureSlot,
       0n,
       'deserialized finality update key',
     )
   })
+
   const bootstrap = specTestVectors.bootstrap['6718368']
   const deserializedBootstrap = ssz.capella.LightClientBootstrap.deserialize(
     hexToBytes(bootstrap.content_value).slice(4),
