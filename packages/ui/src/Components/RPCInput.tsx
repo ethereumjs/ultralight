@@ -20,14 +20,11 @@ import {
 } from '@mui/material'
 import React, { ChangeEvent, useEffect } from 'react'
 import z from 'zod'
-import Delete from '@mui/icons-material/Delete'
-import DocumentScanner from '@mui/icons-material/DocumentScanner'
 import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
 import { decodeTxt } from '../utils/enr'
 import { ClientContext } from '../Contexts/ClientContext'
 import { RPCMethod } from './RPC'
 import SuperJSON from 'superjson'
-import { on } from 'events'
 
 const keyParser = z
   .string()
@@ -35,7 +32,6 @@ const keyParser = z
   .refine((val) => BigInt(val).toString(16) === val.slice(2))
 
 export default function RPCInput(props: { method: RPCMethod }) {
-  const { DISTANCES, NODEID } = React.useContext(RPCContext)
   switch (props.method) {
     case 'portal_historyPing': {
       return <InputEnr />
@@ -102,7 +98,6 @@ export default function RPCInput(props: { method: RPCMethod }) {
 }
 
 export function InputBlockHash() {
-  const { BLOCK_HASH } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
   const [valid, setValid] = React.useState<boolean | undefined>()
   const [cur, setCur] = React.useState('')
@@ -132,7 +127,6 @@ export function InputBlockHash() {
 }
 
 export function InputBlockNumber() {
-  const { BLOCK_NUMBER } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
   const [valid, setValid] = React.useState<boolean | undefined>()
   const [cur, setCur] = React.useState('')
@@ -162,7 +156,6 @@ export function SelectContentKey() {
   const { CONTENT_STORE } = React.useContext(ClientContext)
   const dispatch = React.useContext(RPCDispatchContext)
   const [value, setValue] = React.useState<string | null>(null)
-  const [inputValue, setInputValue] = React.useState('')
 
   useEffect(() => {
     dispatch({
@@ -177,9 +170,6 @@ export function SelectContentKey() {
       clearOnBlur
       handleHomeEndKeys
       id="select-key"
-      onInputChange={(event, newInputValue) => {
-        setInputValue(newInputValue)
-      }}
       onChange={(event, newValue) => {
         setValue(newValue)
       }}
@@ -188,7 +178,7 @@ export function SelectContentKey() {
       defaultValue={Object.keys(CONTENT_STORE)[0] ?? 'ContentKeys'}
       filterSelectedOptions
       renderInput={(params) => (
-        <TextField {...params} label="filterSelectedOptions" placeholder="ContentKey" />
+        <TextField {...params} label="ContentKeys" placeholder="ContentKey" />
       )}
     />
   )
@@ -197,7 +187,6 @@ export function SelectContentKeyArray() {
   const { CONTENT_STORE } = React.useContext(ClientContext)
   const dispatch = React.useContext(RPCDispatchContext)
   const [value, setValue] = React.useState<string[]>([])
-  const [inputValue, setInputValue] = React.useState('')
 
   useEffect(() => {
     dispatch({
@@ -210,9 +199,6 @@ export function SelectContentKeyArray() {
     <Autocomplete
       multiple
       id="select-multiple-keys"
-      onInputChange={(event, newInputValue) => {
-        setInputValue(newInputValue)
-      }}
       onChange={(event, newValue) => {
         setValue(newValue)
       }}
@@ -221,17 +207,16 @@ export function SelectContentKeyArray() {
       defaultValue={[]}
       filterSelectedOptions
       renderInput={(params) => (
-        <TextField {...params} label="filterSelectedOptions" placeholder="ContentKey" />
+        <TextField {...params} label="ContentKeys" placeholder="ContentKey" />
       )}
     />
   )
 }
 
 export function InputContentKey() {
-  const { CONTENT_KEY } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
-  const [valid, setValid] = React.useState<boolean | undefined>()
   const [cur, setCur] = React.useState('')
+  const [valid, setValid] = React.useState<boolean | undefined>(undefined)
   const setContentKey = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const contentKey = e.target.value
     if (contentKey.length === 0) {
@@ -252,7 +237,7 @@ export function InputContentKey() {
   return (
     <FormControl fullWidth>
       <FormHelperText>ContentKey</FormHelperText>
-      <TextField placeholder="contentKey" value={cur} onChange={setContentKey} />
+      <TextField error={valid === false} placeholder="contentKey" value={cur} onChange={setContentKey} />
     </FormControl>
   )
 }
@@ -281,9 +266,7 @@ export function InputContent() {
 export function InputEnr() {
   const [cur, setCur] = React.useState('')
   const [valid, setValid] = React.useState<boolean | undefined>()
-  const [decoded, setDecoded] = React.useState({})
   const { ROUTING_TABLE } = React.useContext(ClientContext)
-  const { ENR } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
 
   function setEnr(e: string) {
@@ -301,9 +284,8 @@ export function InputEnr() {
       try {
         decodeTxt(cur)
         setValid(true)
-      } catch (err: any) {
-        console.log(cur)
-        console.log('error', err.message)
+      } catch {
+        setValid(false)
       }
     } catch {
       setValid(false)
@@ -314,10 +296,10 @@ export function InputEnr() {
     <Stack direction={'column'}>
       <FormControl fullWidth>
         <Autocomplete
-          onInputChange={(event, newInputValue) => {
+          onInputChange={(_, newInputValue) => {
             setEnr(newInputValue)
           }}
-          onChange={(event, newValue) => {
+          onChange={(_, newValue) => {
             if (!newValue) return
             setEnr(newValue)
           }}
@@ -329,27 +311,15 @@ export function InputEnr() {
           options={Object.values(ROUTING_TABLE).map(([, , enr]) => enr)}
           getOptionLabel={(option) => option}
           filterSelectedOptions
-          renderInput={(params) => (
-            <TextField {...params} label="Node ENR" />
-          )}
+          renderInput={(params) => <TextField {...params} label="Node ENR" />}
         />
       </FormControl>
-      {valid === true && (
-        <List>
-          <ListSubheader>ENR</ListSubheader>
-          <ListSubheader>{cur}</ListSubheader>
-          {Object.entries(decoded).map(([k, v]) => {
-            return <ListItemText primary={k} secondary={SuperJSON.stringify(v)} />
-          })}
-        </List>
-      )}
     </Stack>
   )
 }
 
 export function InputNodeId() {
   const { ROUTING_TABLE } = React.useContext(ClientContext)
-  const { NODEID } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
   const [valid, setValid] = React.useState<boolean | undefined>()
   const [error, setError] = React.useState('')
@@ -399,11 +369,11 @@ export function InputNodeId() {
         options={Object.values(ROUTING_TABLE).map(([, , nodeId]) => nodeId)}
         getOptionLabel={(option) => option}
         defaultValue={''}
-        onChange={(event, newValue) => {
+        onChange={(_, newValue) => {
           if (!newValue) return
           setNodeId(newValue)
         }}
-        onInputChange={(event, newInputValue) => {
+        onInputChange={(_, newInputValue) => {
           onChangeInput(newInputValue)
         }}
         filterSelectedOptions
@@ -417,7 +387,6 @@ export function InputNodeId() {
 }
 
 export function InputDistances() {
-  const { DISTANCES } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
 
   function setDistances(distances: number[]) {
@@ -451,7 +420,6 @@ export function InputDistances() {
 
 export function InputContentKeyArray() {
   const { CONTENT_STORE } = React.useContext(ClientContext)
-  const { CONTENT_KEY_ARRAY } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
   const [arrayStr, setArrayStr] = React.useState('')
   const [open, setOpen] = React.useState(false)
@@ -495,13 +463,6 @@ export function InputContentKeyArray() {
     }
   }
 
-  const removeKey = (key: string) => {
-    dispatch({
-      type: 'CONTENT_KEY_ARRAY',
-      contentKeyArray: CONTENT_KEY_ARRAY.filter((k) => k !== key),
-    })
-  }
-
   return (
     <FormControl fullWidth>
       <FormHelperText>ContentKey Array</FormHelperText>
@@ -514,7 +475,7 @@ export function InputContentKeyArray() {
       <FormHelperText>Add ContentKey</FormHelperText>
       <Autocomplete
         multiple
-        onChange={(event, newValue) => {
+        onChange={(_, newValue) => {
           setArrayStr(JSON.stringify(newValue))
           setContentKeyArray(newValue)
           inputKeyArray()
@@ -528,7 +489,7 @@ export function InputContentKeyArray() {
         defaultValue={[]}
         filterSelectedOptions
         renderInput={(params) => (
-          <TextField {...params} label="filterSelectedOptions" placeholder="ContentKey" />
+          <TextField {...params} label="ContentKey" placeholder="ContentKey" />
         )}
       />
       <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
@@ -536,27 +497,6 @@ export function InputContentKeyArray() {
           {errorMsg}
         </Alert>
       </Snackbar>
-      {/* <List dense>
-        {CONTENT_KEY_ARRAY.map((key) => {
-          return (
-            <ListItem
-              key={key}
-              secondaryAction={
-                <IconButton onClick={() => removeKey(key)} edge="end" aria-label="delete">
-                  <Delete />
-                </IconButton>
-              }
-            >
-              <ListItemAvatar>
-                <Avatar>
-                  <DocumentScanner />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText primary={key} secondary={key.slice(0, 4)} />
-            </ListItem>
-          )
-        })}
-      </List> */}
     </FormControl>
   )
 }
