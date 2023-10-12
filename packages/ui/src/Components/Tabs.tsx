@@ -52,7 +52,7 @@ export default function ClientTabs() {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
-  const wssClient = trpc.self.useMutation()
+  const wssClient = trpc.browser_nodeInfo.useMutation()
   const getWSSClient = async () => {
     const wssClientInfo = await wssClient.mutateAsync()
     dispatch({
@@ -85,7 +85,7 @@ export default function ClientTabs() {
             variant="scrollable"
             value={value}
             onChange={handleChange}
-            aria-label="Vertical tabs example"
+            aria-label="App Tabs"
             sx={{ borderRight: 1, borderColor: 'divider' }}
           >
             <Tab label="WSS Client" {...a11yProps(0)} />
@@ -100,18 +100,6 @@ export default function ClientTabs() {
           </TabPanel>
           <TabPanel value={value} index={2}>
             <Box>TESTS</Box>
-          </TabPanel>
-          <TabPanel value={value} index={3}>
-            Item Four
-          </TabPanel>
-          <TabPanel value={value} index={4}>
-            Item Five
-          </TabPanel>
-          <TabPanel value={value} index={5}>
-            Item Six
-          </TabPanel>
-          <TabPanel value={value} index={6}>
-            Item Seven
           </TabPanel>
         </Box>
       </AllClientsDispatchContext.Provider>
