@@ -19,12 +19,12 @@ export function SelfNodeInfo() {
   const row = createRow(tag, enr, nodeId, multiAddr, 0)
   return (
     <TableContainer component={Paper}>
-      <Table size="small" aria-label="spanning table">
+      <Table size="small" aria-label="self node info">
         <TableHead>
           <TableRow>
             <TableCell>{row.tag}</TableCell>
-            <TableCell>{row.enr.slice(0, 16)}...</TableCell>
-            <TableCell align="right">{row.nodeId.slice(0, 12)}...</TableCell>
+            <TableCell>{row.enr}</TableCell>
+            <TableCell align="right">{row.nodeId}</TableCell>
             <TableCell align="right">{row.multiAddr}</TableCell>
           </TableRow>
         </TableHead>
@@ -42,7 +42,7 @@ export default function NodeInfo() {
   return (
     <Box overflow="scroll">
       <TableContainer component={Paper}>
-        <Table size="small" aria-label="spanning table">
+        <Table size="small" aria-label="node info">
           <TableHead>
             <TableRow>
               <TableCell>Client</TableCell>
