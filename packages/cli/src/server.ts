@@ -3,7 +3,7 @@ import { initTRPC } from '@trpc/server'
 import { createHTTPServer } from '@trpc/server/adapters/standalone'
 import cors from 'cors'
 import jayson from 'jayson/promise/index.js'
-import { SignableENR } from '@chainsafe/discv5'
+import { ENR, SignableENR } from '@chainsafe/discv5'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { execSync } from 'child_process'
@@ -16,6 +16,8 @@ import { applyWSSHandler } from '@trpc/server/adapters/ws'
 import { subscriptions } from './subscriptions.js'
 import { websocketProcedures } from './procedures.js'
 import { httpProcedures } from './rpc/procedures.js'
+import { z_Enr } from './rpc/trpcTypes.js'
+import { z } from 'zod'
 
 const main = async () => {
   const t = initTRPC
@@ -65,6 +67,28 @@ const main = async () => {
 
   //  WSS Client Methods
 
+  const decodeENR = publicProcedure
+    .input(z_Enr)
+    .output(
+      z.object({
+        nodeId: z.string(),
+        multiaddr: z.string(),
+        c: z.string(),
+      }),
+    )
+    .mutation(({ input }) => {
+      const enr = ENR.decodeTxt(input)
+      const tag = enr.kvs.get('c')
+      const c = tag ? tag.toString() : ''
+      const nodeId = enr.nodeId
+      const multiaddr = enr.getLocationMultiaddr('udp')?.toString() ?? ''
+      return {
+        nodeId,
+        multiaddr,
+        c,
+      }
+    })
+
   const { onTalkReq, onTalkResp, onContentAdded, onNodeAdded, onSendTalkReq, onSendTalkResp } =
     await subscriptions(portal, history, publicProcedure)
 
@@ -92,6 +116,7 @@ const main = async () => {
   // Create tRpc Router
 
   const appRouter = router({
+    decodeENR,
     onTalkReq,
     onTalkResp,
     onSendTalkReq,
