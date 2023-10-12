@@ -38,13 +38,6 @@ export function WSSClient() {
   const boot = ClientInitialState.RPC.boot.useMutation()
   const sendPing = ClientInitialState.RPC.sendPing.useMutation()
   const localRoutingTable = ClientInitialState.RPC.localRoutingTable.useMutation()
-  const findNodes = ClientInitialState.RPC.browser_historyFindNodes.useMutation()
-  const findContent = ClientInitialState.RPC.browser_historyFindContent.useMutation()
-  const recursiveFindContent =
-    ClientInitialState.RPC.browser_historyRecursiveFindContent.useMutation()
-  const offer = ClientInitialState.RPC.browser_historyOffer.useMutation()
-  const sendOffer = ClientInitialState.RPC.browser_historySendOffer.useMutation()
-  const gossip = ClientInitialState.RPC.browser_historyGossip.useMutation()
 
   const pingBootNodes = async () => {
     const bootnodeENRS = await boot.mutateAsync()
