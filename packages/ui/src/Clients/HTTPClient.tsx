@@ -11,6 +11,7 @@ import {
 
 export default function HTTPClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
+  const [port, setPort] = useState(8545)
 
   const routingTable = trpc.portal_historyRoutingTableInfo.useMutation({
     onMutate(variables) {
@@ -45,7 +46,7 @@ export default function HTTPClient() {
       })
     },
   })
-  const getNodeInfo = async (port: number = 8545) => {
+  const getNodeInfo = async () => {
     const info = await nodeInfo.mutateAsync({ port })
     dispatch({
       type: 'NODE_INFO',
@@ -71,7 +72,7 @@ export default function HTTPClient() {
   const [pong, setPong] = useState<any>()
 
   const ping = async (enr: string) => {
-    const pong = await sendPing.mutateAsync({ enr })
+    const pong = await sendPing.mutateAsync({ port, enr })
     setPong(pong)
     getRoutingTable()
   }
@@ -115,16 +116,16 @@ export default function HTTPClient() {
     const res = await bootHTTP.mutateAsync()
     const bootnoderes = res.map((r) => {
       return r
-      ? {
-        tag: r.tag,
-        enr: r.enr,
-        connected: 'true',
-      }
-      : {
-        tag: 'client0.0.1',
-        enr: 'enr:xxxx....',
-        connected: 'false',
-      }
+        ? {
+            tag: r.tag,
+            enr: r.enr,
+            connected: 'true',
+          }
+        : {
+            tag: 'client0.0.1',
+            enr: 'enr:xxxx....',
+            connected: 'false',
+          }
     })
     dispatch({
       type: 'BOOTNODES',
@@ -132,17 +133,17 @@ export default function HTTPClient() {
     })
     getRoutingTable()
   }
-  
+
   useEffect(() => {
     getNodeInfo()
-    pingBootNodesHTTP()
+    // pingBootNodesHTTP()
   }, [])
-  
+
   return (
     <ClientContext.Provider value={state}>
       <ClientDispatchContext.Provider value={dispatch}>
         <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
-          <Client ping={ping} pong={pong} name={'WebSockets Client'} />
+          <Client ping={ping} pong={pong} name={'HTTP Client'} />
         </Box>
       </ClientDispatchContext.Provider>
     </ClientContext.Provider>

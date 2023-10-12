@@ -9,58 +9,160 @@ import {
   ClientProvider,
   ClientReducer,
 } from '../Contexts/ClientContext'
+import { RPCContext, RPCDispatchContext, RPCInitialState, RPCReducer } from '../Contexts/RPCContext'
 
 export function WSSClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
-  const boot = trpc.pingBootNodes.useMutation()
+  const [rpcState, rpcDispatch] = useReducer(RPCReducer, RPCInitialState)
+  const [pong, setPong] = useState<any>()
+  const [ready, setReady] = useState(false)
+  const [listening, setListening] = useState({
+    onTalkReq: false,
+    onTalkResp: false,
+    onSendTalkReq: false,
+    onSendTalkResp: false,
+    onContentAdded: false,
+    onNodeAdded: false,
+  })
+
+  useEffect(() => {
+    if (Object.values(listening).every((v) => v === true)) {
+      setReady(true)
+    }
+  }, [listening])
+
+  useEffect(() => {
+    bootUP()
+  }, [])
+
+  const boot = ClientInitialState.RPC.boot.useMutation()
+  const sendPing = ClientInitialState.RPC.sendPing.useMutation()
+  const localRoutingTable = ClientInitialState.RPC.localRoutingTable.useMutation()
+  const findNodes = ClientInitialState.RPC.browser_historyFindNodes.useMutation()
+  const findContent = ClientInitialState.RPC.browser_historyFindContent.useMutation()
+  const recursiveFindContent =
+    ClientInitialState.RPC.browser_historyRecursiveFindContent.useMutation()
+  const offer = ClientInitialState.RPC.browser_historyOffer.useMutation()
+  const sendOffer = ClientInitialState.RPC.browser_historySendOffer.useMutation()
+  const gossip = ClientInitialState.RPC.browser_historyGossip.useMutation()
 
   const pingBootNodes = async () => {
-    const res = await boot.mutateAsync()
-    const bootnoderes = res.map((r) => {
-      return r
-        ? {
-            tag: r.tag,
-            enr: r.enr,
-            connected: 'true',
-          }
-        : {
-            tag: 'client0.0.1',
-            enr: 'enr:xxxx....',
-            connected: 'false',
-          }
-    })
-    dispatch({
-      type: 'BOOTNODES',
-      bootnodeResponses: bootnoderes,
-    })
+    const bootnodeENRS = await boot.mutateAsync()
     getLocalRoutingTable()
+    for (const bootnode of bootnodeENRS) {
+      dispatch({
+        type: 'BOOTNODES',
+        nodeId: bootnode.nodeId,
+        client: bootnode.c,
+        enr: bootnode.enr,
+        response: undefined,
+      })
+    }
   }
-  const localRoutingTable = trpc.local_routingTable.useMutation()
   trpc.onTalkReq.useSubscription(undefined, {
-    onData(data) {
-      console.log('onTalkReq data:', data)
-    },
-    onError(error) {
-      console.log('onTalkReq error:', error)
-    },
-    onStarted() {
-      console.log('onTalkReq started')
-    },
-  })
-
-  const sendPing = trpc.ping.useMutation({
-    onMutate(variables) {
-      console.log({ variables })
-    },
-    onSettled(data) {
-      console.log({
-        data,
+    onData(data: any) {
+      console.log('Talk Request Received', data.topic)
+      dispatch({
+        type: 'LOG_RECEIVED',
+        topic: data.topic,
+        nodeId: data.nodeId,
+        log: data.message,
       })
     },
+    onStarted() {
+      console.log('onTalkReq subscription started')
+      setListening({ ...listening, onTalkReq: true })
+    },
   })
-  const [pong, setPong] = useState<any>()
+  trpc.onTalkResp.useSubscription(undefined, {
+    onData(data: any) {
+      console.log('Talk Response Received', data.topic)
+      dispatch({
+        type: 'LOG_RECEIVED',
+        topic: data.topic,
+        nodeId: data.nodeId,
+        log: data.message,
+      })
+    },
+    onStarted() {
+      console.log('onTalkResp subscription started')
+      setListening({ ...listening, onTalkResp: true })
+    },
+  })
+  trpc.onSendTalkReq.useSubscription(undefined, {
+    onData(data: any) {
+      console.log('sent talk request', data.topic)
+      dispatch({
+        type: 'LOG_SENT',
+        topic: data.topic,
+        nodeId: data.nodeId,
+        log: data.payload,
+      })
+    },
+    onStarted() {
+      setListening({ ...listening, onSendTalkReq: true })
+      console.log('onSendTalkReq subscription started', listening)
+    },
+  })
+  trpc.onSendTalkResp.useSubscription(undefined, {
+    onData(data: any) {
+      console.log('sent talk response', data.topic)
+      dispatch({
+        type: 'LOG_SENT',
+        topic: data.topic,
+        nodeId: data.nodeId,
+        log: data.payload,
+      })
+    },
+    onStarted() {
+      console.log('onSendTalkResp subscription started')
+      setListening({ ...listening, onSendTalkResp: true })
+    },
+  })
+  trpc.onContentAdded.useSubscription(undefined, {
+    onData(data: any) {
+      const type =
+        data.contentType === 0
+          ? 'BlockHeader'
+          : data.contentType === 1
+          ? 'BlockBody'
+          : data.contentType === 2
+          ? 'BlockReceipts'
+          : data.contentType === 3
+          ? 'EpochAccumulator'
+          : 'unknown'
+      dispatch({
+        type: 'CONTENT_STORE',
+        contentKey: '0x0' + data.contentType + data.key.slice(2),
+        content: { type, added: new Date().toString().split(' ').slice(1, 5).join(' ') },
+      })
+    },
+    onStarted() {
+      console.log('onContentAdded subscription started')
+      setListening({ ...listening, onContentAdded: true })
+    },
+  })
+
+  trpc.onNodeAdded.useSubscription(undefined, {
+    onData({ nodeId, protocolId }) {
+      if (Object.keys(state.BOOTNODES).includes(nodeId)) {
+        dispatch({
+          type: 'BOOTNODES',
+          nodeId,
+          client: state.BOOTNODES[nodeId].client,
+          enr: state.BOOTNODES[nodeId].enr,
+          response: 'pong',
+        })
+      }
+    },
+    onStarted() {
+      console.log('onNodeAdded subscription started')
+      setListening({ ...listening, onNodeAdded: true })
+    },
+  })
 
   const ping = async (enr: string) => {
+    setPong(undefined)
     const pong = await sendPing.mutateAsync({ enr })
     setPong(pong)
     getLocalRoutingTable()
@@ -73,26 +175,35 @@ export function WSSClient() {
       routingTable: _peers,
     })
   }
-  const node = trpc.self.useMutation()
-  const getSelf = async () => { 
+  const node = trpc.browser_nodeInfo.useMutation()
+  const getSelf = async () => {
     const nodeInfo = await node.mutateAsync()
     dispatch({
       type: 'NODE_INFO',
       ...nodeInfo,
     })
   }
-  useEffect(() => {
+
+  const bootUP = () => {
     getSelf()
-    getLocalRoutingTable()
     pingBootNodes()
-  }, [])
+    getLocalRoutingTable()
+
+    setInterval(() => {
+      getLocalRoutingTable()
+    }, 10000)
+  }
 
   return (
     <ClientContext.Provider value={state}>
       <ClientDispatchContext.Provider value={dispatch}>
-        <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
-          <Client ping={ping} pong={pong} name={'WebSockets Client'} />
-        </Box>
+        <RPCContext.Provider value={rpcState}>
+          <RPCDispatchContext.Provider value={rpcDispatch}>
+            <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
+              <Client ping={ping} pong={pong} name={'WebSockets Client'} />
+            </Box>
+          </RPCDispatchContext.Provider>
+        </RPCContext.Provider>
       </ClientDispatchContext.Provider>
     </ClientContext.Provider>
   )
