@@ -94,7 +94,10 @@ export abstract class BaseProtocol extends EventEmitter {
     const deserialized = PortalWireMessageType.deserialize(request)
     const decoded = deserialized.value
     const messageType = deserialized.selector
-    this.logger.extend(MessageCodes[messageType])(`Received from ${shortId(src.nodeId)}`)
+    const srcEnr = this.routingTable.getWithPending(src.nodeId)
+    this.logger.extend(MessageCodes[messageType])(
+      `Received from ${shortId(srcEnr !== undefined ? srcEnr.value : src.nodeId)}`,
+    )
     switch (messageType) {
       case MessageCodes.PING:
         this.handlePing(src, id, decoded as PingMessage)
