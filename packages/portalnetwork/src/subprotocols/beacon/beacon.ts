@@ -514,7 +514,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     this.metrics?.contentMessagesSent.inc()
 
     this.logger(
-      `Received handleFindContent request for contentKey: ${toHexString(
+      `Received FindContent request for contentKey: ${toHexString(
         decodedContentMessage.contentKey,
       )}`,
     )
