@@ -4,20 +4,31 @@ import { trpc } from '../utils/trpc'
 export const ClientDispatchContext = createContext<any>(null)
 
 export const mutations = {
-  boot: trpc.pingBootNodes,
-  sendPing: trpc.ping,
-  localRoutingTable: trpc.local_routingTable,
-  browser_historyFindNodes: trpc.browser_historyFindNodes,
-  browser_historyFindContent: trpc.browser_historyFindContent,
-  browser_historyRecursiveFindContent: trpc.browser_historyRecursiveFindContent,
-  browser_historyOffer: trpc.browser_historyOffer,
-  browser_historySendOffer: trpc.browser_historySendOffer,
-  browser_historyGossip: trpc.browser_historyGossip,
-  eth_getBlockByHash: trpc.browser_ethGetBlockByHash,
-  eth_getBlockByNumber: trpc.browser_ethGetBlockByNumber,
+  ws: {
+    pingBootNodes: trpc.pingBootNodes,
+    portal_historyPing: trpc.ping,
+    portal_historyRoutingTableInfo: trpc.local_routingTable,
+    portal_historyFindNodes: trpc.browser_historyFindNodes,
+    portal_historyFindContent: trpc.browser_historyFindContent,
+    portal_historyRecursiveFindContent: trpc.browser_historyRecursiveFindContent,
+    portal_historyOffer: trpc.browser_historyOffer,
+    portal_historySendOffer: trpc.browser_historySendOffer,
+    portal_historyGossip: trpc.browser_historyGossip,
+    eth_getBlockByHash: trpc.browser_ethGetBlockByHash,
+    eth_getBlockByNumber: trpc.browser_ethGetBlockByNumber,
+  },
+  http: {
+    // portal_historyFindNodes: trpc.portal_historyFindNodes,
+    // portal_historyFindContent: trpc.portal_historyFindContent,
+    // portal_historyRecursiveFindContent: trpc.portal_historyRecursiveFindContent,
+    // portal_historyOffer: trpc.portal_historyOffer,
+    // portal_historySendOffer: trpc.portal_historySendOffer,
+    // portal_historyGossip: trpc.portal_historyGossip,
+
+  }
 }
 
-type TMutations = typeof mutations
+export type TMutations = typeof mutations
 
 interface IClientInitialState {
   NODE_INFO: {
