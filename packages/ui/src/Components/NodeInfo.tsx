@@ -18,8 +18,8 @@ export function SelfNodeInfo() {
   const { tag, enr, nodeId, multiAddr } = state.NODE_INFO
   const row = createRow(tag, enr, nodeId, multiAddr, 0)
   return (
-    <TableContainer component={Paper}>
-      <Table size="small" aria-label="self node info">
+    <TableContainer sx={{ width: '100%' }} component={Paper}>
+      <Table sx={{ width: '100%' }} size="small" aria-label="self node info">
         <TableHead>
           <TableRow>
             <TableCell>{row.tag}</TableCell>
@@ -40,9 +40,9 @@ export default function NodeInfo() {
     createRow(tag, enr, nodeId, multiAddr, bucket),
   )
   return (
-    <Box overflow="scroll">
-      <TableContainer component={Paper}>
-        <Table size="small" aria-label="node info">
+    <Box overflow="hidden">
+      <TableContainer sx={{ maxHeight: 500 }} component={Paper}>
+        <Table stickyHeader size="small" aria-label="node info">
           <TableHead>
             <TableRow>
               <TableCell>Client</TableCell>

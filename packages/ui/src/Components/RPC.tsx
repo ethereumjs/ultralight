@@ -16,7 +16,7 @@ import {
 import React from 'react'
 import RPCInput from './RPCInput'
 import RPCParams from './RPCParams'
-import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
+import { RPCContext, RPCDispatchContext, TMethods, WSMethods } from '../Contexts/RPCContext'
 import { ClientContext } from '../Contexts/ClientContext'
 import { trpc } from '../utils/trpc'
 
@@ -37,24 +37,24 @@ export const methodNames = [
 export type RPCMethod = (typeof methodNames)[number]
 
 export default function RPC() {
-  const state = React.useContext(ClientContext)
-  const dispatch = React.useContext(RPCDispatchContext)
   const rpcState = React.useContext(RPCContext)
   const rpcDispatch = React.useContext(RPCDispatchContext)
   const [meta, setMeta] = React.useState<any>({})
   const [method, setMethod] = React.useState<RPCMethod>('discv5_nodeInfo')
-  const rpcMethods: { [key in RPCMethod]: any } = {
+  const rpcMethods: Record<keyof TMethods, any> = {
+    pingBootNodes: trpc.pingBootNodes.useMutation(),
     discv5_nodeInfo: trpc.browser_nodeInfo.useMutation(),
-    portal_historyPing: state.RPC.sendPing.useMutation(),
-    portal_historyRoutingTableInfo: state.RPC.localRoutingTable.useMutation(),
-    portal_historyFindNodes: state.RPC.browser_historyFindNodes.useMutation(),
-    portal_historyFindContent: state.RPC.browser_historyFindContent.useMutation(),
-    portal_historyRecursiveFindContent: state.RPC.browser_historyRecursiveFindContent.useMutation(),
-    portal_historyOffer: state.RPC.browser_historyOffer.useMutation(),
-    portal_historySendOffer: state.RPC.browser_historySendOffer.useMutation(),
-    portal_historyGossip: state.RPC.browser_historyGossip.useMutation(),
-    eth_getBlockByHash: state.RPC.eth_getBlockByHash.useMutation(),
-    eth_getBlockByNumber: state.RPC.eth_getBlockByNumber.useMutation(),
+    portal_historyPing: rpcState.REQUEST.portal_historyPing.useMutation(),
+    portal_historyRoutingTableInfo: rpcState.REQUEST.portal_historyRoutingTableInfo.useMutation(),
+    portal_historyFindNodes: rpcState.REQUEST.portal_historyFindNodes.useMutation(),
+    portal_historyFindContent: rpcState.REQUEST.portal_historyFindContent.useMutation(),
+    portal_historyRecursiveFindContent:
+      rpcState.REQUEST.portal_historyRecursiveFindContent.useMutation(),
+    portal_historyOffer: rpcState.REQUEST.portal_historyOffer.useMutation(),
+    portal_historySendOffer: rpcState.REQUEST.portal_historySendOffer.useMutation(),
+    portal_historyGossip: rpcState.REQUEST.portal_historyGossip.useMutation(),
+    eth_getBlockByHash: rpcState.REQUEST.eth_getBlockByHash.useMutation(),
+    eth_getBlockByNumber: rpcState.REQUEST.eth_getBlockByNumber.useMutation(),
   }
   function handleChangeMethod(event: SelectChangeEvent<string>) {
     setMethod(event.target.value as RPCMethod)
@@ -67,7 +67,7 @@ export default function RPC() {
     })
     const req = request()
     console.log(`method: ${method}`)
-    console.log(`params: ${req.params}`)
+    console.log(`params: ${JSON.stringify(req.params)}`)
     rpcDispatch({
       type: 'CURRENT_REQUEST',
       request: JSON.stringify({
@@ -76,7 +76,7 @@ export default function RPC() {
       }),
     })
     const res = await req.response
-    console.log(`response: ${res}`)
+    console.log(`response: ${JSON.stringify(res)}`)
     rpcDispatch({
       type: 'CURRENT_RESPONSE',
       response: typeof res === 'string' ? res : JSON.stringify(res),
@@ -88,10 +88,10 @@ export default function RPC() {
 
     switch (method) {
       case 'discv5_nodeInfo': {
-        const res = rpcMethods.discv5_nodeInfo.mutateAsync()
+        const res = rpcMethods.discv5_nodeInfo.mutateAsync({})
         return {
           type: 'discv5_nodeInfo',
-          params: [],
+          params: {},
           response: res,
         }
       }
@@ -241,6 +241,11 @@ export default function RPC() {
               <RPCInput method={method as RPCMethod} />
             </ListItem>
             <ListItem>
+              <Paper>
+                {/* {meta?.description} */}
+              </Paper>
+            </ListItem>
+            <ListItem>
               <RPCParams method={method as RPCMethod} />
             </ListItem>
           </List>
@@ -248,10 +253,12 @@ export default function RPC() {
         <Container>
           <Paper sx={{ border: 'solid black 2px' }}>
             <ListSubheader>Request:</ListSubheader>
-            {rpcState.CURRENT_LOG.request}</Paper>
+            {rpcState.CURRENT_LOG.request}
+          </Paper>
           <Paper sx={{ border: 'solid black 2px' }}>
             <ListSubheader>Response:</ListSubheader>
-            {rpcState.CURRENT_LOG.response}</Paper>
+            {rpcState.CURRENT_LOG.response}
+          </Paper>
         </Container>
       </Stack>
     </Container>

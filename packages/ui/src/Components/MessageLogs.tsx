@@ -11,6 +11,8 @@ import {
   Button,
   Tabs,
   Tab,
+  Stack,
+  Container,
 } from '@mui/material'
 import React from 'react'
 import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
@@ -40,7 +42,7 @@ export default function MessageLogs() {
     '0xabcd': false,
   })
   const [selected, setSelected] = React.useState<string>('')
-
+  const [hover, setHover] = React.useState<string>('')
   const altertMsg = (type: keyof typeof msgAlerts) => {
     switch (type) {
       case 'ping':
@@ -116,7 +118,8 @@ export default function MessageLogs() {
   })
 
   const peerCellStyle = (peer: keyof typeof peerAlerts) => ({
-    backgroundColor: peerAlerts[peer] ? 'orange' : 'white',
+    border: selected === peer ? 'solid black 1px' : 'none',
+    backgroundColor: peerAlerts[peer] ? 'orange' : hover === peer ? 'grey' : 'white',
   })
 
   React.useEffect(() => {
@@ -177,7 +180,7 @@ export default function MessageLogs() {
     ]
     const fakeLog = setInterval(() => {
       const topic = topics[Math.floor(Math.random() * topics.length)]
-        dispatch({
+      dispatch({
         type: 'LOG_RECEIVED',
         topic: topic,
         nodeId: '0xFakeId',
@@ -197,25 +200,16 @@ export default function MessageLogs() {
   }
 
   return (
-    <Tabs
-      orientation="vertical"
-      variant="scrollable"
-      value={value}
-      onChange={handleChange}
-      aria-label="message logs"
-      sx={{ borderRight: 1, borderColor: 'divider' }}
-    >
-      <Tab label={value === 0 ? '' : 'BACK'}></Tab>
-      <Tab label={value === 0 ? ' ' : selected}></Tab>
-      <TabPanel index={0} value={value}>
-        <TableContainer component={Paper}>
-          <Table size="small" aria-label="spanning table">
+    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+      <Stack width={'100%'} direction="column" spacing={2}>
+        <TableContainer sx={{ maxHeight: 400 }}>
+          <Table padding="none" stickyHeader aria-label="message logs">
             <TableHead>
-              <TableCell align="center" colSpan={4}>
+              <TableCell align="center" colSpan={2}>
                 Peer
               </TableCell>
-              <TableCell style={msgCellStyle('ping')} align="center">
-                Ping
+              <TableCell align="center">
+                <ListItemText primary="Ping" />
               </TableCell>
               <TableCell style={msgCellStyle('pong')} align="center">
                 Pong
@@ -226,8 +220,8 @@ export default function MessageLogs() {
               <TableCell style={msgCellStyle('nodes')} align="center">
                 Nodes
               </TableCell>
-              <TableCell style={msgCellStyle('findContent')} align="center">
-                FindContent
+              <TableCell align="center">
+                <ListItemText primary="Find Content" />
               </TableCell>
               <TableCell style={msgCellStyle('content')} align="center">
                 Content
@@ -248,15 +242,17 @@ export default function MessageLogs() {
                 return (
                   <>
                     <TableRow>
-                      <TableCell rowSpan={2} style={peerCellStyle(peer)} colSpan={2}>
+                      <TableCell
+                      onMouseEnter={() => setHover(peer)}
+                      onMouseLeave={() => setHover('')}
+                        onClick={() => handleSelect(peer)}
+                        rowSpan={2}
+                        style={peerCellStyle(peer)}
+                        colSpan={1}
+                      >
                         <Tooltip title={peer}>
-                          <ListItemText>
-                            {peer.slice(0, 6)}...{peer.slice(-4)}
-                          </ListItemText>
+                          <ListItemText primary={peer.slice(0,16) + '...'} />
                         </Tooltip>
-                      </TableCell>
-                      <TableCell rowSpan={2} style={peerCellStyle(peer)} colSpan={2}>
-                        <Button onClick={() => handleSelect(peer)}>DETAILS</Button>
                       </TableCell>
                       <TableCell style={{ color: 'blue' }} align="center">
                         SENT
@@ -327,10 +323,8 @@ export default function MessageLogs() {
             </TableBody>
           </Table>
         </TableContainer>
-      </TabPanel>
-      <TabPanel index={1} value={value}>
         <PeerMessageLogs selected={selected} />
-      </TabPanel>
-    </Tabs>
+      </Stack>
+    </Paper>
   )
 }

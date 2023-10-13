@@ -12,6 +12,7 @@ import {
   AllClientsInitialState,
   AllClientsReducer,
 } from '../Contexts/AllClientsContext'
+import { Container } from '@mui/material'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -22,19 +23,16 @@ interface TabPanelProps {
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props
   return (
-    <div
+    <Container
       role="tabpanel"
       hidden={value !== index}
       id={`vertical-tabpanel-${index}`}
       aria-labelledby={`vertical-tab-${index}`}
+      sx={{ padding: 0, width: '100%', margin: 0 }}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
+      {value === index && <Box sx={{ padding: 0, margin: 0, width: '100%' }}>{children}</Box>}
+    </Container>
   )
 }
 
@@ -60,7 +58,6 @@ export default function ClientTabs() {
       ...wssClientInfo,
     })
   }
-  
 
   const httpClient = trpc.discv5_nodeInfo.useMutation()
   const getNodeInfo = async (port: number = 8545) => {
@@ -79,10 +76,12 @@ export default function ClientTabs() {
   return (
     <AllClientsContext.Provider value={clients}>
       <AllClientsDispatchContext.Provider value={dispatch}>
-        <Box sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', height: 224 }}>
+        <Box
+          id="App Tab Box"
+          sx={{ bgcolor: 'background.paper', width: '100%' }}
+        >
           <Tabs
-            orientation="vertical"
-            variant="scrollable"
+            variant="fullWidth"
             value={value}
             onChange={handleChange}
             aria-label="App Tabs"
