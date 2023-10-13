@@ -8,9 +8,17 @@ import {
   ClientInitialState,
   ClientReducer,
 } from '../Contexts/ClientContext'
+import {
+  RPCContext,
+  RPCDispatchContext,
+  RPCInitialState,
+  RPCReducer,
+  httpMethods,
+} from '../Contexts/RPCContext'
 
 export default function HTTPClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
+  const [rpcState, rpcDispatch] = useReducer(RPCReducer, RPCInitialState)
   const [port, setPort] = useState(8545)
 
   const routingTable = trpc.portal_historyRoutingTableInfo.useMutation({
@@ -142,9 +150,13 @@ export default function HTTPClient() {
   return (
     <ClientContext.Provider value={state}>
       <ClientDispatchContext.Provider value={dispatch}>
-        <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
-          <Client ping={ping} pong={pong} name={'HTTP Client'} />
-        </Box>
+        <RPCContext.Provider value={{ ...rpcState, REQUEST: httpMethods }}>
+          <RPCDispatchContext.Provider value={rpcDispatch}>
+            <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
+              <Client ping={ping} pong={pong} name={'HTTP Client'} />
+            </Box>
+          </RPCDispatchContext.Provider>
+        </RPCContext.Provider>
       </ClientDispatchContext.Provider>
     </ClientContext.Provider>
   )

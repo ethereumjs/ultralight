@@ -6,10 +6,9 @@ import {
   ClientContext,
   ClientDispatchContext,
   ClientInitialState,
-  ClientProvider,
   ClientReducer,
 } from '../Contexts/ClientContext'
-import { RPCContext, RPCDispatchContext, RPCInitialState, RPCReducer } from '../Contexts/RPCContext'
+import { RPCContext, RPCDispatchContext, RPCInitialState, RPCReducer, wsMethods } from '../Contexts/RPCContext'
 
 export function WSSClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
@@ -35,9 +34,9 @@ export function WSSClient() {
     bootUP()
   }, [])
 
-  const boot = ClientInitialState.RPC.boot.useMutation()
-  const sendPing = ClientInitialState.RPC.sendPing.useMutation()
-  const localRoutingTable = ClientInitialState.RPC.localRoutingTable.useMutation()
+  const boot = ClientInitialState.RPC.ws.pingBootNodes.useMutation()
+  const sendPing = ClientInitialState.RPC.ws.portal_historyPing.useMutation()
+  const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
 
   const pingBootNodes = async () => {
     const bootnodeENRS = await boot.mutateAsync()
@@ -188,7 +187,7 @@ export function WSSClient() {
   }
 
   return (
-    <ClientContext.Provider value={state}>
+    <ClientContext.Provider value={{ ...state, CONNECTION: 'ws', REQUEST: wsMethods }}>
       <ClientDispatchContext.Provider value={dispatch}>
         <RPCContext.Provider value={rpcState}>
           <RPCDispatchContext.Provider value={rpcDispatch}>
