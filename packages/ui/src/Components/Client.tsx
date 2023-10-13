@@ -1,18 +1,19 @@
-import { Container, Stack } from '@mui/material'
+import { Container, ListItemText, Stack } from '@mui/material'
 import { SelfNodeInfo } from './NodeInfo'
 import FunctionTabs from './FunctionTabs'
+import PortMenu from './Port'
 
-export default function Client(props: { name: string; ping: any; pong: any }) {
-  const { name, ping, pong } = props
+export default function Client(props: { name: string; }) {
   return (
     <Container sx={{ width: '100%' }} id="Client">
       <Stack width={'100%'} direction={'column'}>
-        <h1>{name}</h1>
+        <ListItemText primary={props.name} />
+        {props.name === 'HTTP Client' && <PortMenu />}
         <Container sx={{ width: '100%' }}>
           <SelfNodeInfo />
         </Container>
         <Container sx={{ width: '100%' }}>
-          <FunctionTabs ping={ping} pong={pong} />
+          <FunctionTabs />
         </Container>
       </Stack>
     </Container>

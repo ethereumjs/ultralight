@@ -192,7 +192,7 @@ export function WSSClient() {
         <RPCContext.Provider value={rpcState}>
           <RPCDispatchContext.Provider value={rpcDispatch}>
             <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
-              <Client ping={ping} pong={pong} name={'WebSockets Client'} />
+              <Client name={'WebSockets Client'} />
             </Box>
           </RPCDispatchContext.Provider>
         </RPCContext.Provider>

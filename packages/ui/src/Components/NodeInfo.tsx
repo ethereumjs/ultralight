@@ -7,7 +7,8 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Paper from '@mui/material/Paper'
 import { Box } from '@mui/material'
-import { ClientContext } from '../Contexts/ClientContext'
+import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
+import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
 
 function createRow(tag: string, enr: string, nodeId: string, multiAddr: string, bucket: number) {
   return { tag, enr, nodeId, multiAddr, bucket }
@@ -15,8 +16,28 @@ function createRow(tag: string, enr: string, nodeId: string, multiAddr: string, 
 
 export function SelfNodeInfo() {
   const state = React.useContext(ClientContext)
+  const dispatch = React.useContext(ClientDispatchContext)
+  const rpc = React.useContext(RPCContext)
+  const rpcDispatch = React.useContext(RPCDispatchContext)
   const { tag, enr, nodeId, multiAddr } = state.NODE_INFO
+
   const row = createRow(tag, enr, nodeId, multiAddr, 0)
+  const nodeInfo = rpc.REQUEST.discv5_nodeInfo.useMutation()
+  const getNodeInfo = async () => {
+    const info = state.CONNECTION === 'http'
+      ? await nodeInfo.mutateAsync({ port: rpc.PORT })
+      : await nodeInfo.mutateAsync({})
+    dispatch({
+      type: 'NODE_INFO',
+      ...info,
+    })
+  }
+  React.useEffect(() => {
+    getNodeInfo()
+  }, [])
+  React.useEffect(() => {
+    getNodeInfo()
+  }, [rpc.PORT, rpc.IP])
   return (
     <TableContainer sx={{ width: '100%' }} component={Paper}>
       <Table sx={{ width: '100%' }} size="small" aria-label="self node info">

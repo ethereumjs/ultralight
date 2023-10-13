@@ -2,7 +2,6 @@ import { initTRPC } from '@trpc/server'
 // eslint-disable-next-line node/file-extension-in-import
 import { createHTTPServer } from '@trpc/server/adapters/standalone'
 import cors from 'cors'
-import jayson from 'jayson/promise/index.js'
 import { ENR, SignableENR } from '@chainsafe/discv5'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -57,14 +56,6 @@ const main = async () => {
   const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   const router = t.router
 
-  const clientA = jayson.Client.http({
-    host: '192.168.86.29',
-    port: 8545,
-  })
-  const clients: Record<number, jayson.HttpClient> = {
-    8545: clientA,
-  }
-
   //  WSS Client Methods
 
   const decodeENR = publicProcedure
@@ -111,11 +102,13 @@ const main = async () => {
     discv5_nodeInfo,
     pingBootNodeHTTP,
     portal_historyStore,
+    getPubIp,
   } = httpProcedures(publicProcedure, pubIp)
 
   // Create tRpc Router
 
   const appRouter = router({
+    getPubIp,
     decodeENR,
     onTalkReq,
     onTalkResp,

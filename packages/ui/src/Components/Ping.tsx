@@ -22,16 +22,20 @@ import SendIcon from '@mui/icons-material/Send'
 import { CheckmarkIcon } from 'react-hot-toast'
 import React, { useEffect } from 'react'
 import { ClientContext } from '../Contexts/ClientContext'
+import { RPCContext } from '../Contexts/RPCContext'
 
-export default function Ping(props: { ping: any; pong: any }) {
+export default function Ping() {
   const state = React.useContext(ClientContext)
-  const { ping, pong } = props
+  const rpc = React.useContext(RPCContext)
+  const [pong, setPong] = React.useState<any>(null)
+  const ping = rpc.REQUEST.portal_historyPing.useMutation()
   const [open, setOpen] = React.useState(false)
   const [alert, setAlert] = React.useState<'closed' | 'open' | 'success' | 'fail'>('closed')
   const [toPing, setToPing] = React.useState<string>('')
   const [peer, setPeer] = React.useState<string>('')
-  const handleClick = () => {
-    ping(toPing)
+  const handleClick = async () => {
+    const pong = await ping.mutateAsync({ enr: toPing, port: rpc.PORT })
+    setPong(pong)
     setAlert('open')
   }
   const setEnr = (enr: string) => {
@@ -68,7 +72,7 @@ export default function Ping(props: { ping: any; pong: any }) {
   )
 
   const handleClickQuery = () => {
-    ping(toPing)
+    handleClick()
     if (timerRef.current) {
       clearTimeout(timerRef.current)
     }

@@ -48,6 +48,8 @@ export type HttpMethods = typeof httpMethods
 export type TMethods = WSMethods | HttpMethods
 
 interface IRPCInitialState {
+  PORT: number
+  IP?: string
   CONTENT_KEY: string
   CONTENT: string
   CONTENT_KEY_ARRAY: string[]
@@ -64,6 +66,7 @@ interface IRPCInitialState {
 }
 
 export const RPCInitialState: IRPCInitialState = {
+  PORT: 8545,
   CONTENT_KEY: '',
   CONTENT: '',
   CONTENT_KEY_ARRAY: [],
@@ -82,6 +85,25 @@ export const RPCContext = createContext(RPCInitialState)
 
 export function RPCReducer(state: any, action: any) {
   switch (action.type) {
+    case 'PORT': {
+      return {
+        ...state,
+        PORT: action.port,
+      }
+    }
+    case 'IP': {
+      return {
+        ...state,
+        IP: action.ip,
+      }
+    }
+    case 'RPC_ADDR': {
+      return {
+        ...state,
+        PORT: action.port,
+        IP: action.ip,
+      }
+    }
     case 'CONTENT_KEY': {
       return {
         ...state,

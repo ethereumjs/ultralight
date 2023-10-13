@@ -18,6 +18,10 @@ export const mutations = {
     eth_getBlockByNumber: trpc.browser_ethGetBlockByNumber,
   },
   http: {
+    pingBootNodes: trpc.pingBootNodeHTTP,
+    discv5_nodeInfo: trpc.discv5_nodeInfo,
+    portal_historyRoutingTableInfo: trpc.portal_historyRoutingTableInfo,
+    portal_historyPing: trpc.portal_historyPing,
     // portal_historyFindNodes: trpc.portal_historyFindNodes,
     // portal_historyFindContent: trpc.portal_historyFindContent,
     // portal_historyRecursiveFindContent: trpc.portal_historyRecursiveFindContent,
@@ -38,7 +42,7 @@ interface IClientInitialState {
     multiAddr: string
   }
   CONNECTED: boolean
-  CONNECTION: number | 'ws'
+  CONNECTION: 'http' | 'ws'
   ROUTING_TABLE: {
     [key: number]: [string, string, string, string, number]
   }
@@ -78,10 +82,10 @@ interface IClientInitialState {
 
 export const ClientInitialState: IClientInitialState = {
   NODE_INFO: {
-    tag: 'ultralight',
-    enr: 'enr:xxxx...',
-    nodeId: '0x...',
-    multiAddr: '/ip4/xxx.xxx.xx.xx/udp/xxxx',
+    tag: '',
+    enr: '',
+    nodeId: '',
+    multiAddr: '',
   },
   CONNECTION: 'ws',
   CONNECTED: false,

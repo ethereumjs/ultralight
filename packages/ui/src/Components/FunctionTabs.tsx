@@ -44,9 +44,8 @@ function a11yProps(index: number) {
   }
 }
 
-export default function FunctionTabs(props: { ping: any; pong: any }) {
+export default function FunctionTabs() {
   const state = React.useContext(ClientContext)
-  const { ping, pong } = props
   const [value, setValue] = React.useState(0)
 
   const handleChange = (_: any, newValue: number) => {
@@ -79,7 +78,7 @@ export default function FunctionTabs(props: { ping: any; pong: any }) {
           <BootNodeResponses />
         </TabPanel>
         <TabPanel value={value} index={2}>
-          <Ping ping={ping} pong={pong} />
+          <Ping />
         </TabPanel>
         <TabPanel value={value} index={3}>
           <GetBeacon />

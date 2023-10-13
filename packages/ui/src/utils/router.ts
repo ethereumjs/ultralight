@@ -223,26 +223,28 @@ const browser_historyGossip = publicProcedure
     return 0
   })
 
-const portal_historyRoutingTableInfo = publicProcedure.mutation(async () => {
-  return {
-    routingTable: [['']],
-  }
-})
-
-const discv5_nodeInfo = publicProcedure
+const portal_historyRoutingTableInfo = publicProcedure
   .input(
     z.object({
       port: z.number(),
+      ip: z.string(),
     }),
   )
-  .mutation(async ({ input }) => {
+  .mutation(async () => {
     return {
-      client: 'ultralight',
-      enr: '',
-      nodeId: '',
-      multiAddr: '',
+      localNodeId: "",
+      buckets: [""]
     }
   })
+
+const discv5_nodeInfo = publicProcedure.input(z.any()).mutation(async ({ input }) => {
+  return {
+    client: 'ultralight',
+    enr: '',
+    nodeId: '',
+    multiAddr: '',
+  }
+})
 
 const ping = publicProcedure
   .input(
@@ -272,7 +274,7 @@ const pingBootNodes = publicProcedure
 const portal_historyPing = publicProcedure
   .input(
     z.object({
-      port: z.number(),
+      port: z.union([z.undefined(), z.number()]),
       enr: z.string(),
     }),
   )
@@ -301,7 +303,14 @@ const browser_historyLocalContent = publicProcedure
     return JSON.stringify({ key: 'value' })
   })
 
-const pingBootNodeHTTP = publicProcedure.mutation(async () => {
+const pingBootNodeHTTP = publicProcedure
+.input(
+  z.object({
+    port: z.number(),
+    ip: z.string(),
+  }),
+)
+.mutation(async () => {
   const x = Math.random() >= 0.5
   return [{ tag: '', enr: '', dataRadius: '', enrSeq: -1 }]
 })
@@ -346,8 +355,11 @@ const browser_ethGetBlockByNumber = publicProcedure
   .mutation(({ input }) => {
     return undefined
   })
-
+const getPubIp = publicProcedure.query(() => {
+  return ''
+})
 export const appRouter = router({
+  getPubIp,
   decodeENR,
   onTalkReq,
   onTalkResp,

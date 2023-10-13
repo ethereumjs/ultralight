@@ -1,4 +1,4 @@
-import { ENR, HistoryProtocol, PortalNetwork, ProtocolId, toHexString } from 'portalnetwork'
+import { ENR, toHexString } from 'portalnetwork'
 import { PublicProcudure } from '../subscriptions.js'
 import { z } from 'zod'
 import jayson from 'jayson/promise/index.js'
@@ -37,8 +37,8 @@ const bootnodes = [
   'enr:-IS4QGG6moBhLW1oXz84NaKEHaRcim64qzFn1hAG80yQyVGNLoKqzJe887kEjthr7rJCNlt6vdVMKMNoUC9OCeNK-EMDgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQLJhXByb3LmxHQaqgLDtIGUmpANXaBbFw3ybZWzGqb9-IN1ZHCCE4k',
   'enr:-IS4QA5hpJikeDFf1DD1_Le6_ylgrLGpdwn3SRaneGu9hY2HUI7peHep0f28UUMzbC0PvlWjN8zSfnqMG07WVcCyBhADgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQJMpHmGj1xSP1O-Mffk_jYIHVcg6tY5_CjmWVg1gJEsPIN1ZHCCE4o',
 ]
-export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '127.0.0.1') => {
-  const httpClient = (port: number) => {
+export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string) => {
+  const httpClient = (port: number, ip: string = ipAddr) => {
     return jayson.Client.http({
       host: ip,
       port: port,
@@ -47,7 +47,10 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
   /**
    * HTTP Client Methods
    */
-
+  const getPubIp = publicProcedure.input(z.undefined()).query(() => {
+    console.log(ipAddr)
+    return ipAddr
+  })
   /**
    * {@link portal_historyRoutingTableInfo}
    */
@@ -55,15 +58,15 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .meta({
       description: 'Get Local Routing Table Info',
     })
-    .input(z.object({ port: z.number() }))
+    .input(z.object({ port: z.number(), ip: z.union([z.undefined(), z.string()]) }))
     .output(z_RoutingTableInfoResult)
     .mutation(async ({ input }) => {
-      const client = httpClient(input.port)
+      const client = httpClient(input.port, input.ip)
       const res = await client.request('portal_historyRoutingTableInfo', [])
       const routingTable = res.result
       return {
-        localNodeId: routingTable.localNodeId,
-        buckets: routingTable.buckets,
+        localNodeId: routingTable.localNodeId ?? '',
+        buckets: routingTable.buckets ?? [],
       }
     })
 
@@ -74,10 +77,11 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(
       z.object({
         port: z.number(),
+        ip: z.union([z.undefined(), z.string()]),
       }),
     )
     .mutation(async ({ input }) => {
-      const client = httpClient(input.port)
+      const client = httpClient(input.port, input.ip)
       const info = await client.request('discv5_nodeInfo', [])
       const enr = ENR.decodeTxt(info.result.enr)
       return {
@@ -95,7 +99,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyPingParams))
     .output(z_historyPingResult)
     .mutation(async ({ input }) => {
-      const client = httpClient(input.port)
+      const client = httpClient(input.port, input.ip)
       const p = await client.request('portal_historyPing', [input.enr])
       const _pong = p.result
       const pong = _pong && {
@@ -112,10 +116,11 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(
       z.object({
         port: z.number(),
+        ip: z.union([z.undefined(), z.string()]),
       }),
     )
     .mutation(async ({ input }) => {
-      const client = httpClient(input.port)
+      const client = httpClient(input.port, input.ip)
       const pongs = []
       for await (const [idx, enr] of bootnodes.entries()) {
         const p = await client.request('portal_historyPing', [enr])
@@ -145,7 +150,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyStoreParams))
     .output(z_historyStoreResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyStore', [
+      const res = await httpClient(input.port, input.ip).request('portal_historyStore', [
         input.contentKey,
         input.content,
       ])
@@ -159,7 +164,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyLocalContentParams))
     .output(z_historyLocalContentResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyLocalContent', [
+      const res = await httpClient(input.port, input.ip).request('portal_historyLocalContent', [
         input.contentKey,
       ])
       return res.result
@@ -172,7 +177,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyFindNodesParams))
     .output(z_historyFindNodesResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyFindNodes', [
+      const res = await httpClient(input.port, input.ip).request('portal_historyFindNodes', [
         input.enr,
         input.distances,
       ])
@@ -186,7 +191,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyFindContentParams))
     .output(z_historyFindContentResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyFindContent', [
+      const res = await httpClient(input.port, input.ip).request('portal_historyFindContent', [
         input.enr,
         input.contentKey,
       ])
@@ -200,9 +205,10 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyRecursiveFindContentParams))
     .output(z_historyRecursiveFindContentResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyRecursiveFindContent', [
-        input.contentKey,
-      ])
+      const res = await httpClient(input.port, input.ip).request(
+        'portal_historyRecursiveFindContent',
+        [input.contentKey],
+      )
       return res.result
     })
 
@@ -213,7 +219,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyOfferParams))
     .output(z_historyOfferResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyOffer', [
+      const res = await httpClient(input.port, input.ip).request('portal_historyOffer', [
         input.enr,
         input.contentKey,
         input.content,
@@ -228,7 +234,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historySendOfferParams))
     .output(z_historySendOfferResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historySendOffer', [
+      const res = await httpClient(input.port, input.ip).request('portal_historySendOffer', [
         input.nodeId,
         input.contentKeys,
       ])
@@ -242,7 +248,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     .input(z_ui(z_historyGossipParams))
     .output(z_historyGossipResult)
     .mutation(async ({ input }) => {
-      const res = await httpClient(input.port).request('portal_historyGossip', [
+      const res = await httpClient(input.port, input.ip).request('portal_historyGossip', [
         input.contentKey,
         input.content,
       ])
@@ -250,6 +256,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ip: string = '1
     })
 
   return {
+    getPubIp,
     portal_historyRoutingTableInfo,
     discv5_nodeInfo,
     pingBootNodeHTTP,
