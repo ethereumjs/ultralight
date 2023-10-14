@@ -8,27 +8,17 @@ import {
   ClientInitialState,
   ClientReducer,
 } from '../Contexts/ClientContext'
-import { RPCContext, RPCDispatchContext, RPCInitialState, RPCReducer, wsMethods } from '../Contexts/RPCContext'
+import {
+  RPCContext,
+  RPCDispatchContext,
+  RPCInitialState,
+  RPCReducer,
+  wsMethods,
+} from '../Contexts/RPCContext'
 
 export function WSSClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
   const [rpcState, rpcDispatch] = useReducer(RPCReducer, RPCInitialState)
-  const [pong, setPong] = useState<any>()
-  const [ready, setReady] = useState(false)
-  const [listening, setListening] = useState({
-    onTalkReq: false,
-    onTalkResp: false,
-    onSendTalkReq: false,
-    onSendTalkResp: false,
-    onContentAdded: false,
-    onNodeAdded: false,
-  })
-
-  useEffect(() => {
-    if (Object.values(listening).every((v) => v === true)) {
-      setReady(true)
-    }
-  }, [listening])
 
   useEffect(() => {
     bootUP()
@@ -60,7 +50,6 @@ export function WSSClient() {
       },
       onStarted() {
         console.log('onTalkReq subscription started')
-        setListening({ ...listening, onTalkReq: true })
       },
     })
     trpc.onTalkResp.useSubscription(undefined, {
@@ -75,7 +64,6 @@ export function WSSClient() {
       },
       onStarted() {
         console.log('onTalkResp subscription started')
-        setListening({ ...listening, onTalkResp: true })
       },
     })
     trpc.onSendTalkReq.useSubscription(undefined, {
@@ -89,8 +77,7 @@ export function WSSClient() {
         })
       },
       onStarted() {
-        setListening({ ...listening, onSendTalkReq: true })
-        console.log('onSendTalkReq subscription started', listening)
+        console.log('onSendTalkReq subscription started')
       },
     })
     trpc.onSendTalkResp.useSubscription(undefined, {
@@ -105,7 +92,6 @@ export function WSSClient() {
       },
       onStarted() {
         console.log('onSendTalkResp subscription started')
-        setListening({ ...listening, onSendTalkResp: true })
       },
     })
     trpc.onContentAdded.useSubscription(undefined, {
@@ -128,7 +114,6 @@ export function WSSClient() {
       },
       onStarted() {
         console.log('onContentAdded subscription started')
-        setListening({ ...listening, onContentAdded: true })
       },
     })
     trpc.onNodeAdded.useSubscription(undefined, {
@@ -137,17 +122,8 @@ export function WSSClient() {
       },
       onStarted() {
         console.log('onNodeAdded subscription started')
-        setListening({ ...listening, onNodeAdded: true })
       },
     })
-  }
-  
-
-  const ping = async (enr: string) => {
-    setPong(undefined)
-    const pong = await sendPing.mutateAsync({ enr })
-    setPong(pong)
-    getLocalRoutingTable()
   }
 
   const getLocalRoutingTable = async () => {

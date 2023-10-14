@@ -365,6 +365,29 @@ const browser_ethGetBlockByHash = publicProcedure
     return undefined
   })
 
+const eth_getBlockByNumber = publicProcedure
+  .input(
+    z.object({
+      blockNumber: z.string(),
+      includeTransactions: z.boolean(),
+    }),
+  )
+  .output(z.union([z.undefined(), z.string(), z.record(z.string(), z.string())]))
+  .mutation(({ input }) => {
+    return undefined
+  })
+const eth_getBlockByHash = publicProcedure
+  .input(
+    z.object({
+      hash: z.string(),
+      includeTransactions: z.boolean(),
+    }),
+  )
+  .output(z.union([z.undefined(), z.string(), z.record(z.string(), z.string())]))
+  .mutation(({ input }) => {
+    return undefined
+  })
+
 const browser_ethGetBlockByNumber = publicProcedure
   .input(
     z.object({
@@ -522,6 +545,8 @@ export const appRouter = router({
   browser_historyGossip,
   browser_ethGetBlockByHash,
   browser_ethGetBlockByNumber,
+  eth_getBlockByHash,
+  eth_getBlockByNumber,
   portal_historyFindNodes,
   portal_historyFindContent,
   portal_historyRecursiveFindContent,

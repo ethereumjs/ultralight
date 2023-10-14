@@ -25,24 +25,15 @@ export const httpMethods = {
   discv5_nodeInfo: trpc.discv5_nodeInfo,
   portal_historyPing: trpc.portal_historyPing,
   portal_historyRoutingTableInfo: trpc.portal_historyRoutingTableInfo,
-  // portal_historyFindNodes: trpc.portal_historyFindNodes,
-  // portal_historyFindContent: trpc.portal_historyFindContent,
-  // portal_historyRecursiveFindContent: trpc.portal_historyRecursiveFindContent,
-  // portal_historyOffer: trpc.portal_historyOffer,
-  // portal_historySendOffer: trpc.portal_historySendOffer,
-  // portal_historyGossip: trpc.portal_historyGossip,
-  // eth_getBlockByHash: trpc.portal_ethGetBlockByHash,
-  // eth_getBlockByNumber: trpc.portal_ethGetBlockByNumber,
+  portal_historyFindNodes: trpc.portal_historyFindNodes,
+  portal_historyFindContent: trpc.portal_historyFindContent,
+  portal_historyRecursiveFindContent: trpc.portal_historyRecursiveFindContent,
+  portal_historyOffer: trpc.portal_historyOffer,
+  portal_historySendOffer: trpc.portal_historySendOffer,
+  portal_historyGossip: trpc.portal_historyGossip,
+  eth_getBlockByHash: trpc.eth_getBlockByHash,
+  eth_getBlockByNumber: trpc.eth_getBlockByNumber,
 
-  // TODO: uncomment above and delete below once implemented
-  portal_historyFindNodes: trpc.browser_historyFindNodes,
-  portal_historyFindContent: trpc.browser_historyFindContent,
-  portal_historyRecursiveFindContent: trpc.browser_historyRecursiveFindContent,
-  portal_historyOffer: trpc.browser_historyOffer,
-  portal_historySendOffer: trpc.browser_historySendOffer,
-  portal_historyGossip: trpc.browser_historyGossip,
-  eth_getBlockByHash: trpc.browser_ethGetBlockByHash,
-  eth_getBlockByNumber: trpc.browser_ethGetBlockByNumber,
 }
 export type WSMethods = typeof wsMethods
 export type HttpMethods = typeof httpMethods
