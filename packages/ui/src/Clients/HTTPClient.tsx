@@ -18,12 +18,50 @@ import {
 export default function HTTPClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
   const [rpcState, rpcDispatch] = useReducer(RPCReducer, RPCInitialState)
-  const routingTable = ClientInitialState.RPC.http.portal_historyRoutingTableInfo.useMutation()
+  const routingTable = ClientInitialState.RPC.http.local_routingTable.useMutation()
   const pingBootNodes = ClientInitialState.RPC.http.pingBootNodes.useMutation()
+  const getEnr = ClientInitialState.RPC.http.portal_historyGetEnr.useMutation()
+  async function updateRT() {
+    console.log('updating routing table')
+    const rt = await routingTable.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
+    console.log({ rt })
+    const rtEnrs = await Promise.allSettled(
+      rt.map(async ([nodeId, bucket]) => {
+        const res = await getEnr.mutateAsync({
+          port: rpcState.PORT,
+          ip: rpcState.IP,
+          nodeId,
+        })
+        const enr = res
+        return enr instanceof Object
+          ? [nodeId, [enr.c, enr.enr, enr.nodeId, enr.multiaddr, bucket]]
+          : [nodeId, ['N/A', 'N/A', nodeId, 'N/A', bucket]]
+      }),
+    )
+
+    console.log({ rtEnrs: rtEnrs.map((r) => r.status === 'fulfilled' && r.value) })
+    dispatch({
+      type: 'ROUTING_TABLE',
+      routingTable: Object.fromEntries(
+        rtEnrs.map((r) => (r.status === 'fulfilled' ? r.value : ['', ['', '', '', '', -1]])),
+      ),
+    })
+  }
+
+  async function bootUP() {
+    const bootnodes = await pingBootNodes.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
+    console.log({ bootnodes })
+    dispatch({
+      type: 'BOOTNODES',
+      bootnodes
+    })
+  }
+
   useEffect(() => {
-    pingBootNodes.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
-    setInterval(() => {
-      routingTable.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
+    clearInterval('updated')
+    bootUP()
+    const updated = setInterval(async () => {
+      await updateRT()
     }, 10000)
   }, [])
 

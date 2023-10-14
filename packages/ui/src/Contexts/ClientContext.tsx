@@ -7,7 +7,7 @@ export const mutations = {
   ws: {
     pingBootNodes: trpc.pingBootNodes,
     portal_historyPing: trpc.ping,
-    portal_historyRoutingTableInfo: trpc.local_routingTable,
+    portal_historyRoutingTableInfo: trpc.browser_localRoutingTable,
     portal_historyFindNodes: trpc.browser_historyFindNodes,
     portal_historyFindContent: trpc.browser_historyFindContent,
     portal_historyRecursiveFindContent: trpc.browser_historyRecursiveFindContent,
@@ -19,7 +19,9 @@ export const mutations = {
   },
   http: {
     pingBootNodes: trpc.pingBootNodeHTTP,
+    local_routingTable: trpc.local_routingTable,
     discv5_nodeInfo: trpc.discv5_nodeInfo,
+    portal_historyGetEnr: trpc.portal_historyGetEnr,
     portal_historyRoutingTableInfo: trpc.portal_historyRoutingTableInfo,
     portal_historyPing: trpc.portal_historyPing,
     // portal_historyFindNodes: trpc.portal_historyFindNodes,
@@ -28,8 +30,7 @@ export const mutations = {
     // portal_historyOffer: trpc.portal_historyOffer,
     // portal_historySendOffer: trpc.portal_historySendOffer,
     // portal_historyGossip: trpc.portal_historyGossip,
-
-  }
+  },
 }
 
 export type TMutations = typeof mutations
@@ -48,13 +49,15 @@ interface IClientInitialState {
   }
   SELECTED_PEER: string
   OUTGOING_ENR: string
-  BOOTNODES: {
-    [key: string]: {
-      tag: string
+  BOOTNODES: Record<
+    string,
+    {
+      idx: number
+      client: string
       enr: string
-      connected: string | undefined
+      connected: boolean
     }
-  }
+  >
   SUBSCRIPTION_LOGS: {
     [key: string]: {
       [key: string]: string[]
@@ -98,7 +101,6 @@ export const ClientInitialState: IClientInitialState = {
   SENT_LOGS: {},
   CONTENT_STORE: {},
   RPC: mutations,
-
 }
 export const ClientContext = createContext(ClientInitialState)
 
@@ -142,12 +144,17 @@ export function ClientReducer(state: any, action: any) {
     case 'BOOTNODES': {
       return {
         ...state,
+        BOOTNODES: action.bootnodes,
+      }
+    }
+    case 'CONNECT_BOOTNODE': {
+      return {
+        ...state,
         BOOTNODES: {
           ...state.BOOTNODES,
           [action.nodeId]: {
-            tag: action.client,
-            enr: action.enr,
-            connected: action.response,
+            ...state.BOOTNODES[action.nodeId],
+            connected: true,
           },
         },
       }

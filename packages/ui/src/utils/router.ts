@@ -151,10 +151,17 @@ const browser_nodeInfo = publicProcedure.mutation(() => {
   }
 })
 
-const local_routingTable = publicProcedure
+const browser_localRoutingTable = publicProcedure
+  .input(z.union([z.undefined(), z.object({ port: z.number(), ip: z.string() })]))
   .output(z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.number()])))
   .mutation(() => {
     return demorows
+  })
+const local_routingTable = publicProcedure
+  .input(z.union([z.undefined(), z.object({ port: z.number(), ip: z.string() })]))
+  .output(z.array(z.tuple([z.string(), z.number()])))
+  .mutation(() => {
+    return []
   })
 
 const browser_historyFindNodes = publicProcedure
@@ -232,8 +239,8 @@ const portal_historyRoutingTableInfo = publicProcedure
   )
   .mutation(async () => {
     return {
-      localNodeId: "",
-      buckets: [""]
+      localNodeId: '',
+      buckets: [''],
     }
   })
 
@@ -259,16 +266,19 @@ const ping = publicProcedure
   })
 const pingBootNodes = publicProcedure
   .output(
-    z.array(
+    z.record(
+      z.string(),
       z.object({
+        idx: z.number(),
+        client: z.string(),
         enr: z.string(),
         nodeId: z.string(),
-        c: z.string(),
+        connected: z.boolean(),
       }),
     ),
   )
   .mutation(async () => {
-    return []
+    return {}
   })
 
 const portal_historyPing = publicProcedure
@@ -304,16 +314,27 @@ const browser_historyLocalContent = publicProcedure
   })
 
 const pingBootNodeHTTP = publicProcedure
-.input(
-  z.object({
-    port: z.number(),
-    ip: z.string(),
-  }),
-)
-.mutation(async () => {
-  const x = Math.random() >= 0.5
-  return [{ tag: '', enr: '', dataRadius: '', enrSeq: -1 }]
-})
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+    }),
+  )
+  .output(
+    z.record(
+      z.string(),
+      z.object({
+        idx: z.number(),
+        client: z.string(),
+        enr: z.string(),
+        nodeId: z.string(),
+        connected: z.boolean(),
+      }),
+    ),
+  )
+  .mutation(async () => {
+    return {}
+  })
 
 const decodeENR = publicProcedure
   .input(z.string())
@@ -358,6 +379,120 @@ const browser_ethGetBlockByNumber = publicProcedure
 const getPubIp = publicProcedure.query(() => {
   return ''
 })
+const portal_historyFindNodes = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      nodeId: z.string(),
+    }),
+  )
+  .output(z.object({ enrs: z.array(z.string()) }))
+  .mutation(async () => {
+    return {
+      enrs: [],
+    }
+  })
+
+const portal_historyFindContent = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      enr: z.string(),
+      contentKey: z.string(),
+    }),
+  )
+  .output(z.object({ content: z.string() }))
+  .mutation(async () => {
+    return {
+      content: '',
+      utpTransfer: true,
+    }
+  })
+
+const portal_historyRecursiveFindContent = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      contentKey: z.string(),
+    }),
+  )
+  .output(z.object({ content: z.string(), utpTransfer: z.boolean() }))
+  .mutation(async () => {
+    return {
+      content: '',
+      utpTransfer: true,
+    }
+  })
+
+const portal_historyOffer = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      enr: z.string(),
+      contentKey: z.string(),
+      content: z.string(),
+    }),
+  )
+  .output(z.union([z.undefined(), z.array(z.boolean()), z.array(z.never())]))
+  .mutation(async () => {
+    return [true]
+  })
+
+const portal_historySendOffer = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      nodeId: z.string(),
+      contentKeys: z.array(z.string()),
+    }),
+  )
+  .output(z.union([z.string(), z.undefined()]))
+  .mutation(async () => {
+    return ''
+  })
+
+const portal_historyGossip = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      contentKey: z.string(),
+      content: z.string(),
+    }),
+  )
+  .output(z.number())
+  .mutation(async () => {
+    return 0
+  })
+
+const portal_historyGetEnr = publicProcedure
+  .input(
+    z.object({
+      port: z.number(),
+      ip: z.string(),
+      nodeId: z.string(),
+    }),
+  )
+  .output(
+    z.union([
+      z.string(),
+      z.object({
+        enr: z.string(),
+        nodeId: z.string(),
+        multiaddr: z.string(),
+        c: z.string(),
+      }),
+    ]),
+  )
+  .mutation(async () => {
+    return ''
+  })
+
 export const appRouter = router({
   getPubIp,
   decodeENR,
@@ -375,6 +510,7 @@ export const appRouter = router({
   discv5_nodeInfo,
   portal_historyRoutingTableInfo,
   portal_historyPing,
+  browser_localRoutingTable,
   browser_historyLocalContent,
   browser_historyStore,
   pingBootNodeHTTP,
@@ -386,6 +522,13 @@ export const appRouter = router({
   browser_historyGossip,
   browser_ethGetBlockByHash,
   browser_ethGetBlockByNumber,
+  portal_historyFindNodes,
+  portal_historyFindContent,
+  portal_historyRecursiveFindContent,
+  portal_historyOffer,
+  portal_historySendOffer,
+  portal_historyGossip,
+  portal_historyGetEnr,
 })
 
 export type AppRouter = typeof appRouter

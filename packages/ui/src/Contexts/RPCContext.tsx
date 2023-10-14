@@ -21,6 +21,7 @@ export const wsMethods = {
 
 export const httpMethods = {
   pingBootNodes: trpc.pingBootNodeHTTP,
+  local_routingTable: trpc.local_routingTable,
   discv5_nodeInfo: trpc.discv5_nodeInfo,
   portal_historyPing: trpc.portal_historyPing,
   portal_historyRoutingTableInfo: trpc.portal_historyRoutingTableInfo,

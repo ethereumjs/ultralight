@@ -39,119 +39,109 @@ export function WSSClient() {
   const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
 
   const pingBootNodes = async () => {
-    const bootnodeENRS = await boot.mutateAsync()
+    const bootnodeResponses = await boot.mutateAsync()
+    dispatch({
+      type: 'BOOTNODES',
+      bootnodes: bootnodeResponses,
+    })
     getLocalRoutingTable()
-    for (const bootnode of bootnodeENRS) {
-      dispatch({
-        type: 'BOOTNODES',
-        nodeId: bootnode.nodeId,
-        client: bootnode.c,
-        enr: bootnode.enr,
-        response: undefined,
-      })
-    }
   }
-  trpc.onTalkReq.useSubscription(undefined, {
-    onData(data: any) {
-      console.log('Talk Request Received', data.topic)
-      dispatch({
-        type: 'LOG_RECEIVED',
-        topic: data.topic,
-        nodeId: data.nodeId,
-        log: data.message,
-      })
-    },
-    onStarted() {
-      console.log('onTalkReq subscription started')
-      setListening({ ...listening, onTalkReq: true })
-    },
-  })
-  trpc.onTalkResp.useSubscription(undefined, {
-    onData(data: any) {
-      console.log('Talk Response Received', data.topic)
-      dispatch({
-        type: 'LOG_RECEIVED',
-        topic: data.topic,
-        nodeId: data.nodeId,
-        log: data.message,
-      })
-    },
-    onStarted() {
-      console.log('onTalkResp subscription started')
-      setListening({ ...listening, onTalkResp: true })
-    },
-  })
-  trpc.onSendTalkReq.useSubscription(undefined, {
-    onData(data: any) {
-      console.log('sent talk request', data.topic)
-      dispatch({
-        type: 'LOG_SENT',
-        topic: data.topic,
-        nodeId: data.nodeId,
-        log: data.payload,
-      })
-    },
-    onStarted() {
-      setListening({ ...listening, onSendTalkReq: true })
-      console.log('onSendTalkReq subscription started', listening)
-    },
-  })
-  trpc.onSendTalkResp.useSubscription(undefined, {
-    onData(data: any) {
-      console.log('sent talk response', data.topic)
-      dispatch({
-        type: 'LOG_SENT',
-        topic: data.topic,
-        nodeId: data.nodeId,
-        log: data.payload,
-      })
-    },
-    onStarted() {
-      console.log('onSendTalkResp subscription started')
-      setListening({ ...listening, onSendTalkResp: true })
-    },
-  })
-  trpc.onContentAdded.useSubscription(undefined, {
-    onData(data: any) {
-      const type =
-        data.contentType === 0
-          ? 'BlockHeader'
-          : data.contentType === 1
-          ? 'BlockBody'
-          : data.contentType === 2
-          ? 'BlockReceipts'
-          : data.contentType === 3
-          ? 'EpochAccumulator'
-          : 'unknown'
-      dispatch({
-        type: 'CONTENT_STORE',
-        contentKey: '0x0' + data.contentType + data.key.slice(2),
-        content: { type, added: new Date().toString().split(' ').slice(1, 5).join(' ') },
-      })
-    },
-    onStarted() {
-      console.log('onContentAdded subscription started')
-      setListening({ ...listening, onContentAdded: true })
-    },
-  })
 
-  trpc.onNodeAdded.useSubscription(undefined, {
-    onData({ nodeId, protocolId }) {
-      if (Object.keys(state.BOOTNODES).includes(nodeId)) {
+  const startSubs = () => {
+    trpc.onTalkReq.useSubscription(undefined, {
+      onData(data: any) {
+        console.log('Talk Request Received', data.topic)
         dispatch({
-          type: 'BOOTNODES',
-          nodeId,
-          client: state.BOOTNODES[nodeId].client,
-          enr: state.BOOTNODES[nodeId].enr,
-          response: 'pong',
+          type: 'LOG_RECEIVED',
+          topic: data.topic,
+          nodeId: data.nodeId,
+          log: data.message,
         })
-      }
-    },
-    onStarted() {
-      console.log('onNodeAdded subscription started')
-      setListening({ ...listening, onNodeAdded: true })
-    },
-  })
+      },
+      onStarted() {
+        console.log('onTalkReq subscription started')
+        setListening({ ...listening, onTalkReq: true })
+      },
+    })
+    trpc.onTalkResp.useSubscription(undefined, {
+      onData(data: any) {
+        console.log('Talk Response Received', data.topic)
+        dispatch({
+          type: 'LOG_RECEIVED',
+          topic: data.topic,
+          nodeId: data.nodeId,
+          log: data.message,
+        })
+      },
+      onStarted() {
+        console.log('onTalkResp subscription started')
+        setListening({ ...listening, onTalkResp: true })
+      },
+    })
+    trpc.onSendTalkReq.useSubscription(undefined, {
+      onData(data: any) {
+        console.log('sent talk request', data.topic)
+        dispatch({
+          type: 'LOG_SENT',
+          topic: data.topic,
+          nodeId: data.nodeId,
+          log: data.payload,
+        })
+      },
+      onStarted() {
+        setListening({ ...listening, onSendTalkReq: true })
+        console.log('onSendTalkReq subscription started', listening)
+      },
+    })
+    trpc.onSendTalkResp.useSubscription(undefined, {
+      onData(data: any) {
+        console.log('sent talk response', data.topic)
+        dispatch({
+          type: 'LOG_SENT',
+          topic: data.topic,
+          nodeId: data.nodeId,
+          log: data.payload,
+        })
+      },
+      onStarted() {
+        console.log('onSendTalkResp subscription started')
+        setListening({ ...listening, onSendTalkResp: true })
+      },
+    })
+    trpc.onContentAdded.useSubscription(undefined, {
+      onData(data: any) {
+        const type =
+          data.contentType === 0
+            ? 'BlockHeader'
+            : data.contentType === 1
+            ? 'BlockBody'
+            : data.contentType === 2
+            ? 'BlockReceipts'
+            : data.contentType === 3
+            ? 'EpochAccumulator'
+            : 'unknown'
+        dispatch({
+          type: 'CONTENT_STORE',
+          contentKey: '0x0' + data.contentType + data.key.slice(2),
+          content: { type, added: new Date().toString().split(' ').slice(1, 5).join(' ') },
+        })
+      },
+      onStarted() {
+        console.log('onContentAdded subscription started')
+        setListening({ ...listening, onContentAdded: true })
+      },
+    })
+    trpc.onNodeAdded.useSubscription(undefined, {
+      onData({ nodeId, protocolId }) {
+        console.log('onNodeAdded', { nodeId, protocolId })
+      },
+      onStarted() {
+        console.log('onNodeAdded subscription started')
+        setListening({ ...listening, onNodeAdded: true })
+      },
+    })
+  }
+  
 
   const ping = async (enr: string) => {
     setPong(undefined)
@@ -177,11 +167,11 @@ export function WSSClient() {
   }
 
   const bootUP = () => {
+    clearInterval('update')
     getSelf()
     pingBootNodes()
     getLocalRoutingTable()
-
-    setInterval(() => {
+    const update = setInterval(() => {
       getLocalRoutingTable()
     }, 10000)
   }
