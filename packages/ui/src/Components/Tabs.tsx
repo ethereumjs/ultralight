@@ -69,8 +69,8 @@ export default function ClientTabs() {
     })
   }
   React.useEffect(() => {
-    getWSSClient()
-    getNodeInfo()
+    // getWSSClient()
+    // getNodeInfo()
   }, [])
 
   return (

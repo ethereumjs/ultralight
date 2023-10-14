@@ -1,4 +1,5 @@
 import {
+  Container,
   Paper,
   Table,
   TableBody,
@@ -6,49 +7,65 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
 } from '@mui/material'
 import { CheckmarkIcon, ErrorIcon } from 'react-hot-toast'
 import { ClientContext } from '../Contexts/ClientContext'
 import React from 'react'
 
-function createRow(tag: string, enr: string, nodeId: string, multiAddr: string, bucket: number) {
-  return { tag, enr, nodeId, multiAddr, bucket }
+function createRow(idx: number, client: string, enr: string, nodeId: string, connected: boolean) {
+  return { idx, client, enr, nodeId, connected }
 }
 
 export default function BootNodeResponses() {
   const state = React.useContext(ClientContext)
-  const rows = Object.values(state.BOOTNODES).map(({ tag, enr, connected }) =>
-    createRow(tag, enr, connected === undefined ? '' : connected, '', 0),
+  const rows = Object.entries(state.BOOTNODES).map(([nodeId, { idx, client, enr, connected }]) =>
+    createRow(idx, client, enr, nodeId, connected),
   )
   return (
-    <TableContainer sx={{ maxHeight: '20vh', overflow: 'scroll' }} component={Paper}>
-      <Table size="small" aria-label="spanning table">
-        <TableHead>
-          <TableRow>
-            <TableCell align="center" colSpan={3}>
-              BootNode Responses
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell>#</TableCell>
-            <TableCell>Client</TableCell>
-            <TableCell>ENR</TableCell>
-            <TableCell align="right">Ping</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row, idx) => (
-            <TableRow key={idx}>
-              <TableCell>{idx}</TableCell>
-              <TableCell>{row.tag}</TableCell>
-              <TableCell>{row.enr}</TableCell>
-              <TableCell align="right">
-                {row.nodeId === 'true' ? <CheckmarkIcon /> : <ErrorIcon />}
+    <Container
+      sx={{
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <TableContainer sx={{ maxHeight: '600' }} component={Paper}>
+        <Table padding="none" stickyHeader aria-label="spanning table">
+          <TableHead>
+            <TableRow>
+              <TableCell align="center" colSpan={3}>
+                BootNode Responses
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+            <TableRow>
+              <TableCell>#</TableCell>
+              <TableCell>Client</TableCell>
+              <TableCell>ENR</TableCell>
+              <TableCell>NodeId</TableCell>
+              <TableCell>Connected</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((row, idx) => (
+              <TableRow key={idx}>
+                <TableCell>{idx}</TableCell>
+                <TableCell>{row.client}</TableCell>
+                <Tooltip title={row.enr}>
+                  <TableCell>{row.enr.slice(0, 24)}...</TableCell>
+                </Tooltip>
+                <Tooltip title={row.nodeId}>
+                  <TableCell>
+                    0x{row.nodeId.slice(0, 16)}...
+                  </TableCell>
+                </Tooltip>
+                <TableCell align="right">
+                  {row.connected ? <CheckmarkIcon /> : <ErrorIcon />}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
   )
 }
