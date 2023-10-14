@@ -1,10 +1,12 @@
 # Portal Client UI
 
 This package contains a React web-app that is used to render a client-agnostic UI for Portal Clients.
+This is separate from the `Browser-Client` package, which runs Portal Client in the Browser.
+Th UI differs from the `Browser-Client` in that the UI package has no portal-network or discv5 dependencies, and can be used to interact with any locally running Portal Client, not just Ultralight.
 
 The React App, server, and the process by which they are started and run, are currently WIP.
 
-The App utilizes **tRpc**, and typescript based RPC library, to communicate with the Portal Client.  The App is currently configured to communicate an Ultralight Client via a websocket connection, but this is not a requirement of the App.  Any Portal Client running on a local RPC server should be accessible in the `HTTP Client` tab.  A `WebSocket` based connection to Ultralight enables the App to receive real-time events from the Ultralight Client, allowing for additional functions not available using just the JSON-RPC API, such as subscribing to client events.
+The App utilizes **tRpc**, and typescript based RPC library, to communicate with the Portal Client.  The App is currently configured to communicate an Ultralight Client via a websocket connection, but this is not a requirement of the App.  Any Portal Client running on a local RPC server should be accessible in the `HTTP Client` tab.  A `WebSocket` based connection to Ultralight enables the App to receive real-time events from the Ultralight Client, allowing for additional functions not available using the JSON-RPC API alone, such as subscribing to client events.
 
 ## Running the App (Development mode)
 
