@@ -43,7 +43,7 @@ const bootnodeENRs = [
   'enr:-IS4QGG6moBhLW1oXz84NaKEHaRcim64qzFn1hAG80yQyVGNLoKqzJe887kEjthr7rJCNlt6vdVMKMNoUC9OCeNK-EMDgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQLJhXByb3LmxHQaqgLDtIGUmpANXaBbFw3ybZWzGqb9-IN1ZHCCE4k',
   'enr:-IS4QA5hpJikeDFf1DD1_Le6_ylgrLGpdwn3SRaneGu9hY2HUI7peHep0f28UUMzbC0PvlWjN8zSfnqMG07WVcCyBhADgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQJMpHmGj1xSP1O-Mffk_jYIHVcg6tY5_CjmWVg1gJEsPIN1ZHCCE4o',
 ]
-const bootnodes = bootnodeENRs.map((b) => {
+export const bootnodes = bootnodeENRs.map((b) => {
   const enr = ENR.decodeTxt(b)
   const tag = enr.kvs.get('c')
   const c = tag ? tag.toString() : ''
@@ -70,7 +70,7 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       }
     })
 
-  const local_routingTable = publicProcedure
+  const browser_localRoutingTable = publicProcedure
     .meta({
       description: 'Get Local Routing Table',
     })
@@ -113,19 +113,33 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       description: 'Ping all BootNodes',
     })
     .output(
-      z.array(
+      z.record(
+        z.string(),
         z.object({
-          enr: z_Enr,
+          idx: z.number(),
+          client: z.string(),
           nodeId: z.string(),
-          c: z.string(),
+          enr: z.string(),
+          connected: z.boolean(),
         }),
       ),
     )
     .mutation(async () => {
-      for (const enr of bootnodes) {
-        history.sendPing(enr.enr)
+      const pongs = []
+      for await (const [idx, enr] of bootnodes.entries()) {
+        const pong = await history.sendPing(enr.enr)
+        pongs.push([
+          enr.nodeId,
+          {
+            idx,
+            client: idx < 3 ? 'trin' : idx < 7 ? 'fluffy' : 'ultralight',
+            nodeId: enr.nodeId,
+            enr: enr.enr,
+            connected: pong ? true : false,
+          },
+        ])
       }
-      return bootnodes
+      return Object.fromEntries(pongs)
     })
 
   const browser_historyStore = publicProcedure
@@ -349,7 +363,7 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
 
   return {
     browser_nodeInfo,
-    local_routingTable,
+    browser_localRoutingTable,
     ping,
     pingBootNodes,
     browser_historyStore,

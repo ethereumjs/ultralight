@@ -85,7 +85,7 @@ const main = async () => {
 
   const {
     browser_nodeInfo,
-    local_routingTable,
+    browser_localRoutingTable,
     ping,
     pingBootNodes,
     browser_historyStore,
@@ -98,11 +98,13 @@ const main = async () => {
 
   const {
     portal_historyRoutingTableInfo,
+    local_routingTable,
     portal_historyPing,
     discv5_nodeInfo,
     pingBootNodeHTTP,
     portal_historyStore,
     getPubIp,
+    portal_historyGetEnr,
   } = httpProcedures(publicProcedure, pubIp)
 
   // Create tRpc Router
@@ -118,10 +120,12 @@ const main = async () => {
     onNodeAdded,
     browser_nodeInfo,
     local_routingTable,
+    browser_localRoutingTable,
     ping,
     pingBootNodes,
     discv5_nodeInfo,
     portal_historyRoutingTableInfo,
+    portal_historyGetEnr,
     portal_historyPing,
     portal_historyStore,
     browser_historyStore,
@@ -148,6 +152,9 @@ const main = async () => {
     ws.once('close', () => {
       console.log(`➖➖ Connection (${wss.clients.size})`)
     })
+  })
+  wss.on('error', (err: any) => {
+    console.error(`❌ WebSocket Server error: ${err.message}`)
   })
   console.log('✅ WebSocket Server listening on ws://localhost:3001')
   process.on('SIGTERM', () => {

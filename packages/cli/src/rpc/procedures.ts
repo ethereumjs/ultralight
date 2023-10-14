@@ -22,21 +22,11 @@ import {
   z_historySendOfferResult,
   z_historyStoreParams,
   z_historyStoreResult,
+  z_nodeId,
   z_ui,
 } from './trpcTypes.js'
-const bootnodes = [
-  'enr:-I24QDy_atpK3KlPjl6X5yIrK7FosdHI1cW0I0MeiaIVuYg3AEEH9tRSTyFb2k6lpUiFsqxt8uTW3jVMUzoSlQf5OXYBY4d0IDAuMS4wgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg',
-  'enr:-I24QIdQtNSyUNcoyR4R7pWLfGj0YuX550Qld0HuInYo_b7JE9CIzmi2TF9hPg-OFL3kebYgLjnPkRu17niXB6xKQugBY4d0IDAuMS4wgmlkgnY0gmlwhJO2oc6Jc2VjcDI1NmsxoQJal-rNlNBoOMikJ7PcGk1h6Mlt_XtTWihHwOKmFVE-GoN1ZHCCIyg',
-  'enr:-I24QI_QC3IsdxHUX_jk8udbQ4U2bv-Gncsdg9GzgaPU95ayHdAwnH7mY22A6ggd_aZegFiBBOAPamkP2pyHbjNH61sBY4d0IDAuMS4wgmlkgnY0gmlwhJ31OTWJc2VjcDI1NmsxoQMo_DLYhV1nqAVC1ayEIwrhoFCcHvWuhC_J-w-n_4aHP4N1ZHCCIyg',
-  'enr:-IS4QGUtAA29qeT3cWVr8lmJfySmkceR2wp6oFQtvO_uMe7KWaK_qd1UQvd93MJKXhMnubSsTQPJ6KkbIu0ywjvNdNEBgmlkgnY0gmlwhMIhKO6Jc2VjcDI1NmsxoQJ508pIqRqsjsvmUQfYGvaUFTxfsELPso_62FKDqlxI24N1ZHCCI40',
-  'enr:-IS4QNaaoQuHGReAMJKoDd6DbQKMbQ4Mked3Gi3GRatwgRVVPXynPlO_-gJKRF_ZSuJr3wyHfwMHyJDbd6q1xZQVZ2kBgmlkgnY0gmlwhMIhKO6Jc2VjcDI1NmsxoQM2kBHT5s_Uh4gsNiOclQDvLK4kPpoQucge3mtbuLuUGYN1ZHCCI44',
-  'enr:-IS4QBdIjs6S1ZkvlahSkuYNq5QW3DbD-UDcrm1l81f2PPjnNjb_NDa4B5x4olHCXtx0d2ZeZBHQyoHyNnuVZ-P1GVkBgmlkgnY0gmlwhMIhKO-Jc2VjcDI1NmsxoQOO3gFuaCAyQKscaiNLC9HfLbVzFdIerESFlOGcEuKWH4N1ZHCCI40',
-  'enr:-IS4QM731tV0CvQXLTDcZNvgFyhhpAjYDKU5XLbM7sZ1WEzIRq4zsakgrv3KO3qyOYZ8jFBK-VzENF8o-vnykuQ99iABgmlkgnY0gmlwhMIhKO-Jc2VjcDI1NmsxoQMTq6Cdx3HmL3Q9sitavcPHPbYKyEibKPKvyVyOlNF8J4N1ZHCCI44',
-  'enr:-IS4QFV_wTNknw7qiCGAbHf6LxB-xPQCktyrCEZX-b-7PikMOIKkBg-frHRBkfwhI3XaYo_T-HxBYmOOQGNwThkBBHYDgmlkgnY0gmlwhKRc9_OJc2VjcDI1NmsxoQKHPt5CQ0D66ueTtSUqwGjfhscU_LiwS28QvJ0GgJFd-YN1ZHCCE4k',
-  'enr:-IS4QDpUz2hQBNt0DECFm8Zy58Hi59PF_7sw780X3qA0vzJEB2IEd5RtVdPUYZUbeg4f0LMradgwpyIhYUeSxz2Tfa8DgmlkgnY0gmlwhKRc9_OJc2VjcDI1NmsxoQJd4NAVKOXfbdxyjSOUJzmA4rjtg43EDeEJu1f8YRhb_4N1ZHCCE4o',
-  'enr:-IS4QGG6moBhLW1oXz84NaKEHaRcim64qzFn1hAG80yQyVGNLoKqzJe887kEjthr7rJCNlt6vdVMKMNoUC9OCeNK-EMDgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQLJhXByb3LmxHQaqgLDtIGUmpANXaBbFw3ybZWzGqb9-IN1ZHCCE4k',
-  'enr:-IS4QA5hpJikeDFf1DD1_Le6_ylgrLGpdwn3SRaneGu9hY2HUI7peHep0f28UUMzbC0PvlWjN8zSfnqMG07WVcCyBhADgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQJMpHmGj1xSP1O-Mffk_jYIHVcg6tY5_CjmWVg1gJEsPIN1ZHCCE4o',
-]
+import { bootnodes } from '../procedures.js'
+
 export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string) => {
   const httpClient = (port: number, ip: string = ipAddr) => {
     return jayson.Client.http({
@@ -51,6 +41,40 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
     console.log(ipAddr)
     return ipAddr
   })
+
+  const portal_historyGetEnr = publicProcedure
+    .meta({
+      description: 'Get ENR',
+    })
+    .input(
+      z.object({ port: z.number(), ip: z.union([z.undefined(), z.string()]), nodeId: z_nodeId }),
+    )
+    .output(
+      z.union([
+        z.string(),
+        z.object({
+          enr: z.string(),
+          nodeId: z.string(),
+          multiaddr: z.string(),
+          c: z.string(),
+        }),
+      ]),
+    )
+    .mutation(async ({ input }) => {
+      const client = httpClient(input.port, input.ip)
+      const res = await client.request('portal_historyGetEnr', [input.nodeId])
+      if (res.result && res.result.startsWith('enr')) {
+        const enr = ENR.decodeTxt(res.result)
+        return {
+          enr: res.result,
+          nodeId: enr.nodeId,
+          multiaddr: enr.getLocationMultiaddr('udp')?.toString() ?? '',
+          c: enr.kvs.get('c')?.toString() ?? '',
+        }
+      }
+      return ''
+    })
+
   /**
    * {@link portal_historyRoutingTableInfo}
    */
@@ -63,11 +87,31 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
     .mutation(async ({ input }) => {
       const client = httpClient(input.port, input.ip)
       const res = await client.request('portal_historyRoutingTableInfo', [])
-      const routingTable = res.result
-      return {
-        localNodeId: routingTable.localNodeId ?? '',
-        buckets: routingTable.buckets ?? [],
-      }
+      const routingTable = res.result ?? { localNodeId: '', buckets: [] }
+      return routingTable
+    })
+
+  const local_routingTable = publicProcedure
+    .meta({
+      description: 'Get Local Routing Table Info',
+    })
+    .input(z.object({ port: z.number(), ip: z.union([z.undefined(), z.string()]) }))
+    .output(z.array(z.array(z.union([z.number(), z.string()]))))
+    .mutation(async ({ input }) => {
+      const client = httpClient(input.port, input.ip)
+      const res = await client.request('portal_historyRoutingTableInfo', [])
+      const routingTable = res.result ?? { localNodeId: 'err', buckets: [] }
+      const buckets: [string, string, string, string, number][] = [
+        ...routingTable.buckets.entries(),
+      ]
+        .filter(([_, bucket]) => bucket.length > 0)
+        .map(([idx, bucket]) => {
+          return bucket.map((nodeId: string) => [nodeId, 256 - idx])
+        })
+        .flat()
+
+      console.log('BUCKETS', buckets)
+      return buckets
     })
 
   const discv5_nodeInfo = publicProcedure
@@ -119,28 +163,35 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
         ip: z.union([z.undefined(), z.string()]),
       }),
     )
+    .output(
+      z.record(
+        z.string(),
+        z.object({
+          idx: z.number(),
+          client: z.string(),
+          nodeId: z.string(),
+          enr: z.string(),
+          connected: z.boolean(),
+        }),
+      ),
+    )
     .mutation(async ({ input }) => {
       const client = httpClient(input.port, input.ip)
       const pongs = []
       for await (const [idx, enr] of bootnodes.entries()) {
-        const p = await client.request('portal_historyPing', [enr])
+        const p = await client.request('portal_historyPing', [enr.enr])
         const pongRes = p.result
-        const pong = pongRes
-          ? {
-              tag: `${idx < 3 ? 'trin' : idx < 7 ? 'fluffy' : 'ultralight'}`,
-              enr: `${enr.slice(0, 12)}`,
-              customPayload: toHexString(pongRes.dataRadius),
-              enrSeq: Number(pongRes.enrSeq),
-            }
-          : {
-              tag: '',
-              enr: ``,
-              customPayload: '',
-              enrSeq: -1,
-            }
-        pongs.push(pong)
+        const pong = {
+          idx,
+          client: `${idx < 3 ? 'trin' : idx < 7 ? 'fluffy' : 'ultralight'}`,
+          enr: enr.enr,
+          nodeId: enr.nodeId,
+          connected: pongRes ? true : false,
+        }
+
+        pongs.push([enr.nodeId, pong])
       }
-      return pongs
+      return Object.fromEntries(pongs)
     })
 
   const portal_historyStore = publicProcedure
@@ -181,7 +232,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
         input.enr,
         input.distances,
       ])
-      return res.result.enrs
+      return res.result
     })
 
   const portal_historyFindContent = publicProcedure
@@ -258,8 +309,10 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
   return {
     getPubIp,
     portal_historyRoutingTableInfo,
+    local_routingTable,
     discv5_nodeInfo,
     pingBootNodeHTTP,
+    portal_historyGetEnr,
     portal_historyStore,
     portal_historyLocalContent,
     portal_historyPing,
