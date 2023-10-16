@@ -10,7 +10,6 @@ import {
 import { PublicProcudure } from './subscriptions.js'
 import { z } from 'zod'
 import {
-  z_Enr,
   z_historyFindContentParams,
   z_historyFindContentResult,
   z_historyGossipParams,
@@ -28,7 +27,7 @@ import {
   z_historyStoreParams,
   z_historyStoreResult,
 } from './rpc/trpcTypes.js'
-import { toJSON } from './util.js'
+import { toJSON } from '../util.js'
 import { BitArray } from '@chainsafe/ssz'
 const bootnodeENRs = [
   'enr:-I24QDy_atpK3KlPjl6X5yIrK7FosdHI1cW0I0MeiaIVuYg3AEEH9tRSTyFb2k6lpUiFsqxt8uTW3jVMUzoSlQf5OXYBY4d0IDAuMS4wgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg',
