@@ -21,7 +21,6 @@ import PeerMessageLogs from './PeerMessageLogs'
 
 export default function MessageLogs() {
   const state = React.useContext(ClientContext)
-  const dispatch = React.useContext(ClientDispatchContext)
   const [currentReceivedLogs, setCurrentReceivedLogs] = React.useState<
     Record<string, Record<string, any[]>>
   >(state.RECEIVED_LOGS)
@@ -167,36 +166,9 @@ export default function MessageLogs() {
     setCurrentReceivedLogs(state.RECEIVED_LOGS)
   }, [state.RECEIVED_LOGS, state.SENT_LOGS])
 
-  React.useEffect(() => {
-    const topics = [
-      'PING',
-      'PONG',
-      'FINDNODES',
-      'NODES',
-      'FINDCONTENT',
-      'CONTENT',
-      'OFFER',
-      'ACCEPT',
-    ]
-    const fakeLog = setInterval(() => {
-      const topic = topics[Math.floor(Math.random() * topics.length)]
-      dispatch({
-        type: 'LOG_RECEIVED',
-        topic: topic,
-        nodeId: '0xFakeId',
-        log: `${new Date().toLocaleTimeString()}`,
-      })
-    }, 10000)
-  }, [])
-  const [value, setValue] = React.useState(0)
-
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue)
-  }
 
   const handleSelect = (peer: string) => {
     setSelected(peer)
-    setValue(1)
   }
 
   return (
