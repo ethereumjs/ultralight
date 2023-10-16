@@ -6,7 +6,7 @@ Th UI differs from the `Browser-Client` in that the UI package has no portal-net
 
 The React App, server, and the process by which they are started and run, are currently WIP.
 
-The App utilizes **tRpc**, and typescript based RPC library, to communicate with the Portal Client.  The App is currently configured to communicate an Ultralight Client via a websocket connection, but this is not a requirement of the App.  Any Portal Client running on a local RPC server should be accessible in the `HTTP Client` tab.  A `WebSocket` based connection to Ultralight enables the App to receive real-time events from the Ultralight Client, allowing for additional functions not available using the JSON-RPC API alone, such as subscribing to client events.
+The App utilizes **tRpc**, a typescript based RPC library, to communicate with the Portal Client.  The App is currently configured to communicate an Ultralight Client via a websocket connection, but this is not a requirement of the App.  Any Portal Client running on a local RPC server should be accessible in the `HTTP Client` tab.  A `WebSocket` based connection to Ultralight enables the App to receive real-time events from the Ultralight Client, allowing for additional functions not available using the JSON-RPC API alone, such as subscribing to client events.
 
 ## Running the App (Development mode)
 
@@ -14,25 +14,24 @@ The App utilizes **tRpc**, and typescript based RPC library, to communicate with
   - *from ultralight/*
     - run `npm i`
 
-*optional*
-- Start RPC-based portal client 
-  - Default app configuration looks for http client on udp port 8545
-  - for Ultralight:
-    - *from ultralight/packages/ultralight/cli/*
-      - run `npm run devnet --numNodes=1`
-  - for Fluffy:
-    - *see Fluffy README.md*
-  - for Trin:
-    - *see Trin README.md*
+- Run one of the following Portal Network client options:
+  - Start RPC-based portal client 
+    - Default app configuration looks for http client on udp port 8545
+    - for Ultralight:
+      - *from ultralight/packages/ultralight/cli/*
+        - run `npm run devnet --numNodes=1`
+    - for Fluffy:
+      - *see Fluffy README.md*
+    - for Trin:
+      - *see Trin README.md*
 
+  - Start the **tRpc Ultralight server**:
+    - *from ultralight/packages/CLI/:*
+      - run `npm run server:dev`
+    - Currently configured to also start Ultralight instance on udp PORT 8656
+    - At time of writing, this server is prone to crashing if an error occurs in the client, and will need to be restarted manually.
 
-- Start the **tRpc server**:
-  - *from ultralight/packages/CLI/:*
-    - run `npm run server:dev`
-  - Currently configured to also start Ultralight instance on udp PORT 8656
-  - At time of writing, this server is prone to crashing if an error occurs in the client, and will need to be restarted manually.
-
-- Start the App server:
+- Start the UI server:
   - *from ultralight/packages/ui/*
     - run `npm run dev`
   - serves the app on http://localhost:3000
