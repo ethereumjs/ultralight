@@ -241,7 +241,7 @@ export default function ContentStore(props: any) {
                   })
                   .map(([key, value]) => {
                     return (
-                      <TableRow>
+                      <TableRow key={key}>
                         <TableCell width={'33%'} sx={{ overflow: 'scroll' }}>
                           <Tooltip title={key}>
                             <ListItemButton onClick={() => setDisplayKey(key)}>
@@ -291,6 +291,7 @@ export default function ContentStore(props: any) {
                       const data = val ? Object.entries(val)[i] : undefined
                       return (
                         <TableCell
+                        key={idx}
                           onClick={() => {
                             console.log('copy', data && data[1])
                           }}

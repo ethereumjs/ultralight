@@ -212,7 +212,7 @@ export default function MessageLogs() {
               {Object.entries(state.RECEIVED_LOGS).map(([peer, logs]: any) => {
                 const sentLogs = (state.SENT_LOGS as any)[peer] ?? {}
                 return (
-                  <>
+                  <div key={peer}>
                     <TableRow>
                       <TableCell
                       onMouseEnter={() => setHover(peer)}
@@ -289,7 +289,7 @@ export default function MessageLogs() {
                         {logs['UTP'] ? logs['UTP'].length : 0}
                       </TableCell>
                     </TableRow>
-                  </>
+                  </div>
                 )
               })}
             </TableBody>

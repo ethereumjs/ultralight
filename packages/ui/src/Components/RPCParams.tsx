@@ -104,7 +104,7 @@ export default function RPCParams(props: { method: RPCMethod }) {
                 val = `<set ${key}>`
               }
               return (
-                <TableRow>
+                <TableRow key={key}>
                   <TableCell>{key}</TableCell>
                   <TableCell>{val}</TableCell>
                 </TableRow>

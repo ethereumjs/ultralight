@@ -65,7 +65,7 @@ export default function PeerMessageLogs(props: { selected: string }) {
             <TableBody>
               {messageTypes.map((msgType, idx) => {
                 return (
-                  <TableRow>
+                  <TableRow key={idx}>
                     <TableCell align="center">
                       <Button onClick={() => setValue(idx + 1)}>{msgType}</Button>
                     </TableCell>
@@ -87,7 +87,7 @@ export default function PeerMessageLogs(props: { selected: string }) {
         </TableContainer>
         {messageTypes.map((msgType, idx) => {
           return (
-            <TabPanel value={value} index={idx + 1}>
+            <TabPanel key={idx + 1} value={value} index={idx + 1}>
               <Paper>
                 <ListItemText sx={{ textAlign: 'center' }} primary={msgType} />
               </Paper>
@@ -106,11 +106,11 @@ export default function PeerMessageLogs(props: { selected: string }) {
                         sentLogs[msgType].length ?? 0,
                         sentLogs[msgType].length ?? 0,
                       ),
-                    }).map((_, idx) => {
+                    }).map((_, _idx) => {
                       return (
-                        <TableRow key={idx}>
-                          <TableCell>{sentLogs[msgType][idx] ?? ''}</TableCell>
-                          <TableCell>{receivedLogs[msgType][idx] ?? ''}</TableCell>
+                        <TableRow key={[idx, _idx].toString()}>
+                          <TableCell>{sentLogs[msgType][_idx] ?? ''}</TableCell>
+                          <TableCell>{receivedLogs[msgType][_idx] ?? ''}</TableCell>
                         </TableRow>
                       )
                     })}
