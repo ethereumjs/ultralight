@@ -51,16 +51,6 @@ export default function PortMenu() {
   const id = open ? 'simple-popover' : undefined
   return (
     <div>
-      <List>
-        <ListItemText
-        primary={rpc.IP}
-        secondary={rpc.PORT}
-        />
-        <ListItemText
-        primary={curIP}
-        secondary={curPort}
-        />
-      </List>
       <Button aria-describedby={id} variant="contained" onClick={handleClick}>
         {address.data}:{rpc.PORT}
       </Button>
