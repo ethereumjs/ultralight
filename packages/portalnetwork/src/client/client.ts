@@ -5,6 +5,7 @@ import {
   NodeId,
   ENR,
   createKeypairFromPeerId,
+  createPeerIdFromKeypair,
 } from '@chainsafe/discv5'
 import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import { EventEmitter } from 'events'
@@ -224,21 +225,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
     //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
     // }
-    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, _verified) => {
+    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
 
-      // if (!verified || !enr.getLocationMultiaddr('udp')) {
-      //   // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
-      //   // corresponding to the node's observed IP/Port so that we can send outbound messages to
-      //   // those nodes later on if needed.  This is currently used by uTP when responding to
-      //   // FINDCONTENT requests from nodes with invalid ENRs.
-      //   const peerId = await createPeerIdFromKeypair(enr.keypair)
-      //   this.unverifiedSessionCache.set(
-      //     enr.nodeId,
-      //     multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString())
-      //   )
-      //   this.logger(this.unverifiedSessionCache.get(enr.nodeId))
-      // }
+      if (!verified || !enr.getLocationMultiaddr('udp')) {
+        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
+        // corresponding to the node's observed IP/Port so that we can send outbound messages to
+        // those nodes later on if needed.  This is currently used by uTP when responding to
+        // FINDCONTENT requests from nodes with invalid ENRs.
+        const peerId = await createPeerIdFromKeypair(enr.keypair)
+        this.unverifiedSessionCache.set(
+          enr.nodeId,
+          multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString()),
+        )
+        this.logger(this.unverifiedSessionCache.get(enr.nodeId))
+      }
     })
 
     if (opts.metrics) {

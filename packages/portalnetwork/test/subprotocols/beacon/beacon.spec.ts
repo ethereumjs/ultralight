@@ -57,8 +57,8 @@ describe('portal network spec test vectors', () => {
 
   it('deserializes optimistic update key', () => {
     assert.equal(
-      optimisticUpdateKey.optimisticSlot,
-      0n,
+      optimisticUpdateKey.signatureSlot,
+      6718464n,
       'correctly deserialized optimistic update key',
     )
   })
@@ -81,8 +81,8 @@ describe('portal network spec test vectors', () => {
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalizedSlot,
-      0n,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).signatureSlot,
+      6718464n,
       'deserialized finality update key',
     )
   })
@@ -191,7 +191,7 @@ describe('API tests', async () => {
     const retrievedFinalityUpdate = await protocol.findContentLocally(
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ finalizedSlot: 6718463n }),
+        LightClientFinalityUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
 
@@ -226,7 +226,7 @@ describe('API tests', async () => {
     const retrievedOptimisticUpdate = await protocol.findContentLocally(
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
-        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
 

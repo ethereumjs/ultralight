@@ -17,7 +17,7 @@ export const shortId = (nodeId: string | ENR) => {
     return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
   const nodeType = nodeId.kvs.get('c')
   const nodeTypeString =
-    nodeType !== undefined && nodeType.length > 0 ? `${bytesToUtf8(nodeType)}:` : undefined
+    nodeType !== undefined && nodeType.length > 0 ? `${bytesToUtf8(nodeType)}:` : ''
   return (
     nodeTypeString +
     nodeId.nodeId.slice(0, 5) +
