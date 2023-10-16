@@ -18,7 +18,8 @@ The App utilizes **tRpc**, and typescript based RPC library, to communicate with
 - Start RPC-based portal client 
   - Default app configuration looks for http client on udp port 8545
   - for Ultralight:
-    - *see ultralight/packages/CLI/README.md*
+    - *from ultralight/packages/ultralight/cli/*
+      - run `npm run devnet --numNodes=1`
   - for Fluffy:
     - *see Fluffy README.md*
   - for Trin:
