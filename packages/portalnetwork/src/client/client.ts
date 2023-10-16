@@ -38,7 +38,7 @@ import { peerIdFromKeys } from '@libp2p/peer-id'
 import { hexToBytes } from '@ethereumjs/util'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
-  tickerTape: boolean
+  eventLog: boolean
   discv5: Discv5
   protocols: Map<ProtocolId, BaseProtocol>
   uTP: PortalNetworkUTP
@@ -162,7 +162,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   constructor(opts: PortalNetworkOpts) {
     // eslint-disable-next-line constructor-super
     super()
-    this.tickerTape = opts.tickerTape ?? false
+    this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
@@ -404,7 +404,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         Buffer.from(payload),
         hexToBytes(messageProtocol),
       )
-      this.tickerTape &&
+      this.eventLog &&
         this.emit('SendTalkReq', nodeAddr.nodeId, toHexString(res), toHexString(payload))
       return res
     } catch (err: any) {
@@ -421,7 +421,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     requestId: bigint,
     payload: Uint8Array,
   ) => {
-    this.tickerTape &&
+    this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), toHexString(payload))
     this.discv5.sendTalkResp(src, requestId, payload)
   }

@@ -34,7 +34,7 @@ export interface PortalNetworkOpts {
   dataDir?: string
   dbSize(): Promise<number>
   trustedBlockRoot?: string
-  tickerTape?: boolean
+  eventLog?: boolean
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, IPortalNetworkEvents>
