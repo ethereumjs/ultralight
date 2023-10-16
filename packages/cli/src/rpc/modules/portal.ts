@@ -170,7 +170,6 @@ export class portal {
     requestId: bigint,
     payload: Uint8Array,
   ) {
-    // ;(this._client as any).emit('SendTalkResp', nodeId, requestId, toHexString(payload))
     this._client.sendPortalNetworkResponse(
       {
         nodeId,
