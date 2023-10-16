@@ -5,6 +5,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemText, 
 import { ClientContext } from '../Contexts/ClientContext'
 import { trpc } from '../utils/trpc'
 import { set, z } from 'zod'
+import DropDown from '@mui/icons-material/ArrowDropDown'
 
 export default function PortMenu() {
   const rpc = React.useContext(RPCContext)
@@ -51,7 +52,7 @@ export default function PortMenu() {
   const id = open ? 'simple-popover' : undefined
   return (
     <div>
-      <Button aria-describedby={id} variant="contained" onClick={handleClick}>
+      <Button aria-describedby={id} variant="contained" onClick={handleClick} endIcon={<DropDown />}>
         {address.data}:{rpc.PORT}
       </Button>
       <Dialog id={id} open={open} onClose={handleClose}>
