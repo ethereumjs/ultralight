@@ -86,12 +86,6 @@ export default function ContentStore(props: any) {
   })
 
   async function retrieve() {
-    if (displayKey === '0xFakeKey') {
-      return {
-        header: { hash: '0x0', number: -1 },
-        proof: [Uint8Array.from([0]), Uint8Array.from([0]), Uint8Array.from([0])],
-      }
-    }
     const res = await historyRetrieve.mutateAsync({
       contentKey: displayKey!,
     })
