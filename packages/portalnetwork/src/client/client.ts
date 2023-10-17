@@ -149,6 +149,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
       trustedBlockRoot: opts.trustedBlockRoot,
+      eventLog: opts.eventLog,
     })
 
     return portal
