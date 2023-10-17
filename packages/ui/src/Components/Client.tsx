@@ -16,7 +16,9 @@ export default function Client(props: { name: string }) {
   if (state.CONNECTION === 'ws') {
     trpc.onTalkReq.useSubscription(undefined, {
       onData(data: any) {
-        console.log('Talk Request Received', data.topic)
+        console.groupCollapsed(`Talk Request Received: ${data.topic} ${data.nodeId.slice(0,6)}...`)
+        console.dir(data)
+        console.groupEnd()
         dispatch({
           type: 'LOG_RECEIVED',
           topic: data.topic,
@@ -25,12 +27,14 @@ export default function Client(props: { name: string }) {
         })
       },
       onStarted() {
-        console.log('onTalkReq subscription started')
+        console.info('WS: onTalkReq subscription started')
       },
     })
     trpc.onTalkResp.useSubscription(undefined, {
       onData(data: any) {
-        console.log('Talk Response Received', data.topic)
+        console.groupCollapsed(`Talk Response Received: ${data.topic} ${data.nodeId.slice(0,6)}...`)
+        console.dir(data)
+        console.groupEnd()
         dispatch({
           type: 'LOG_RECEIVED',
           topic: data.topic,
@@ -39,12 +43,14 @@ export default function Client(props: { name: string }) {
         })
       },
       onStarted() {
-        console.log('onTalkResp subscription started')
+        console.info('onTalkResp subscription started')
       },
     })
     trpc.onSendTalkReq.useSubscription(undefined, {
       onData(data: any) {
-        console.log('sent talk request', data.topic)
+        console.groupCollapsed('Talk Request Sent:' + data.topic + ' ' + data.nodeId.slice(0,6) + '...')
+        console.dir(data)
+        console.groupEnd()
         dispatch({
           type: 'LOG_SENT',
           topic: data.topic,
@@ -53,12 +59,15 @@ export default function Client(props: { name: string }) {
         })
       },
       onStarted() {
-        console.log('onSendTalkReq subscription started')
+        console.info('onSendTalkReq subscription started')
       },
     })
     trpc.onSendTalkResp.useSubscription(undefined, {
       onData(data: any) {
-        console.log('sent talk response', data.topic)
+        console.groupCollapsed('Talk Response Sent:' + data.topic + " " + data.nodeId.slice(0,6) + '...')
+        console.dir(data)
+        console.groupEnd()
+        
         dispatch({
           type: 'LOG_SENT',
           topic: data.topic,
@@ -67,7 +76,7 @@ export default function Client(props: { name: string }) {
         })
       },
       onStarted() {
-        console.log('onSendTalkResp subscription started')
+        console.info('onSendTalkResp subscription started')
       },
     })
     trpc.onContentAdded.useSubscription(undefined, {
@@ -89,15 +98,15 @@ export default function Client(props: { name: string }) {
         })
       },
       onStarted() {
-        console.log('onContentAdded subscription started')
+        console.info('onContentAdded subscription started')
       },
     })
     trpc.onNodeAdded.useSubscription(undefined, {
       onData({ nodeId, protocolId }) {
-        console.log('node added', nodeId, protocolId)
+        console.info('node added: ', nodeId)
       },
       onStarted() {
-        console.log('onNodeAdded subscription started')
+        console.info('onNodeAdded subscription started')
       },
     })
   }
