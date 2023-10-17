@@ -37,13 +37,14 @@ export const methodNames = [
 export type RPCMethod = (typeof methodNames)[number]
 
 export default function RPC() {
+  const { CONNECTION } = React.useContext(ClientContext)
   const rpcState = React.useContext(RPCContext)
   const rpcDispatch = React.useContext(RPCDispatchContext)
   const [meta, setMeta] = React.useState<any>({})
   const [method, setMethod] = React.useState<RPCMethod>('discv5_nodeInfo')
   const rpcMethods: Record<keyof TMethods, any> = {
-    pingBootNodes: trpc.pingBootNodes.useMutation(),
-    discv5_nodeInfo: trpc.browser_nodeInfo.useMutation(),
+    pingBootNodes: rpcState.REQUEST.pingBootNodes.useMutation(),
+    discv5_nodeInfo: rpcState.REQUEST.discv5_nodeInfo.useMutation(),
     portal_historyPing: rpcState.REQUEST.portal_historyPing.useMutation(),
     portal_historyRoutingTableInfo: rpcState.REQUEST.portal_historyRoutingTableInfo.useMutation(),
     portal_historyFindNodes: rpcState.REQUEST.portal_historyFindNodes.useMutation(),
@@ -65,7 +66,7 @@ export default function RPC() {
       type: 'CURRENT_RESPONSE',
       response: '',
     })
-    const req = request()
+    const req = await request()
     console.log(`method: ${method}`)
     console.log(`params: ${JSON.stringify(req.params)}`)
     rpcDispatch({
@@ -75,31 +76,90 @@ export default function RPC() {
         params: req.params,
       }),
     })
-    const res = await req.response
+    const res = req.response
     console.log(`response: ${JSON.stringify(res)}`)
     rpcDispatch({
       type: 'CURRENT_RESPONSE',
-      response: typeof res === 'string' ? res : JSON.stringify(res),
+      response: res,
     })
   }
 
-  function request() {
-    console.log(`Preparing request for ${method}`)
+  function methodArgs() {
+    let params = {}
+    switch (method) {
+      case 'discv5_nodeInfo':
+        params = {}
+        break
+      case 'portal_historyPing':
+        params = {
+          enr: rpcState.ENR,
+        }
+        break
+      case 'portal_historyRoutingTableInfo':
+        params = {}
+        break
+      case 'portal_historyFindNodes':
+        params = {
+          nodeId: rpcState.NODEID,
+          distances: rpcState.DISTANCES,
+        }
+        break
+      case 'portal_historyFindContent':
+        params = {
+          nodeId: rpcState.NODEID,
+          contentKey: rpcState.CONTENT_KEY,
+        }
+        break
+      case 'portal_historyRecursiveFindContent':
+        params = {
+          contentKey: rpcState.CONTENT_KEY,
+        }
+        break
+      case 'portal_historyOffer':
+        params = {
+          nodeId: rpcState.NODEID,
+          contentKey: rpcState.CONTENT_KEY,
+          content: rpcState.CONTENT,
+        }
+        break
+      case 'portal_historySendOffer':
+        params = {
+          nodeId: rpcState.NODEID,
+          contentKeys: rpcState.CONTENT_KEY_ARRAY,
+        }
+        break
+      case 'portal_historyGossip':
+        params = {
+          contentKey: rpcState.CONTENT_KEY,
+          content: rpcState.CONTENT,
+        }
+        break
+      default:
+        params = {}
+        break
+    }
+    if (CONNECTION === 'http') {
+      params = { ...params, port: rpcState.PORT, ip: rpcState.IP }
+    }
+    return params
+  }
+
+  async function request() {
+    console.log(`Preparing request for ${method} (${CONNECTION})`)
+    const params = methodArgs()
+    console.log(`params: ${JSON.stringify(params)}`)
 
     switch (method) {
       case 'discv5_nodeInfo': {
-        const res = rpcMethods.discv5_nodeInfo.mutateAsync({})
+        const res = await rpcMethods.discv5_nodeInfo.mutateAsync(params)
         return {
           type: 'discv5_nodeInfo',
-          params: {},
+          params,
           response: res,
         }
       }
       case 'portal_historyPing': {
-        const params = {
-          enr: rpcState.ENR,
-        }
-        const res = rpcMethods.portal_historyPing.mutateAsync(params)
+        const res = await rpcMethods.portal_historyPing.mutateAsync(params)
         return {
           type: 'portal_historyPing',
           params,
@@ -107,19 +167,15 @@ export default function RPC() {
         }
       }
       case 'portal_historyRoutingTableInfo': {
-        const res = rpcMethods.portal_historyRoutingTableInfo.mutateAsync()
+        const res = await rpcMethods.portal_historyRoutingTableInfo.mutateAsync()
         return {
           type: 'portal_historyRoutingTableInfo',
-          params: [],
+          params,
           response: res,
         }
       }
       case 'portal_historyFindNodes': {
-        const params = {
-          nodeId: rpcState.NODEID,
-          distances: rpcState.DISTANCES,
-        }
-        const res = rpcMethods.portal_historyFindNodes.mutateAsync(params)
+        const res = await rpcMethods.portal_historyFindNodes.mutateAsync(params)
         return {
           type: 'portal_historyFindNodes',
           params,
@@ -127,11 +183,7 @@ export default function RPC() {
         }
       }
       case 'portal_historyFindContent': {
-        const params = {
-          nodeId: rpcState.NODEID,
-          contentKey: rpcState.CONTENT_KEY,
-        }
-        const res = rpcMethods.portal_historyFindContent.mutateAsync(params)
+        const res = await rpcMethods.portal_historyFindContent.mutateAsync(params)
         return {
           type: 'portal_historyFindContent',
           params,
@@ -139,10 +191,7 @@ export default function RPC() {
         }
       }
       case 'portal_historyRecursiveFindContent': {
-        const params = {
-          contentKey: rpcState.CONTENT_KEY,
-        }
-        const res = rpcMethods.portal_historyRecursiveFindContent.mutateAsync(params)
+        const res = await rpcMethods.portal_historyRecursiveFindContent.mutateAsync(params)
         return {
           type: 'portal_historyRecursiveFindContent',
           params,
@@ -150,12 +199,7 @@ export default function RPC() {
         }
       }
       case 'portal_historyOffer': {
-        const params = {
-          nodeId: rpcState.NODEID,
-          contentKey: rpcState.CONTENT_KEY,
-          content: rpcState.CONTENT,
-        }
-        const res = rpcMethods.portal_historyOffer.mutateAsync(params)
+        const res = await rpcMethods.portal_historyOffer.mutateAsync(params)
         return {
           type: 'portal_historyOffer',
           params,
@@ -163,11 +207,7 @@ export default function RPC() {
         }
       }
       case 'portal_historySendOffer': {
-        const params = {
-          nodeId: rpcState.NODEID,
-          contentKeys: rpcState.CONTENT_KEY_ARRAY,
-        }
-        const res = rpcMethods.portal_historySendOffer.mutateAsync(params)
+        const res = await rpcMethods.portal_historySendOffer.mutateAsync(params)
         return {
           type: 'portal_historySendOffer',
           params,
@@ -175,11 +215,7 @@ export default function RPC() {
         }
       }
       case 'portal_historyGossip': {
-        const params = {
-          contentKey: rpcState.CONTENT_KEY,
-          content: rpcState.CONTENT,
-        }
-        const res = rpcMethods.portal_historyGossip.mutateAsync(params)
+        const res = await rpcMethods.portal_historyGossip.mutateAsync(params)
         return {
           type: 'portal_historyGossip',
           params,
@@ -190,7 +226,7 @@ export default function RPC() {
         return {
           type: 'UNKNOWN',
           params: [],
-          response: async () => {},
+          response: {},
         }
     }
   }
@@ -241,9 +277,7 @@ export default function RPC() {
               <RPCInput method={method as RPCMethod} />
             </ListItem>
             <ListItem>
-              <Paper>
-                {/* {meta?.description} */}
-              </Paper>
+              <Paper>{/* {meta?.description} */}</Paper>
             </ListItem>
             <ListItem>
               <RPCParams method={method as RPCMethod} />
@@ -257,7 +291,15 @@ export default function RPC() {
           </Paper>
           <Paper sx={{ border: 'solid black 2px' }}>
             <ListSubheader>Response:</ListSubheader>
-            {rpcState.CURRENT_LOG.response}
+            {rpcState.CURRENT_LOG.response === undefined ? (
+              <ListItemText primary={'No response'} />
+            ) : typeof rpcState.CURRENT_LOG.response === 'string' ? (
+              <ListItemText primary={rpcState.CURRENT_LOG.response} />
+            ) : (
+              Object.entries(rpcState.CURRENT_LOG.response).map(([key, value]) => {
+                return <ListItemText key={key} primary={key} secondary={value} />
+              })
+            )}
           </Paper>
         </Container>
       </Stack>
