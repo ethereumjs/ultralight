@@ -639,7 +639,7 @@ export abstract class BaseProtocol extends EventEmitter {
     }
     if (flagged.length > 0) {
       this.logger.extend('livenessCheck')(`Flagged ${flagged.length} peers from routing table`)
-    } else {
+    } else if (peers.length > 0) {
       this.logger.extend('livenessCheck')(`${peers.length} peers passed liveness check`)
     }
     this.routingTable.clearIgnored()
