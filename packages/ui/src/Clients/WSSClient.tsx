@@ -29,7 +29,7 @@ export function WSSClient() {
   const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
 
   const pingBootNodes = async () => {
-    const bootnodeResponses = await boot.mutateAsync()
+    const bootnodeResponses = await boot.mutateAsync({})
     dispatch({
       type: 'BOOTNODES',
       bootnodes: bootnodeResponses,
@@ -46,7 +46,7 @@ export function WSSClient() {
   }
   const node = trpc.browser_nodeInfo.useMutation()
   const getSelf = async () => {
-    const nodeInfo = await node.mutateAsync()
+    const nodeInfo = await node.mutateAsync({})
     dispatch({
       type: 'NODE_INFO',
       ...nodeInfo,

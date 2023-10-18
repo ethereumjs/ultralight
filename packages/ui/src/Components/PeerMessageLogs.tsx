@@ -110,7 +110,9 @@ export default function PeerMessageLogs(props: { selected: string }) {
                       return (
                         <TableRow key={[idx, _idx].toString()}>
                           <TableCell>{sentLogs[msgType][_idx] ?? ''}</TableCell>
-                          <TableCell>{receivedLogs[msgType][_idx] ?? ''}</TableCell>
+                          <TableCell>
+                            {(receivedLogs[msgType] && receivedLogs[msgType][_idx]) ?? ''}
+                          </TableCell>
                         </TableRow>
                       )
                     })}

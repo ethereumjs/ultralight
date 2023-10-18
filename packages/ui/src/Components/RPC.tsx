@@ -322,7 +322,7 @@ export default function RPC() {
                   {open ? <ExpandLess /> : <ExpandMore />}
                 </ListItemButton>
                 <Collapse in={open} timeout="auto" unmountOnExit>
-                  <List component="div" disablePadding>
+                  <List disablePadding>
                     {Object.entries(JSON.parse(rpcState.CURRENT_LOG.response.asJSON as string)).map(
                       ([jsonKey, jsonVal]) => {
                         return (

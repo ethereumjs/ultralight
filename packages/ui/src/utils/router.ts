@@ -276,6 +276,7 @@ const ping = publicProcedure
     return pong
   })
 const pingBootNodes = publicProcedure
+  .input(z.any())
   .output(
     z.record(
       z.string(),
@@ -344,8 +345,8 @@ const portal_historyLocalContent = publicProcedure
 const pingBootNodeHTTP = publicProcedure
   .input(
     z.object({
-      port: z.number(),
-      ip: z.string(),
+      port: z.union([z.undefined(), z.number()]),
+      ip: z.union([z.undefined(), z.string()]),
     }),
   )
   .output(

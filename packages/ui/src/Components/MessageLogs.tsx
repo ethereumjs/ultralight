@@ -14,7 +14,7 @@ import {
   Stack,
   Container,
 } from '@mui/material'
-import React from 'react'
+import React, { Fragment } from 'react'
 import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
 import { TabPanel } from './FunctionTabs'
 import PeerMessageLogs from './PeerMessageLogs'
@@ -166,7 +166,6 @@ export default function MessageLogs() {
     setCurrentReceivedLogs(state.RECEIVED_LOGS)
   }, [state.RECEIVED_LOGS, state.SENT_LOGS])
 
-
   const handleSelect = (peer: string) => {
     setSelected(peer)
   }
@@ -177,53 +176,55 @@ export default function MessageLogs() {
         <TableContainer sx={{ maxHeight: 400 }}>
           <Table padding="none" stickyHeader aria-label="message logs">
             <TableHead>
-              <TableCell align="center" colSpan={2}>
-                Peer
-              </TableCell>
-              <TableCell align="center">
-                <ListItemText primary="Ping" />
-              </TableCell>
-              <TableCell style={msgCellStyle('pong')} align="center">
-                Pong
-              </TableCell>
-              <TableCell style={msgCellStyle('findNodes')} align="center">
-                FindNodes
-              </TableCell>
-              <TableCell style={msgCellStyle('nodes')} align="center">
-                Nodes
-              </TableCell>
-              <TableCell align="center">
-                <ListItemText primary="Find Content" />
-              </TableCell>
-              <TableCell style={msgCellStyle('content')} align="center">
-                Content
-              </TableCell>
-              <TableCell style={msgCellStyle('offer')} align="center">
-                Offer
-              </TableCell>
-              <TableCell style={msgCellStyle('accept')} align="center">
-                Accept
-              </TableCell>
-              <TableCell style={msgCellStyle('accept')} align="center">
-                uTP
-              </TableCell>
+              <TableRow>
+                <TableCell align="center" colSpan={2}>
+                  Peer
+                </TableCell>
+                <TableCell align="center">
+                  <ListItemText primary="Ping" />
+                </TableCell>
+                <TableCell style={msgCellStyle('pong')} align="center">
+                  Pong
+                </TableCell>
+                <TableCell style={msgCellStyle('findNodes')} align="center">
+                  FindNodes
+                </TableCell>
+                <TableCell style={msgCellStyle('nodes')} align="center">
+                  Nodes
+                </TableCell>
+                <TableCell align="center">
+                  <ListItemText primary="Find Content" />
+                </TableCell>
+                <TableCell style={msgCellStyle('content')} align="center">
+                  Content
+                </TableCell>
+                <TableCell style={msgCellStyle('offer')} align="center">
+                  Offer
+                </TableCell>
+                <TableCell style={msgCellStyle('accept')} align="center">
+                  Accept
+                </TableCell>
+                <TableCell style={msgCellStyle('accept')} align="center">
+                  uTP
+                </TableCell>
+              </TableRow>
             </TableHead>
             <TableBody>
               {Object.entries(state.RECEIVED_LOGS).map(([peer, logs]: any) => {
                 const sentLogs = (state.SENT_LOGS as any)[peer] ?? {}
                 return (
-                  <div key={peer}>
+                  <Fragment  key={peer}>
                     <TableRow>
                       <TableCell
-                      onMouseEnter={() => setHover(peer)}
-                      onMouseLeave={() => setHover('')}
+                        onMouseEnter={() => setHover(peer)}
+                        onMouseLeave={() => setHover('')}
                         onClick={() => handleSelect(peer)}
                         rowSpan={2}
                         style={peerCellStyle(peer)}
                         colSpan={1}
                       >
                         <Tooltip title={peer}>
-                          <ListItemText primary={peer.slice(0,16) + '...'} />
+                          <ListItemText primary={peer.slice(0, 16) + '...'} />
                         </Tooltip>
                       </TableCell>
                       <TableCell style={{ color: 'blue' }} align="center">
@@ -289,7 +290,7 @@ export default function MessageLogs() {
                         {logs['UTP'] ? logs['UTP'].length : 0}
                       </TableCell>
                     </TableRow>
-                  </div>
+                  </Fragment>
                 )
               })}
             </TableBody>
