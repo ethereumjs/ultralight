@@ -3,6 +3,7 @@ import { createWSClient, wsLink } from '@trpc/client'
 import { useState } from 'react'
 import { trpc } from './utils/trpc'
 import ClientTabs from './Components/Tabs'
+import { AppRouter } from './utils/router'
 
 export function App() {
   const [wsClient] = useState(
@@ -26,7 +27,7 @@ export function App() {
   const [trpcClient] = useState(
     trpc.createClient({
       links: [
-        wsLink({
+        wsLink<AppRouter>({
           client: wsClient,
         }),
       ],

@@ -144,7 +144,9 @@ export const subscriptions = async (
     .subscription(() => {
       return observable((emit) => {
         const contentAdded = (key: string, contentType: number, content: string) => {
-          console.log('onContentAdded', { key, contentType, content })
+          console.groupCollapsed('onContentAdded')
+          console.dir({ key, contentType, content })
+          console.groupEnd()
           emit.next({ key, contentType, content })
         }
         history.on('ContentAdded', contentAdded)
@@ -194,6 +196,7 @@ export const subscriptions = async (
     .subscription(() => {
       return observable((emit) => {
         const sendReq = (nodeId: string, _res: string, payload: string) => {
+          console.log('sendTalkRequest')
           const deserialized = PortalWireMessageType.deserialize(fromHexString(payload))
           const messageType = deserialized.selector
           emit.next({
@@ -226,7 +229,9 @@ export const subscriptions = async (
               message: deserialized.value.toString(),
             })
           } catch (err: any) {
-            log.extend('SendTalkResp ERROR')({ args, error: err.message })
+            console.log('SendTalkResp ERROR')
+            console.dir({ args, error: err.message })
+            console.groupEnd()
           }
         }
         client.on('SendTalkResp', sendResp)

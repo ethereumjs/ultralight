@@ -142,11 +142,20 @@ const onUtp = publicProcedure.subscription(({ input }) => {
   })
 })
 
-const browser_nodeInfo = publicProcedure.mutation(() => {
+const browser_nodeInfo = publicProcedure.input(z.any()).mutation(() => {
   return {
     enr: '',
     nodeId: '',
     client: '',
+    multiAddr: '',
+  }
+})
+
+const discv5_nodeInfo = publicProcedure.input(z.any()).mutation(async ({ input }) => {
+  return {
+    client: 'ultralight',
+    enr: '',
+    nodeId: '',
     multiAddr: '',
   }
 })
@@ -181,8 +190,19 @@ const browser_historyFindContent = publicProcedure
       contentKey: z.string(),
     }),
   )
+  .output(
+    z.union([
+      z.undefined(),
+      z.object({
+        content: z.array(z.string()),
+      }),
+      z.object({
+        enrs: z.array(z.string()),
+      }),
+    ]),
+  )
   .mutation(async () => {
-    return JSON.stringify({ key: 'value' })
+    return undefined
   })
 const browser_historyRecursiveFindContent = publicProcedure
   .input(
@@ -244,15 +264,6 @@ const portal_historyRoutingTableInfo = publicProcedure
     }
   })
 
-const discv5_nodeInfo = publicProcedure.input(z.any()).mutation(async ({ input }) => {
-  return {
-    client: 'ultralight',
-    enr: '',
-    nodeId: '',
-    multiAddr: '',
-  }
-})
-
 const ping = publicProcedure
   .input(
     z.object({
@@ -288,9 +299,9 @@ const portal_historyPing = publicProcedure
       enr: z.string(),
     }),
   )
+  .output(z.any())
   .mutation(async () => {
-    const x = Math.random() >= 0.5
-    return [{ dataRadius: '', enrSeq: 1 }]
+    return { dataRadius: '', enrSeq: 1 }
   })
 
 const browser_historyStore = publicProcedure
@@ -303,14 +314,31 @@ const browser_historyStore = publicProcedure
   .mutation(async () => {
     return true
   })
-const browser_historyLocalContent = publicProcedure
+const portal_historyStore = publicProcedure
   .input(
     z.object({
+      port: z.number(),
+      ip: z.union([z.undefined(), z.string()]),
       contentKey: z.string(),
+      content: z.string(),
     }),
   )
   .mutation(async () => {
-    return JSON.stringify({ key: 'value' })
+    return true
+  })
+const browser_historyLocalContent = publicProcedure.input(z.any()).mutation(async () => {
+  return ''
+})
+const portal_historyLocalContent = publicProcedure
+  .input(
+    z.object({
+      contentKey: z.string(),
+      port: z.number(),
+      ip: z.union([z.undefined(), z.string()]),
+    }),
+  )
+  .mutation(async () => {
+    return ''
   })
 
 const pingBootNodeHTTP = publicProcedure
@@ -553,6 +581,8 @@ export const appRouter = router({
   portal_historyOffer,
   portal_historySendOffer,
   portal_historyGossip,
+  portal_historyStore,
+  portal_historyLocalContent,
   portal_historyGetEnr,
 })
 

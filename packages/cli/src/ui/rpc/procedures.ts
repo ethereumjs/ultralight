@@ -1,4 +1,4 @@
-import { ENR, toHexString } from 'portalnetwork'
+import { ENR, fromHexString, toHexString } from 'portalnetwork'
 import { PublicProcudure } from '../subscriptions.js'
 import { z } from 'zod'
 import jayson from 'jayson/promise/index.js'
@@ -26,9 +26,10 @@ import {
   z_ui,
 } from './trpcTypes.js'
 import { bootnodes } from '../procedures.js'
+import { toJSON } from '../../util.js'
 
 export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string) => {
-  const httpClient = (port: number, ip: string = ipAddr) => {
+  const httpClient = (port: number = 8545, ip: string = ipAddr) => {
     return jayson.Client.http({
       host: ip,
       port: port,
@@ -110,7 +111,6 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
         })
         .flat()
 
-      console.log('BUCKETS', buckets)
       return buckets
     })
 
@@ -125,8 +125,18 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
       }),
     )
     .mutation(async ({ input }) => {
+      console.log('discv5_nodeInfo request:', input)
       const client = httpClient(input.port, input.ip)
       const info = await client.request('discv5_nodeInfo', [])
+      console.log('discv5_nodeInfo result:', info.result)
+      if (!info.result) {
+        return {
+          client: '',
+          enr: '',
+          nodeId: '',
+          multiAddr: '',
+        }
+      }
       const enr = ENR.decodeTxt(info.result.enr)
       return {
         client: enr.kvs.get('c')?.toString(),
@@ -141,15 +151,21 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
       description: 'Send Ping to ENR',
     })
     .input(z_ui(z_historyPingParams))
-    .output(z_historyPingResult)
+    .output(z.any())
     .mutation(async ({ input }) => {
       const client = httpClient(input.port, input.ip)
-      const p = await client.request('portal_historyPing', [input.enr])
-      const _pong = p.result
-      const pong = _pong && {
-        dataRadius: toHexString(_pong.dataRadius),
-        enrSeq: _pong.enrSeq,
-      }
+      const res = await client.request('portal_historyPing', [input.enr])
+      const _pong = res.result
+      const pong = _pong
+        ? {
+            enrSeq: Number(_pong.enrSeq),
+            dataRadius: toHexString(_pong.dataRadius),
+          }
+        : {
+            enrSeq: 0,
+            dataRadius: '',
+          }
+      console.log('portal_historyPing', { input, res, pong })
       return pong
     })
 
@@ -205,6 +221,7 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
         input.contentKey,
         input.content,
       ])
+      console.log('portal_historyStore', { input, res })
       return res.result
     })
 
@@ -215,10 +232,15 @@ export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string)
     .input(z_ui(z_historyLocalContentParams))
     .output(z_historyLocalContentResult)
     .mutation(async ({ input }) => {
+      console.log('portal_historyLocalContent')
       const res = await httpClient(input.port, input.ip).request('portal_historyLocalContent', [
         input.contentKey,
       ])
-      return res.result
+      try {
+        return toJSON(fromHexString(input.contentKey), fromHexString(res.result))
+      } catch {
+        return res.result
+      }
     })
 
   const portal_historyFindNodes = publicProcedure

@@ -6,6 +6,7 @@ export const ClientDispatchContext = createContext<any>(null)
 export const mutations = {
   ws: {
     pingBootNodes: trpc.pingBootNodes,
+    discv5_nodeInfo: trpc.browser_nodeInfo,
     portal_historyPing: trpc.ping,
     portal_historyRoutingTableInfo: trpc.browser_localRoutingTable,
     portal_historyFindNodes: trpc.browser_historyFindNodes,

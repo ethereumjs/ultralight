@@ -1,22 +1,12 @@
 import {
-  List,
-  ListItem,
   FormControl,
   FormHelperText,
-  TextareaAutosize,
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
-  ListItemText,
-  Avatar,
-  IconButton,
-  ListItemAvatar,
   Alert,
   Snackbar,
   TextField,
   Autocomplete,
   Stack,
-  ListSubheader,
+  ListItemText,
 } from '@mui/material'
 import React, { ChangeEvent, useEffect } from 'react'
 import z from 'zod'
@@ -24,12 +14,15 @@ import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
 import { decodeTxt } from '../utils/enr'
 import { ClientContext } from '../Contexts/ClientContext'
 import { RPCMethod } from './RPC'
-import SuperJSON from 'superjson'
 
+const nodeIdParser = z
+  .string()
+  .transform((val) => (val.startsWith('0x') ? val : '0x' + val))
+  .refine((val) => val.length === 66)
 const keyParser = z
   .string()
   .transform((val) => (val.startsWith('0x') ? val : '0x' + val))
-  .refine((val) => BigInt(val).toString(16) === val.slice(2))
+  .refine((val) => val.length === 68)
 
 export default function RPCInput(props: { method: RPCMethod }) {
   switch (props.method) {
@@ -38,7 +31,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyFindNodes': {
       return (
-        <Stack direction={'column'}>
+        <Stack width={'100%'}  direction={'column'}>
           <InputNodeId />
           <InputDistances />
         </Stack>
@@ -46,7 +39,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyFindContent': {
       return (
-        <Stack direction={'column'}>
+        <Stack width={'100%'}  direction={'column'}>
           <InputNodeId />
           <InputContentKey />
         </Stack>
@@ -54,14 +47,14 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyRecursiveFindContent': {
       return (
-        <Stack direction={'column'}>
+        <Stack width={'100%'}  direction={'column'}>
           <InputContentKey />
         </Stack>
       )
     }
     case 'portal_historyOffer': {
       return (
-        <Stack direction={'column'}>
+        <Stack width={'100%'}  direction={'column'}>
           <InputNodeId />
           <InputContentKey />
           <InputContent />
@@ -70,7 +63,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historySendOffer': {
       return (
-        <Stack direction={'column'}>
+        <Stack width={'100%'} direction={'column'}>
           <InputNodeId />
           <InputContentKeyArray />
         </Stack>
@@ -78,7 +71,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyGossip': {
       return (
-        <Stack direction={'column'}>
+        <Stack width={'100%'}  direction={'column'}>
           <InputNodeId />
           <InputContentKey />
           <InputContent />
@@ -170,6 +163,9 @@ export function SelectContentKey() {
       clearOnBlur
       handleHomeEndKeys
       id="select-key"
+      onInputChange={(_, newInputValue) => {
+        setValue(newInputValue)
+      }}
       onChange={(event, newValue) => {
         setValue(newValue)
       }}
@@ -204,10 +200,9 @@ export function SelectContentKeyArray() {
       }}
       options={Object.keys(CONTENT_STORE)}
       getOptionLabel={(option) => option}
-      defaultValue={[]}
       filterSelectedOptions
       renderInput={(params) => (
-        <TextField {...params} label="ContentKeys" placeholder="ContentKey" />
+        <TextField {...params} label="ContentKeys" placeholder="Content_Key" />
       )}
     />
   )
@@ -215,8 +210,11 @@ export function SelectContentKeyArray() {
 
 export function InputContentKey() {
   const dispatch = React.useContext(RPCDispatchContext)
-  const [cur, setCur] = React.useState('')
+  const [cur, setCur] = React.useState(
+    '',
+  )
   const [valid, setValid] = React.useState<boolean | undefined>(undefined)
+  const [keyErr, setKeyErr] = React.useState<string | undefined>(undefined)
   const setContentKey = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const contentKey = e.target.value
     if (contentKey.length === 0) {
@@ -230,33 +228,55 @@ export function InputContentKey() {
         type: 'CONTENT_KEY',
         contentKey: contentKey,
       })
-    } catch {
+      setKeyErr(undefined)
+    } catch (err: any) {
+      setKeyErr(err.message)
       setValid(false)
     }
   }
   return (
     <FormControl fullWidth>
+      {keyErr && <ListItemText>{keyErr}</ListItemText>}
       <FormHelperText>ContentKey</FormHelperText>
-      <TextField error={valid === false} placeholder="contentKey" value={cur} onChange={setContentKey} />
+      <TextField
+        error={valid === false}
+        placeholder="contentKey"
+        value={cur}
+        onChange={setContentKey}
+      />
     </FormControl>
   )
 }
 
 export function InputContent() {
+  const [cur, setCur] = React.useState('')
   const { CONTENT } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
+  
+  function setContent() {
+    dispatch({
+      type: 'CONTENT',
+      content: cur,
+    })
+  }
+
+  useEffect(() => {
+    if (cur.length === 0) {
+      return
+    }
+    setContent()
+  }, [cur])
+  
   return (
     <FormControl fullWidth>
       <FormHelperText>Content</FormHelperText>
       <TextField
+      maxRows={10}
         multiline
         placeholder="content"
-        value={CONTENT}
+        value={cur}
         onChange={(e) =>
-          dispatch({
-            type: 'CONTENT',
-            content: e.target.value,
-          })
+          setCur(e.target.value)
         }
       />
     </FormControl>
@@ -265,9 +285,13 @@ export function InputContent() {
 
 export function InputEnr() {
   const [cur, setCur] = React.useState('')
-  const [valid, setValid] = React.useState<boolean | undefined>()
+  const [valid, setValid] = React.useState<boolean | undefined>(false)
   const { ROUTING_TABLE } = React.useContext(ClientContext)
   const dispatch = React.useContext(RPCDispatchContext)
+
+  useEffect(() => {
+    setEnr(cur)
+  }, [cur])
 
   function setEnr(e: string) {
     setCur(e)
@@ -282,7 +306,8 @@ export function InputEnr() {
         enr: cur,
       })
       try {
-        decodeTxt(cur)
+        const decoded = decodeTxt(cur)
+        console.log('DECODED', decoded)
         setValid(true)
       } catch {
         setValid(false)
@@ -293,22 +318,23 @@ export function InputEnr() {
   }
 
   return (
-    <Stack direction={'column'}>
+    <Stack width={'100%'}  direction={'column'}>
       <FormControl fullWidth>
         <Autocomplete
           onInputChange={(_, newInputValue) => {
-            setEnr(newInputValue)
+            setCur(newInputValue)
           }}
           onChange={(_, newValue) => {
             if (!newValue) return
-            setEnr(newValue)
+            setCur(newValue)
           }}
           freeSolo
+          fullWidth
           selectOnFocus
           clearOnBlur
           handleHomeEndKeys
           id="select-enr"
-          options={Object.values(ROUTING_TABLE).map(([, , enr]) => enr)}
+          options={Object.values(ROUTING_TABLE).map(([, enr]) => enr)}
           getOptionLabel={(option) => option}
           filterSelectedOptions
           renderInput={(params) => <TextField {...params} label="Node ENR" />}
@@ -331,12 +357,12 @@ export function InputNodeId() {
       return
     }
     try {
-      setCur(keyParser.parse(nodeId))
+      setCur(nodeIdParser.parse(nodeId))
     } catch {
       setValid(false)
       setError('NodeId must be valid hex string')
-      setCur('')
-      setNodeId('')
+      // setCur('')
+      // setNodeId('')
     }
   }
 
@@ -358,9 +384,8 @@ export function InputNodeId() {
   }, [cur])
 
   return (
-    <FormControl fullWidth>
-      <FormHelperText>{cur}</FormHelperText>
       <Autocomplete
+        fullWidth
         freeSolo
         selectOnFocus
         clearOnBlur
@@ -368,10 +393,11 @@ export function InputNodeId() {
         id="select-nodeId"
         options={Object.values(ROUTING_TABLE).map(([, , nodeId]) => nodeId)}
         getOptionLabel={(option) => option}
-        defaultValue={''}
+        placeholder={'Node ID'}
         onChange={(_, newValue) => {
           if (!newValue) return
-          setNodeId(newValue)
+          onChangeInput(newValue)
+          // setNodeId(newValue)
         }}
         onInputChange={(_, newInputValue) => {
           onChangeInput(newInputValue)
@@ -381,8 +407,6 @@ export function InputNodeId() {
           <TextField error={valid === false} onError={() => {}} {...params} label="NodeId" />
         )}
       />
-      {valid === false && <FormHelperText error>{error}</FormHelperText>}
-    </FormControl>
   )
 }
 
@@ -397,7 +421,7 @@ export function InputDistances() {
   }
 
   return (
-    <Stack direction={'column'}>
+    <Stack width={'100%'}  direction={'column'}>
       <FormControl fullWidth>
         <Autocomplete
           multiple
@@ -420,8 +444,9 @@ export function InputDistances() {
 
 export function InputContentKeyArray() {
   const { CONTENT_STORE } = React.useContext(ClientContext)
+  const { CONTENT_KEY_ARRAY } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
-  const [arrayStr, setArrayStr] = React.useState('')
+  const [newKey, setNewKey] = React.useState<string>('')
   const [open, setOpen] = React.useState(false)
   const [errorMsg, setErrorMsg] = React.useState('Invalid ContentKey')
   const [contentKeyArray, setContentKeyArray] = React.useState<string[]>([])
@@ -431,32 +456,35 @@ export function InputContentKeyArray() {
     setOpen(false)
   }
 
-  const setInputArray = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    let arrayStr = e.target.value
-    if (!arrayStr.startsWith('[')) {
-      arrayStr = '[' + arrayStr
+  const handleNewVlaue = (key: string | null) => {
+    if (!key || CONTENT_KEY_ARRAY.includes(key)) {
+      return
     }
-    if (!arrayStr.endsWith(']')) {
-      arrayStr = arrayStr + ']'
-    }
-    const array = JSON.parse(arrayStr)
-    setArrayStr(JSON.stringify(array))
+    setInputArray([...contentKeyArray, key])
+  }
+
+  const setInputArray = (array: string[]) => {
+    // setArrayStr(JSON.stringify(array))
     try {
       keyArrParser.parse(array)
       setContentKeyArray(array)
       inputKeyArray()
-    } catch {
+    } catch (err) {
+      console.log('contentkeyparser error', err)
       //
     }
   }
 
   const inputKeyArray = () => {
     try {
-      const keyArr = keyArrParser.parse(contentKeyArray)
+      // const keyArr = keyArrParser.parse(contentKeyArray)
+      console.log('content_key_array', contentKeyArray)
+      console.log('CONTENT_KEY_ARRAY pre', CONTENT_KEY_ARRAY)
       dispatch({
         type: 'CONTENT_KEY_ARRAY',
-        contentKeyArray: keyArr,
+        contentKeyArray: contentKeyArray,
       })
+      console.log('CONTENT_KEY_ARRAY post', CONTENT_KEY_ARRAY)
     } catch (err: any) {
       setErrorMsg(`Invalid ContentKey Array: err.message`)
       setOpen(true)
@@ -465,28 +493,29 @@ export function InputContentKeyArray() {
 
   return (
     <FormControl fullWidth>
-      <FormHelperText>ContentKey Array</FormHelperText>
-      <TextField
-        multiline
-        placeholder={`["0x00abcd", "0x01abcd"]`}
-        value={arrayStr}
-        onChange={setInputArray}
-      />
       <FormHelperText>Add ContentKey</FormHelperText>
       <Autocomplete
-        multiple
+        // multiple
         onChange={(_, newValue) => {
-          setArrayStr(JSON.stringify(newValue))
-          setContentKeyArray(newValue)
+          // setArrayStr([...contentKeyArray, newValue])
+          handleNewVlaue(newValue)
           inputKeyArray()
+        }}
+        onInputChange={(_, newInputValue) => {
+          handleNewVlaue(newInputValue)
         }}
         selectOnFocus
         clearOnBlur
         handleHomeEndKeys
         id="select-multiple-keys"
-        options={Object.keys(CONTENT_STORE)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            inputKeyArray()
+          }
+        }}
+        options={[newKey, ...Object.keys(CONTENT_STORE)]}
         getOptionLabel={(option) => option}
-        defaultValue={[]}
+        // defaultValue={'ContentKey'}
         filterSelectedOptions
         renderInput={(params) => (
           <TextField {...params} label="ContentKey" placeholder="ContentKey" />

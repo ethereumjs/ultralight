@@ -1,10 +1,14 @@
 import {
+  Box,
   Button,
+  Collapse,
   Container,
   FormControl,
   InputLabel,
   List,
   ListItem,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
   ListSubheader,
   MenuItem,
@@ -19,6 +23,8 @@ import RPCParams from './RPCParams'
 import { RPCContext, RPCDispatchContext, TMethods, WSMethods } from '../Contexts/RPCContext'
 import { ClientContext } from '../Contexts/ClientContext'
 import { trpc } from '../utils/trpc'
+import ExpandLess from '@mui/icons-material/ExpandLess'
+import ExpandMore from '@mui/icons-material/ExpandMore'
 
 export const methodNames = [
   'discv5_nodeInfo',
@@ -37,6 +43,11 @@ export const methodNames = [
 export type RPCMethod = (typeof methodNames)[number]
 
 export default function RPC() {
+  const [open, setOpen] = React.useState(true)
+  const handleOpen = () => {
+    setOpen(!open)
+  }
+
   const { CONNECTION } = React.useContext(ClientContext)
   const rpcState = React.useContext(RPCContext)
   const rpcDispatch = React.useContext(RPCDispatchContext)
@@ -54,6 +65,8 @@ export default function RPC() {
     portal_historyOffer: rpcState.REQUEST.portal_historyOffer.useMutation(),
     portal_historySendOffer: rpcState.REQUEST.portal_historySendOffer.useMutation(),
     portal_historyGossip: rpcState.REQUEST.portal_historyGossip.useMutation(),
+    portal_historyStore: rpcState.REQUEST.portal_historyStore.useMutation(),
+    portal_historyLocalContent: rpcState.REQUEST.portal_historyLocalContent.useMutation(),
     eth_getBlockByHash: rpcState.REQUEST.eth_getBlockByHash.useMutation(),
     eth_getBlockByNumber: rpcState.REQUEST.eth_getBlockByNumber.useMutation(),
   }
@@ -232,59 +245,63 @@ export default function RPC() {
   }
 
   return (
-    <Container>
-      <Stack direction="row" spacing={2}>
-        <Paper sx={{ border: 'solid black 2px' }}>
-          <List>
-            <ListItem>
-              <Stack direction="row" spacing={2}>
-                <ListItemText primary={'RPC'} />
-                <Button onClick={handleClick} variant="contained">
-                  Send
-                </Button>
-              </Stack>
-            </ListItem>
-            <ListItem>
-              <FormControl fullWidth>
-                <InputLabel id="rpc-method-select-menu">Method</InputLabel>
-                <Select
-                  labelId="rpc-method-select-menu-label"
-                  id="rpc-method-menu"
-                  value={method}
-                  label="Method"
-                  autoWidth
-                  onChange={handleChangeMethod}
-                >
-                  <MenuItem value={'discv5_nodeInfo'}>discv5_nodeInfo</MenuItem>
-                  <MenuItem value={'portal_historyRoutingTableInfo'}>
-                    portal_historyRoutingTableInfo
-                  </MenuItem>
-                  <MenuItem value={'portal_historyPing'}>portal_historyPing</MenuItem>
-                  <MenuItem value={'portal_historyFindNodes'}>portal_historyFindNodes</MenuItem>
-                  <MenuItem value={'portal_historyFindContent'}>portal_historyFindContent</MenuItem>
-                  <MenuItem value={'portal_historyRecursiveFindContent'}>
-                    portal_historyRecursiveFindContent
-                  </MenuItem>
-                  <MenuItem value={'portal_historyOffer'}>portal_historyOffer</MenuItem>
-                  <MenuItem value={'portal_historySendOffer'}>portal_historySendOffer</MenuItem>
-                  <MenuItem value={'portal_historyGossip'}>portal_historyGossip</MenuItem>
-                  <MenuItem value={'eth_getBlockByHash'}>eth_getBlockByHash</MenuItem>
-                  <MenuItem value={'eth_getBlockByNumber'}>eth_getBlockByNumber</MenuItem>
-                </Select>
-              </FormControl>
-            </ListItem>
-            <ListItem>
-              <RPCInput method={method as RPCMethod} />
-            </ListItem>
-            <ListItem>
-              <Paper>{/* {meta?.description} */}</Paper>
-            </ListItem>
-            <ListItem>
-              <RPCParams method={method as RPCMethod} />
-            </ListItem>
-          </List>
-        </Paper>
-        <Container>
+    <Container >
+      <Stack width='100%' direction="row" spacing={2}>
+        <Box width='50%'>
+          <Paper sx={{ border: 'solid black 2px' }}>
+            <List>
+              <ListItem>
+                <Stack direction="row" spacing={2}>
+                  <ListItemText primary={'RPC'} />
+                  <Button onClick={handleClick} variant="contained">
+                    Send
+                  </Button>
+                </Stack>
+              </ListItem>
+              <ListItem>
+                <FormControl fullWidth>
+                  <InputLabel id="rpc-method-select-menu">Method</InputLabel>
+                  <Select
+                    labelId="rpc-method-select-menu-label"
+                    id="rpc-method-menu"
+                    value={method}
+                    label="Method"
+                    autoWidth
+                    onChange={handleChangeMethod}
+                  >
+                    <MenuItem value={'discv5_nodeInfo'}>discv5_nodeInfo</MenuItem>
+                    <MenuItem value={'portal_historyRoutingTableInfo'}>
+                      portal_historyRoutingTableInfo
+                    </MenuItem>
+                    <MenuItem value={'portal_historyPing'}>portal_historyPing</MenuItem>
+                    <MenuItem value={'portal_historyFindNodes'}>portal_historyFindNodes</MenuItem>
+                    <MenuItem value={'portal_historyFindContent'}>
+                      portal_historyFindContent
+                    </MenuItem>
+                    <MenuItem value={'portal_historyRecursiveFindContent'}>
+                      portal_historyRecursiveFindContent
+                    </MenuItem>
+                    <MenuItem value={'portal_historyOffer'}>portal_historyOffer</MenuItem>
+                    <MenuItem value={'portal_historySendOffer'}>portal_historySendOffer</MenuItem>
+                    <MenuItem value={'portal_historyGossip'}>portal_historyGossip</MenuItem>
+                    <MenuItem value={'eth_getBlockByHash'}>eth_getBlockByHash</MenuItem>
+                    <MenuItem value={'eth_getBlockByNumber'}>eth_getBlockByNumber</MenuItem>
+                  </Select>
+                </FormControl>
+              </ListItem>
+              <ListItem>
+                <RPCInput method={method as RPCMethod} />
+              </ListItem>
+              <ListItem>
+                <Paper>{/* {meta?.description} */}</Paper>
+              </ListItem>
+              <ListItem>
+                <RPCParams method={method as RPCMethod} />
+              </ListItem>
+            </List>
+          </Paper>
+        </Box>
+        <Box width='50%'>
           <Paper sx={{ border: 'solid black 2px' }}>
             <ListSubheader>Request:</ListSubheader>
             {rpcState.CURRENT_LOG.request}
@@ -295,13 +312,39 @@ export default function RPC() {
               <ListItemText primary={'No response'} />
             ) : typeof rpcState.CURRENT_LOG.response === 'string' ? (
               <ListItemText primary={rpcState.CURRENT_LOG.response} />
+            ) : typeof rpcState.CURRENT_LOG.response === 'number' ? (
+              <ListItemText primary={rpcState.CURRENT_LOG.response} />
+            ) : 'asJSON' in rpcState.CURRENT_LOG.response ? (
+              <ListItem>
+                <ListItemButton onClick={handleOpen}>
+                  <ListItemIcon>{/* <InboxIcon /> */}</ListItemIcon>
+                  <ListItemText primary="As JSON" />
+                  {open ? <ExpandLess /> : <ExpandMore />}
+                </ListItemButton>
+                <Collapse in={open} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {Object.entries(JSON.parse(rpcState.CURRENT_LOG.response.asJSON as string)).map(
+                      ([jsonKey, jsonVal]) => {
+                        return (
+                          <ListItemText
+                            primary={jsonKey}
+                            secondary={
+                              typeof jsonVal === 'string' ? jsonVal : JSON.stringify(jsonVal)
+                            }
+                          />
+                        )
+                      },
+                    )}
+                  </List>
+                </Collapse>
+              </ListItem>
             ) : (
               Object.entries(rpcState.CURRENT_LOG.response).map(([key, value]) => {
                 return <ListItemText key={key} primary={key} secondary={value} />
               })
             )}
           </Paper>
-        </Container>
+        </Box>
       </Stack>
     </Container>
   )

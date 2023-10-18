@@ -29,6 +29,7 @@ import { trpc } from '../utils/trpc'
 
 import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
 import { JSONObject } from 'superjson/dist/types'
+import { RPCContext } from '../Contexts/RPCContext'
 
 const blockHeaderContent_key =
   '0x0088e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
@@ -72,11 +73,12 @@ export default function ContentStore(props: any) {
   )
   const [hashKey, setHashKey] = React.useState<string>('')
   const [curType, setCurType] = React.useState<string>('')
-  const [stored, setStored] = React.useState<Map<string, string>>(new Map())
+  const [stored, setStored] = React.useState<string[]>([])
   const [displayKey, setDisplayKey] = React.useState<string | undefined>('')
   const [display, setDisplay] = React.useState<JSONObject | undefined>()
-  const historyStore = trpc.browser_historyStore.useMutation()
-  const historyRetrieve = trpc.browser_historyLocalContent.useMutation()
+  const { REQUEST, PORT, IP } = React.useContext(RPCContext)
+  const historyStore = REQUEST.portal_historyStore.useMutation()
+  const historyRetrieve = REQUEST.portal_historyLocalContent.useMutation()
   const [sortBy, setSortBy] = React.useState<{
     key: 'added' | 'key'
     asc: boolean
@@ -86,10 +88,21 @@ export default function ContentStore(props: any) {
   })
 
   async function retrieve() {
-    const res = await historyRetrieve.mutateAsync({
+    let params: any = {
       contentKey: displayKey!,
-    })
-    console.log('retrieve', displayKey, res)
+    }
+    if (state.CONNECTION === 'http') {
+      params = {
+        ...params,
+        port: PORT,
+        // ip: IP,
+      }
+    }
+    const res = await historyRetrieve.mutateAsync(params)
+    console.groupCollapsed('portal_historyLocalContent')
+    console.dir(params)
+    console.dir(res)
+    console.groupEnd()
     setDisplay(JSON.parse(res))
   }
 
@@ -117,13 +130,25 @@ export default function ContentStore(props: any) {
   }, [contentKey])
 
   const onClick = async () => {
-    console.log('portal_historyStore', contentKey, curType)
     const key = contentKey.startsWith('0x') ? contentKey : '0x' + contentKey
     const value = content.startsWith('0x') ? content : '0x' + content
-    await historyStore.mutateAsync({
+    let params: any = {
       contentKey: key,
       content: value,
-    })
+    }
+    if (state.CONNECTION === 'http') {
+      params = {
+        ...params,
+        port: PORT,
+        // ip: IP,
+      }
+    }
+    const res = await historyStore.mutateAsync(params)
+    console.groupCollapsed('portal_historyStore')
+    console.dir(params)
+    console.dir(res)
+    console.groupEnd()
+    setStored([...stored, key])
     setDisplayKey(key)
   }
 
@@ -158,7 +183,12 @@ export default function ContentStore(props: any) {
               </FormControl>
             </ListItem>
             <ListItem>
-              <Button fullWidth endIcon={<SaveAs />} sx={{ border: 'solid black' }} onClick={onClick}>
+              <Button
+                fullWidth
+                endIcon={<SaveAs />}
+                sx={{ border: 'solid black' }}
+                onClick={onClick}
+              >
                 <ListItemText primary="STORE CONTENT" secondary={curType} />
               </Button>
             </ListItem>
@@ -188,6 +218,17 @@ export default function ContentStore(props: any) {
                 SAMPLE BLOCKBODY
               </Button>
             </ListItem>
+            {stored.map((key) => {
+              return (
+                <ListItem key={key}>
+                  <Tooltip title={key}>
+                    <ListItemButton onClick={() => setDisplayKey(key)}>
+                      <ListItemText primary={key.slice(0, 10) + '...'} />
+                    </ListItemButton>
+                  </Tooltip>
+                </ListItem>
+              )
+            })}
           </List>
           <TableContainer sx={{ maxHeight: 500 }}>
             <Table stickyHeader padding="none">
@@ -291,7 +332,7 @@ export default function ContentStore(props: any) {
                       const data = val ? Object.entries(val)[i] : undefined
                       return (
                         <TableCell
-                        key={idx}
+                          key={idx}
                           onClick={() => {
                             console.log('copy', data && data[1])
                           }}

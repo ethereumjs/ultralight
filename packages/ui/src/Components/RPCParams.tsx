@@ -7,6 +7,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
 } from '@mui/material'
 import { RPCMethod } from './RPC'
 import React from 'react'
@@ -89,7 +90,7 @@ export default function RPCParams(props: { method: RPCMethod }) {
         <Table stickyHeader padding="checkbox">
           <TableHead>
             <TableRow>
-              <TableCell colSpan={2}>
+              <TableCell colSpan={4}>
                 <ListItemText
                   primary={props.method}
                   secondary={`params: [${Object.keys(params(props.method)).toString()}]`}
@@ -99,16 +100,38 @@ export default function RPCParams(props: { method: RPCMethod }) {
           </TableHead>
           <TableBody>
             {Object.entries(params(props.method)).map(([key, entry]) => {
-              let val = typeof entry === 'string' ? entry : JSON.stringify(entry)
-              if (val.length === 0) {
-                val = `<set ${key}>`
+              if (typeof entry === 'string') {
+                let val = entry
+                if (val.length === 0) {
+                  val = `<set ${key}>`
+                }
+                return (
+                  <TableRow key={key}>
+                    <TableCell>{key}</TableCell>
+                    <TableCell>
+                      {val.length > 68 ? (
+                        <Tooltip title={val}>
+                          <ListItemText secondary={val.slice(0, 16) + '...'} />
+                        </Tooltip>
+                      ) : (
+                        <ListItemText secondary={val} />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
               }
-              return (
-                <TableRow key={key}>
-                  <TableCell>{key}</TableCell>
-                  <TableCell>{val}</TableCell>
-                </TableRow>
-              )
+              if (entry instanceof Array) {
+                return (
+                  <TableRow key={key}>
+                    <TableCell>{key}</TableCell>
+                    <TableCell colSpan={3}>
+                      {entry.map((e, i) => {
+                        return <ListItemText key={i} secondary={e} />
+                      })}
+                    </TableCell>
+                  </TableRow>
+                )
+              }
             })}
           </TableBody>
         </Table>

@@ -17,6 +17,7 @@ import { websocketProcedures } from './procedures.js'
 import { httpProcedures } from './rpc/procedures.js'
 import { z_Enr } from './rpc/trpcTypes.js'
 import { z } from 'zod'
+import debug from 'debug'
 
 const main = async () => {
   const t = initTRPC
@@ -49,6 +50,7 @@ const main = async () => {
     config: config,
     radius: 2n ** 256n - 1n,
     supportedProtocols: [ProtocolId.HistoryNetwork],
+    eventLog: true,
   })
   portal.discv5.enableLogs()
   portal.enableLog('*')
@@ -90,6 +92,13 @@ const main = async () => {
     pingBootNodes,
     browser_historyStore,
     browser_historyLocalContent,
+    browser_ethGetBlockByHash,
+    browser_ethGetBlockByNumber,
+    browser_historyFindContent,
+    browser_historyGossip,
+    browser_historyOffer,
+    browser_historyRecursiveFindContent,
+    browser_historySendOffer,
   } = websocketProcedures(portal, publicProcedure)
 
   /**
@@ -105,6 +114,13 @@ const main = async () => {
     portal_historyStore,
     getPubIp,
     portal_historyGetEnr,
+    portal_historyFindContent,
+    portal_historyFindNodes,
+    portal_historyRecursiveFindContent,
+    portal_historyOffer,
+    portal_historySendOffer,
+    portal_historyGossip,
+    portal_historyLocalContent,
   } = httpProcedures(publicProcedure, pubIp)
 
   // Create tRpc Router
@@ -128,8 +144,22 @@ const main = async () => {
     portal_historyGetEnr,
     portal_historyPing,
     portal_historyStore,
+    portal_historyFindContent,
+    portal_historyFindNodes,
+    portal_historyRecursiveFindContent,
+    portal_historyOffer,
+    portal_historySendOffer,
+    portal_historyGossip,
+    portal_historyLocalContent,
     browser_historyStore,
     browser_historyLocalContent,
+    browser_ethGetBlockByHash,
+    browser_ethGetBlockByNumber,
+    browser_historyFindContent,
+    browser_historyGossip,
+    browser_historyOffer,
+    browser_historyRecursiveFindContent,
+    browser_historySendOffer,
     pingBootNodeHTTP,
   })
 
@@ -146,33 +176,34 @@ const main = async () => {
       console.log('context 4')
       return {}
     },
+    onError: (err: any) => {
+      console.debug(`❌ WebSocket Server Handler error: ${err.message}`)
+    },
   })
   wss.on('connection', (ws) => {
-    console.log(`➕➕ Connection (${wss.clients.size})`)
+    console.info(`➕➕ Connection (${wss.clients.size})`)
     ws.once('close', () => {
-      console.log(`➖➖ Connection (${wss.clients.size})`)
+      console.info(`➖➖ Connection (${wss.clients.size})`)
     })
   })
   wss.on('error', (err: any) => {
-    console.error(`❌ WebSocket Server error: ${err.message}`)
+    console.debug(`❌ WebSocket Server error: ${err.message}`)
   })
-  console.log('✅ WebSocket Server listening on ws://localhost:3001')
+  console.info('✅ WebSocket Server listening on ws://localhost:3001')
   process.on('SIGTERM', () => {
-    console.log('SIGTERM')
+    clearInterval('update')
+    clearInterval('updated')
+    console.warn('SIGTERM')
     handler.broadcastReconnectNotification()
     wss.close()
   })
   portal.discv5.enableLogs()
-
-  portal.enableLog('*ultralight*, *LightClient*, -OFFER, -ACCEPT, *ultralight:RPC*')
+  portal.enableLog(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
+  debug.enable(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
 
   await portal.start()
 
-  console.log('nodeId', portal.discv5.enr.encodeTxt())
-  console.log('nodeId', portal.discv5.enr.nodeId)
-
-  console.log('browser_nodeInfo', JSON.stringify(appRouter.browser_nodeInfo._def))
-  console.log('browser_nodeInfo', JSON.stringify(appRouter.ping._def))
+  console.log({ enr: portal.discv5.enr.encodeTxt(), nodeId: portal.discv5.enr.nodeId })
 
   // create server
   createHTTPServer({
@@ -184,4 +215,7 @@ const main = async () => {
     },
   }).listen(8546)
 }
-main()
+main().catch((err) => {
+  console.error(err)
+  console.log(`SERVER ERROR: ${err.message}`)
+})

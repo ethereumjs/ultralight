@@ -1,20 +1,40 @@
 import { createContext, useContext, useReducer } from 'react'
 import { TMutations } from './ClientContext'
 import { trpc } from '../utils/trpc'
+import { BuildProcedure } from '@trpc/server'
 
 export const RPCDispatchContext = createContext<any>(null)
+
+interface IMethods {
+pingBootNodes: typeof trpc.pingBootNodes
+discv5_nodeInfo: typeof trpc.browser_nodeInfo
+portal_historyPing: typeof trpc.ping
+portal_historyRoutingTableInfo: typeof trpc.browser_localRoutingTable
+portal_historyFindNodes:  typeof trpc.browser_historyFindNodes
+portal_historyFindContent: typeof trpc.browser_historyFindContent
+portal_historyLocalContent: typeof trpc.browser_historyLocalContent
+portal_historyRecursiveFindContent: typeof trpc.browser_historyRecursiveFindContent
+portal_historyOffer: typeof trpc.browser_historyOffer
+portal_historySendOffer: typeof trpc.browser_historySendOffer
+portal_historyStore: typeof trpc.browser_historyStore
+portal_historyGossip: typeof trpc.browser_historyGossip
+eth_getBlockByHash: typeof trpc.browser_ethGetBlockByHash
+eth_getBlockByNumber: typeof trpc.browser_ethGetBlockByNumber
+}
 
 export const wsMethods = {
   pingBootNodes: trpc.pingBootNodes,
   discv5_nodeInfo: trpc.browser_nodeInfo,
   portal_historyPing: trpc.ping,
-  portal_historyRoutingTableInfo: trpc.local_routingTable,
+  portal_historyRoutingTableInfo: trpc.browser_localRoutingTable,
   portal_historyFindNodes: trpc.browser_historyFindNodes,
   portal_historyFindContent: trpc.browser_historyFindContent,
+  portal_historyLocalContent: trpc.browser_historyLocalContent,
   portal_historyRecursiveFindContent: trpc.browser_historyRecursiveFindContent,
   portal_historyOffer: trpc.browser_historyOffer,
   portal_historySendOffer: trpc.browser_historySendOffer,
   portal_historyGossip: trpc.browser_historyGossip,
+  portal_historyStore: trpc.browser_historyStore,
   eth_getBlockByHash: trpc.browser_ethGetBlockByHash,
   eth_getBlockByNumber: trpc.browser_ethGetBlockByNumber,
 }
@@ -27,10 +47,12 @@ export const httpMethods = {
   portal_historyRoutingTableInfo: trpc.portal_historyRoutingTableInfo,
   portal_historyFindNodes: trpc.portal_historyFindNodes,
   portal_historyFindContent: trpc.portal_historyFindContent,
+  portal_historyLocalContent: trpc.portal_historyLocalContent,
   portal_historyRecursiveFindContent: trpc.portal_historyRecursiveFindContent,
   portal_historyOffer: trpc.portal_historyOffer,
   portal_historySendOffer: trpc.portal_historySendOffer,
   portal_historyGossip: trpc.portal_historyGossip,
+  portal_historyStore: trpc.portal_historyStore,
   eth_getBlockByHash: trpc.eth_getBlockByHash,
   eth_getBlockByNumber: trpc.eth_getBlockByNumber,
 
@@ -52,7 +74,7 @@ interface IRPCInitialState {
   BLOCK_NUMBER: string
   CURRENT_LOG: {
     request: string | undefined
-    response: string | undefined
+    response: string | object | undefined
   }
   REQUEST: TMethods
 }
@@ -61,7 +83,7 @@ export const RPCInitialState: IRPCInitialState = {
   PORT: 8545,
   CONTENT_KEY: '',
   CONTENT: '',
-  CONTENT_KEY_ARRAY: [],
+  CONTENT_KEY_ARRAY: [""],
   ENR: '',
   NODEID: '',
   DISTANCES: [],

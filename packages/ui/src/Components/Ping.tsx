@@ -33,7 +33,9 @@ export default function Ping() {
   const [alert, setAlert] = React.useState<'closed' | 'open' | 'success' | 'fail'>('closed')
   const [toPing, setToPing] = React.useState<string>('')
   const [peer, setPeer] = React.useState<string>('')
+  const [pinging, setPinging] = React.useState('')
   const handleClick = async () => {
+    setPinging(toPing)
     const pong = await ping.mutateAsync({ enr: toPing, port: rpc.PORT })
     setPong(pong)
     setAlert('open')
@@ -170,12 +172,15 @@ export default function Ping() {
         </FormControl>
       </ListItem>
       {pong && (
-        <ListItem>
+        <>
           <ListItemText
-            primary="PONG received"
-            secondary={`dataRadius: ${pong.dataRadius}\nenrSeq: ${pong.enrSeq}`}
+            sx={{ textAlign: 'center' }}
+            primary={`PONG received`}
+            secondary={pinging}
           />
-        </ListItem>
+          <ListItemText primary="dataRadius" secondary={pong.dataRadius} />
+          <ListItemText primary="enrSeq" secondary={pong.enrSeq} />
+        </>
       )}
     </List>
   )

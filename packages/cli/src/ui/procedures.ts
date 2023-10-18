@@ -97,13 +97,14 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     .input(z_historyPingParams)
     .output(z_historyPingResult)
     .mutation(async ({ input }) => {
-      const _pong = await history.sendPing(input.enr)
-      const pong = _pong
+      const res = await history.sendPing(input.enr)
+      const pong = res
         ? {
-            enrSeq: '0x' + _pong.enrSeq.toString(16),
-            dataRadius: toHexString(_pong.customPayload),
+            enrSeq: Number(res.enrSeq),
+            dataRadius: toHexString(res.customPayload),
           }
         : undefined
+      console.log('ping', { input, pong })
       return pong
     })
 
@@ -178,14 +179,25 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     .output(z_historyFindContentResult)
     .mutation(async ({ input }) => {
       const contentKey = fromHexString(input.contentKey)
-      const res = await history.sendFindContent(input.enr, contentKey)
+      const res = await history.sendFindContent(input.nodeId, contentKey)
+      console.log('browser_historyFindContent', { input, contentKey, res })
       if (!res) return undefined
 
       switch (res?.selector) {
         case 0: {
-          return { content: toJSON(contentKey, <Uint8Array>res.value) }
+          return {
+            content: toHexString(res.value as Uint8Array),
+            utpTransfer: true,
+            asJSON: toJSON(contentKey, <Uint8Array>res.value),
+          }
         }
         case 1: {
+          return {
+            content: toHexString(res.value as Uint8Array),
+            asJSON: toJSON(contentKey, <Uint8Array>res.value),
+          }
+        }
+        case 2: {
           return { enrs: (<Uint8Array[]>res.value).map(toHexString) }
         }
         default: {

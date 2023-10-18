@@ -22,9 +22,9 @@ export default function HTTPClient() {
   const pingBootNodes = ClientInitialState.RPC.http.pingBootNodes.useMutation()
   const getEnr = ClientInitialState.RPC.http.portal_historyGetEnr.useMutation()
   async function updateRT() {
-    console.log('updating routing table')
     const rt = await routingTable.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
-    console.log({ rt })
+    console.groupCollapsed('update routing table', rpcState.PORT)
+    console.dir(rt)
     const rtEnrs = await Promise.allSettled(
       rt.map(async ([nodeId, bucket]) => {
         const res = await getEnr.mutateAsync({
@@ -39,7 +39,8 @@ export default function HTTPClient() {
       }),
     )
 
-    console.log({ rtEnrs: rtEnrs.map((r) => r.status === 'fulfilled' && r.value) })
+    console.dir({ rtEnrs: rtEnrs.map((r) => r.status === 'fulfilled' && r.value) })
+    console.groupEnd()
     dispatch({
       type: 'ROUTING_TABLE',
       routingTable: Object.fromEntries(
@@ -53,16 +54,16 @@ export default function HTTPClient() {
     console.log({ bootnodes })
     dispatch({
       type: 'BOOTNODES',
-      bootnodes
+      bootnodes,
     })
   }
 
   useEffect(() => {
-    clearInterval('updated')
-    bootUP()
-    const updated = setInterval(async () => {
-      await updateRT()
-    }, 10000)
+    updateRT()
+    clearInterval(setInterval(() => updateRT(), 10000))
+    // bootUP()
+    const updated = setInterval(() => updateRT(), 10000)
+    console.log(updated)
   }, [])
 
   return (

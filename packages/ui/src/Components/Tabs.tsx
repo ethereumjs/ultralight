@@ -50,29 +50,7 @@ export default function ClientTabs() {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
-  const wssClient = trpc.browser_nodeInfo.useMutation()
-  const getWSSClient = async () => {
-    const wssClientInfo = await wssClient.mutateAsync()
-    dispatch({
-      type: 'WSS_INFO',
-      ...wssClientInfo,
-    })
-  }
-
-  const httpClient = trpc.discv5_nodeInfo.useMutation()
-  const getNodeInfo = async (port: number = 8545) => {
-    const nodeInfo = await httpClient.mutateAsync({ port })
-    dispatch({
-      type: 'HTTP_INFO',
-      port,
-      ...nodeInfo,
-    })
-  }
-  React.useEffect(() => {
-    // getWSSClient()
-    // getNodeInfo()
-  }, [])
-
+  
   return (
     <AllClientsContext.Provider value={clients}>
       <AllClientsDispatchContext.Provider value={dispatch}>

@@ -6,6 +6,15 @@ const byte = 256
 export const z_uint = (length: number) => z.number().min(bit ** length)
 export const z_bytes = (length: number) => z.number().min(byte ** length)
 export const z_hexString = (bytes?: number) => {
+  return z.string().refine((x) => !bytes || x.length === bytes * 2 + (x.startsWith('0x') ? 2 : 0))
+}
+export const z_prefixedHexString = (bytes?: number) => {
+  return z
+    .string()
+    .transform((x) => (x.startsWith('0x') ? x : '0x' + x))
+    .refine((x) => !bytes || x.length === bytes * 2)
+}
+export const z_unprefixedHexString = (bytes?: number) => {
   return z
     .string()
     .transform((x) => (x.startsWith('0x') ? x.slice(2) : x))
@@ -15,9 +24,9 @@ export const z_hexString = (bytes?: number) => {
 export const z_kBucket = z.array(z_bytes(32))
 export const z_kBucketArray = z.array(z_kBucket)
 export const z_DataRadius = z_hexString(32)
-export const z_nodeId = z_hexString(32)
+export const z_nodeId = z_unprefixedHexString()
 export const z_Enr = z.string().startsWith('enr:')
-export const z_EnrSeq = z_hexString()
+export const z_EnrSeq = z.number()
 export const z_ipAddr = z.string()
 export const z_socketAddr = z.string()
 export const z_udpPort = z_uint(16)
@@ -27,7 +36,7 @@ export const z_RequestId = z_bytes(8)
 export const z_ProtocolId = z.number().gte(0).lte(4)
 export const z_Discv5Payload = z_hexString()
 export const z_ContentKey = z_hexString()
-export const z_Content = z_hexString()
+export const z_Content = z.string()
 
 export const z_ContentMessage = z.object({
   content: z_hexString(),
@@ -88,7 +97,7 @@ export const z_historyFindNodesParams = z.object({
   distances: z.array(z_distance),
 })
 export const z_historyFindContentParams = z.object({
-  enr: z_Enr,
+  nodeId: z_nodeId,
   contentKey: z_ContentKey,
 })
 export const z_historyRecursiveFindContentParams = z.object({
