@@ -334,10 +334,17 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         break
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
+        this.logger.extend('FINDLOCALLY')(
+          `looking for most optimistic update for slot ${key.signatureSlot}`,
+        )
         if (
           this.lightClient !== undefined &&
-          key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot)
+          key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot + 1)
         ) {
+          // We have to check against the light client head + 1 since it will be one slot behind the current slot
+          this.logger.extend('FINDLOCALLY')(
+            'found optimistic header matching head from light client',
+          )
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
           value = await this.retrieve(
@@ -348,6 +355,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
+          this.logger.extend('FINDLOCALLY')(
+            `light client is not started, retrieving whatever we have - ${
+              value ?? 'nothing found'
+            }`,
+          )
+        } else {
+          this.logger.extend('FINDLOCALLY')('tried to retrieve an optimistic update we do not have')
         }
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
@@ -382,7 +396,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   ): Promise<Union<Uint8Array | Uint8Array[]> | undefined> => {
     const enr = this.routingTable.getValue(dstId)
     if (!enr) {
-      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
+      this.logger.extend('FINDCONTENT')(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return
     }
     this.metrics?.findContentMessagesSent.inc()
@@ -811,8 +825,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 const slot = LightClientOptimisticUpdateKey.deserialize(key.slice(1)).signatureSlot
                 if (
                   this.lightClient !== undefined &&
-                  slot > this.lightClient.getHead().beacon.slot
+                  slot > this.lightClient.getHead().beacon.slot + 1
                 ) {
+                  // We have to check against the light client head + 1 since it will be one slot behind the current slot
                   offerAccepted = true
                   contentIds[x] = true
                   this.logger.extend('OFFER')(
