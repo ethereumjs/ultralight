@@ -678,8 +678,9 @@ describe('beacon light client sync tests', () => {
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-        // FIXME
-        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 0n }),
+        LightClientOptimisticUpdateKey.serialize({
+          signatureSlot: BigInt(optimisticUpdate.signatureSlot),
+        }),
       ),
       concatBytes(
         capellaForkDigest,

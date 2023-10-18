@@ -704,7 +704,6 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.protocolId)
-      this.logger.extend(`OFFER`)(`Response from ${shortId(dstId)}`)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -721,7 +720,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
               return []
             }
-            this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
+            this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
             for await (const key of requestedKeys) {

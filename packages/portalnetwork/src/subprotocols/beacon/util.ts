@@ -17,7 +17,7 @@ export const getBeaconContentKey = (
   contentType: BeaconLightClientNetworkContentType,
   serializedKey: Uint8Array,
 ) => {
-  const prefix = Buffer.alloc(1, contentType)
+  const prefix = new Uint8Array(1).fill(contentType)
   return toHexString(prefix) + toHexString(serializedKey).slice(2)
 }
 

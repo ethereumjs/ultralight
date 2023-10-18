@@ -13,7 +13,7 @@ import {
   LightClientUpdatesByRangeKey,
 } from './types.js'
 import { Debugger } from 'debug'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 import { getBeaconContentKey } from './util.js'
 
@@ -77,10 +77,31 @@ export class UltralightTransport implements LightClientTransport {
       getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
     )
     this.logger(`requesting LightClientOptimisticUpdate for ${currentSlot.toString(10)}`)
-    // Try to get optimistic update from Portal Network.  We request an update corresponding to the current slot
-    // (i.e. tip of the chain) - 1 as the attested header in the optimistic update "should" be only one slot behind
-    // the tip if consensus is working properly and on happy path
 
+    // Try to get optimistic update locally
+    const localUpdate = await this.protocol.findContentLocally(
+      hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+          LightClientOptimisticUpdateKey.serialize({
+            signatureSlot: currentSlot,
+          }),
+        ),
+      ),
+    )
+
+    if (localUpdate !== undefined && bytesToHex(localUpdate) !== '0x') {
+      const forkhash = localUpdate.slice(0, 4) as Uint8Array
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      optimisticUpdate = ssz[forkname].LightClientOptimisticUpdate.deserialize(localUpdate.slice(4))
+
+      return {
+        version: forkname,
+        data: optimisticUpdate,
+      }
+    }
+
+    // Try to get optimistic update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
@@ -117,6 +138,29 @@ export class UltralightTransport implements LightClientTransport {
       getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
     )
     this.logger(`requesting LightClientFinalityUpdate for ${currentSlot.toString(10)}`)
+
+    // Try retrieving finality update locally
+    const localUpdate = await this.protocol.findContentLocally(
+      hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+          LightClientFinalityUpdateKey.serialize({
+            signatureSlot: currentSlot,
+          }),
+        ),
+      ),
+    )
+
+    if (localUpdate !== undefined && bytesToHex(localUpdate) !== '0x') {
+      const forkhash = localUpdate.slice(0, 4) as Uint8Array
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      finalityUpdate = ssz[forkname].LightClientFinalityUpdate.deserialize(localUpdate.slice(4))
+
+      return {
+        version: forkname,
+        data: finalityUpdate,
+      }
+    }
     // Try to get finality update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
