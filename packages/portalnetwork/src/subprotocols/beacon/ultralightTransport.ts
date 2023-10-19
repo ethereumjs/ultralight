@@ -44,7 +44,7 @@ export class UltralightTransport implements LightClientTransport {
       )
       let decoded
       decoded = await this.protocol.findContentLocally(rangeKey)
-      if (decoded === undefined) {
+      if (decoded === undefined || bytesToHex(decoded) === '0x') {
         decoded = await this.protocol.sendFindContent(
           this.protocol.routingTable.random()!.nodeId,
           rangeKey,
@@ -253,9 +253,14 @@ export class UltralightTransport implements LightClientTransport {
         const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
           forkhash,
         ) as LightClientForkName
-        handler(
-          ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
-        )
+        try {
+          handler(
+            ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
+          )
+        } catch (err) {
+          this.logger('something went wrong on Optimistic Update')
+          this.logger(err)
+        }
       }
     })
   }

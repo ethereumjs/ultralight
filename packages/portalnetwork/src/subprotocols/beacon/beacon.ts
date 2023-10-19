@@ -276,10 +276,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    * the `lightClientBootStrap`
    */
   public initializeLightClient = async (blockRoot: string) => {
-    // Disable bootstrap finder mechanism if currently running
-    if (this.syncStrategy === SyncStrategy.PollNetwork)
-      this.portal.removeListener('NodeAdded', this.getBootStrapVote)
-    else this.portal.removeListener('NodeAdded', this.getBootstrap)
+    // Ensure bootstrap finder mechanism is disabled if currently running
+    this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+    this.portal.removeListener('NodeAdded', this.getBootstrap)
 
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')
@@ -335,16 +334,14 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
         this.logger.extend('FINDLOCALLY')(
-          `looking for most optimistic update for slot ${key.signatureSlot}`,
+          `looking for optimistic update for slot ${key.signatureSlot}`,
         )
         if (
           this.lightClient !== undefined &&
           key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot + 1)
         ) {
           // We have to check against the light client head + 1 since it will be one slot behind the current slot
-          this.logger.extend('FINDLOCALLY')(
-            'found optimistic header matching head from light client',
-          )
+          this.logger.extend('FINDLOCALLY')('found optimistic update matching light client head')
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
           value = await this.retrieve(
@@ -356,7 +353,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
           this.logger.extend('FINDLOCALLY')(
-            `light client is not started, retrieving whatever we have - ${
+            `light client is not running, retrieving whatever we have - ${
               value ?? 'nothing found'
             }`,
           )
