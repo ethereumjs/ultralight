@@ -14,6 +14,7 @@ import {
   PortalNetwork,
   FoundContent,
   toHexString,
+  ENR,
 } from '../../index.js'
 import { ProtocolId } from '../types.js'
 import { ETH } from './eth_module.js'
@@ -100,7 +101,11 @@ export class HistoryProtocol extends BaseProtocol {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = this.routingTable.getWithPending(dstId)?.value
+    const enr = dstId.startsWith('enr:')
+      ? ENR.decodeTxt(dstId)
+      : this.routingTable.getWithPending(dstId)?.value
+      ? this.routingTable.getWithPending(dstId)?.value
+      : this.routingTable.getWithPending(dstId.slice(2))?.value
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return

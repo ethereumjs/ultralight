@@ -115,7 +115,7 @@ export default function LookupContent() {
           </Stack>
         </Box>
       </ListItem>
-      <ListItem>
+      {/* <ListItem>
         <Stack direction="column">
           <TextField
             value={contentKey}
@@ -141,7 +141,7 @@ export default function LookupContent() {
             </Select>
           </FormControl>
         </Stack>
-      </ListItem>
+      </ListItem> */}
     </List>
   )
 }

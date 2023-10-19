@@ -1,6 +1,5 @@
-import { Box, Stack } from '@mui/material'
-import { trpc } from '../utils/trpc'
-import { useEffect, useReducer, useState } from 'react'
+import { Box } from '@mui/material'
+import { useEffect, useReducer } from 'react'
 import Client from '../Components/Client'
 import {
   ClientContext,
@@ -8,142 +7,75 @@ import {
   ClientInitialState,
   ClientReducer,
 } from '../Contexts/ClientContext'
+import {
+  RPCContext,
+  RPCDispatchContext,
+  RPCInitialState,
+  RPCReducer,
+  httpMethods,
+} from '../Contexts/RPCContext'
 
 export default function HTTPClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
-
-  const routingTable = trpc.portal_historyRoutingTableInfo.useMutation({
-    onMutate(variables) {
-      console.log('routingtable mutate:', { variables })
-    },
-    onSettled(data, error, variables, context) {
-      console.log('routingtable settled:', {
-        data,
-        error,
-        variables,
-        context,
-      })
-    },
-  })
-  const nodeInfo = trpc.discv5_nodeInfo.useMutation({
-    onMutate(variables) {
-      console.log('nodeinfo mutate:', { variables })
-    },
-    onSettled(data, error, variables, context) {
-      console.log('nodeinfo settled:', {
-        data,
-        error,
-        variables,
-        context,
-      })
-    },
-    onError(error, variables, context) {
-      console.log('nodeinfo error:', {
-        error,
-        variables,
-        context,
-      })
-    },
-  })
-  const getNodeInfo = async (port: number = 8545) => {
-    const info = await nodeInfo.mutateAsync({ port })
-    dispatch({
-      type: 'NODE_INFO',
-      ...info,
-    })
-  }
-  const sendPing = trpc.portal_historyPing.useMutation({
-    onMutate(variables) {
-      // A mutation is about to happen!
-      // You can do something here like show a loading indicator
-      // onMutate returns a context object that will be passed to the other methods
-      console.log({ variables })
-    },
-    onSettled(data, error, variables, context) {
-      console.log({
-        data,
-        error,
-        variables,
-        context,
-      })
-    },
-  })
-  const [pong, setPong] = useState<any>()
-
-  const ping = async (enr: string) => {
-    const pong = await sendPing.mutateAsync({ enr })
-    setPong(pong)
-    getRoutingTable()
-  }
-
-  const getRoutingTable = async () => {
-    const table = await routingTable.mutateAsync()
-    const allBucketsEntries = [...table.routingTable.reverse().entries()]
-    const buckets = allBucketsEntries.filter(([_, bucket]) => bucket.length > 0)
-    const p = buckets
-      .map(([idx, bucket]) => {
-        return bucket.map((peer: string) => {
-          return ['', '', '0x' + peer, '', idx]
+  const [rpcState, rpcDispatch] = useReducer(RPCReducer, RPCInitialState)
+  const routingTable = ClientInitialState.RPC.http.local_routingTable.useMutation()
+  const pingBootNodes = ClientInitialState.RPC.http.pingBootNodes.useMutation()
+  const getEnr = ClientInitialState.RPC.http.portal_historyGetEnr.useMutation()
+  async function updateRT() {
+    const rt = await routingTable.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
+    console.groupCollapsed('update routing table', rpcState.PORT)
+    console.dir(rt)
+    const rtEnrs = await Promise.allSettled(
+      rt.map(async ([nodeId, bucket]) => {
+        const res = await getEnr.mutateAsync({
+          port: rpcState.PORT,
+          ip: rpcState.IP,
+          nodeId,
         })
-      })
-      .flat(1)
-    const r = Object.fromEntries(p.entries())
-    dispatch({ type: 'ROUTING_TABLE', routingTable: r })
+        const enr = res
+        return enr instanceof Object
+          ? [nodeId, [enr.c, enr.enr, enr.nodeId, enr.multiaddr, bucket]]
+          : [nodeId, ['N/A', 'N/A', nodeId, 'N/A', bucket]]
+      }),
+    )
+
+    console.dir({ rtEnrs: rtEnrs.map((r) => r.status === 'fulfilled' && r.value) })
+    console.groupEnd()
+    dispatch({
+      type: 'ROUTING_TABLE',
+      routingTable: Object.fromEntries(
+        rtEnrs.map((r) => (r.status === 'fulfilled' ? r.value : ['', ['', '', '', '', -1]])),
+      ),
+    })
   }
 
-  const bootHTTP = trpc.pingBootNodeHTTP.useMutation({
-    onMutate(variables) {
-      console.log('bootnode mutate:', { variables })
-    },
-    onSettled(data, error, variables, context) {
-      console.log('bootnode settled:', {
-        data,
-        error,
-        variables,
-        context,
-      })
-    },
-    onError(error, variables, context) {
-      console.log('bootnode error:', {
-        error,
-        variables,
-        context,
-      })
-    },
-  })
-  const pingBootNodesHTTP = async () => {
-    const res = await bootHTTP.mutateAsync()
-    const bootnoderes = res.map((r) => {
-      return r
-      ? {
-        tag: r.tag,
-        enr: r.enr,
-        connected: 'true',
-      }
-      : {
-        tag: 'client0.0.1',
-        enr: 'enr:xxxx....',
-        connected: 'false',
-      }
-    })
+  async function bootUP() {
+    const bootnodes = await pingBootNodes.mutateAsync({ port: rpcState.PORT, ip: rpcState.IP })
+    console.log({ bootnodes })
     dispatch({
       type: 'BOOTNODES',
-      bootnodeResponses: bootnoderes,
+      bootnodes,
     })
-    getRoutingTable()
   }
-  
+
   useEffect(() => {
-    getNodeInfo()
-    pingBootNodesHTTP()
+    updateRT()
+    clearInterval(setInterval(() => updateRT(), 10000))
+    // bootUP()
+    const updated = setInterval(() => updateRT(), 10000)
+    console.log(updated)
   }, [])
-  
+
   return (
-    <ClientContext.Provider value={state}>
+    <ClientContext.Provider value={{ ...state, CONNECTION: 'http' }}>
       <ClientDispatchContext.Provider value={dispatch}>
-        <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
-          <Client ping={ping} pong={pong} name={'WebSockets Client'} />
-        </Box>
+        <RPCContext.Provider value={{ ...rpcState, REQUEST: httpMethods }}>
+          <RPCDispatchContext.Provider value={rpcDispatch}>
+            <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
+              <Client name={'HTTP Client'} />
+            </Box>
+          </RPCDispatchContext.Provider>
+        </RPCContext.Provider>
       </ClientDispatchContext.Provider>
     </ClientContext.Provider>
   )

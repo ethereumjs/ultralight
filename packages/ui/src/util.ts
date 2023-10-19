@@ -1,7 +1,6 @@
 import { BlockHeader } from '@ethereumjs/block'
 import { RLP } from '@ethereumjs/rlp'
 import { TransactionFactory } from '@ethereumjs/tx'
-import { Enr } from './rpc/schema/types.js'
 import {
   BaseProtocol,
   BlockBodyContentType,
@@ -12,6 +11,8 @@ import {
   sszUnclesType,
   toHexString,
 } from 'portalnetwork'
+
+type Enr = string
 
 export const hasValidEnrPrefix = (enr: Enr) => {
   return enr.startsWith('enr:')

@@ -12,6 +12,7 @@ import {
   AllClientsInitialState,
   AllClientsReducer,
 } from '../Contexts/AllClientsContext'
+import { Container } from '@mui/material'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -22,19 +23,16 @@ interface TabPanelProps {
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props
   return (
-    <div
+    <Container
       role="tabpanel"
       hidden={value !== index}
       id={`vertical-tabpanel-${index}`}
       aria-labelledby={`vertical-tab-${index}`}
+      sx={{ padding: 0, width: '100%', margin: 0 }}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
+      {value === index && <Box sx={{ padding: 0, margin: 0, width: '100%' }}>{children}</Box>}
+    </Container>
   )
 }
 
@@ -48,44 +46,23 @@ function a11yProps(index: number) {
 export default function ClientTabs() {
   const [clients, dispatch] = React.useReducer(AllClientsReducer, AllClientsInitialState)
 
-  const [value, setValue] = React.useState(0)
+  const [value, setValue] = React.useState(1)
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
-  const wssClient = trpc.self.useMutation()
-  const getWSSClient = async () => {
-    const wssClientInfo = await wssClient.mutateAsync()
-    dispatch({
-      type: 'WSS_INFO',
-      ...wssClientInfo,
-    })
-  }
   
-
-  const httpClient = trpc.discv5_nodeInfo.useMutation()
-  const getNodeInfo = async (port: number = 8545) => {
-    const nodeInfo = await httpClient.mutateAsync({ port })
-    dispatch({
-      type: 'HTTP_INFO',
-      port,
-      ...nodeInfo,
-    })
-  }
-  React.useEffect(() => {
-    getWSSClient()
-    getNodeInfo()
-  }, [])
-
   return (
     <AllClientsContext.Provider value={clients}>
       <AllClientsDispatchContext.Provider value={dispatch}>
-        <Box sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', height: 224 }}>
+        <Box
+          id="App Tab Box"
+          sx={{ bgcolor: 'background.paper', width: '100%' }}
+        >
           <Tabs
-            orientation="vertical"
-            variant="scrollable"
+            variant="fullWidth"
             value={value}
             onChange={handleChange}
-            aria-label="Vertical tabs example"
+            aria-label="App Tabs"
             sx={{ borderRight: 1, borderColor: 'divider' }}
           >
             <Tab label="WSS Client" {...a11yProps(0)} />
@@ -100,18 +77,6 @@ export default function ClientTabs() {
           </TabPanel>
           <TabPanel value={value} index={2}>
             <Box>TESTS</Box>
-          </TabPanel>
-          <TabPanel value={value} index={3}>
-            Item Four
-          </TabPanel>
-          <TabPanel value={value} index={4}>
-            Item Five
-          </TabPanel>
-          <TabPanel value={value} index={5}>
-            Item Six
-          </TabPanel>
-          <TabPanel value={value} index={6}>
-            Item Seven
           </TabPanel>
         </Box>
       </AllClientsDispatchContext.Provider>

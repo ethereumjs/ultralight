@@ -6,65 +6,27 @@ import {
   ClientContext,
   ClientDispatchContext,
   ClientInitialState,
-  ClientProvider,
   ClientReducer,
 } from '../Contexts/ClientContext'
+import {
+  RPCContext,
+  RPCDispatchContext,
+  RPCInitialState,
+  RPCReducer,
+  wsMethods,
+} from '../Contexts/RPCContext'
 
 export function WSSClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
-  const boot = trpc.pingBootNodes.useMutation()
+  const [rpcState, rpcDispatch] = useReducer(RPCReducer, RPCInitialState)
 
-  const pingBootNodes = async () => {
-    const res = await boot.mutateAsync()
-    const bootnoderes = res.map((r) => {
-      return r
-        ? {
-            tag: r.tag,
-            enr: r.enr,
-            connected: 'true',
-          }
-        : {
-            tag: 'client0.0.1',
-            enr: 'enr:xxxx....',
-            connected: 'false',
-          }
-    })
-    dispatch({
-      type: 'BOOTNODES',
-      bootnodeResponses: bootnoderes,
-    })
-    getLocalRoutingTable()
-  }
-  const localRoutingTable = trpc.local_routingTable.useMutation()
-  trpc.onTalkReq.useSubscription(undefined, {
-    onData(data) {
-      console.log('onTalkReq data:', data)
-    },
-    onError(error) {
-      console.log('onTalkReq error:', error)
-    },
-    onStarted() {
-      console.log('onTalkReq started')
-    },
-  })
+  useEffect(() => {
+    bootUP()
+  }, [])
 
-  const sendPing = trpc.ping.useMutation({
-    onMutate(variables) {
-      console.log({ variables })
-    },
-    onSettled(data) {
-      console.log({
-        data,
-      })
-    },
-  })
-  const [pong, setPong] = useState<any>()
+  const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
 
-  const ping = async (enr: string) => {
-    const pong = await sendPing.mutateAsync({ enr })
-    setPong(pong)
-    getLocalRoutingTable()
-  }
+
 
   const getLocalRoutingTable = async () => {
     const _peers = await localRoutingTable.mutateAsync()
@@ -73,26 +35,34 @@ export function WSSClient() {
       routingTable: _peers,
     })
   }
-  const node = trpc.self.useMutation()
-  const getSelf = async () => { 
-    const nodeInfo = await node.mutateAsync()
+  const node = trpc.browser_nodeInfo.useMutation()
+  const getSelf = async () => {
+    const nodeInfo = await node.mutateAsync({})
     dispatch({
       type: 'NODE_INFO',
       ...nodeInfo,
     })
   }
-  useEffect(() => {
+
+  const bootUP = () => {
+    clearInterval('update')
     getSelf()
     getLocalRoutingTable()
-    pingBootNodes()
-  }, [])
+    const update = setInterval(() => {
+      getLocalRoutingTable()
+    }, 10000)
+  }
 
   return (
-    <ClientContext.Provider value={state}>
+    <ClientContext.Provider value={{ ...state, CONNECTION: 'ws', REQUEST: wsMethods }}>
       <ClientDispatchContext.Provider value={dispatch}>
-        <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
-          <Client ping={ping} pong={pong} name={'WebSockets Client'} />
-        </Box>
+        <RPCContext.Provider value={rpcState}>
+          <RPCDispatchContext.Provider value={rpcDispatch}>
+            <Box height={'100vh'} width={'100%'} style={{ wordBreak: 'break-word' }}>
+              <Client name={'WebSockets Client'} />
+            </Box>
+          </RPCDispatchContext.Provider>
+        </RPCContext.Provider>
       </ClientDispatchContext.Provider>
     </ClientContext.Provider>
   )
