@@ -26,24 +26,25 @@ The App utilizes **tRpc**, a typescript based RPC library, to communicate with t
       - *see Trin README.md*
 
   - Start the **tRpc Ultralight server**:
-    - *from ultralight/packages/CLI/:*
+    - *from ultralight/packages/UI/:*
       - run `npm run server:dev`
-    - Currently configured to also start Ultralight instance on udp PORT 8656
     - At time of writing, this server is prone to crashing if an error occurs in the client, and will need to be restarted manually.
 
 - Start the UI server:
   - *from ultralight/packages/ui/*
     - run `npm run dev`
   - serves the app on http://localhost:3000
-  - default app configuration also starts websocket server on http://ws.localhost:3001
+  - starts websocket server on http://ws.localhost:3001
 
 - Open Browser to http://localhost:3000
   - WS Client tab interacts with websocket client
+    - Start client with Start Button
+    - Then connect to bootnodes, or manually ping a peer and view the routing table
     - By default all available event subscriptions are enabled.
   - HTTP Client tab interacts with http client
     - Manually change IP/PORT in Browser to connect to different clients
-
-Clients under both tabs will automatically ping a hardcoded set of Bootnodes and begin to populate their routing tables when the App starts.  There is often an initial latency period before the updated routing table appears in the UI.  Logging in the browser console will also provide some feedback on the status of the client.
+  - TESTS tab
+    - not yet implemented
 
 ## App Features
 
