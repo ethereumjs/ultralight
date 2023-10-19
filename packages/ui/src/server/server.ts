@@ -86,6 +86,7 @@ const main = async () => {
     await subscriptions(portal, history, publicProcedure)
 
   const {
+    start,
     browser_nodeInfo,
     browser_localRoutingTable,
     ping,
@@ -126,6 +127,7 @@ const main = async () => {
   // Create tRpc Router
 
   const appRouter = router({
+    start,
     getPubIp,
     decodeENR,
     onTalkReq,
@@ -197,12 +199,11 @@ const main = async () => {
     handler.broadcastReconnectNotification()
     wss.close()
   })
-  // portal.discv5.enableLogs()
-  // portal.enableLog(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
-  // debug.enable(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
 
+  portal.discv5.enableLogs()
+  portal.enableLog(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
+  debug.enable(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
   // await portal.start()
-
   // console.log({ enr: portal.discv5.enr.encodeTxt(), nodeId: portal.discv5.enr.nodeId })
 
   // create server

@@ -56,6 +56,24 @@ export const bootnodes = bootnodeENRs.map((b) => {
 export const websocketProcedures = (portal: PortalNetwork, publicProcedure: PublicProcudure) => {
   const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
 
+  const start = publicProcedure
+    .meta({
+      description: 'Start Portal Network',
+    })
+    .mutation(async () => {
+      if (portal.discv5.isStarted()) return 'Already started'
+      try {
+        await portal.start()
+        portal.discv5.isStarted() 
+        ? console.log('Discv5 started')
+        : console.log('Discv5 not started')
+        return portal.discv5.enr.encodeTxt()
+      } catch (err: any) {
+        console.log('PORTAL_START_ERROR', err.message)
+        return err.message
+      }
+    })
+
   const browser_nodeInfo = publicProcedure
     .meta({
       description: 'Get ENR, NodeId, Client Tag, and MultiAddress',
@@ -373,6 +391,7 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
     })
 
   return {
+    start,
     browser_nodeInfo,
     browser_localRoutingTable,
     ping,

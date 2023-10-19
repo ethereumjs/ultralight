@@ -24,18 +24,9 @@ export function WSSClient() {
     bootUP()
   }, [])
 
-  const boot = ClientInitialState.RPC.ws.pingBootNodes.useMutation()
-  const sendPing = ClientInitialState.RPC.ws.portal_historyPing.useMutation()
   const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
 
-  const pingBootNodes = async () => {
-    const bootnodeResponses = await boot.mutateAsync({})
-    dispatch({
-      type: 'BOOTNODES',
-      bootnodes: bootnodeResponses,
-    })
-    getLocalRoutingTable()
-  }
+
 
   const getLocalRoutingTable = async () => {
     const _peers = await localRoutingTable.mutateAsync()
@@ -56,7 +47,6 @@ export function WSSClient() {
   const bootUP = () => {
     clearInterval('update')
     getSelf()
-    // pingBootNodes()
     getLocalRoutingTable()
     const update = setInterval(() => {
       getLocalRoutingTable()

@@ -65,7 +65,7 @@ export default function ClientTabs() {
             aria-label="App Tabs"
             sx={{ borderRight: 1, borderColor: 'divider' }}
           >
-            <Tab disabled label="WSS Client" {...a11yProps(0)} />
+            <Tab label="WSS Client" {...a11yProps(0)} />
             <Tab label="HTTP Client" {...a11yProps(1)} />
             <Tab label="Tests" {...a11yProps(2)} />
           </Tabs>

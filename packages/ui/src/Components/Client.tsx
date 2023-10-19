@@ -6,17 +6,16 @@ import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
 import React from 'react'
 import { trpc } from '../utils/trpc'
 import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
+import Start from './Start'
 
 export default function Client(props: { name: string }) {
   const dispatch = React.useContext(ClientDispatchContext)
   const state = React.useContext(ClientContext)
-  const rpcState = React.useContext(RPCContext)
-  const rpcDispatch = React.useContext(RPCDispatchContext)
 
   if (state.CONNECTION === 'ws') {
     trpc.onTalkReq.useSubscription(undefined, {
       onData(data: any) {
-        console.groupCollapsed(`Talk Request Received: ${data.topic} ${data.nodeId.slice(0,6)}...`)
+        console.groupCollapsed(`Talk Request Received: ${data.topic} ${data.nodeId.slice(0, 6)}...`)
         console.dir(data)
         console.groupEnd()
         dispatch({
@@ -32,7 +31,9 @@ export default function Client(props: { name: string }) {
     })
     trpc.onTalkResp.useSubscription(undefined, {
       onData(data: any) {
-        console.groupCollapsed(`Talk Response Received: ${data.topic} ${data.nodeId.slice(0,6)}...`)
+        console.groupCollapsed(
+          `Talk Response Received: ${data.topic} ${data.nodeId.slice(0, 6)}...`,
+        )
         console.dir(data)
         console.groupEnd()
         dispatch({
@@ -48,7 +49,9 @@ export default function Client(props: { name: string }) {
     })
     trpc.onSendTalkReq.useSubscription(undefined, {
       onData(data: any) {
-        console.groupCollapsed('Talk Request Sent:' + data.topic + ' ' + data.nodeId.slice(0,6) + '...')
+        console.groupCollapsed(
+          'Talk Request Sent:' + data.topic + ' ' + data.nodeId.slice(0, 6) + '...',
+        )
         console.dir(data)
         console.groupEnd()
         dispatch({
@@ -64,10 +67,12 @@ export default function Client(props: { name: string }) {
     })
     trpc.onSendTalkResp.useSubscription(undefined, {
       onData(data: any) {
-        console.groupCollapsed('Talk Response Sent:' + data.topic + " " + data.nodeId.slice(0,6) + '...')
+        console.groupCollapsed(
+          'Talk Response Sent:' + data.topic + ' ' + data.nodeId.slice(0, 6) + '...',
+        )
         console.dir(data)
         console.groupEnd()
-        
+
         dispatch({
           type: 'LOG_SENT',
           topic: data.topic,
@@ -112,16 +117,20 @@ export default function Client(props: { name: string }) {
   }
   return (
     <Container sx={{ width: '100%' }} id="Client">
-      <Stack width={'100%'} direction={'column'}>
-        <ListItemText primary={props.name} />
-        {props.name === 'HTTP Client' && <PortMenu />}
-        <Container sx={{ width: '100%' }}>
-          <SelfNodeInfo />
-        </Container>
-        <Container sx={{ width: '100%' }}>
-          <FunctionTabs />
-        </Container>
-      </Stack>
+      {!state.CONNECTED ? (
+        <Start />
+      ) : (
+        <Stack width={'100%'} direction={'column'}>
+          <ListItemText primary={props.name} />
+          {props.name === 'HTTP Client' && <PortMenu />}
+          <Container sx={{ width: '100%' }}>
+            <SelfNodeInfo />
+          </Container>
+          <Container sx={{ width: '100%' }}>
+            <FunctionTabs />
+          </Container>
+        </Stack>
+      )}
     </Container>
   )
 }

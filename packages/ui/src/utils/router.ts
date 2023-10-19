@@ -142,6 +142,14 @@ const onUtp = publicProcedure.subscription(({ input }) => {
   })
 })
 
+const start = publicProcedure
+  .meta({
+    description: 'Start Portal Network',
+  })
+  .mutation(async () => {
+    return ''
+  })
+
 const browser_nodeInfo = publicProcedure.input(z.any()).mutation(() => {
   return {
     enr: '',
@@ -555,6 +563,7 @@ export const appRouter = router({
   onContentAdded,
   onNodeAdded,
   onUtp,
+  start,
   browser_nodeInfo,
   local_routingTable,
   ping,
