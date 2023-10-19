@@ -13,7 +13,7 @@ export default function Start() {
 
   const startUP = async () => {
     const client = await start.mutateAsync()
-    if (client.startsWith('enr')) {
+    if (client.startsWith('enr') || client === 'Already started') {
       setStarted(true)
       setNodeId(client)
       dispatch({
