@@ -1,13 +1,24 @@
+import { QueryClient } from '@tanstack/react-query'
+import { createWSClient, wsLink } from '@trpc/client'
 import { Dispatch, createContext, useContext, useReducer } from 'react'
+import { trpc } from '../utils/trpc'
 
-export const AllClientsContext = createContext(null)
-export const AllClientsDispatchContext = createContext<any>(null)
+const trpcClient = trpc.createClient({
+  links: [
+    wsLink({
+      client: createWSClient({
+        url: `ws://localhost:3001`,
+      }),
+    }),
+  ],
+})
+
 export const AllClientsInitialState = {
   WSS_CLIENT: {
     client: 'ultralight',
     enr: 'enr:xxxx...',
     nodeId: '0x...',
-    multiAddr: '/ip4/xxx.xxx.xx.xx/udp/xxxx'
+    multiAddr: '/ip4/xxx.xxx.xx.xx/udp/xxxx',
   },
   HTTP_CLIENTS: {
     8545: {
@@ -17,7 +28,11 @@ export const AllClientsInitialState = {
       multiAddr: '/ip4/xxx.xxx.xx.xx/udp/xxxx',
     },
   },
+  queryClient: new QueryClient(),
+  trpcClient,
 }
+export const AllClientsContext = createContext(AllClientsInitialState)
+export const AllClientsDispatchContext = createContext<any>(null)
 
 export function AllClientsReducer(clients: any, action: any) {
   switch (action.type) {
@@ -63,11 +78,10 @@ export function ALLClientsProvider({ children }: { children: React.ReactNode }) 
   )
 }
 
-export function useClients() {
+export function useAllClients() {
   return useContext(AllClientsContext)
 }
 
-export function useClientsDispatch() {
+export function useAllClientsDispatch() {
   return useContext(AllClientsDispatchContext)
 }
-

@@ -39,6 +39,7 @@ import { peerIdFromKeys } from '@libp2p/peer-id'
 import { hexToBytes } from '@ethereumjs/util'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
+  eventLog: boolean
   discv5: Discv5
   protocols: Map<ProtocolId, BaseProtocol>
   uTP: PortalNetworkUTP
@@ -149,6 +150,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
       trustedBlockRoot: opts.trustedBlockRoot,
+      eventLog: opts.eventLog,
     })
 
     return portal
@@ -162,7 +164,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   constructor(opts: PortalNetworkOpts) {
     // eslint-disable-next-line constructor-super
     super()
-
+    this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
@@ -380,7 +382,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      let nodeAddr
+      let nodeAddr: ENR | undefined
       if (typeof enr === 'string') {
         // If ENR is not provided, look up ENR in protocol routing table by nodeId
         const protocol = this.protocols.get(protocolId)
@@ -388,7 +390,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           nodeAddr = protocol.routingTable.getWithPending(enr)?.value
           if (!nodeAddr) {
             // Check in unverified sessions cache if no ENR found in routing table
-            nodeAddr = this.unverifiedSessionCache.get(enr)
+            // nodeAddr = this.unverifiedSessionCache.get(enr)
           }
         }
       } else {
@@ -404,6 +406,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         Buffer.from(payload),
         hexToBytes(messageProtocol),
       )
+      this.eventLog &&
+        this.emit('SendTalkReq', nodeAddr.nodeId, toHexString(res), toHexString(payload))
       return res
     } catch (err: any) {
       if (protocolId === ProtocolId.UTPNetwork) {
@@ -419,6 +423,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     requestId: bigint,
     payload: Uint8Array,
   ) => {
+    this.eventLog &&
+      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), toHexString(payload))
     this.discv5.sendTalkResp(src, requestId, payload)
   }
 }

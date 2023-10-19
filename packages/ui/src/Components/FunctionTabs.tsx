@@ -1,15 +1,17 @@
 import * as React from 'react'
 import Tabs from '@mui/material/Tabs'
 import Tab from '@mui/material/Tab'
-import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
-import LookupContent from './LookupContent'
-import GetBlockBy from './getBlockBy'
 import GetBeacon from './getChainTip'
 import Ping from './Ping'
 import NodeInfo from './NodeInfo'
 import BootNodeResponses from './BootNodes'
-import { ClientContext } from '../Contexts/ClientContext'
+import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
+import { Button, LinearProgress, Stack } from '@mui/material'
+import ContentStore from './ContentStore'
+import MessageLogs from './MessageLogs'
+import RPC from './RPC'
+import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -17,23 +19,20 @@ interface TabPanelProps {
   value: number
 }
 
-function TabPanel(props: TabPanelProps) {
+export function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props
 
   return (
-    <div
+    <Box
       role="tabpanel"
       hidden={value !== index}
       id={`vertical-tabpanel-${index}`}
       aria-labelledby={`vertical-tab-${index}`}
+      style={{ width: '100%' }}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
+      {value === index && <Box sx={{ p: 0 }}>{children}</Box>}
+    </Box>
   )
 }
 
@@ -44,52 +43,92 @@ function a11yProps(index: number) {
   }
 }
 
-export default function FunctionTabs(props: { ping: any; pong: any }) {
+export default function FunctionTabs() {
   const state = React.useContext(ClientContext)
-  const { ping, pong } = props
+  const { REQUEST, PORT, IP } = React.useContext(RPCContext)
+  const dispatch = React.useContext(ClientDispatchContext)
+  const rpcDispatch = React.useContext(RPCDispatchContext)
   const [value, setValue] = React.useState(0)
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const [bootup, setBootup] = React.useState<boolean | undefined>(true)
+
+  const pingBooTnodes = REQUEST.pingBootNodes.useMutation()
+
+  const handleChange = (_: any, newValue: number) => {
     setValue(newValue)
   }
 
+  const bootNodes = async () => {
+    setBootup(undefined)
+    setTimeout(() => {
+      setBootup(false)
+    }, 10000)
+    const res =
+      state.CONNECTION === 'http'
+        ? await pingBooTnodes.mutateAsync({
+            port: PORT,
+            ip: IP,
+          })
+        : await pingBooTnodes.mutateAsync({})
+    res &&
+      dispatch({
+        type: 'BOOTNODES',
+        bootnodes: res,
+      })
+    setBootup(false)
+  }
+
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex' }}>
-      <Tabs
-        orientation="vertical"
-        variant="scrollable"
-        value={value}
-        onChange={handleChange}
-        aria-label="Vertical tabs example"
-        sx={{ borderRight: 1, borderColor: 'divider' }}
-      >
-        <Tab label={`Peers (${Object.keys(state.ROUTING_TABLE).length})`} {...a11yProps(0)} />
-        <Tab label="BootNodes" {...a11yProps(1)} />
-        <Tab label="PingPong" {...a11yProps(2)} />
-        <Tab label="StateRoot" {...a11yProps(3)} />
-        <Tab label="GetBlockBy" {...a11yProps(4)} />
-        <Tab label="ContentLookup" {...a11yProps(5)} />
-        <Tab label="Node Info" {...a11yProps(6)} />
-      </Tabs>
-      <TabPanel value={value} index={0}>
-        <NodeInfo />
-      </TabPanel>
-      <TabPanel value={value} index={1}>
-        <BootNodeResponses />
-      </TabPanel>
-      <TabPanel value={value} index={2}>
-        <Ping ping={ping} pong={pong} />
-      </TabPanel>
-      <TabPanel value={value} index={3}>
-        <GetBeacon />
-      </TabPanel>
-      <TabPanel value={value} index={4}>
-        <GetBlockBy />
-      </TabPanel>
-      <TabPanel value={value} index={5}>
-        <LookupContent />
-      </TabPanel>
-      <TabPanel value={value} index={6}>
-      </TabPanel>
+    <Box sx={{ bgcolor: 'background.paper', width: '100%' }}>
+      {bootup === true ? (
+        <Button variant="contained" fullWidth onClick={() => bootNodes()}>
+          CONNECT TO BOOTNODES
+        </Button>
+      ) : bootup === undefined ? (
+        <Box sx={{ width: '100%' }}>
+          <LinearProgress />
+        </Box>
+      ) : (
+        <></>
+      )}
+      <Stack width={'100%'} direction="row" spacing={2}>
+        <Tabs
+          orientation="vertical"
+          variant="fullWidth"
+          value={value}
+          onChange={handleChange}
+          aria-label="Client Tabs"
+          sx={{ borderRight: 1, borderColor: 'divider' }}
+        >
+          <Tab label={`Peers (${Object.keys(state.ROUTING_TABLE).length})`} {...a11yProps(0)} />
+          <Tab label="BootNodes" {...a11yProps(1)} />
+          <Tab label="PingPong" {...a11yProps(2)} />
+          <Tab label="StateRoot" {...a11yProps(3)} />
+          <Tab disabled={state.CONNECTION === 'http'} label="PeerLogs" {...a11yProps(4)} />
+          <Tab label="Store Content" {...a11yProps(5)} />
+          <Tab label="RPC Interface" {...a11yProps(6)} />
+        </Tabs>
+        <TabPanel value={value} index={0}>
+          <NodeInfo />
+        </TabPanel>
+        <TabPanel value={value} index={1}>
+          <BootNodeResponses />
+        </TabPanel>
+        <TabPanel value={value} index={2}>
+          <Ping />
+        </TabPanel>
+        <TabPanel value={value} index={3}>
+          <GetBeacon />
+        </TabPanel>
+        <TabPanel value={value} index={4}>
+          <MessageLogs />
+        </TabPanel>
+        <TabPanel value={value} index={5}>
+          <ContentStore />
+        </TabPanel>
+        <TabPanel value={value} index={6}>
+          <RPC />
+        </TabPanel>
+      </Stack>
     </Box>
   )
 }
