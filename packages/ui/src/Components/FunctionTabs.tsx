@@ -103,7 +103,7 @@ export default function FunctionTabs() {
           <Tab label="BootNodes" {...a11yProps(1)} />
           <Tab label="PingPong" {...a11yProps(2)} />
           <Tab label="StateRoot" {...a11yProps(3)} />
-          <Tab label="PeerLogs" {...a11yProps(4)} />
+          <Tab disabled={state.CONNECTION === 'http'} label="PeerLogs" {...a11yProps(4)} />
           <Tab label="Store Content" {...a11yProps(5)} />
           <Tab label="RPC Interface" {...a11yProps(6)} />
         </Tabs>
