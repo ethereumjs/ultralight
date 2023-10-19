@@ -228,9 +228,11 @@ export class HistoryProtocol extends BaseProtocol {
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (block instanceof Block) {
       this.put(this.protocolId, bodyContentKey, toHexString(value))
-      if (block.transactions.length > 0) {
-        await this.saveReceipts(block)
-      }
+      // TODO: Decide when and if to build and store receipts.
+      //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
+      // if (block.transactions.length > 0) {
+      //   await this.saveReceipts(block)
+      // }
     } else {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
