@@ -197,13 +197,13 @@ const main = async () => {
     handler.broadcastReconnectNotification()
     wss.close()
   })
-  portal.discv5.enableLogs()
-  portal.enableLog(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
-  debug.enable(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
+  // portal.discv5.enableLogs()
+  // portal.enableLog(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
+  // debug.enable(`*${portal.discv5.enr.nodeId.slice(0, 5)}*`)
 
-  await portal.start()
+  // await portal.start()
 
-  console.log({ enr: portal.discv5.enr.encodeTxt(), nodeId: portal.discv5.enr.nodeId })
+  // console.log({ enr: portal.discv5.enr.encodeTxt(), nodeId: portal.discv5.enr.nodeId })
 
   // create server
   createHTTPServer({

@@ -46,7 +46,7 @@ function a11yProps(index: number) {
 export default function ClientTabs() {
   const [clients, dispatch] = React.useReducer(AllClientsReducer, AllClientsInitialState)
 
-  const [value, setValue] = React.useState(0)
+  const [value, setValue] = React.useState(1)
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
@@ -65,7 +65,7 @@ export default function ClientTabs() {
             aria-label="App Tabs"
             sx={{ borderRight: 1, borderColor: 'divider' }}
           >
-            <Tab label="WSS Client" {...a11yProps(0)} />
+            <Tab disabled label="WSS Client" {...a11yProps(0)} />
             <Tab label="HTTP Client" {...a11yProps(1)} />
             <Tab label="Tests" {...a11yProps(2)} />
           </Tabs>

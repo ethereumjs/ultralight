@@ -35,7 +35,7 @@ export function SelfNodeInfo() {
   }
   React.useEffect(() => {
     getNodeInfo()
-  }, [])
+  }, [rpc.PORT, rpc.IP])
   return (
     <TableContainer sx={{ width: '100%' }} component={Paper}>
       <Table sx={{ width: '100%' }} size="small" aria-label="self node info">
