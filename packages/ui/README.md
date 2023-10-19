@@ -46,6 +46,10 @@ The App utilizes **tRpc**, a typescript based RPC library, to communicate with t
   - TESTS tab
     - not yet implemented
 
+## Console
+
+  - See the browser console for additional information while the client is running.
+
 ## App Features
 
 ### Routing Table
