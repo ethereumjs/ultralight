@@ -94,7 +94,10 @@ export abstract class BaseProtocol extends EventEmitter {
     const deserialized = PortalWireMessageType.deserialize(request)
     const decoded = deserialized.value
     const messageType = deserialized.selector
-    this.logger.extend(MessageCodes[messageType])(`Received from ${shortId(src.nodeId)}`)
+    const srcEnr = this.routingTable.getWithPending(src.nodeId)
+    this.logger.extend(MessageCodes[messageType])(
+      `Received from ${shortId(srcEnr !== undefined ? srcEnr.value : src.nodeId)}`,
+    )
     switch (messageType) {
       case MessageCodes.PING:
         this.handlePing(src, id, decoded as PingMessage)
@@ -132,14 +135,18 @@ export abstract class BaseProtocol extends EventEmitter {
     if (!(enr instanceof ENR)) {
       enr = ENR.decodeTxt(enr)
     }
-    // 3000ms tolerance for ping timeout
-    setTimeout(() => {
+    if (enr.nodeId === this.portal.discv5.enr.nodeId) {
+      // Don't ping ourselves
       return undefined
-    }, 3000)
+    }
+    // 3000ms tolerance for ping timeout
     if (!enr.nodeId) {
       this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
+    const timeout = setTimeout(() => {
+      return undefined
+    }, 3000)
     try {
       const pingMsg = PortalWireMessageType.serialize({
         selector: MessageCodes.PING,
@@ -156,13 +163,16 @@ export abstract class BaseProtocol extends EventEmitter {
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
         this.updateRoutingTable(enr, pongMessage.customPayload)
+        clearTimeout(timeout)
         return pongMessage
       } else {
+        clearTimeout(timeout)
         this.routingTable.evictNode(enr.nodeId)
       }
     } catch (err: any) {
       this.logger(`Error during PING request: ${err.toString()}`)
       enr.nodeId && this.routingTable.evictNode(enr.nodeId)
+      clearTimeout(timeout)
       return
     }
   }
@@ -486,7 +496,7 @@ export abstract class BaseProtocol extends EventEmitter {
     this.metrics?.contentMessagesSent.inc()
 
     this.logger(
-      `Received handleFindContent request for contentKey: ${toHexString(
+      `Received FindContent request for contentKey: ${toHexString(
         decodedContentMessage.contentKey,
       )}`,
     )

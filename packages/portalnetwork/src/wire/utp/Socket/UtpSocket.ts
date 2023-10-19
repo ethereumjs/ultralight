@@ -169,7 +169,6 @@ export class UtpSocket extends EventEmitter {
     try {
       await this.packetManager.congestionControl.canSend()
     } catch (e) {
-      console.trace(e)
       this.logger(`DATA packet not acked.  Closing connection to ${this.remoteAddress}`)
       await this.sendResetPacket()
       this.close()

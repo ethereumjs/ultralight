@@ -188,7 +188,7 @@ describe('Find Content tests', () => {
       node1.discv5.enr.nodeId,
       concatBytes(
         new Uint8Array([3]),
-        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
 
@@ -200,7 +200,7 @@ describe('Find Content tests', () => {
     const content = await protocol2.findContentLocally(
       concatBytes(
         new Uint8Array([3]),
-        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
 
@@ -369,7 +369,7 @@ describe('OFFER/ACCEPT tests', () => {
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
       hexToBytes(optimisticUpdate.content_value),
     )
@@ -395,7 +395,7 @@ describe('OFFER/ACCEPT tests', () => {
       hexToBytes(
         getBeaconContentKey(
           BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-          LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+          LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
         ),
       ),
     )
@@ -485,7 +485,7 @@ describe('OFFER/ACCEPT tests', () => {
 
     const staleOptimisticUpdateContentKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-      LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 6718463n }),
+      LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
     )
     await protocol1.store(
       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
@@ -679,7 +679,7 @@ describe('beacon light client sync tests', () => {
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
         // FIXME
-        LightClientOptimisticUpdateKey.serialize({ optimisticSlot: 0n }),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 0n }),
       ),
       concatBytes(
         capellaForkDigest,
