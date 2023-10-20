@@ -13,7 +13,7 @@ import {
   LightClientUpdatesByRangeKey,
 } from './types.js'
 import { Debugger } from 'debug'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 import { getBeaconContentKey } from './util.js'
 
@@ -44,7 +44,7 @@ export class UltralightTransport implements LightClientTransport {
       )
       let decoded
       decoded = await this.protocol.findContentLocally(rangeKey)
-      if (decoded === undefined) {
+      if (decoded === undefined || bytesToHex(decoded) === '0x') {
         decoded = await this.protocol.sendFindContent(
           this.protocol.routingTable.random()!.nodeId,
           rangeKey,
@@ -77,10 +77,31 @@ export class UltralightTransport implements LightClientTransport {
       getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
     )
     this.logger(`requesting LightClientOptimisticUpdate for ${currentSlot.toString(10)}`)
-    // Try to get optimistic update from Portal Network.  We request an update corresponding to the current slot
-    // (i.e. tip of the chain) - 1 as the attested header in the optimistic update "should" be only one slot behind
-    // the tip if consensus is working properly and on happy path
 
+    // Try to get optimistic update locally
+    const localUpdate = await this.protocol.findContentLocally(
+      hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+          LightClientOptimisticUpdateKey.serialize({
+            signatureSlot: currentSlot,
+          }),
+        ),
+      ),
+    )
+
+    if (localUpdate !== undefined && bytesToHex(localUpdate) !== '0x') {
+      const forkhash = localUpdate.slice(0, 4) as Uint8Array
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      optimisticUpdate = ssz[forkname].LightClientOptimisticUpdate.deserialize(localUpdate.slice(4))
+
+      return {
+        version: forkname,
+        data: optimisticUpdate,
+      }
+    }
+
+    // Try to get optimistic update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
@@ -113,16 +134,48 @@ export class UltralightTransport implements LightClientTransport {
   }> {
     let finalityUpdate, forkname
 
+    const currentFinalitySlot = this.protocol.lightClient?.getFinalized().beacon.slot
+    if (currentFinalitySlot === undefined) {
+      throw new Error('Light Client is not running or no Finality Update is available')
+    }
     const currentSlot = BigInt(
       getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
     )
-    this.logger(`requesting LightClientFinalityUpdate for ${currentSlot.toString(10)}`)
+    // Ask for the next possible finality update (or current finality slot if next would still be in the future)
+    const nextFinalitySlot =
+      currentSlot >= currentFinalitySlot + 32
+        ? BigInt(currentFinalitySlot + 32)
+        : BigInt(currentFinalitySlot)
+    this.logger(`requesting LightClientFinalityUpdate for ${nextFinalitySlot.toString(10)}`)
+
+    // Try retrieving finality update locally
+    const localUpdate = await this.protocol.findContentLocally(
+      hexToBytes(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+          LightClientFinalityUpdateKey.serialize({
+            finalitySlot: nextFinalitySlot,
+          }),
+        ),
+      ),
+    )
+
+    if (localUpdate !== undefined && bytesToHex(localUpdate) !== '0x') {
+      const forkhash = localUpdate.slice(0, 4) as Uint8Array
+      forkname = this.protocol.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      finalityUpdate = ssz[forkname].LightClientFinalityUpdate.deserialize(localUpdate.slice(4))
+
+      return {
+        version: forkname,
+        data: finalityUpdate,
+      }
+    }
     // Try to get finality update from Portal Network
     const decoded = await this.protocol.sendFindContent(
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ signatureSlot: currentSlot }),
+        LightClientFinalityUpdateKey.serialize({ finalitySlot: nextFinalitySlot }),
       ),
     )
     if (decoded !== undefined) {
@@ -209,9 +262,14 @@ export class UltralightTransport implements LightClientTransport {
         const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
           forkhash,
         ) as LightClientForkName
-        handler(
-          ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
-        )
+        try {
+          handler(
+            ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
+          )
+        } catch (err) {
+          this.logger('something went wrong trying to process Optimistic Update')
+          this.logger(err)
+        }
       }
     })
   }
@@ -223,7 +281,14 @@ export class UltralightTransport implements LightClientTransport {
         const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
           forkhash,
         ) as LightClientForkName
-        handler(ssz[forkname].LightClientFinalityUpdate.deserialize((value as Uint8Array).slice(4)))
+        try {
+          handler(
+            ssz[forkname].LightClientFinalityUpdate.deserialize((value as Uint8Array).slice(4)),
+          )
+        } catch (err) {
+          this.logger('something went wrong trying to process Finality Update')
+          this.logger(err)
+        }
       }
     })
   }

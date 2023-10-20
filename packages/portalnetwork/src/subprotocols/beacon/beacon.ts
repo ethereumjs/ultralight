@@ -276,10 +276,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    * the `lightClientBootStrap`
    */
   public initializeLightClient = async (blockRoot: string) => {
-    // Disable bootstrap finder mechanism if currently running
-    if (this.syncStrategy === SyncStrategy.PollNetwork)
-      this.portal.removeListener('NodeAdded', this.getBootStrapVote)
-    else this.portal.removeListener('NodeAdded', this.getBootstrap)
+    // Ensure bootstrap finder mechanism is disabled if currently running
+    this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+    this.portal.removeListener('NodeAdded', this.getBootstrap)
 
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')
@@ -334,10 +333,15 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         break
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
+        this.logger.extend('FINDLOCALLY')(
+          `looking for optimistic update for slot ${key.signatureSlot}`,
+        )
         if (
           this.lightClient !== undefined &&
-          key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot)
+          key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot + 1)
         ) {
+          // We have to check against the light client head + 1 since it will be one slot behind the current slot
+          this.logger.extend('FINDLOCALLY')('found optimistic update matching light client head')
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
           value = await this.retrieve(
@@ -348,24 +352,43 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           )
+          this.logger.extend('FINDLOCALLY')(
+            `light client is not running, retrieving whatever we have - ${
+              value ?? 'nothing found'
+            }`,
+          )
+        } else {
+          this.logger.extend('FINDLOCALLY')('tried to retrieve an optimistic update we do not have')
         }
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
         if (
           this.lightClient !== undefined &&
-          key.signatureSlot === BigInt(this.lightClient.getFinalized().beacon.slot)
+          key.finalitySlot <= BigInt(this.lightClient.getFinalized().beacon.slot)
         ) {
-          // We only store the most recent finality update so only retrieve the optimistic update if the slot
-          // in the key matches the current finalized slot known to our light client
+          // We only store the most recent finality update so only retrieve the finality update if the slot
+          // in the key is less than or equal to the current finalized slot known to our light client
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
         } else if (this.lightClient === undefined) {
-          // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
+          // If the light client isn't initialized, we just blindly store and retrieve the finality update we have
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
+          if (value !== undefined) {
+            const decoded = hexToBytes(value)
+            const forkhash = decoded.slice(0, 4) as Uint8Array
+            const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+            if (
+              ssz[forkname].LightClientFinalityUpdate.deserialize(decoded).finalizedHeader.beacon
+                .slot < Number(key.finalitySlot)
+            ) {
+              // If what we have stored locally is older than the finality update requested, don't send it
+              value = undefined
+            }
+          }
         }
 
         break
@@ -382,7 +405,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
   ): Promise<Union<Uint8Array | Uint8Array[]> | undefined> => {
     const enr = this.routingTable.getValue(dstId)
     if (!enr) {
-      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
+      this.logger.extend('FINDCONTENT')(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return
     }
     this.metrics?.findContentMessagesSent.inc()
@@ -704,7 +727,6 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.protocolId)
-      this.logger.extend(`OFFER`)(`Response from ${shortId(dstId)}`)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -721,7 +743,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
               return []
             }
-            this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
+            this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
             for await (const key of requestedKeys) {
@@ -792,7 +814,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             }
             case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
               {
-                const slot = LightClientFinalityUpdateKey.deserialize(key.slice(1)).signatureSlot
+                const slot = LightClientFinalityUpdateKey.deserialize(key.slice(1)).finalitySlot
                 if (
                   this.lightClient !== undefined &&
                   slot > this.lightClient.getFinalized().beacon.slot
@@ -812,8 +834,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 const slot = LightClientOptimisticUpdateKey.deserialize(key.slice(1)).signatureSlot
                 if (
                   this.lightClient !== undefined &&
-                  slot > this.lightClient.getHead().beacon.slot
+                  slot > this.lightClient.getHead().beacon.slot + 1
                 ) {
+                  // We have to check against the light client head + 1 since it will be one slot behind the current slot
                   offerAccepted = true
                   contentIds[x] = true
                   this.logger.extend('OFFER')(

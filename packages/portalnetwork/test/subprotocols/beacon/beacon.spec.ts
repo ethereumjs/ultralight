@@ -81,7 +81,7 @@ describe('portal network spec test vectors', () => {
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).signatureSlot,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalitySlot,
       6718464n,
       'deserialized finality update key',
     )
@@ -191,7 +191,7 @@ describe('API tests', async () => {
     const retrievedFinalityUpdate = await protocol.findContentLocally(
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ signatureSlot: 6718463n }),
+        LightClientFinalityUpdateKey.serialize({ finalitySlot: 6718463n }),
       ),
     )
 
@@ -226,7 +226,7 @@ describe('API tests', async () => {
     const retrievedOptimisticUpdate = await protocol.findContentLocally(
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
-        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718464n }),
       ),
     )
 
@@ -367,6 +367,7 @@ describe('constructor/initialization tests', async () => {
     assert.equal((beacon.lightClient as any).checkpointRoot, trustedBlockRoot)
     expect(beacon.lightClient!.start).toHaveBeenCalled()
     const listeners = beacon.portal.listeners('NodeAdded')
+
     assert.equal(listeners.length, 0, 'bootstrap listener is not running')
     vi.resetAllMocks()
   })

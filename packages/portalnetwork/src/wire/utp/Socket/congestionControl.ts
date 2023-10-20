@@ -64,7 +64,8 @@ export class CongestionControl extends EventEmitter {
     const delta = this.rtt - packetRtt
     this.rtt_var = this.rtt_var + Math.floor((Math.abs(delta) - this.rtt_var) / 4)
     this.rtt = Math.floor(this.rtt + (packetRtt - this.rtt) / 8)
-    this.timeout = Math.max(this.rtt + this.rtt_var * 4, 500)
+    // 2147483647 is the highest signed 32 bit integer so this Math.min guards against timeout overflows
+    this.timeout = Math.min(Math.max(this.rtt + this.rtt_var * 4, 500), 2147483647)
     clearTimeout(this.timeoutCounter)
     this.logger(`timeout set to ${this.timeout}ms`)
     this.timeoutCounter = setTimeout(() => {

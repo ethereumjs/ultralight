@@ -28,7 +28,7 @@ export const LightClientUpdatesByRangeKey = new ContainerType({
   count: new UintBigintType(8),
 })
 export const LightClientFinalityUpdateKey = new ContainerType({
-  signatureSlot: new UintBigintType(8),
+  finalitySlot: new UintBigintType(8),
 })
 export const LightClientOptimisticUpdateKey = new ContainerType({
   signatureSlot: new UintBigintType(8),

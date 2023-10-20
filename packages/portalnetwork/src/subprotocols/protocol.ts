@@ -84,10 +84,6 @@ export abstract class BaseProtocol extends EventEmitter {
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
   public handle(message: ITalkReqMessage, src: INodeAddress) {
-    const enr = this.findEnr(src.nodeId)
-    if (enr !== undefined) {
-      this.updateRoutingTable(enr)
-    }
     const id = message.id
     const protocol = message.protocol
     const request = message.request
@@ -95,6 +91,11 @@ export abstract class BaseProtocol extends EventEmitter {
     const decoded = deserialized.value
     const messageType = deserialized.selector
     const srcEnr = this.routingTable.getWithPending(src.nodeId)
+    if (srcEnr === undefined) {
+      this.logger(`Received TALKREQ from node not known to support ${this.protocolName}`)
+      const enr = this.findEnr(src.nodeId)
+      enr !== undefined && this.updateRoutingTable(enr)
+    }
     this.logger.extend(MessageCodes[messageType])(
       `Received from ${shortId(srcEnr !== undefined ? srcEnr.value : src.nodeId)}`,
     )

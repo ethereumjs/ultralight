@@ -241,11 +241,11 @@ export class UtpSocket extends EventEmitter {
     }
     // Add the packet.seqNr to this.ackNrs at the relative index, regardless of order received.
     if (this.ackNrs[0] === undefined) {
-      this.logger(`Setting AckNr[0] to ${packet.header.seqNr}]`)
+      this.logger(`Setting AckNr[0] to ${packet.header.seqNr}`)
       this.ackNrs[0] = packet.header.seqNr
     } else {
       this.logger(
-        `Setting AckNr[${packet.header.seqNr - this.ackNrs[0]}] to ${packet.header.seqNr}]`,
+        `Setting AckNr[${packet.header.seqNr - this.ackNrs[0]}] to ${packet.header.seqNr}`,
       )
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
