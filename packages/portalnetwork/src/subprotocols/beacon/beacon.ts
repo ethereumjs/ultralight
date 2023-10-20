@@ -365,18 +365,30 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
         if (
           this.lightClient !== undefined &&
-          key.finalitySlot === BigInt(this.lightClient.getFinalized().beacon.slot)
+          key.finalitySlot <= BigInt(this.lightClient.getFinalized().beacon.slot)
         ) {
-          // We only store the most recent finality update so only retrieve the optimistic update if the slot
-          // in the key matches the current finalized slot known to our light client
+          // We only store the most recent finality update so only retrieve the finality update if the slot
+          // in the key is less than or equal to the current finalized slot known to our light client
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
         } else if (this.lightClient === undefined) {
-          // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
+          // If the light client isn't initialized, we just blindly store and retrieve the finality update we have
           value = await this.retrieve(
             intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           )
+          if (value !== undefined) {
+            const decoded = hexToBytes(value)
+            const forkhash = decoded.slice(0, 4) as Uint8Array
+            const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+            if (
+              ssz[forkname].LightClientFinalityUpdate.deserialize(decoded).finalizedHeader.beacon
+                .slot < Number(key.finalitySlot)
+            ) {
+              // If what we have stored locally is older than the finality update requested, don't send it
+              value = undefined
+            }
+          }
         }
 
         break
