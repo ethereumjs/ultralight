@@ -138,8 +138,14 @@ export class UltralightTransport implements LightClientTransport {
     if (currentFinalitySlot === undefined) {
       throw new Error('Light Client is not running or no Finality Update is available')
     }
-    // Ask for the next possible finality update
-    const nextFinalitySlot = BigInt(currentFinalitySlot + 32)
+    const currentSlot = BigInt(
+      getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
+    )
+    // Ask for the next possible finality update (or current finality slot if next would still be in the future)
+    const nextFinalitySlot =
+      currentSlot >= currentFinalitySlot + 32
+        ? BigInt(currentFinalitySlot + 32)
+        : BigInt(currentFinalitySlot)
     this.logger(`requesting LightClientFinalityUpdate for ${nextFinalitySlot.toString(10)}`)
 
     // Try retrieving finality update locally
