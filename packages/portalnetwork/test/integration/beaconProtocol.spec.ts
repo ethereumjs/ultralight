@@ -154,7 +154,7 @@ describe('Find Content tests', () => {
       getHead: () => {
         return {
           beacon: {
-            slot: 6718463,
+            slot: 6718462,
           },
         }
       },
@@ -164,7 +164,7 @@ describe('Find Content tests', () => {
       getHead: () => {
         return {
           beacon: {
-            slot: 6718463,
+            slot: 6718462,
           },
         }
       },
@@ -324,6 +324,8 @@ describe('OFFER/ACCEPT tests', () => {
       },
     })
 
+    node1.enableLog('*BeaconLightClientNetwork*')
+    node2.enableLog('*BeaconLightClientNetwork')
     await node1.start()
     await node2.start()
     const protocol1 = node1.protocols.get(
@@ -339,7 +341,7 @@ describe('OFFER/ACCEPT tests', () => {
       getHead: () => {
         return {
           beacon: {
-            slot: 6718463,
+            slot: 6718462,
           },
         }
       },
@@ -351,7 +353,7 @@ describe('OFFER/ACCEPT tests', () => {
       getHead: () => {
         return {
           beacon: {
-            slot: 6718462,
+            slot: 6718461,
           },
         }
       },
@@ -383,7 +385,7 @@ describe('OFFER/ACCEPT tests', () => {
             getHead: () => {
               return {
                 beacon: {
-                  slot: 6718463,
+                  slot: 6718462,
                 },
               }
             },

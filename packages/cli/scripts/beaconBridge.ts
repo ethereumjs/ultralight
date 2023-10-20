@@ -2,7 +2,7 @@ import jayson from 'jayson/promise/index.js'
 
 import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
-import { BeaconLightClientNetworkContentType, fromHexString, getBeaconContentKey, LightClientBootstrapKey, LightClientOptimisticUpdateKey, LightClientUpdatesByRange, LightClientUpdatesByRangeKey, ProtocolId, toHexString } from 'portalnetwork'
+import { BeaconLightClientNetworkContentType, fromHexString, getBeaconContentKey, LightClientBootstrapKey, LightClientFinalityUpdateKey, LightClientOptimisticUpdateKey, LightClientUpdatesByRange, LightClientUpdatesByRangeKey, ProtocolId, toHexString } from 'portalnetwork'
 import { ssz } from '@lodestar/types'
 import { ForkName } from '@lodestar/params'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
@@ -42,7 +42,7 @@ const main = async () => {
     const res = await ultralight.request('portal_beaconStore', [getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientBootstrap, LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) })), toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientBootstrap.serialize(bootstrap)))])
     console.log('Pushed bootstrap into Portal Network', res)
     const res2 = await ultralight.request('portal_beaconStore', [rangeKey, toHexString(serializedRange)])
-    console.log(`Pushed light client updates for range ${oldPeriod}-${oldPeriod + 3} into Portal Network`, res2)
+    console.log(`Pushed light client updates for range ${oldPeriod}-${currentPeriod} into Portal Network`, res2)
     const res3 = await ultralight.request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate)))])
     console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.signatureSlot}`, res3)
     const res4 = await ultralight.request('portal_beaconStartLightClient',[bootstrapRoot])
@@ -59,8 +59,12 @@ const main = async () => {
         await new Promise(resolve => setTimeout(() => resolve(undefined), 13000))
         let optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson((await (await fetch(beaconNode + 'eth/v1/beacon/light_client/optimistic_update')).json()).data)
         let optimisticUpdateKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate, LightClientOptimisticUpdateKey.serialize({ signatureSlot: BigInt(optimisticUpdate.signatureSlot) }))
-        const res = await ultralight.request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate)))])
+        let res = await ultralight.request('portal_beaconStore', [optimisticUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate)))])
         console.log(`Pushed optimistic update for signature slot ${optimisticUpdate.signatureSlot}`, res)
+        let finalityUpdate = ssz.capella.LightClientFinalityUpdate.fromJson((await (await fetch(beaconNode + 'eth/v1/beacon/light_client/finality_update')).json()).data) 
+        let finalityUpdateKey = getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientFinalityUpdate, LightClientFinalityUpdateKey.serialize({ finalitySlot: BigInt(finalityUpdate.finalizedHeader.beacon.slot) }))
+        res = await ultralight.request('portal_beaconStore', [finalityUpdateKey, toHexString(concatBytes(capellaForkDigest, ssz.capella.LightClientFinalityUpdate.serialize(finalityUpdate)))])
+        console.log(`Pushed finality update for signature slot ${finalityUpdate.finalizedHeader.beacon.slot}`, res)
     }
 
 }

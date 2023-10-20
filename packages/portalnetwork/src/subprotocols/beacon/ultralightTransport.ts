@@ -134,10 +134,13 @@ export class UltralightTransport implements LightClientTransport {
   }> {
     let finalityUpdate, forkname
 
-    const currentSlot = BigInt(
-      getCurrentSlot(this.protocol.beaconConfig, genesisData.mainnet.genesisTime),
-    )
-    this.logger(`requesting LightClientFinalityUpdate for ${currentSlot.toString(10)}`)
+    const currentFinalitySlot = this.protocol.lightClient?.getFinalized().beacon.slot
+    if (currentFinalitySlot === undefined) {
+      throw new Error('Light Client is not running or no Finality Update is available')
+    }
+    // Ask for the next possible finality update
+    const nextFinalitySlot = BigInt(currentFinalitySlot + 32)
+    this.logger(`requesting LightClientFinalityUpdate for ${nextFinalitySlot.toString(10)}`)
 
     // Try retrieving finality update locally
     const localUpdate = await this.protocol.findContentLocally(
@@ -145,7 +148,7 @@ export class UltralightTransport implements LightClientTransport {
         getBeaconContentKey(
           BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
           LightClientFinalityUpdateKey.serialize({
-            signatureSlot: currentSlot,
+            finalitySlot: nextFinalitySlot,
           }),
         ),
       ),
@@ -166,7 +169,7 @@ export class UltralightTransport implements LightClientTransport {
       this.protocol.routingTable.random()!.nodeId,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ signatureSlot: currentSlot }),
+        LightClientFinalityUpdateKey.serialize({ finalitySlot: nextFinalitySlot }),
       ),
     )
     if (decoded !== undefined) {
@@ -258,7 +261,7 @@ export class UltralightTransport implements LightClientTransport {
             ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
           )
         } catch (err) {
-          this.logger('something went wrong on Optimistic Update')
+          this.logger('something went wrong trying to process Optimistic Update')
           this.logger(err)
         }
       }
@@ -272,7 +275,14 @@ export class UltralightTransport implements LightClientTransport {
         const forkname = this.protocol.beaconConfig.forkDigest2ForkName(
           forkhash,
         ) as LightClientForkName
-        handler(ssz[forkname].LightClientFinalityUpdate.deserialize((value as Uint8Array).slice(4)))
+        try {
+          handler(
+            ssz[forkname].LightClientFinalityUpdate.deserialize((value as Uint8Array).slice(4)),
+          )
+        } catch (err) {
+          this.logger('something went wrong trying to process Finality Update')
+          this.logger(err)
+        }
       }
     })
   }

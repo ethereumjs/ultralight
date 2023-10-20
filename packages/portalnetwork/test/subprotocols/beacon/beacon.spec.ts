@@ -81,7 +81,7 @@ describe('portal network spec test vectors', () => {
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).signatureSlot,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalitySlot,
       6718464n,
       'deserialized finality update key',
     )
@@ -191,7 +191,7 @@ describe('API tests', async () => {
     const retrievedFinalityUpdate = await protocol.findContentLocally(
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
-        LightClientFinalityUpdateKey.serialize({ signatureSlot: 6718463n }),
+        LightClientFinalityUpdateKey.serialize({ finalitySlot: 6718463n }),
       ),
     )
 

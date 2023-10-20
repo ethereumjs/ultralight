@@ -74,7 +74,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
 
   it('deserializes finality update key', () => {
     assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).signatureSlot,
+      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalitySlot,
       6718464n,
       'deserialized finality update key',
     )
