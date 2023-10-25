@@ -22,6 +22,7 @@ import {
   FoundContent,
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
+  StateProtocol,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -69,6 +70,7 @@ export class portal {
   private _client: PortalNetwork
   private _history: HistoryProtocol
   private _beacon: BeaconLightClientNetwork
+  private _state: StateProtocol
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
@@ -77,6 +79,7 @@ export class portal {
     this._beacon = this._client.protocols.get(
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
+    this._state = this._client.protocols.get(ProtocolId.StateNetwork) as StateProtocol
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
