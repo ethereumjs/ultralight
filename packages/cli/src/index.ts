@@ -149,6 +149,9 @@ const main = async () => {
         case 'beacon':
           networks.push(ProtocolId.BeaconLightClientNetwork)
           break
+        case 'state':
+          networks.push(ProtocolId.StateNetwork)
+          break
       }
     }
   } else {
