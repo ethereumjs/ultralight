@@ -30,6 +30,8 @@ import { middleware, validators } from '../validators.js'
 import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
+  // state
+  'portal_statePing',
   'portal_stateRoutingTableInfo',
   'portal_stateStore',
   'portal_stateLocalContent',
@@ -97,6 +99,7 @@ export class portal {
       [validators.array(validators.enr)],
     ])
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
+    this.statePing = middleware(this.statePing.bind(this), 1, [[validators.enr]])
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
       [validators.enr],
       [validators.hex],
@@ -330,6 +333,23 @@ export class portal {
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
+    if (pong) {
+      this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+    } else {
+      this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+    }
+    return (
+      pong && {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: toHexString(pong.customPayload),
+      }
+    )
+  }
+  async statePing(params: [string]) {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    this.logger(`PING request received on StateNetwork for ${shortId(encodedENR.nodeId)}`)
+    const pong = await this._state.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
     } else {
