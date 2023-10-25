@@ -23,6 +23,7 @@ import {
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
   StateProtocol,
+  StateNetworkContentType,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -36,6 +37,10 @@ const methods = [
   'portal_stateStore',
   'portal_stateLocalContent',
   'portal_stateGossip',
+  'portal_stateFindContent',
+  'portal_stateRecursiveFindContent',
+  'portal_stateOffer',
+  'portal_stateSendOffer',
   // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
@@ -144,12 +149,28 @@ export class portal {
     this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
+    this.stateFindContent = middleware(this.stateFindContent.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
+    this.stateRecursiveFindContent = middleware(this.stateRecursiveFindContent.bind(this), 1, [
+      [validators.contentKey],
+    ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
       [validators.enr],
       [validators.hex],
       [validators.hex],
     ])
     this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
+      [validators.dstId],
+      [validators.array(validators.hex)],
+    ])
+    this.stateOffer = middleware(this.stateOffer.bind(this), 3, [
+      [validators.enr],
+      [validators.hex],
+      [validators.hex],
+    ])
+    this.stateSendOffer = middleware(this.stateSendOffer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.hex)],
     ])
@@ -522,6 +543,52 @@ export class portal {
           utpTransfer: res.selector === FoundContent.UTP,
         }
   }
+  async stateFindContent(params: [string, string]) {
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    if (!this._state.routingTable.getWithPending(nodeId)?.value) {
+      const pong = await this._state.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
+    const res = await this._state.sendFindContent(nodeId, fromHexString(contentKey))
+    this.logger.extend('findContent')(
+      `request returned type: ${res ? FoundContent[res.selector] : res}`,
+    )
+    if (!res) {
+      return { enrs: [] }
+    }
+    const content: Uint8Array | Uint8Array[] =
+      res.selector === FoundContent.ENRS
+        ? (res.value as Uint8Array[])
+        : res.selector === FoundContent.CONTENT
+        ? (res.value as Uint8Array)
+        : await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              resolve(Uint8Array.from([]))
+            }, 2000)
+            this._client.uTP.on(
+              ProtocolId.StateNetwork,
+              (_contentType: StateNetworkContentType, hash: string, value: Uint8Array) => {
+                if (hash.slice(2) === contentKey.slice(4)) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              },
+            )
+          })
+    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
+    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+    this.logger.extend('findContent')(content)
+    return res.selector === FoundContent.ENRS
+      ? { enrs: content }
+      : {
+          content: content.length > 0 ? toHexString(content as Uint8Array) : '',
+          utpTransfer: res.selector === FoundContent.UTP,
+        }
+  }
+
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
@@ -568,6 +635,31 @@ export class portal {
       }
     }
   }
+  async stateRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('stateRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._state, fromHexString(contentKey))
+    const res = await lookup.startLookup()
+    this.logger.extend('stateRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+    if (!res) {
+      this.logger.extend('stateRecursiveFindContent')(`request returned { enrs: [] }`)
+      return { content: '0x', utpTransfer: false }
+    }
+    if ('enrs' in res) {
+      this.logger.extend('stateRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
+      )
+      return { enrs: res.enrs.map(toHexString) }
+    } else {
+      this.logger.extend('stateRecursiveFindContent')(
+        `request returned { content: ${toHexString(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      return {
+        content: toHexString(res.content),
+        utpTransfer: res.utp,
+      }
+    }
+  }
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params
     const enr = ENR.decodeTxt(enrHex)
@@ -591,6 +683,26 @@ export class portal {
     const keys = contentKeys.map((key) => fromHexString(key))
     const res = await this._history.sendOffer(dstId, keys)
     const enr = this._history.routingTable.getWithPending(dstId)?.value
+    return res && enr && '0x' + enr.seq.toString(16)
+  }
+  async stateOffer(params: [string, string, string]) {
+    const [enrHex, contentKeyHex, contentValueHex] = params
+    const enr = ENR.decodeTxt(enrHex)
+    if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+      const res = await this._state.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    await this._state.stateStore(contentKeyHex, contentValueHex)
+    const res = await this._state.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
+    return res
+  }
+  async stateSendOffer(params: [string, string[]]) {
+    const [dstId, contentKeys] = params
+    const keys = contentKeys.map((key) => fromHexString(key))
+    const res = await this._state.sendOffer(dstId, keys)
+    const enr = this._state.routingTable.getWithPending(dstId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
   async historySendAccept(params: [string, string, string[]]) {
