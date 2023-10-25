@@ -32,6 +32,7 @@ import { Multiaddr } from '@multiformats/multiaddr'
 const methods = [
   'portal_stateRoutingTableInfo',
   'portal_stateStore',
+  'portal_stateLocalContent',
   // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
@@ -123,6 +124,7 @@ export class portal {
     this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
       [validators.hex],
     ])
+    this.stateLocalContent = middleware(this.stateLocalContent.bind(this), 1, [[validators.hex]])
     this.historyStore = middleware(this.historyStore.bind(this), 2, [
       [validators.contentKey],
       [validators.hex],
@@ -439,6 +441,15 @@ export class portal {
     const res = await this._history.findContentLocally(fromHexString(contentKey))
     this.logger.extend(`historyLocalContent`)(`request returned ${res.length} bytes`)
     this.logger.extend(`historyLocalContent`)(`${toHexString(res)}`)
+    return res.length > 0 ? toHexString(res) : '0x'
+  }
+  async stateLocalContent(params: [string]): Promise<string | undefined> {
+    const [contentKey] = params
+    this.logger(`Received stateLocalContent request for ${contentKey}`)
+
+    const res = await this._state.findContentLocally(fromHexString(contentKey))
+    this.logger.extend(`stateLocalContent`)(`request returned ${res.length} bytes`)
+    this.logger.extend(`stateLocalContent`)(`${toHexString(res)}`)
     return res.length > 0 ? toHexString(res) : '0x'
   }
   async historyFindContent(params: [string, string]) {

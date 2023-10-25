@@ -2,6 +2,8 @@ import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import { BaseProtocol } from '../protocol.js'
 import { ProtocolId } from '../types.js'
+import { toHexString } from '@chainsafe/ssz'
+import { hexToBytes } from '@ethereumjs/util'
 
 export class StateProtocol extends BaseProtocol {
   protocolId: ProtocolId.StateNetwork
@@ -18,6 +20,10 @@ export class StateProtocol extends BaseProtocol {
     return undefined
   }
 
+  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
+    const value = await this.retrieve(toHexString(contentKey))
+    return value ? hexToBytes(value) : hexToBytes('0x')
+  }
 
   public routingTableInfo = async () => {
     return {
