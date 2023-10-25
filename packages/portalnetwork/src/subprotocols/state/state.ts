@@ -116,7 +116,6 @@ export class StateProtocol extends BaseProtocol {
     }
   }
 
-
   public routingTableInfo = async () => {
     return {
       nodeId: this.enr.nodeId,
