@@ -56,8 +56,8 @@ describe('Beacon network type tests using portal network spec test vectors', () 
     )
   })
 
-  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_value)
-  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_key).slice(
+  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718368'].content_value)
+  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718368'].content_key).slice(
     1,
   )
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
