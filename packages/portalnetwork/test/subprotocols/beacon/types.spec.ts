@@ -56,8 +56,8 @@ describe('Beacon network type tests using portal network spec test vectors', () 
     )
   })
 
-  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_value)
-  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718463'].content_key).slice(
+  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718368'].content_value)
+  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718368'].content_key).slice(
     1,
   )
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
@@ -75,7 +75,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
   it('deserializes finality update key', () => {
     assert.equal(
       LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalitySlot,
-      6718464n,
+      6718368n,
       'deserialized finality update key',
     )
   })
