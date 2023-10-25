@@ -22,11 +22,13 @@
     "vitest": "^0.34.1"
   },
   "dependencies": {
+    "alchemy-sdk": "v3-beta",
     "@chainsafe/discv5": "5.1.1",
     "@chainsafe/ssz": "^0.11.1",
     "@ethereumjs/block": "5.0.0",
     "@ethereumjs/rlp": "5.0.0",
     "@ethereumjs/tx": "5.0.0",
+    "@ethereumjs/trie": "^6.0.0",
     "@ethereumjs/util": "9.0.0",
     "@ethereumjs/vm": "7.0.0",
     "@libp2p/interface-peer-id": "^2.0.1",
