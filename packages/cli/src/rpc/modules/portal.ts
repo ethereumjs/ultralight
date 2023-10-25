@@ -29,6 +29,8 @@ import { middleware, validators } from '../validators.js'
 import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
+  'portal_stateStore',
+  // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
   'portal_historyGetEnr',
@@ -118,6 +120,10 @@ export class portal {
     ])
     this.historyStore = middleware(this.historyStore.bind(this), 2, [
       [validators.contentKey],
+      [validators.hex],
+    ])
+    this.stateStore = middleware(this.stateStore.bind(this), 2, [
+      [validators.hex],
       [validators.hex],
     ])
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
@@ -575,6 +581,17 @@ export class portal {
       )
       return true
     } catch {
+      return false
+    }
+  }
+  async stateStore(params: [string, string]) {
+    const [contentKey, content] = params
+    try {
+      await this._state.stateStore(contentKey, content)
+      this.logger(`stored ${contentKey} in state network db`)
+      return true
+    } catch {
+      this.logger(`stateStore failed for ${contentKey}`)
       return false
     }
   }

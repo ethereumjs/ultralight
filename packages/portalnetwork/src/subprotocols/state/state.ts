@@ -18,8 +18,9 @@ export class StateProtocol extends BaseProtocol {
     return undefined
   }
 
-  public findContentLocally = async (_contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
-    return undefined
+  public stateStore = async (contentKey: string, content: string) => {
+    this.put(ProtocolId.StateNetwork, contentKey, content)
+    this.logger(`content added for: ${contentKey}`)
   }
 
   public store = async () => {}
