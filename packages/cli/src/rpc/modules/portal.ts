@@ -33,6 +33,7 @@ const methods = [
   'portal_stateRoutingTableInfo',
   'portal_stateStore',
   'portal_stateLocalContent',
+  'portal_stateGossip',
   // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
@@ -156,6 +157,10 @@ export class portal {
     ])
     this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
       [validators.contentKey],
+      [validators.hex],
+    ])
+    this.stateGossip = middleware(this.stateGossip.bind(this), 2, [
+      [validators.hex],
       [validators.hex],
     ])
     this.beaconSendFindContent = middleware(this.beaconSendFindContent.bind(this), 2, [
@@ -603,6 +608,12 @@ export class portal {
     const [contentKey, content] = params
     this.logger(`historyGossip request received for ${contentKey}`)
     const res = await this._history.gossipContent(fromHexString(contentKey), fromHexString(content))
+    return res
+  }
+  async stateGossip(params: [string, string]) {
+    const [contentKey, content] = params
+    this.logger(`stateGossip request received for ${contentKey}`)
+    const res = await this._state.gossipContent(fromHexString(contentKey), fromHexString(content))
     return res
   }
   async historyStore(params: [string, string]) {
