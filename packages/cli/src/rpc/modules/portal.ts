@@ -30,6 +30,7 @@ import { middleware, validators } from '../validators.js'
 import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
+  'portal_stateRoutingTableInfo',
   'portal_stateStore',
   // history
   'portal_historyRoutingTableInfo',
@@ -83,6 +84,7 @@ export class portal {
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
+    this.stateRoutingTableInfo = middleware(this.stateRoutingTableInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
@@ -275,6 +277,24 @@ export class portal {
     let localNodeId = ''
     let buckets: string[][] = []
     const table = this._history.routingTable
+    try {
+      localNodeId = table.localId
+      buckets = table.buckets
+        .map((bucket) => bucket.values().map((value) => value.nodeId))
+        .reverse()
+    } catch (err) {
+      localNodeId = (err as any).message
+    }
+    return {
+      localNodeId: localNodeId,
+      buckets: buckets,
+    }
+  }
+  async stateRoutingTableInfo(_params: []): Promise<any> {
+    this.logger(`portal_stateRoutingTableInfo request received.`)
+    let localNodeId = ''
+    let buckets: string[][] = []
+    const table = this._state.routingTable
     try {
       localNodeId = table.localId
       buckets = table.buckets

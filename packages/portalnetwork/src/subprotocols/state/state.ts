@@ -18,6 +18,14 @@ export class StateProtocol extends BaseProtocol {
     return undefined
   }
 
+
+  public routingTableInfo = async () => {
+    return {
+      nodeId: this.enr.nodeId,
+      buckets: [['']],
+    }
+  }
+
   public stateStore = async (contentKey: string, content: string) => {
     this.put(ProtocolId.StateNetwork, contentKey, content)
     this.logger(`content added for: ${contentKey}`)
