@@ -5,6 +5,7 @@ import EventEmitter from 'events'
 import jayson from 'jayson/promise/index.js'
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads'
 import { execSync } from 'child_process'
+import path from 'path'
 
 const bridgeThread = async () => {
   const args = await yargs(hideBin(process.argv))
@@ -110,7 +111,9 @@ const bridgeThread = async () => {
       }
     }
     processing.add(latest.result.number)
-    const worker = new Worker('./dist/stateBridge.js', {
+    const worker = new Worker('./scripts/stateBridge.ts', {
+      execArgv: ["--loader", "ts-node/esm"],
+
       workerData: { latest, KEY: args.KEY, host: args.host, port: currentPort(), memory },
     })
     worker.on('message', async (msg) => {
