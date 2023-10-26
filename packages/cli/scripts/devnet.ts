@@ -34,7 +34,7 @@ const args: any = yargs(hideBin(process.argv))
   }).option('networks', {
     describe: 'supported subnetworks',
     array: true,
-    default: ['history', 'beacon'],
+    default: ['history', 'beacon', 'state'],
     optional: true
   }).option('connectNodes', {
     describe: 'connet all nodes on network start',
