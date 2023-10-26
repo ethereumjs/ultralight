@@ -14,7 +14,7 @@
     "@types/yargs": "^17.0.7",
     "eslint": "^8.6.0",
     "nodemon": "^2.0.19",
-    "prettier": "^2.5.1",
+    "prettier": "^3.0.2",
     "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
     "tsx": "^3.12.7",
@@ -27,6 +27,7 @@
     "@ethereumjs/block": "5.0.0",
     "@ethereumjs/rlp": "5.0.0",
     "@ethereumjs/tx": "5.0.0",
+    "@ethereumjs/trie": "^6.0.0",
     "@ethereumjs/util": "9.0.0",
     "@ethereumjs/vm": "7.0.0",
     "@libp2p/interface-peer-id": "^2.0.1",
@@ -43,6 +44,14 @@
     "@lodestar/light-client": "^1.11.0",
     "@lodestar/params": "^1.9.2",
     "@lodestar/types": "^1.9.2"
+  },
+  "peerDependencies": {
+    "alchemy-sdk": "v3-beta"
+  },
+  "peerDependenciesMeta": {
+    "alchemy-sdk": {
+      "optional": true
+    }
   },
   "scripts": {
     "start": "ts-node --esm src/index.ts",

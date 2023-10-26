@@ -92,7 +92,7 @@ export const decodeStateNetworkContentKey = (key: Uint8Array) => {
   }
 }
 
-export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>) => {
+export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
   if (!opts.address) {
     throw new Error('address is required')
   }
@@ -101,8 +101,8 @@ export const getStateNetworkContentId = (opts: Omit<ContentKeyOpts, 'stateRoot'>
       return sha256(opts.address.toBytes())
     }
     case StateNetworkContentType.ContractStorageTrieProof: {
-      if (!opts.slot) {
-        throw new Error('slot value required')
+      if (opts.slot === undefined) {
+        throw new Error(`slot value required: ${opts}`)
       }
       return Uint8Array.from(
         bigIntToBytes(
