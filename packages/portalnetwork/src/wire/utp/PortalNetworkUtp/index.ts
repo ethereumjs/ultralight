@@ -24,6 +24,7 @@ import {
   decodeHistoryNetworkContentKey,
   BeaconLightClientNetworkContentType,
   ConnectionState,
+  StateNetworkContentType,
 } from '../../../index.js'
 import { EventEmitter } from 'events'
 
@@ -314,6 +315,22 @@ export class PortalNetworkUTP extends EventEmitter {
             continue
           } else {
             this.emit(ProtocolId.BeaconLightClientNetwork, k[0], toHexString(k), _content)
+          }
+        }
+        break
+      case ProtocolId.StateNetwork:
+        for (const [idx, k] of keys.entries()) {
+          const _content = contents[idx]
+          this.logger.extend(`FINISHED`)(
+            `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
+              StateNetworkContentType[k[0]]
+            } to database`,
+          )
+          if (_content.length === 0) {
+            this.logger.extend(`FINISHED`)(`Missing content...`)
+            continue
+          } else {
+            this.emit(ProtocolId.StateNetwork, k, _content)
           }
         }
         break

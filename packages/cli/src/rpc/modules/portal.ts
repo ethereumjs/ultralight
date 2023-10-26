@@ -22,6 +22,8 @@ import {
   FoundContent,
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
+  StateProtocol,
+  StateNetworkContentType,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
 import { isValidId } from '../util.js'
@@ -29,6 +31,17 @@ import { middleware, validators } from '../validators.js'
 import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
+  // state
+  'portal_statePing',
+  'portal_stateRoutingTableInfo',
+  'portal_stateStore',
+  'portal_stateLocalContent',
+  'portal_stateGossip',
+  'portal_stateFindContent',
+  'portal_stateRecursiveFindContent',
+  'portal_stateOffer',
+  'portal_stateSendOffer',
+  // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
   'portal_historyGetEnr',
@@ -67,6 +80,7 @@ export class portal {
   private _client: PortalNetwork
   private _history: HistoryProtocol
   private _beacon: BeaconLightClientNetwork
+  private _state: StateProtocol
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
@@ -75,9 +89,11 @@ export class portal {
     this._beacon = this._client.protocols.get(
       ProtocolId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
+    this._state = this._client.protocols.get(ProtocolId.StateNetwork) as StateProtocol
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
+    this.stateRoutingTableInfo = middleware(this.stateRoutingTableInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
@@ -88,6 +104,7 @@ export class portal {
       [validators.array(validators.enr)],
     ])
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
+    this.statePing = middleware(this.statePing.bind(this), 1, [[validators.enr]])
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
       [validators.enr],
       [validators.hex],
@@ -116,8 +133,13 @@ export class portal {
     this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
       [validators.hex],
     ])
+    this.stateLocalContent = middleware(this.stateLocalContent.bind(this), 1, [[validators.hex]])
     this.historyStore = middleware(this.historyStore.bind(this), 2, [
       [validators.contentKey],
+      [validators.hex],
+    ])
+    this.stateStore = middleware(this.stateStore.bind(this), 2, [
+      [validators.hex],
       [validators.hex],
     ])
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
@@ -125,6 +147,13 @@ export class portal {
       [validators.hex],
     ])
     this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
+      [validators.contentKey],
+    ])
+    this.stateFindContent = middleware(this.stateFindContent.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
+    this.stateRecursiveFindContent = middleware(this.stateRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
@@ -136,6 +165,15 @@ export class portal {
       [validators.dstId],
       [validators.array(validators.hex)],
     ])
+    this.stateOffer = middleware(this.stateOffer.bind(this), 3, [
+      [validators.enr],
+      [validators.hex],
+      [validators.hex],
+    ])
+    this.stateSendOffer = middleware(this.stateSendOffer.bind(this), 2, [
+      [validators.dstId],
+      [validators.array(validators.hex)],
+    ])
     this.historySendAccept = middleware(this.historySendAccept.bind(this), 2, [
       [validators.enr],
       [validators.hex],
@@ -143,6 +181,10 @@ export class portal {
     ])
     this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
       [validators.contentKey],
+      [validators.hex],
+    ])
+    this.stateGossip = middleware(this.stateGossip.bind(this), 2, [
+      [validators.hex],
       [validators.hex],
     ])
     this.beaconSendFindContent = middleware(this.beaconSendFindContent.bind(this), 2, [
@@ -279,6 +321,24 @@ export class portal {
       buckets: buckets,
     }
   }
+  async stateRoutingTableInfo(_params: []): Promise<any> {
+    this.logger(`portal_stateRoutingTableInfo request received.`)
+    let localNodeId = ''
+    let buckets: string[][] = []
+    const table = this._state.routingTable
+    try {
+      localNodeId = table.localId
+      buckets = table.buckets
+        .map((bucket) => bucket.values().map((value) => value.nodeId))
+        .reverse()
+    } catch (err) {
+      localNodeId = (err as any).message
+    }
+    return {
+      localNodeId: localNodeId,
+      buckets: buckets,
+    }
+  }
   async historyLookupEnr(params: [string]) {
     const [nodeId] = params
     if (nodeId === this._client.discv5.enr.nodeId) {
@@ -294,6 +354,23 @@ export class portal {
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
     const pong = await this._history.sendPing(encodedENR)
+    if (pong) {
+      this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+    } else {
+      this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+    }
+    return (
+      pong && {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: toHexString(pong.customPayload),
+      }
+    )
+  }
+  async statePing(params: [string]) {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    this.logger(`PING request received on StateNetwork for ${shortId(encodedENR.nodeId)}`)
+    const pong = await this._state.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
     } else {
@@ -412,6 +489,15 @@ export class portal {
     this.logger.extend(`historyLocalContent`)(`${toHexString(res)}`)
     return res.length > 0 ? toHexString(res) : '0x'
   }
+  async stateLocalContent(params: [string]): Promise<string | undefined> {
+    const [contentKey] = params
+    this.logger(`Received stateLocalContent request for ${contentKey}`)
+
+    const res = await this._state.findContentLocally(fromHexString(contentKey))
+    this.logger.extend(`stateLocalContent`)(`request returned ${res.length} bytes`)
+    this.logger.extend(`stateLocalContent`)(`${toHexString(res)}`)
+    return res.length > 0 ? toHexString(res) : '0x'
+  }
   async historyFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
@@ -457,6 +543,52 @@ export class portal {
           utpTransfer: res.selector === FoundContent.UTP,
         }
   }
+  async stateFindContent(params: [string, string]) {
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    if (!this._state.routingTable.getWithPending(nodeId)?.value) {
+      const pong = await this._state.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
+    const res = await this._state.sendFindContent(nodeId, fromHexString(contentKey))
+    this.logger.extend('findContent')(
+      `request returned type: ${res ? FoundContent[res.selector] : res}`,
+    )
+    if (!res) {
+      return { enrs: [] }
+    }
+    const content: Uint8Array | Uint8Array[] =
+      res.selector === FoundContent.ENRS
+        ? (res.value as Uint8Array[])
+        : res.selector === FoundContent.CONTENT
+        ? (res.value as Uint8Array)
+        : await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              resolve(Uint8Array.from([]))
+            }, 2000)
+            this._client.uTP.on(
+              ProtocolId.StateNetwork,
+              (_contentType: StateNetworkContentType, hash: string, value: Uint8Array) => {
+                if (hash.slice(2) === contentKey.slice(4)) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              },
+            )
+          })
+    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
+    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+    this.logger.extend('findContent')(content)
+    return res.selector === FoundContent.ENRS
+      ? { enrs: content }
+      : {
+          content: content.length > 0 ? toHexString(content as Uint8Array) : '',
+          utpTransfer: res.selector === FoundContent.UTP,
+        }
+  }
+
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
@@ -503,6 +635,31 @@ export class portal {
       }
     }
   }
+  async stateRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('stateRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._state, fromHexString(contentKey))
+    const res = await lookup.startLookup()
+    this.logger.extend('stateRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+    if (!res) {
+      this.logger.extend('stateRecursiveFindContent')(`request returned { enrs: [] }`)
+      return { content: '0x', utpTransfer: false }
+    }
+    if ('enrs' in res) {
+      this.logger.extend('stateRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
+      )
+      return { enrs: res.enrs.map(toHexString) }
+    } else {
+      this.logger.extend('stateRecursiveFindContent')(
+        `request returned { content: ${toHexString(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      return {
+        content: toHexString(res.content),
+        utpTransfer: res.utp,
+      }
+    }
+  }
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params
     const enr = ENR.decodeTxt(enrHex)
@@ -526,6 +683,26 @@ export class portal {
     const keys = contentKeys.map((key) => fromHexString(key))
     const res = await this._history.sendOffer(dstId, keys)
     const enr = this._history.routingTable.getWithPending(dstId)?.value
+    return res && enr && '0x' + enr.seq.toString(16)
+  }
+  async stateOffer(params: [string, string, string]) {
+    const [enrHex, contentKeyHex, contentValueHex] = params
+    const enr = ENR.decodeTxt(enrHex)
+    if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+      const res = await this._state.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    await this._state.stateStore(contentKeyHex, contentValueHex)
+    const res = await this._state.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
+    return res
+  }
+  async stateSendOffer(params: [string, string[]]) {
+    const [dstId, contentKeys] = params
+    const keys = contentKeys.map((key) => fromHexString(key))
+    const res = await this._state.sendOffer(dstId, keys)
+    const enr = this._state.routingTable.getWithPending(dstId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
   async historySendAccept(params: [string, string, string[]]) {
@@ -565,6 +742,12 @@ export class portal {
     const res = await this._history.gossipContent(fromHexString(contentKey), fromHexString(content))
     return res
   }
+  async stateGossip(params: [string, string]) {
+    const [contentKey, content] = params
+    this.logger(`stateGossip request received for ${contentKey}`)
+    const res = await this._state.gossipContent(fromHexString(contentKey), fromHexString(content))
+    return res
+  }
   async historyStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
@@ -575,6 +758,17 @@ export class portal {
       )
       return true
     } catch {
+      return false
+    }
+  }
+  async stateStore(params: [string, string]) {
+    const [contentKey, content] = params
+    try {
+      await this._state.stateStore(contentKey, content)
+      this.logger(`stored ${contentKey} in state network db`)
+      return true
+    } catch {
+      this.logger(`stateStore failed for ${contentKey}`)
       return false
     }
   }

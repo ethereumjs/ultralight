@@ -149,6 +149,9 @@ const main = async () => {
         case 'beacon':
           networks.push(ProtocolId.BeaconLightClientNetwork)
           break
+        case 'state':
+          networks.push(ProtocolId.StateNetwork)
+          break
       }
     }
   } else {
@@ -173,7 +176,7 @@ const main = async () => {
   // portal.enableLog(
   //  'ultralight,-FINDNODES,*LightClient:DEBUG,*LightClient:INFO,*BeaconLightClientNetwork,*BOOTSTRAP,*OFFER,*ACCEPT,*FINDCONTENT,*FOUNDCONTENT,*uTP:FINISHED',
   //  )
-  portal.enableLog('*Portal*,uTP*,ultralight')
+  portal.enableLog('*RPC*, *ultralight*, *Portal*')
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
@@ -233,7 +236,11 @@ const main = async () => {
             else return res.error
           })
         } else {
-          log(`Received ${method} with params: ${JSON.stringify(params)}`)
+          log(
+            `Received ${method} with params: ${(params as any[]).map((p, idx) => {
+              return `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''}`
+            })}`,
+          )
           return this.getMethod(method)
         }
       },
