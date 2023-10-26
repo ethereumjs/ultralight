@@ -1,7 +1,6 @@
 import jayson from 'jayson/promise/index.js'
-import { Worker, isMainThread, parentPort, workerData } from 'worker_threads'
-import { Alchemy, Network, TransactionResponse } from 'alchemy-sdk'
-import { Trie } from '@ethereumjs/trie'
+import {  parentPort, workerData } from 'worker_threads'
+import { Alchemy, Network } from 'alchemy-sdk'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   getStateNetworkContentKey,
