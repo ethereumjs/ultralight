@@ -363,6 +363,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
+        this.logger.extend('FINDLOCALLY')(
+          `looking for finality update for slot - ${
+            key.finalitySlot
+          } and local finalized update is for slot - ${
+            this.lightClient?.getFinalized().beacon.slot ?? 'unavailable'
+          }`,
+        )
         if (
           this.lightClient !== undefined &&
           key.finalitySlot <= BigInt(this.lightClient.getFinalized().beacon.slot)
