@@ -8,12 +8,6 @@ import { execSync } from 'child_process'
 
 const bridgeThread = async () => {
   const args = await yargs(hideBin(process.argv))
-    .option('KEY', {
-      describe: 'alchemy api key',
-      string: true,
-      default: 'JY46MOVpzcwZYEln86fa44MHIks4OoSl',
-      optional: true,
-    })
     .option('devnet', {
       describe: 'running portal state network devnet',
       boolean: true,
@@ -39,23 +33,15 @@ const bridgeThread = async () => {
     })
     .strict().argv
 
+  const alchemyAPIKey = process.env.ALCHEMY_API_KEY
   const alchemyHTTP = jayson.Client.https({
     host: 'eth-mainnet.g.alchemy.com',
-    path: '/v2/JY46MOVpzcwZYEln86fa44MHIks4OoSl',
+    path: `/v2/${alchemyAPIKey}`,
   })
 
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
   args.host = args.host ?? pubIp[0]
-
-  const config = {
-    apiKey: 'JY46MOVpzcwZYEln86fa44MHIks4OoSl',
-    network: Network.ETH_MAINNET,
-    url: 'https://eth-mainnet.alchemyapi.io/v2/JY46MOVpzcwZYEln86fa44MHIks4OoSl',
-  }
-  const alchemy = new Alchemy({
-    ...config,
-  })
 
   const processing: Set<string> = new Set()
   const processed: Set<string> = new Set()
