@@ -14,7 +14,7 @@ const { Client } = jayson
 const main = async () => {
     const beaconConfig = createBeaconConfig(defaultChainConfig, hexToBytes(genesisData.mainnet.genesisValidatorsRoot))
     const capellaForkDigest = beaconConfig.forkName2ForkDigest(ForkName.capella)
-    const beaconNode = 'https://lodestar-mainnet.chainsafe.io/'
+    const beaconNode = 'http://testing.mainnet.beacon-api.nimbus.team/'
     const ultralight = Client.http({ host: '127.0.0.1', port: 8545 })
 
     console.log('Retrieving bootstrap and updates from Beacon node...')
