@@ -53,7 +53,7 @@ export class StateProtocol extends BaseProtocol {
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
-    this.logger.extend('FINDCONTENT')(`Sending to ${shortId(dstId)}`)
+    this.logger.extend('FINDCONTENT')(`Sending to ${shortId(enr)}`)
     const res = await this.sendMessage(enr, payload, this.protocolId)
     if (res.length === 0) {
       return undefined
@@ -62,7 +62,7 @@ export class StateProtocol extends BaseProtocol {
     try {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()
-        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
+        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentKey = decodeHistoryNetworkContentKey(toHexString(key))
         const contentHash = contentKey.blockHash
@@ -100,7 +100,7 @@ export class StateProtocol extends BaseProtocol {
         return decoded
       }
     } catch (err: any) {
-      this.logger(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+      this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)
     }
   }
 

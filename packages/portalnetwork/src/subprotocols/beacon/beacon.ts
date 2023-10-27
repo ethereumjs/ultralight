@@ -179,7 +179,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
           ),
         )
         this.logger.extend('BOOTSTRAP')(
-          `Requesting recent LightClientUpdates from ${shortId(nodeId)}`,
+          `Requesting recent LightClientUpdates from ${shortId(nodeId, this.routingTable)}`,
         )
         const range = await this.sendFindContent(nodeId, rangeKey)
         if (range === undefined) return // If we don't get a range, exit early
@@ -363,6 +363,13 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
+        this.logger.extend('FINDLOCALLY')(
+          `looking for finality update for slot - ${
+            key.finalitySlot
+          } and local finalized update is for slot - ${
+            this.lightClient?.getFinalized().beacon.slot ?? 'unavailable'
+          }`,
+        )
         if (
           this.lightClient !== undefined &&
           key.finalitySlot <= BigInt(this.lightClient.getFinalized().beacon.slot)
@@ -422,7 +429,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
     try {
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.metrics?.contentMessagesReceived.inc()
-        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(dstId)}`)
+        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         let decoded = ContentMessageType.deserialize(res.subarray(1))
         switch (decoded.selector) {
           case FoundContent.UTP: {
@@ -460,7 +467,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    this.logger(`received invalid content from ${shortId(enr)}`)
                     break
                   }
                   this.logger(
@@ -474,7 +481,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    this.logger(`received invalid content from ${shortId(enr)}`)
                     break
                   }
                   this.logger(
@@ -488,7 +495,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    this.logger(`received invalid content from ${shortId(enr)}`)
                     break
                   }
                   this.logger(
@@ -500,7 +507,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   try {
                     LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(dstId)}`)
+                    this.logger(`received invalid content from ${shortId(enr)}`)
                     break
                   }
                   this.logger(
@@ -524,7 +531,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
       }
       // TODO Should we do anything other than ignore responses to FINDCONTENT messages that isn't a CONTENT response?
     } catch (err: any) {
-      this.logger(`Error sending FINDCONTENT to ${shortId(dstId)} - ${err.message}`)
+      this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)
     }
   }
 
@@ -724,7 +731,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
         return
       }
       this.logger.extend(`OFFER`)(
-        `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`,
+        `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.protocolId)
       if (res.length > 0) {
@@ -740,7 +747,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
-              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr)}`)
               return []
             }
             this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
@@ -772,7 +779,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
             return msg.contentKeys
           }
         } catch (err: any) {
-          this.logger(`Error sending to ${shortId(dstId)} - ${err.message}`)
+          this.logger(`Error sending to ${shortId(enr)} - ${err.message}`)
         }
       }
     }
@@ -787,7 +794,9 @@ export class BeaconLightClientNetwork extends BaseProtocol {
    */
   override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
-      `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`,
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${
+        msg.contentKeys.length
+      } pieces of content.`,
     )
     try {
       if (msg.contentKeys.length > 0) {
@@ -807,7 +816,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                 offerAccepted = true
                 contentIds[x] = true
                 this.logger.extend('OFFER')(
-                  `Found some interesting content from ${shortId(src.nodeId)}`,
+                  `Found some interesting content from ${shortId(src.nodeId, this.routingTable)}`,
                 )
               }
               break
@@ -824,6 +833,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   this.logger.extend('OFFER')(
                     `Found a newer Finalized Update from ${shortId(
                       src.nodeId,
+                      this.routingTable,
                     )} corresponding to slot ${slot}`,
                   )
                 }
@@ -842,6 +852,7 @@ export class BeaconLightClientNetwork extends BaseProtocol {
                   this.logger.extend('OFFER')(
                     `Found a newer Optimstic Update from ${shortId(
                       src.nodeId,
+                      this.routingTable,
                     )} corresponding to slot ${slot}`,
                   )
                 }

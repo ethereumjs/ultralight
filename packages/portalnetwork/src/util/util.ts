@@ -6,24 +6,27 @@ import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import { promises as fs } from 'fs'
 
 import * as path from 'path'
+import { PortalNetworkRoutingTable } from '../client'
 
 export const MEGABYTE = 1048576
 
 /**
  *  Shortens a Node ID to a readable length
  */
-export const shortId = (nodeId: string | ENR) => {
-  if (typeof nodeId === 'string')
-    return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
-  const nodeType = nodeId.kvs.get('c')
+export const shortId = (nodeId: string | ENR, routingTable?: PortalNetworkRoutingTable) => {
+  let enr
+  if (typeof nodeId === 'string') {
+    enr = routingTable?.getWithPending(nodeId)
+    if (enr === undefined) return nodeId.slice(0, 5) + '...' + nodeId.slice(nodeId.length - 5)
+    enr = enr.value
+  } else {
+    enr = nodeId
+  }
+
+  const nodeType = enr.kvs.get('c')
   const nodeTypeString =
     nodeType !== undefined && nodeType.length > 0 ? `${bytesToUtf8(nodeType)}:` : ''
-  return (
-    nodeTypeString +
-    nodeId.nodeId.slice(0, 5) +
-    '...' +
-    nodeId.nodeId.slice(nodeId.nodeId.length - 5)
-  )
+  return nodeTypeString + enr.nodeId.slice(0, 5) + '...' + enr.nodeId.slice(enr.nodeId.length - 5)
 }
 
 /**

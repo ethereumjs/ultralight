@@ -97,7 +97,10 @@ export abstract class BaseProtocol extends EventEmitter {
       enr !== undefined && this.updateRoutingTable(enr)
     }
     this.logger.extend(MessageCodes[messageType])(
-      `Received from ${shortId(srcEnr !== undefined ? srcEnr.value : src.nodeId)}`,
+      `Received from ${shortId(
+        srcEnr !== undefined ? srcEnr.value : src.nodeId,
+        this.routingTable,
+      )}`,
     )
     switch (messageType) {
       case MessageCodes.PING:
@@ -201,7 +204,7 @@ export abstract class BaseProtocol extends EventEmitter {
       selector: MessageCodes.PONG,
       value: payload,
     })
-    this.logger.extend('PONG')(`Sent to ${shortId(src.nodeId)}`)
+    this.logger.extend('PONG')(`Sent to ${shortId(src.nodeId, this.routingTable)}`)
     this.sendResponse(src, requestId, pongMsg)
   }
 
@@ -284,7 +287,7 @@ export abstract class BaseProtocol extends EventEmitter {
 
       for (const distance of payload.distances) {
         this.logger.extend(`FINDNODES`)(
-          `Gathering ENRs at distance ${distance} from ${shortId(src.nodeId)}`,
+          `Gathering ENRs at distance ${distance} from ${shortId(src.nodeId, this.routingTable)}`,
         )
         if (distance === 0) {
           // Send the client's ENR if a node at distance 0 is requested
@@ -314,7 +317,7 @@ export abstract class BaseProtocol extends EventEmitter {
           `Sending`,
           nodesPayload.enrs.length.toString(),
           `ENRs to `,
-          shortId(src.nodeId),
+          shortId(src.nodeId, this.routingTable),
         )
       }
       this.sendResponse(src, requestId, encodedPayload)
@@ -346,10 +349,10 @@ export abstract class BaseProtocol extends EventEmitter {
         return
       }
       this.logger.extend(`OFFER`)(
-        `Sent to ${shortId(dstId)} with ${contentKeys.length} pieces of content`,
+        `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.protocolId)
-      this.logger.extend(`OFFER`)(`Response from ${shortId(dstId)}`)
+      this.logger.extend(`OFFER`)(`Response from ${shortId(enr)}`)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -363,7 +366,7 @@ export abstract class BaseProtocol extends EventEmitter {
             )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
-              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(dstId)}`)
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr)}`)
               return []
             }
             this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
@@ -393,7 +396,7 @@ export abstract class BaseProtocol extends EventEmitter {
             return msg.contentKeys
           }
         } catch (err: any) {
-          this.logger(`Error sending to ${shortId(dstId)} - ${err.message}`)
+          this.logger(`Error sending to ${shortId(enr)} - ${err.message}`)
         }
       }
     }
@@ -401,7 +404,9 @@ export abstract class BaseProtocol extends EventEmitter {
 
   protected handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
-      `Received from ${shortId(src.nodeId)} with ${msg.contentKeys.length} pieces of content.`,
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${
+        msg.contentKeys.length
+      } pieces of content.`,
     )
     try {
       if (msg.contentKeys.length > 0) {
@@ -417,7 +422,7 @@ export abstract class BaseProtocol extends EventEmitter {
               offerAccepted = true
               contentIds[x] = true
               this.logger.extend('OFFER')(
-                `Found some interesting content from ${shortId(src.nodeId)}`,
+                `Found some interesting content from ${shortId(src.nodeId, this.routingTable)}`,
               )
             }
           }
@@ -482,7 +487,7 @@ export abstract class BaseProtocol extends EventEmitter {
     })
     await this.sendResponse(src, requestId, encodedPayload)
     this.logger.extend('ACCEPT')(
-      `Sent to ${shortId(src.nodeId)} for ${
+      `Sent to ${shortId(src.nodeId, this.routingTable)} for ${
         desiredContentKeys.length
       } pieces of content.  connectionId: ${id}`,
     )
