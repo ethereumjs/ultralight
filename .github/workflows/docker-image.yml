@@ -1,11 +1,9 @@
 name: Docker Build Job
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-  workflow_dispatch:
-  schedule:
-    - cron: 0 0 * * *  
+  push:
+    branches: 
+      - master
 
 jobs:
   docker:
