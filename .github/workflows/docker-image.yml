@@ -4,8 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
   workflow_dispatch:
-  schedule:
-    - cron: 0 0 * * *  
+  push:
+    branches:
+    - 'master'
 
 jobs:
   docker:
@@ -27,8 +28,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Build and push
+        env:
+          PUSH: ${{ contains(github.event.name, 'push') }}
         uses: docker/build-push-action@v5
         with:
-          push: ${{ github.event.name == 'schedule' }}
+          push: ${{ env.PUSH }}
           tags: ghcr.io/${{ github.repository_owner }}/ultralight:latest
           provenance: false
