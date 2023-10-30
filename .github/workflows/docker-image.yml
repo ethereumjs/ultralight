@@ -5,7 +5,8 @@ on:
     types: [opened, reopened, synchronize]
   workflow_dispatch:
   push:
-    - ['master']
+    branches:
+    - 'master'
 
 jobs:
   docker:
@@ -29,6 +30,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
-          push: ${{ github.event.name == 'push' }}
+          push: ${{ vars.GITHUB_EVENT_NAME == 'push' }}
           tags: ghcr.io/${{ github.repository_owner }}/ultralight:latest
           provenance: false
