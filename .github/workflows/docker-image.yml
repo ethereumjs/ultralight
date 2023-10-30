@@ -29,6 +29,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
-          push: true
+          push: ${{ github.event.name }} == 'push'
           tags: ghcr.io/${{ github.repository_owner }}/ultralight:latest
           provenance: false
