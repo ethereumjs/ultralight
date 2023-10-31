@@ -28,10 +28,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       -
         name: Build and push
-        env:
-          MASTER_PUSHED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: docker/build-push-action@v5
         with:
-          push: ${{ enr.MASTER_PUSHED }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           tags: ghcr.io/${{ github.repository_owner }}/ultralight:latest
           provenance: false
