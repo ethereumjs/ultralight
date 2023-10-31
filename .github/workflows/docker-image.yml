@@ -29,9 +29,9 @@ jobs:
       -
         name: Build and push
         env:
-          PUSH: ${{ contains(github.event.name, 'push') }}
+          MASTER_PUSHED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: docker/build-push-action@v5
         with:
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          push: ${{ enr.MASTER_PUSHED }}
           tags: ghcr.io/${{ github.repository_owner }}/ultralight:latest
           provenance: false
