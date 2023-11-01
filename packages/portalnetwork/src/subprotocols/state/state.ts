@@ -44,6 +44,9 @@ export class StateProtocol extends BaseProtocol {
    */
   public eth_getBalance = eth_getBalance.bind(this)
 
+  /**
+   * {@link eth_getStorageAt}
+   */
   public eth_getStorageAt = eth_getStorageAt.bind(this)
   public eth_getTransactionCount = eth_getTransactionCount.bind(this)
   public eth_getCode = eth_getCode.bind(this)

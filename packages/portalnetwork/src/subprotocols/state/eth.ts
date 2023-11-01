@@ -15,7 +15,20 @@ export async function eth_getBalance(
   return undefined
 }
 
-export async function eth_getStorageAt(this: StateProtocol, ...args: any) {
+/**
+ *
+ * @param this StateProtocol
+ * @param address address of the storage
+ * @param slot integer of the position in the storage
+ * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+ * @returns the value at this storage position
+ */
+export async function eth_getStorageAt(
+  this: StateProtocol,
+  address: string,
+  slot: string,
+  blockTag?: string,
+): Promise<string | undefined> {
   return undefined
 }
 
