@@ -58,7 +58,27 @@ export async function eth_getCode(this: StateProtocol, address: string, blockTag
   return undefined
 }
 
-export async function eth_call(this: StateProtocol, ...args: any) {
+export type TxCallObject = {
+  from?: string
+  to: string
+  gas?: string
+  gasPrice?: string
+  value?: string
+  data?: string
+}
+
+/**
+ *
+ * @param this state protocol
+ * @param txCallObject transaction call object
+ * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+ * @returns the return value of the executed contract
+ */
+export async function eth_call(
+  this: StateProtocol,
+  txCallObject: TxCallObject,
+  blockTag?: string,
+): Promise<string | undefined> {
   return undefined
 }
 
