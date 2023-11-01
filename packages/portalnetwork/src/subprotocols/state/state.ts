@@ -16,6 +16,14 @@ import {
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { StateNetworkContentType } from './types.js'
+import {
+  eth_getBalance,
+  eth_getCode,
+  eth_getStorageAt,
+  eth_getTransactionCount,
+  eth_call,
+  eth_estimateGas,
+} from './eth.js'
 
 export class StateProtocol extends BaseProtocol {
   protocolId: ProtocolId.StateNetwork
@@ -30,6 +38,13 @@ export class StateProtocol extends BaseProtocol {
       await this.stateStore(toHexString(contentKey), toHexString(content))
     })
   }
+
+  public eth_getBalance = eth_getBalance.bind(this)
+  public eth_getStorageAt = eth_getStorageAt.bind(this)
+  public eth_getTransactionCount = eth_getTransactionCount.bind(this)
+  public eth_getCode = eth_getCode.bind(this)
+  public eth_call = eth_call.bind(this)
+  public eth_estimateGas = eth_estimateGas.bind(this)
 
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
