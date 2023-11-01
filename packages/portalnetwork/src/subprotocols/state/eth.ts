@@ -47,7 +47,14 @@ export async function eth_getTransactionCount(
   return undefined
 }
 
-export async function eth_getCode(this: StateProtocol, ...args: any) {
+/**
+ *
+ * @param this state protocol
+ * @param address address
+ * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+ * @returns code at a given address
+ */
+export async function eth_getCode(this: StateProtocol, address: string, blockTag?: string) {
   return undefined
 }
 
