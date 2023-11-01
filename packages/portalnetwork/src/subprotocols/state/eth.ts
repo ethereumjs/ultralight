@@ -1,6 +1,17 @@
 import { StateProtocol } from './state.js'
 
-export async function eth_getBalance(this: StateProtocol, ...args: any) {
+/**
+ *
+ * @param this StateProtocol
+ * @param address address to check for balance
+ * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+ * @returns the balance of the account of given address
+ */
+export async function eth_getBalance(
+  this: StateProtocol,
+  address: string,
+  blockTag?: string,
+): Promise<bigint | undefined> {
   return undefined
 }
 
