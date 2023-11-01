@@ -237,9 +237,14 @@ const main = async () => {
           })
         } else {
           log(
-            `Received ${method} with params: ${(params as any[]).map((p, idx) => {
-              return `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''}`
-            })}`,
+            `Received ${method} with params: ${
+              params !== undefined &&
+              (params as any[]).map((p, idx) => {
+                return `${idx}: ${p.toString().slice(0, 64)}${
+                  p.toString().length > 64 ? '...' : ''
+                }`
+              })
+            }`,
           )
           return this.getMethod(method)
         }
