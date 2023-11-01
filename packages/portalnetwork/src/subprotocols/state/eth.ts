@@ -32,7 +32,18 @@ export async function eth_getStorageAt(
   return undefined
 }
 
-export async function eth_getTransactionCount(this: StateProtocol, ...args: any) {
+/**
+ *
+ * @param this state protocol
+ * @param address address
+ * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+ * @returns
+ */
+export async function eth_getTransactionCount(
+  this: StateProtocol,
+  address: string,
+  blockTag?: string,
+): Promise<number | undefined> {
   return undefined
 }
 
