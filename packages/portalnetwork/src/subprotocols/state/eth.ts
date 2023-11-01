@@ -82,6 +82,26 @@ export async function eth_call(
   return undefined
 }
 
-export async function eth_estimateGas(this: StateProtocol, ...args: any) {
+export type TxEstimateObject = {
+  from?: string
+  to?: string
+  gas?: string
+  gasPrice?: string
+  value?: string
+  data?: string
+}
+
+/**
+ * Generates and returns an estimate of how much gas is necessary to allow the transaction to complete. The transaction will not be added to the blockchain.
+ * @param this state protocol
+ * @param txObject transaction object
+ * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+ * @returns
+ */
+export async function eth_estimateGas(
+  this: StateProtocol,
+  txObject: TxEstimateObject,
+  blockTag?: string,
+): Promise<string | undefined> {
   return undefined
 }
