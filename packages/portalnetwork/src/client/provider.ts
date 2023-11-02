@@ -45,13 +45,13 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     if (typeof blockTag === 'string' && blockTag.length === 66) {
       block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, false)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlock(block)
+        return ethJsBlockToEthersBlock(block, this.provider)
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
       block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, false)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlock(block)
+        return ethJsBlockToEthersBlock(block, this.provider)
       }
     }
     // TODO: Add block to history network if retrieved from provider
@@ -65,13 +65,13 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     if (isBlockHash) {
       block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, true)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlockWithTxs(block)
+        return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
       block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, true)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlockWithTxs(block)
+        return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
     }
 
@@ -89,7 +89,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
 
     const ethJSBlock = blockFromRpc(block)
     addRLPSerializedBlock(toHexString(ethJSBlock.serialize()), block.hash, this.historyProtocol)
-    const ethersBlock = ethJsBlockToEthersBlockWithTxs(ethJSBlock)
+    const ethersBlock = ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
     return ethersBlock
   }
 }
