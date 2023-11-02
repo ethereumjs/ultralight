@@ -75,17 +75,56 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
   }
 }
 
-export const decodeStateNetworkContentKey = (key: Uint8Array) => {
-  const contentType = key[0] as StateNetworkContentType
+export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
+  switch (contentKey[0]) {
+    case 0:
+      return StateNetworkContentType.AccountTrieProof
+    case 1:
+      return StateNetworkContentType.ContractStorageTrieProof
+    case 2:
+      return StateNetworkContentType.ContractByteCode
+    default:
+      throw new Error('Invalid content key type')
+  }
+}
+
+export const decodeStateNetworkContentKey = (
+  key: Uint8Array,
+):
+  | {
+      contentType: StateNetworkContentType.AccountTrieProof
+      address: Uint8Array
+      stateRoot: Uint8Array
+    }
+  | {
+      contentType: StateNetworkContentType.ContractStorageTrieProof
+      address: Uint8Array
+      slot: bigint
+      stateRoot: Uint8Array
+    }
+  | {
+      contentType: StateNetworkContentType.ContractByteCode
+      address: Uint8Array
+      codeHash: Uint8Array
+    } => {
+  const contentType = StateNetworkContentType[keyType(key)]
   switch (contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
-      return AccountTrieProofKeyType.deserialize(key.slice(1))
+    case 'AccountTrieProof': {
+      const { address, stateRoot } = AccountTrieProofKeyType.deserialize(key.slice(1))
+      return { contentType: StateNetworkContentType.AccountTrieProof, address, stateRoot }
     }
-    case StateNetworkContentType.ContractStorageTrieProof: {
-      return ContractStorageTrieKeyType.deserialize(key.slice(1))
+    case 'ContractStorageTrieProof': {
+      const { address, slot, stateRoot } = ContractStorageTrieKeyType.deserialize(key.slice(1))
+      return {
+        contentType: StateNetworkContentType.ContractStorageTrieProof,
+        address,
+        slot,
+        stateRoot,
+      }
     }
-    case StateNetworkContentType.ContractByteCode: {
-      return ContractByteCodeKeyType.deserialize(key.slice(1))
+    case 'ContractByteCode': {
+      const { address, codeHash } = ContractByteCodeKeyType.deserialize(key.slice(1))
+      return { contentType: StateNetworkContentType.ContractByteCode, address, codeHash }
     }
     default:
       throw new Error(`Content Type ${contentType} not supported`)
