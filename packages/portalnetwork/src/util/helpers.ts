@@ -1,9 +1,4 @@
-import { BigNumber, ethers } from 'ethers'
-import {
-  BlockWithTransactions,
-  TransactionReceipt,
-  TransactionResponse,
-} from '@ethersproject/abstract-provider'
+import { ethers } from 'ethers'
 import { Block as ethJsBlock, BlockHeader } from '@ethereumjs/block'
 import { toHexString } from './index.js'
 import { FeeMarketEIP1559Transaction, LegacyTransaction, TypedTxData } from '@ethereumjs/tx'
@@ -18,34 +13,34 @@ import { Block, BlockOptions, JsonRpcBlock } from '@ethereumjs/block'
 import type { TypedTransaction } from '@ethereumjs/tx'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
 import { Log, TxReceiptType } from '../subprotocols/index.js'
-export interface ExtendedEthersBlock extends ethers.providers.Block {
-  blockReward?: BigNumber
-  unclesReward?: BigNumber
-  feeReward?: BigNumber
+export interface ExtendedEthersBlock extends ethers.Block {
+  blockReward?: bigint
+  unclesReward?: bigint
+  feeReward?: bigint
   size?: number
   sha3Uncles: string
   uncleHeaders: string[]
   stateRoot: string
-  totalDifficulty?: BigNumber
+  totalDifficulty?: bigint
   transactionCount: number
 }
-export interface ExtendedEthersBlockWithTransactions extends BlockWithTransactions {
-  blockReward?: BigNumber
-  unclesReward?: BigNumber
-  feeReward?: BigNumber
+export interface ExtendedEthersBlockWithTransactions extends ethers.Block {
+  blockReward?: bigint
+  unclesReward?: bigint
+  feeReward?: bigint
   size?: number
   sha3Uncles: string
   uncleHeaders: string[]
   stateRoot: string
-  totalDifficulty?: BigNumber
+  totalDifficulty?: bigint
   transactionCount: number
 }
 
-export interface ExtendedTxReceipt extends TransactionReceipt {
+export interface ExtendedTxReceipt extends ethers.TransactionReceipt {
   bitvector: string
 }
 
-export async function getBlockReceipts(block: Block): Promise<TransactionReceipt[]> {
+export async function getBlockReceipts(block: Block): Promise<ethers.TransactionReceipt[]> {
   const vm = await VM.create({
     common: block.common,
     setHardfork: true,
@@ -61,19 +56,22 @@ export async function getBlockReceipts(block: Block): Promise<TransactionReceipt
     receipts.push(txResult.receipt)
   }
 
-  const blockReceipts: ExtendedTxReceipt[] = receipts.map((r, idx) => {
+  const blockReceipts: ethers.TransactionReceipt[] = receipts.map((r, idx) => {
     const logs = r.logs.map((log: Log, i) => {
-      return {
-        blockNumber: Number(block.header.number),
-        blockHash: toHexString(block.header.hash()),
-        transactionIndex: idx,
-        removed: false,
-        address: toHexString(log[0]),
-        data: toHexString(log[2]),
-        topics: log[1].map((l) => toHexString(l)),
-        transactionHash: toHexString(block.transactions[idx].hash()),
-        logIndex: i,
-      }
+      return new ethers.TransactionReceipt(
+        {
+          blockNumber: Number(block.header.number),
+          blockHash: toHexString(block.header.hash()),
+          transactionIndex: idx,
+          removed: false,
+          address: toHexString(log[0]),
+          data: toHexString(log[2]),
+          topics: log[1].map((l) => toHexString(l)),
+          transactionHash: toHexString(block.transactions[idx].hash()),
+          logIndex: i,
+        },
+        {} as any,
+      )
     })
     return {
       to: block.transactions[idx].to!.toString(),
@@ -83,18 +81,18 @@ export async function getBlockReceipts(block: Block): Promise<TransactionReceipt
       root: (r as PreByzantiumTxReceipt).stateRoot
         ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
         : undefined,
-      gasUsed: BigNumber.from(block.header.gasUsed),
+      gasUsed: block.header.gasUsed,
       logsBloom: toHexString(block.header.logsBloom),
       blockHash: toHexString(block.hash()),
       transactionHash: toHexString(block.transactions[idx].hash()),
-      cumulativeGasUsed: BigNumber.from(r.cumulativeBlockGasUsed),
+      cumulativeGasUsed: r.cumulativeBlockGasUsed,
       logs: logs,
       blockNumber: Number(block.header.number),
       confirmations: 0,
       effectiveGasPrice:
         block.transactions[idx].type === 0
-          ? BigNumber.from((block.transactions[idx] as LegacyTransaction).gasPrice)
-          : BigNumber.from(0),
+          ? (block.transactions[idx] as LegacyTransaction).gasPrice
+          : 0,
       byzantium: (r as PreByzantiumTxReceipt).stateRoot ? false : true,
       type: block.transactions[idx].type,
       status: (r as PostByzantiumTxReceipt).status ?? undefined,
@@ -119,24 +117,25 @@ export const ethJsBlockToEthersBlock = (block: ethJsBlock): ExtendedEthersBlock 
   debug.enable('ethJsBlockToEthersBlock')
   debug('ethJsBlockToEthersBlock')('found a block')
 
-  return {
-    hash: toHexString(block.hash()),
-    transactions: [],
-    parentHash: toHexString(block.header.parentHash),
-    number: Number(block.header.number),
-    timestamp: Number(block.header.timestamp),
-    nonce: toHexString(block.header.nonce),
-    difficulty: Number(block.header.difficulty),
-    gasLimit: ethers.BigNumber.from(block.header.gasLimit),
-    miner: block.header.coinbase.toString(),
-    gasUsed: ethers.BigNumber.from(block.header.gasUsed),
-    extraData: toHexString(block.header.extraData),
-    _difficulty: ethers.BigNumber.from(block.header.difficulty),
-    sha3Uncles: toHexString(block.header.uncleHash),
-    uncleHeaders: block.uncleHeaders.map((uncle) => toHexString(uncle.hash())),
-    stateRoot: toHexString(block.header.stateRoot),
-    transactionCount: block.transactions.length,
-  }
+  return new ethers.Block(
+    {
+      hash: toHexString(block.hash()),
+      transactions: [],
+      parentHash: toHexString(block.header.parentHash),
+      number: Number(block.header.number),
+      timestamp: Number(block.header.timestamp),
+      nonce: toHexString(block.header.nonce),
+      difficulty: block.header.difficulty,
+      gasLimit: block.header.gasLimit,
+      miner: block.header.coinbase.toString(),
+      gasUsed: block.header.gasUsed,
+      extraData: toHexString(block.header.extraData),
+      uncleHeaders: block.uncleHeaders.map((uncle) => toHexString(uncle.hash())),
+      stateRoot: toHexString(block.header.stateRoot),
+      transactionCount: block.transactions.length,
+    },
+    {} as any,
+  )
 }
 
 export interface ExtendedTransactionResponse {}
@@ -152,9 +151,9 @@ export const ethJsBlockToEthersBlockWithTxs = async (
   debug.enable('ethJsBlockToEthersBlock')
   debug('ethJsBlockToEthersBlockWithTxns')('found a block')
 
-  const txns: TransactionResponse[] = []
+  const txns: ethers.TransactionResponse[] = []
   for (const [idx, tx] of Object.entries(block.transactions)) {
-    const normedTx: TransactionResponse = {
+    const normedTx: ethers.TransactionResponse = {
       hash: toHexString(tx.hash()),
       r: tx.r?.toString(),
       s: tx.s?.toString(),
@@ -163,19 +162,14 @@ export const ethJsBlockToEthersBlockWithTxs = async (
       from: tx.getSenderAddress().toString(),
       wait: () => getTransactionReceipt(block, parseInt(idx)),
       nonce: Number(tx.nonce),
-      chainId: 1,
-      gasLimit: BigNumber.from(tx.gasLimit),
+      chainId: 1n,
+      gasLimit: tx.gasLimit,
       data: toHexString(tx.data),
-      value: ethers.BigNumber.from(tx.value),
-      gasPrice: tx.type === 0 ? BigNumber.from((tx as LegacyTransaction).gasPrice) : undefined,
-      maxFeePerGas:
-        tx.type === 2
-          ? BigNumber.from((tx as FeeMarketEIP1559Transaction).maxFeePerGas)
-          : undefined,
+      value: tx.value,
+      gasPrice: tx.type === 0 ? (tx as LegacyTransaction).gasPrice : 0n,
+      maxFeePerGas: tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxFeePerGas : null,
       maxPriorityFeePerGas:
-        tx.type === 2
-          ? BigNumber.from((tx as FeeMarketEIP1559Transaction).maxPriorityFeePerGas)
-          : undefined,
+        tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxPriorityFeePerGas : null,
     }
     txns.push(normedTx)
   }
@@ -186,12 +180,12 @@ export const ethJsBlockToEthersBlockWithTxs = async (
     number: Number(block.header.number),
     timestamp: Number(block.header.timestamp),
     nonce: toHexString(block.header.nonce),
-    difficulty: Number(block.header.difficulty),
-    gasLimit: ethers.BigNumber.from(block.header.gasLimit),
+    difficulty: block.header.difficulty,
+    gasLimit: block.header.gasLimit,
     miner: block.header.coinbase.toString(),
-    gasUsed: ethers.BigNumber.from(block.header.gasUsed),
+    gasUsed: block.header.gasUsed,
     extraData: toHexString(block.header.extraData),
-    _difficulty: ethers.BigNumber.from(block.header.difficulty),
+    _difficulty: block.header.difficulty,
     sha3Uncles: toHexString(block.header.uncleHash),
     uncleHeaders: block.uncleHeaders.map((uncle) => toHexString(uncle.hash())),
     stateRoot: toHexString(block.header.stateRoot),
