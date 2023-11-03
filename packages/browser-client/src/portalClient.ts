@@ -64,13 +64,13 @@ export const startUp = async (provider: UltralightProvider) => {
 }
 export async function createNodeFromScratch(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? await UltralightProvider.create('', 1, {
+    ? await UltralightProvider.create('', {
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.MOBILE,
         supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
       })
-    : await UltralightProvider.create('', 1, {
+    : await UltralightProvider.create('', {
         proxyAddress: state.proxy,
         bootnodes: bns,
         db: state.LDB as any,
@@ -83,14 +83,14 @@ export async function createNodeFromScratch(state: AppState): Promise<Ultralight
 
 export async function createNodeFromStorage(state: AppState): Promise<UltralightProvider> {
   const provider = Capacitor.isNativePlatform()
-    ? await UltralightProvider.create('', 1, {
+    ? await UltralightProvider.create('', {
         bootnodes: bns,
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.MOBILE,
         supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
       })
-    : await UltralightProvider.create('', 1, {
+    : await UltralightProvider.create('', {
         proxyAddress: state.proxy,
         bootnodes: bns,
         db: state.LDB as any,
