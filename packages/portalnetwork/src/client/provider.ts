@@ -16,24 +16,21 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
   public historyProtocol: HistoryProtocol
   public static create = async (
     fallbackProviderUrl: string | ethers.JsonRpcProvider,
-    network = 1,
     opts: Partial<PortalNetworkOpts>,
   ) => {
     const portal = await PortalNetwork.create(opts)
-    return new UltralightProvider(fallbackProviderUrl, network, portal)
+    return new UltralightProvider(fallbackProviderUrl, portal)
   }
-  constructor(
-    fallbackProvider: string | ethers.JsonRpcProvider,
-    network = 1,
-    portal: PortalNetwork,
-  ) {
+  constructor(fallbackProvider: string | ethers.JsonRpcProvider, portal: PortalNetwork) {
+    const staticNetwork = ethers.Network.from('mainnet')
     super(
       typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider._getConnection(),
-      network,
+      staticNetwork,
+      { staticNetwork },
     )
     this.fallbackProvider =
       typeof fallbackProvider === 'string'
-        ? new ethers.JsonRpcProvider(fallbackProvider, network)
+        ? new ethers.JsonRpcProvider(fallbackProvider, staticNetwork, { staticNetwork })
         : fallbackProvider
     this.portal = portal
     this.historyProtocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol

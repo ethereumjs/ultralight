@@ -1,4 +1,4 @@
-import { it, assert, vi } from 'vitest'
+import { it, assert } from 'vitest'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { ProtocolId } from '../../src/subprotocols/types.js'
@@ -13,7 +13,7 @@ it('Test provider functionality', async () => {
   const peerId = await createSecp256k1PeerId()
   const enr = SignableENR.createFromPeerId(peerId)
   enr.setLocationMultiaddr(ma)
-  const provider = await UltralightProvider.create(new MockProvider(), 1, {
+  const provider = await UltralightProvider.create(new MockProvider(), {
     bindAddress: '0.0.0.0',
     transport: TransportLayer.NODE,
     config: {
