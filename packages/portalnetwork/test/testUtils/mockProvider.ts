@@ -3,7 +3,7 @@ import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 
-export class MockProvider extends ethers.providers.StaticJsonRpcProvider {
+export class MockProvider extends ethers.JsonRpcProvider {
   send = async (method: string, params: Array<any>) => {
     switch (method) {
       case 'eth_getBlockByNumber':

@@ -28,8 +28,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     portal: PortalNetwork,
   ) {
     super(
-      //@ts-ignore
-      typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider.#connect.url,
+      typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider._getConnection(),
       network,
     )
     this.fallbackProvider =
@@ -40,7 +39,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     this.historyProtocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   }
 
-  getBlock = async (blockTag: ethers.BlockTag) => {
+  getBlock = async (blockTag: ethers.BlockTag): Promise<ethers.Block | null> => {
     let block
     if (typeof blockTag === 'string' && blockTag.length === 66) {
       block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, false)
@@ -89,7 +88,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
 
     const ethJSBlock = blockFromRpc(block)
     addRLPSerializedBlock(toHexString(ethJSBlock.serialize()), block.hash, this.historyProtocol)
-    const ethersBlock = ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
+    const ethersBlock = await ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
     return ethersBlock
   }
 }

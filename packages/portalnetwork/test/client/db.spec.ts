@@ -9,8 +9,7 @@ import {
   serializedContentKeyToContentId,
 } from '../../src/index.js'
 import debug from 'debug'
-import { randomBytes } from 'ethers/lib/utils.js'
-import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
+import { bigIntToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { distance } from '@chainsafe/discv5'
 
 it('DBManager unit tests', async () => {
