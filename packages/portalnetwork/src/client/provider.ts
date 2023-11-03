@@ -10,69 +10,64 @@ import {
 import { PortalNetwork } from './client.js'
 import { PortalNetworkOpts } from './types.js'
 
-export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
-  private fallbackProvider:
-    | ethers.providers.StaticJsonRpcProvider
-    | ethers.providers.JsonRpcProvider
+export class UltralightProvider extends ethers.JsonRpcProvider {
+  private fallbackProvider: ethers.JsonRpcProvider
   public portal: PortalNetwork
   public historyProtocol: HistoryProtocol
   public static create = async (
-    fallbackProviderUrl: string | ethers.providers.JsonRpcProvider,
-    network = 1,
+    fallbackProviderUrl: string | ethers.JsonRpcProvider,
     opts: Partial<PortalNetworkOpts>,
   ) => {
     const portal = await PortalNetwork.create(opts)
-    return new UltralightProvider(fallbackProviderUrl, network, portal)
+    return new UltralightProvider(fallbackProviderUrl, portal)
   }
-  constructor(
-    fallbackProvider: string | ethers.providers.JsonRpcProvider,
-    network = 1,
-    portal: PortalNetwork,
-  ) {
+  constructor(fallbackProvider: string | ethers.JsonRpcProvider, portal: PortalNetwork) {
+    const staticNetwork = ethers.Network.from('mainnet')
     super(
-      typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider.connection,
-      network,
+      typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider._getConnection(),
+      staticNetwork,
+      { staticNetwork },
     )
     this.fallbackProvider =
       typeof fallbackProvider === 'string'
-        ? new ethers.providers.StaticJsonRpcProvider(fallbackProvider, network)
+        ? new ethers.JsonRpcProvider(fallbackProvider, staticNetwork, { staticNetwork })
         : fallbackProvider
     this.portal = portal
     this.historyProtocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
   }
 
-  getBlock = async (blockTag: ethers.providers.BlockTag) => {
+  getBlock = async (blockTag: ethers.BlockTag): Promise<ethers.Block | null> => {
     let block
     if (typeof blockTag === 'string' && blockTag.length === 66) {
       block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, false)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlock(block)
+        return ethJsBlockToEthersBlock(block, this.provider)
       }
     } else if (blockTag !== 'latest') {
-      const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
+      const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
       block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, false)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlock(block)
+        return ethJsBlockToEthersBlock(block, this.provider)
       }
     }
     // TODO: Add block to history network if retrieved from provider
     return this.fallbackProvider.getBlock(blockTag)
   }
 
-  getBlockWithTransactions = async (blockTag: ethers.providers.BlockTag) => {
+  getBlockWithTransactions = async (blockTag: ethers.BlockTag) => {
     let block
     const isBlockHash =
-      ethers.utils.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
+      ethers.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
     if (isBlockHash) {
       block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, true)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlockWithTxs(block)
+        return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
     } else if (blockTag !== 'latest') {
-      const blockNum = typeof blockTag === 'number' ? blockTag : parseInt(blockTag)
+      const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
       block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, true)
       if (block !== undefined) {
-        return ethJsBlockToEthersBlockWithTxs(block)
+        return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
     }
 
@@ -83,14 +78,14 @@ export class UltralightProvider extends ethers.providers.StaticJsonRpcProvider {
         typeof blockTag === 'number'
           ? blockTag
           : blockTag !== 'latest'
-          ? parseInt(blockTag)
+          ? Number(BigInt(blockTag))
           : blockTag
       block = await this.fallbackProvider.send('eth_getBlockByNumber', [blockNum, true])
     }
 
     const ethJSBlock = blockFromRpc(block)
     addRLPSerializedBlock(toHexString(ethJSBlock.serialize()), block.hash, this.historyProtocol)
-    const ethersBlock = ethJsBlockToEthersBlockWithTxs(ethJSBlock)
+    const ethersBlock = await ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
     return ethersBlock
   }
 }

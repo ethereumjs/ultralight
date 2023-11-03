@@ -1,5 +1,4 @@
 import { ethers } from 'ethers'
-import type { Block, BlockWithTransactions, _Block } from '@ethersproject/abstract-provider'
 import { TypedTransaction } from '@ethereumjs/tx'
 import { BrowserLevel } from 'browser-level'
 import { ENR, ProtocolId, TransportLayer, UltralightProvider } from 'portalnetwork'
@@ -22,7 +21,7 @@ export type AppState = {
   isLoading: boolean
   hover: number | undefined
   //
-  block: Block | BlockWithTransactions | undefined
+  block: ethers.Block | undefined
   transaction: TypedTransaction | undefined
 }
 
@@ -130,23 +129,19 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
   CREATENODEFROMBINDADDRESS:
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
-      const provider = await UltralightProvider.create(
-        new ethers.providers.CloudflareProvider(),
-        1,
-        {
-          supportedProtocols: [ProtocolId.HistoryNetwork],
-          proxyAddress: action.payload.state.proxy,
-          db: action.payload.state.LDB as any,
-          transport: TransportLayer.WEB,
-          //@ts-ignore
+      const provider = await UltralightProvider.create(new ethers.CloudflareProvider(), {
+        supportedProtocols: [ProtocolId.HistoryNetwork],
+        proxyAddress: action.payload.state.proxy,
+        db: action.payload.state.LDB as any,
+        transport: TransportLayer.WEB,
+        //@ts-ignore
+        config: {
           config: {
-            config: {
-              enrUpdate: true,
-              addrVotesToUpdateEnr: 1,
-            },
+            enrUpdate: true,
+            addrVotesToUpdateEnr: 1,
           },
         },
-      )
+      })
       await startUp(provider)
       dispatch({ type: StateChange.SETPORTAL, payload: provider })
     },

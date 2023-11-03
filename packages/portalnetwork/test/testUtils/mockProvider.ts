@@ -3,7 +3,10 @@ import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 
-export class MockProvider extends ethers.providers.StaticJsonRpcProvider {
+export class MockProvider extends ethers.JsonRpcProvider {
+  _getConnection(): ethers.FetchRequest {
+    return undefined as any
+  }
   send = async (method: string, params: Array<any>) => {
     switch (method) {
       case 'eth_getBlockByNumber':
@@ -17,9 +20,20 @@ export class MockProvider extends ethers.providers.StaticJsonRpcProvider {
     }
   }
 
+  _send = async (
+    payload: ethers.JsonRpcPayload | ethers.JsonRpcPayload[],
+  ): Promise<ethers.JsonRpcResult[]> => {
+    payload = payload as ethers.JsonRpcPayload
+    const res = await this.send(payload.method, payload.params as any)
+    return [
+      {
+        result: res,
+        id: payload.id,
+      },
+    ]
+  }
   private getBlockValues = async (params: [blockTag: string, _: boolean]) => {
     const [blockTag, _] = params
-
     if (blockTag.slice(0, 2) !== '0x')
       return {
         number: 'latest',

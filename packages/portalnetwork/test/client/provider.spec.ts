@@ -13,7 +13,7 @@ it('Test provider functionality', async () => {
   const peerId = await createSecp256k1PeerId()
   const enr = SignableENR.createFromPeerId(peerId)
   enr.setLocationMultiaddr(ma)
-  const provider = await UltralightProvider.create(new MockProvider(), 1, {
+  const provider = await UltralightProvider.create(new MockProvider(), {
     bindAddress: '0.0.0.0',
     transport: TransportLayer.NODE,
     config: {
@@ -27,7 +27,7 @@ it('Test provider functionality', async () => {
   })
 
   const block = await provider.getBlock(5000)
-  assert.ok(block.number === 5000, 'retrieved block from fallback provider')
+  assert.ok(block!.number === 5000, 'retrieved block from fallback provider')
 
   // Stub getBlockByHash for unit testing
   provider.historyProtocol.ETH.getBlockByHash = async (_hash: string) => {
@@ -36,8 +36,12 @@ it('Test provider functionality', async () => {
   const block2 = await provider.getBlock(
     '0xb495a1d7e6663152ae92708da4843337b958146015a2802f4193a410044698c9',
   )
-  assert.equal(block2.number, 2, 'got block 2 from portal network')
+  assert.equal(block2!.number, 2, 'got block 2 from portal network')
   await (provider as any).portal.stop()
 
-  assert.equal(1, (await provider.detectNetwork()).chainId, 'parent class methods work as expected')
+  assert.equal(
+    1n,
+    (await provider._detectNetwork()).chainId,
+    'parent class methods work as expected',
+  )
 })
