@@ -9,6 +9,7 @@ import {
 import { UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { Account, MapDB, equalsBytes } from '@ethereumjs/util'
 import { decodeStateNetworkContentKey } from './util.js'
+import { RLP } from '@ethereumjs/rlp'
 
 type StateRoot = string
 type StorageRoot = string
@@ -157,13 +158,19 @@ export class StateDB {
     content: Uint8Array,
   ): Promise<boolean> {
     const { data, witnesses } = ContractStorageTrieProofType.deserialize(content)
-    const storageTrie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
+    const storageTrie = new Trie({ useKeyHashing: true, db: this.trieDB })
     await storageTrie.fromProof(witnesses)
-    const stored = await storageTrie.get(new UintBigintType(32).serialize(slot))
-    if (!stored || !equalsBytes(data, stored)) {
+    const stored = await storageTrie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))
+    const decoded = RLP.decode(stored)
+    if (!stored || !equalsBytes(data, decoded as Uint8Array)) {
       this.logger('ContractStorageTrieProof input failed')
-      return false
+      throw new Error('ContractStorageTrieProof input failed')
     }
+    this.setStorageTrie(
+      toHexString(stateRoot),
+      toHexString(address),
+      toHexString(storageTrie.root()),
+    )
     this.logger('ContractStorageTrieProof input success')
     return true
   }
@@ -319,7 +326,7 @@ export class StateDB {
    */
   async getStorageAt(address: Address, slot: bigint, stateRoot: StateRoot) {
     const trie = await this.getStorageTrie(stateRoot, address)
-    const key = new UintBigintType(32).serialize(slot)
+    const key = fromHexString('0x' + slot.toString(16).padStart(64, '0'))
     const value = await trie.get(key)
     if (value === null) {
       return undefined
@@ -337,6 +344,7 @@ export class StateDB {
   async setStorageTrie(stateRoot: StateRoot, address: Address, storageRoot: TrieRoot) {
     const storageTries = this.getStorageTries(stateRoot)
     storageTries.set(address, storageRoot)
+    this.storageTries.set(stateRoot, storageTries)
     return true
   }
 
