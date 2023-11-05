@@ -101,3 +101,30 @@ describe('Input ContractStorageProof', async () => {
     assert.deepEqual(content, fromHexString(testdata.CSTP.content))
   })
 })
+
+describe('Input ContractByteCode content', async () => {
+  const database = new StateDB()
+  const contentKey = fromHexString(testdata.BYTECODE.contentKey)
+  const content = fromHexString(testdata.BYTECODE.content)
+  await database.storeContent(contentKey, content)
+  const { address, codeHash } = decodeStateNetworkContentKey(contentKey) as {
+    contentType: StateNetworkContentType.ContractByteCode
+    address: Uint8Array
+    codeHash: Uint8Array
+  }
+  it('should record address', () => {
+    assert.isTrue(database.accounts.has(toHexString(address)))
+  })
+  it('should retrieve bytecode by codehash', async () => {
+    const bytecode = await database.getContractByteCode(toHexString(codeHash))
+    assert.deepEqual(bytecode, fromHexString(testdata.BYTECODE.content))
+  })
+  it('should retrieve codehash', async () => {
+    const hash = await database.getAccountCodeHash(toHexString(address))
+    assert.deepEqual(hash, codeHash)
+  })
+  it('should serve eth_getCode', async () => {
+    const bytecode = await database.getCode(toHexString(address))
+    assert.deepEqual(bytecode, fromHexString(testdata.BYTECODE.content))
+  })
+})
