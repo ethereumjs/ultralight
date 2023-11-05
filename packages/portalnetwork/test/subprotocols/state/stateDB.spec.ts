@@ -1,8 +1,7 @@
-import { describe, it, assert, assertType } from 'vitest'
+import { describe, it, assert } from 'vitest'
 import testdata from './content.json'
 import {
   AccountTrieProofType,
-  ContractStorageTrieProofType,
   StateNetworkContentType,
 } from '../../../src/subprotocols/state/types.js'
 import { decodeStateNetworkContentKey } from '../../../src/subprotocols/state/util.js'
@@ -56,10 +55,6 @@ describe('Input AccountTrieProof', async () => {
       codeHash: account!.codeHash,
       storageRoot: account!.storageRoot,
       witnesses: proof,
-    })
-    console.log({
-      balance: account!.balance.toString(16),
-      nonce: account!.nonce.toString(16),
     })
     assert.deepEqual(content, fromHexString(testdata.ATP.content))
   })
