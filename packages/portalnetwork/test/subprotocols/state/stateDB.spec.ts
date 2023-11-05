@@ -2,11 +2,13 @@ import { describe, it, assert } from 'vitest'
 import testdata from './content.json'
 import {
   AccountTrieProofType,
+  ContractStorageTrieProofType,
   StateNetworkContentType,
 } from '../../../src/subprotocols/state/types.js'
 import { decodeStateNetworkContentKey } from '../../../src/subprotocols/state/util.js'
 import { StateDB } from '../../../src/subprotocols/state/statedb.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { RLP } from '@ethereumjs/rlp'
 
 describe('Input AccountTrieProof', async () => {
   const database = new StateDB()
@@ -57,5 +59,45 @@ describe('Input AccountTrieProof', async () => {
       witnesses: proof,
     })
     assert.deepEqual(content, fromHexString(testdata.ATP.content))
+  })
+})
+
+describe('Input ContractStorageProof', async () => {
+  const database = new StateDB()
+  const contentKey = fromHexString(testdata.CSTP.contentKey)
+  const content = fromHexString(testdata.CSTP.content)
+  await database.storeContent(contentKey, content)
+  const { address, stateRoot, slot } = decodeStateNetworkContentKey(contentKey) as {
+    contentType: StateNetworkContentType.ContractStorageTrieProof
+    address: Uint8Array
+    stateRoot: Uint8Array
+    slot: bigint
+  }
+  it('should record state root', () => {
+    assert.isTrue(database.stateRoots.has(toHexString(stateRoot)))
+    assert.isTrue(database.storageTries.has(toHexString(stateRoot)))
+  })
+  it('should record address', () => {
+    assert.isTrue(database.accounts.has(toHexString(address)))
+    const tries = database.storageTries.get(toHexString(stateRoot))
+    assert.isDefined(tries)
+    assert.isTrue(tries!.has(toHexString(address)))
+  })
+  it('should serve eth_getStorageAt from database', async () => {
+    const storage = await database.getStorageAt(toHexString(address), slot, toHexString(stateRoot))
+    const data = RLP.decode(storage!) as Uint8Array
+    assert.isDefined(storage)
+    assert.equal(toHexString(data), testdata.CSTP.value)
+  })
+  it('should rebuild contract storage proof content from database', async () => {
+    const storageTrie = await database.getStorageTrie(toHexString(stateRoot), toHexString(address))
+    const value = await storageTrie.get(fromHexString(testdata.CSTP.slot))
+    const data = RLP.decode(value!) as Uint8Array
+    const witnesses = await storageTrie.createProof(fromHexString(testdata.CSTP.slot))
+    const content = ContractStorageTrieProofType.serialize({
+      data,
+      witnesses,
+    })
+    assert.deepEqual(content, fromHexString(testdata.CSTP.content))
   })
 })
