@@ -1,4 +1,4 @@
-import { Debugger } from 'debug'
+import debug, { Debugger } from 'debug'
 import { StateProtocol } from './state.js'
 import { Trie } from '@ethereumjs/trie'
 import {
@@ -19,19 +19,19 @@ type Address = string
 export class StateDB {
   trieDB: MapDB<string, string>
   logger: Debugger
-  state: StateProtocol
-  stateRoots: Array<StateRoot>
+  state?: StateProtocol
+  stateRoots: Set<StateRoot>
   accounts: Set<Address>
   accountTries: Map<StateRoot, TrieRoot>
   storageTries: Map<StateRoot, Map<Address, StorageRoot>>
   accountCodeHash: Map<Address, CodeHash>
   contractByteCode: Map<CodeHash, Uint8Array>
 
-  constructor(state: StateProtocol) {
+  constructor(state?: StateProtocol) {
     this.state = state
     this.trieDB = new MapDB()
-    this.logger = state.logger.extend('StateDB')
-    this.stateRoots = []
+    this.logger = debug('StateDB')
+    this.stateRoots = new Set()
     this.accounts = new Set()
     this.accountTries = new Map()
     this.storageTries = new Map()
@@ -48,6 +48,7 @@ export class StateDB {
   async storeContent(contentKey: Uint8Array, content: Uint8Array) {
     const decoded = decodeStateNetworkContentKey(contentKey)
     this.accounts.add(toHexString(decoded.address))
+    'stateRoot' in decoded && this.stateRoots.add(toHexString(decoded.stateRoot))
     switch (decoded.contentType) {
       case StateNetworkContentType.AccountTrieProof: {
         const { address, stateRoot } = decoded
