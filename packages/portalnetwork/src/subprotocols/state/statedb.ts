@@ -356,8 +356,14 @@ export class StateDB {
    */
   async getAccountCodeHash(
     address: Address,
-    stateRoot: StateRoot,
+    stateRoot?: StateRoot,
   ): Promise<Uint8Array | undefined> {
+    if (this.accountCodeHash.has(address)) {
+      return fromHexString(this.accountCodeHash.get(address)!)
+    }
+    if (!stateRoot) {
+      return undefined
+    }
     const account = await this.getAccount(address, stateRoot)
     if (!account) {
       return undefined
@@ -371,7 +377,7 @@ export class StateDB {
    * @param stateRoot state root
    * @returns contract bytecode
    */
-  async getCode(address: Address, stateRoot: StateRoot) {
+  async getCode(address: Address, stateRoot?: StateRoot) {
     const codeHash = await this.getAccountCodeHash(address, stateRoot)
     if (!codeHash) {
       return undefined
