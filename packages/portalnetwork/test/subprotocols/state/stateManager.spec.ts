@@ -43,7 +43,7 @@ describe('UltralightStateManager', () => {
     await trie.put(address.toBytes(), account.serialize())
 
     const proof = await trie.createProof(address.toBytes())
-    console.log(proof)
+
     const content = AccountTrieProofType.serialize({
       balance: account!.balance,
       nonce: account!.nonce,
@@ -53,6 +53,7 @@ describe('UltralightStateManager', () => {
     })
     await protocol.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
 
+    usm.setStateRoot(trie.root())
     const gotAccount = await usm.getAccount(address)
     assert.equal(gotAccount?.balance, account.balance, 'retrieved account from state manager')
   })
