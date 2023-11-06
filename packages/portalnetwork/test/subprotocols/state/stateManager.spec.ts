@@ -20,7 +20,7 @@ const enr1 = SignableENR.createFromPeerId(id1)
 const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
 enr1.setLocationMultiaddr(initMa)
 describe('UltralightStateManager', () => {
-  it.only('should get account from stateDB when it exists', async () => {
+  it('should get account from stateDB when it exists', async () => {
     const node = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedProtocols: [ProtocolId.StateNetwork],
