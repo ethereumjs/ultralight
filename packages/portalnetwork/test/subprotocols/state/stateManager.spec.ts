@@ -39,10 +39,11 @@ describe('UltralightStateManager', () => {
     const address = Address.fromPrivateKey(pk)
     const account = Account.fromAccountData({ balance: 0n, nonce: 1n })
 
-    const trie = new Trie()
-    await trie.put(address.bytes, account.serialize())
+    const trie = new Trie({ useKeyHashing: true })
+    await trie.put(address.toBytes(), account.serialize())
 
-    const proof = await trie.createProof(address.bytes)
+    const proof = await trie.createProof(address.toBytes())
+    console.log(proof)
     const content = AccountTrieProofType.serialize({
       balance: account!.balance,
       nonce: account!.nonce,
@@ -50,7 +51,7 @@ describe('UltralightStateManager', () => {
       storageRoot: account!.storageRoot,
       witnesses: proof,
     })
-    await protocol.stateDB.inputAccountTrieProof(address.bytes, trie.root(), content)
+    await protocol.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
 
     const gotAccount = await usm.getAccount(address)
     assert.equal(gotAccount?.balance, account.balance, 'retrieved account from state manager')
