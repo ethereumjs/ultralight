@@ -9,6 +9,12 @@ import { decodeStateNetworkContentKey } from '../../../src/subprotocols/state/ut
 import { StateDB } from '../../../src/subprotocols/state/statedb.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { RLP } from '@ethereumjs/rlp'
+import block0_meta from './testdata/block-0x11a86a9-meta.json'
+import block0_db from './testdata/block-0x11a86a9-db.json'
+import block1_meta from './testdata/block-0x11a86aa-meta.json'
+import block1_db from './testdata/block-0x11a86aa-db.json'
+import block2_meta from './testdata/block-0x11a86ab-meta.json'
+import block2_db from './testdata/block-0x11a86ab-db.json'
 
 describe('Input AccountTrieProof', async () => {
   const database = new StateDB()
@@ -126,5 +132,24 @@ describe('Input ContractByteCode content', async () => {
   it('should serve eth_getCode', async () => {
     const bytecode = await database.getCode(toHexString(address))
     assert.deepEqual(bytecode, fromHexString(testdata.BYTECODE.content))
+  })
+})
+
+describe('Input whole block of content', async () => {
+  const database = new StateDB()
+  const contentKeys = Object.keys(block0_db)
+  const s = 0
+  it('should store all content by key', async () => {
+    for await (const key of contentKeys) {
+      const storing = await database.storeContent(fromHexString(key), fromHexString(block0_db[key]))
+      assert.isTrue(storing)
+    }
+  })
+  it('should store and serve all content by key', async () => {
+    for await (const key of contentKeys) {
+      const retrieved = await database.getContent(fromHexString(key))
+      assert.isDefined(retrieved)
+      assert.deepEqual(retrieved, fromHexString(block0_db[key]))
+    }
   })
 })
