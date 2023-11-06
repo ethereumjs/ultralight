@@ -1,4 +1,4 @@
-import { Debugger } from 'debug'
+import debug, { Debugger } from 'debug'
 import { StateProtocol } from './state.js'
 import { Trie } from '@ethereumjs/trie'
 import {
@@ -9,6 +9,7 @@ import {
 import { UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { Account, MapDB, equalsBytes } from '@ethereumjs/util'
 import { decodeStateNetworkContentKey } from './util.js'
+import { RLP } from '@ethereumjs/rlp'
 
 type StateRoot = string
 type StorageRoot = string
@@ -19,19 +20,19 @@ type Address = string
 export class StateDB {
   trieDB: MapDB<string, string>
   logger: Debugger
-  state: StateProtocol
-  stateRoots: Array<StateRoot>
+  state?: StateProtocol
+  stateRoots: Set<StateRoot>
   accounts: Set<Address>
   accountTries: Map<StateRoot, TrieRoot>
   storageTries: Map<StateRoot, Map<Address, StorageRoot>>
   accountCodeHash: Map<Address, CodeHash>
   contractByteCode: Map<CodeHash, Uint8Array>
 
-  constructor(state: StateProtocol) {
+  constructor(state?: StateProtocol) {
     this.state = state
     this.trieDB = new MapDB()
-    this.logger = state.logger.extend('StateDB')
-    this.stateRoots = []
+    this.logger = debug('StateDB')
+    this.stateRoots = new Set()
     this.accounts = new Set()
     this.accountTries = new Map()
     this.storageTries = new Map()
@@ -48,6 +49,7 @@ export class StateDB {
   async storeContent(contentKey: Uint8Array, content: Uint8Array) {
     const decoded = decodeStateNetworkContentKey(contentKey)
     this.accounts.add(toHexString(decoded.address))
+    'stateRoot' in decoded && this.stateRoots.add(toHexString(decoded.stateRoot))
     switch (decoded.contentType) {
       case StateNetworkContentType.AccountTrieProof: {
         const { address, stateRoot } = decoded
@@ -156,13 +158,19 @@ export class StateDB {
     content: Uint8Array,
   ): Promise<boolean> {
     const { data, witnesses } = ContractStorageTrieProofType.deserialize(content)
-    const storageTrie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
+    const storageTrie = new Trie({ useKeyHashing: true, db: this.trieDB })
     await storageTrie.fromProof(witnesses)
-    const stored = await storageTrie.get(new UintBigintType(32).serialize(slot))
-    if (!stored || !equalsBytes(data, stored)) {
+    const stored = await storageTrie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))
+    const decoded = RLP.decode(stored)
+    if (!stored || !equalsBytes(data, decoded as Uint8Array)) {
       this.logger('ContractStorageTrieProof input failed')
-      return false
+      throw new Error('ContractStorageTrieProof input failed')
     }
+    this.setStorageTrie(
+      toHexString(stateRoot),
+      toHexString(address),
+      toHexString(storageTrie.root()),
+    )
     this.logger('ContractStorageTrieProof input success')
     return true
   }
@@ -318,7 +326,7 @@ export class StateDB {
    */
   async getStorageAt(address: Address, slot: bigint, stateRoot: StateRoot) {
     const trie = await this.getStorageTrie(stateRoot, address)
-    const key = new UintBigintType(32).serialize(slot)
+    const key = fromHexString('0x' + slot.toString(16).padStart(64, '0'))
     const value = await trie.get(key)
     if (value === null) {
       return undefined
@@ -336,6 +344,7 @@ export class StateDB {
   async setStorageTrie(stateRoot: StateRoot, address: Address, storageRoot: TrieRoot) {
     const storageTries = this.getStorageTries(stateRoot)
     storageTries.set(address, storageRoot)
+    this.storageTries.set(stateRoot, storageTries)
     return true
   }
 
@@ -347,8 +356,14 @@ export class StateDB {
    */
   async getAccountCodeHash(
     address: Address,
-    stateRoot: StateRoot,
+    stateRoot?: StateRoot,
   ): Promise<Uint8Array | undefined> {
+    if (this.accountCodeHash.has(address)) {
+      return fromHexString(this.accountCodeHash.get(address)!)
+    }
+    if (!stateRoot) {
+      return undefined
+    }
     const account = await this.getAccount(address, stateRoot)
     if (!account) {
       return undefined
@@ -362,7 +377,7 @@ export class StateDB {
    * @param stateRoot state root
    * @returns contract bytecode
    */
-  async getCode(address: Address, stateRoot: StateRoot) {
+  async getCode(address: Address, stateRoot?: StateRoot) {
     const codeHash = await this.getAccountCodeHash(address, stateRoot)
     if (!codeHash) {
       return undefined

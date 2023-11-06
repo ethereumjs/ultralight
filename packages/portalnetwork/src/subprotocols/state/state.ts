@@ -15,7 +15,7 @@ import {
   FoundContent,
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
-import { StateNetworkContentType } from './types.js'
+import { AccountTrieProofType, StateNetworkContentType } from './types.js'
 import {
   eth_getBalance,
   eth_getCode,
@@ -24,13 +24,16 @@ import {
   eth_call,
   eth_estimateGas,
 } from './eth.js'
+import { StateDB } from './statedb.js'
 
 export class StateProtocol extends BaseProtocol {
+  stateDB: StateDB
   protocolId: ProtocolId.StateNetwork
   protocolName = 'StateNetwork'
   logger: Debugger
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
+    this.stateDB = new StateDB(this)
     this.protocolId = ProtocolId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.routingTable.setLogger(this.logger)
@@ -160,4 +163,17 @@ export class StateProtocol extends BaseProtocol {
   }
 
   public store = async () => {}
+
+  public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
+    const account = await this.stateDB.getAccount(toHexString(address), toHexString(stateRoot))
+    const trie = this.stateDB.getAccountTrie(toHexString(stateRoot))
+    const proof = await trie.createProof(address)
+    return AccountTrieProofType.serialize({
+      balance: account!.balance,
+      nonce: account!.nonce,
+      codeHash: account!.codeHash,
+      storageRoot: account!.storageRoot,
+      witnesses: proof,
+    })
+  }
 }
