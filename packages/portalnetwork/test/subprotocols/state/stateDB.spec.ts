@@ -164,7 +164,7 @@ describe('Input whole block of content', async () => {
       assert.isDefined(txCount)
     }
   })
-  it('should return undefined for non-existant account', async () => {
+  it('should return undefined for non-existent account', async () => {
     const nonex = await database.getAccount(toHexString(new Uint8Array(32)), block0_meta.stateroot)
     assert.isUndefined(nonex)
   })
@@ -181,7 +181,7 @@ describe('Input whole block of content', async () => {
       }
     }
   })
-  it('should throw if non-existant', async () => {
+  it('should throw if non-existent', async () => {
     try {
       const value = await database.getStorageAt(accessed[0].address, 2n, block0_meta.stateroot)
       assert.fail(`should not have accessed ${accessed[0].address} slot 2: ${value}`)
