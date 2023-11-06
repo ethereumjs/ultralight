@@ -32,6 +32,8 @@ describe('Account Trie Proof Content Type', async () => {
     assertType<bigint>(nonce)
     assertType<Uint8Array>(codeHash)
     assertType<Uint8Array>(storageRoot)
+    assert.deepEqual(decoded.address, fromHexString('0xae2fc483527b8ef99eb5d9b44875f005ba1fae13'))
+    assert.equal(balance, BigInt(testdata.ATP.balance))
   })
 
   const rootNode = witnesses[0]
@@ -72,6 +74,7 @@ describe('Contract Storage Trie Proof Content Type', async () => {
     assertType<Uint8Array>(decoded.address)
     assertType<bigint>(decoded.slot)
     assertType<Uint8Array>(decoded.stateRoot)
+    assert.deepEqual(decoded.address, fromHexString('0x4c083084c9d50334b343c44ec97d16011303cc73'))
   })
 
   const { data, witnesses } = ContractStorageTrieProofType.deserialize(fromHexString(content))
@@ -104,6 +107,10 @@ describe('Contract Byte Code Content Type', async () => {
     assertType<Uint8Array>(decoded.codeHash)
     assert.equal(decoded.contentType, StateNetworkContentType.ContractByteCode)
     assert.deepEqual(fromHexString(testdata.BYTECODE.address), decoded.address)
+    assert.deepEqual(
+      decoded.codeHash,
+      fromHexString('0x0be74cc05824041ef286fd08582cdfacec7784a35af72f937acf64ade5073da1'),
+    )
   })
 
   const bytecode = fromHexString(content)
