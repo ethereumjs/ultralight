@@ -97,11 +97,15 @@ export class StateDB {
       case StateNetworkContentType.ContractStorageTrieProof: {
         const { address, slot, stateRoot } = decoded
         const trie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
-        const data = await trie.get(new UintBigintType(32).serialize(slot))
+        let data = await trie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))
         if (!data) {
-          return undefined
+          data = new Uint8Array(32).fill(0)
+        } else {
+          data = RLP.decode(data) as Uint8Array
         }
-        const witnesses = await trie.createProof(new UintBigintType(32).serialize(slot))
+        const witnesses = await trie.createProof(
+          fromHexString('0x' + slot.toString(16).padStart(64, '0')),
+        )
         return ContractStorageTrieProofType.serialize({
           data,
           witnesses,
@@ -158,13 +162,19 @@ export class StateDB {
     content: Uint8Array,
   ): Promise<boolean> {
     const { data, witnesses } = ContractStorageTrieProofType.deserialize(content)
-    const storageTrie = new Trie({ useKeyHashing: true, db: this.trieDB })
+    const storageTrie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
     await storageTrie.fromProof(witnesses)
-    const stored = await storageTrie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))
-    const decoded = RLP.decode(stored)
-    if (!stored || !equalsBytes(data, decoded as Uint8Array)) {
+    const slotHex = '0x' + slot.toString(16).padStart(64, '0')
+    const slotBytes = fromHexString(slotHex)
+    const stored = await storageTrie.get(slotBytes)
+    if (
+      !stored &&
+      toHexString(data) !== '0x0000000000000000000000000000000000000000000000000000000000000000'
+    ) {
       this.logger('ContractStorageTrieProof input failed')
-      throw new Error('ContractStorageTrieProof input failed')
+      throw new Error(
+        `ContractStorageTrieProof input failed: slot ${slotHex} not found in storage trie`,
+      )
     }
     this.setStorageTrie(
       toHexString(stateRoot),
@@ -312,7 +322,7 @@ export class StateDB {
   async getStorageTrie(stateRoot: StateRoot, address: Address): Promise<Trie> {
     const storageRoot = await this.getStorageRoot(address, stateRoot)
     if (!storageRoot) {
-      throw new Error(`StorageRoot not found for address ${address}`)
+      return new Trie({ useKeyHashing: true, db: this.trieDB })
     }
     return new Trie({ useKeyHashing: true, root: storageRoot, db: this.trieDB })
   }
