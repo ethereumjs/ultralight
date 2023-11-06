@@ -15,6 +15,7 @@ import block1_meta from './testdata/block-0x11a86aa-meta.json'
 import block1_db from './testdata/block-0x11a86aa-db.json'
 import block2_meta from './testdata/block-0x11a86ab-meta.json'
 import block2_db from './testdata/block-0x11a86ab-db.json'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 describe('Input AccountTrieProof', async () => {
   const database = new StateDB()
@@ -150,6 +151,56 @@ describe('Input whole block of content', async () => {
       const retrieved = await database.getContent(fromHexString(key))
       assert.isDefined(retrieved)
       assert.deepEqual(retrieved, fromHexString(block0_db[key]))
+    }
+  })
+  it('should retrieve all accounts from StateDB', async () => {
+    const accounts = block0_meta.accounts
+    for (const add of accounts) {
+      const acc = await database.getAccount(add, block0_meta.stateroot)
+      assert.isDefined(acc)
+      const balance = await database.getBalance(add, block0_meta.stateroot)
+      assert.isDefined(balance)
+      const txCount = await database.getTransactionCount(add, block0_meta.stateroot)
+      assert.isDefined(txCount)
+    }
+  })
+  it('should return undefined for non-existant account', async () => {
+    const nonex = await database.getAccount(toHexString(new Uint8Array(32)), block0_meta.stateroot)
+    assert.isUndefined(nonex)
+  })
+  const accessed = block0_meta.accessList
+  it('should access all storage slots', async () => {
+    for (const a of accessed) {
+      for (const slot of a.keys) {
+        try {
+          const value = await database.getStorageAt(a.address, BigInt(slot), block0_meta.stateroot)
+          assert.ok(`accessed ${a.address} slot ${slot} value ${value}`)
+        } catch (e: any) {
+          assert.fail(e.message)
+        }
+      }
+    }
+  })
+  it('should throw if non-existant', async () => {
+    try {
+      const value = await database.getStorageAt(accessed[0].address, 2n, block0_meta.stateroot)
+      assert.fail(`should not have accessed ${accessed[0].address} slot 2: ${value}`)
+    } catch {
+      assert.ok(true)
+    }
+  })
+  const codes = block0_meta.byteCode
+  it('should retrieve all codehashes', async () => {
+    for (const { address, codeHash } of codes) {
+      const hash = await database.getAccountCodeHash(address, block0_meta.stateroot)
+      assert.deepEqual(hash, fromHexString(codeHash))
+    }
+  })
+  it('should retrieve all bytecode', async () => {
+    for (const { address, codeHash } of codes) {
+      const bytecode = await database.getCode(address, block0_meta.stateroot)
+      assert.isDefined(bytecode)
+      assert.deepEqual(keccak256(bytecode!), fromHexString(codeHash))
     }
   })
 })
