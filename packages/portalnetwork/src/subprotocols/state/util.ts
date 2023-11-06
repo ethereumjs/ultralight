@@ -50,13 +50,10 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
       return Uint8Array.from([opts.contentType, ...key])
     }
     case StateNetworkContentType.ContractStorageTrieProof: {
-      if (!opts.slot || !opts.stateRoot) {
-        throw new Error('required fields missing')
-      }
       const key = ContractStorageTrieKeyType.serialize({
         address: opts.address.toBytes(),
-        slot: opts.slot,
-        stateRoot: opts.stateRoot,
+        slot: opts.slot!,
+        stateRoot: opts.stateRoot!,
       })
       return Uint8Array.from([opts.contentType, ...key])
     }
@@ -127,10 +124,11 @@ export const decodeStateNetworkContentKey = (
       return { contentType: StateNetworkContentType.ContractByteCode, address, codeHash }
     }
     default:
-      throw new Error(`Content Type ${contentType} not supported`)
+      throw new Error(`Content Type ${contentType} NOT supported`)
   }
 }
 
+export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
 export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
   if (!opts.address) {
     throw new Error('address is required')
@@ -142,11 +140,14 @@ export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
     case StateNetworkContentType.ContractStorageTrieProof: {
       if (opts.slot === undefined) {
         throw new Error(`slot value required: ${opts}`)
+      if (opts.slot === undefined) {
+        throw new Error(`slot value required: ${opts}`)
       }
       return Uint8Array.from(
         bigIntToBytes(
-          BigInt(toHexString(sha256(opts.address.toBytes()))) +
-            (BigInt(toHexString(sha256(bigIntToBytes(opts.slot)))) % MODULO),
+          (BigInt(toHexString(sha256(opts.address.toBytes()))) +
+            BigInt(toHexString(sha256(bigIntToBytes(opts.slot))))) %
+            MODULO,
         ),
       )
     }
