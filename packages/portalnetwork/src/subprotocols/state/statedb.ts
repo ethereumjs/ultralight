@@ -337,7 +337,7 @@ export class StateDB {
   async getStorageAt(address: Address, slot: bigint, stateRoot: StateRoot) {
     const trie = await this.getStorageTrie(stateRoot, address)
     const key = fromHexString('0x' + slot.toString(16).padStart(64, '0'))
-    const value = await trie.get(key)
+    const value = await trie.get(key, true)
     if (value === null) {
       return undefined
     }
