@@ -36,8 +36,8 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   getAccount(address: Address): Promise<Account | undefined> {
     return this.state.stateDB.getAccount(address.toString(), this.stateRoot)
   }
-  putAccount(address: Address, account?: Account | undefined): Promise<void> {
-    throw new Error('Method not implemented.')
+  putAccount = async (address: Address, account?: Account | undefined): Promise<void> => {
+    return undefined
   }
   deleteAccount(address: Address): Promise<void> {
     throw new Error('Method not implemented.')
@@ -69,12 +69,10 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   clearContractStorage(address: Address): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  checkpoint(): Promise<void> {
-    throw new Error('Method not implemented.')
+  checkpoint = async (): Promise<void> => {
+    return undefined
   }
-  commit(): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
+  commit = async (): Promise<void> => {}
   revert(): Promise<void> {
     throw new Error('Method not implemented.')
   }

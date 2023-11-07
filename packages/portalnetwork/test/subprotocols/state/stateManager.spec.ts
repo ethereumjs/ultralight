@@ -14,7 +14,7 @@ import {
   AccountTrieProofType,
   ContractByteCodeType,
 } from '../../../src/subprotocols/state/types.js'
-import { SHA256 } from '@chainsafe/as-sha256'
+import { EVM } from '@ethereumjs/evm'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { fromHexString } from '@chainsafe/ssz'
 
@@ -125,5 +125,10 @@ describe('UltralightStateManager', () => {
     assert.equal(gotAccount?.balance, account.balance, 'retrieved account from state manager')
     const gotCode = await usm.getContractCode(address)
     assert.deepEqual(gotCode, byteCode, 'retrieved contract code from state network')
+
+    const greeterInput = '0xcfae3217'
+    const evm = new EVM({ stateManager: usm })
+    const res = await evm.runCall({ data: fromHexString(greeterInput), to: address })
+    assert.equal(res.execResult.exceptionError, undefined)
   })
 })
