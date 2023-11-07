@@ -694,7 +694,7 @@ export class portal {
         return '0x'
       }
     }
-    await this._state.stateStore(contentKeyHex, contentValueHex)
+    await this._state.store(contentKeyHex, contentValueHex)
     const res = await this._state.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
     return res
   }
@@ -764,7 +764,7 @@ export class portal {
   async stateStore(params: [string, string]) {
     const [contentKey, content] = params
     try {
-      await this._state.stateStore(contentKey, content)
+      await this._state.store(contentKey, content)
       this.logger(`stored ${contentKey} in state network db`)
       return true
     } catch {

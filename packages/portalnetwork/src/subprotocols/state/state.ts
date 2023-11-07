@@ -2,7 +2,7 @@ import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import { BaseProtocol } from '../protocol.js'
 import { ProtocolId } from '../types.js'
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { bytesToInt, hexToBytes } from '@ethereumjs/util'
 import { ENR } from '@chainsafe/discv5'
 import { shortId } from '../../util/util.js'
@@ -38,7 +38,7 @@ export class StateProtocol extends BaseProtocol {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.routingTable.setLogger(this.logger)
     client.uTP.on(ProtocolId.StateNetwork, async (contentKey: Uint8Array, content: Uint8Array) => {
-      await this.stateStore(toHexString(contentKey), toHexString(content))
+      await this.store(toHexString(contentKey), toHexString(content))
     })
   }
 
@@ -128,7 +128,7 @@ export class StateProtocol extends BaseProtocol {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.stateStore(toHexString(key), toHexString(decoded.value as Uint8Array))
+              await this.store(toHexString(key), toHexString(decoded.value as Uint8Array))
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -146,8 +146,8 @@ export class StateProtocol extends BaseProtocol {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
-    const value = await this.retrieve(toHexString(contentKey))
-    return value ? hexToBytes(value) : hexToBytes('0x')
+    const value = await this.stateDB.getContent(contentKey)
+    return value ?? hexToBytes('0x')
   }
 
   public routingTableInfo = async () => {
@@ -157,12 +157,10 @@ export class StateProtocol extends BaseProtocol {
     }
   }
 
-  public stateStore = async (contentKey: string, content: string) => {
-    this.put(ProtocolId.StateNetwork, contentKey, content)
+  public store = async (contentKey: string, content: string) => {
+    this.stateDB.storeContent(fromHexString(contentKey), fromHexString(content))
     this.logger(`content added for: ${contentKey}`)
   }
-
-  public store = async () => {}
 
   public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
     const account = await this.stateDB.getAccount(toHexString(address), toHexString(stateRoot))
