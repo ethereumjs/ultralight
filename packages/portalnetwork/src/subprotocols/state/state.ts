@@ -38,7 +38,7 @@ export class StateProtocol extends BaseProtocol {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.routingTable.setLogger(this.logger)
     client.uTP.on(ProtocolId.StateNetwork, async (contentKey: Uint8Array, content: Uint8Array) => {
-      await this.stateStore(toHexString(contentKey), toHexString(content))
+      await this.store(toHexString(contentKey), toHexString(content))
     })
   }
 
@@ -128,7 +128,7 @@ export class StateProtocol extends BaseProtocol {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.stateStore(toHexString(key), toHexString(decoded.value as Uint8Array))
+              await this.store(toHexString(key), toHexString(decoded.value as Uint8Array))
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -157,12 +157,10 @@ export class StateProtocol extends BaseProtocol {
     }
   }
 
-  public stateStore = async (contentKey: string, content: string) => {
+  public store = async (contentKey: string, content: string) => {
     this.stateDB.storeContent(fromHexString(contentKey), fromHexString(content))
     this.logger(`content added for: ${contentKey}`)
   }
-
-  public store = async () => {}
 
   public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
     const account = await this.stateDB.getAccount(toHexString(address), toHexString(stateRoot))
