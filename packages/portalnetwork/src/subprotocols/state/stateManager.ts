@@ -31,7 +31,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     throw new Error('Method not implemented.')
   }
   shallowCopy(): EVMStateManagerInterface {
-    throw new Error('Method not implemented.')
+    return new UltralightStateManager(this.state)
   }
   getAccount(address: Address): Promise<Account | undefined> {
     return this.state.stateDB.getAccount(address.toString(), this.stateRoot)
