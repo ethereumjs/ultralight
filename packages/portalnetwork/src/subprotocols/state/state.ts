@@ -2,7 +2,7 @@ import debug, { Debugger } from 'debug'
 import { PortalNetwork } from '../../client/client.js'
 import { BaseProtocol } from '../protocol.js'
 import { ProtocolId } from '../types.js'
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { bytesToInt, hexToBytes } from '@ethereumjs/util'
 import { ENR } from '@chainsafe/discv5'
 import { shortId } from '../../util/util.js'
@@ -146,8 +146,8 @@ export class StateProtocol extends BaseProtocol {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
-    const value = await this.retrieve(toHexString(contentKey))
-    return value ? hexToBytes(value) : hexToBytes('0x')
+    const value = await this.stateDB.getContent(contentKey)
+    return value ?? hexToBytes('0x')
   }
 
   public routingTableInfo = async () => {
@@ -158,7 +158,7 @@ export class StateProtocol extends BaseProtocol {
   }
 
   public stateStore = async (contentKey: string, content: string) => {
-    this.put(ProtocolId.StateNetwork, contentKey, content)
+    this.stateDB.storeContent(fromHexString(contentKey), fromHexString(content))
     this.logger(`content added for: ${contentKey}`)
   }
 
