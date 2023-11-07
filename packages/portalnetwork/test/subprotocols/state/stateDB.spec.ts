@@ -16,6 +16,7 @@ import block1_db from './testdata/block-0x11a86aa-db.json'
 import block2_meta from './testdata/block-0x11a86ab-meta.json'
 import block2_db from './testdata/block-0x11a86ab-db.json'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { randomBytes } from '@ethereumjs/util'
 
 describe('Input AccountTrieProof', async () => {
   const database = new StateDB()
@@ -175,15 +176,26 @@ describe('Input whole block of content', async () => {
         try {
           const value = await database.getStorageAt(a.address, BigInt(slot), block0_meta.stateroot)
           assert.ok(`accessed ${a.address} slot ${slot} value ${value}`)
+          if (value === undefined) {
+            assert.ok(`should return undefined for deleted slot ${slot} of ${a.address}`)
+          }
         } catch (e: any) {
           assert.fail(e.message)
         }
       }
     }
   })
-  it('should throw if non-existent', async () => {
+  it('should throw if key non-existant', async () => {
+    let fakeKey = toHexString(randomBytes(32))
+    while (accessed[0].keys.includes(fakeKey)) {
+      fakeKey = toHexString(randomBytes(32))
+    }
     try {
-      const value = await database.getStorageAt(accessed[0].address, 2n, block0_meta.stateroot)
+      const value = await database.getStorageAt(
+        accessed[0].address,
+        BigInt(fakeKey),
+        block0_meta.stateroot,
+      )
       assert.fail(`should not have accessed ${accessed[0].address} slot 2: ${value}`)
     } catch {
       assert.ok(true)
