@@ -216,3 +216,113 @@ describe('Input whole block of content', async () => {
     }
   })
 })
+
+describe('Input multiple blocks of content', async () => {
+  const database = new StateDB()
+  const blocksMeta = [block0_meta, block1_meta, block2_meta]
+  for await (const [idx, block] of [block0_db, block1_db, block2_db].entries()) {
+    const contentKeys = Object.keys(block)
+    const s = 0
+    it(`should store ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
+      for await (const key of contentKeys) {
+        const storing = await database.storeContent(fromHexString(key), fromHexString(block[key]))
+        assert.isTrue(storing)
+      }
+    })
+    it(`should retrieve ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
+      for await (const key of contentKeys) {
+        const retrieved = await database.getContent(fromHexString(key))
+        assert.isDefined(retrieved)
+        assert.deepEqual(retrieved, fromHexString(block[key]))
+      }
+    })
+    it(`should retrieve ${blocksMeta[idx].accounts.length} accounts  (block: ${blocksMeta[idx].blockNumber})`, async () => {
+      const accounts = blocksMeta[idx].accounts
+      for (const add of accounts) {
+        const acc = await database.getAccount(add, blocksMeta[idx].stateroot)
+        assert.isDefined(acc)
+        const balance = await database.getBalance(add, blocksMeta[idx].stateroot)
+        assert.isDefined(balance)
+        const txCount = await database.getTransactionCount(add, blocksMeta[idx].stateroot)
+        assert.isDefined(txCount)
+      }
+    })
+    const accessed = blocksMeta[idx].accessList
+    const total = accessed.reduce((acc, a) => acc + a.keys.length, 0)
+    it(`should retrieve ${total} storage values from ${accessed.length} TXs in block: ${blocksMeta[idx].blockNumber}`, async () => {
+      for (const a of accessed) {
+        for (const slot of a.keys) {
+          try {
+            const value = await database.getStorageAt(
+              a.address,
+              BigInt(slot),
+              blocksMeta[idx].stateroot,
+            )
+            assert.ok(`accessed ${a.address} slot ${slot} value ${value}`)
+            if (value === undefined) {
+              assert.ok(`should return undefined for deleted slot ${slot} of ${a.address}`)
+            }
+          } catch (e: any) {
+            assert.fail(e.message)
+          }
+        }
+      }
+    })
+    const codes = blocksMeta[idx].byteCode
+    it(`should retrieve ${codes.length} codeHashes from block: ${blocksMeta[idx].blockNumber}`, async () => {
+      for (const { address, codeHash } of codes) {
+        const hash = await database.getAccountCodeHash(address, blocksMeta[idx].stateroot)
+        assert.deepEqual(hash, fromHexString(codeHash))
+      }
+    })
+    it(`should retrieve bytecode for ${codes.length} contracts from block: ${blocksMeta[idx].blockNumber}`, async () => {
+      for (const { address, codeHash } of codes) {
+        const bytecode = await database.getCode(address, blocksMeta[idx].stateroot)
+        assert.isDefined(bytecode)
+        assert.deepEqual(keccak256(bytecode!), fromHexString(codeHash))
+      }
+    })
+  }
+  const allContentKeys = [
+    ...Object.keys(block0_db),
+    ...Object.keys(block1_db),
+    ...Object.keys(block2_db),
+  ]
+  const allContents = Object.fromEntries(
+    Object.entries(block0_db).concat(Object.entries(block1_db)).concat(Object.entries(block2_db)),
+  )
+  it(`should serve ${allContentKeys.length} pieces of content by key`, async () => {
+    for await (const key of allContentKeys) {
+      const retrieved = await database.getContent(fromHexString(key))
+      assert.isDefined(retrieved)
+      assert.deepEqual(retrieved, fromHexString(allContents[key]))
+    }
+  })
+  const allTxs = [...block0_meta.accessList, ...block1_meta.accessList, ...block2_meta.accessList]
+  const totalSlot = allTxs.reduce((acc, a) => acc + a.keys.length, 0)
+  it(`should serve ${totalSlot} storage values from ${allTxs.length} TXs`, async () => {
+    for (const b of blocksMeta) {
+      for (const a of b.accessList) {
+        for (const slot of a.keys) {
+          try {
+            const value = await database.getStorageAt(a.address, BigInt(slot), b.stateroot)
+            assert.ok(`accessed ${a.address} slot ${slot} value ${value}`)
+            if (value === undefined) {
+              assert.ok(`should return undefined for deleted slot ${slot} of ${a.address}`)
+            }
+          } catch (e: any) {
+            assert.fail(e.message)
+          }
+        }
+      }
+    }
+  })
+  const allBytehashes = [...block0_meta.byteCode, ...block1_meta.byteCode, ...block2_meta.byteCode]
+  it(`should retrieve bytecode for ${allBytehashes.length} contracts`, async () => {
+    for (const { address, codeHash } of allBytehashes) {
+      const bytecode = await database.getCode(address)
+      assert.isDefined(bytecode)
+      assert.deepEqual(keccak256(bytecode!), fromHexString(codeHash))
+    }
+  })
+})
