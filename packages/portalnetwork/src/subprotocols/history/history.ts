@@ -277,4 +277,12 @@ export class HistoryProtocol extends BaseProtocol {
     EpochAccumulator.createFromProof(proof, target)
     return true
   }
+
+  public async getStateRoot(blockNumber: bigint) {
+    const block = await this.ETH.getBlockByNumber(blockNumber, false)
+    if (!block) {
+      throw new Error('Block not found')
+    }
+    return toHexString(block.header.stateRoot)
+  }
 }
