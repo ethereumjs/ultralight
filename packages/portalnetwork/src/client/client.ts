@@ -427,4 +427,23 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), toHexString(payload))
     this.discv5.sendTalkResp(src, requestId, payload)
   }
+
+  public ethGetBalance = async (
+    address: string,
+    blockNumber: bigint,
+  ): Promise<bigint | undefined> => {
+    const history = this.protocols.get(ProtocolId.HistoryNetwork)
+    if (!history) {
+      throw new Error('Cannot get StateRoot by number without HistoryNetwork')
+    }
+    const state = this.protocols.get(ProtocolId.StateNetwork)
+    if (!state) {
+      throw new Error('Cannot get balance without StateNetwork')
+    }
+    const stateRoot = await (<HistoryProtocol>history).getStateRoot(blockNumber)
+    if (!stateRoot) {
+      throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
+    }
+    return (<StateProtocol>state).stateDB.getBalance(address, stateRoot)
+  }
 }
