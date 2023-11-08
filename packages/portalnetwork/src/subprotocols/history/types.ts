@@ -10,6 +10,7 @@ import {
 } from '@chainsafe/ssz'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 import { Bytes32Type } from '../types.js'
+import { MAX_WITHDRAWALS_PER_PAYLOAD } from '@lodestar/params'
 
 /* ----------------- Constants ----------- */
 // number of header records in a single epoch
@@ -99,7 +100,13 @@ export type HeaderRecord = {
 export type HistoricalEpoch = Uint8Array
 export type HeaderRecordList = Uint8Array[]
 export type Rlp = Uint8Array
-export type BlockBodyContent = { txsRlp: Rlp[]; unclesRlp: Rlp }
+export type PreShanghaiBlockBodyContent = { txsRlp: Rlp[]; unclesRlp: Rlp }
+export type PostShanghaiBlockBodyContent = {
+  txsRlp: Rlp[]
+  unclesRlp: Rlp
+  allWithdrawals: Rlp[]
+}
+export type BlockBodyContent = PreShanghaiBlockBodyContent | PostShanghaiBlockBodyContent
 export type Log = [address: Uint8Array, topics: Uint8Array[], data: Uint8Array]
 export type rlpReceipt = [
   postStateOrStatus: Uint8Array,
@@ -156,4 +163,15 @@ export const BlockHeaderProofType = new UnionType([new NoneType(), AccumulatorPr
 export const BlockHeaderWithProof = new ContainerType({
   header: new ByteListType(MAX_HEADER_LENGTH),
   proof: BlockHeaderProofType,
+})
+
+export const SSZWithdrawal = new ByteListType(192)
+export type TAllWithdrawals = Uint8Array[]
+export const AllWithdrawals = new ListCompositeType(SSZWithdrawal, MAX_WITHDRAWALS_PER_PAYLOAD)
+
+export const PreShanghaiBlockBody = BlockBodyContentType
+export const PostShanghaiBlockBody = new ContainerType({
+  allTransactions: allTransactionsType,
+  sszUncles: sszUnclesType,
+  allWithdrawals: AllWithdrawals,
 })
