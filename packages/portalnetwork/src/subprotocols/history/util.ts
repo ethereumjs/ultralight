@@ -79,10 +79,22 @@ export const decodeSszBlockBody = (
       allWithdrawals,
     }
   } else {
-    const body = BlockBodyContentType.deserialize(sszBody)
-    const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
-    const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
-    return { txsRlp, unclesRlp }
+    try {
+      const body = BlockBodyContentType.deserialize(sszBody)
+      const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+      const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+      return { txsRlp, unclesRlp }
+    } catch {
+      const body = PostShanghaiBlockBody.deserialize(sszBody)
+      const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+      const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+      const allWithdrawals = body.allWithdrawals.map((sszW) => SSZWithdrawal.deserialize(sszW))
+      return {
+        txsRlp,
+        unclesRlp,
+        allWithdrawals,
+      }
+    }
   }
 }
 
