@@ -89,10 +89,20 @@ export const decodeSszBlockBody = (
 export const sszEncodeBlockBody = (block: Block) => {
   const encodedSSZTxs = block.transactions.map((tx) => sszTransactionType.serialize(tx.serialize()))
   const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
-  return BlockBodyContentType.serialize({
-    allTransactions: encodedSSZTxs,
-    sszUncles: sszUnclesType.serialize(encodedUncles),
-  })
+  if (block.withdrawals) {
+    const encodedWithdrawals = block.withdrawals.map((w) => rlp.encode(w.raw()))
+    const sszWithdrawals = encodedWithdrawals.map(SSZWithdrawal.serialize)
+    return PostShanghaiBlockBody.serialize({
+      allTransactions: encodedSSZTxs,
+      sszUncles: encodedUncles,
+      allWithdrawals: sszWithdrawals,
+    })
+  } else {
+    return PreShanghaiBlockBody.serialize({
+      allTransactions: encodedSSZTxs,
+      sszUncles: encodedUncles,
+    })
+  }
 }
 
 /**
