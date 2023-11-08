@@ -10,6 +10,7 @@ import {
 } from '@chainsafe/ssz'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 import { Bytes32Type } from '../types.js'
+import { MAX_WITHDRAWALS_PER_PAYLOAD } from '@lodestar/params'
 
 /* ----------------- Constants ----------- */
 // number of header records in a single epoch
@@ -168,3 +169,9 @@ export const SSZWithdrawal = new ByteListType(192)
 export type TAllWithdrawals = Uint8Array[]
 export const AllWithdrawals = new ListCompositeType(SSZWithdrawal, MAX_WITHDRAWALS_PER_PAYLOAD)
 
+export const PreShanghaiBlockBody = BlockBodyContentType
+export const PostShanghaiBlockBody = new ContainerType({
+  allTransactions: allTransactionsType,
+  sszUncles: sszUnclesType,
+  allWithdrawals: AllWithdrawals,
+})
