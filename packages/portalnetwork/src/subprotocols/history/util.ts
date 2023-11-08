@@ -64,11 +64,26 @@ export const decodeHistoryNetworkContentKey = (contentKey: string) => {
   }
 }
 
-export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
-  const body = BlockBodyContentType.deserialize(sszBody)
-  const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
-  const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
-  return { txsRlp, unclesRlp }
+export const decodeSszBlockBody = (
+  sszBody: Uint8Array,
+  withdrawals: boolean = false,
+): BlockBodyContent => {
+  if (withdrawals) {
+    const body = PostShanghaiBlockBody.deserialize(sszBody)
+    const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+    const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+    const allWithdrawals = body.allWithdrawals.map((sszW) => SSZWithdrawal.deserialize(sszW))
+    return {
+      txsRlp,
+      unclesRlp,
+      allWithdrawals,
+    }
+  } else {
+    const body = BlockBodyContentType.deserialize(sszBody)
+    const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+    const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+    return { txsRlp, unclesRlp }
+  }
 }
 
 export const sszEncodeBlockBody = (block: Block) => {
