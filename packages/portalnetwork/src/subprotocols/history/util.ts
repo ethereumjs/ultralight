@@ -103,7 +103,7 @@ export const sszEncodeBlockBody = (block: Block) => {
   const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
   if (block.withdrawals) {
     const encodedWithdrawals = block.withdrawals.map((w) => rlp.encode(w.raw()))
-    const sszWithdrawals = encodedWithdrawals.map(SSZWithdrawal.serialize)
+    const sszWithdrawals = encodedWithdrawals.map((w) => SSZWithdrawal.serialize(w))
     return PostShanghaiBlockBody.serialize({
       allTransactions: encodedSSZTxs,
       sszUncles: encodedUncles,
