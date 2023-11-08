@@ -6,8 +6,11 @@ import {
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
+  PostShanghaiBlockBody,
+  PreShanghaiBlockBody,
   sszTransactionType,
   sszUnclesType,
+  SSZWithdrawal,
   Witnesses,
 } from './types.js'
 import { RLP as rlp } from '@ethereumjs/rlp'
