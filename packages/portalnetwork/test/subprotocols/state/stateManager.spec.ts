@@ -138,11 +138,19 @@ describe('UltralightStateManager', () => {
     const evm = new EVM({ stateManager: usm })
     const res = (await evm.runCall({ data: fromHexString(greeterInput), to: address })).execResult
       .returnValue
+    // Decode offset in `returnValue` for start of Solidity return value
     const offset = bytesToInt(res.slice(0, 32))
+    // First 32 bytes of return value are length of returned value
     const length = bytesToInt(res.slice(offset, offset + 32))
+    // Compute the starting position of the returned value
     const startPosition = offset + 32
+    // Compuite the ending position of the returned value
     const endPosition = startPosition + length
     const returnedValue = bytesToUtf8(res.slice(startPosition, endPosition))
-    assert.equal(returnedValue, 'hello')
+    assert.equal(
+      returnedValue,
+      'hello',
+      'got expected greeting from contract stored in Ultralight State Manager',
+    )
   })
 })
