@@ -163,3 +163,8 @@ export const BlockHeaderWithProof = new ContainerType({
   header: new ByteListType(MAX_HEADER_LENGTH),
   proof: BlockHeaderProofType,
 })
+
+export const SSZWithdrawal = new ByteListType(192)
+export type TAllWithdrawals = Uint8Array[]
+export const AllWithdrawals = new ListCompositeType(SSZWithdrawal, MAX_WITHDRAWALS_PER_PAYLOAD)
+
