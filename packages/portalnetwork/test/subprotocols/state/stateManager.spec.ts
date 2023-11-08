@@ -1,7 +1,15 @@
 import { assert, describe, it } from 'vitest'
 import { StateProtocol } from '../../../src/subprotocols/state/state.js'
 import { UltralightStateManager } from '../../../src/subprotocols/state/stateManager.js'
-import { Account, Address, hexToBytes, randomBytes } from '@ethereumjs/util'
+import {
+  Account,
+  Address,
+  bytesToBigInt,
+  bytesToInt,
+  bytesToUtf8,
+  hexToBytes,
+  randomBytes,
+} from '@ethereumjs/util'
 import { PortalNetwork } from '../../../src/client/client.js'
 import { TransportLayer } from '../../../src/client/types.js'
 import { ProtocolId } from '../../../src/subprotocols/types.js'
@@ -128,7 +136,13 @@ describe('UltralightStateManager', () => {
 
     const greeterInput = '0xcfae3217'
     const evm = new EVM({ stateManager: usm })
-    const res = await evm.runCall({ data: fromHexString(greeterInput), to: address })
-    assert.equal(res.execResult.exceptionError, undefined)
+    const res = (await evm.runCall({ data: fromHexString(greeterInput), to: address })).execResult
+      .returnValue
+    const offset = bytesToInt(res.slice(0, 32))
+    const length = bytesToInt(res.slice(offset, offset + 32))
+    const startPosition = offset + 32
+    const endPosition = startPosition + length
+    const returnedValue = bytesToUtf8(res.slice(startPosition, endPosition))
+    assert.equal(returnedValue, 'hello')
   })
 })
