@@ -90,7 +90,7 @@ describe('BlockBody ssz serialization/deserialization', () => {
 })
 
 describe('BlockHeader ssz serialization/deserialization with pre and post shanghai blocks', () => {
-  it.only('should serialize and deserialize pre and post shanghai blocks', async () => {
+  it('should serialize and deserialize pre and post shanghai blocks', async () => {
     const preShanghaiBlockJson = await import('./testData/block31591.json')
     const postShanghaiBlockJson = await import('./testData/block18529207.json')
 
