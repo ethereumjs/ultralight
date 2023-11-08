@@ -99,7 +99,13 @@ export type HeaderRecord = {
 export type HistoricalEpoch = Uint8Array
 export type HeaderRecordList = Uint8Array[]
 export type Rlp = Uint8Array
-export type BlockBodyContent = { txsRlp: Rlp[]; unclesRlp: Rlp }
+export type PreShanghaiBlockBodyContent = { txsRlp: Rlp[]; unclesRlp: Rlp }
+export type PostShanghaiBlockBodyContent = {
+  txsRlp: Rlp[]
+  unclesRlp: Rlp
+  allWithdrawals: Rlp[]
+}
+export type BlockBodyContent = PreShanghaiBlockBodyContent | PostShanghaiBlockBodyContent
 export type Log = [address: Uint8Array, topics: Uint8Array[], data: Uint8Array]
 export type rlpReceipt = [
   postStateOrStatus: Uint8Array,
