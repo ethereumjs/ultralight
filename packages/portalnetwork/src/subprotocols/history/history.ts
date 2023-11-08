@@ -88,6 +88,7 @@ export class HistoryProtocol extends BaseProtocol {
         throw new Error('Received block header with invalid proof')
       }
     }
+    this.blockIndex.set(header.number.toString(16), toHexString(header.hash()))
     this.put(
       this.protocolId,
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
