@@ -68,6 +68,13 @@ export class HistoryProtocol extends BaseProtocol {
     return value ? hexToBytes(value) : hexToBytes('0x')
   }
 
+  public indexBlockhash = async (number: bigint, blockHash: string) => {
+    const blockNumber = '0x' + number.toString(16)
+    const blockindex = await this.blockIndex()
+    blockindex.set(blockNumber, blockHash)
+    await this.setBlockIndex(blockindex)
+  }
+
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
@@ -86,6 +93,7 @@ export class HistoryProtocol extends BaseProtocol {
         throw new Error('Received block header with invalid proof')
       }
     }
+    this.indexBlockhash(header.number, toHexString(header.hash()))
     this.put(
       this.protocolId,
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
