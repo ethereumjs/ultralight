@@ -1,4 +1,4 @@
-import debug, { Debugger } from 'debug'
+import { Debugger } from 'debug'
 import { StateNetwork } from './state.js'
 import { Trie } from '@ethereumjs/trie'
 import {
@@ -6,7 +6,7 @@ import {
   ContractStorageTrieProofType,
   StateNetworkContentType,
 } from './types.js'
-import { UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Account, MapDB, equalsBytes } from '@ethereumjs/util'
 import { decodeStateNetworkContentKey } from './util.js'
 import { RLP } from '@ethereumjs/rlp'
@@ -19,7 +19,7 @@ type Address = string
 
 export class StateDB {
   trieDB: MapDB<string, string>
-  logger: Debugger
+  logger: Debugger | undefined
   state?: StateNetwork
   stateRoots: Set<StateRoot>
   accounts: Set<Address>
@@ -31,7 +31,7 @@ export class StateDB {
   constructor(state?: StateNetwork) {
     this.state = state
     this.trieDB = new MapDB()
-    this.logger = debug('StateDB')
+    this.logger = state?.logger.extend('StateDB')
     this.stateRoots = new Set()
     this.accounts = new Set()
     this.accountTries = new Map()
@@ -143,7 +143,7 @@ export class StateDB {
     if (!stored || !equalsBytes(account, stored)) {
       throw new Error('AccountTrieProof input failed')
     }
-    this.logger('AccountTrieProof input success')
+    this.logger?.('AccountTrieProof input success')
     return true
   }
 
@@ -171,7 +171,7 @@ export class StateDB {
       !stored &&
       toHexString(data) !== '0x0000000000000000000000000000000000000000000000000000000000000000'
     ) {
-      this.logger('ContractStorageTrieProof input failed')
+      this.logger?.('ContractStorageTrieProof input failed')
       throw new Error(
         `ContractStorageTrieProof input failed: slot ${slotHex} not found in storage trie`,
       )
@@ -181,7 +181,7 @@ export class StateDB {
       toHexString(address),
       toHexString(storageTrie.root()),
     )
-    this.logger('ContractStorageTrieProof input success')
+    this.logger?.('ContractStorageTrieProof input success')
     return true
   }
 
@@ -199,7 +199,7 @@ export class StateDB {
   ): Promise<boolean> {
     this.contractByteCode.set(toHexString(codeHash), content)
     this.accountCodeHash.set(toHexString(address), toHexString(codeHash))
-    this.logger('ContractByteCode input success')
+    this.logger?.('ContractByteCode input success')
     return true
   }
 
