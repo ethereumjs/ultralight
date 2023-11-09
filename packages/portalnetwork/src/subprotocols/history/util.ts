@@ -6,8 +6,11 @@ import {
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
+  PostShanghaiBlockBody,
+  PreShanghaiBlockBody,
   sszTransactionType,
   sszUnclesType,
+  SSZWithdrawal,
   Witnesses,
 } from './types.js'
 import { RLP as rlp } from '@ethereumjs/rlp'
@@ -61,20 +64,57 @@ export const decodeHistoryNetworkContentKey = (contentKey: string) => {
   }
 }
 
-export const decodeSszBlockBody = (sszBody: Uint8Array): BlockBodyContent => {
-  const body = BlockBodyContentType.deserialize(sszBody)
-  const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
-  const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
-  return { txsRlp, unclesRlp }
+export const decodeSszBlockBody = (
+  sszBody: Uint8Array,
+  withdrawals: boolean = false,
+): BlockBodyContent => {
+  if (withdrawals) {
+    const body = PostShanghaiBlockBody.deserialize(sszBody)
+    const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+    const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+    const allWithdrawals = body.allWithdrawals.map((sszW) => SSZWithdrawal.deserialize(sszW))
+    return {
+      txsRlp,
+      unclesRlp,
+      allWithdrawals,
+    }
+  } else {
+    try {
+      const body = BlockBodyContentType.deserialize(sszBody)
+      const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+      const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+      return { txsRlp, unclesRlp }
+    } catch {
+      const body = PostShanghaiBlockBody.deserialize(sszBody)
+      const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
+      const unclesRlp = sszUnclesType.deserialize(body.sszUncles)
+      const allWithdrawals = body.allWithdrawals.map((sszW) => SSZWithdrawal.deserialize(sszW))
+      return {
+        txsRlp,
+        unclesRlp,
+        allWithdrawals,
+      }
+    }
+  }
 }
 
 export const sszEncodeBlockBody = (block: Block) => {
   const encodedSSZTxs = block.transactions.map((tx) => sszTransactionType.serialize(tx.serialize()))
   const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
-  return BlockBodyContentType.serialize({
-    allTransactions: encodedSSZTxs,
-    sszUncles: sszUnclesType.serialize(encodedUncles),
-  })
+  if (block.withdrawals) {
+    const encodedWithdrawals = block.withdrawals.map((w) => rlp.encode(w.raw()))
+    const sszWithdrawals = encodedWithdrawals.map((w) => SSZWithdrawal.serialize(w))
+    return PostShanghaiBlockBody.serialize({
+      allTransactions: encodedSSZTxs,
+      sszUncles: encodedUncles,
+      allWithdrawals: sszWithdrawals,
+    })
+  } else {
+    return PreShanghaiBlockBody.serialize({
+      allTransactions: encodedSSZTxs,
+      sszUncles: encodedUncles,
+    })
+  }
 }
 
 /**

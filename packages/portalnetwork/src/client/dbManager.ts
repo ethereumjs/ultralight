@@ -46,6 +46,18 @@ export class DBManager {
     })
   }
 
+  async storeBlockIndex(blockIndex: Map<string, string>) {
+    return this.db.put('block_index', JSON.stringify(Array.from(blockIndex.entries())))
+  }
+
+  async getBlockIndex(): Promise<Map<string, string>> {
+    try {
+      return new Map(JSON.parse(await this.db.get('block_index')))
+    } catch {
+      return new Map()
+    }
+  }
+
   batch(ops: AbstractBatchOperation<string, string, string>[], sublevel?: ProtocolId) {
     const db = sublevel ? this.sublevels.get(sublevel) ?? this.db : this.db
     return (db as any).batch(ops)

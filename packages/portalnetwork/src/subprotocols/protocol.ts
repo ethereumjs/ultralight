@@ -46,6 +46,8 @@ export abstract class BaseProtocol extends EventEmitter {
   abstract protocolId: ProtocolId
   abstract protocolName: string
   public enr: SignableENR
+  blockIndex: () => Promise<Map<string, string>>
+  setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -66,6 +68,8 @@ export abstract class BaseProtocol extends EventEmitter {
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
     this.put = client.db.put.bind(client.db)
     this.get = client.db.get.bind(client.db)
+    this.blockIndex = client.db.getBlockIndex.bind(client.db)
+    this.setBlockIndex = client.db.storeBlockIndex.bind(client.db)
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
     this._prune = client.db.prune.bind(client.db)
     this.enr = client.discv5.enr

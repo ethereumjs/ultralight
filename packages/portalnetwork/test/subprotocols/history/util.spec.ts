@@ -1,6 +1,6 @@
 import { toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
-import { describe, it, assert } from 'vitest'
+import { describe, it, assert, assertType } from 'vitest'
 import {
   blockNumberToGindex,
   blockNumberToLeafIndex,
@@ -12,6 +12,8 @@ import {
   reassembleBlock,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
+  decodeSszBlockBody,
+  PostShanghaiBlockBodyContent,
 } from '../../../src/index.js'
 import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 
@@ -83,6 +85,37 @@ describe('BlockBody ssz serialization/deserialization', () => {
       bytesToHex(block.header.hash()),
       bytesToHex(reassembledBlock.header.hash()),
       'was able to ssz serialize and deserialize a block',
+    )
+  })
+})
+
+describe('BlockHeader ssz serialization/deserialization with pre and post shanghai blocks', () => {
+  it('should serialize and deserialize pre and post shanghai blocks', async () => {
+    const preShanghaiBlockJson = await import('./testData/block31591.json')
+    const postShanghaiBlockJson = await import('./testData/block18529207.json')
+
+    const preShanghaiBlock = Block.fromRPC(preShanghaiBlockJson, undefined, {
+      setHardfork: true,
+    })
+    const postShanghaiBlock = Block.fromRPC(postShanghaiBlockJson, undefined, {
+      setHardfork: true,
+    })
+
+    const preEncoded = sszEncodeBlockBody(preShanghaiBlock)
+    const postEncoded = sszEncodeBlockBody(postShanghaiBlock)
+    assertType<Uint8Array>(preEncoded)
+    assertType<Uint8Array>(postEncoded)
+
+    const deserializedPreBlock = decodeSszBlockBody(preEncoded, false)
+    const deserializedPostBlock = decodeSszBlockBody(
+      postEncoded,
+      true,
+    ) as PostShanghaiBlockBodyContent
+    assert.equal(deserializedPreBlock['allWithdrawals'], undefined)
+    assert.ok(
+      deserializedPostBlock.allWithdrawals !== undefined &&
+        deserializedPostBlock.allWithdrawals.length === 16,
+      'deserialized post shanghai block body with withdrawals',
     )
   })
 })
