@@ -23,45 +23,44 @@ const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
 const enr1 = SignableENR.createFromPeerId(id1)
 const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/0`)
 enr1.setLocationMultiaddr(initMa)
-describe('State Network wire spec tests', async () => {
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
-  enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  const enr2 = SignableENR.createFromPeerId(id2)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
-  enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
-    transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.StateNetwork],
-    config: {
-      enr: enr1,
-      bindAddrs: {
-        ip4: initMa,
-      },
-      peerId: id1,
-    },
-  })
-  const node2 = await PortalNetwork.create({
-    transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.StateNetwork],
-    config: {
-      enr: enr2,
-      bindAddrs: {
-        ip4: initMa2,
-      },
-      peerId: id2,
-    },
-  })
-
-  await node1.start()
-  await node2.start()
-  const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
-  const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  await network1!.sendPing(network2?.enr!.toENR())
-
+describe('State Network wire spec tests', () => {
   it('should find another node', async () => {
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
+    const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
+    await network1!.sendPing(network2?.enr!.toENR())
     const enr = network2.routingTable.getWithPending(node1.discv5.enr.nodeId)
     assert.equal(
       enr?.value.nodeId,
@@ -69,7 +68,43 @@ describe('State Network wire spec tests', async () => {
       'found another node that supports state network',
     )
   })
-  it.only('should find content from another node', async () => {
+  it('should find content from another node', async () => {
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
+    const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
+    await network1!.sendPing(network2?.enr!.toENR())
     const pk = randomBytes(32)
     const address = Address.fromPrivateKey(pk)
     const account = Account.fromAccountData({ balance: 0n, nonce: 1n })
