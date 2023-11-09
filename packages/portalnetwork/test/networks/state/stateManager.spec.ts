@@ -4,7 +4,6 @@ import { UltralightStateManager } from '../../../src/networks/state/stateManager
 import {
   Account,
   Address,
-  bytesToBigInt,
   bytesToInt,
   bytesToUtf8,
   hexToBytes,
@@ -123,7 +122,7 @@ describe('UltralightStateManager', () => {
     await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
 
     const byteCodeContent = ContractByteCodeType.serialize(byteCode)
-    await network.stateDB.inputContractByteCode(address.toBytes(), trie.root(), byteCodeContent)
+    await network.stateDB.inputContractByteCode(address.toBytes(), codehash, byteCodeContent)
 
     usm.setStateRoot(trie.root())
     const gotAccount = await usm.getAccount(address)

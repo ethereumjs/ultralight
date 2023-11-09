@@ -15,7 +15,7 @@ import {
   FoundContent,
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
-import { AccountTrieProofType, StateNetworkContentType } from './types.js'
+import { AccountTrieProofType, ContractByteCodeType, StateNetworkContentType } from './types.js'
 import {
   eth_getCode,
   eth_getStorageAt,
@@ -34,9 +34,9 @@ export class StateNetwork extends BaseNetwork {
   logger: Debugger
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
-    this.stateDB = new StateDB(this)
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
+    this.stateDB = new StateDB(this)
     this.routingTable.setLogger(this.logger)
     client.uTP.on(NetworkId.StateNetwork, async (contentKey: Uint8Array, content: Uint8Array) => {
       await this.store(toHexString(contentKey), toHexString(content))
@@ -167,5 +167,22 @@ export class StateNetwork extends BaseNetwork {
       })
     }
     return account
+  }
+
+  public getBytecode = async (codeHash: string, address: string) => {
+    let bytecode
+    bytecode = await this.stateDB.getContractByteCode(codeHash)
+    if (bytecode !== undefined) return bytecode
+    const contentKey = getStateNetworkContentKey({
+      codeHash: fromHexString(codeHash),
+      address: Address.fromString(address),
+      contentType: StateNetworkContentType.ContractByteCode,
+    })
+    const lookup = new ContentLookup(this, contentKey)
+    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
+    if (res.content !== undefined) {
+      bytecode = ContractByteCodeType.deserialize(res.content)
+    }
+    return bytecode
   }
 }
