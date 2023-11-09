@@ -1,4 +1,4 @@
-import { describe, it, assert, test } from 'vitest'
+import { describe, it, assert } from 'vitest'
 import {
   HistoryProtocol,
   PortalNetwork,
@@ -6,7 +6,6 @@ import {
   StateProtocol,
   addRLPSerializedBlock,
   fromHexString,
-  reassembleBlock,
   toHexString,
 } from '../../src'
 import block0_meta from './state/testdata/block-0x11a86a9-meta.json'
@@ -17,8 +16,6 @@ import block2_meta from './state/testdata/block-0x11a86ab-meta.json'
 import block2_db from './state/testdata/block-0x11a86ab-db.json'
 import testBlockData from './state/testdata/testblocks.json'
 import { Block } from '@ethereumjs/block'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { StateDB } from '../../src/subprotocols/state/statedb.js'
 
 describe('shared accounts', async () => {
   for (const account0 of block0_meta.accounts) {
@@ -61,7 +58,6 @@ describe('ethGetBalance using HistoryProtocol and StateProtocol', async () => {
   const blocksMeta = [block0_meta, block1_meta, block2_meta]
   for await (const [idx, block] of [block0_db, block1_db, block2_db].entries()) {
     const contentKeys = Object.keys(block)
-    const s = 0
     it(`should store ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
       for await (const key of contentKeys) {
         const storing = await state.stateDB.storeContent(

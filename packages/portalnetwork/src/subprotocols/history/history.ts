@@ -76,19 +76,24 @@ export class HistoryProtocol extends BaseProtocol {
     await this.setBlockIndex(blockindex)
   }
 
-  public getBlockHeaderBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
+  /**
+   * Retrieve a blockheader from the DB by hash
+   * @param blockHash the hash of the blockheader sought
+   * @param asBytes return the header as RLP encoded bytes or as an @ethereumjs/block BlockHeader
+   * @returns the bytes or Blockheader if found or else undefined
+   */
+  public getBlockHeaderFromDB = async (
+    blockHash: Uint8Array,
+    asBytes = true,
+  ): Promise<Uint8Array | BlockHeader | undefined> => {
     const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
     const value = await this.retrieve(contentKey)
     const header = value ? BlockHeaderWithProof.deserialize(fromHexString(value)).header : undefined
-    return value ? header : undefined
-  }
-
-  public getBlockHeader = async (blockHash: Uint8Array): Promise<BlockHeader | undefined> => {
-    const value = await this.getBlockHeaderBytes(blockHash)
-    if (!value) {
-      return undefined
-    }
-    return BlockHeader.fromRLPSerializedHeader(value, { setHardfork: true })
+    return header !== undefined
+      ? asBytes
+        ? header
+        : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
+      : undefined
   }
 
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
@@ -97,11 +102,18 @@ export class HistoryProtocol extends BaseProtocol {
     return value ? hexToBytes(value) : undefined
   }
 
+  /**
+   * Convenience function that implements `getBlockByHash` when block is stored locally
+   * @param blockHash the hash of the block sought
+   * @param includeTransactions whether to include the full transactions or not
+   * @returns a block with or without transactions
+   * @throws if the block isn't found in the DB
+   */
   public getBlockFromDB = async (
     blockHash: Uint8Array,
     includeTransactions = true,
   ): Promise<Block> => {
-    const header = await this.getBlockHeaderBytes(blockHash)
+    const header = (await this.getBlockHeaderFromDB(blockHash)) as Uint8Array
     if (!header) {
       throw new Error('Block not found')
     }
@@ -261,7 +273,7 @@ export class HistoryProtocol extends BaseProtocol {
       if (header) {
         block = reassembleBlock(header, value)
       } else {
-        const headerBytes = await this.getBlockHeaderBytes(fromHexString(hashKey))
+        const headerBytes = (await this.getBlockHeaderFromDB(fromHexString(hashKey))) as Uint8Array
         // Verify we can construct a valid block from the header and body provided
         block = reassembleBlock(headerBytes!, value)
       }
