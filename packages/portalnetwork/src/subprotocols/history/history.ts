@@ -15,6 +15,7 @@ import {
   FoundContent,
   toHexString,
   ENR,
+  fromHexString,
 } from '../../index.js'
 import { ProtocolId } from '../types.js'
 import { ETH } from './eth_module.js'
@@ -246,7 +247,7 @@ export class HistoryProtocol extends BaseProtocol {
     return decodeReceipts(receipts)
   }
 
-  public async addBlockBody(value: Uint8Array, hashKey: string) {
+  public async addBlockBody(value: Uint8Array, hashKey: string, header?: Uint8Array) {
     const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
@@ -254,15 +255,14 @@ export class HistoryProtocol extends BaseProtocol {
     }
     let block: Block | undefined
     try {
-      const headerContentKey = getContentKey(
-        HistoryNetworkContentType.BlockHeader,
-        hexToBytes(hashKey),
-      )
-      const headerWith = await this.retrieve(headerContentKey)
-      const hexHeader = BlockHeaderWithProof.deserialize(hexToBytes(headerWith!)).header
-      // Verify we can construct a valid block from the header and body provided
-      block = reassembleBlock(hexHeader, value)
-    } catch {
+      if (header) {
+        block = reassembleBlock(header, value)
+      } else {
+        const headerBytes = await this.getBlockHeaderBytes(fromHexString(hashKey))
+        // Verify we can construct a valid block from the header and body provided
+        block = reassembleBlock(headerBytes!, value)
+      }
+    } catch (err: any) {
       this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
@@ -285,11 +285,11 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
-    const epochHash = epochRootByBlocknumber(blockNumber)
-    const epoch = await this.retrieve(
-      getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash),
-    )
     try {
+      const epochHash = epochRootByBlocknumber(blockNumber)
+      const epoch = await this.retrieve(
+        getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash!),
+      )
       const accumulator = EpochAccumulator.deserialize(hexToBytes(epoch!))
       const tree = EpochAccumulator.value_toTree(accumulator)
       const proofInput: SingleProofInput = {
