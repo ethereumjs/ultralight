@@ -177,14 +177,14 @@ The Ultralight client exposes a minimal JSON-RPC interface that allows for some 
 - `discv5_deleteEnr` - Deletes an ENR from Routing Table
 - `discv5_lookupEnr` - Lookup node by NodeId
 
-**portal_<subprotocol>** Portal Network subprotocol operations
+**portal_<subnetwork>** Portal Network subnetwork operations
 
 - `portal_historyAddBootNode` - Adds a new ENR to HistoryNetwork routing table
-- `portal_historyNodeInfo` - Returns NodeId and ENR of History Protocol supporting node
+- `portal_historyNodeInfo` - Returns NodeId and ENR of History Network supporting node
 - `portal_historyRoutingTableInfo` - Returns History Network Routing Table K-Buckets
 - `portal_historyLookupEnr` - Lookup node by NodeId
 - `portal_historyAddEnrs` - Add ENRs to Routing Table
-- `portal_historyPing` - Ping a node on History Protocol
+- `portal_historyPing` - Ping a node on History Network
 - `portal_historyFindNodes` - Takes a `nodeId` and an array of `log2distances` and sends a `FINDNODES` request to that node
 - `portal_historyLocalContent` - Search local database for content
 - `portal_historyFindContent` - Ask a peer for content by content key

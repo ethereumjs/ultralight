@@ -18,10 +18,7 @@ import { SignableENR } from '@chainsafe/discv5/enr'
 import { multiaddr } from '@multiformats/multiaddr'
 
 import { Trie } from '@ethereumjs/trie'
-import {
-  AccountTrieProofType,
-  ContractByteCodeType,
-} from '../../../src/networks/state/types.js'
+import { AccountTrieProofType, ContractByteCodeType } from '../../../src/networks/state/types.js'
 import { EVM } from '@ethereumjs/evm'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { fromHexString } from '@chainsafe/ssz'

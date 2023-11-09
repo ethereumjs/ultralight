@@ -37,9 +37,7 @@ export class ultralight {
     this.logger(`ultralight_addBlockToHistory request received`)
 
     const [blockHash, rlpHex] = params
-    const network = this._client.networks.get(
-      NetworkId.HistoryNetwork,
-    ) as never as HistoryNetwork
+    const network = this._client.networks.get(NetworkId.HistoryNetwork) as never as HistoryNetwork
     try {
       addRLPSerializedBlock(rlpHex, blockHash, network)
       this.logger(`Block ${blockHash} added to content DB`)

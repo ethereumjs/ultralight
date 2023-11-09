@@ -99,9 +99,7 @@ it('gossip test', async () => {
   //   hexToBytes(epoch25)
   // )
   assert.equal(
-    await network1.retrieve(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    ),
+    await network1.retrieve('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
     epoch25,
     'epoch 25 added',
   )
@@ -191,9 +189,7 @@ it('FindContent', async () => {
     hexToBytes(epoch25),
   )
   assert.equal(
-    await network1.retrieve(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    ),
+    await network1.retrieve('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
     epoch25,
     'epoch 25 added',
   )
@@ -260,9 +256,7 @@ it('eth_getBlockByHash', async () => {
     hexToBytes(epoch25),
   )
   assert.equal(
-    await network1.retrieve(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    ),
+    await network1.retrieve('0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70'),
     epoch25,
     'epoch 25 added',
   )

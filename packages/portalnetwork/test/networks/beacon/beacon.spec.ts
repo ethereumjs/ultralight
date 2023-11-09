@@ -148,9 +148,7 @@ describe('API tests', async () => {
     },
   })
 
-  const network = <BeaconLightClientNetwork>(
-    node1.networks.get(NetworkId.BeaconLightClientNetwork)
-  )
+  const network = <BeaconLightClientNetwork>node1.networks.get(NetworkId.BeaconLightClientNetwork)
 
   it('stores and retrieves bootstrap', async () => {
     const bootstrap = specTestVectors.bootstrap['6718368']
