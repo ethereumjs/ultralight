@@ -4,7 +4,7 @@ import {
   ENR,
   fromHexString,
   getContentId,
-  ProtocolId,
+  NetworkId,
   toHexString,
 } from 'portalnetwork'
 

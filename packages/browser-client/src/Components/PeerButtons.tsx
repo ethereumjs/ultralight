@@ -15,7 +15,7 @@ export default function PeerButtons() {
       peerState,
       peerDispatch,
     },
-    state.provider!.historyProtocol,
+    state.provider!.historyNetwork,
   )
 
   useEffect(() => {

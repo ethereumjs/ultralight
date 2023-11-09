@@ -2,7 +2,7 @@ import jayson from 'jayson/promise/index.js'
 
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
-import { BeaconLightClientNetworkContentType, getBeaconContentKey, LightClientBootstrapKey, LightClientForkName, LightClientOptimisticUpdateKey, LightClientUpdatesByRange, LightClientUpdatesByRangeKey, ProtocolId, toHexString } from 'portalnetwork'
+import { BeaconLightClientNetworkContentType, getBeaconContentKey, LightClientBootstrapKey, LightClientForkName, LightClientOptimisticUpdateKey, LightClientUpdatesByRange, LightClientUpdatesByRangeKey, NetworkId, toHexString } from 'portalnetwork'
 
 import { ssz, allForks } from '@lodestar/types'
 import { ForkLightClient } from '@lodestar/params'

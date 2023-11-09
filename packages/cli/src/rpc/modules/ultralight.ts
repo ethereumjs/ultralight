@@ -1,10 +1,10 @@
 import { Debugger } from 'debug'
 import {
-  ProtocolId,
+  NetworkId,
   addRLPSerializedBlock,
   HistoryNetworkContentType,
   fromHexString,
-  HistoryProtocol,
+  HistoryNetwork,
   PortalNetwork,
 } from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
@@ -13,12 +13,12 @@ const methods = ['ultralight_store', 'ultralight_addBlockToHistory']
 
 export class ultralight {
   private _client: PortalNetwork
-  private _history: HistoryProtocol
+  private _history: HistoryNetwork
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    this._history = this._client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
@@ -37,11 +37,11 @@ export class ultralight {
     this.logger(`ultralight_addBlockToHistory request received`)
 
     const [blockHash, rlpHex] = params
-    const protocol = this._client.protocols.get(
-      ProtocolId.HistoryNetwork,
-    ) as never as HistoryProtocol
+    const network = this._client.networks.get(
+      NetworkId.HistoryNetwork,
+    ) as never as HistoryNetwork
     try {
-      addRLPSerializedBlock(rlpHex, blockHash, protocol)
+      addRLPSerializedBlock(rlpHex, blockHash, network)
       this.logger(`Block ${blockHash} added to content DB`)
       return `Block ${blockHash} added to content DB`
     } catch (err: any) {

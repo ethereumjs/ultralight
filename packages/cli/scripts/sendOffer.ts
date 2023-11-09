@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import { ENR, ProtocolId, fromHexString, getContentKey, toHexString } from 'portalnetwork'
+import { ENR, NetworkId, fromHexString, getContentKey, toHexString } from 'portalnetwork'
 import { Block, BlockData, BlockHeader } from '@ethereumjs/block'
 
 const blocks = {
@@ -88,7 +88,7 @@ const main = async () => {
 
   const ping = await nodeA.request('portal_historyPing', [
     nodeBEnr.result.enr,
-    ProtocolId.HistoryNetwork,
+    NetworkId.HistoryNetwork,
   ])
 
   console.log(ping)

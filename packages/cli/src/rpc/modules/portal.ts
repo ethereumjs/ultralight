@@ -3,11 +3,11 @@ import { BitArray } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import {
   ENR,
-  ProtocolId,
+  NetworkId,
   fromHexString,
   shortId,
   toHexString,
-  HistoryProtocol,
+  HistoryNetwork,
   PortalNetwork,
   HistoryNetworkContentType,
   ContentLookup,
@@ -22,7 +22,7 @@ import {
   FoundContent,
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
-  StateProtocol,
+  StateNetwork,
   StateNetworkContentType,
 } from 'portalnetwork'
 import { GetEnrResult } from '../schema/types.js'
@@ -78,18 +78,18 @@ const methods = [
 
 export class portal {
   private _client: PortalNetwork
-  private _history: HistoryProtocol
+  private _history: HistoryNetwork
   private _beacon: BeaconLightClientNetwork
-  private _state: StateProtocol
+  private _state: StateNetwork
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = this._client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    this._beacon = this._client.protocols.get(
-      ProtocolId.BeaconLightClientNetwork,
+    this._history = this._client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    this._beacon = this._client.networks.get(
+      NetworkId.BeaconLightClientNetwork,
     ) as BeaconLightClientNetwork
-    this._state = this._client.protocols.get(ProtocolId.StateNetwork) as StateProtocol
+    this._state = this._client.networks.get(NetworkId.StateNetwork) as StateNetwork
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
@@ -524,7 +524,7 @@ export class portal {
               resolve(Uint8Array.from([]))
             }, 2000)
             this._client.uTP.on(
-              ProtocolId.HistoryNetwork,
+              NetworkId.HistoryNetwork,
               (_contentType: HistoryNetworkContentType, hash: string, value: Uint8Array) => {
                 if (hash.slice(2) === contentKey.slice(4)) {
                   clearTimeout(timeout)
@@ -569,7 +569,7 @@ export class portal {
               resolve(Uint8Array.from([]))
             }, 2000)
             this._client.uTP.on(
-              ProtocolId.StateNetwork,
+              NetworkId.StateNetwork,
               (_contentType: StateNetworkContentType, hash: string, value: Uint8Array) => {
                 if (hash.slice(2) === contentKey.slice(4)) {
                   clearTimeout(timeout)
@@ -712,7 +712,7 @@ export class portal {
     const accepted: boolean[] = Array(contentKeys.length).fill(false)
     for (let x = 0; x < contentKeys.length; x++) {
       try {
-        await this._client.db.get(ProtocolId.HistoryNetwork, contentKeys[x])
+        await this._client.db.get(NetworkId.HistoryNetwork, contentKeys[x])
       } catch (err) {
         accepted[x] = true
       }

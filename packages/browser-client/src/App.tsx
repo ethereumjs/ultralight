@@ -41,7 +41,7 @@ export const App = () => {
   return (
     <VStack spacing={0} overflow="hidden" height="99vh" width="100%">
       <ChakraProvider theme={theme}>
-        {state && state.provider && state.provider.historyProtocol && (
+        {state && state.provider && state.provider.historyNetwork && (
           <AppContext.Provider value={{ state, dispatch }}>
             <Box height="10%" width="100%">
               <Header />

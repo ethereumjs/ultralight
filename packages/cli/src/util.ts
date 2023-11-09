@@ -3,11 +3,11 @@ import { RLP } from '@ethereumjs/rlp'
 import { TransactionFactory } from '@ethereumjs/tx'
 import { Enr } from './rpc/schema/types.js'
 import {
-  BaseProtocol,
+  BaseNetwork,
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  ProtocolId,
+  NetworkId,
   sszReceiptType,
   sszUnclesType,
   toHexString,
@@ -48,19 +48,19 @@ export const isValidEnr = (enr: Enr) => {
 /**
  * Add a valid Ethereum Node Record (ENR) that is compliant with EIP-778
  * https://eips.ethereum.org/EIPS/eip-778 as a bootnode to an instance of a Portal Network
- * protocol
- * @param protocolId the protocolId associated with an instance of a Portal Network protocol
- * @param baseProtocol the methods of the protocolId instance of a Portal Network protocol
+ * network
+ * @param networkId the networkId associated with an instance of a Portal Network network
+ * @param baseNetwork the methods of the networkId instance of a Portal Network network
  * @param enr a base64 encoded string containing an Ethereum Node Record (ENR)
  * @throws {Error}
  */
-export const addBootNode = async (protocolId: ProtocolId, baseProtocol: BaseProtocol, enr: Enr) => {
+export const addBootNode = async (networkId: NetworkId, baseNetwork: BaseNetwork, enr: Enr) => {
   try {
-    await baseProtocol!.addBootNode(enr)
-    baseProtocol!.logger(`Added bootnode ${enr} to ${protocolId}`)
+    await baseNetwork!.addBootNode(enr)
+    baseNetwork!.logger(`Added bootnode ${enr} to ${networkId}`)
   } catch (error: any) {
-    throw new Error(`Error adding bootnode ${enr} to protocol \
-      ${protocolId}: ${error.message ?? error}`)
+    throw new Error(`Error adding bootnode ${enr} to network \
+      ${networkId}: ${error.message ?? error}`)
   }
 }
 

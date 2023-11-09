@@ -1,7 +1,7 @@
 import { Block } from '@ethereumjs/block'
 import { JsonTx, TypedTransaction } from '@ethereumjs/tx'
 import { Address, bigIntToHex, bytesToHex, intToHex } from '@ethereumjs/util'
-import { Log } from 'portalnetwork/src/subprotocols/index.js'
+import { Log } from 'portalnetwork/src/networks/index.js'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
 export type GetLogsParams = {

@@ -1,4 +1,4 @@
-import { HistoryNetworkContentType, ProtocolId, toHexString } from 'portalnetwork'
+import { HistoryNetworkContentType, NetworkId, toHexString } from 'portalnetwork'
 import { isValidEnr } from '../util.js'
 
 const INVALID_PARAMS = -32602
@@ -234,12 +234,12 @@ export const validators = {
     }
   },
 
-  get protocolId() {
+  get networkId() {
     return (params: any[], index: number) => {
-      if (!Object.values(ProtocolId).includes(params[index])) {
+      if (!Object.values(NetworkId).includes(params[index])) {
         return {
           code: INVALID_PARAMS,
-          message: `invalid argument ${index}: Protocol not supported`,
+          message: `invalid argument ${index}: Network not supported`,
         }
       }
     }

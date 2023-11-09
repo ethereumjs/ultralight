@@ -23,7 +23,7 @@ import {
   getContentId,
   getContentKey,
   HistoryNetworkContentType,
-  ProtocolId,
+  NetworkId,
 } from 'portalnetwork'
 import { PeerContext, PeerContextType, PeerStateChange } from '../peerReducer'
 
@@ -58,7 +58,7 @@ export function PortalButton(props: IPortalButton) {
       peerState,
       peerDispatch,
     },
-    state.provider!.historyProtocol,
+    state.provider!.historyNetwork,
   )
   const [offer, setOffer] = useState<string[]>([])
   const [blockHash, setBlockhash] = useState<string>(
@@ -71,7 +71,7 @@ export function PortalButton(props: IPortalButton) {
   const addToOffer = async (type: HistoryNetworkContentType) => {
     const contentKey = getContentKey(type, fromHexString(blockHash))
     const contentId = getContentId(type, blockHash)
-    if (await state.provider?.historyProtocol.get(ProtocolId.HistoryNetwork, contentKey)) {
+    if (await state.provider?.historyNetwork.get(NetworkId.HistoryNetwork, contentKey)) {
       setOffer([...offer, contentId])
     }
   }

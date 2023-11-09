@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import { ENR, PortalNetwork, ProtocolId } from 'portalnetwork'
+import { ENR, PortalNetwork, NetworkId } from 'portalnetwork'
 import { RPCManager } from '../src/rpc.js'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { Multiaddr } from '@multiformats/multiaddr'
@@ -44,7 +44,7 @@ const main = async (numNodes: number) => {
             //@ts-ignore Because level doesn't know how to get along with itself
             db: undefined,
             metrics,
-            supportedProtocols: [ProtocolId.HistoryNetwork],
+            supportedNetworks: [NetworkId.HistoryNetwork],
             // dataDir: args.datadir
         })
         process.on('SIGINT', async () => {

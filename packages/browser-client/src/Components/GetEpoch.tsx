@@ -7,9 +7,9 @@ import {
   epochRootByIndex,
   fromHexString,
   getContentKey,
-  HistoryProtocol,
+  HistoryNetwork,
   MAX_HISTORICAL_EPOCHS,
-  ProtocolId,
+  NetworkId,
   toHexString,
 } from 'portalnetwork'
 import React, { useState, useContext } from 'react'
@@ -22,11 +22,11 @@ export default function GetEpoch() {
 
   async function sendFindEpoch(): Promise<string> {
     const epochRootHash = await epochRootByIndex(epochIndex)
-    const protocol = state.provider!.portal.protocols.get(
-      ProtocolId.HistoryNetwork,
-    ) as HistoryProtocol
+    const network = state.provider!.portal.networks.get(
+      NetworkId.HistoryNetwork,
+    ) as HistoryNetwork
     const lookup = new ContentLookup(
-      protocol,
+      network,
       fromHexString(getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)),
     )
     const epoch = await lookup.startLookup()

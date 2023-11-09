@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import { TypedTransaction } from '@ethereumjs/tx'
 import { BrowserLevel } from 'browser-level'
-import { ENR, ProtocolId, TransportLayer, UltralightProvider } from 'portalnetwork'
+import { ENR, NetworkId, TransportLayer, UltralightProvider } from 'portalnetwork'
 import React from 'react'
 import { AsyncActionHandlers } from 'use-reducer-async'
 import { createNodeFromScratch, createNodeFromStorage, refresh, startUp } from './portalClient'
@@ -77,7 +77,7 @@ export const reducer: React.Reducer<AppState, AppStateAction | AsyncAction> = (
       return { ..._state }
     case StateChange.SETPORTAL:
       _state.provider = payload
-      // _state.block = _state.historyProtocol.accumulator.genesisBlock
+      // _state.block = _state.historyNetwork.accumulator.genesisBlock
       return { ..._state }
     case StateChange.REFRESHPEERS:
       return refresh(state)
@@ -130,7 +130,7 @@ export const asyncActionHandlers: AsyncActionHandlers<AppReducer, AsyncAction> =
     ({ dispatch }: reducerType) =>
     async (action: AsyncAction) => {
       const provider = await UltralightProvider.create(new ethers.CloudflareProvider(), {
-        supportedProtocols: [ProtocolId.HistoryNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork],
         proxyAddress: action.payload.state.proxy,
         db: action.payload.state.LDB as any,
         transport: TransportLayer.WEB,

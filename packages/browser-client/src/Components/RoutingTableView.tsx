@@ -32,7 +32,7 @@ export default function RoutingTableView() {
 
   async function connectToPeer() {
     try {
-      await state.provider?.historyProtocol.addBootNode(state.searchEnr)
+      await state.provider?.historyNetwork.addBootNode(state.searchEnr)
       dispatch({ type: StateChange.SETSEARCHENR, payload: '' })
       dispatch({ type: StateChange.REFRESHPEERS })
     } catch (err) {}
