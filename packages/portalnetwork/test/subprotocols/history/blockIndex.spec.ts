@@ -23,8 +23,11 @@ describe('BlockIndex', async () => {
   it('should store block header', () => {
     assert.equal(stored, headerWithProof)
   })
-  it('should save block index', () => {
-    assert.isTrue(history.blockIndex.has('1'))
-    assert.equal(history.blockIndex.get('1'), hash)
+  it('should save block index', async () => {
+    const numberHex = '0x' + BigInt(1).toString(16)
+    const index = await history.blockIndex()
+    assert.isTrue(index.has(numberHex))
+    assert.equal(index.get(numberHex), hash)
+  })
   })
 })
