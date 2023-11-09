@@ -43,13 +43,11 @@ export class HistoryProtocol extends BaseProtocol {
   protocolName = 'HistoryNetwork'
   logger: Debugger
   ETH: ETH
-  blockIndex: Map<string, string> = new Map()
   gossipManager: GossipManager
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
     this.protocolId = ProtocolId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
-    this.blockIndex = new Map()
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
