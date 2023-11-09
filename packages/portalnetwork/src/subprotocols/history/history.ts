@@ -15,6 +15,7 @@ import {
   FoundContent,
   toHexString,
   ENR,
+  fromHexString,
 } from '../../index.js'
 import { ProtocolId } from '../types.js'
 import { ETH } from './eth_module.js'
@@ -73,6 +74,54 @@ export class HistoryProtocol extends BaseProtocol {
     const blockindex = await this.blockIndex()
     blockindex.set(blockNumber, blockHash)
     await this.setBlockIndex(blockindex)
+  }
+
+  /**
+   * Retrieve a blockheader from the DB by hash
+   * @param blockHash the hash of the blockheader sought
+   * @param asBytes return the header as RLP encoded bytes or as an @ethereumjs/block BlockHeader
+   * @returns the bytes or Blockheader if found or else undefined
+   */
+  public getBlockHeaderFromDB = async (
+    blockHash: Uint8Array,
+    asBytes = true,
+  ): Promise<Uint8Array | BlockHeader | undefined> => {
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
+    const value = await this.retrieve(contentKey)
+    const header = value ? BlockHeaderWithProof.deserialize(fromHexString(value)).header : undefined
+    return header !== undefined
+      ? asBytes
+        ? header
+        : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
+      : undefined
+  }
+
+  public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
+    const value = await this.retrieve(contentKey)
+    return value ? hexToBytes(value) : undefined
+  }
+
+  /**
+   * Convenience function that implements `getBlockByHash` when block is stored locally
+   * @param blockHash the hash of the block sought
+   * @param includeTransactions whether to include the full transactions or not
+   * @returns a block with or without transactions
+   * @throws if the block isn't found in the DB
+   */
+  public getBlockFromDB = async (
+    blockHash: Uint8Array,
+    includeTransactions = true,
+  ): Promise<Block> => {
+    const header = (await this.getBlockHeaderFromDB(blockHash)) as Uint8Array
+    if (!header) {
+      throw new Error('Block not found')
+    }
+    const body = await this.getBlockBodyBytes(blockHash)
+    if (!body && includeTransactions) {
+      throw new Error('Block body not found')
+    }
+    return reassembleBlock(header, body)
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
@@ -213,7 +262,7 @@ export class HistoryProtocol extends BaseProtocol {
     return decodeReceipts(receipts)
   }
 
-  public async addBlockBody(value: Uint8Array, hashKey: string) {
+  public async addBlockBody(value: Uint8Array, hashKey: string, header?: Uint8Array) {
     const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
@@ -221,15 +270,14 @@ export class HistoryProtocol extends BaseProtocol {
     }
     let block: Block | undefined
     try {
-      const headerContentKey = getContentKey(
-        HistoryNetworkContentType.BlockHeader,
-        hexToBytes(hashKey),
-      )
-      const headerWith = await this.retrieve(headerContentKey)
-      const hexHeader = BlockHeaderWithProof.deserialize(hexToBytes(headerWith!)).header
-      // Verify we can construct a valid block from the header and body provided
-      block = reassembleBlock(hexHeader, value)
-    } catch {
+      if (header) {
+        block = reassembleBlock(header, value)
+      } else {
+        const headerBytes = (await this.getBlockHeaderFromDB(fromHexString(hashKey))) as Uint8Array
+        // Verify we can construct a valid block from the header and body provided
+        block = reassembleBlock(headerBytes!, value)
+      }
+    } catch (err: any) {
       this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
       block = await this.ETH.getBlockByHash(hashKey, false)
     }
@@ -252,11 +300,11 @@ export class HistoryProtocol extends BaseProtocol {
   }
 
   public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
-    const epochHash = epochRootByBlocknumber(blockNumber)
-    const epoch = await this.retrieve(
-      getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash),
-    )
     try {
+      const epochHash = epochRootByBlocknumber(blockNumber)
+      const epoch = await this.retrieve(
+        getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash!),
+      )
       const accumulator = EpochAccumulator.deserialize(hexToBytes(epoch!))
       const tree = EpochAccumulator.value_toTree(accumulator)
       const proofInput: SingleProofInput = {
@@ -284,5 +332,13 @@ export class HistoryProtocol extends BaseProtocol {
     }
     EpochAccumulator.createFromProof(proof, target)
     return true
+  }
+
+  public async getStateRoot(blockNumber: bigint) {
+    const block = await this.ETH.getBlockByNumber(blockNumber, false)
+    if (!block) {
+      throw new Error('Block not found')
+    }
+    return toHexString(block.header.stateRoot)
   }
 }

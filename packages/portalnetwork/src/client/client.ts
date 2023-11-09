@@ -37,6 +37,7 @@ import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
 import { peerIdFromKeys } from '@libp2p/peer-id'
 import { hexToBytes } from '@ethereumjs/util'
+import { ETH } from './eth.js'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
@@ -47,6 +48,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
+  ETH: ETH
   private refreshListeners: Map<ProtocolId, ReturnType<typeof setInterval>>
   private peerId: PeerId
   private supportsRendezvous: boolean
@@ -209,6 +211,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
 
+    this.ETH = new ETH(this)
+
     // Set version info pair in ENR
     this.discv5.enr.set('c', new TextEncoder().encode('u 0.0.1'))
     // Event handling
@@ -278,6 +282,27 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.removeAllListeners()
     await this.db.close()
     this.refreshListeners.forEach((protocol) => clearInterval(protocol))
+  }
+
+  public protocol = (): {
+    [ProtocolId.HistoryNetwork]: HistoryProtocol | undefined
+    [ProtocolId.StateNetwork]: StateProtocol | undefined
+    [ProtocolId.BeaconLightClientNetwork]: BeaconLightClientNetwork | undefined
+  } => {
+    const history = this.protocols.get(ProtocolId.HistoryNetwork)
+      ? (this.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol)
+      : undefined
+    const state = this.protocols.get(ProtocolId.StateNetwork)
+      ? (this.protocols.get(ProtocolId.StateNetwork) as StateProtocol)
+      : undefined
+    const beacon = this.protocols.get(ProtocolId.BeaconLightClientNetwork)
+      ? (this.protocols.get(ProtocolId.BeaconLightClientNetwork) as BeaconLightClientNetwork)
+      : undefined
+    return {
+      [ProtocolId.HistoryNetwork]: history,
+      [ProtocolId.StateNetwork]: state,
+      [ProtocolId.BeaconLightClientNetwork]: beacon,
+    }
   }
 
   /**
