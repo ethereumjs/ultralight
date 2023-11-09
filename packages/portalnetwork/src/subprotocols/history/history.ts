@@ -75,6 +75,39 @@ export class HistoryProtocol extends BaseProtocol {
     await this.setBlockIndex(blockindex)
   }
 
+  public getBlockHeaderBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
+    const value = await this.retrieve(contentKey)
+    const header = value ? BlockHeaderWithProof.deserialize(fromHexString(value)).header : undefined
+    return value ? header : undefined
+  }
+
+  public getBlockHeader = async (blockHash: Uint8Array): Promise<BlockHeader | undefined> => {
+    const value = await this.getBlockHeaderBytes(blockHash)
+    if (!value) {
+      return undefined
+    }
+    return BlockHeader.fromRLPSerializedHeader(value, { setHardfork: true })
+  }
+
+  public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
+    const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
+    const value = await this.retrieve(contentKey)
+    return value ? hexToBytes(value) : undefined
+  }
+
+  public getBlock = async (blockHash: Uint8Array, includeTransactions = true): Promise<Block> => {
+    const header = await this.getBlockHeaderBytes(blockHash)
+    if (!header) {
+      throw new Error('Block not found')
+    }
+    const body = await this.getBlockBodyBytes(blockHash)
+    if (!body && includeTransactions) {
+      throw new Error('Block body not found')
+    }
+    return reassembleBlock(header, body)
+  }
+
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
