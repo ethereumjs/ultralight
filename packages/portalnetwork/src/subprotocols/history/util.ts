@@ -1,5 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   BlockBodyContent,
   BlockBodyContentType,
@@ -23,7 +23,7 @@ import {
 } from '@ethereumjs/block'
 import { HistoryProtocol } from './history.js'
 import { historicalEpochs } from './data/epochHashes.js'
-import { hexToBytes } from '@ethereumjs/util'
+import { WithdrawalBytes, hexToBytes } from '@ethereumjs/util'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -126,14 +126,15 @@ export const sszEncodeBlockBody = (block: Block) => {
 export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => {
   if (rawBody) {
     const decodedBody = decodeSszBlockBody(rawBody)
-    const block = Block.fromValuesArray(
-      [
-        rlp.decode(rawHeader) as never as BlockHeaderBytes,
-        decodedBody.txsRlp as TransactionsBytes,
-        rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBytes,
-      ] as BlockBytes,
-      { setHardfork: true },
-    )
+    const valuesArray: BlockBytes = [
+      rlp.decode(rawHeader) as never as BlockHeaderBytes,
+      decodedBody.txsRlp as TransactionsBytes,
+      rlp.decode(decodedBody.unclesRlp) as never as UncleHeadersBytes,
+    ]
+    if ('allWithdrawals' in decodedBody) {
+      valuesArray.push(decodedBody.allWithdrawals.map((w) => rlp.decode(w)) as WithdrawalBytes)
+    }
+    const block = Block.fromValuesArray(valuesArray, { setHardfork: true })
     return block
   } else {
     const blockBuffer: BlockBytes = [
@@ -158,7 +159,7 @@ export const addRLPSerializedBlock = async (
   protocol: HistoryProtocol,
   witnesses?: Witnesses,
 ) => {
-  const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
+  const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
@@ -184,21 +185,20 @@ export const addRLPSerializedBlock = async (
       header: header.serialize(),
       proof: { selector: 0, value: null },
     })
+    await protocol.indexBlockhash(header.number, toHexString(header.hash()))
+
     await protocol.store(
       HistoryNetworkContentType.BlockHeader,
       toHexString(header.hash()),
       headerProof,
     )
   }
-  await protocol.store(
-    HistoryNetworkContentType.BlockBody,
-    toHexString(header.hash()),
-    sszEncodeBlockBody(
-      Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
-        setHardfork: true,
-      }),
-    ),
+  const sszBlock = sszEncodeBlockBody(
+    Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
+      setHardfork: true,
+    }),
   )
+  await protocol.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())
 }
 
 // Each EpochAccumulator is a merkle tree with 16384 leaves, and 16383 parent nodes.
@@ -223,7 +223,7 @@ export const blockNumberToLeafIndex = (blockNumber: bigint) => {
   return (Number(blockNumber) % 8192) * 2
 }
 export const epochRootByIndex = (index: number) => {
-  return hexToBytes(historicalEpochs[index])
+  return historicalEpochs[index] ? hexToBytes(historicalEpochs[index]) : undefined
 }
 export const epochRootByBlocknumber = (blockNumber: bigint) => {
   return epochRootByIndex(epochIndexByBlocknumber(blockNumber))
