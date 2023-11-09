@@ -43,11 +43,6 @@ export class StateNetwork extends BaseNetwork {
   }
 
   /**
-   * {@link eth_getBalance}
-   */
-  public eth_getBalance = eth_getBalance.bind(this)
-
-  /**
    * {@link eth_getStorageAt}
    */
   public eth_getStorageAt = eth_getStorageAt.bind(this)

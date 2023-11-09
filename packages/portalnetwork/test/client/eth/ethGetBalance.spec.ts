@@ -7,14 +7,14 @@ import {
   addRLPSerializedBlock,
   fromHexString,
   toHexString,
-} from '../../src'
-import block0_meta from './state/testdata/block-0x11a86a9-meta.json'
-import block0_db from './state/testdata/block-0x11a86a9-db.json'
-import block1_meta from './state/testdata/block-0x11a86aa-meta.json'
-import block1_db from './state/testdata/block-0x11a86aa-db.json'
-import block2_meta from './state/testdata/block-0x11a86ab-meta.json'
-import block2_db from './state/testdata/block-0x11a86ab-db.json'
-import testBlockData from './state/testdata/testblocks.json'
+} from '../../../src'
+import block0_meta from '../../networks/state/testdata/block-0x11a86a9-meta.json'
+import block0_db from '../../networks/state/testdata/block-0x11a86a9-db.json'
+import block1_meta from '../../networks/state/testdata/block-0x11a86aa-meta.json'
+import block1_db from '../../networks/state/testdata/block-0x11a86aa-db.json'
+import block2_meta from '../../networks/state/testdata/block-0x11a86ab-meta.json'
+import block2_db from '../../networks/state/testdata/block-0x11a86ab-db.json'
+import testBlockData from '../../networks/state/testdata/testblocks.json'
 import { Block } from '@ethereumjs/block'
 
 describe('shared accounts', async () => {
@@ -38,11 +38,6 @@ describe('ethGetBalance using HistoryNetwork and StateNetwork', async () => {
   })
   const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const state = ultralight.networks.get(NetworkId.StateNetwork) as StateNetwork
-
-  it('should instantiate with history and state networks active', async () => {
-    assert.isDefined(history)
-    assert.isDefined(state)
-  })
 
   for (const blockNumber of Object.keys(testBlockData)) {
     const block = Block.fromRPC(testBlockData[blockNumber], undefined, {
