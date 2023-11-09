@@ -27,10 +27,13 @@ export class ETH {
     let body: any
     let block
     try {
-      return this.protocol.getBlock(fromHexString(blockHash), includeTransactions)
-    } catch {
-      header = await this.protocol.getBlockHeaderBytes(fromHexString(blockHash))
-    }
+      // Try to find block locally
+      const block = await this.protocol.getBlockFromDB(
+        fromHexString(blockHash),
+        includeTransactions,
+      )
+      return block
+    } catch {}
     const headerContentKey = hexToBytes(
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
     )

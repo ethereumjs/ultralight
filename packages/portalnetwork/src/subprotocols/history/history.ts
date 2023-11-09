@@ -97,7 +97,10 @@ export class HistoryProtocol extends BaseProtocol {
     return value ? hexToBytes(value) : undefined
   }
 
-  public getBlock = async (blockHash: Uint8Array, includeTransactions = true): Promise<Block> => {
+  public getBlockFromDB = async (
+    blockHash: Uint8Array,
+    includeTransactions = true,
+  ): Promise<Block> => {
     const header = await this.getBlockHeaderBytes(blockHash)
     if (!header) {
       throw new Error('Block not found')

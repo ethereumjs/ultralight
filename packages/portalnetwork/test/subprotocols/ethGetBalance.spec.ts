@@ -74,7 +74,7 @@ describe('ethGetBalance using HistoryProtocol and StateProtocol', async () => {
   }
 
   const stateRoots = [block0_meta.stateroot, block1_meta.stateroot, block2_meta.stateroot]
-  it(`should have account info`, async () => {
+  it('should have account info', async () => {
     let nonce = 0n
     for (const stateRoot of stateRoots) {
       const account0 = await state.stateDB.getAccount(
