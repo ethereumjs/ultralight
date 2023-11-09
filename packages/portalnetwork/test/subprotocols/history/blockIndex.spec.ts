@@ -29,5 +29,20 @@ describe('BlockIndex', async () => {
     assert.isTrue(index.has(numberHex))
     assert.equal(index.get(numberHex), hash)
   })
+  it('should store blockIndex in DB', async () => {
+    const expected = Array.from(await history.blockIndex())
+    const stored = JSON.parse(await ultralight.db.db.get('block_index'))
+    assert.deepEqual(stored, expected)
+  })
+
+  const ultralight2 = await PortalNetwork.create({
+    supportedProtocols: [ProtocolId.HistoryNetwork],
+    db: ultralight.db.db,
+  })
+  const history2 = ultralight2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  it('should start with blockIndex in DB', async () => {
+    const expected = await history.blockIndex()
+    const stored = await history2.blockIndex()
+    assert.deepEqual(stored, expected)
   })
 })
