@@ -3,7 +3,7 @@ import { PortalNetwork } from '../../client/client.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { Account, Address, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import { ENR } from '@chainsafe/discv5'
 import { shortId } from '../../util/util.js'
 import { RequestCode } from '../../wire/index.js'
@@ -24,6 +24,8 @@ import {
   eth_estimateGas,
 } from './eth.js'
 import { StateDB } from './statedb.js'
+import { getStateNetworkContentKey } from './util.js'
+import { ContentLookup } from '../contentLookup.js'
 
 export class StateNetwork extends BaseNetwork {
   stateDB: StateDB
@@ -40,31 +42,6 @@ export class StateNetwork extends BaseNetwork {
       await this.store(toHexString(contentKey), toHexString(content))
     })
   }
-
-  /**
-   * {@link eth_getStorageAt}
-   */
-  public eth_getStorageAt = eth_getStorageAt.bind(this)
-
-  /**
-   * {@link eth_getTransactionCount}
-   */
-  public eth_getTransactionCount = eth_getTransactionCount.bind(this)
-
-  /**
-   * {@link eth_getCode}
-   */
-  public eth_getCode = eth_getCode.bind(this)
-
-  /**
-   * {@link eth_call}
-   */
-  public eth_call = eth_call.bind(this)
-
-  /**
-   * {@link eth_estimateGas}
-   */
-  public eth_estimateGas = eth_estimateGas.bind(this)
 
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
@@ -167,5 +144,28 @@ export class StateNetwork extends BaseNetwork {
       storageRoot: account!.storageRoot,
       witnesses: proof,
     })
+  }
+
+  public getAccount = async (address: string, stateRoot: string) => {
+    let account
+    account = await this.stateDB.getAccount(address, stateRoot)
+    if (account !== undefined) return account
+    const contentKey = getStateNetworkContentKey({
+      address: Address.fromString(address),
+      stateRoot: fromHexString(stateRoot),
+      contentType: StateNetworkContentType.AccountTrieProof,
+    })
+    const lookup = new ContentLookup(this, contentKey)
+    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
+    if (res.content !== undefined) {
+      const decoded = AccountTrieProofType.deserialize(res.content)
+      account = Account.fromAccountData({
+        balance: decoded.balance,
+        nonce: decoded.nonce,
+        codeHash: decoded.codeHash,
+        storageRoot: decoded.storageRoot,
+      })
+    }
+    return account
   }
 }
