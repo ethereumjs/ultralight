@@ -1,4 +1,4 @@
-import { PortalNetwork } from '.'
+import { PortalNetwork } from './client.js'
 import { BeaconLightClientNetwork, HistoryNetwork, NetworkId, StateNetwork } from '../networks'
 
 export class ETH {
