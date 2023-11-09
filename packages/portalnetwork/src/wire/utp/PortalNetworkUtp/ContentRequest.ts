@@ -1,9 +1,9 @@
 import { UtpSocket, ConnectionState } from '../index.js'
-import { ProtocolId } from '../../../index.js'
+import { NetworkId } from '../../../index.js'
 import { RequestCode } from './types.js'
 
 export interface ContentRequestOptions {
-  protocolId: ProtocolId
+  networkId: NetworkId
   requestCode: RequestCode
   socket: UtpSocket
   socketKey: string
@@ -11,7 +11,7 @@ export interface ContentRequestOptions {
   content?: Uint8Array
 }
 export class ContentRequest {
-  protocolId: ProtocolId
+  networkId: NetworkId
   requestCode: RequestCode
   contentKey?: Uint8Array
   contentKeys: Uint8Array[]
@@ -20,7 +20,7 @@ export class ContentRequest {
   content?: Uint8Array
 
   constructor(options: ContentRequestOptions) {
-    this.protocolId = options.protocolId
+    this.networkId = options.networkId
     this.contentKeys = options.contentKeys
     this.requestCode = options.requestCode
     this.content = options.content

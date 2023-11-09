@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
-import { addRLPSerializedBlock, HistoryProtocol } from '../subprotocols/index.js'
-import { ProtocolId } from '../subprotocols/types.js'
+import { addRLPSerializedBlock, HistoryNetwork } from '../networks/index.js'
+import { NetworkId } from '../networks/types.js'
 import { toHexString } from '../util/discv5.js'
 import {
   ethJsBlockToEthersBlock,
@@ -13,7 +13,7 @@ import { PortalNetworkOpts } from './types.js'
 export class UltralightProvider extends ethers.JsonRpcProvider {
   private fallbackProvider: ethers.JsonRpcProvider
   public portal: PortalNetwork
-  public historyProtocol: HistoryProtocol
+  public historyNetwork: HistoryNetwork
   public static create = async (
     fallbackProviderUrl: string | ethers.JsonRpcProvider,
     opts: Partial<PortalNetworkOpts>,
@@ -33,19 +33,19 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
         ? new ethers.JsonRpcProvider(fallbackProvider, staticNetwork, { staticNetwork })
         : fallbackProvider
     this.portal = portal
-    this.historyProtocol = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    this.historyNetwork = portal.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   }
 
   getBlock = async (blockTag: ethers.BlockTag): Promise<ethers.Block | null> => {
     let block
     if (typeof blockTag === 'string' && blockTag.length === 66) {
-      block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, false)
+      block = await this.historyNetwork?.ETH.getBlockByHash(blockTag, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block, this.provider)
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
-      block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, false)
+      block = await this.historyNetwork?.ETH.getBlockByNumber(blockNum, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block, this.provider)
       }
@@ -59,13 +59,13 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     const isBlockHash =
       ethers.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
     if (isBlockHash) {
-      block = await this.historyProtocol?.ETH.getBlockByHash(blockTag, true)
+      block = await this.historyNetwork?.ETH.getBlockByHash(blockTag, true)
       if (block !== undefined) {
         return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
-      block = await this.historyProtocol?.ETH.getBlockByNumber(blockNum, true)
+      block = await this.historyNetwork?.ETH.getBlockByNumber(blockNum, true)
       if (block !== undefined) {
         return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
@@ -84,7 +84,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     }
 
     const ethJSBlock = blockFromRpc(block)
-    addRLPSerializedBlock(toHexString(ethJSBlock.serialize()), block.hash, this.historyProtocol)
+    addRLPSerializedBlock(toHexString(ethJSBlock.serialize()), block.hash, this.historyNetwork)
     const ethersBlock = await ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
     return ethersBlock
   }

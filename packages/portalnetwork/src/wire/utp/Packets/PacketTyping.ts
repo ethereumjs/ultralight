@@ -1,5 +1,5 @@
 import { Debugger } from 'debug'
-import { ProtocolId } from '../../../subprotocols/types.js'
+import { NetworkId } from '../../../networks/types.js'
 import { Packet } from './index.js'
 import { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 
@@ -98,7 +98,7 @@ export interface IData extends IPacket<PacketType.ST_DATA> {
 export type ICreate<T extends PacketType> = IBasic<T> | ISelectiveAck | IData
 
 export interface UtpSocketOptions {
-  protocolId: ProtocolId
+  networkId: NetworkId
   remoteAddress: string
   sndId: number
   rcvId: number

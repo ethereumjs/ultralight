@@ -8,9 +8,9 @@ import {
   BlockHeaderWithProof,
   getContentKey,
   HistoryNetworkContentType,
-  HistoryProtocol,
+  HistoryNetwork,
   PortalNetwork,
-  ProtocolId,
+  NetworkId,
   toHexString,
   TransportLayer,
 } from '../../src/index.js'
@@ -55,7 +55,7 @@ it('gossip test', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -66,7 +66,7 @@ it('gossip test', async () => {
   })
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -78,35 +78,35 @@ it('gossip test', async () => {
 
   await node1.start()
   await node2.start()
-  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  await protocol1?.sendPing(protocol2?.enr!.toENR())
+  const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  await network1?.sendPing(network2?.enr!.toENR())
   assert.equal(
-    protocol1?.routingTable.getWithPending(
+    network1?.routingTable.getWithPending(
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     )?.value.nodeId,
     '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
     'node1 added node2 to routing table',
   )
-  await protocol1.store(
+  await network1.store(
     HistoryNetworkContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     hexToBytes(epoch25),
   )
-  // await protocol2.store(
+  // await network2.store(
   //   HistoryNetworkContentType.EpochAccumulator,
   //   '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
   //   hexToBytes(epoch25)
   // )
   assert.equal(
-    await protocol1.retrieve(
+    await network1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
     epoch25,
     'epoch 25 added',
   )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
-    const proof = await protocol1.generateInclusionProof(testBlock.header.number)
+    const proof = await network1.generateInclusionProof(testBlock.header.number)
     assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
     const headerWith = BlockHeaderWithProof.serialize({
       header: testBlock.header.serialize(),
@@ -115,7 +115,7 @@ it('gossip test', async () => {
         value: proof,
       },
     })
-    await protocol1.store(
+    await network1.store(
       HistoryNetworkContentType.BlockHeader,
       toHexString(testBlock.hash()),
       headerWith,
@@ -124,7 +124,7 @@ it('gossip test', async () => {
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
-  protocol2.on('ContentAdded', async (key, contentType, content) => {
+  network2.on('ContentAdded', async (key, contentType, content) => {
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(hexToBytes(content))
       const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
@@ -158,7 +158,7 @@ it('FindContent', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -170,7 +170,7 @@ it('FindContent', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -182,25 +182,25 @@ it('FindContent', async () => {
 
   await node1.start()
   await node2.start()
-  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
-  await protocol1.store(
+  await network1.store(
     HistoryNetworkContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     hexToBytes(epoch25),
   )
   assert.equal(
-    await protocol1.retrieve(
+    await network1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
     epoch25,
     'epoch 25 added',
   )
-  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.enr!.toENR())
+  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, network1)
+  await network1.sendPing(network2?.enr!.toENR())
 
-  const res = await protocol2.sendFindContent(
+  const res = await network2.sendFindContent(
     node1.discv5.enr.nodeId,
     hexToBytes(
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(testBlockData[29].blockHash)),
@@ -228,7 +228,7 @@ it('eth_getBlockByHash', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -240,7 +240,7 @@ it('eth_getBlockByHash', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -252,24 +252,24 @@ it('eth_getBlockByHash', async () => {
 
   await node1.start()
   await node2.start()
-  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  await protocol1.store(
+  const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  await network1.store(
     HistoryNetworkContentType.EpochAccumulator,
     '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     hexToBytes(epoch25),
   )
   assert.equal(
-    await protocol1.retrieve(
+    await network1.retrieve(
       '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     ),
     epoch25,
     'epoch 25 added',
   )
-  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.enr!.toENR())
+  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, network1)
+  await network1.sendPing(network2?.enr!.toENR())
 
-  const retrieved = await protocol2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
+  const retrieved = await network2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
   assert.equal(
     toHexString(retrieved!.hash()),
     testBlockData[29].blockHash,
@@ -291,7 +291,7 @@ it('eth_getBlockByNumber', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -303,7 +303,7 @@ it('eth_getBlockByNumber', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -318,8 +318,8 @@ it('eth_getBlockByNumber', async () => {
 
   await node1.start()
   await node2.start()
-  const protocol1 = node1.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-  const protocol2 = node2.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
   const epochData = require('../testData/testEpoch.json')
   const block1000 = require('../testData/testBlock1000.json')
@@ -329,11 +329,11 @@ it('eth_getBlockByNumber', async () => {
   const blockRlp = block1000.raw
   const blockHash = block1000.hash
 
-  await protocol1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
-  await protocol2.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
-  await addRLPSerializedBlock(blockRlp, blockHash, protocol1)
-  await protocol1.sendPing(protocol2?.enr!.toENR())
-  const retrieved = await protocol2.ETH.getBlockByNumber(1000, false)
+  await network1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
+  await network2.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
+  await addRLPSerializedBlock(blockRlp, blockHash, network1)
+  await network1.sendPing(network2?.enr!.toENR())
+  const retrieved = await network2.ETH.getBlockByNumber(1000, false)
 
   assert.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
 

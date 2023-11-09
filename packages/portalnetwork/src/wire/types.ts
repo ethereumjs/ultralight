@@ -24,7 +24,7 @@ export enum FoundContent {
 
 export type PingPongCustomData = Uint8Array
 
-// Wire Protocol Message Codes
+// Wire Network Message Codes
 export enum MessageCodes {
   PING = 0x00,
   PONG = 0x01,

@@ -17,7 +17,7 @@ import {
   Packet,
   PacketType,
   PortalNetworkUTP,
-  ProtocolId,
+  NetworkId,
   randUint16,
   RequestCode,
   startingNrs,
@@ -75,13 +75,13 @@ const _peerId = await createSecp256k1PeerId()
 const DEFAULT_RAND_ID = 1234
 
 describe('uTP Reader/Writer tests', () => {
-  const protocolId = ProtocolId.HistoryNetwork
+  const networkId = NetworkId.HistoryNetwork
   const content = randomBytes(sampleSize)
   const logger = debug('uTP-')
   const uTP = new PortalNetworkUTP(logger)
   it('Content Write/Read', async () => {
     const socket = uTP.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
       RequestCode.FOUNDCONTENT_WRITE,
       peerId.toString(),
       DEFAULT_RAND_ID,
@@ -89,7 +89,7 @@ describe('uTP Reader/Writer tests', () => {
       content,
     )
     const _socket = uTP.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
       RequestCode.FINDCONTENT_READ,
       _peerId.toString(),
       DEFAULT_RAND_ID + 1,
@@ -189,7 +189,7 @@ describe('uTP Reader/Writer tests', () => {
 
     const connectionId = 1234
     const _socket2 = uTP.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
 
       RequestCode.FOUNDCONTENT_WRITE,
       _peerId.toString(),
@@ -201,7 +201,7 @@ describe('uTP Reader/Writer tests', () => {
     const socketKey = createSocketKey(peerId.toString(), connectionId)
     const contents = [encodeWithVariantPrefix(offerContents)]
     const offer_socket = uTP.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
 
       RequestCode.OFFER_WRITE,
       peerId.toString(),
@@ -210,7 +210,7 @@ describe('uTP Reader/Writer tests', () => {
       contents[0],
     )!
     const offer = new ContentRequest({
-      protocolId: ProtocolId.HistoryNetwork,
+      networkId: NetworkId.HistoryNetwork,
       requestCode: RequestCode.OFFER_WRITE,
       socket: offer_socket,
       socketKey,
@@ -240,13 +240,13 @@ describe('PortalNetworkUTP test', () => {
   const logger = debug('log')
   const utp = new PortalNetworkUTP(logger)
   it('createPortalNetworkUTPSocket', async () => {
-    const protocolId = ProtocolId.HistoryNetwork
+    const networkId = NetworkId.HistoryNetwork
     // connectionId comes from discv5 talkResp message
     const connectionId = randUint16()
     const socketIds = utp.startingIdNrs(connectionId)
     assert.ok(utp, 'PortalNetworkUTP created')
     let socket = utp.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
       RequestCode.FOUNDCONTENT_WRITE,
       '0xPeerAddress',
       socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
@@ -265,7 +265,7 @@ describe('PortalNetworkUTP test', () => {
       'UTPSocket has correct ackNr',
     )
     socket = utp.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
       RequestCode.FINDCONTENT_READ,
       '0xPeerAddress',
       socketIds[RequestCode.FINDCONTENT_READ].sndId,
@@ -287,7 +287,7 @@ describe('PortalNetworkUTP test', () => {
     )
 
     socket = utp.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
       RequestCode.OFFER_WRITE,
       '0xPeerAddress',
       socketIds[RequestCode.OFFER_WRITE].sndId,
@@ -304,7 +304,7 @@ describe('PortalNetworkUTP test', () => {
       'UTPSocket has correct seqNr',
     )
     socket = utp.createPortalNetworkUTPSocket(
-      protocolId,
+      networkId,
       RequestCode.ACCEPT_READ,
       '0xPeerAddress',
       socketIds[RequestCode.ACCEPT_READ].sndId,
@@ -322,7 +322,7 @@ describe('PortalNetworkUTP test', () => {
   it('handleNewRequest', async () => {
     const connectionId = randUint16()
     let params: INewRequest = {
-      protocolId: ProtocolId.HistoryNetwork,
+      networkId: NetworkId.HistoryNetwork,
       contentKeys: [randomBytes(33)],
       peerId: '0xPeerAddress',
       connectionId,
@@ -339,9 +339,9 @@ describe('PortalNetworkUTP test', () => {
     assert.ok(contentRequest, 'contentRequest created')
     assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     assert.equal(
-      contentRequest.protocolId,
-      ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId',
+      contentRequest.networkId,
+      NetworkId.HistoryNetwork,
+      'contentRequest has correct networkId',
     )
     assert.equal(
       contentRequest.requestCode,
@@ -385,9 +385,9 @@ describe('PortalNetworkUTP test', () => {
     assert.ok(contentRequest, 'contentRequest created')
     assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     assert.equal(
-      contentRequest.protocolId,
-      ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId',
+      contentRequest.networkId,
+      NetworkId.HistoryNetwork,
+      'contentRequest has correct networkId',
     )
     assert.equal(
       contentRequest.requestCode,
@@ -426,9 +426,9 @@ describe('PortalNetworkUTP test', () => {
     assert.ok(contentRequest, 'contentRequest created')
     assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     assert.equal(
-      contentRequest.protocolId,
-      ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId',
+      contentRequest.networkId,
+      NetworkId.HistoryNetwork,
+      'contentRequest has correct networkId',
     )
     assert.equal(
       contentRequest.requestCode,
@@ -468,9 +468,9 @@ describe('PortalNetworkUTP test', () => {
     assert.ok(contentRequest, 'contentRequest created')
     assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
     assert.equal(
-      contentRequest.protocolId,
-      ProtocolId.HistoryNetwork,
-      'contentRequest has correct protocolId',
+      contentRequest.networkId,
+      NetworkId.HistoryNetwork,
+      'contentRequest has correct networkId',
     )
     assert.equal(
       contentRequest.requestCode,
@@ -498,7 +498,7 @@ describe('PortalNetworkUTP test', () => {
   it('send', async () => {
     const peerId = '0xpeerId'
     const msg = Buffer.from([1, 2, 3])
-    const sent = utp.send(peerId, msg, ProtocolId.HistoryNetwork)
+    const sent = utp.send(peerId, msg, NetworkId.HistoryNetwork)
     utp.emit('Sent')
     assert.ok(await sent, 'send method returns true when sent event is emitted')
   })
@@ -508,12 +508,12 @@ describe('PortalNetworkUTP test', () => {
     const contentKeys = contentHashes.map((hash) =>
       hexToBytes(getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(hash))),
     )
-    utp.on(ProtocolId.HistoryNetwork, (selector, hash, value) => {
+    utp.on(NetworkId.HistoryNetwork, (selector, hash, value) => {
       assert.equal(selector, HistoryNetworkContentType.BlockHeader, 'Stream selector correct')
       assert.ok(contentHashes.includes(hash), 'Streamed a requested content hash')
       assert.deepEqual(value, contents[contentHashes.indexOf(hash)], 'Stream content correct')
     })
-    await utp.returnContent(ProtocolId.HistoryNetwork, contents, contentKeys)
+    await utp.returnContent(NetworkId.HistoryNetwork, contents, contentKeys)
     utp.removeAllListeners()
   })
 })

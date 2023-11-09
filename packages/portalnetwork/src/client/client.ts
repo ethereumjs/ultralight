@@ -13,10 +13,10 @@ import debug, { Debugger } from 'debug'
 import { toHexString } from '@chainsafe/ssz'
 import {
   BeaconLightClientNetwork,
-  StateProtocol,
-  ProtocolId,
+  StateNetwork,
+  NetworkId,
   SyncStrategy,
-} from '../subprotocols/index.js'
+} from '../networks/index.js'
 import {
   PortalNetworkEventEmitter,
   PortalNetworkMetrics,
@@ -28,8 +28,8 @@ import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
-import { BaseProtocol } from '../subprotocols/protocol.js'
-import { HistoryProtocol } from '../subprotocols/history/history.js'
+import { BaseNetwork } from '../networks/network.js'
+import { HistoryNetwork } from '../networks/history/history.js'
 import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import { LRUCache } from 'lru-cache'
@@ -42,14 +42,14 @@ import { ETH } from './eth.js'
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
   discv5: Discv5
-  protocols: Map<ProtocolId, BaseProtocol>
+  networks: Map<NetworkId, BaseNetwork>
   uTP: PortalNetworkUTP
   db: DBManager
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
   ETH: ETH
-  private refreshListeners: Map<ProtocolId, ReturnType<typeof setInterval>>
+  private refreshListeners: Map<NetworkId, ReturnType<typeof setInterval>>
   private peerId: PeerId
   private supportsRendezvous: boolean
   private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
@@ -148,7 +148,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       radius: 2n ** 256n,
       bootnodes,
       db: opts.db,
-      supportedProtocols: opts.supportedProtocols ?? [ProtocolId.HistoryNetwork],
+      supportedNetworks: opts.supportedNetworks ?? [NetworkId.HistoryNetwork],
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
       trustedBlockRoot: opts.trustedBlockRoot,
@@ -171,7 +171,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
-    this.protocols = new Map()
+    this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
     this.peerId = opts.config.peerId as PeerId
     this.supportsRendezvous = false
@@ -182,30 +182,30 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.discv5.enr.nodeId,
       this.logger,
       opts.dbSize,
-      opts.supportedProtocols,
+      opts.supportedNetworks,
       opts.db,
     ) as DBManager
-    opts.supportedProtocols = opts.supportedProtocols ?? []
-    for (const protocol of opts.supportedProtocols) {
-      switch (protocol) {
-        case ProtocolId.HistoryNetwork:
-          this.protocols.set(protocol, new HistoryProtocol(this, opts.radius))
+    opts.supportedNetworks = opts.supportedNetworks ?? []
+    for (const network of opts.supportedNetworks) {
+      switch (network) {
+        case NetworkId.HistoryNetwork:
+          this.networks.set(network, new HistoryNetwork(this, opts.radius))
           break
-        case ProtocolId.StateNetwork:
-          this.protocols.set(protocol, new StateProtocol(this, opts.radius))
+        case NetworkId.StateNetwork:
+          this.networks.set(network, new StateNetwork(this, opts.radius))
           break
-        case ProtocolId.BeaconLightClientNetwork:
+        case NetworkId.BeaconLightClientNetwork:
           {
             const syncStrategy = opts.trustedBlockRoot
               ? SyncStrategy.TrustedBlockRoot
               : SyncStrategy.PollNetwork
-            this.protocols.set(
-              protocol,
+            this.networks.set(
+              network,
               new BeaconLightClientNetwork(this, opts.radius, opts.trustedBlockRoot, syncStrategy),
             )
           }
           break
-        case ProtocolId.Rendezvous:
+        case NetworkId.Rendezvous:
           this.supportsRendezvous = true
           break
       }
@@ -219,10 +219,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    this.uTP.on('Send', async (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
-      const enr = this.protocols.get(protocolId)?.routingTable.getWithPending(peerId)?.value
+    this.uTP.on('Send', async (peerId: string, msg: Buffer, networkId: NetworkId) => {
+      const enr = this.networks.get(networkId)?.routingTable.getWithPending(peerId)?.value
       try {
-        await this.sendPortalNetworkMessage(enr ?? peerId, msg, protocolId, true)
+        await this.sendPortalNetworkMessage(enr ?? peerId, msg, networkId, true)
         this.uTP.emit('Sent')
       } catch {
         this.uTP.closeRequest(msg.readUInt16BE(2), peerId)
@@ -264,11 +264,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public start = async () => {
     await this.discv5.start()
     await this.db.open()
-    for (const protocol of this.protocols.values()) {
+    for (const network of this.networks.values()) {
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
-        protocol.protocolId,
-        setInterval(() => protocol.bucketRefresh(), 30000),
+        network.networkId,
+        setInterval(() => network.bucketRefresh(), 30000),
       )
     }
   }
@@ -281,27 +281,27 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.removeAllListeners()
     await this.removeAllListeners()
     await this.db.close()
-    this.refreshListeners.forEach((protocol) => clearInterval(protocol))
+    this.refreshListeners.forEach((network) => clearInterval(network))
   }
 
-  public protocol = (): {
-    [ProtocolId.HistoryNetwork]: HistoryProtocol | undefined
-    [ProtocolId.StateNetwork]: StateProtocol | undefined
-    [ProtocolId.BeaconLightClientNetwork]: BeaconLightClientNetwork | undefined
+  public network = (): {
+    [NetworkId.HistoryNetwork]: HistoryNetwork | undefined
+    [NetworkId.StateNetwork]: StateNetwork | undefined
+    [NetworkId.BeaconLightClientNetwork]: BeaconLightClientNetwork | undefined
   } => {
-    const history = this.protocols.get(ProtocolId.HistoryNetwork)
-      ? (this.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol)
+    const history = this.networks.get(NetworkId.HistoryNetwork)
+      ? (this.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork)
       : undefined
-    const state = this.protocols.get(ProtocolId.StateNetwork)
-      ? (this.protocols.get(ProtocolId.StateNetwork) as StateProtocol)
+    const state = this.networks.get(NetworkId.StateNetwork)
+      ? (this.networks.get(NetworkId.StateNetwork) as StateNetwork)
       : undefined
-    const beacon = this.protocols.get(ProtocolId.BeaconLightClientNetwork)
-      ? (this.protocols.get(ProtocolId.BeaconLightClientNetwork) as BeaconLightClientNetwork)
+    const beacon = this.networks.get(NetworkId.BeaconLightClientNetwork)
+      ? (this.networks.get(NetworkId.BeaconLightClientNetwork) as BeaconLightClientNetwork)
       : undefined
     return {
-      [ProtocolId.HistoryNetwork]: history,
-      [ProtocolId.StateNetwork]: state,
-      [ProtocolId.BeaconLightClientNetwork]: beacon,
+      [NetworkId.HistoryNetwork]: history,
+      [NetworkId.StateNetwork]: state,
+      [NetworkId.BeaconLightClientNetwork]: beacon,
     }
   }
 
@@ -319,8 +319,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public storeNodeDetails = async () => {
     const peers: string[] = []
-    for (const protocol of this.protocols) {
-      ;(protocol[1] as any).routingTable.values().forEach((enr: ENR) => {
+    for (const network of this.networks) {
+      ;(network[1] as any).routingTable.values().forEach((enr: ENR) => {
         peers.push(enr.encodeTxt())
       })
     }
@@ -354,21 +354,21 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
-    if (toHexString(message.protocol) === ProtocolId.UTPNetwork) {
+    if (toHexString(message.protocol) === NetworkId.UTPNetwork) {
       this.handleUTP(src, src.nodeId, message, message.request)
       return
     }
-    const protocol = this.protocols.get(toHexString(message.protocol) as ProtocolId)
-    if (!protocol) {
+    const network = this.networks.get(toHexString(message.protocol) as NetworkId)
+    if (!network) {
       this.logger(
-        `Received TALKREQ message on unsupported protocol ${toHexString(message.protocol)}`,
+        `Received TALKREQ message on unsupported network ${toHexString(message.protocol)}`,
       )
       await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
 
       return
     }
 
-    protocol.handle(message, src)
+    network.handle(message, src)
   }
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
@@ -395,24 +395,24 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    *
    * @param dstId `NodeId` of message recipient
    * @param payload `Buffer` serialized payload of message
-   * @param protocolId subprotocol ID of subprotocol message is being sent on
+   * @param networkId subnetwork ID of subnetwork message is being sent on
    * @returns response from `dstId` as `Buffer` or null `Buffer`
    */
   public sendPortalNetworkMessage = async (
     enr: ENR | string,
     payload: Uint8Array,
-    protocolId: ProtocolId,
+    networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
-    const messageProtocol = utpMessage ? ProtocolId.UTPNetwork : protocolId
+    const messageNetwork = utpMessage ? NetworkId.UTPNetwork : networkId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
       let nodeAddr: ENR | undefined
       if (typeof enr === 'string') {
-        // If ENR is not provided, look up ENR in protocol routing table by nodeId
-        const protocol = this.protocols.get(protocolId)
-        if (protocol) {
-          nodeAddr = protocol.routingTable.getWithPending(enr)?.value
+        // If ENR is not provided, look up ENR in network routing table by nodeId
+        const network = this.networks.get(networkId)
+        if (network) {
+          nodeAddr = network.routingTable.getWithPending(enr)?.value
           if (!nodeAddr) {
             // Check in unverified sessions cache if no ENR found in routing table
             // nodeAddr = this.unverifiedSessionCache.get(enr)
@@ -429,13 +429,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       const res = await this.discv5.sendTalkReq(
         nodeAddr,
         Buffer.from(payload),
-        hexToBytes(messageProtocol),
+        hexToBytes(messageNetwork),
       )
       this.eventLog &&
         this.emit('SendTalkReq', nodeAddr.nodeId, toHexString(res), toHexString(payload))
       return res
     } catch (err: any) {
-      if (protocolId === ProtocolId.UTPNetwork) {
+      if (networkId === NetworkId.UTPNetwork) {
         throw new Error(`Error sending TALKREQ message: ${err}`)
       } else {
         return new Uint8Array()

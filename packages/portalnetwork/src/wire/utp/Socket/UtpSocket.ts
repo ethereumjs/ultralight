@@ -8,7 +8,7 @@ import {
   ICreateData,
 } from '../index.js'
 import EventEmitter from 'events'
-import { ProtocolId, bitmap } from '../../../index.js'
+import { NetworkId, bitmap } from '../../../index.js'
 import { Debugger } from 'debug'
 import ContentWriter from './ContentWriter.js'
 import ContentReader from './ContentReader.js'
@@ -16,7 +16,7 @@ import { PacketManager } from '../Packets/PacketManager.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
 
 export class UtpSocket extends EventEmitter {
-  protocolId: ProtocolId
+  networkId: NetworkId
   type: UtpSocketType
   content: Uint8Array
   remoteAddress: string
@@ -40,7 +40,7 @@ export class UtpSocket extends EventEmitter {
   updateWindow: () => void
   constructor(options: UtpSocketOptions) {
     super()
-    this.protocolId = options.protocolId
+    this.networkId = options.networkId
     this.content = options.content ?? Uint8Array.from([])
     this.remoteAddress = options.remoteAddress
     this.rcvConnectionId = options.rcvId
@@ -118,7 +118,7 @@ export class UtpSocket extends EventEmitter {
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
       `|| ackNr: ${packet.header.ackNr}`,
     )
-    this.emit('send', this.remoteAddress, msg, this.protocolId, true)
+    this.emit('send', this.remoteAddress, msg, this.networkId, true)
     return msg
   }
 

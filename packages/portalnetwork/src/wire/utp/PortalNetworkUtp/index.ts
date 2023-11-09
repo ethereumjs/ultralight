@@ -1,7 +1,7 @@
 import { BitVectorType, toHexString } from '@chainsafe/ssz'
 import { Debugger } from 'debug'
 import {
-  ProtocolId,
+  NetworkId,
   Packet,
   PacketType,
   UtpSocket,
@@ -66,7 +66,7 @@ export class PortalNetworkUTP extends EventEmitter {
   }
 
   createPortalNetworkUTPSocket(
-    protocolId: ProtocolId,
+    networkId: NetworkId,
     requestCode: RequestCode,
     remoteAddress: string,
     sndId: number,
@@ -74,7 +74,7 @@ export class PortalNetworkUTP extends EventEmitter {
     content?: Uint8Array,
   ): UtpSocket {
     const socket: UtpSocket = new UtpSocket({
-      protocolId,
+      networkId,
       remoteAddress,
       sndId,
       rcvId,
@@ -84,8 +84,8 @@ export class PortalNetworkUTP extends EventEmitter {
       logger: this.logger,
       content,
     })
-    socket.on('send', async (remoteAddr, msg, protocolId) => {
-      await this.send(remoteAddr, msg, protocolId)
+    socket.on('send', async (remoteAddr, msg, networkId) => {
+      await this.send(remoteAddr, msg, networkId)
       socket.emit('sent')
     })
     return socket
@@ -106,10 +106,10 @@ export class PortalNetworkUTP extends EventEmitter {
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
     const newRequest = new ContentRequest({
-      protocolId: params.protocolId,
+      networkId: params.networkId,
       requestCode,
       socket: this.createPortalNetworkUTPSocket(
-        params.protocolId,
+        params.networkId,
         requestCode,
         peerId,
         sndId,
@@ -169,8 +169,8 @@ export class PortalNetworkUTP extends EventEmitter {
     }
   }
 
-  async send(peerId: string, msg: Buffer, protocolId: ProtocolId) {
-    this.emit('Send', peerId, msg, protocolId, true)
+  async send(peerId: string, msg: Buffer, networkId: NetworkId) {
+    this.emit('Send', peerId, msg, networkId, true)
     return new Promise((resolve, _reject) => {
       this.once('Sent', () => {
         resolve(true)
@@ -280,12 +280,12 @@ export class PortalNetworkUTP extends EventEmitter {
     if (request.requestCode === RequestCode.ACCEPT_READ) {
       contents = dropPrefixes(content)
     }
-    await this.returnContent(request.protocolId, contents, keys)
+    await this.returnContent(request.networkId, contents, keys)
   }
-  async returnContent(protocol: ProtocolId, contents: Uint8Array[], keys: Uint8Array[]) {
+  async returnContent(network: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
-    switch (protocol) {
-      case ProtocolId.HistoryNetwork:
+    switch (network) {
+      case NetworkId.HistoryNetwork:
         for (const [idx, k] of keys.entries()) {
           const decodedContentKey = decodeHistoryNetworkContentKey(toHexString(k))
           const _content = contents[idx]
@@ -298,11 +298,11 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit(ProtocolId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
+            this.emit(NetworkId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
           }
         }
         break
-      case ProtocolId.BeaconLightClientNetwork:
+      case NetworkId.BeaconLightClientNetwork:
         for (const [idx, k] of keys.entries()) {
           const _content = contents[idx]
           this.logger.extend(`FINISHED`)(
@@ -314,11 +314,11 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit(ProtocolId.BeaconLightClientNetwork, k[0], toHexString(k), _content)
+            this.emit(NetworkId.BeaconLightClientNetwork, k[0], toHexString(k), _content)
           }
         }
         break
-      case ProtocolId.StateNetwork:
+      case NetworkId.StateNetwork:
         for (const [idx, k] of keys.entries()) {
           const _content = contents[idx]
           this.logger.extend(`FINISHED`)(
@@ -330,7 +330,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit(ProtocolId.StateNetwork, k, _content)
+            this.emit(NetworkId.StateNetwork, k, _content)
           }
         }
         break
