@@ -280,7 +280,7 @@ it('eth_getBlockByHash', async () => {
   await node2.stop()
 })
 
-it.only('eth_getBlockByNumber', async () => {
+it('eth_getBlockByNumber', async () => {
   const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
