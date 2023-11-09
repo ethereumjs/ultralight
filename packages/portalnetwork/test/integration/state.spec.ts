@@ -140,11 +140,11 @@ describe('recursive find content', () => {
   it('should recursively find an account from another node', async () => {
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3042`)
     enr1.setLocationMultiaddr(initMa)
     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3043`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
