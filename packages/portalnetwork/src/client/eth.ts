@@ -25,7 +25,8 @@ export class ETH {
     if (!stateRoot) {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
-    return this.state!.stateDB.getBalance(address, stateRoot)
+    const res = await this.state!.getAccount(address, stateRoot)
+    return res?.balance
   }
 
   private networkCheck = (networks: NetworkId[]) => {
