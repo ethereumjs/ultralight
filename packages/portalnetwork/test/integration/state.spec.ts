@@ -137,7 +137,7 @@ describe('State Network wire spec tests', () => {
 })
 
 describe('recursive find content', () => {
-  it.only('should find content from another node', async () => {
+  it('should recursively find an account from another node', async () => {
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
