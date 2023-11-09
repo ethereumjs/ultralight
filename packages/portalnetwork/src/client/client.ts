@@ -284,6 +284,27 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.refreshListeners.forEach((protocol) => clearInterval(protocol))
   }
 
+  public protocol = (): {
+    [ProtocolId.HistoryNetwork]: HistoryProtocol | undefined
+    [ProtocolId.StateNetwork]: StateProtocol | undefined
+    [ProtocolId.BeaconLightClientNetwork]: BeaconLightClientNetwork | undefined
+  } => {
+    const history = this.protocols.get(ProtocolId.HistoryNetwork)
+      ? (this.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol)
+      : undefined
+    const state = this.protocols.get(ProtocolId.StateNetwork)
+      ? (this.protocols.get(ProtocolId.StateNetwork) as StateProtocol)
+      : undefined
+    const beacon = this.protocols.get(ProtocolId.BeaconLightClientNetwork)
+      ? (this.protocols.get(ProtocolId.BeaconLightClientNetwork) as BeaconLightClientNetwork)
+      : undefined
+    return {
+      [ProtocolId.HistoryNetwork]: history,
+      [ProtocolId.StateNetwork]: state,
+      [ProtocolId.BeaconLightClientNetwork]: beacon,
+    }
+  }
+
   /**
    *
    * @param namespaces comma separated list of logging namespaces
