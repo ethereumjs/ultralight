@@ -2,8 +2,8 @@ import { Block } from '@ethereumjs/block'
 import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
 import { Debugger } from 'debug'
 import {
-  ProtocolId,
-  HistoryProtocol,
+  NetworkId,
+  HistoryNetwork,
   PortalNetwork,
   getContentKey,
   fromHexString,
@@ -22,7 +22,7 @@ import { validators, middleware } from '../validators.js'
  */
 export class eth {
   private _client: PortalNetwork
-  private _history: HistoryProtocol
+  private _history: HistoryNetwork
   private logger: Debugger
   /**
    * Create eth_* RPC module
@@ -30,7 +30,7 @@ export class eth {
    */
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = client.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+    this._history = client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     this.logger = logger.extend('eth')
 
     this.getBlockByNumber = middleware(this.getBlockByNumber.bind(this), 2, [

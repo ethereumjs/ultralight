@@ -4,7 +4,7 @@ import {
   getContentId,
   getContentKey,
   HistoryNetworkContentType,
-  HistoryProtocol,
+  HistoryNetwork,
   reassembleBlock,
   epochRootByIndex,
 } from 'portalnetwork'
@@ -13,11 +13,11 @@ import { PeerContextType, PeerDispatch, PeerState, PeerStateChange } from './pee
 export class PeerActions {
   state: PeerState
   dispatch: PeerDispatch
-  historyProtocol: HistoryProtocol
-  constructor(peerContext: PeerContextType, protocol: HistoryProtocol) {
+  historyNetwork: HistoryNetwork
+  constructor(peerContext: PeerContextType, network: HistoryNetwork) {
     this.state = peerContext.peerState
     this.dispatch = peerContext.peerDispatch
-    this.historyProtocol = protocol
+    this.historyNetwork = network
   }
 
   addToOffer = (type: HistoryNetworkContentType): void => {
@@ -30,7 +30,7 @@ export class PeerActions {
   handlePing = async (enr: string) => {
     this.dispatch({ type: PeerStateChange.PING, payload: ['yellow.200', 'PINGING'] })
     setTimeout(async () => {
-      const pong = await this.historyProtocol.sendPing(ENR.decodeTxt(enr))
+      const pong = await this.historyNetwork.sendPing(ENR.decodeTxt(enr))
       if (pong) {
         this.dispatch({ type: PeerStateChange.PING, payload: ['green.200', 'PONG RECEIVED!'] })
         setTimeout(() => {
@@ -46,11 +46,11 @@ export class PeerActions {
   }
 
   handleFindNodes = async (peer: ENR) => {
-    return await this.historyProtocol.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
+    return await this.historyNetwork.sendFindNodes(peer.nodeId, [parseInt(this.state.distance)])
   }
 
   handleOffer = async (enr: string) => {
-    return await this.historyProtocol.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
+    return await this.historyNetwork.sendOffer(ENR.decodeTxt(enr).nodeId, this.state.offer)
   }
 
   sendFindContent = async (type: string, enr: string) => {
@@ -58,7 +58,7 @@ export class PeerActions {
       const headerContentId = fromHexString(
         getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(this.state.blockHash)),
       )
-      const header = await this.historyProtocol.sendFindContent(
+      const header = await this.historyNetwork.sendFindContent(
         ENR.decodeTxt(enr).nodeId,
         headerContentId,
       )
@@ -68,16 +68,16 @@ export class PeerActions {
       const headerContentKey = fromHexString(
         getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(this.state.blockHash)),
       )
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
+      this.historyNetwork!.sendFindContent(ENR.decodeTxt(enr).nodeId, headerContentKey)
       const bodyContentKey = fromHexString(
         getContentKey(HistoryNetworkContentType.BlockBody, fromHexString(this.state.blockHash)),
       )
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
+      this.historyNetwork!.sendFindContent(ENR.decodeTxt(enr).nodeId, bodyContentKey)
     } else if (type === 'epoch') {
       const epochContentKey = fromHexString(
         getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootByIndex(this.state.epoch)),
       )
-      this.historyProtocol!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)
+      this.historyNetwork!.sendFindContent(ENR.decodeTxt(enr).nodeId, epochContentKey)
     }
   }
 }

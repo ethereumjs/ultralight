@@ -6,12 +6,12 @@ import { initTRPC } from '@trpc/server'
 import { observable } from '@trpc/server/observable'
 import debug from 'debug'
 import {
-  HistoryProtocol,
+  HistoryNetwork,
   MessageCodes,
   PortalNetwork,
   PortalNetworkEventEmitter,
   PortalWireMessageType,
-  ProtocolId,
+  NetworkId,
   fromHexString,
   toHexString,
 } from 'portalnetwork'
@@ -66,7 +66,7 @@ export type PublicProcudure = typeof pubProcedure
 
 export const subscriptions = async (
   portal: PortalNetwork,
-  history: HistoryProtocol,
+  history: HistoryNetwork,
   publicProcedure: PublicProcudure,
 ) => {
   const log = debug('ui:subscription')
@@ -82,7 +82,7 @@ export const subscriptions = async (
     .subscription(() => {
       return observable((emit) => {
         const talkReq = (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
-          if (toHexString(message.protocol) === ProtocolId.UTPNetwork) {
+          if (toHexString(message.protocol) === NetworkId.UTPNetwork) {
             emit.next({
               nodeId: '0x' + src.nodeId,
               topic: 'UTP',
@@ -176,10 +176,10 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const utpEvent = (peerId: string, msg: Buffer, protocolId: ProtocolId) => {
+        const utpEvent = (peerId: string, msg: Buffer, networkId: NetworkId) => {
           emit.next({
             peerId,
-            protocolId,
+            networkId,
             msg: toHexString(msg),
           })
         }

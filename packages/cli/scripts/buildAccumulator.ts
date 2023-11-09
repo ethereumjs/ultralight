@@ -1,6 +1,6 @@
 import jayson from 'jayson/promise/index.js'
 import { BlockHeader } from '@ethereumjs/block'
-import { fromHexString, ProtocolId, toHexString } from 'portalnetwork'
+import { fromHexString, NetworkId, toHexString } from 'portalnetwork'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 

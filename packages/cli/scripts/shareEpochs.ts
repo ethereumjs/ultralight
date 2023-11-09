@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import {  ProtocolId, toHexString } from 'portalnetwork'
+import {  NetworkId, toHexString } from 'portalnetwork'
 import { Block, BlockData, BlockHeader } from '@ethereumjs/block';
 
 type StoredBlock = {
@@ -60,7 +60,7 @@ const main = async () => {
   }
 
 //   bootnodes.slice(1).forEach( async (bootnode, idx) => {
-//     const ping = await bootnode.request('portal_ping', [bootnodeEnrs[0], ProtocolId.HistoryNetwork])
+//     const ping = await bootnode.request('portal_ping', [bootnodeEnrs[0], NetworkId.HistoryNetwork])
 //     console.log(ping)
 //   })
   
@@ -70,9 +70,9 @@ const main = async () => {
   // The builder node joins the network.
   // Ultralight pings the builder and asks for snapshot
   
-//   const ping1 = await ultralight.request('portal_ping', [bootnodeEnrs[0], ProtocolId.HistoryNetwork])
+//   const ping1 = await ultralight.request('portal_ping', [bootnodeEnrs[0], NetworkId.HistoryNetwork])
 //   console.log(ping1)
-    const ping3 = await ultralight.request('portal_ping', [builderEnr.result, ProtocolId.HistoryNetwork])
+    const ping3 = await ultralight.request('portal_ping', [builderEnr.result, NetworkId.HistoryNetwork])
   console.log(ping3)
   const res = await ultralight.request('portal_history_getSnapshot', [builderEnr.result])  
   console.log(res)

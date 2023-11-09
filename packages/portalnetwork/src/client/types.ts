@@ -1,13 +1,13 @@
 import StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import EventEmitter from 'events'
 import { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
-import { StateNetworkRoutingTable, ProtocolId } from '../index.js'
+import { StateNetworkRoutingTable, NetworkId } from '../index.js'
 import { PortalNetworkRoutingTable } from './routingTable.js'
 import { AbstractLevel } from 'abstract-level'
 
 export interface IPortalNetworkEvents {
-  NodeAdded: (nodeId: NodeId, protocolId: ProtocolId) => void
-  NodeRemoved: (nodeId: NodeId, protocolId: ProtocolId) => void
+  NodeAdded: (nodeId: NodeId, networkId: NetworkId) => void
+  NodeRemoved: (nodeId: NodeId, networkId: NetworkId) => void
   ContentAdded: (key: string, contentType: number, content: string) => void
   Verified: (key: string, verified: boolean) => void
   SendTalkReq: (nodeId: string, requestId: string, payload: string) => void
@@ -21,7 +21,7 @@ export enum TransportLayer {
 }
 
 export interface PortalNetworkOpts {
-  supportedProtocols?: ProtocolId[]
+  supportedNetworks?: NetworkId[]
   radius?: bigint
   bootnodes?: string[]
   db?: AbstractLevel<string, string> | undefined

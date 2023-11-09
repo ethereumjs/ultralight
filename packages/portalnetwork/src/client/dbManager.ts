@@ -4,20 +4,20 @@ import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
 import { serializedContentKeyToContentId } from '../index.js'
-import { ProtocolId } from '../index.js'
+import { NetworkId } from '../index.js'
 
 export class DBManager {
   nodeId: string
   db: AbstractLevel<string, string>
   logger: Debugger
   currentSize: () => Promise<number>
-  sublevels: Map<ProtocolId, AbstractLevel<string, string>>
+  sublevels: Map<NetworkId, AbstractLevel<string, string>>
 
   constructor(
     nodeId: NodeId,
     logger: Debugger,
     currentSize: () => Promise<number>,
-    sublevels: ProtocolId[] = [],
+    sublevels: NetworkId[] = [],
     db?: AbstractLevel<string>,
   ) {
     //@ts-ignore Because level doesn't know how to get along with itself
@@ -26,20 +26,20 @@ export class DBManager {
     this.logger = logger.extend('DB')
     this.currentSize = currentSize
     this.sublevels = new Map()
-    for (const protocol of sublevels) {
-      const sub = this.db.sublevel(protocol)
-      this.sublevels.set(protocol, sub)
+    for (const network of sublevels) {
+      const sub = this.db.sublevel(network)
+      this.sublevels.set(network, sub)
     }
   }
 
-  get(protocol: ProtocolId, key: string) {
-    const db = this.sublevel(protocol)
+  get(network: NetworkId, key: string) {
+    const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
     return db.get(databaseKey)
   }
 
-  put(protocol: ProtocolId, key: string, val: string) {
-    const db = this.sublevel(protocol)
+  put(network: NetworkId, key: string, val: string) {
+    const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
     return db.put(databaseKey, val, (err: any) => {
       if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
@@ -58,13 +58,13 @@ export class DBManager {
     }
   }
 
-  batch(ops: AbstractBatchOperation<string, string, string>[], sublevel?: ProtocolId) {
+  batch(ops: AbstractBatchOperation<string, string, string>[], sublevel?: NetworkId) {
     const db = sublevel ? this.sublevels.get(sublevel) ?? this.db : this.db
     return (db as any).batch(ops)
   }
 
-  del(protocol: ProtocolId, key: string) {
-    const db = this.sublevel(protocol)
+  del(network: NetworkId, key: string) {
+    const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
     return db.del(databaseKey)
   }
@@ -74,11 +74,11 @@ export class DBManager {
     return bigIntToHex(d)
   }
 
-  sublevel(protocol: ProtocolId) {
-    return this.sublevels.get(protocol)!
+  sublevel(network: NetworkId) {
+    return this.sublevels.get(network)!
   }
 
-  async prune(sublevel: ProtocolId, radius: bigint) {
+  async prune(sublevel: NetworkId, radius: bigint) {
     const db = this.sublevels.get(sublevel)
     if (!db) return
     for await (const key of db.keys({ gte: bigIntToHex(radius) })) {

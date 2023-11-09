@@ -66,7 +66,7 @@ The Ping/Pong tab provides an AutoComplete input field to select a peer from the
 
 ### STATEROOT
 
-The StateRoot tab follows the tip of the chain using the Beacon Light Protocol
+The StateRoot tab follows the tip of the chain using the Beacon Light Network
 
 ### PEER_LOGS (WebSocket only)
 

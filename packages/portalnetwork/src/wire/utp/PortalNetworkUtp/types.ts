@@ -1,4 +1,4 @@
-import { ProtocolId } from '../../../subprotocols/types.js'
+import { NetworkId } from '../../../networks/types.js'
 
 export type UtpSocketKey = string
 
@@ -13,7 +13,7 @@ export function createSocketKey(remoteAddr: string, id: number) {
   return `${remoteAddr}-${id}`
 }
 export interface INewRequest {
-  protocolId: ProtocolId
+  networkId: NetworkId
   contentKeys: Uint8Array[]
   peerId: string
   connectionId: number

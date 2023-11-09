@@ -1,7 +1,7 @@
 import { it, assert } from 'vitest'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
-import { ProtocolId } from '../../src/subprotocols/types.js'
+import { NetworkId } from '../../src/networks/types.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -23,14 +23,14 @@ it('Test provider functionality', async () => {
       enr: enr,
       peerId: peerId,
     },
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
   })
 
   const block = await provider.getBlock(5000)
   assert.ok(block!.number === 5000, 'retrieved block from fallback provider')
 
   // Stub getBlockByHash for unit testing
-  provider.historyProtocol.ETH.getBlockByHash = async (_hash: string) => {
+  provider.historyNetwork.ETH.getBlockByHash = async (_hash: string) => {
     return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
   }
   const block2 = await provider.getBlock(

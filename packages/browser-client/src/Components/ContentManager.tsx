@@ -16,7 +16,7 @@ export default function ContentManager() {
           const blocks = Object.entries(JSON.parse(reader.result as string)) as any
           let last = blocks[0]
           for (const block of blocks) {
-            await addRLPSerializedBlock(block[1].rlp, block[0], state.provider!.historyProtocol)
+            await addRLPSerializedBlock(block[1].rlp, block[0], state.provider!.historyNetwork)
             last = block
           }
           dispatch({

@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { PortalNetwork, ProtocolId, fromHexString } from 'portalnetwork'
+import { PortalNetwork, NetworkId, fromHexString } from 'portalnetwork'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 import yargs from 'yargs/yargs'
@@ -78,7 +78,7 @@ const args: ClientOpts = yargs(hideBin(process.argv))
     optional: true,
   })
   .option('networks', {
-    describe: 'subprotocols to enable',
+    describe: 'subnetworks to enable',
     array: true,
     optional: true,
   })
@@ -139,27 +139,27 @@ const main = async () => {
     },
     trustedBlockRoot: args.trustedBlockRoot,
   } as any
-  let networks: ProtocolId[] = []
+  let networks: NetworkId[] = []
   if (args.networks) {
     for (const network of args.networks) {
       switch (network) {
         case 'history':
-          networks.push(ProtocolId.HistoryNetwork)
+          networks.push(NetworkId.HistoryNetwork)
           break
         case 'beacon':
-          networks.push(ProtocolId.BeaconLightClientNetwork)
+          networks.push(NetworkId.BeaconLightClientNetwork)
           break
         case 'state':
-          networks.push(ProtocolId.StateNetwork)
+          networks.push(NetworkId.StateNetwork)
           break
       }
     }
   } else {
-    networks = [ProtocolId.HistoryNetwork]
+    networks = [NetworkId.HistoryNetwork]
   }
 
   if (args.trustedBlockRoot !== undefined) {
-    networks.push(ProtocolId.BeaconLightClientNetwork)
+    networks.push(NetworkId.BeaconLightClientNetwork)
   }
   const portal = await PortalNetwork.create({
     config: config,
@@ -167,7 +167,7 @@ const main = async () => {
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
-    supportedProtocols: networks,
+    supportedNetworks: networks,
     dataDir: args.dataDir,
     trustedBlockRoot: args.trustedBlockRoot,
   })
@@ -204,9 +204,9 @@ const main = async () => {
     }
   }
   try {
-    for (const protocol of portal.protocols) {
+    for (const network of portal.networks) {
       for (const bootnode of bootnodes) {
-        await addBootNode(protocol[0], protocol[1], bootnode)
+        await addBootNode(network[0], network[1], bootnode)
       }
     }
   } catch (error: any) {

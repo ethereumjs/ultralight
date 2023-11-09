@@ -9,7 +9,7 @@ import {
   toHexString,
   Packet,
   ConnectionState,
-  ProtocolId,
+  NetworkId,
 } from '../../../src/index.js'
 import { hexToBytes } from '@ethereumjs/util'
 
@@ -20,9 +20,9 @@ const DEFAULT_RAND_ACKNR = 4444
 const readId = 1111
 const writeId = 2222
 
-const _read = (protocolId: ProtocolId) =>
+const _read = (networkId: NetworkId) =>
   new UtpSocket({
-    protocolId: protocolId,
+    networkId: networkId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
     remoteAddress: '1234',
@@ -31,9 +31,9 @@ const _read = (protocolId: ProtocolId) =>
     logger: debug('test'),
     type: UtpSocketType.READ,
   })
-const _write = (protocolId: ProtocolId) =>
+const _write = (networkId: NetworkId) =>
   new UtpSocket({
-    protocolId: protocolId,
+    networkId: networkId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
     remoteAddress: '1234',
@@ -44,8 +44,8 @@ const _write = (protocolId: ProtocolId) =>
     content: content,
   })
 describe('socket constructor', () => {
-  const read = _read(ProtocolId.HistoryNetwork)
-  const write = _write(ProtocolId.HistoryNetwork)
+  const read = _read(NetworkId.HistoryNetwork)
+  const write = _write(NetworkId.HistoryNetwork)
   it('Read Socket', () => {
     assert.equal(read.type, UtpSocketType.READ, 'Socket type correctly updated to READ')
     assert.equal(read.sndConnectionId, writeId, 'Socket sndId correctly updated to 2')
@@ -64,8 +64,8 @@ describe('socket constructor', () => {
 })
 
 describe('createPacket()', () => {
-  const read = _read(ProtocolId.HistoryNetwork)
-  const write = _write(ProtocolId.HistoryNetwork)
+  const read = _read(NetworkId.HistoryNetwork)
+  const write = _write(NetworkId.HistoryNetwork)
   it('SYN', () => {
     const read_syn = read.createPacket({ pType: PacketType.ST_SYN })
     assert.equal(read_syn.header.pType, PacketType.ST_SYN, 'Packet type correctly set to ST_SYN')
@@ -227,8 +227,8 @@ describe('createPacket()', () => {
 })
 
 describe('sendPacket()', async () => {
-  const read = _read(ProtocolId.HistoryNetwork)
-  const write = _write(ProtocolId.HistoryNetwork)
+  const read = _read(NetworkId.HistoryNetwork)
+  const write = _write(NetworkId.HistoryNetwork)
   const test = async (
     socket: UtpSocket,
     testFunction: (...args: any) => Promise<void>,
@@ -261,8 +261,8 @@ describe('sendPacket()', async () => {
 })
 
 describe('handle()', async () => {
-  const read = _read(ProtocolId.HistoryNetwork)
-  const write = _write(ProtocolId.HistoryNetwork)
+  const read = _read(NetworkId.HistoryNetwork)
+  const write = _write(NetworkId.HistoryNetwork)
   const test = async (
     socket: UtpSocket,
     testFunction: (...args: any) => Promise<any>,
@@ -310,7 +310,7 @@ describe('handle()', async () => {
 })
 
 describe('uTP Socket Tests', () => {
-  const s = _write(ProtocolId.HistoryNetwork)
+  const s = _write(NetworkId.HistoryNetwork)
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
   s.setWriter(s.getSeqNr())

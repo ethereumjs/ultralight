@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import { ProtocolId } from 'portalnetwork'
+import { NetworkId } from 'portalnetwork'
 
 const main = async () => {
   const bootnode = jayson.Client.http({ host: '127.0.0.1', port: 8545 })
@@ -9,7 +9,7 @@ const main = async () => {
     const ultralight = jayson.Client.http({ host: '127.0.0.1', port: 8546 + i })
     const ping = await ultralight.request('portal_ping', [
       bootnodeEnr.result,
-      ProtocolId.HistoryNetwork,
+      NetworkId.HistoryNetwork,
     ])
     console.log(ping)
     const res = await ultralight.request('portal_history_getSnapshot', [bootnodeEnr.result])

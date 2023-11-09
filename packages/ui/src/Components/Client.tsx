@@ -107,7 +107,7 @@ export default function Client(props: { name: string }) {
       },
     })
     trpc.onNodeAdded.useSubscription(undefined, {
-      onData({ nodeId, protocolId }) {
+      onData({ nodeId, networkId }) {
         console.info('node added: ', nodeId)
       },
       onStarted() {

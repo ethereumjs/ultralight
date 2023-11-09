@@ -18,7 +18,7 @@ export type udpPort = string
 export type isTcp = boolean | undefined
 export type Distances = number
 export type RequestId = bytes8
-export type ProtocolId = number
+export type NetworkId = number
 export type Discv5Payload = hexString
 export type ContentMessage = {
   connectionId: number

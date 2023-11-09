@@ -1,5 +1,5 @@
 import { describe, it, assert } from 'vitest'
-import { PortalNetwork, ProtocolId } from '../../src/index.js'
+import { PortalNetwork, NetworkId } from '../../src/index.js'
 import * as td from 'testdouble'
 import { TransportLayer } from '../../src/client/index.js'
 
@@ -7,7 +7,7 @@ describe('Client unit tests', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
   })
 
   it('node initialization/startup', async () => {

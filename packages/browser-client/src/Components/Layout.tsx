@@ -34,7 +34,7 @@ export default function Layout() {
   useEffect(() => {
     if (state.provider) {
       for (const peer of state.provider.portal.bootnodes) {
-        state.provider?.historyProtocol.addBootNode(peer)
+        state.provider?.historyNetwork.addBootNode(peer)
       }
     }
     setSample()

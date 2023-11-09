@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import { fromHexString, getContentId, ProtocolId } from 'portalnetwork'
+import { fromHexString, getContentId, NetworkId } from 'portalnetwork'
 
 const testBlocks = [
   {
@@ -36,18 +36,18 @@ const main = async () => {
 
   const ping1 = await peer0.request('portal_ping', [
     ultralightENR.result,
-    ProtocolId.HistoryNetwork,
+    NetworkId.HistoryNetwork,
   ])
   console.log(ping1.result.startsWith('PING'))
   const ping2 = await ultralight.request('portal_ping', [
     peer0ENR.result,
-    ProtocolId.HistoryNetwork,
+    NetworkId.HistoryNetwork,
   ])
   console.log(ping2.result.startsWith('PING'))
 
-  const findCon = await peer0.request('eth_getBlockByHash', [testBlocks[0].hash, true, ProtocolId.HistoryNetwork])
+  const findCon = await peer0.request('eth_getBlockByHash', [testBlocks[0].hash, true, NetworkId.HistoryNetwork])
   console.log(findCon.result.header.number.slice(2) === (testBlocks[0].number.toString(16)))
-  const findCon2 = await ultralight.request('eth_getBlockByHash', [testBlocks[1].hash, true, ProtocolId.HistoryNetwork])
+  const findCon2 = await ultralight.request('eth_getBlockByHash', [testBlocks[1].hash, true, NetworkId.HistoryNetwork])
   console.log(findCon2.result.header.number.slice(2) === (testBlocks[1].number.toString(16)))
 
 

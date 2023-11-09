@@ -1,5 +1,5 @@
 import { Client } from 'jayson/promise'
-import { ProtocolId } from 'portalnetwork'
+import { NetworkId } from 'portalnetwork'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import blocks from '../blocks200000-210000.json'
@@ -31,10 +31,10 @@ const main = async () => {
 }
 
   const newPeer = Client.http({ port: 8546 + 9 })
-  const add = await newPeer.request('portal_addBootNode', [bootEnrs[0], ProtocolId.HistoryNetwork])
+  const add = await newPeer.request('portal_addBootNode', [bootEnrs[0], NetworkId.HistoryNetwork])
   console.log(add)
   bootEnrs.forEach( (boot) => {
-      newPeer.request('portal_nodeLookup', [ProtocolId.HistoryNetwork, boot])
+      newPeer.request('portal_nodeLookup', [NetworkId.HistoryNetwork, boot])
     })
 
   console.log('Done')

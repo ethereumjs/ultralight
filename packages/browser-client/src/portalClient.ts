@@ -7,14 +7,14 @@ import {
   fromHexString,
   TransportLayer,
   UltralightProvider,
-  ProtocolId,
+  NetworkId,
 } from 'portalnetwork'
 import { AppState } from './globalReducer'
 import bns from './bootnodes.json'
 
 export const refresh = (state: AppState) => {
   try {
-    const known = state.provider!.historyProtocol!.routingTable.values()
+    const known = state.provider!.historyNetwork!.routingTable.values()
     const formattedKnown: [number, string, string, string, string][] = known.map((_enr: ENR) => {
       const distToSelf = log2Distance(state.provider!.portal.discv5.enr.nodeId, _enr.nodeId)
       return [
@@ -68,14 +68,14 @@ export async function createNodeFromScratch(state: AppState): Promise<Ultralight
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.MOBILE,
-        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
       })
     : await UltralightProvider.create('', {
         proxyAddress: state.proxy,
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.WEB,
-        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
       })
   await startUp(provider)
   return provider
@@ -88,7 +88,7 @@ export async function createNodeFromStorage(state: AppState): Promise<Ultralight
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.MOBILE,
-        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
       })
     : await UltralightProvider.create('', {
         proxyAddress: state.proxy,
@@ -96,7 +96,7 @@ export async function createNodeFromStorage(state: AppState): Promise<Ultralight
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.WEB,
-        supportedProtocols: [ProtocolId.HistoryNetwork, ProtocolId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
       })
   await startUp(provider)
   return provider

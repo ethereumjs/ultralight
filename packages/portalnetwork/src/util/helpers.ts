@@ -12,7 +12,7 @@ import { Block, BlockOptions, JsonRpcBlock } from '@ethereumjs/block'
 
 import type { AccessListEIP2930Transaction, TypedTransaction } from '@ethereumjs/tx'
 import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
-import { Log, TxReceiptType } from '../subprotocols/index.js'
+import { Log, TxReceiptType } from '../networks/index.js'
 
 export async function getBlockReceipts(
   block: Block,

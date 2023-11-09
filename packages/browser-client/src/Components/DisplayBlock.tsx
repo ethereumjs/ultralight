@@ -22,7 +22,7 @@ import {
   toHexString,
   TxReceiptWithType,
   decodeReceipts,
-  ProtocolId,
+  NetworkId,
 } from 'portalnetwork'
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext, AppContextType, StateChange } from '../globalReducer'
@@ -222,8 +222,8 @@ const DisplayBlock = () => {
     try {
       const receipts = decodeReceipts(
         fromHexString(
-          await state.provider!.historyProtocol.get(
-            ProtocolId.HistoryNetwork,
+          await state.provider!.historyNetwork.get(
+            NetworkId.HistoryNetwork,
             getContentKey(HistoryNetworkContentType.Receipt, fromHexString(state.block!.hash)),
           ),
         ),

@@ -105,15 +105,15 @@ const onContentAdded = publicProcedure.subscription(({ input }) => {
 const onNodeAdded = publicProcedure.subscription(() => {
   const ee = new EventEmitter()
   return observable((emit) => {
-    const nodeAdded = (nodeId: string, protocolId: number) => {
-      console.log('nodeAdded', { nodeId, protocolId })
+    const nodeAdded = (nodeId: string, networkId: number) => {
+      console.log('nodeAdded', { nodeId, networkId })
       emit.next({
         nodeId,
-        protocolId,
+        networkId,
       })
     }
-    ee.on('NodeAdded', (nodeId: string, protocolId: number) => {
-      nodeAdded(nodeId, protocolId)
+    ee.on('NodeAdded', (nodeId: string, networkId: number) => {
+      nodeAdded(nodeId, networkId)
     })
     return () => {
       ee.off('NodeAdded', () => {

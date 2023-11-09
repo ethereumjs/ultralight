@@ -1,7 +1,7 @@
 import jayson, { HttpClient } from 'jayson/promise/index.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { fromHexString, getContentKey, HistoryNetworkContentType, ProtocolId, toHexString } from 'portalnetwork'
+import { fromHexString, getContentKey, HistoryNetworkContentType, NetworkId, toHexString } from 'portalnetwork'
 import { createRequire } from 'module'
 import { readFileSync } from 'fs'
 import { Block } from '@ethereumjs/block'
