@@ -17,7 +17,6 @@ import {
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { AccountTrieProofType, StateNetworkContentType } from './types.js'
 import {
-  eth_getBalance,
   eth_getCode,
   eth_getStorageAt,
   eth_getTransactionCount,
