@@ -108,10 +108,14 @@ describe('UltralightStateManager', () => {
     const codehash = keccak256(byteCode)
     const account = Account.fromAccountData({ balance: 0n, nonce: 1n, codeHash: codehash })
 
+    const zero = Address.zero()
+    const zeroAccount = new Account()
     const trie = new Trie({ useKeyHashing: true })
     await trie.put(address.toBytes(), account.serialize())
+    await trie.put(zero.bytes, zeroAccount.serialize())
 
     const proof = await trie.createProof(address.toBytes())
+    const zeroProof = await trie.createProof(zero.bytes)
     const content = AccountTrieProofType.serialize({
       balance: account!.balance,
       nonce: account!.nonce,
@@ -119,8 +123,15 @@ describe('UltralightStateManager', () => {
       storageRoot: account!.storageRoot,
       witnesses: proof,
     })
+    const zeroContent = AccountTrieProofType.serialize({
+      balance: zeroAccount!.balance,
+      nonce: zeroAccount!.nonce,
+      codeHash: zeroAccount!.codeHash,
+      storageRoot: zeroAccount!.storageRoot,
+      witnesses: zeroProof,
+    })
     await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
-
+    await network.stateDB.inputAccountTrieProof(zero.bytes, trie.root(), zeroContent)
     const byteCodeContent = ContractByteCodeType.serialize(byteCode)
     await network.stateDB.inputContractByteCode(address.toBytes(), codehash, byteCodeContent)
 

@@ -214,13 +214,13 @@ export class StateDB {
 
   /**
    * Get account data by address and state root
-   * @param address account address
-   * @param stateRoot state root
+   * @param account address as hex prefixed string
+   * @param stateRoot state root as hex prefixed string
    * @returns account data
    */
-  async getAccount(address: Address, stateRoot: StateRoot) {
+  async getAccount(address: string, stateRoot: StateRoot) {
     const trie = this.getAccountTrie(stateRoot)
-    const key = fromHexString(address.toString())
+    const key = fromHexString(address)
     const accountRLP = await trie.get(key)
     if (accountRLP === null) {
       return undefined
