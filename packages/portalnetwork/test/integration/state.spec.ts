@@ -27,11 +27,11 @@ describe('State Network wire spec tests', () => {
   it('should find another node', async () => {
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3020`)
     enr1.setLocationMultiaddr(initMa)
     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
     const enr2 = SignableENR.createFromPeerId(id2)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3021`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
