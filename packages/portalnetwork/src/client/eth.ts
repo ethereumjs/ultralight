@@ -1,10 +1,5 @@
 import { PortalNetwork } from '.'
-import {
-  BeaconLightClientNetwork,
-  HistoryProtocol,
-  ProtocolId,
-  StateProtocol,
-} from '../subprotocols'
+import { BeaconLightClientNetwork, HistoryProtocol, StateProtocol } from '../subprotocols'
 
 export class ETH {
   history?: HistoryProtocol
@@ -12,11 +7,9 @@ export class ETH {
   beacon?: BeaconLightClientNetwork
 
   constructor(portal: PortalNetwork) {
-    this.history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
-    this.state = portal.protocols.get(ProtocolId.StateNetwork) as StateProtocol
-    this.beacon = portal.protocols.get(
-      ProtocolId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
+    this.history = portal.protocol()['0x500b']
+    this.state = portal.protocol()['0x500a']
+    this.beacon = portal.protocol()['0x501a']
   }
 
   ethGetBalance = async (address: string, blockNumber: bigint): Promise<bigint | undefined> => {
