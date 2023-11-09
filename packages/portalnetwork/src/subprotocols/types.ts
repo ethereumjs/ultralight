@@ -1,6 +1,9 @@
 import { ByteVectorType } from '@chainsafe/ssz'
 import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { HistoryProtocol } from './history'
+import { StateProtocol } from './state'
+import { BeaconLightClientNetwork } from './beacon'
 
 const BYTE_SIZE = 256
 
@@ -15,6 +18,14 @@ export enum ProtocolId {
   UTPNetwork = '0x757470',
   Rendezvous = '0x72656e',
 }
+
+export type SubNetwork<T extends ProtocolId> = T extends '0x500a'
+  ? HistoryProtocol
+  : T extends '0x500b'
+  ? StateProtocol
+  : T extends '0x501a'
+  ? BeaconLightClientNetwork
+  : never
 
 export class Bloom {
   bitvector: Uint8Array
