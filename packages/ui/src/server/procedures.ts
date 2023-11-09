@@ -1,9 +1,9 @@
 import {
   ENR,
   ContentLookup,
-  HistoryProtocol,
+  HistoryNetwork,
   PortalNetwork,
-  ProtocolId,
+  NetworkId,
   fromHexString,
   toHexString,
 } from 'portalnetwork'
@@ -54,7 +54,7 @@ export const bootnodes = bootnodeENRs.map((b) => {
   }
 })
 export const websocketProcedures = (portal: PortalNetwork, publicProcedure: PublicProcudure) => {
-  const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const history = portal.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
   const start = publicProcedure
     .meta({

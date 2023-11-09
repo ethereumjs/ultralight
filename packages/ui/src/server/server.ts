@@ -6,7 +6,7 @@ import { ENR, SignableENR } from '@chainsafe/discv5'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { execSync } from 'child_process'
-import { HistoryProtocol, PortalNetwork, ProtocolId } from 'portalnetwork'
+import { HistoryNetwork, PortalNetwork, NetworkId } from 'portalnetwork'
 
 import ws from 'ws'
 
@@ -49,13 +49,13 @@ const main = async () => {
   const portal = await PortalNetwork.create({
     config: config,
     radius: 2n ** 256n - 1n,
-    supportedProtocols: [ProtocolId.HistoryNetwork],
+    supportedNetworks: [NetworkId.HistoryNetwork],
     eventLog: true,
   })
   portal.discv5.enableLogs()
   portal.enableLog('*')
 
-  const history = portal.protocols.get(ProtocolId.HistoryNetwork) as HistoryProtocol
+  const history = portal.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const router = t.router
 
   //  WSS Client Methods

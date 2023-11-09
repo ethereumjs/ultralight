@@ -157,7 +157,7 @@ describe('store -- Block Bodies and Receipts', async () => {
   const epochHash = '0x987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa'
 
   await network.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
-  const _epochHash = toHexString(epochRootByBlocknumber(207686n))
+  const _epochHash = toHexString(epochRootByBlocknumber(207686n)!)
   it('Should store and retrieve a block body from DB', async () => {
     assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
   })
