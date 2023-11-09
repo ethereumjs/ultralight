@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import {
   EpochAccumulator,
@@ -22,17 +22,21 @@ export class ETH {
     blockHash: string,
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
-    const headerContentKey = hexToBytes(
-      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
-    )
-
-    const bodyContentKey = includeTransactions
-      ? hexToBytes(getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash)))
-      : undefined
     let lookupResponse: ContentLookupResponse
     let header: any
     let body: any
     let block
+    try {
+      return this.protocol.getBlock(fromHexString(blockHash), includeTransactions)
+    } catch {
+      header = await this.protocol.getBlockHeaderBytes(fromHexString(blockHash))
+    }
+    const headerContentKey = hexToBytes(
+      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
+    )
+    const bodyContentKey = includeTransactions
+      ? hexToBytes(getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash)))
+      : undefined
     try {
       let lookup = new ContentLookup(this.protocol, headerContentKey)
       lookupResponse = await lookup.startLookup()
@@ -69,26 +73,33 @@ export class ETH {
     blockNumber: number | bigint,
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
-    let blockHash
-    const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
-    const lookupKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)
-    const epoch_lookup = new ContentLookup(this.protocol, hexToBytes(lookupKey))
-    const result = await epoch_lookup.startLookup()
-
-    if (result && 'content' in result) {
-      this.protocol.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-        `Found EpochAccumulator with header record for block ${blockNumber}`,
-      )
-      const epoch = EpochAccumulator.deserialize(result.content)
-      blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
-
-      const block = await this.getBlockByHash(blockHash, includeTransactions)
-      if (block?.header.number === BigInt(blockNumber)) {
-        return block
-      } else {
-        this.protocol.logger(`Block ${blockNumber} not found`)
+    let blockHash = (await this.protocol.blockIndex()).get('0x' + blockNumber.toString(16))
+    if (!blockHash) {
+      const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
+      if (!epochRootHash) {
         return undefined
       }
+      const lookupKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)
+      const epoch_lookup = new ContentLookup(this.protocol, hexToBytes(lookupKey))
+      const result = await epoch_lookup.startLookup()
+
+      if (result && 'content' in result) {
+        this.protocol.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
+          `Found EpochAccumulator with header record for block ${blockNumber}`,
+        )
+        const epoch = EpochAccumulator.deserialize(result.content)
+        blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
+      }
+    }
+    if (!blockHash) {
+      return undefined
+    }
+    const block = await this.getBlockByHash(blockHash, includeTransactions)
+    if (block?.header.number === BigInt(blockNumber)) {
+      return block
+    } else {
+      this.protocol.logger(`Block ${blockNumber} not found`)
+      return undefined
     }
   }
 }
