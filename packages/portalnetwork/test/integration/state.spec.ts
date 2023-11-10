@@ -18,6 +18,7 @@ import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { Account, Address, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { Trie } from '@ethereumjs/trie'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { RLP } from '@ethereumjs/rlp'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -266,7 +267,7 @@ describe('recursive find content', () => {
     assertType<Uint8Array>(res)
     assert.deepEqual(res, byteCode, 'retrieved bytecode via recursive find content')
   })
-  it.skip('should recursively find contract storage from another node', async () => {
+  it('should recursively find contract storage from another node', async () => {
     const cstp = (await import('../networks/state/content.json')).CSTP
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
@@ -305,7 +306,10 @@ describe('recursive find content', () => {
     const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
 
     const storageTrie = new Trie({ useKeyHashing: true })
-    await storageTrie.put(fromHexString(cstp.slot), fromHexString(cstp.value))
+    const storageTrieProof = ContractStorageTrieProofType.deserialize(fromHexString(cstp.content))
+    await storageTrie.fromProof(storageTrieProof.witnesses)
+    const stored = await storageTrie.get(fromHexString(cstp.slot))
+    assert.deepEqual(RLP.decode(stored), Uint8Array.from(cstp.data), 'stored value in storage trie')
 
     const pk = randomBytes(32)
     const address = Address.fromPrivateKey(pk)
@@ -318,6 +322,8 @@ describe('recursive find content', () => {
     const trie = new Trie({ useKeyHashing: true })
     await trie.put(address.toBytes(), account.serialize())
 
+    const storedAccount = await trie.get(address.bytes)
+    assert.deepEqual(storedAccount, account.serialize(), 'stored account in account trie')
     const proof = await trie.createProof(address.toBytes())
     const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
 
@@ -329,7 +335,7 @@ describe('recursive find content', () => {
       witnesses: proof,
     })
     const storageContent = ContractStorageTrieProofType.serialize({
-      data: fromHexString(cstp.value),
+      data: Uint8Array.from(cstp.data),
       witnesses: storageProof,
     })
     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -345,9 +351,9 @@ describe('recursive find content', () => {
       BigInt(cstp.slot),
       toHexString(trie.root()),
     )
-    assertType<Uint8Array>(res)
+    assert.isDefined(res)
     assert.equal(
-      toHexString(res),
+      toHexString(res!),
       cstp.value,
       'retrieved contract storage slot via recursive find content',
     )
