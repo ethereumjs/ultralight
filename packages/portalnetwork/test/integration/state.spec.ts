@@ -2,6 +2,7 @@ import { describe, it, assert, assertType } from 'vitest'
 import {
   AccountTrieProofType,
   ContractByteCodeType,
+  ContractStorageTrieProofType,
   NetworkId,
   PortalNetwork,
   StateNetwork,
@@ -264,5 +265,91 @@ describe('recursive find content', () => {
     const res = await network2.getBytecode(toHexString(codehash), address.toString())
     assertType<Uint8Array>(res)
     assert.deepEqual(res, byteCode, 'retrieved bytecode via recursive find content')
+  })
+  it.skip('should recursively find contract storage from another node', async () => {
+    const cstp = (await import('../networks/state/content.json')).CSTP
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3046`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3047`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
+    const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
+
+    const storageTrie = new Trie({ useKeyHashing: true })
+    await storageTrie.put(fromHexString(cstp.slot), fromHexString(cstp.value))
+
+    const pk = randomBytes(32)
+    const address = Address.fromPrivateKey(pk)
+    const account = Account.fromAccountData({
+      balance: 0n,
+      nonce: 1n,
+      storageRoot: storageTrie.root(),
+    })
+
+    const trie = new Trie({ useKeyHashing: true })
+    await trie.put(address.toBytes(), account.serialize())
+
+    const proof = await trie.createProof(address.toBytes())
+    const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
+
+    const content = AccountTrieProofType.serialize({
+      balance: account!.balance,
+      nonce: account!.nonce,
+      codeHash: account!.codeHash,
+      storageRoot: account!.storageRoot,
+      witnesses: proof,
+    })
+    const storageContent = ContractStorageTrieProofType.serialize({
+      data: fromHexString(cstp.value),
+      witnesses: storageProof,
+    })
+    await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
+    await network1.stateDB.inputContractStorageTrieProof(
+      address.bytes,
+      BigInt(cstp.slot),
+      trie.root(),
+      storageContent,
+    )
+    await network1!.sendPing(network2?.enr!.toENR())
+    const res = await network2.getContractStorage(
+      address.toString(),
+      BigInt(cstp.slot),
+      toHexString(trie.root()),
+    )
+    assertType<Uint8Array>(res)
+    assert.equal(
+      toHexString(res),
+      cstp.value,
+      'retrieved contract storage slot via recursive find content',
+    )
   })
 })
