@@ -210,18 +210,28 @@ export class StateNetwork extends BaseNetwork {
    * @param stateRoot stateRoot corresponding to block at which storage slot is sought
    * @returns a storage value corresponding to `slot` or undefined
    */
-  public getContractStorage = async (address: string, slot: bigint, stateRoot: string) => {
+  public getContractStorage = async (
+    address: string,
+    slot: bigint,
+    stateRoot: string,
+  ): Promise<Uint8Array | undefined> => {
     let storage
-    storage = await this.stateDB.getStorageAt(address, slot, stateRoot)
-    if (storage !== undefined) return storage
+    try {
+      storage = await this.stateDB.getStorageAt(address, slot, stateRoot)
+      if (storage !== undefined) return storage
+    } catch {
+      this.logger(`Content not found locally.  Requesting from network.`)
+    }
     const contentKey = getStateNetworkContentKey({
+      contentType: StateNetworkContentType.ContractStorageTrieProof,
       address: Address.fromString(address),
       slot,
       stateRoot: fromHexString(stateRoot),
     })
     const lookup = new ContentLookup(this, contentKey)
-    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
-    if (res.content !== undefined) {
+    let res = await lookup.startLookup()
+    if (res !== undefined) {
+      res = res as { content: Uint8Array; utp: boolean }
       const proof = ContractStorageTrieProofType.deserialize(res.content)
       if (proof !== undefined) storage = proof.data
     }
