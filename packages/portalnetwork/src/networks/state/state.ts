@@ -15,7 +15,12 @@ import {
   FoundContent,
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
-import { AccountTrieProofType, ContractByteCodeType, StateNetworkContentType } from './types.js'
+import {
+  AccountTrieProofType,
+  ContractByteCodeType,
+  ContractStorageTrieProofType,
+  StateNetworkContentType,
+} from './types.js'
 import {
   eth_getCode,
   eth_getStorageAt,
@@ -146,6 +151,12 @@ export class StateNetwork extends BaseNetwork {
     })
   }
 
+  /**
+   * Retrieve an account from the state network
+   * @param address the hex prefixed string representation of an address
+   * @param stateRoot the stateRoot from the block at which you wish to retrieve an account's state
+   * @returns an account corresponding to `address` or undefined if not found
+   */
   public getAccount = async (address: string, stateRoot: string) => {
     let account
     account = await this.stateDB.getAccount(address, stateRoot)
@@ -169,6 +180,12 @@ export class StateNetwork extends BaseNetwork {
     return account
   }
 
+  /**
+   * Retrieve bytecode for a specific address
+   * @param codeHash codehash corresponding to the bytecode sought
+   * @param address for the bytecode being sought
+   * @returns returns the bytecode as a `Uint8Array` or else undefined
+   */
   public getBytecode = async (codeHash: string, address: string) => {
     let bytecode
     bytecode = await this.stateDB.getContractByteCode(codeHash)
@@ -184,5 +201,30 @@ export class StateNetwork extends BaseNetwork {
       bytecode = ContractByteCodeType.deserialize(res.content)
     }
     return bytecode
+  }
+
+  /**
+   * Retrieve a storage slot for a given account with a given stateroot
+   * @param address address for storage slot sought
+   * @param slot storage slot sought
+   * @param stateRoot stateRoot corresponding to block at which storage slot is sought
+   * @returns a storage value corresponding to `slot` or undefined
+   */
+  public getContractStorage = async (address: string, slot: bigint, stateRoot: string) => {
+    let storage
+    storage = await this.stateDB.getStorageAt(address, slot, stateRoot)
+    if (storage !== undefined) return storage
+    const contentKey = getStateNetworkContentKey({
+      address: Address.fromString(address),
+      slot,
+      stateRoot: fromHexString(stateRoot),
+    })
+    const lookup = new ContentLookup(this, contentKey)
+    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
+    if (res.content !== undefined) {
+      const proof = ContractStorageTrieProofType.deserialize(res.content)
+      if (proof !== undefined) storage = proof.data
+    }
+    return storage
   }
 }

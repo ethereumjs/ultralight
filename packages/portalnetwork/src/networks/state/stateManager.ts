@@ -59,7 +59,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     return code ?? new Uint8Array()
   }
   getContractStorage = async (address: Address, key: Uint8Array): Promise<Uint8Array> => {
-    const res = await this.state.stateDB.getStorageAt(
+    const res = await this.state.getContractStorage(
       address.toString(),
       bytesToBigInt(key),
       this.stateRoot,

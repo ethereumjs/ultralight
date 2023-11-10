@@ -17,10 +17,14 @@ import { SignableENR } from '@chainsafe/discv5/enr'
 import { multiaddr } from '@multiformats/multiaddr'
 
 import { Trie } from '@ethereumjs/trie'
-import { AccountTrieProofType, ContractByteCodeType } from '../../../src/networks/state/types.js'
+import {
+  AccountTrieProofType,
+  ContractByteCodeType,
+  ContractStorageTrieProofType,
+} from '../../../src/networks/state/types.js'
 import { EVM } from '@ethereumjs/evm'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { fromHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -68,7 +72,7 @@ describe('UltralightStateManager', () => {
     assert.equal(gotAccount?.balance, account.balance, 'retrieved account from state manager')
   })
 
-  it('should store bytecode', async () => {
+  it('should be able to retrieve bytecode necessary to execute evm.runCall', async () => {
     // Greeter contract Solidity code
     // pragma solidity >= 0.8.0;
 
@@ -158,6 +162,65 @@ describe('UltralightStateManager', () => {
       returnedValue,
       'hello',
       'got expected greeting from contract stored in Ultralight State Manager',
+    )
+  })
+  it('should retrieve contract storage slot value from state manager', async () => {
+    const cstp = (await import('./content.json')).CSTP
+    const node = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const network = node.networks.get(NetworkId.StateNetwork) as StateNetwork
+    const usm = new UltralightStateManager(network)
+
+    const storageTrie = new Trie({ useKeyHashing: true })
+    await storageTrie.put(fromHexString(cstp.slot), fromHexString(cstp.value))
+
+    const pk = randomBytes(32)
+    const address = Address.fromPrivateKey(pk)
+    const account = Account.fromAccountData({
+      balance: 0n,
+      nonce: 1n,
+      storageRoot: storageTrie.root(),
+    })
+
+    const trie = new Trie({ useKeyHashing: true })
+    await trie.put(address.toBytes(), account.serialize())
+
+    const proof = await trie.createProof(address.toBytes())
+    const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
+
+    const content = AccountTrieProofType.serialize({
+      balance: account!.balance,
+      nonce: account!.nonce,
+      codeHash: account!.codeHash,
+      storageRoot: account!.storageRoot,
+      witnesses: proof,
+    })
+    const storageContent = ContractStorageTrieProofType.serialize({
+      data: fromHexString(cstp.value),
+      witnesses: storageProof,
+    })
+    await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
+    await network.stateDB.inputContractStorageTrieProof(
+      address.bytes,
+      BigInt(cstp.slot),
+      trie.root(),
+      storageContent,
+    )
+    usm.setStateRoot(trie.root())
+    const res = await usm.getContractStorage(address, fromHexString(cstp.slot))
+    assert.equal(
+      toHexString(res),
+      cstp.value,
+      'successfully retrieved storage slot with state manager',
     )
   })
 })
