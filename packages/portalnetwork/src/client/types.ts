@@ -71,3 +71,18 @@ export interface PortalNetworkMetrics {
   totalBytesSent: ICounter
   currentDBSize: IGauge
 }
+
+/** Borrowed from @ethereumjs/client type definitions
+ * https://github.com/ethereumjs/ethereumjs-monorepo/blob/8384cd445e7f16f527a55a48d23eaae51a3e3ba5/packages/client/src/rpc/types.ts#L1
+ */
+export interface RpcTx {
+  from?: string
+  to?: string
+  gas?: string
+  gasPrice?: string
+  value?: string
+  data?: string
+  maxPriorityFeePerGas?: string
+  maxFeePerGas?: string
+  type?: string
+}
