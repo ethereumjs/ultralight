@@ -300,8 +300,6 @@ describe('recursive find content', () => {
       },
     })
 
-    node1.enableLog('*Portal*')
-    node2.enableLog('*Portal*')
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
