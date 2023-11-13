@@ -13,6 +13,7 @@ import {
   MessageCodes,
   ContentMessageType,
   FoundContent,
+  FindContentMessageType,
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import {
@@ -43,9 +44,12 @@ export class StateNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.stateDB = new StateDB(this)
     this.routingTable.setLogger(this.logger)
-    client.uTP.on(NetworkId.StateNetwork, async (contentKey: Uint8Array, content: Uint8Array) => {
-      await this.store(toHexString(contentKey), toHexString(content))
-    })
+    client.uTP.on(
+      NetworkId.StateNetwork,
+      async (contentType: any, contentKey: Uint8Array, content: Uint8Array) => {
+        await this.store(contentType, toHexString(contentKey.slice(1)), content)
+      },
+    )
   }
 
   /**
@@ -104,7 +108,7 @@ export class StateNetwork extends BaseNetwork {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.store(toHexString(key), toHexString(decoded.value as Uint8Array))
+              await this.store(key[0], toHexString(key.slice(1)), decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -133,9 +137,14 @@ export class StateNetwork extends BaseNetwork {
     }
   }
 
-  public store = async (contentKey: string, content: string) => {
-    this.stateDB.storeContent(fromHexString(contentKey), fromHexString(content))
+  public store = async (
+    contentType: StateNetworkContentType,
+    contentKey: string,
+    content: Uint8Array,
+  ) => {
+    this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
+    this.emit('ContentAdded', contentKey, contentType, toHexString(content))
   }
 
   public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {

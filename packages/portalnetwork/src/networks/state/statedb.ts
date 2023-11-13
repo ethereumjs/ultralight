@@ -7,7 +7,7 @@ import {
   StateNetworkContentType,
 } from './types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Account, MapDB, equalsBytes } from '@ethereumjs/util'
+import { Account, MapDB, concatBytes, equalsBytes } from '@ethereumjs/util'
 import { decodeStateNetworkContentKey } from './util.js'
 import { RLP } from '@ethereumjs/rlp'
 
@@ -46,8 +46,14 @@ export class StateDB {
    * @param content
    * @returns true if content is stored successfully
    */
-  async storeContent(contentKey: Uint8Array, content: Uint8Array) {
-    const decoded = decodeStateNetworkContentKey(contentKey)
+  async storeContent(
+    contentType: StateNetworkContentType,
+    contentKey: Uint8Array,
+    content: Uint8Array,
+  ) {
+    const decoded = decodeStateNetworkContentKey(
+      concatBytes(Uint8Array.from([contentType]), contentKey),
+    )
     this.accounts.add(toHexString(decoded.address))
     'stateRoot' in decoded && this.stateRoots.add(toHexString(decoded.stateRoot))
     switch (decoded.contentType) {

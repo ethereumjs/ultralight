@@ -330,7 +330,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit(NetworkId.StateNetwork, k, _content)
+            this.emit(NetworkId.StateNetwork, k[0], k, _content)
           }
         }
         break
