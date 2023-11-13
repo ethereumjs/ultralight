@@ -34,6 +34,12 @@ export class ETH {
     return res?.balance
   }
 
+  /**
+   * Implements functionality needed for making `eth_call` RPC calls over Portal Network data
+   * @param tx an `RpcTx` object matching the `eth_call` input spec
+   * @param blockNumber a block number as a `bigint`
+   * @returns An execution result as defined by the `eth_call` spec
+   */
   ethCall = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
     this.networkCheck([NetworkId.HistoryNetwork, NetworkId.StateNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
