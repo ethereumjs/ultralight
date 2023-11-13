@@ -55,8 +55,10 @@ describe('ethGetBalance using HistoryNetwork and StateNetwork', async () => {
     const contentKeys = Object.keys(block)
     it(`should store ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
       for await (const key of contentKeys) {
+        const keyBytes = fromHexString(key)
         const storing = await state.stateDB.storeContent(
-          fromHexString(key),
+          keyBytes[0],
+          keyBytes.slice(1),
           fromHexString(block[key]),
         )
         assert.isTrue(storing)

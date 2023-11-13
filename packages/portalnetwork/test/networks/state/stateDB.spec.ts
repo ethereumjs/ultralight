@@ -22,7 +22,7 @@ describe('Input AccountTrieProof', async () => {
   const database = new StateDB()
   const contentKey = fromHexString(testdata.ATP.contentKey)
   const content = fromHexString(testdata.ATP.content)
-  await database.storeContent(contentKey, content)
+  await database.storeContent(contentKey[0], contentKey.slice(1), content)
   const { address, stateRoot } = decodeStateNetworkContentKey(contentKey) as {
     contentType: StateNetworkContentType.AccountTrieProof
     address: Uint8Array
@@ -74,7 +74,7 @@ describe('Input ContractStorageProof', async () => {
   const database = new StateDB()
   const contentKey = fromHexString(testdata.CSTP.contentKey)
   const content = fromHexString(testdata.CSTP.content)
-  await database.storeContent(contentKey, content)
+  await database.storeContent(contentKey[0], contentKey.slice(1), content)
   const { address, stateRoot, slot } = decodeStateNetworkContentKey(contentKey) as {
     contentType: StateNetworkContentType.ContractStorageTrieProof
     address: Uint8Array
@@ -114,7 +114,7 @@ describe('Input ContractByteCode content', async () => {
   const database = new StateDB()
   const contentKey = fromHexString(testdata.BYTECODE.contentKey)
   const content = fromHexString(testdata.BYTECODE.content)
-  await database.storeContent(contentKey, content)
+  await database.storeContent(contentKey[0], contentKey.slice(1), content)
   const { address, codeHash } = decodeStateNetworkContentKey(contentKey) as {
     contentType: StateNetworkContentType.ContractByteCode
     address: Uint8Array
@@ -140,10 +140,14 @@ describe('Input ContractByteCode content', async () => {
 describe('Input whole block of content', async () => {
   const database = new StateDB()
   const contentKeys = Object.keys(block0_db)
-  const s = 0
   it('should store all content by key', async () => {
     for await (const key of contentKeys) {
-      const storing = await database.storeContent(fromHexString(key), fromHexString(block0_db[key]))
+      const keyBytes = fromHexString(key)
+      const storing = await database.storeContent(
+        keyBytes[0],
+        keyBytes.slice(1),
+        fromHexString(block0_db[key]),
+      )
       assert.isTrue(storing)
     }
   })
@@ -222,10 +226,14 @@ describe('Input multiple blocks of content', async () => {
   const blocksMeta = [block0_meta, block1_meta, block2_meta]
   for await (const [idx, block] of [block0_db, block1_db, block2_db].entries()) {
     const contentKeys = Object.keys(block)
-    const s = 0
     it(`should store ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
       for await (const key of contentKeys) {
-        const storing = await database.storeContent(fromHexString(key), fromHexString(block[key]))
+        const keyBytes = fromHexString(key)
+        const storing = await database.storeContent(
+          keyBytes[0],
+          keyBytes.slice(1),
+          fromHexString(block[key]),
+        )
         assert.isTrue(storing)
       }
     })
