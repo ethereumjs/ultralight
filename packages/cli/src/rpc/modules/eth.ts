@@ -88,7 +88,10 @@ export class eth {
     const [address, blockTag] = params
     try {
       const res = await this._client.ETH.ethGetBalance(address, BigInt(blockTag))
-      return res
+      if (res === undefined) {
+        return '0x0'
+      }
+      return bigIntToHex(res)
     } catch (err: any) {
       console.log(err)
       throw {

@@ -209,7 +209,8 @@ const generateStateNetworkContent = async () => {
       address: Address.fromString(add),
       contentType: StateNetworkContentType.AccountTrieProof,
     })
-    return [add, { contentKey, contentId, content }]
+    await toStorage(contentKey, content)
+    //return [add, { contentKey, contentId, content }]
   }
 
   const resultMsg2 = [
