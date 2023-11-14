@@ -35,12 +35,12 @@ interface ContentKeyOpts {
 }
 
 export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
-  if (!opts.address) {
+  if (opts.address === undefined) {
     throw new Error('address is required')
   }
   switch (opts.contentType) {
     case StateNetworkContentType.AccountTrieProof: {
-      if (!opts.stateRoot) {
+      if (opts.stateRoot === undefined) {
         throw new Error('stateRoot is required')
       }
       const key = AccountTrieProofKeyType.serialize({
@@ -50,10 +50,10 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
       return Uint8Array.from([opts.contentType, ...key])
     }
     case StateNetworkContentType.ContractStorageTrieProof: {
-      if (!opts.slot) {
-        throw new Error('slot is required')
+      if (opts.slot === undefined) {
+        throw new Error(`slot is required`)
       }
-      if (!opts.stateRoot) {
+      if (opts.stateRoot === undefined) {
         throw new Error('stateRoot is required')
       }
       const key = ContractStorageTrieKeyType.serialize({
@@ -64,7 +64,7 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
       return Uint8Array.from([opts.contentType, ...key])
     }
     case StateNetworkContentType.ContractByteCode: {
-      if (!opts.codeHash) {
+      if (opts.codeHash === undefined) {
         throw new Error('codeHash required')
       }
       const key = ContractByteCodeKeyType.serialize({
