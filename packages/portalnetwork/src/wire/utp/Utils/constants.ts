@@ -23,7 +23,7 @@ export const AUTO_ACK_SMALLER_THAN_ACK_NUMBER: boolean = true
 export const MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC: number = 120000000
 
 export const DEFAULT_PACKET_SIZE = 512
-export const MAX_PACKET_SIZE: number = 1280
+export const MAX_PACKET_SIZE: number = 1225
 export const MIN_PACKET_SIZE: number = 150
 export const MINIMUM_MTU: number = 576
 export const SEND_IN_BURST: boolean = true

@@ -84,7 +84,7 @@ export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
     case 2:
       return StateNetworkContentType.ContractByteCode
     default:
-      throw new Error('Invalid content key type')
+      throw new Error(`Invalid content key type`)
   }
 }
 

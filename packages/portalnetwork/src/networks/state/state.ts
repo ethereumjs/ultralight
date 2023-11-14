@@ -3,7 +3,7 @@ import { PortalNetwork } from '../../client/client.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { Account, Address, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import { ENR } from '@chainsafe/discv5'
 import { shortId } from '../../util/util.js'
 import { RequestCode } from '../../wire/index.js'
@@ -13,11 +13,16 @@ import {
   MessageCodes,
   ContentMessageType,
   FoundContent,
+  FindContentMessageType,
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
-import { AccountTrieProofType, StateNetworkContentType } from './types.js'
 import {
-  eth_getBalance,
+  AccountTrieProofType,
+  ContractByteCodeType,
+  ContractStorageTrieProofType,
+  StateNetworkContentType,
+} from './types.js'
+import {
   eth_getCode,
   eth_getStorageAt,
   eth_getTransactionCount,
@@ -25,6 +30,8 @@ import {
   eth_estimateGas,
 } from './eth.js'
 import { StateDB } from './statedb.js'
+import { getStateNetworkContentKey } from './util.js'
+import { ContentLookup } from '../contentLookup.js'
 
 export class StateNetwork extends BaseNetwork {
   stateDB: StateDB
@@ -33,44 +40,17 @@ export class StateNetwork extends BaseNetwork {
   logger: Debugger
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
-    this.stateDB = new StateDB(this)
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
+    this.stateDB = new StateDB(this)
     this.routingTable.setLogger(this.logger)
-    client.uTP.on(NetworkId.StateNetwork, async (contentKey: Uint8Array, content: Uint8Array) => {
-      await this.store(toHexString(contentKey), toHexString(content))
-    })
+    client.uTP.on(
+      NetworkId.StateNetwork,
+      async (contentType: any, contentKey: Uint8Array, content: Uint8Array) => {
+        await this.store(contentType, toHexString(contentKey.slice(1)), content)
+      },
+    )
   }
-
-  /**
-   * {@link eth_getBalance}
-   */
-  public eth_getBalance = eth_getBalance.bind(this)
-
-  /**
-   * {@link eth_getStorageAt}
-   */
-  public eth_getStorageAt = eth_getStorageAt.bind(this)
-
-  /**
-   * {@link eth_getTransactionCount}
-   */
-  public eth_getTransactionCount = eth_getTransactionCount.bind(this)
-
-  /**
-   * {@link eth_getCode}
-   */
-  public eth_getCode = eth_getCode.bind(this)
-
-  /**
-   * {@link eth_call}
-   */
-  public eth_call = eth_call.bind(this)
-
-  /**
-   * {@link eth_estimateGas}
-   */
-  public eth_estimateGas = eth_estimateGas.bind(this)
 
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
@@ -128,7 +108,7 @@ export class StateNetwork extends BaseNetwork {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.store(toHexString(key), toHexString(decoded.value as Uint8Array))
+              await this.store(key[0], toHexString(key.slice(1)), decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -157,9 +137,14 @@ export class StateNetwork extends BaseNetwork {
     }
   }
 
-  public store = async (contentKey: string, content: string) => {
-    this.stateDB.storeContent(fromHexString(contentKey), fromHexString(content))
+  public store = async (
+    contentType: StateNetworkContentType,
+    contentKey: string,
+    content: Uint8Array,
+  ) => {
+    this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
+    this.emit('ContentAdded', contentKey, contentType, toHexString(content))
   }
 
   public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
@@ -173,5 +158,92 @@ export class StateNetwork extends BaseNetwork {
       storageRoot: account!.storageRoot,
       witnesses: proof,
     })
+  }
+
+  /**
+   * Retrieve an account from the state network
+   * @param address the hex prefixed string representation of an address
+   * @param stateRoot the stateRoot from the block at which you wish to retrieve an account's state
+   * @returns an account corresponding to `address` or undefined if not found
+   */
+  public getAccount = async (address: string, stateRoot: string) => {
+    let account
+    account = await this.stateDB.getAccount(address, stateRoot)
+    if (account !== undefined) return account
+    const contentKey = getStateNetworkContentKey({
+      address: Address.fromString(address),
+      stateRoot: fromHexString(stateRoot),
+      contentType: StateNetworkContentType.AccountTrieProof,
+    })
+    const lookup = new ContentLookup(this, contentKey)
+    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
+    if (res.content !== undefined) {
+      const decoded = AccountTrieProofType.deserialize(res.content)
+      account = Account.fromAccountData({
+        balance: decoded.balance,
+        nonce: decoded.nonce,
+        codeHash: decoded.codeHash,
+        storageRoot: decoded.storageRoot,
+      })
+    }
+    return account
+  }
+
+  /**
+   * Retrieve bytecode for a specific address
+   * @param codeHash codehash corresponding to the bytecode sought
+   * @param address for the bytecode being sought
+   * @returns returns the bytecode as a `Uint8Array` or else undefined
+   */
+  public getBytecode = async (codeHash: string, address: string) => {
+    let bytecode
+    bytecode = await this.stateDB.getContractByteCode(codeHash)
+    if (bytecode !== undefined) return bytecode
+    const contentKey = getStateNetworkContentKey({
+      codeHash: fromHexString(codeHash),
+      address: Address.fromString(address),
+      contentType: StateNetworkContentType.ContractByteCode,
+    })
+    const lookup = new ContentLookup(this, contentKey)
+    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
+    if (res.content !== undefined) {
+      bytecode = ContractByteCodeType.deserialize(res.content)
+    }
+    return bytecode
+  }
+
+  /**
+   * Retrieve a storage slot for a given account with a given stateroot
+   * @param address address for storage slot sought
+   * @param slot storage slot sought
+   * @param stateRoot stateRoot corresponding to block at which storage slot is sought
+   * @returns a storage value corresponding to `slot` or undefined
+   */
+  public getContractStorage = async (
+    address: string,
+    slot: bigint,
+    stateRoot: string,
+  ): Promise<Uint8Array | undefined> => {
+    let storage
+    try {
+      storage = await this.stateDB.getStorageAt(address, slot, stateRoot)
+      if (storage !== undefined) return storage
+    } catch {
+      this.logger(`Content not found locally.  Requesting from network.`)
+    }
+    const contentKey = getStateNetworkContentKey({
+      contentType: StateNetworkContentType.ContractStorageTrieProof,
+      address: Address.fromString(address),
+      slot,
+      stateRoot: fromHexString(stateRoot),
+    })
+    const lookup = new ContentLookup(this, contentKey)
+    let res = await lookup.startLookup()
+    if (res !== undefined) {
+      res = res as { content: Uint8Array; utp: boolean }
+      const proof = ContractStorageTrieProofType.deserialize(res.content)
+      if (proof !== undefined) storage = proof.data
+    }
+    return storage
   }
 }

@@ -148,11 +148,11 @@ it('gossip test', async () => {
 it('FindContent', async () => {
   const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3070`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3071`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
@@ -216,11 +216,11 @@ it('FindContent', async () => {
 it('eth_getBlockByHash', async () => {
   const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3080`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3081`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
@@ -277,11 +277,11 @@ it('eth_getBlockByHash', async () => {
 it('eth_getBlockByNumber', async () => {
   const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
   enr1.setLocationMultiaddr(initMa)
   const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
   const enr2 = SignableENR.createFromPeerId(id2)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,

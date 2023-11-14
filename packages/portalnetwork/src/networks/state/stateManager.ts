@@ -2,6 +2,7 @@ import { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@eth
 import { Address, Account, bytesToBigInt, bytesToHex } from '@ethereumjs/util'
 
 import { StateNetwork } from './state.js'
+import { toHexString } from '@chainsafe/ssz'
 
 export class UltralightStateManager implements EVMStateManagerInterface {
   originalStorageCache: {
@@ -34,7 +35,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     return new UltralightStateManager(this.state)
   }
   getAccount(address: Address): Promise<Account | undefined> {
-    return this.state.stateDB.getAccount(address.toString(), this.stateRoot)
+    return this.state.getAccount(address.toString(), this.stateRoot)
   }
   putAccount = async (address: Address, account?: Account | undefined): Promise<void> => {
     return undefined
@@ -52,11 +53,13 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     throw new Error('Method not implemented.')
   }
   getContractCode = async (address: Address): Promise<Uint8Array> => {
-    const code = await this.state.stateDB.getCode(address.toString(), this.stateRoot)
+    const account = await this.state.getAccount(address.toString(), this.stateRoot)
+    const code =
+      account && (await this.state.getBytecode(toHexString(account.codeHash), address.toString()))
     return code ?? new Uint8Array()
   }
   getContractStorage = async (address: Address, key: Uint8Array): Promise<Uint8Array> => {
-    const res = await this.state.stateDB.getStorageAt(
+    const res = await this.state.getContractStorage(
       address.toString(),
       bytesToBigInt(key),
       this.stateRoot,

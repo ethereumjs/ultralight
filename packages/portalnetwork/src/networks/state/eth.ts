@@ -3,21 +3,6 @@ import { StateNetwork } from './state.js'
 /**
  *
  * @param this StateNetwork
- * @param address address to check for balance
- * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
- * @returns the balance of the account of given address
- */
-export async function eth_getBalance(
-  this: StateNetwork,
-  address: string,
-  blockTag?: string,
-): Promise<bigint | undefined> {
-  return undefined
-}
-
-/**
- *
- * @param this StateNetwork
  * @param address address of the storage
  * @param slot integer of the position in the storage
  * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
