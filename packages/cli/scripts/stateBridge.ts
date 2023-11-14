@@ -14,6 +14,7 @@ import {
 } from 'portalnetwork'
 import { Address } from '@ethereumjs/util'
 import { AccessList } from '@ethereumjs/tx'
+import { Block } from '@ethereumjs/block'
 
 const config = {
   apiKey: workerData.KEY,
@@ -43,17 +44,18 @@ const store = async (contentKey: Uint8Array, content: Uint8Array) => {
   parentPort?.postMessage(`stored: ${stored.result}`)
 }
 
-const index = async (blockNum: number, blockHash: string) => {
+const index = async (block: Block) => {
   const client = jayson.Client.http({
     host: workerData.host,
     port: workerData.port,
   })
-  await client.request('ultralight_indexBlock', [
-    '0x' + (blockNum.toString(16)),
-    blockHash,
+  await client.request('ultralight_addBlockToHistory', [
+    toHexString(block.header.hash()),
+    toHexString(block.serialize()),
   ])
 
-  parentPort?.postMessage(`indexed: ${blockNum}`)
+  await client.request('ultralight_indexBlock', ['0x' + block.header.number.toString(16), toHexString(block.header.hash())])
+  parentPort?.postMessage(`indexed: ${block.header.number}`)
 }
 const gossip = async (contentKey: Uint8Array, content: Uint8Array) => {
   const client = jayson.Client.http({
@@ -85,6 +87,10 @@ const generateStateNetworkContent = async () => {
   const stateroot = latest.result.stateRoot
   const receipts = await alchemy.core.getTransactionReceipts({ blockNumber: number })
   const block = await alchemy.core.getBlockWithTransactions(number)
+  
+  const blockJson = await alchemy.core.send('eth_getBlockByNumber', [number.toString(16), false])
+  const ethJSBlock = Block.fromRPC(blockJson, undefined, { setHardfork: true})
+  await index(ethJSBlock)
   let totalCSP = 0
   let totalBytes_storage = 0
   const accessLists: AccessList[] = block.transactions
@@ -227,7 +233,7 @@ const generateStateNetworkContent = async () => {
   ].join('/')
 
   parentPort?.postMessage(resultMsg2 + '\r')
-
+  
   return number
 }
 
