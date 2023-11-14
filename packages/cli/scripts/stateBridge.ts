@@ -20,6 +20,7 @@ const config = {
   network: Network.ETH_MAINNET,
   url: `https://eth-mainnet.alchemyapi.io/v2/${workerData.KEY}`,
 }
+
 const alchemy = new Alchemy({
   ...config,
 })
@@ -42,6 +43,18 @@ const store = async (contentKey: Uint8Array, content: Uint8Array) => {
   parentPort?.postMessage(`stored: ${stored.result}`)
 }
 
+const index = async (blockNum: number, blockHash: string) => {
+  const client = jayson.Client.http({
+    host: workerData.host,
+    port: workerData.port,
+  })
+  await client.request('ultralight_indexBlock', [
+    '0x' + (blockNum.toString(16)),
+    blockHash,
+  ])
+
+  parentPort?.postMessage(`indexed: ${blockNum}`)
+}
 const gossip = async (contentKey: Uint8Array, content: Uint8Array) => {
   const client = jayson.Client.http({
     host: workerData.host ?? 'localhost',
@@ -86,8 +99,9 @@ const generateStateNetworkContent = async () => {
         number,
       ])
       for (const p of storageProof) {
-        const contentkey = ContractStorageTrieKeyType.serialize({
-          address: fromHexString(
+        const contentkey = getStateNetworkContentKey({
+          contentType: StateNetworkContentType.ContractStorageTrieProof,
+          address: Address.fromString(
             contract.address.length % 2 === 0
               ? contract.address
               : '0x0' + contract.address.slice(2),
@@ -136,8 +150,9 @@ const generateStateNetworkContent = async () => {
       toStorage(accountProofContentKey, accountProofContent)
       const codeHash = accountProof.codeHash
       const bytecode = await alchemy.core.getCode(c.contractAddress, number)
-      const bytecodeContentkey = ContractByteCodeKeyType.serialize({
-        address: fromHexString(c.contractAddress),
+      const bytecodeContentkey = getStateNetworkContentKey({
+        contentType: StateNetworkContentType.ContractByteCode,
+        address: Address.fromString(c.contractAddress),
         codeHash: fromHexString(codeHash),
       })
       const contractBytecode = ContractByteCodeType.serialize(fromHexString(bytecode))

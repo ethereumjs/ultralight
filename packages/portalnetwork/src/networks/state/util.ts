@@ -50,8 +50,11 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
       return Uint8Array.from([opts.contentType, ...key])
     }
     case StateNetworkContentType.ContractStorageTrieProof: {
-      if (!opts.slot || !opts.stateRoot) {
-        throw new Error('required fields missing')
+      if (!opts.slot) {
+        throw new Error('slot is required')
+      }
+      if (!opts.stateRoot) {
+        throw new Error('stateRoot is required')
       }
       const key = ContractStorageTrieKeyType.serialize({
         address: opts.address.toBytes(),
