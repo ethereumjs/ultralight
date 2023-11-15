@@ -25,6 +25,7 @@ export function encodeWithVariantPrefix(contents: Uint8Array[]): Uint8Array {
 type length = number
 type offset = number
 type Prefix = { length: length; offset: offset }
+//eslint-disable-next-line
 export default Prefix
 /**
  *

@@ -48,7 +48,7 @@ export class PortalNetworkUTP extends EventEmitter {
     const requestKey = this.getRequestKey(connectionId, peerId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
-      request.socket.sendResetPacket()
+      void request.socket.sendResetPacket()
       this.logger.extend('CLOSING')(`Closing uTP request with ${peerId}`)
       request.close()
       this.openContentRequest.delete(requestKey)
@@ -245,7 +245,7 @@ export class PortalNetworkUTP extends EventEmitter {
         packet.header.ackNr + 1
       }`,
     )
-    if (acked) {
+    if (acked !== undefined) {
       request.socket.updateRTT(packet.header.timestampMicroseconds, acked)
       request.socket.ackNrs.push(acked)
     }

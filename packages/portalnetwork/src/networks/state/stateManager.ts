@@ -20,16 +20,16 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this.stateRoot = ''
     this.stateRootBytes = new Uint8Array()
   }
-  dumpStorage(address: Address): Promise<StorageDump> {
+  dumpStorage(_address: Address): Promise<StorageDump> {
     throw new Error('Method not implemented.')
   }
-  dumpStorageRange(address: Address, startKey: bigint, limit: number): Promise<StorageRange> {
+  dumpStorageRange(_address: Address, _startKey: bigint, _limit: number): Promise<StorageRange> {
     throw new Error('Method not implemented.')
   }
-  generateCanonicalGenesis(initState: any): Promise<void> {
+  generateCanonicalGenesis(_initState: any): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  getProof(address: Address, storageSlots?: Uint8Array[] | undefined): Promise<Proof> {
+  getProof(_address: Address, _storageSlots?: Uint8Array[] | undefined): Promise<Proof> {
     throw new Error('Method not implemented.')
   }
   shallowCopy(): EVMStateManagerInterface {
@@ -38,19 +38,19 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   getAccount(address: Address): Promise<Account | undefined> {
     return this.state.getAccount(address.toString(), this.stateRoot)
   }
-  putAccount = async (address: Address, account?: Account | undefined): Promise<void> => {
+  putAccount = async (_address: Address, _account?: Account | undefined): Promise<void> => {
     return undefined
   }
-  deleteAccount(address: Address): Promise<void> {
+  deleteAccount(_address: Address): Promise<void> {
     throw new Error('Method not implemented.')
   }
   modifyAccountFields(
-    address: Address,
-    accountFields: Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>,
+    _address: Address,
+    _accountFields: Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>,
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  putContractCode(address: Address, value: Uint8Array): Promise<void> {
+  putContractCode(_address: Address, _value: Uint8Array): Promise<void> {
     throw new Error('Method not implemented.')
   }
   getContractCode = async (address: Address): Promise<Uint8Array> => {
@@ -67,10 +67,10 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     )
     return res ?? new Uint8Array()
   }
-  putContractStorage(address: Address, key: Uint8Array, value: Uint8Array): Promise<void> {
+  putContractStorage(_address: Address, _key: Uint8Array, _value: Uint8Array): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  clearContractStorage(address: Address): Promise<void> {
+  clearContractStorage(_address: Address): Promise<void> {
     throw new Error('Method not implemented.')
   }
   checkpoint = async (): Promise<void> => {
@@ -83,11 +83,14 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   getStateRoot = async (): Promise<Uint8Array> => {
     return this.stateRootBytes
   }
-  setStateRoot = async (stateRoot: Uint8Array, clearCache?: boolean | undefined): Promise<void> => {
+  setStateRoot = async (
+    stateRoot: Uint8Array,
+    _clearCache?: boolean | undefined,
+  ): Promise<void> => {
     this.stateRootBytes = stateRoot
     this.stateRoot = bytesToHex(stateRoot)
   }
   hasStateRoot = async (root: Uint8Array): Promise<boolean> => {
-    return (await this.state.stateDB.getAccountTrie(bytesToHex(root))) !== undefined
+    return this.state.stateDB.getAccountTrie(bytesToHex(root)) !== undefined
   }
 }

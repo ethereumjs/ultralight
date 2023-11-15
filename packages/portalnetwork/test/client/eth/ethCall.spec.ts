@@ -78,17 +78,9 @@ describe('ethCall', () => {
     const proof = await trie.createProof(address.toBytes())
     const zeroProof = await trie.createProof(zero.bytes)
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     const zeroContent = AccountTrieProofType.serialize({
-      balance: zeroAccount!.balance,
-      nonce: zeroAccount!.nonce,
-      codeHash: zeroAccount!.codeHash,
-      storageRoot: zeroAccount!.storageRoot,
       witnesses: zeroProof,
     })
     await state.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -96,7 +88,7 @@ describe('ethCall', () => {
     const byteCodeContent = ContractByteCodeType.serialize(byteCode)
     await state.stateDB.inputContractByteCode(address.toBytes(), codehash, byteCodeContent)
 
-    usm.setStateRoot(trie.root())
+    await usm.setStateRoot(trie.root())
     const block = Block.fromBlockData(
       { header: { stateRoot: trie.root(), number: 15537394n } },
       { setHardfork: true },
@@ -106,7 +98,7 @@ describe('ethCall', () => {
       toHexString(block.header.hash()),
       history,
     )
-    history.indexBlockhash(block.header.number, toHexString(block.header.hash()))
+    await history.indexBlockhash(block.header.number, toHexString(block.header.hash()))
 
     const greeterInput = '0xcfae3217'
 

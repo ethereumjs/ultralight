@@ -1897,5 +1897,5 @@ const accumulator = [
   '0x3f81607c8cb3f0448a11cab8df0e504b605581f4891a9a35bd9c0dd37a71834f',
   '0xe6ebe562c89bc8ecb94dc9b2889a27a816ec05d3d6bd1625acad72227071e721',
 ]
-
+//eslint-disable-next-line
 export default accumulator
