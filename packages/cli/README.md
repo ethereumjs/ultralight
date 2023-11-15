@@ -1,6 +1,6 @@
 # Ultralight CLI
 
-This is an experimental implementation an Ultralight node packaged up as a NodeJS application and run from the command line.  
+This is an experimental implementation an Ultralight node packaged as a NodeJS application and run from the command line.  
 
 ## Usage
 
