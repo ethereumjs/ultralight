@@ -1,10 +1,13 @@
-import { NodeId, distance } from '@chainsafe/discv5'
+import { distance } from '@chainsafe/discv5'
 import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
-import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
-import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
+
 import { serializedContentKeyToContentId } from '../index.js'
-import { NetworkId } from '../index.js'
+
+import type { NetworkId } from '../index.js'
+import type { NodeId } from '@chainsafe/discv5'
+import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
+import type { Debugger } from 'debug'
 
 export class DBManager {
   nodeId: string

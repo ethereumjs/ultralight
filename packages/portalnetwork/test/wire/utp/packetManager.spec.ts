@@ -1,5 +1,5 @@
 import debug from 'debug'
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
 
 import { DEFAULT_PACKET_SIZE, PacketManager } from '../../../src/index.js'
 

@@ -1,10 +1,13 @@
-import { ENR, distance, NodeId } from '@chainsafe/discv5'
+import { ENR, distance } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
-import { Debugger } from 'debug'
-import { serializedContentKeyToContentId, shortId } from '../util/index.js'
-import { HistoryNetworkContentType } from './history/types.js'
-import { BaseNetwork } from './network.js'
 import { hexToBytes } from '@ethereumjs/util'
+
+import { serializedContentKeyToContentId, shortId } from '../util/index.js'
+
+import type { HistoryNetworkContentType } from './history/types.js'
+import type { BaseNetwork } from './network.js'
+import type { NodeId } from '@chainsafe/discv5'
+import type { Debugger } from 'debug'
 
 type lookupPeer = {
   nodeId: NodeId

@@ -1,10 +1,11 @@
-import {
+import { createPacketHeader } from './index.js'
+
+import type {
   PacketHeader,
-  createPacketHeader,
-  SelectiveAckHeader,
-  PacketType,
   PacketInput,
   PacketOptions,
+  PacketType,
+  SelectiveAckHeader,
 } from './index.js'
 
 export class Packet<T extends PacketType> {

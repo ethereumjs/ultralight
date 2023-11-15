@@ -1,9 +1,10 @@
 import { ByteVectorType } from '@chainsafe/ssz'
 import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { HistoryNetwork } from './history'
-import { StateNetwork } from './state'
-import { BeaconLightClientNetwork } from './beacon'
+
+import type { BeaconLightClientNetwork } from './beacon'
+import type { HistoryNetwork } from './history'
+import type { StateNetwork } from './state'
 
 const BYTE_SIZE = 256
 

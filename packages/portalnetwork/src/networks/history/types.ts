@@ -8,9 +8,11 @@ import {
   UnionType,
   VectorCompositeType,
 } from '@chainsafe/ssz'
-import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
-import { Bytes32Type } from '../types.js'
 import { MAX_WITHDRAWALS_PER_PAYLOAD } from '@lodestar/params'
+
+import { Bytes32Type } from '../types.js'
+
+import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
 /* ----------------- Constants ----------- */
 // number of header records in a single epoch

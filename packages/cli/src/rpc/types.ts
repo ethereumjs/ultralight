@@ -1,8 +1,10 @@
-import { Block } from '@ethereumjs/block'
-import { JsonTx, TypedTransaction } from '@ethereumjs/tx'
-import { Address, bigIntToHex, bytesToHex, intToHex } from '@ethereumjs/util'
-import { Log } from 'portalnetwork/src/networks/index.js'
-import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
+import { bigIntToHex, bytesToHex, intToHex } from '@ethereumjs/util'
+
+import type { Block } from '@ethereumjs/block'
+import type { JsonTx, TypedTransaction } from '@ethereumjs/tx'
+import type { Address } from '@ethereumjs/util'
+import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
+import type { Log } from 'portalnetwork/src/networks/index.js'
 
 export type GetLogsParams = {
   fromBlock?: string // QUANTITY, block number or "earliest" or "latest" (default: "latest")

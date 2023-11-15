@@ -1,18 +1,19 @@
-import { createProof, SingleProof, ProofType } from '@chainsafe/persistent-merkle-tree'
-
+import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { BlockHeader } from '@ethereumjs/block'
-import {
-  blockNumberToGindex,
-  EpochAccumulator,
-  EPOCH_SIZE,
-  getContentKey,
-  HeaderProofInterface,
-  HeaderRecord,
-  HistoryNetworkContentType,
-  HistoryNetwork,
-} from '../index.js'
-import accumulator from './data/master.js'
 import { hexToBytes } from '@ethereumjs/util'
+
+import {
+  EPOCH_SIZE,
+  EpochAccumulator,
+  HistoryNetworkContentType,
+  blockNumberToGindex,
+  getContentKey,
+} from '../index.js'
+
+import accumulator from './data/master.js'
+
+import type { HeaderProofInterface, HeaderRecord, HistoryNetwork } from '../index.js'
+import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
 
 const mainnetHistoricalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
   return hexToBytes(hash)

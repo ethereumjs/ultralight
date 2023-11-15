@@ -1,5 +1,7 @@
-import { ENR, KademliaRoutingTable, NodeId } from '@chainsafe/discv5'
-import { Debugger } from 'debug'
+import { KademliaRoutingTable } from '@chainsafe/discv5'
+
+import type { ENR, NodeId } from '@chainsafe/discv5'
+import type { Debugger } from 'debug'
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>

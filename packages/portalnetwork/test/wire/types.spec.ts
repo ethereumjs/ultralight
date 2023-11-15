@@ -1,13 +1,14 @@
-import { describe, assert, it } from 'vitest'
-import {
-  ContentMessageType,
-  MessageCodes,
-  PortalWireMessageType,
-  PingPongCustomDataType,
-} from '../../src/wire/types.js'
 import { ENR } from '@chainsafe/discv5'
 import { BitArray, toHexString } from '@chainsafe/ssz'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { assert, describe, it } from 'vitest'
+
+import {
+  ContentMessageType,
+  MessageCodes,
+  PingPongCustomDataType,
+  PortalWireMessageType,
+} from '../../src/wire/types.js'
 
 describe('message encoding should match test vectors', () => {
   // Validate PING/PONG message encoding
@@ -19,7 +20,7 @@ describe('message encoding should match test vectors', () => {
     payload = PortalWireMessageType.serialize({
       selector: MessageCodes.PING,
       value: {
-        enrSeq: enrSeq,
+        enrSeq,
         customPayload: PingPongCustomDataType.serialize({ radius: dataRadius }),
       },
     })
@@ -63,8 +64,8 @@ describe('message encoding should match test vectors', () => {
     payload = PortalWireMessageType.serialize({
       selector: MessageCodes.NODES,
       value: {
-        total: total,
-        enrs: enrs,
+        total,
+        enrs,
       },
     })
     testVector =
@@ -78,7 +79,7 @@ describe('message encoding should match test vectors', () => {
   it('should encode FINDCONTENT message correctly', () => {
     payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDCONTENT,
-      value: { contentKey: contentKey },
+      value: { contentKey },
     })
     testVector = '0x0404000000706f7274616c'
     assert.equal(toHexString(payload), testVector, 'find content message encoded correctly')
@@ -101,7 +102,7 @@ describe('message encoding should match test vectors', () => {
     const contentKeys = [hexToBytes('0x010203')]
     payload = PortalWireMessageType.serialize({
       selector: MessageCodes.OFFER,
-      value: { contentKeys: contentKeys },
+      value: { contentKeys },
     })
     testVector = '0x060400000004000000010203'
     assert.equal(toHexString(payload), testVector, 'offer message encodes correctly')
@@ -114,7 +115,7 @@ describe('message encoding should match test vectors', () => {
     payload = PortalWireMessageType.serialize({
       selector: MessageCodes.ACCEPT,
       value: {
-        connectionId: connectionId,
+        connectionId,
         contentKeys: acceptMessageContentKeys,
       },
     })

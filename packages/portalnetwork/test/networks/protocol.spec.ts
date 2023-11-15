@@ -1,24 +1,24 @@
 import { ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
+import { hexToBytes } from '@ethereumjs/util'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-import { describe, it, assert } from 'vitest'
 import * as td from 'testdouble'
+import { assert, describe, it } from 'vitest'
+
 import {
-  generateRandomNodeIdAtDistance,
+  ContentRequest,
   MessageCodes,
-  NodesMessage,
+  NetworkId,
   PingPongCustomDataType,
   PortalNetwork,
   PortalWireMessageType,
-  NetworkId,
   TransportLayer,
-  BaseNetwork,
-  ContentRequest,
-  HistoryNetwork,
+  generateRandomNodeIdAtDistance,
 } from '../../src/index.js'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { BitArray } from '@chainsafe/ssz'
-import { hexToBytes } from '@ethereumjs/util'
+
+import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { BitArray } from '@chainsafe/ssz'
 
 describe('network wire message tests', async () => {
   const node = await PortalNetwork.create({

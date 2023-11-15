@@ -1,17 +1,23 @@
-import debug, { Debugger } from 'debug'
+import { getSocketAddressOnENR } from '@chainsafe/discv5'
+import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
+import { multiaddr as ma } from '@multiformats/multiaddr'
+import debug from 'debug'
 import { EventEmitter } from 'events'
-import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
-import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
-import {
+import WebSocket from 'isomorphic-ws'
+import WebSocketAsPromised from 'websocket-as-promised'
+
+import type { ENR, SocketAddress } from '@chainsafe/discv5'
+import type {
   IPMode,
   IRemoteInfo,
   ITransportEvents,
   ITransportService,
 } from '@chainsafe/discv5/lib/transport/types.js'
-import WebSocketAsPromised from 'websocket-as-promised'
-import WebSocket from 'isomorphic-ws'
-import StrictEventEmitter from 'strict-event-emitter-types/types/src'
-import { ENR, SocketAddress, getSocketAddressOnENR } from '@chainsafe/discv5'
+import type { IPacket } from '@chainsafe/discv5/packet'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type { Debugger } from 'debug'
+import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
+
 const log = debug('discv5:transport')
 
 interface IWebSocketTransportEvents extends ITransportEvents {

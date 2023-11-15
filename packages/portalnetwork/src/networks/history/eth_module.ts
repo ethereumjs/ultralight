@@ -1,17 +1,21 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block } from '@ethereumjs/block'
+import { hexToBytes } from '@ethereumjs/util'
+
+import { ContentLookup } from '../index.js'
+
 import {
-  EpochAccumulator,
-  reassembleBlock,
-  HistoryNetwork,
   BlockBodyContentType,
-  getContentKey,
+  BlockHeaderWithProof,
+  EpochAccumulator,
   HistoryNetworkContentType,
   epochRootByBlocknumber,
-  BlockHeaderWithProof,
+  getContentKey,
+  reassembleBlock,
 } from './index.js'
-import { ContentLookup, ContentLookupResponse } from '../index.js'
-import { hexToBytes } from '@ethereumjs/util'
+
+import type { HistoryNetwork } from './index.js'
+import type { ContentLookupResponse } from '../index.js'
+import type { Block } from '@ethereumjs/block'
 
 export class ETH {
   network: HistoryNetwork

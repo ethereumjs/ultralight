@@ -1,4 +1,4 @@
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
 
 describe.todo('Receipt Manager Tests', () => {
   it.todo('should be a real test someday', () => {

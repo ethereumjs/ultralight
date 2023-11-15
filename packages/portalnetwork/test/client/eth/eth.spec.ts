@@ -1,8 +1,10 @@
 import { assert, describe, it } from 'vitest'
+
 import { PortalNetwork } from '../../../src/client/client.js'
 import { NetworkId } from '../../../src/networks/types.js'
-import { HistoryNetwork } from '../../../src/networks/history/history.js'
-import { StateNetwork } from '../../../src/networks/state/state.js'
+
+import type { HistoryNetwork } from '../../../src/networks/history/history.js'
+import type { StateNetwork } from '../../../src/networks/state/state.js'
 
 describe('ETH class base level API checks', async () => {
   const ultralight = await PortalNetwork.create({

@@ -1,17 +1,18 @@
+import { hexToBytes } from '@ethereumjs/util'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
+
 import {
+  ConnectionState,
+  HeaderExtension,
+  NetworkId,
+  Packet,
   PacketType,
   UtpSocket,
   UtpSocketType,
-  HeaderExtension,
   toHexString,
-  Packet,
-  ConnectionState,
-  NetworkId,
 } from '../../../src/index.js'
-import { hexToBytes } from '@ethereumjs/util'
 
 const sampleSize = 50000
 const content = randomBytes(sampleSize)
@@ -22,7 +23,7 @@ const writeId = 2222
 
 const _read = (networkId: NetworkId) =>
   new UtpSocket({
-    networkId: networkId,
+    networkId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
     remoteAddress: '1234',
@@ -33,7 +34,7 @@ const _read = (networkId: NetworkId) =>
   })
 const _write = (networkId: NetworkId) =>
   new UtpSocket({
-    networkId: networkId,
+    networkId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
     remoteAddress: '1234',
@@ -41,7 +42,7 @@ const _write = (networkId: NetworkId) =>
     sndId: readId,
     logger: debug('test'),
     type: UtpSocketType.WRITE,
-    content: content,
+    content,
   })
 describe('socket constructor', () => {
   const read = _read(NetworkId.HistoryNetwork)

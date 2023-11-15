@@ -1,13 +1,15 @@
-import { Uint16, Uint32, Uint8 } from '../index.js'
 import { VERSION } from '../Utils/constants.js'
+
 import { SelectiveAckHeaderExtension } from './Extensions.js'
-import {
+
+import type {
   HeaderInput,
   ISelectiveAckHeaderInput,
   MicroSeconds,
   PacketHeader,
   PacketType,
 } from './PacketTyping.js'
+import type { Uint16, Uint32, Uint8 } from '../index.js'
 
 abstract class Header<T extends PacketType> {
   pType: PacketType

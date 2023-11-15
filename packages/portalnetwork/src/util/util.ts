@@ -1,12 +1,13 @@
 import { digest } from '@chainsafe/as-sha256'
-import { ENR, NodeId, fromHex, toHex } from '@chainsafe/discv5'
+import { fromHex, toHex } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
 import { bytesToUtf8 } from '@ethereumjs/util'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import { promises as fs } from 'fs'
-
 import * as path from 'path'
-import { PortalNetworkRoutingTable } from '../client'
+
+import type { PortalNetworkRoutingTable } from '../client'
+import type { ENR, NodeId } from '@chainsafe/discv5'
 
 export const MEGABYTE = 1048576
 

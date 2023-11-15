@@ -1,14 +1,7 @@
-import {
-  Bytes32TimeStamp,
-  HeaderExtension,
-  HeaderInput,
-  ICreate,
-  Packet,
-  PacketOptions,
-  PacketType,
-  CongestionControl,
-} from '../index.js'
-import { Debugger } from 'debug'
+import { Bytes32TimeStamp, CongestionControl, HeaderExtension, Packet } from '../index.js'
+
+import type { HeaderInput, ICreate, PacketOptions, PacketType } from '../index.js'
+import type { Debugger } from 'debug'
 
 export class PacketManager {
   logger: Debugger

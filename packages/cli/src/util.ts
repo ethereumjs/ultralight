@@ -1,17 +1,17 @@
 import { BlockHeader } from '@ethereumjs/block'
 import { RLP } from '@ethereumjs/rlp'
 import { TransactionFactory } from '@ethereumjs/tx'
-import { Enr } from './rpc/schema/types.js'
 import {
-  BaseNetwork,
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  NetworkId,
   sszReceiptType,
   sszUnclesType,
   toHexString,
 } from 'portalnetwork'
+
+import type { Enr } from './rpc/schema/types.js'
+import type { BaseNetwork, NetworkId } from 'portalnetwork'
 
 export const hasValidEnrPrefix = (enr: Enr) => {
   return enr.startsWith('enr:')

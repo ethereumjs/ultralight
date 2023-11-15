@@ -1,41 +1,46 @@
-import { distance, ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
-import { ITalkReqMessage } from '@chainsafe/discv5/message'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { toHexString, BitArray } from '@chainsafe/ssz'
-import { Union } from '@chainsafe/ssz/lib/interface.js'
-import { Debugger } from 'debug'
+import { ENR, EntryStatus, distance } from '@chainsafe/discv5'
+import { BitArray, toHexString } from '@chainsafe/ssz'
+import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { EventEmitter } from 'events'
+
 import {
-  randUint16,
-  MAX_PACKET_SIZE,
-  arrayByteLength,
-  PortalNetworkMetrics,
-  NetworkId,
-  PortalNetworkRoutingTable,
-  shortId,
-  serializedContentKeyToContentId,
-  generateRandomNodeIdAtDistance,
-  AcceptMessage,
   ContentMessageType,
+  MAX_PACKET_SIZE,
+  MessageCodes,
+  NodeLookup,
+  PingPongCustomDataType,
+  PortalNetworkRoutingTable,
+  PortalWireMessageType,
+  RequestCode,
+  arrayByteLength,
+  encodeWithVariantPrefix,
+  generateRandomNodeIdAtDistance,
+  randUint16,
+  serializedContentKeyToContentId,
+  shortId,
+} from '../index.js'
+import { FoundContent } from '../wire/types.js'
+
+import type {
+  AcceptMessage,
+  ContentRequest,
   FindContentMessage,
   FindNodesMessage,
-  MessageCodes,
+  INewRequest,
+  NetworkId,
   NodesMessage,
   OfferMessage,
   PingMessage,
-  PingPongCustomDataType,
   PongMessage,
-  PortalWireMessageType,
-  RequestCode,
-  NodeLookup,
-  StateNetworkRoutingTable,
-  encodeWithVariantPrefix,
-  INewRequest,
-  ContentRequest,
   PortalNetwork,
+  PortalNetworkMetrics,
+  StateNetworkRoutingTable,
 } from '../index.js'
-import { FoundContent } from '../wire/types.js'
-import { EventEmitter } from 'events'
-import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
+import type { SignableENR } from '@chainsafe/discv5'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { ITalkReqMessage } from '@chainsafe/discv5/message'
+import type { Union } from '@chainsafe/ssz/lib/interface.js'
+import type { Debugger } from 'debug'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
@@ -222,7 +227,7 @@ export abstract class BaseNetwork extends EventEmitter {
    */
   public sendFindNodes = async (dstId: string, distances: number[]) => {
     this.metrics?.findNodesMessagesSent.inc()
-    const findNodesMsg: FindNodesMessage = { distances: distances }
+    const findNodesMsg: FindNodesMessage = { distances }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
@@ -563,7 +568,7 @@ export abstract class BaseNetwork extends EventEmitter {
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
-        value: value,
+        value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
       this.sendResponse(
@@ -677,7 +682,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.livenessCheck()
     const notFullBuckets = this.routingTable.buckets
       .map((bucket, idx) => {
-        return { bucket: bucket, distance: idx }
+        return { bucket, distance: idx }
       })
       .filter((pair) => pair.bucket.size() < 16)
       .reverse()

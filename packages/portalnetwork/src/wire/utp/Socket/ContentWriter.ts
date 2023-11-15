@@ -1,6 +1,8 @@
-import { Debugger } from 'debug'
-import { BUFFER_SIZE, PacketType } from '../Packets/PacketTyping.js'
 import { EventEmitter } from 'events'
+
+import { BUFFER_SIZE, PacketType } from '../Packets/PacketTyping.js'
+
+import type { Debugger } from 'debug'
 export default class ContentWriter extends EventEmitter {
   logger: Debugger
   startingSeqNr: number

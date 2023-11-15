@@ -1,28 +1,28 @@
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { multiaddr } from '@multiformats/multiaddr'
-import { describe, it, assert, vi } from 'vitest'
-import {
-  PortalNetwork,
-  NetworkId,
-  TransportLayer,
-  BeaconLightClientNetwork,
-  BeaconLightClientNetworkContentType,
-  toHexString,
-  getBeaconContentKey,
-  LightClientBootstrapKey,
-  LightClientUpdatesByRange,
-  LightClientOptimisticUpdateKey,
-  LightClientUpdatesByRangeKey,
-} from '../../src/index.js'
-import { createRequire } from 'module'
-
 import { SignableENR } from '@chainsafe/discv5'
-import { ssz } from '@lodestar/types'
-
-import { ForkName } from '@lodestar/params'
 import { concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
+import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { RunStatusCode } from '@lodestar/light-client'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
+import { ForkName } from '@lodestar/params'
+import { ssz } from '@lodestar/types'
+import { multiaddr } from '@multiformats/multiaddr'
+import { createRequire } from 'module'
+import { assert, describe, it, vi } from 'vitest'
+
+import {
+  BeaconLightClientNetworkContentType,
+  LightClientBootstrapKey,
+  LightClientOptimisticUpdateKey,
+  LightClientUpdatesByRange,
+  LightClientUpdatesByRangeKey,
+  NetworkId,
+  PortalNetwork,
+  TransportLayer,
+  getBeaconContentKey,
+  toHexString,
+} from '../../src/index.js'
+
+import type { BeaconLightClientNetwork } from '../../src/index.js'
 
 const require = createRequire(import.meta.url)
 

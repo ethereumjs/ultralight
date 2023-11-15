@@ -1,20 +1,22 @@
-import { Debugger } from 'debug'
-import { NodeId, PortalNetwork } from 'portalnetwork'
-import { middleware, validators } from '../validators.js'
+import { multiaddr } from '@multiformats/multiaddr'
+
 import * as schema from '../schema/index.js'
-import {
+import { middleware, validators } from '../validators.js'
+
+import type {
   AddEnrResult,
   DeleteEnrResult,
   Enr,
+  EnrSeq,
   GetEnrResult,
-  isTcp,
   LookupEnrResult,
   NodeInfoResult,
   RoutingTableInfoResult,
-  EnrSeq,
+  isTcp,
   socketAddr,
 } from '../schema/types.js'
-import { multiaddr } from '@multiformats/multiaddr'
+import type { Debugger } from 'debug'
+import type { NodeId, PortalNetwork } from 'portalnetwork'
 
 const methods = [
   'discv5_nodeInfo',

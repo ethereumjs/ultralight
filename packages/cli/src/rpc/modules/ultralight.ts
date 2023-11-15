@@ -1,14 +1,15 @@
-import { Debugger } from 'debug'
 import {
+  HistoryNetworkContentType,
   NetworkId,
   addRLPSerializedBlock,
-  HistoryNetworkContentType,
   fromHexString,
-  HistoryNetwork,
-  PortalNetwork,
 } from 'portalnetwork'
-import { middleware, validators } from '../validators.js'
+
 import { INTERNAL_ERROR } from '../error-code.js'
+import { middleware, validators } from '../validators.js'
+
+import type { Debugger } from 'debug'
+import type { HistoryNetwork, PortalNetwork } from 'portalnetwork'
 
 const methods = ['ultralight_store', 'ultralight_addBlockToHistory']
 

@@ -1,6 +1,8 @@
 import { ByteListType, ContainerType, ListCompositeType, UintBigintType } from '@chainsafe/ssz'
-import { ForkName } from '@lodestar/params'
+
 import { Bytes32Type } from '../types.js'
+
+import type { ForkName } from '@lodestar/params'
 
 export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 

@@ -1,12 +1,13 @@
 import { hexToBytes } from '@ethereumjs/util'
+
 import {
   BUFFER_SIZE,
   Bytes32TimeStamp,
-  encodeWithVariantPrefix,
   HeaderExtension,
   Packet,
   PacketType,
   RequestCode,
+  encodeWithVariantPrefix,
 } from '../../src/wire/utp/index.js'
 
 const DEFAULT_RAND_SEQNR = 5555
@@ -132,7 +133,7 @@ export function Packets(
             },
           }),
         ],
-        dataAcks: dataAcks,
+        dataAcks,
         finack: [
           Packet.fromOpts({
             header: {
@@ -569,7 +570,7 @@ export function Packets(
             },
           }),
         ],
-        dataAcks: dataAcks,
+        dataAcks,
         finack: [
           Packet.fromOpts({
             header: {

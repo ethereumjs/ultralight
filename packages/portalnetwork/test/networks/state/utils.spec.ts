@@ -1,20 +1,21 @@
-import { describe, it, assert } from 'vitest'
-import {
-  decodeStateNetworkContentKey,
-  distance,
-  getStateNetworkContentId,
-  getStateNetworkContentKey,
-  keyType,
-  MODULO,
-} from '../../../src/networks/state/util.js'
+import { UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { Address, randomBytes } from '@ethereumjs/util'
+import { assert, describe, it } from 'vitest'
+
 import {
   AccountTrieProofKeyType,
   ContractByteCodeKeyType,
   ContractStorageTrieKeyType,
   StateNetworkContentType,
 } from '../../../src/networks/state/types.js'
-import { UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
+import {
+  MODULO,
+  decodeStateNetworkContentKey,
+  distance,
+  getStateNetworkContentId,
+  getStateNetworkContentKey,
+  keyType,
+} from '../../../src/networks/state/util.js'
 
 describe('distance()', () => {
   it('should calculate distance between two values', () => {

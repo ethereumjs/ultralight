@@ -1,4 +1,4 @@
-import { StateNetwork } from './state.js'
+import type { StateNetwork } from './state.js'
 
 /**
  *

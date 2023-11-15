@@ -1,21 +1,22 @@
-import { Block } from '@ethereumjs/block'
 import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
-import { Debugger } from 'debug'
 import {
-  NetworkId,
-  HistoryNetwork,
-  PortalNetwork,
-  getContentKey,
-  fromHexString,
-  reassembleBlock,
   BlockHeaderWithProof,
   GET_LOGS_BLOCK_RANGE_LIMIT,
+  NetworkId,
+  fromHexString,
+  getContentKey,
   getLogs,
-  RpcTx,
+  reassembleBlock,
 } from 'portalnetwork'
+
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
-import { GetLogsParams, jsonRpcLog } from '../types.js'
-import { validators, middleware } from '../validators.js'
+import { jsonRpcLog } from '../types.js'
+import { middleware, validators } from '../validators.js'
+
+import type { GetLogsParams } from '../types.js'
+import type { Block } from '@ethereumjs/block'
+import type { Debugger } from 'debug'
+import type { HistoryNetwork, PortalNetwork, RpcTx } from 'portalnetwork'
 
 /**
  * eth_* RPC module

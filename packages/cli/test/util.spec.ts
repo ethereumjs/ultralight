@@ -1,10 +1,12 @@
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
+
 import {
   extractBase64URLCharsFromEnr,
   hasValidBase64URLChars,
   hasValidEnrPrefix,
 } from '../src/util.js'
-import { Enr } from '../src/rpc/schema/types.js'
+
+import type { Enr } from '../src/rpc/schema/types.js'
 
 describe('portal network cli test utils', () => {
   const enr: Enr =

@@ -1,5 +1,5 @@
+export * from './Extensions.js'
 export * from './Packet.js'
 export * from './PacketHeader.js'
 export * from './PacketManager.js'
 export * from './PacketTyping.js'
-export * from './Extensions.js'

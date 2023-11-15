@@ -1,32 +1,4 @@
-import { Debugger } from 'debug'
-import { BaseNetwork } from '../network.js'
-import { NetworkId } from '../types.js'
-import { PortalNetwork } from '../../client/client.js'
-import debug from 'debug'
-import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { toHexString } from '@chainsafe/ssz'
-import { shortId } from '../../util/util.js'
-import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
-import { genesisData } from '@lodestar/config/networks'
-import {
-  BeaconLightClientNetworkContentType,
-  LightClientBootstrapKey,
-  LightClientFinalityUpdateKey,
-  LightClientForkName,
-  LightClientOptimisticUpdateKey,
-  LightClientUpdatesByRange,
-  LightClientUpdatesByRangeKey,
-  MIN_BOOTSTRAP_VOTES,
-  SyncStrategy,
-} from './types.js'
-import {
-  AcceptMessage,
-  ContentMessageType,
-  FindContentMessage,
-  MessageCodes,
-  OfferMessage,
-  PortalWireMessageType,
-} from '../../wire/types.js'
 import {
   bytesToHex,
   bytesToInt,
@@ -35,22 +7,47 @@ import {
   intToHex,
   padToEven,
 } from '@ethereumjs/util'
-import {
-  RequestCode,
-  FoundContent,
-  randUint16,
-  MAX_PACKET_SIZE,
-  encodeWithVariantPrefix,
-} from '../../wire/index.js'
-import { ssz } from '@lodestar/types'
-
-import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
-import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 import { Lightclient } from '@lodestar/light-client'
+import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
+import { ssz } from '@lodestar/types'
+import debug from 'debug'
+
+import { shortId } from '../../util/util.js'
+import {
+  FoundContent,
+  MAX_PACKET_SIZE,
+  RequestCode,
+  encodeWithVariantPrefix,
+  randUint16,
+} from '../../wire/index.js'
+import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../wire/types.js'
+import { BaseNetwork } from '../network.js'
+import { NetworkId } from '../types.js'
+
+import {
+  BeaconLightClientNetworkContentType,
+  LightClientBootstrapKey,
+  LightClientFinalityUpdateKey,
+  LightClientOptimisticUpdateKey,
+  LightClientUpdatesByRange,
+  LightClientUpdatesByRangeKey,
+  MIN_BOOTSTRAP_VOTES,
+  SyncStrategy,
+} from './types.js'
 import { UltralightTransport } from './ultralightTransport.js'
-import { NodeId } from '@chainsafe/discv5'
 import { getBeaconContentKey } from './util.js'
+
+import type { LightClientForkName } from './types.js'
+import type { PortalNetwork } from '../../client/client.js'
+import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
+import type { NodeId } from '@chainsafe/discv5'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { Union } from '@chainsafe/ssz/lib/interface.js'
+import type { BeaconConfig } from '@lodestar/config'
+import type { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
+import type { Debugger } from 'debug'
 
 export class BeaconLightClientNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconLightClientNetwork
@@ -562,7 +559,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
-        value: value,
+        value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
       this.sendResponse(

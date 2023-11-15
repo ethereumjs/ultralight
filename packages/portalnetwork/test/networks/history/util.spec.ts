@@ -1,21 +1,23 @@
 import { toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
-import { describe, it, assert, assertType } from 'vitest'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { assert, assertType, describe, it } from 'vitest'
+
 import {
+  ContentKeyType,
+  HistoryNetworkContentType,
   blockNumberToGindex,
   blockNumberToLeafIndex,
+  decodeSszBlockBody,
   epochRootByBlocknumber,
   epochRootByIndex,
   getContentId,
-  ContentKeyType,
-  HistoryNetworkContentType,
   reassembleBlock,
   serializedContentKeyToContentId,
   sszEncodeBlockBody,
-  decodeSszBlockBody,
-  PostShanghaiBlockBodyContent,
 } from '../../../src/index.js'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+
+import type { PostShanghaiBlockBodyContent } from '../../../src/index.js'
 
 describe('utility functions', () => {
   const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'

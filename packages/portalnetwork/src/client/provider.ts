@@ -1,14 +1,18 @@
 import { ethers } from 'ethers'
-import { addRLPSerializedBlock, HistoryNetwork } from '../networks/index.js'
+
+import { addRLPSerializedBlock } from '../networks/index.js'
 import { NetworkId } from '../networks/types.js'
 import { toHexString } from '../util/discv5.js'
 import {
+  blockFromRpc,
   ethJsBlockToEthersBlock,
   ethJsBlockToEthersBlockWithTxs,
-  blockFromRpc,
 } from '../util/helpers.js'
+
 import { PortalNetwork } from './client.js'
-import { PortalNetworkOpts } from './types.js'
+
+import type { PortalNetworkOpts } from './types.js'
+import type { HistoryNetwork } from '../networks/index.js'
 
 export class UltralightProvider extends ethers.JsonRpcProvider {
   private fallbackProvider: ethers.JsonRpcProvider

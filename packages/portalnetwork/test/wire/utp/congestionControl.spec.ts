@@ -1,4 +1,4 @@
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
 
 import { CongestionControl, DEFAULT_PACKET_SIZE } from '../../../src/index.js'
 

@@ -1,24 +1,24 @@
+import { SignableENR } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Block } from '@ethereumjs/block'
+import { Trie } from '@ethereumjs/trie'
+import { Account, Address, bytesToInt, bytesToUtf8, randomBytes } from '@ethereumjs/util'
+import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { assert, describe, it } from 'vitest'
+
 import {
   AccountTrieProofType,
   ContractByteCodeType,
-  HistoryNetwork,
   NetworkId,
   PortalNetwork,
-  RpcTx,
-  StateNetwork,
   TransportLayer,
   UltralightStateManager,
   addRLPSerializedBlock,
 } from '../../../src/index.js'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { SignableENR } from '@chainsafe/discv5'
-import { multiaddr } from '@multiformats/multiaddr'
-import { Account, Address, bytesToInt, bytesToUtf8, randomBytes } from '@ethereumjs/util'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { Trie } from '@ethereumjs/trie'
-import { Block } from '@ethereumjs/block'
+
+import type { HistoryNetwork, RpcTx, StateNetwork } from '../../../src/index.js'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',

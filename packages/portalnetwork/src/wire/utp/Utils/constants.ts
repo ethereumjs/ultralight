@@ -1,4 +1,5 @@
 import { RequestCode } from '../PortalNetworkUtp/types.js'
+
 import { randUint16 } from './math.js'
 
 export const VERSION = 1

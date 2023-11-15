@@ -1,8 +1,9 @@
-import { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
-import { Address, Account, bytesToBigInt, bytesToHex } from '@ethereumjs/util'
-
-import { StateNetwork } from './state.js'
 import { toHexString } from '@chainsafe/ssz'
+import { bytesToBigInt, bytesToHex } from '@ethereumjs/util'
+
+import type { StateNetwork } from './state.js'
+import type { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
+import type { Account, Address } from '@ethereumjs/util'
 
 export class UltralightStateManager implements EVMStateManagerInterface {
   originalStorageCache: {

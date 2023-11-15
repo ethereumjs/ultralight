@@ -1,15 +1,12 @@
-import { PortalNetwork } from './client.js'
-import {
-  BeaconLightClientNetwork,
-  HistoryNetwork,
-  NetworkId,
-  StateNetwork,
-  UltralightStateManager,
-} from '../networks/index.js'
-import { RpcTx } from './types.js'
+import { fromHexString } from '@chainsafe/ssz'
 import { EVM } from '@ethereumjs/evm'
 import { Address, TypeOutput, toType } from '@ethereumjs/util'
-import { fromHexString } from '@chainsafe/ssz'
+
+import { NetworkId, UltralightStateManager } from '../networks/index.js'
+
+import type { PortalNetwork } from './client.js'
+import type { RpcTx } from './types.js'
+import type { BeaconLightClientNetwork, HistoryNetwork, StateNetwork } from '../networks/index.js'
 
 export class ETH {
   history?: HistoryNetwork

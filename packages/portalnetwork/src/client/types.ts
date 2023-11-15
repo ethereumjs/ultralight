@@ -1,9 +1,9 @@
-import StrictEventEmitter from 'strict-event-emitter-types/types/src'
-import EventEmitter from 'events'
-import { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
-import { StateNetworkRoutingTable, NetworkId } from '../index.js'
-import { PortalNetworkRoutingTable } from './routingTable.js'
-import { AbstractLevel } from 'abstract-level'
+import type { PortalNetworkRoutingTable } from './routingTable.js'
+import type { NetworkId, StateNetworkRoutingTable } from '../index.js'
+import type { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
+import type { AbstractLevel } from 'abstract-level'
+import type EventEmitter from 'events'
+import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
 
 export interface IPortalNetworkEvents {
   NodeAdded: (nodeId: NodeId, networkId: NetworkId) => void

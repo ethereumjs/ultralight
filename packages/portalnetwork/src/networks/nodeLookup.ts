@@ -1,7 +1,9 @@
-import { ENR, distance, EntryStatus, log2Distance } from '@chainsafe/discv5'
-import { Debugger } from 'debug'
+import { ENR, EntryStatus, distance, log2Distance } from '@chainsafe/discv5'
+
 import { shortId } from '../index.js'
-import { BaseNetwork } from './network.js'
+
+import type { BaseNetwork } from './network.js'
+import type { Debugger } from 'debug'
 
 // This class implements a version of the the lookup algorithm defined in the Kademlia paper
 // https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf.

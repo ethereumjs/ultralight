@@ -1,4 +1,5 @@
 import { HistoryNetworkContentType, NetworkId, toHexString } from 'portalnetwork'
+
 import { isValidEnr } from '../util.js'
 
 const INVALID_PARAMS = -32602

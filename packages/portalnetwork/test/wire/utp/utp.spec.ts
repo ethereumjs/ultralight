@@ -1,30 +1,32 @@
 import { toHexString } from '@chainsafe/ssz'
+import { hexToBytes } from '@ethereumjs/util'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
+
 import {
   BUFFER_SIZE,
+  ContentKeyType,
   ContentRequest,
+  HeaderExtension,
+  HistoryNetworkContentType,
+  NetworkId,
+  Packet,
+  PacketType,
+  PortalNetworkUTP,
+  RequestCode,
+  UtpSocketType,
   createSocketKey,
   dropPrefixes,
   encodeWithVariantPrefix,
   getContentKey,
-  HeaderExtension,
-  ContentKeyType,
-  HistoryNetworkContentType,
-  INewRequest,
-  Packet,
-  PacketType,
-  PortalNetworkUTP,
-  NetworkId,
   randUint16,
-  RequestCode,
   startingNrs,
-  UtpSocketType,
 } from '../../../src/index.js'
 import ContentReader from '../../../src/wire/utp/Socket/ContentReader.js'
-import { hexToBytes } from '@ethereumjs/util'
+
+import type { INewRequest } from '../../../src/index.js'
 
 const blocks = {
   '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220': {

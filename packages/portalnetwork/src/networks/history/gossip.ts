@@ -1,8 +1,10 @@
 import { toHexString } from '@chainsafe/ssz'
-import { HistoryNetwork } from './history.js'
-import { HistoryNetworkContentType } from './types.js'
-import { getContentId, getContentKey } from './util.js'
 import { hexToBytes } from '@ethereumjs/util'
+
+import { getContentId, getContentKey } from './util.js'
+
+import type { HistoryNetwork } from './history.js'
+import type { HistoryNetworkContentType } from './types.js'
 
 type Peer = string
 

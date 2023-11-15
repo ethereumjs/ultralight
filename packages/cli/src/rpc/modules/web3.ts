@@ -1,6 +1,7 @@
-import { Debugger } from 'debug'
-import { PortalNetwork } from 'portalnetwork'
 import { middleware } from '../validators.js'
+
+import type { Debugger } from 'debug'
+import type { PortalNetwork } from 'portalnetwork'
 
 export class web3 {
   private _client: PortalNetwork

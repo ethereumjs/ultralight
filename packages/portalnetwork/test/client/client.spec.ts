@@ -1,7 +1,8 @@
-import { describe, it, assert } from 'vitest'
-import { PortalNetwork, NetworkId } from '../../src/index.js'
 import * as td from 'testdouble'
+import { assert, describe, it } from 'vitest'
+
 import { TransportLayer } from '../../src/client/index.js'
+import { NetworkId, PortalNetwork } from '../../src/index.js'
 
 describe('Client unit tests', async () => {
   const node = await PortalNetwork.create({

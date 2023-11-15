@@ -1,5 +1,5 @@
 export * from './routingTable.js'
-export * from './util.js'
-export * from './types.js'
 export * from './state.js'
 export * from './stateManager.js'
+export * from './types.js'
+export * from './util.js'

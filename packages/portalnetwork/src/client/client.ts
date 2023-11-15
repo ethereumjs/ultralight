@@ -1,43 +1,41 @@
 import {
   Discv5,
   SignableENR,
-  IDiscv5CreateOptions,
-  NodeId,
-  ENR,
   createKeypairFromPeerId,
   createPeerIdFromKeypair,
 } from '@chainsafe/discv5'
-import { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
-import { EventEmitter } from 'events'
-import debug, { Debugger } from 'debug'
 import { toHexString } from '@chainsafe/ssz'
+import { hexToBytes } from '@ethereumjs/util'
+import { peerIdFromKeys } from '@libp2p/peer-id'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+import debug from 'debug'
+import { EventEmitter } from 'events'
+import { LRUCache } from 'lru-cache'
+
+import { HistoryNetwork } from '../networks/history/history.js'
 import {
   BeaconLightClientNetwork,
-  StateNetwork,
   NetworkId,
+  StateNetwork,
   SyncStrategy,
 } from '../networks/index.js'
-import {
-  PortalNetworkEventEmitter,
-  PortalNetworkMetrics,
-  PortalNetworkOpts,
-  TransportLayer,
-} from './types.js'
-import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
+import { MEGABYTE, dirSize } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
-import { BaseNetwork } from '../networks/network.js'
-import { HistoryNetwork } from '../networks/history/history.js'
-import { Multiaddr, multiaddr } from '@multiformats/multiaddr'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
-import { LRUCache } from 'lru-cache'
-import { dirSize, MEGABYTE } from '../util/index.js'
 import { DBManager } from './dbManager.js'
-import { peerIdFromKeys } from '@libp2p/peer-id'
-import { hexToBytes } from '@ethereumjs/util'
 import { ETH } from './eth.js'
+import { TransportLayer } from './types.js'
+
+import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
+import type { BaseNetwork } from '../networks/network.js'
+import type { ENR, IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
+import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type { Debugger } from 'debug'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
@@ -144,7 +142,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
 
     const portal = new PortalNetwork({
-      config: config,
+      config,
       radius: 2n ** 256n,
       bootnodes,
       db: opts.db,

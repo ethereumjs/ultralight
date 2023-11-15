@@ -1,11 +1,11 @@
-import * as WS from 'ws'
+import debug from 'debug'
 import * as dgram from 'dgram'
+import http = require('http')
+import https = require('https')
+import * as PromClient from 'prom-client'
+import * as WS from 'ws'
 import yargs from 'yargs' //eslint-disable-next-line
 import { hideBin } from 'yargs/helpers'
-import http = require('http')
-import * as PromClient from 'prom-client'
-import debug from 'debug'
-import https = require('https')
 const log = debug('proxy')
 debug.enable('proxy')
 

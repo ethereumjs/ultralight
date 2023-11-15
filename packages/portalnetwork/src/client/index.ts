@@ -1,5 +1,5 @@
 export * from './client.js'
-export * from './routingTable.js'
-export * from './types.js'
 export * from './dbManager.js'
 export * from './provider.js'
+export * from './routingTable.js'
+export * from './types.js'

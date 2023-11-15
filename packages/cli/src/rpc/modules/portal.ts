@@ -1,34 +1,38 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { BitArray } from '@chainsafe/ssz'
-import { Debugger } from 'debug'
 import {
-  ENR,
-  NetworkId,
-  fromHexString,
-  shortId,
-  toHexString,
-  HistoryNetwork,
-  PortalNetwork,
-  HistoryNetworkContentType,
   ContentLookup,
+  ContentMessageType,
+  ENR,
+  FoundContent,
+  MessageCodes,
+  NetworkId,
   NodeLookup,
   PingPongCustomDataType,
   PortalWireMessageType,
-  MessageCodes,
-  NodesMessage,
-  ContentMessageType,
-  AcceptMessage,
   decodeHistoryNetworkContentKey,
-  FoundContent,
+  fromHexString,
+  shortId,
+  toHexString,
+} from 'portalnetwork'
+
+import { isValidId } from '../util.js'
+import { middleware, validators } from '../validators.js'
+
+import type { GetEnrResult } from '../schema/types.js'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type { Debugger } from 'debug'
+import type {
+  AcceptMessage,
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
+  HistoryNetwork,
+  HistoryNetworkContentType,
+  NodesMessage,
+  PortalNetwork,
   StateNetwork,
   StateNetworkContentType,
 } from 'portalnetwork'
-import { GetEnrResult } from '../schema/types.js'
-import { isValidId } from '../util.js'
-import { middleware, validators } from '../validators.js'
-import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
   // state
@@ -317,8 +321,8 @@ export class portal {
       localNodeId = (err as any).message
     }
     return {
-      localNodeId: localNodeId,
-      buckets: buckets,
+      localNodeId,
+      buckets,
     }
   }
   async stateRoutingTableInfo(_params: []): Promise<any> {
@@ -335,8 +339,8 @@ export class portal {
       localNodeId = (err as any).message
     }
     return {
-      localNodeId: localNodeId,
-      buckets: buckets,
+      localNodeId,
+      buckets,
     }
   }
   async historyLookupEnr(params: [string]) {

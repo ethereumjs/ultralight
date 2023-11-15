@@ -1,16 +1,17 @@
-import { it, assert } from 'vitest'
+import { distance } from '@chainsafe/discv5'
+import { bigIntToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
+import debug from 'debug'
+import { assert, it } from 'vitest'
+
 import {
-  getContentId,
-  getContentKey,
+  DBManager,
   HistoryNetworkContentType,
   NetworkId,
-  toHexString,
-  DBManager,
+  getContentId,
+  getContentKey,
   serializedContentKeyToContentId,
+  toHexString,
 } from '../../src/index.js'
-import debug from 'debug'
-import { bigIntToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { distance } from '@chainsafe/discv5'
 
 it('DBManager unit tests', async () => {
   const size = async () => {

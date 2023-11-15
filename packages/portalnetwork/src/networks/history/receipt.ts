@@ -1,3 +1,4 @@
+import { RLP } from '@ethereumjs/rlp'
 import {
   bigIntToBytes,
   bytesToBigInt,
@@ -6,16 +7,16 @@ import {
   hexToBytes,
   intToBytes,
 } from '@ethereumjs/util'
-import { RLP } from '@ethereumjs/rlp'
-import {
+
+import type {
   IReceiptOpts,
   Log,
   PostByzantiumTxReceiptWithType,
   PreByzantiumTxReceiptWithType,
-  rlpReceipt,
   TxReceiptType,
+  rlpReceipt,
 } from './types.js'
-import { TxReceipt, PostByzantiumTxReceipt, PreByzantiumTxReceipt } from '@ethereumjs/vm'
+import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
 export class Receipt {
   cumulativeBlockGasUsed: bigint

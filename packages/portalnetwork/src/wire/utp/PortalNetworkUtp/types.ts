@@ -1,4 +1,4 @@
-import { NetworkId } from '../../../networks/types.js'
+import type { NetworkId } from '../../../networks/types.js'
 
 export type UtpSocketKey = string
 

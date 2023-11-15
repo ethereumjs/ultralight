@@ -1,5 +1,10 @@
-import { describe, it, assert, assertType } from 'vitest'
-import testdata from './content.json'
+import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
+import { Trie } from '@ethereumjs/trie'
+import { Account } from '@ethereumjs/util'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { assert, assertType, describe, it } from 'vitest'
+
+import { Bytes32Type } from '../../../src'
 import {
   AccountTrieProofType,
   ContractStorageTrieProofType,
@@ -7,11 +12,8 @@ import {
   StateNetworkContentType,
 } from '../../../src/networks/state/types.js'
 import { decodeStateNetworkContentKey } from '../../../src/networks/state/util.js'
-import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
-import { Account } from '@ethereumjs/util'
-import { Trie } from '@ethereumjs/trie'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { Bytes32Type } from '../../../src'
+
+import testdata from './content.json'
 
 const oldCSType = new ContainerType({
   witnesses: MPTWitnessesType,

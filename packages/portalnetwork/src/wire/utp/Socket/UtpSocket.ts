@@ -1,19 +1,16 @@
-import {
-  Packet,
-  PacketType,
-  ConnectionState,
-  ICreatePacketOpts,
-  UtpSocketOptions,
-  UtpSocketType,
-  ICreateData,
-} from '../index.js'
-import EventEmitter from 'events'
-import { NetworkId, bitmap } from '../../../index.js'
-import { Debugger } from 'debug'
-import ContentWriter from './ContentWriter.js'
-import ContentReader from './ContentReader.js'
-import { PacketManager } from '../Packets/PacketManager.js'
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
+import EventEmitter from 'events'
+
+import { bitmap } from '../../../index.js'
+import { PacketManager } from '../Packets/PacketManager.js'
+import { ConnectionState, PacketType, UtpSocketType } from '../index.js'
+
+import ContentReader from './ContentReader.js'
+import ContentWriter from './ContentWriter.js'
+
+import type { NetworkId } from '../../../index.js'
+import type { ICreateData, ICreatePacketOpts, Packet, UtpSocketOptions } from '../index.js'
+import type { Debugger } from 'debug'
 
 export class UtpSocket extends EventEmitter {
   networkId: NetworkId

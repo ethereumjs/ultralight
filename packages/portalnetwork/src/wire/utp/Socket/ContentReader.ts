@@ -1,6 +1,7 @@
 import debug from 'debug'
-import { Debugger } from 'debug'
-import { StatePacket } from '../index.js'
+
+import type { StatePacket } from '../index.js'
+import type { Debugger } from 'debug'
 export default class ContentReader {
   packets: StatePacket[]
   inOrder: StatePacket[]

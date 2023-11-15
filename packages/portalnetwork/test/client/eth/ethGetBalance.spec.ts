@@ -1,21 +1,22 @@
-import { describe, it, assert } from 'vitest'
+import { Block } from '@ethereumjs/block'
+import { assert, describe, it } from 'vitest'
+
 import {
-  HistoryNetwork,
-  PortalNetwork,
   NetworkId,
-  StateNetwork,
+  PortalNetwork,
   addRLPSerializedBlock,
   fromHexString,
   toHexString,
 } from '../../../src'
-import block0_meta from '../../networks/state/testdata/block-0x11a86a9-meta.json'
 import block0_db from '../../networks/state/testdata/block-0x11a86a9-db.json'
-import block1_meta from '../../networks/state/testdata/block-0x11a86aa-meta.json'
+import block0_meta from '../../networks/state/testdata/block-0x11a86a9-meta.json'
 import block1_db from '../../networks/state/testdata/block-0x11a86aa-db.json'
-import block2_meta from '../../networks/state/testdata/block-0x11a86ab-meta.json'
+import block1_meta from '../../networks/state/testdata/block-0x11a86aa-meta.json'
 import block2_db from '../../networks/state/testdata/block-0x11a86ab-db.json'
+import block2_meta from '../../networks/state/testdata/block-0x11a86ab-meta.json'
 import testBlockData from '../../networks/state/testdata/testblocks.json'
-import { Block } from '@ethereumjs/block'
+
+import type { HistoryNetwork, StateNetwork } from '../../../src'
 
 describe('shared accounts', async () => {
   for (const account0 of block0_meta.accounts) {

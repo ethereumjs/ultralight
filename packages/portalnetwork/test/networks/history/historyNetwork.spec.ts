@@ -1,26 +1,29 @@
 import { ENR, EntryStatus } from '@chainsafe/discv5'
-import { Block, BlockBytes, BlockHeader } from '@ethereumjs/block'
-import { describe, it, assert } from 'vitest'
-import * as td from 'testdouble'
-import { readFileSync } from 'fs'
-import {
-  PortalNetwork,
-  toHexString,
-  NetworkId,
-  sszEncodeBlockBody,
-  ContentKeyType,
-  HistoryNetworkContentType,
-  EpochAccumulator,
-  TransportLayer,
-  HistoryNetwork,
-  getContentKey,
-  reassembleBlock,
-  BlockHeaderWithProof,
-  epochRootByBlocknumber,
-} from '../../../src/index.js'
-import { createRequire } from 'module'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
+import * as td from 'testdouble'
+import { assert, describe, it } from 'vitest'
+
+import {
+  BlockHeaderWithProof,
+  ContentKeyType,
+  EpochAccumulator,
+  HistoryNetworkContentType,
+  NetworkId,
+  PortalNetwork,
+  TransportLayer,
+  epochRootByBlocknumber,
+  getContentKey,
+  reassembleBlock,
+  sszEncodeBlockBody,
+  toHexString,
+} from '../../../src/index.js'
+
+import type { HistoryNetwork } from '../../../src/index.js'
+import type { BlockBytes } from '@ethereumjs/block'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')

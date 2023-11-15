@@ -1,23 +1,26 @@
-import * as fs from 'fs'
-import { PortalNetwork, NetworkId, fromHexString } from 'portalnetwork'
-import type { PeerId } from '@libp2p/interface-peer-id'
-import { multiaddr } from '@multiformats/multiaddr'
-import yargs from 'yargs/yargs'
-// eslint-disable-next-line node/file-extension-in-import
-import { hideBin } from 'yargs/helpers'
-import jayson from 'jayson/promise/index.js'
-import http from 'http'
-import * as PromClient from 'prom-client'
-import debug from 'debug'
-import { setupMetrics } from './metrics.js'
-import { addBootNode } from './util.js'
-import { Level } from 'level'
-import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { execSync } from 'child_process'
-import { RPCManager } from './rpc/rpc.js'
 import { SignableENR } from '@chainsafe/discv5'
-import { Enr } from './rpc/schema/types.js'
-import { ClientOpts } from './types.js'
+import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+// eslint-disable-next-line node/file-extension-in-import
+
+import { execSync } from 'child_process'
+import debug from 'debug'
+import * as fs from 'fs'
+import http from 'http'
+import jayson from 'jayson/promise/index.js'
+import { Level } from 'level'
+import { NetworkId, PortalNetwork, fromHexString } from 'portalnetwork'
+import * as PromClient from 'prom-client'
+import { hideBin } from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+
+import { setupMetrics } from './metrics.js'
+import { RPCManager } from './rpc/rpc.js'
+import { addBootNode } from './util.js'
+
+import type { Enr } from './rpc/schema/types.js'
+import type { ClientOpts } from './types.js'
+import type { PeerId } from '@libp2p/interface-peer-id'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -127,7 +130,7 @@ const main = async () => {
     db = new Level<string, string>(args.dataDir)
   }
   const config = {
-    enr: enr,
+    enr,
     peerId: id,
     config: {
       enrUpdate: true,
@@ -162,7 +165,7 @@ const main = async () => {
     networks.push(NetworkId.BeaconLightClientNetwork)
   }
   const portal = await PortalNetwork.create({
-    config: config,
+    config,
     radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
@@ -214,7 +217,7 @@ const main = async () => {
   if (args.web3) {
     const [host, port] = args.web3.split(':')
     if (host && port) {
-      web3 = jayson.Client.http({ host: host, port: port })
+      web3 = jayson.Client.http({ host, port })
     }
   }
 
@@ -222,7 +225,7 @@ const main = async () => {
     const manager = new RPCManager(portal)
     const methods = manager.getMethods()
     const server = new jayson.Server(methods, {
-      router: function (method, params) {
+      router(method, params) {
         // `_methods` is not part of the jayson.Server interface but exists on the object
         // but the docs recommend this pattern for custom routing
         // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js

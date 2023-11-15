@@ -1,7 +1,7 @@
-import { SynPacket } from '../Packets/Packet.js'
-import * as dgram from 'dgram'
-import { Multiaddr } from '@multiformats/multiaddr'
-import { Uint16, Uint32 } from '../index.js'
+import type { SynPacket } from '../Packets/Packet.js'
+import type { Uint16, Uint32 } from '../index.js'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type * as dgram from 'dgram'
 
 export const reorderBufferMaxSize: number = 1024
 //   # Maximal number of payload bytes per packet. Total packet size will be equal to

@@ -1,43 +1,40 @@
-import debug, { Debugger } from 'debug'
+import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
+import { Block, BlockHeader } from '@ethereumjs/block'
+import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import debug from 'debug'
+
 import {
   ContentMessageType,
-  decodeHistoryNetworkContentKey,
-  FindContentMessage,
+  ENR,
+  FoundContent,
   MessageCodes,
   PortalWireMessageType,
-  reassembleBlock,
   RequestCode,
-  shortId,
-  Witnesses,
-  saveReceipts,
+  decodeHistoryNetworkContentKey,
   decodeReceipts,
-  PortalNetwork,
-  FoundContent,
-  toHexString,
-  ENR,
   fromHexString,
+  reassembleBlock,
+  saveReceipts,
+  shortId,
+  toHexString,
 } from '../../index.js'
+import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
+
 import { ETH } from './eth_module.js'
 import { GossipManager } from './gossip.js'
 import { BlockHeaderWithProof, EpochAccumulator, HistoryNetworkContentType } from './types.js'
-import { BaseNetwork } from '../network.js'
 import {
+  blockNumberToGindex,
   epochIndexByBlocknumber,
   epochRootByBlocknumber,
   epochRootByIndex,
-  blockNumberToGindex,
   getContentKey,
 } from './util.js'
-import {
-  createProof,
-  Proof,
-  ProofType,
-  SingleProof,
-  SingleProofInput,
-} from '@chainsafe/persistent-merkle-tree'
-import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+
+import type { FindContentMessage, PortalNetwork, Witnesses } from '../../index.js'
+import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
+import type { Debugger } from 'debug'
 
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -327,7 +324,7 @@ export class HistoryNetwork extends BaseNetwork {
     const proof: Proof = {
       type: ProofType.single,
       gindex: blockNumberToGindex(blockNumber),
-      witnesses: witnesses,
+      witnesses,
       leaf: hexToBytes(blockHash),
     }
     EpochAccumulator.createFromProof(proof, target)
