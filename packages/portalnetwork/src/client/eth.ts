@@ -1,6 +1,6 @@
 import { fromHexString } from '@chainsafe/ssz'
 import { EVM } from '@ethereumjs/evm'
-import { Address, TypeOutput, toType } from '@ethereumjs/util'
+import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
 
 import { NetworkId, UltralightStateManager } from '../networks/index.js'
 
@@ -59,7 +59,7 @@ export class ETH {
       data: data !== undefined ? fromHexString(data) : undefined,
     }
     const res = (await evm.runCall(runCallOpts)).execResult.returnValue
-    return res
+    return bytesToHex(res)
   }
 
   private networkCheck = (networks: NetworkId[]) => {

@@ -31,6 +31,11 @@ const bridgeThread = async () => {
       default: 8545,
       optional: true,
     })
+    .option('block', {
+      description: 'block to retrieve state from',
+      number: true,
+      optional: true,
+    })
     .strict().argv
 
   const alchemyAPIKey = process.env.ALCHEMY_API_KEY
@@ -162,13 +167,18 @@ const bridgeThread = async () => {
     console.log('State Network Content Bridge')
     console.log(''.repeat(process.stdout.columns))
     console.log('-'.repeat(process.stdout.columns))
-    void workerTask()
-    getMissed.on('getMissed', (idx) => {
-      void workerTask('0x' + parseInt(idx).toString(16))
-    })
-    setInterval(() => {
+    if (args.block !== undefined) {
+      // Retrieve state for a specific block
+      void workerTask('0x' + BigInt(args.block).toString(16))
+    } else {
       void workerTask()
-    }, 12000)
+      getMissed.on('getMissed', (idx) => {
+        void workerTask('0x' + parseInt(idx).toString(16))
+      })
+      setInterval(() => {
+        void workerTask()
+      }, 12000)
+    }
     process.on('SIGINT', () => {
       console.log('\nshutting down...')
       process.exit(0)
