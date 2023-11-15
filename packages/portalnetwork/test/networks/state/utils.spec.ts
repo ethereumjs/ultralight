@@ -7,7 +7,7 @@ import {
   keyType,
   MODULO,
 } from '../../../src/networks/state/util.js'
-import { Address, bigIntToBytes, bigIntToHex, randomBytes } from '@ethereumjs/util'
+import { Address, randomBytes } from '@ethereumjs/util'
 import {
   AccountTrieProofKeyType,
   ContractByteCodeKeyType,

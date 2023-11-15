@@ -13,7 +13,6 @@ import {
   MessageCodes,
   ContentMessageType,
   FoundContent,
-  FindContentMessageType,
 } from '../../wire/types.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import {
@@ -22,16 +21,10 @@ import {
   ContractStorageTrieProofType,
   StateNetworkContentType,
 } from './types.js'
-import {
-  eth_getCode,
-  eth_getStorageAt,
-  eth_getTransactionCount,
-  eth_call,
-  eth_estimateGas,
-} from './eth.js'
 import { StateDB } from './statedb.js'
 import { getStateNetworkContentKey } from './util.js'
 import { ContentLookup } from '../contentLookup.js'
+import { Trie } from '@ethereumjs/trie'
 
 export class StateNetwork extends BaseNetwork {
   stateDB: StateDB
@@ -148,14 +141,9 @@ export class StateNetwork extends BaseNetwork {
   }
 
   public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
-    const account = await this.stateDB.getAccount(toHexString(address), toHexString(stateRoot))
     const trie = this.stateDB.getAccountTrie(toHexString(stateRoot))
     const proof = await trie.createProof(address)
     return AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
   }
@@ -183,14 +171,12 @@ export class StateNetwork extends BaseNetwork {
     )
     const lookup = new ContentLookup(this, contentKey)
     const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
-    if (res.content !== undefined) {
+    if (res?.content !== undefined) {
       const decoded = AccountTrieProofType.deserialize(res.content)
-      account = Account.fromAccountData({
-        balance: decoded.balance,
-        nonce: decoded.nonce,
-        codeHash: decoded.codeHash,
-        storageRoot: decoded.storageRoot,
-      })
+      const trie = new Trie({ useKeyHashing: true })
+      await trie.fromProof(decoded.witnesses)
+      const accountRLP = await trie.get(fromHexString(address))
+      account = accountRLP ? Account.fromRlpSerializedAccount(accountRLP) : undefined
     }
     return account
   }
@@ -248,7 +234,12 @@ export class StateNetwork extends BaseNetwork {
     if (res !== undefined) {
       res = res as { content: Uint8Array; utp: boolean }
       const proof = ContractStorageTrieProofType.deserialize(res.content)
-      if (proof !== undefined) storage = proof.data
+      if (proof !== undefined) {
+        const trie = new Trie({ useKeyHashing: true })
+        await trie.fromProof(proof.witnesses)
+        storage =
+          (await trie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))) ?? undefined
+      }
     }
     return storage
   }

@@ -3,15 +3,27 @@ import testdata from './content.json'
 import {
   AccountTrieProofType,
   ContractStorageTrieProofType,
+  MPTWitnessesType,
   StateNetworkContentType,
 } from '../../../src/networks/state/types.js'
 import { decodeStateNetworkContentKey } from '../../../src/networks/state/util.js'
-import { fromHexString } from '@chainsafe/ssz'
+import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { Account } from '@ethereumjs/util'
 import { Trie } from '@ethereumjs/trie'
-import { RLP } from '@ethereumjs/rlp'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { Bytes32Type } from '../../../src'
 
+const oldCSType = new ContainerType({
+  witnesses: MPTWitnessesType,
+  data: Bytes32Type,
+})
+const oldAType = new ContainerType({
+  witnesses: MPTWitnessesType,
+  nonce: new UintBigintType(8),
+  balance: new UintBigintType(32),
+  codeHash: Bytes32Type,
+  storageRoot: Bytes32Type,
+})
 describe('Account Trie Proof Content Type', async () => {
   const contentKey = testdata.ATP.contentKey
   const content = testdata.ATP.content
@@ -21,19 +33,12 @@ describe('Account Trie Proof Content Type', async () => {
     address: Uint8Array
     stateRoot: Uint8Array
   }
-  const { witnesses, balance, nonce, codeHash, storageRoot } = AccountTrieProofType.deserialize(
-    fromHexString(content),
-  )
+  const { witnesses } = AccountTrieProofType.deserialize(fromHexString(content))
   it('should deserialize content into account data and witnesses', async () => {
     assertType<Uint8Array>(decoded.address)
     assertType<Uint8Array>(decoded.stateRoot)
     assertType<Uint8Array[]>(witnesses)
-    assertType<bigint>(balance)
-    assertType<bigint>(nonce)
-    assertType<Uint8Array>(codeHash)
-    assertType<Uint8Array>(storageRoot)
     assert.deepEqual(decoded.address, fromHexString('0xae2fc483527b8ef99eb5d9b44875f005ba1fae13'))
-    assert.equal(balance, BigInt(testdata.ATP.balance))
   })
 
   const rootNode = witnesses[0]
@@ -43,20 +48,14 @@ describe('Account Trie Proof Content Type', async () => {
 
   const trie = new Trie({ useKeyHashing: true })
   await trie.fromProof(witnesses)
-  const account = await trie.get(decoded.address)
-
-  const expected = Account.fromAccountData({
-    nonce,
-    balance,
-    codeHash,
-    storageRoot,
-  })
-
   it('should have valid proof for state root', () => {
     assert.deepEqual(trie.root(), decoded.stateRoot)
   })
-  it('should include proof for account', async () => {
-    assert.deepEqual(expected.serialize(), account)
+  const accountRLP = await trie.get(decoded.address)
+  it('should retrieve account from trie', async () => {
+    assert.isDefined(accountRLP)
+    const account = Account.fromRlpSerializedAccount(accountRLP!)
+    assert.isDefined(account)
   })
 })
 
@@ -77,20 +76,19 @@ describe('Contract Storage Trie Proof Content Type', async () => {
     assert.deepEqual(decoded.address, fromHexString('0x4c083084c9d50334b343c44ec97d16011303cc73'))
   })
 
-  const { data, witnesses } = ContractStorageTrieProofType.deserialize(fromHexString(content))
+  const { witnesses } = ContractStorageTrieProofType.deserialize(fromHexString(content))
   it('should deserialize content into data and witnesses', async () => {
-    assertType<Uint8Array>(data)
     assertType<Uint8Array[]>(witnesses)
   })
 
   const root = witnesses[0]
-  const slotBytes = fromHexString('0x' + decoded.slot.toString(16).padStart(64, '0'))
+  // const slotBytes = fromHexString('0x' + decoded.slot.toString(16).padStart(64, '0'))
   const trie = new Trie({ useKeyHashing: true })
   await trie.fromProof(witnesses)
-  const value = await trie.get(slotBytes)
-  const decodedValue = RLP.decode(value!) as Uint8Array
+  // const value = await trie.get(slotBytes)
+  // const decodedValue = RLP.decode(value!) as Uint8Array
   assert.deepEqual(trie.root(), trie['hash'](root))
-  assert.deepEqual(data, decodedValue)
+  // assert.deepEqual(data, decodedValue)
 })
 
 describe('Contract Byte Code Content Type', async () => {

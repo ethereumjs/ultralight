@@ -7,9 +7,8 @@ import {
   StateNetworkContentType,
 } from './types.js'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Account, MapDB, concatBytes, equalsBytes } from '@ethereumjs/util'
+import { Account, MapDB, concatBytes } from '@ethereumjs/util'
 import { decodeStateNetworkContentKey } from './util.js'
-import { RLP } from '@ethereumjs/rlp'
 
 type StateRoot = string
 type StorageRoot = string
@@ -93,27 +92,16 @@ export class StateDB {
           return undefined
         }
         return AccountTrieProofType.serialize({
-          balance: account.balance,
-          codeHash: account.codeHash,
-          nonce: account.nonce,
-          storageRoot: account.storageRoot,
           witnesses: proof,
         })
       }
       case StateNetworkContentType.ContractStorageTrieProof: {
         const { address, slot, stateRoot } = decoded
         const trie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
-        let data = await trie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))
-        if (!data) {
-          data = new Uint8Array(32).fill(0)
-        } else {
-          data = RLP.decode(data) as Uint8Array
-        }
         const witnesses = await trie.createProof(
           fromHexString('0x' + slot.toString(16).padStart(64, '0')),
         )
         return ContractStorageTrieProofType.serialize({
-          data,
           witnesses,
         })
       }
@@ -140,13 +128,11 @@ export class StateDB {
     stateRoot: Uint8Array,
     content: Uint8Array,
   ): Promise<boolean> {
-    const { balance, codeHash, nonce, storageRoot, witnesses } =
-      AccountTrieProofType.deserialize(content)
+    const { witnesses } = AccountTrieProofType.deserialize(content)
     const accountTrie = this.getAccountTrie(toHexString(stateRoot))
     await accountTrie.fromProof(witnesses)
-    const account = Account.fromAccountData({ balance, codeHash, nonce, storageRoot }).serialize()
     const stored = await accountTrie.get(address)
-    if (!stored || !equalsBytes(account, stored)) {
+    if (!stored) {
       throw new Error('AccountTrieProof input failed')
     }
     this.logger?.('AccountTrieProof input success')
@@ -167,21 +153,9 @@ export class StateDB {
     stateRoot: Uint8Array,
     content: Uint8Array,
   ): Promise<boolean> {
-    const { data, witnesses } = ContractStorageTrieProofType.deserialize(content)
+    const { witnesses } = ContractStorageTrieProofType.deserialize(content)
     const storageTrie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
     await storageTrie.fromProof(witnesses)
-    const slotHex = '0x' + slot.toString(16).padStart(64, '0')
-    const slotBytes = fromHexString(slotHex)
-    const stored = await storageTrie.get(slotBytes)
-    if (
-      !stored &&
-      toHexString(data) !== '0x0000000000000000000000000000000000000000000000000000000000000000'
-    ) {
-      this.logger?.('ContractStorageTrieProof input failed')
-      throw new Error(
-        `ContractStorageTrieProof input failed: slot ${slotHex} not found in storage trie`,
-      )
-    }
     this.setStorageTrie(
       toHexString(stateRoot),
       toHexString(address),

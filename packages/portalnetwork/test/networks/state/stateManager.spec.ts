@@ -59,10 +59,6 @@ describe('UltralightStateManager', () => {
     const proof = await trie.createProof(address.toBytes())
 
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -121,17 +117,9 @@ describe('UltralightStateManager', () => {
     const proof = await trie.createProof(address.toBytes())
     const zeroProof = await trie.createProof(zero.bytes)
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     const zeroContent = AccountTrieProofType.serialize({
-      balance: zeroAccount!.balance,
-      nonce: zeroAccount!.nonce,
-      codeHash: zeroAccount!.codeHash,
-      storageRoot: zeroAccount!.storageRoot,
       witnesses: zeroProof,
     })
     await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -200,14 +188,9 @@ describe('UltralightStateManager', () => {
     const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
 
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     const storageContent = ContractStorageTrieProofType.serialize({
-      data: fromHexString(cstp.value),
       witnesses: storageProof,
     })
     await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
