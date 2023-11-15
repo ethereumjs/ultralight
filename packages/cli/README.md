@@ -1,12 +1,12 @@
 # Ultralight CLI
 
-This is an experimental implementation an Ultralight node packaged as a NodeJS application and run from the command line.  
+This is an NodeJS implementation of an Ultralight node that exposes a JSON-RPC for interacting with the Portal Network.  
 
 ## Usage
 
 The easiest way to get started with Ultralight is to use the `npm run dev` script to start up a a single local node:
 
-`npm run dev` along with any of the below parameters.
+`npm run dev` along with any of the below parameters.  Pass `--help` as a CLI parameter for a complete list of available options.
 
 ### CLI Parameters
   --pk                base64 string encoded protobuf serialized private key  [string]
@@ -27,11 +27,13 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
 
 To start a node that has the same node ID each time, you can pass the `--pk` parameter at start-up with a base64 string encoded protobuf serialized private key.  So `ts-node-esm src/index.ts --pk=CAISINx/bjWlmCXTClX2JvDYehb8FSrE6l4MA9LGvP74XdfD` will always start the `cli` client with the node ID `2a9511ca767b7b56bb873234209557d07c5fe09382ed060b272c6a933c5658f5`.
 
-### Connecting to the Portal Network
+### Connecting to the public testnet
+
+The implementation teams run a few public bootnodes for interacting with other Portal Network nodes in the wild.  These nodes currently just support the History network but hopefully more capabilities are coming soon!
 
 There are two ways to specify bootnodes at start-up.  Either pass in a bootnode's base64 string encoded ENR in the `--bootnode` CLI parameter or else pass the `--bootnodeList` parameter with a path to a plaintext file containing a list of base64 string encoded ENRs, one ENR per line.  
 
-The [`bootnodes.txt`](./bootnodes.txt) contains the public bootnodes designated for the Portal Network testnet that are intended to provide an initial connection point into the Portal Network (though they are not guaranteed to be running at any given time).  Use at your own risk!
+The [`bootnodes.txt`](./bootnodes.txt) contains the ENRs for the public bootnodes designated and are intended to provide an initial connection point to the fleets of Portal Network nodes operated by implementation teams.  Use at your own risk!
 
 ## Local Devnet
 Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a terminal, or run a test script from `packages/cli/scripts/` like `sampleTest.ts`
@@ -41,8 +43,8 @@ Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a termina
 - To specify a discv5 port number, include a `--port` variable
   - `npm run devnet -- --numNodes=5 --port=9009`
   - This will start 5 nodes with discv5 listener ports on `[9009, 9010, 9011, 9012, 9013]`
-- To specify which subnetworks to support, include one or more `--networks` parameters
-  - `npm run devnet -- --numNodes=5 --networks=history --networks=beacon`
+- To specify which subnetworks to support, include one or more options with the `--networks` parameter as shown below
+  - `npm run devnet -- --numNodes=5 --networks=history beacon`
 
 Note, all nodes are connected to each other as bootnodes for each network by default.  To turn off this behavior, pass `--connectNodes=false`.
 

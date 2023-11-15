@@ -16,7 +16,7 @@ Ultralight has an embedded Lodestar light client capable of tracking the head of
 2) Use an experimental voting process whereby Ultralight queries peers on the Portal Network for recent Light Client Updates and then selects a bootstrap based on receiving a plurality of "votes" from peers (i.e. getting the same finalized header included in a Light Client Update from a majority of peers).  This is very experimental and prone to failure at this stage of development.  Also, note, selecting a Beacon Chain checkpoint using this method is not known to be trustworthy so should be treateed as purely a novelty for now.
 
 To experiment with the Beacon Light Client Network, do the following:
-- Start a local devnet - `npm run devnet -- --numNodes=[5 or more ideally]`
+- Start a local devnet - `npm run devnet -- --networks=beacon --numNodes=[5 or more ideally]`
 - Pick your light client bootstrap method from above and follow one of the below bootstrapping methods as applicable:
   -- Trusted Checkpoint Sync - `npx ts-node-esm scripts/beaconBridge.ts`
   -- Bootstrap Peer Voting - `npx ts-node-esm scripts/bootstrapFinder.ts`
@@ -55,7 +55,7 @@ To experiment with the Beacon Light Client Network, do the following:
 
 Ultralight currently supports a very minimal implementation of the State Network.  Currently, with a bridge script running to pipe in data, you can retrieve state data for accounts and contract storage that have appeared in recent blocks.  To experiment, you will need an Alchemy API key for Ethereum Mainnet.  Then, do the following:
 
-- Run `npm run devnet -- --history --state --numNodes=1` - this activates both the History and State networks since History is required in order to retrieve the appropriate state root to retrieve state data from.
+- Run `npm run devnet -- --networks=history state --numNodes=1` - this activates both the History and State networks since History is required in order to retrieve the appropriate state root to retrieve state data from.
 
 - In a separate window, run `ALCHEMY_API_KEY=[your Alchemy API key here] npx ts-node-esm scripts/bridgeThread.ts --devnet --numNodes=1`
 - Observe the logs. When you see below, you are ready to start querying state data.
