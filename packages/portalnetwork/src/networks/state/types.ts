@@ -39,15 +39,10 @@ export type ContractByteCodeKey = {
 
 export type AccountTrieProof = {
   witnesses: MPTWitnessNode[]
-  nonce: bigint
-  balance: bigint
-  codeHash: Bytes32
-  storageRoot: Bytes32
 }
 
 export type ContractStorageTrieProof = {
   witness: MPTWitnessNode[]
-  data: Bytes32
 }
 
 export type ContractByteCode = Uint8Array
@@ -70,10 +65,6 @@ export const AccountTrieProofKeyType = new ContainerType({
 
 export const AccountTrieProofType = new ContainerType({
   witnesses: MPTWitnessesType,
-  nonce: new UintBigintType(8),
-  balance: new UintBigintType(32),
-  codeHash: Bytes32Type,
-  storageRoot: Bytes32Type,
 })
 
 export const ContractStorageTrieKeyType = new ContainerType({
@@ -84,7 +75,6 @@ export const ContractStorageTrieKeyType = new ContainerType({
 
 export const ContractStorageTrieProofType = new ContainerType({
   witnesses: MPTWitnessesType,
-  data: Bytes32Type,
 })
 
 export const ContractByteCodeKeyType = new ContainerType({
