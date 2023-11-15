@@ -37,10 +37,6 @@ module.exports = {
       {
         selector: 'interface',
         format: ['PascalCase', 'camelCase'],
-        custom: {
-          regex: '^I[A-Z]',
-          match: false,
-        },
       },
     ],
     '@typescript-eslint/no-unused-vars': [

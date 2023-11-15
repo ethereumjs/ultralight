@@ -7,7 +7,7 @@ import {
   addRLPSerializedBlock,
   fromHexString,
   toHexString,
-} from '../../../src'
+} from '../../../src/index.js'
 import block0_db from '../../networks/state/testdata/block-0x11a86a9-db.json'
 import block0_meta from '../../networks/state/testdata/block-0x11a86a9-meta.json'
 import block1_db from '../../networks/state/testdata/block-0x11a86aa-db.json'
@@ -20,11 +20,11 @@ import type { HistoryNetwork, StateNetwork } from '../../../src'
 
 describe('shared accounts', async () => {
   for (const account0 of block0_meta.accounts) {
-    if (block1_meta.accounts.includes(account0)) {
+    if (block1_meta.accounts.includes(account0) !== undefined) {
       // it(`should have account ${account0} in block 0 and block 1`, async () => {
       //   assert.equal(true, true)
       // })
-      if (block2_meta.accounts.includes(account0)) {
+      if (block2_meta.accounts.includes(account0) !== undefined) {
         it(`${account0}`, async () => {
           assert.equal(true, true)
         })
