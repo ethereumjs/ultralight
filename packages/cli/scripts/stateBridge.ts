@@ -1,5 +1,5 @@
 import jayson from 'jayson/promise/index.js'
-import {  parentPort, workerData } from 'worker_threads'
+import { parentPort, workerData } from 'worker_threads'
 import { Alchemy, Network } from 'alchemy-sdk'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
@@ -54,7 +54,10 @@ const index = async (block: Block) => {
     toHexString(block.serialize()),
   ])
 
-  await client.request('ultralight_indexBlock', ['0x' + block.header.number.toString(16), toHexString(block.header.hash())])
+  await client.request('ultralight_indexBlock', [
+    '0x' + block.header.number.toString(16),
+    toHexString(block.header.hash()),
+  ])
   parentPort?.postMessage(`indexed: ${block.header.number}`)
 }
 const gossip = async (contentKey: Uint8Array, content: Uint8Array) => {
@@ -89,7 +92,7 @@ const generateStateNetworkContent = async () => {
   const block = await alchemy.core.getBlockWithTransactions(number)
   
   const blockJson = await alchemy.core.send('eth_getBlockByNumber', [number.toString(16), false])
-  const ethJSBlock = Block.fromRPC(blockJson, undefined, { setHardfork: true})
+  const ethJSBlock = Block.fromRPC(blockJson, undefined, { setHardfork: true })
   await index(ethJSBlock)
   let totalCSP = 0
   let totalBytes_storage = 0
@@ -116,10 +119,6 @@ const generateStateNetworkContent = async () => {
           stateRoot: fromHexString(stateroot),
         })
         const data = {
-          data:
-            p.value.length % 2 === 0
-              ? fromHexString(p.value)
-              : fromHexString('0x0' + p.value.slice(2)),
           witnesses: p.proof.map((x: string) => {
             return x.length % 2 === 0 ? fromHexString(x) : fromHexString('0x0' + x.slice(2))
           }),
@@ -143,10 +142,6 @@ const generateStateNetworkContent = async () => {
       const accountProof = await alchemy.core.send('eth_getProof', [c.contractAddress, [], number])
       const accountProofContent = AccountTrieProofType.serialize({
         witnesses: accountProof.accountProof.map(fromHexString),
-        nonce: BigInt(accountProof.nonce),
-        balance: BigInt(accountProof.balance),
-        storageRoot: fromHexString(accountProof.storageHash),
-        codeHash: fromHexString(accountProof.codeHash),
       })
       const accountProofContentKey = getStateNetworkContentKey({
         contentType: StateNetworkContentType.AccountTrieProof,
@@ -185,10 +180,6 @@ const generateStateNetworkContent = async () => {
         x.address,
         {
           witnesses: x.accountProof.map(fromHexString),
-          nonce: BigInt(x.nonce),
-          balance: BigInt(x.balance),
-          storageRoot: fromHexString(x.storageHash),
-          codeHash: fromHexString(x.codeHash),
         },
       ]
     }),
@@ -210,7 +201,6 @@ const generateStateNetworkContent = async () => {
       contentType: StateNetworkContentType.AccountTrieProof,
     })
     await toStorage(contentKey, content)
-    //return [add, { contentKey, contentId, content }]
   }
 
   const resultMsg2 = [
@@ -234,7 +224,7 @@ const generateStateNetworkContent = async () => {
   ].join('/')
 
   parentPort?.postMessage(resultMsg2 + '\r')
-  
+
   return number
 }
 
