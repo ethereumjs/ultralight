@@ -9,11 +9,11 @@ export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 export const MIN_BOOTSTRAP_VOTES = 5
 
 export enum BeaconLightClientNetworkContentType {
-  LightClientBootstrap = 0,
-  LightClientUpdatesByRange = 1,
-  LightClientFinalityUpdate = 2,
-  LightClientOptimisticUpdate = 3,
-  LightClientUpdate = 4, // Added for convenience, not part of the Portal Network Spec
+  LightClientBootstrap = 32, // 0x20
+  LightClientUpdatesByRange = 33, // 0x21
+  LightClientFinalityUpdate = 34, // 0x22
+  LightClientOptimisticUpdate = 35, // 0x23
+  LightClientUpdate = 36, // 0x24 (Added for convenience, not part of the Portal Network Spec)
 }
 
 export type LightClientForkName = Exclude<ForkName, 'phase0' | 'bellatrix'> // ForkName subset that excludes forks that have no light client changes
