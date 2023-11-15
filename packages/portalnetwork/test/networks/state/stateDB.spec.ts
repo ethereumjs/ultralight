@@ -56,14 +56,9 @@ describe('Input AccountTrieProof', async () => {
     assert.equal(nonce, BigInt(testdata.ATP.nonce))
   })
   it('should rebuild account trie proof content from database', async () => {
-    const account = await database.getAccount(toHexString(address), toHexString(stateRoot))
     const trie = database.getAccountTrie(toHexString(stateRoot))
     const proof = await trie.createProof(address)
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     assert.deepEqual(content, fromHexString(testdata.ATP.content))
@@ -99,11 +94,8 @@ describe('Input ContractStorageProof', async () => {
   })
   it('should rebuild contract storage proof content from database', async () => {
     const storageTrie = await database.getStorageTrie(toHexString(stateRoot), toHexString(address))
-    const value = await storageTrie.get(fromHexString(testdata.CSTP.slot))
-    const data = RLP.decode(value!) as Uint8Array
     const witnesses = await storageTrie.createProof(fromHexString(testdata.CSTP.slot))
     const content = ContractStorageTrieProofType.serialize({
-      data,
       witnesses,
     })
     assert.deepEqual(content, fromHexString(testdata.CSTP.content))

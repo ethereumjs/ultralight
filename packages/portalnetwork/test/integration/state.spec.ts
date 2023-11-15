@@ -120,10 +120,6 @@ describe('State Network wire spec tests', () => {
     const proof = await trie.createProof(address.toBytes())
 
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -189,10 +185,6 @@ describe('recursive find content', () => {
     const proof = await trie.createProof(address.toBytes())
 
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -251,10 +243,6 @@ describe('recursive find content', () => {
 
     const proof = await trie.createProof(address.toBytes())
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -328,14 +316,9 @@ describe('recursive find content', () => {
     const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
 
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     const storageContent = ContractStorageTrieProofType.serialize({
-      data: Uint8Array.from(cstp.data),
       witnesses: storageProof,
     })
     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
