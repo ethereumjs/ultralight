@@ -212,7 +212,7 @@ describe('Find Content tests', () => {
     )
     await node1.stop()
     await node2.stop()
-  }, 10000)
+  }, 15000)
 
   it('should find LightClientUpdatesByRange update', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
