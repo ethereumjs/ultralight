@@ -83,14 +83,14 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
 
 export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
   switch (contentKey[0]) {
-    case 0:
+    case 16:
       return StateNetworkContentType.AccountTrieProof
-    case 1:
+    case 17:
       return StateNetworkContentType.ContractStorageTrieProof
-    case 2:
+    case 18:
       return StateNetworkContentType.ContractByteCode
     default:
-      throw new Error(`Invalid content key type`)
+      throw new Error(`Invalid content key type: ${contentKey[0]}`)
   }
 }
 
