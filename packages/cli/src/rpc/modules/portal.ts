@@ -216,7 +216,7 @@ export class portal {
     requestId: bigint,
     payload: Uint8Array,
   ) {
-    this._client.sendPortalNetworkResponse(
+    void this._client.sendPortalNetworkResponse(
       {
         nodeId,
         socketAddr,
@@ -464,7 +464,7 @@ export class portal {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this.sendPortalNetworkResponse(
+      void this.sendPortalNetworkResponse(
         dstId,
         enr.getLocationMultiaddr('udp')!,
         BigInt(requestId),
@@ -606,7 +606,7 @@ export class portal {
       value: fromHexString(content),
     })
     const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    this.sendPortalNetworkResponse(
+    void this.sendPortalNetworkResponse(
       nodeId,
       enr?.getLocationMultiaddr('udp')!,
       enr!.seq,
@@ -732,7 +732,7 @@ export class portal {
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    this.sendPortalNetworkResponse(
+    void this.sendPortalNetworkResponse(
       _enr.nodeId,
       _enr.getLocationMultiaddr('udp')!,
       myEnr.seq,

@@ -1,8 +1,6 @@
 import { SignableENR } from '@chainsafe/discv5'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-// eslint-disable-next-line node/file-extension-in-import
-
 import { execSync } from 'child_process'
 import debug from 'debug'
 import * as fs from 'fs'
@@ -101,14 +99,15 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   const cmd = 'hostname -I'
-  const ip = args.bindAddress
-    ? args.bindAddress.split(':')[0]
-    : execSync(cmd).toString().split(' ')[0].trim()
-  const bindPort = args.bindAddress ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
+  const ip =
+    args.bindAddress !== undefined
+      ? args.bindAddress.split(':')[0]
+      : execSync(cmd).toString().split(' ')[0].trim()
+  const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
-  if (!args.pk) {
+  if (args.pk === undefined) {
     id = await createSecp256k1PeerId()
   } else {
     id = await createFromProtobuf(fromHexString(args.pk))
@@ -126,7 +125,7 @@ const main = async () => {
 
   const metrics = setupMetrics()
   let db
-  if (args.dataDir) {
+  if (args.dataDir !== undefined) {
     db = new Level<string, string>(args.dataDir)
   }
   const config = {
@@ -183,9 +182,9 @@ const main = async () => {
 
   if (args.metrics) {
     metricsServer = http.createServer(reportMetrics)
-    Object.entries(metrics).forEach((entry) => {
+    for (const entry of Object.entries(metrics)) {
       register.registerMetric(entry[1])
-    })
+    }
     metricsServer?.listen(args.metricsPort, rpcAddr)
     log(`Started Metrics Server address=http://${rpcAddr}:${args.metricsPort}`)
   }
@@ -193,10 +192,10 @@ const main = async () => {
   await portal.start()
 
   const bootnodes: Array<Enr> = []
-  if (args.bootnode) {
+  if (args.bootnode !== undefined) {
     bootnodes.push(args.bootnode)
   }
-  if (args.bootnodeList) {
+  if (args.bootnodeList !== undefined) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
     const bootnodeList = bootnodeData.split('\n')
     for (const bootnode of bootnodeList) {
@@ -214,7 +213,7 @@ const main = async () => {
   }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
-  if (args.web3) {
+  if (args.web3 !== undefined) {
     const [host, port] = args.web3.split(':')
     if (host && port) {
       web3 = jayson.Client.http({ host, port })
@@ -229,10 +228,10 @@ const main = async () => {
         // `_methods` is not part of the jayson.Server interface but exists on the object
         // but the docs recommend this pattern for custom routing
         // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js
-        if (!this.getMethod && web3) {
+        if (this.getMethod(method) === undefined && web3) {
           return new jayson.Method(async function () {
             const res = await web3!.request(method, params)
-            if (res.result) return res.result
+            if (res.result !== undefined) return res.result
             else return res.error
           })
         } else {
@@ -258,7 +257,7 @@ const main = async () => {
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
     await portal.stop()
-    if (metricsServer?.listening) {
+    if (metricsServer?.listening === true) {
       metricsServer.close()
     }
     process.exit()
