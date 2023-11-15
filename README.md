@@ -1,6 +1,6 @@
-# Ultralight - Portal Network Clients in the browser
+# Ultralight - A Portal Network implementation in Typescript
 
-This monorepo comprises a suite of tools **currently in development** to allow dapps, wallet providers, and really any Javascript based Ethereum application to connect into the Portal Network once development is complete and the Portal Network is live. 
+This monorepo comprises an implementation of the [Portal Network spec](https://github.com/ethereum/portal-network-specs) and is **under active development**.  It aspires to allow dapps, wallet providers, and any Javascript based Ethereum application to leverage the Portal Network for access to the Ethereum chain history and state. 
 
 ## Prerequisites
 
@@ -21,15 +21,17 @@ This will start a single instance of the Ultralight client running locally.
 
 Follow the above quickstart guide and run `npm run dev-testnet` to start the client with the current list of bootnodes.  The client will attempt to ping all of bootnodes in the provided default bootnode list.
 
+### Additional Documentation
+
+See the [`cli`](./packages/cli/README.md) documentation for more specific usage of the NodeJS Ultralight client.
+
+See the [interop instructions](./INTEROP.md) for running Ultralight in conjunction with the [Fluffy](https://github.com/status-im/nimbus-eth1/tree/master/fluffy) and [Trin](https://github.com/ethereum/trin) portal clients.
+
 ### Development Notes
 
 Use `npm run dev` in the `portalnetwork` library to have Typescript automatically recompile code as changes are made.  
 
-### Detailed Node Usage/Interop Instructions
 
-See [`cli`](./packages/cli/README.md) README for more specific usage.
-
-[Interop instructions](./INTEROP.md) for interacting with the [Fluffy](https://github.com/status-im/nimbus-eth1/tree/master/fluffy) and [Trin](https://github.com/ethereum/trin) portal clients
 ## Monorepo Structure
 
 ### [`portalnetwork`](./packages/portalnetwork)
