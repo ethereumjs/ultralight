@@ -14,12 +14,14 @@ import {
 } from 'portalnetwork'
 import { Address } from '@ethereumjs/util'
 import { AccessList } from '@ethereumjs/tx'
+import { Block } from '@ethereumjs/block'
 
 const config = {
   apiKey: workerData.KEY,
   network: Network.ETH_MAINNET,
   url: `https://eth-mainnet.alchemyapi.io/v2/${workerData.KEY}`,
 }
+
 const alchemy = new Alchemy({
   ...config,
 })
@@ -42,6 +44,19 @@ const store = async (contentKey: Uint8Array, content: Uint8Array) => {
   parentPort?.postMessage(`stored: ${stored.result}`)
 }
 
+const index = async (block: Block) => {
+  const client = jayson.Client.http({
+    host: workerData.host,
+    port: workerData.port,
+  })
+  await client.request('ultralight_addBlockToHistory', [
+    toHexString(block.header.hash()),
+    toHexString(block.serialize()),
+  ])
+
+  await client.request('ultralight_indexBlock', ['0x' + block.header.number.toString(16), toHexString(block.header.hash())])
+  parentPort?.postMessage(`indexed: ${block.header.number}`)
+}
 const gossip = async (contentKey: Uint8Array, content: Uint8Array) => {
   const client = jayson.Client.http({
     host: workerData.host ?? 'localhost',
@@ -72,6 +87,10 @@ const generateStateNetworkContent = async () => {
   const stateroot = latest.result.stateRoot
   const receipts = await alchemy.core.getTransactionReceipts({ blockNumber: number })
   const block = await alchemy.core.getBlockWithTransactions(number)
+  
+  const blockJson = await alchemy.core.send('eth_getBlockByNumber', [number.toString(16), false])
+  const ethJSBlock = Block.fromRPC(blockJson, undefined, { setHardfork: true})
+  await index(ethJSBlock)
   let totalCSP = 0
   let totalBytes_storage = 0
   const accessLists: AccessList[] = block.transactions
@@ -86,8 +105,9 @@ const generateStateNetworkContent = async () => {
         number,
       ])
       for (const p of storageProof) {
-        const contentkey = ContractStorageTrieKeyType.serialize({
-          address: fromHexString(
+        const contentkey = getStateNetworkContentKey({
+          contentType: StateNetworkContentType.ContractStorageTrieProof,
+          address: Address.fromString(
             contract.address.length % 2 === 0
               ? contract.address
               : '0x0' + contract.address.slice(2),
@@ -136,8 +156,9 @@ const generateStateNetworkContent = async () => {
       toStorage(accountProofContentKey, accountProofContent)
       const codeHash = accountProof.codeHash
       const bytecode = await alchemy.core.getCode(c.contractAddress, number)
-      const bytecodeContentkey = ContractByteCodeKeyType.serialize({
-        address: fromHexString(c.contractAddress),
+      const bytecodeContentkey = getStateNetworkContentKey({
+        contentType: StateNetworkContentType.ContractByteCode,
+        address: Address.fromString(c.contractAddress),
         codeHash: fromHexString(codeHash),
       })
       const contractBytecode = ContractByteCodeType.serialize(fromHexString(bytecode))
@@ -188,7 +209,8 @@ const generateStateNetworkContent = async () => {
       address: Address.fromString(add),
       contentType: StateNetworkContentType.AccountTrieProof,
     })
-    return [add, { contentKey, contentId, content }]
+    await toStorage(contentKey, content)
+    //return [add, { contentKey, contentId, content }]
   }
 
   const resultMsg2 = [
@@ -212,7 +234,7 @@ const generateStateNetworkContent = async () => {
   ].join('/')
 
   parentPort?.postMessage(resultMsg2 + '\r')
-
+  
   return number
 }
 

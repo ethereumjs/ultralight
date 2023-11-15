@@ -11,6 +11,7 @@ import {
   BlockHeaderWithProof,
   GET_LOGS_BLOCK_RANGE_LIMIT,
   getLogs,
+  RpcTx,
 } from 'portalnetwork'
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { GetLogsParams, jsonRpcLog } from '../types.js'
@@ -76,8 +77,43 @@ export class eth {
         }),
       ],
     ])
+
+    this.getBalance = middleware(this.getBalance.bind(this), 2, [
+      [validators.address],
+      [validators.blockOption],
+    ])
   }
 
+  async getBalance(params: [string, string]) {
+    const [address, blockTag] = params
+    try {
+      const res = await this._client.ETH.ethGetBalance(address, BigInt(blockTag))
+      if (res === undefined) {
+        return '0x0'
+      }
+      return bigIntToHex(res)
+    } catch (err: any) {
+      console.log(err)
+      throw {
+        code: INTERNAL_ERROR,
+        message: err.message,
+      }
+    }
+  }
+
+  async call(params: [RpcTx, string]) {
+    const [tx, blockTag] = params
+    try {
+      const res = await this._client.ETH.ethCall(tx, BigInt(blockTag))
+      return res
+    } catch (err: any) {
+      console.log(err)
+      throw {
+        code: INTERNAL_ERROR,
+        message: err.message,
+      }
+    }
+  }
   /**
    * Returns the currently configured chain id, a value used in replay-protected transaction signing as introduced by EIP-155.
    * @param _params An empty array

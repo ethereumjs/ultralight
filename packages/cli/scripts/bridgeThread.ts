@@ -1,6 +1,5 @@
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs'
-import { Alchemy, Network } from 'alchemy-sdk'
 import EventEmitter from 'events'
 import jayson from 'jayson/promise/index.js'
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads'
@@ -23,7 +22,8 @@ const bridgeThread = async () => {
     .option('host', {
       description: 'ip address of devnet',
       string: true,
-      optional: true,
+      default: '127.0.0.1',
+      optional: true
     })
     .option('port', {
       description: 'starting port number',
@@ -34,6 +34,11 @@ const bridgeThread = async () => {
     .strict().argv
 
   const alchemyAPIKey = process.env.ALCHEMY_API_KEY
+  if (alchemyAPIKey === undefined) {
+    console.log('Alchemy API key must be provided to run this script')
+    process.exit(1)
+  }
+
   const alchemyHTTP = jayson.Client.https({
     host: 'eth-mainnet.g.alchemy.com',
     path: `/v2/${alchemyAPIKey}`,
@@ -99,7 +104,7 @@ const bridgeThread = async () => {
     const worker = new Worker('./scripts/stateBridge.ts', {
       execArgv: ["--loader", "ts-node/esm"],
 
-      workerData: { latest, KEY: args.KEY, host: args.host, port: currentPort(), memory },
+      workerData: { latest, KEY: alchemyAPIKey, host: args.host, port: currentPort(), memory },
     })
     worker.on('message', async (msg) => {
       if (msg.startsWith('getProof')) {

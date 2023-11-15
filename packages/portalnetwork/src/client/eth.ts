@@ -4,7 +4,12 @@ import {
   HistoryNetwork,
   NetworkId,
   StateNetwork,
+  UltralightStateManager,
 } from '../networks/index.js'
+import { RpcTx } from './types.js'
+import { EVM } from '@ethereumjs/evm'
+import { Address, TypeOutput, toType } from '@ethereumjs/util'
+import { fromHexString } from '@chainsafe/ssz'
 
 export class ETH {
   history?: HistoryNetwork
@@ -27,6 +32,37 @@ export class ETH {
     }
     const res = await this.state!.getAccount(address, stateRoot)
     return res?.balance
+  }
+
+  /**
+   * Implements functionality needed for making `eth_call` RPC calls over Portal Network data
+   * @param tx an `RpcTx` object matching the `eth_call` input spec
+   * @param blockNumber a block number as a `bigint`
+   * @returns An execution result as defined by the `eth_call` spec
+   */
+  ethCall = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
+    this.networkCheck([NetworkId.HistoryNetwork, NetworkId.StateNetwork])
+    const stateRoot = await this.history!.getStateRoot(blockNumber)
+    if (!stateRoot) {
+      throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
+    }
+    const usm = new UltralightStateManager(this.state!)
+    // @ts-expect-error There's some weird typing error buried in the state manager interface with the Account type.
+    // Just ignoring for now
+    const evm = new EVM({ stateManager: usm })
+    await evm.stateManager.setStateRoot(fromHexString(stateRoot))
+    const { from, to, gas: gasLimit, gasPrice, value, data } = tx
+
+    const runCallOpts = {
+      caller: from !== undefined ? Address.fromString(from) : undefined,
+      to: to !== undefined ? Address.fromString(to) : undefined,
+      gasLimit: toType(gasLimit, TypeOutput.BigInt),
+      gasPrice: toType(gasPrice, TypeOutput.BigInt),
+      value: toType(value, TypeOutput.BigInt),
+      data: data !== undefined ? fromHexString(data) : undefined,
+    }
+    const res = (await evm.runCall(runCallOpts)).execResult.returnValue
+    return res
   }
 
   private networkCheck = (networks: NetworkId[]) => {

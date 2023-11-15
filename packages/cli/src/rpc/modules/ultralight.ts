@@ -8,6 +8,7 @@ import {
   PortalNetwork,
 } from 'portalnetwork'
 import { middleware, validators } from '../validators.js'
+import { INTERNAL_ERROR } from '../error-code.js'
 
 const methods = ['ultralight_store', 'ultralight_addBlockToHistory']
 
@@ -28,6 +29,10 @@ export class ultralight {
     this.addBlockToHistory = middleware(this.addBlockToHistory.bind(this), 2, [
       [validators.blockHash],
       [validators.hex],
+    ])
+    this.indexBlock = middleware(this.indexBlock.bind(this), 2, [
+      [validators.hex],
+      [validators.blockHash],
     ])
   }
   async methods() {
@@ -61,6 +66,20 @@ export class ultralight {
     } catch (err: any) {
       this.logger(`Error trying to load content to DB. ${err.message.toString()}`)
       return `Error trying to load content to DB. ${err.message.toString()}`
+    }
+  }
+
+  async indexBlock(params: [string, string]) {
+    const [blockNum, blockHash] = params
+    try {
+      this.logger(`Indexed block ${BigInt(blockNum)} / ${blockNum} to ${blockHash} `)
+      await this._history.indexBlockhash(BigInt(blockNum), blockHash)
+      return `Added ${blockNum} to block index`
+    } catch (err: any) {
+      throw {
+        code: INTERNAL_ERROR,
+        message: err.message,
+      }
     }
   }
 }

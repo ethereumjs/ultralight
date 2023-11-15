@@ -26,27 +26,27 @@
     "@chainsafe/ssz": "^0.11.1",
     "@ethereumjs/block": "5.0.0",
     "@ethereumjs/rlp": "5.0.0",
-    "@ethereumjs/tx": "5.0.0",
     "@ethereumjs/trie": "^6.0.0",
+    "@ethereumjs/tx": "5.0.0",
     "@ethereumjs/util": "9.0.0",
     "@ethereumjs/vm": "7.0.0",
     "@libp2p/interface-peer-id": "^2.0.1",
     "@libp2p/peer-id": "^2.0.1",
     "@libp2p/peer-id-factory": "^2.0.3",
+    "@lodestar/config": "^1.9.2",
+    "@lodestar/light-client": "^1.11.0",
+    "@lodestar/params": "^1.9.2",
+    "@lodestar/types": "^1.9.2",
     "@multiformats/multiaddr": "^11.0.0",
     "debug": "^4.3.3",
     "jayson": "^4.0.0",
     "level": "^8.0.0",
     "portalnetwork": "^0.0.1",
     "prom-client": "^14.0.1",
-    "yargs": "^17.3.0",
-    "@lodestar/config": "^1.9.2",
-    "@lodestar/light-client": "^1.11.0",
-    "@lodestar/params": "^1.9.2",
-    "@lodestar/types": "^1.9.2"
+    "yargs": "^17.3.0"
   },
   "peerDependencies": {
-    "alchemy-sdk": "v3-beta"
+    "alchemy-sdk": "^3.0.0-beta.3"
   },
   "peerDependenciesMeta": {
     "alchemy-sdk": {

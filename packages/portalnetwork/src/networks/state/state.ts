@@ -168,6 +168,9 @@ export class StateNetwork extends BaseNetwork {
    */
   public getAccount = async (address: string, stateRoot: string) => {
     let account
+    this.logger.extend('GETACCOUNT')(
+      `trying to retrieve account for ${address} at stateRoot ${stateRoot} locally`,
+    )
     account = await this.stateDB.getAccount(address, stateRoot)
     if (account !== undefined) return account
     const contentKey = getStateNetworkContentKey({
@@ -175,6 +178,9 @@ export class StateNetwork extends BaseNetwork {
       stateRoot: fromHexString(stateRoot),
       contentType: StateNetworkContentType.AccountTrieProof,
     })
+    this.logger.extend('GETACCOUNT')(
+      `didn't find locally. Trying to retrieve account for ${address} at stateRoot ${stateRoot} from network`,
+    )
     const lookup = new ContentLookup(this, contentKey)
     const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
     if (res.content !== undefined) {
