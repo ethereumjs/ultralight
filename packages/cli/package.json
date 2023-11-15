@@ -55,10 +55,9 @@
   },
   "scripts": {
     "start": "ts-node --esm src/index.ts",
-    "server:dev": "tsx watch src/server/server.ts",
-    "server:start": "node dist/server/server.js",
     "devnet": "npx ts-node --esm scripts/devnet.ts ",
     "dev": "npx nodemon --esm src/index.ts -- --bindAddress=127.0.0.1:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data'",
+    "dev-testnet": "npx nodemon --esm src/index.ts -- --bindAddress=0.0.0.0:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data' --bootnodeList=./bootnodes.txt",
     "build": "tsc && cp bootnodes.txt ./dist",
     "test": "npx vitest run test/* -c=./vitest.config.unit.ts",
     "lint": "../../config/cli/lint.sh",
