@@ -252,7 +252,7 @@ describe('API tests', async () => {
     )
 
     const range = await network.findContentLocally(hexToBytes(updatesByRange.content_key))
-    const retrievedRange = await LightClientUpdatesByRange.deserialize(range!)
+    const retrievedRange = LightClientUpdatesByRange.deserialize(range!)
     const update1 = ssz.capella.LightClientUpdate.deserialize(retrievedRange[0].slice(4))
     assert.equal(
       update1.attestedHeader.beacon.slot,

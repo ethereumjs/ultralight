@@ -158,7 +158,7 @@ export class StateDB {
     const { witnesses } = ContractStorageTrieProofType.deserialize(content)
     const storageTrie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
     await storageTrie.fromProof(witnesses)
-    this.setStorageTrie(
+    await this.setStorageTrie(
       toHexString(stateRoot),
       toHexString(address),
       toHexString(storageTrie.root()),
@@ -353,7 +353,7 @@ export class StateDB {
     if (this.accountCodeHash.has(address)) {
       return fromHexString(this.accountCodeHash.get(address)!)
     }
-    if (!stateRoot) {
+    if (stateRoot === undefined) {
       return undefined
     }
     const account = await this.getAccount(address, stateRoot)

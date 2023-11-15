@@ -43,7 +43,7 @@ export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint
     case HistoryNetworkContentType.Receipt:
     case HistoryNetworkContentType.HeaderProof:
     case HistoryNetworkContentType.EpochAccumulator: {
-      if (!hash) throw new Error('block hash is required to generate contentId')
+      if (hash === undefined) throw new Error('block hash is required to generate contentId')
       encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
       break
     }

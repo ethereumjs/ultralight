@@ -64,7 +64,7 @@ describe('UltralightStateManager', () => {
     })
     await network.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
 
-    usm.setStateRoot(trie.root())
+    await usm.setStateRoot(trie.root())
     const gotAccount = await usm.getAccount(address)
     assert.equal(gotAccount?.balance, account.balance, 'retrieved account from state manager')
   })
@@ -128,7 +128,7 @@ describe('UltralightStateManager', () => {
     const byteCodeContent = ContractByteCodeType.serialize(byteCode)
     await network.stateDB.inputContractByteCode(address.toBytes(), codehash, byteCodeContent)
 
-    usm.setStateRoot(trie.root())
+    await usm.setStateRoot(trie.root())
     const gotAccount = await usm.getAccount(address)
     assert.equal(gotAccount?.balance, account.balance, 'retrieved account from state manager')
     const gotCode = await usm.getContractCode(address)
@@ -201,7 +201,7 @@ describe('UltralightStateManager', () => {
       trie.root(),
       storageContent,
     )
-    usm.setStateRoot(trie.root())
+    await usm.setStateRoot(trie.root())
     const res = await usm.getContractStorage(address, fromHexString(cstp.slot))
     assert.equal(
       toHexString(res),

@@ -101,13 +101,13 @@ export async function getReceipts(
 ): Promise<TxReceipt[] | TxReceiptWithType[]> {
   if (!encoded) return []
   let receipts = decodeReceipts(hexToBytes(encoded))
-  if (calcBloom) {
+  if (calcBloom !== undefined) {
     receipts = receipts.map((r) => {
       r.bitvector = logsBloom(r.logs).bitvector
       return r
     })
   }
-  if (includeTxType && body) {
+  if (includeTxType && body !== undefined) {
     const block = reassembleBlock(hexToBytes(encoded), hexToBytes(body))
     receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
       r.txType = block.transactions[i].type
@@ -130,7 +130,7 @@ export async function getLogs(
     let logs: GetLogsReturn = []
     let logIndex = 0
     for (const [receiptIndex, receipt] of receipts.entries()) {
-      block &&
+      block !== undefined &&
         logs.push(
           ...receipt!.logs.map((log) => ({
             log,

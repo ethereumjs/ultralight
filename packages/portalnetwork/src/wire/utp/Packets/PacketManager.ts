@@ -17,7 +17,7 @@ export class PacketManager {
     this.updateWindow = () => this.congestionControl.updateWindow()
   }
   createPacket<T extends PacketType>(opts: ICreate<T>): Packet<T> {
-    if (opts.extension === HeaderExtension.selectiveAck && !opts.bitmask) {
+    if (opts.extension === HeaderExtension.selectiveAck && opts.bitmask === undefined) {
       throw new Error('Selective acks must have a bitmask')
     }
     const header: HeaderInput<T> = {

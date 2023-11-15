@@ -45,7 +45,7 @@ export class DBManager {
     const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
     return db.put(databaseKey, val, (err: any) => {
-      if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+      if (err !== undefined) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
   }
 
@@ -85,7 +85,7 @@ export class DBManager {
     const db = this.sublevels.get(sublevel)
     if (!db) return
     for await (const key of db.keys({ gte: bigIntToHex(radius) })) {
-      db.del(key)
+      await db.del(key)
     }
   }
 
@@ -97,7 +97,7 @@ export class DBManager {
   }
 
   async close() {
-    await this.db.removeAllListeners()
+    this.db.removeAllListeners()
     await this.db.close()
   }
 

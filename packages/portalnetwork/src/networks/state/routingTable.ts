@@ -13,9 +13,9 @@ export class StateNetworkRoutingTable extends PortalNetworkRoutingTable {
    */
   nearest(id: NodeId, limit: number): ENR[] {
     const results: ENR[] = []
-    this.buckets.forEach((bucket) => {
+    for (const bucket of this.buckets) {
       results.push(...bucket.values())
-    })
+    }
     results.sort((a, b) => {
       const diff = distance(BigInt(id), BigInt(a.nodeId)) - distance(BigInt(id), BigInt(b.nodeId))
       if (diff < 0) return -1

@@ -38,7 +38,7 @@ export class GossipManager {
    */
   private enqueue(peer: Peer, key: Uint8Array): number {
     if (!this.history.routingTable.contentKeyKnownToPeer(peer, toHexString(key))) {
-      this.gossipQueues[peer]
+      this.gossipQueues[peer] !== undefined
         ? this.gossipQueues[peer].push(key)
         : (this.gossipQueues[peer] = [key])
     }
@@ -52,7 +52,7 @@ export class GossipManager {
   private gossip(peer: Peer) {
     const queue = this.gossipQueues[peer]
     this.gossipQueues[peer] = []
-    this.history.sendOffer(peer, queue)
+    void this.history.sendOffer(peer, queue)
   }
 
   /**

@@ -24,7 +24,7 @@ import {
   randUint16,
   startingNrs,
 } from '../../../src/index.js'
-import ContentReader from '../../../src/wire/utp/Socket/ContentReader.js'
+import { ContentReader } from '../../../src/wire/utp/Socket/ContentReader.js'
 
 import type { INewRequest } from '../../../src/index.js'
 
@@ -143,9 +143,9 @@ describe('uTP Reader/Writer tests', () => {
       },
     })
     socket.reader = new ContentReader(2)
-    packets.forEach((packet) => {
-      socket.reader!.addPacket(packet)
-    })
+    for (const packet of packets) {
+      await socket.reader!.addPacket(packet)
+    }
     assert.equal(
       packets.length,
       socket.reader.packets.length,
@@ -165,9 +165,9 @@ describe('uTP Reader/Writer tests', () => {
       `Content Reader correctly recompiled content`,
     )
     const _reader2 = new ContentReader(2)
-    packets.reverse().forEach((packet) => {
-      _reader2.addPacket(packet)
-    })
+    for (const packet of packets.reverse()) {
+      await _reader2.addPacket(packet)
+    }
     assert.equal(_reader2.packets.length, packets.length, 'Packets added to reader')
     assert.equal(_reader2.inOrder.length, 1, 'Packets were added out of order')
     const _compiled2 = await _reader2.run()

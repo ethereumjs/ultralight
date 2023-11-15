@@ -139,7 +139,7 @@ export class StateNetwork extends BaseNetwork {
     contentKey: string,
     content: Uint8Array,
   ) => {
-    this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
+    await this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, toHexString(content))
   }

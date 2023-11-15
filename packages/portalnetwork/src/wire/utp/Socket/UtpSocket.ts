@@ -5,8 +5,8 @@ import { bitmap } from '../../../index.js'
 import { PacketManager } from '../Packets/PacketManager.js'
 import { ConnectionState, PacketType, UtpSocketType } from '../index.js'
 
-import ContentReader from './ContentReader.js'
-import ContentWriter from './ContentWriter.js'
+import { ContentReader } from './ContentReader.js'
+import { ContentWriter } from './ContentWriter.js'
 
 import type { NetworkId } from '../../../index.js'
 import type { ICreateData, ICreatePacketOpts, Packet, UtpSocketOptions } from '../index.js'
@@ -90,7 +90,7 @@ export class UtpSocket extends EventEmitter {
         this.writer?.emit('sent')
       }
     })
-    this.writer.start()
+    void this.writer.start()
   }
   setState(state: ConnectionState) {
     this.state = state
@@ -217,7 +217,7 @@ export class UtpSocket extends EventEmitter {
         await this.sendFinPacket()
         return
       }
-      this.writer!.write()
+      await this.writer!.write()
     }
   }
 
@@ -283,7 +283,7 @@ export class UtpSocket extends EventEmitter {
       this.reader = undefined
       this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
       this.close()
-      this.sendAckPacket()
+      await this.sendAckPacket()
       return _content
     } else {
       // TODO: Else wait for all data packets.

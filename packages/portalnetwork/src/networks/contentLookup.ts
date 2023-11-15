@@ -121,7 +121,7 @@ export class ContentLookup {
               !this.network.routingTable.contentKeyKnownToPeer(peer, toHexString(this.contentKey))
             ) {
               // Only offer content if not already offered to this peer
-              this.network.sendOffer(peer, [this.contentKey])
+              await this.network.sendOffer(peer, [this.contentKey])
             }
           }
           return { content: res.value as Uint8Array, utp: false }

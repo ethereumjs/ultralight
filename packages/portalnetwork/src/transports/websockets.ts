@@ -20,13 +20,13 @@ import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
 
 const log = debug('discv5:transport')
 
-interface IWebSocketTransportEvents extends ITransportEvents {
+interface WebSocketTransportEvents extends ITransportEvents {
   multiAddr: (src: Multiaddr) => void
 }
 
 export declare type WSTransportEventEmitter = StrictEventEmitter<
   EventEmitter,
-  IWebSocketTransportEvents
+  WebSocketTransportEvents
 >
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over Websockets

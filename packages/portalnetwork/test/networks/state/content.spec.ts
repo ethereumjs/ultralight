@@ -1,31 +1,18 @@
-import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { Trie } from '@ethereumjs/trie'
 import { Account } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { assert, assertType, describe, it } from 'vitest'
 
-import { Bytes32Type } from '../../../src'
 import {
   AccountTrieProofType,
   ContractStorageTrieProofType,
-  MPTWitnessesType,
   StateNetworkContentType,
 } from '../../../src/networks/state/types.js'
 import { decodeStateNetworkContentKey } from '../../../src/networks/state/util.js'
 
 import testdata from './content.json'
 
-const oldCSType = new ContainerType({
-  witnesses: MPTWitnessesType,
-  data: Bytes32Type,
-})
-const oldAType = new ContainerType({
-  witnesses: MPTWitnessesType,
-  nonce: new UintBigintType(8),
-  balance: new UintBigintType(32),
-  codeHash: Bytes32Type,
-  storageRoot: Bytes32Type,
-})
 describe('Account Trie Proof Content Type', async () => {
   const contentKey = testdata.ATP.contentKey
   const content = testdata.ATP.content

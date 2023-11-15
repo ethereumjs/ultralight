@@ -58,7 +58,7 @@ export class CongestionControl extends EventEmitter {
 
   updateRTT(timestamp: number, ackNr: number): void {
     const sentTime = this.outBuffer.get(ackNr)
-    if (!sentTime) {
+    if (sentTime === undefined) {
       return
     }
     const packetRtt = timestamp - sentTime
@@ -95,9 +95,7 @@ export class CongestionControl extends EventEmitter {
     const delay = Math.abs(timeReceived - timestamp)
     this.reply_micro = delay
     this.ourDelay = delay - this.baseDelay.delay
-    if (timeReceived - this.baseDelay.timestamp > 120000) {
-      this.baseDelay = { delay, timestamp: timeReceived }
-    } else if (delay < this.baseDelay.delay) {
+    if (timeReceived - this.baseDelay.timestamp > 120000 || delay < this.baseDelay.delay) {
       this.baseDelay = { delay, timestamp: timeReceived }
     }
     const offTarget = CCONTROL_TARGET - this.ourDelay

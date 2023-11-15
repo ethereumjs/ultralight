@@ -173,7 +173,11 @@ describe('store -- Block Bodies and Receipts', async () => {
       value: proof,
     },
   })
-  network.store(HistoryNetworkContentType.BlockHeader, serializedBlock.blockHash, headerWithProof)
+  await network.store(
+    HistoryNetworkContentType.BlockHeader,
+    serializedBlock.blockHash,
+    headerWithProof,
+  )
   await network.store(
     HistoryNetworkContentType.BlockBody,
     serializedBlock.blockHash,

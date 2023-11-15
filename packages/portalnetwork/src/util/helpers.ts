@@ -1,6 +1,4 @@
 import { Block, BlockHeader } from '@ethereumjs/block'
-
-/*** Temporary imports from @ethereumjs/block */
 import { TransactionFactory } from '@ethereumjs/tx'
 import { TypeOutput, bytesToHex, setLengthLeft, toBytes, toType } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
@@ -62,9 +60,10 @@ export async function getBlockReceipts(
         from: block.transactions[idx].getSenderAddress().toString(),
         contractAddress: block.transactions[idx].getSenderAddress().toString(),
         index: idx,
-        root: (r as PreByzantiumTxReceipt).stateRoot
-          ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
-          : null,
+        root:
+          (r as PreByzantiumTxReceipt).stateRoot !== undefined
+            ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
+            : null,
         gasUsed: block.header.gasUsed,
         logsBloom: toHexString(block.header.logsBloom),
         blockHash: toHexString(block.hash()),
@@ -86,7 +85,11 @@ export async function getBlockReceipts(
   return blockReceipts
 }
 
-async function getTransactionReceipt(block: Block, idx: number, provider: ethers.JsonRpcProvider) {
+export async function getTransactionReceipt(
+  block: Block,
+  idx: number,
+  provider: ethers.JsonRpcProvider,
+) {
   const receipts = await getBlockReceipts(block, provider)
   return receipts[idx]
 }

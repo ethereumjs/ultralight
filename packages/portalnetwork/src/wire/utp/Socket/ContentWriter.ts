@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import { BUFFER_SIZE, PacketType } from '../Packets/PacketTyping.js'
 
 import type { Debugger } from 'debug'
-export default class ContentWriter extends EventEmitter {
+export class ContentWriter extends EventEmitter {
   logger: Debugger
   startingSeqNr: number
   seqNr: number
@@ -54,7 +54,7 @@ export default class ContentWriter extends EventEmitter {
   async start(): Promise<void> {
     this.writing = true
     this.dataChunks = this.chunk()
-    this.write()
+    await this.write()
   }
 
   chunk(): Record<number, Uint8Array> {

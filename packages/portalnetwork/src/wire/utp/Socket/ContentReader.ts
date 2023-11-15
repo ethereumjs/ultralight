@@ -2,7 +2,7 @@ import debug from 'debug'
 
 import type { StatePacket } from '../index.js'
 import type { Debugger } from 'debug'
-export default class ContentReader {
+export class ContentReader {
   packets: StatePacket[]
   inOrder: StatePacket[]
   reading: boolean

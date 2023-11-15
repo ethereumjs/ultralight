@@ -63,7 +63,7 @@ export class HistoryNetwork extends BaseNetwork {
    */
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const value = await this.retrieve(toHexString(contentKey))
-    return value ? hexToBytes(value) : hexToBytes('0x')
+    return value !== undefined ? hexToBytes(value) : hexToBytes('0x')
   }
 
   public indexBlockhash = async (number: bigint, blockHash: string) => {
@@ -85,7 +85,10 @@ export class HistoryNetwork extends BaseNetwork {
   ): Promise<Uint8Array | BlockHeader | undefined> => {
     const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
     const value = await this.retrieve(contentKey)
-    const header = value ? BlockHeaderWithProof.deserialize(fromHexString(value)).header : undefined
+    const header =
+      value !== undefined
+        ? BlockHeaderWithProof.deserialize(fromHexString(value)).header
+        : undefined
     return header !== undefined
       ? asBytes
         ? header
@@ -96,7 +99,7 @@ export class HistoryNetwork extends BaseNetwork {
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
     const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
     const value = await this.retrieve(contentKey)
-    return value ? hexToBytes(value) : undefined
+    return value !== undefined ? hexToBytes(value) : undefined
   }
 
   /**
@@ -111,7 +114,7 @@ export class HistoryNetwork extends BaseNetwork {
     includeTransactions = true,
   ): Promise<Block> => {
     const header = (await this.getBlockHeaderFromDB(blockHash)) as Uint8Array
-    if (!header) {
+    if (header === undefined) {
       throw new Error('Block not found')
     }
     const body = await this.getBlockBodyBytes(blockHash)
@@ -139,7 +142,7 @@ export class HistoryNetwork extends BaseNetwork {
         throw new Error('Received block header with invalid proof')
       }
     }
-    this.indexBlockhash(header.number, toHexString(header.hash()))
+    await this.indexBlockhash(header.number, toHexString(header.hash()))
     this.put(
       this.networkId,
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
@@ -255,7 +258,7 @@ export class HistoryNetwork extends BaseNetwork {
   public async saveReceipts(block: Block) {
     this.logger.extend('BLOCK_BODY')(`added for block #${block.header.number}`)
     const receipts = await saveReceipts(block)
-    this.store(HistoryNetworkContentType.Receipt, toHexString(block.hash()), receipts)
+    await this.store(HistoryNetworkContentType.Receipt, toHexString(block.hash()), receipts)
     return decodeReceipts(receipts)
   }
 

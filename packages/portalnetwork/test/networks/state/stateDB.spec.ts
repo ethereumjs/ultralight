@@ -186,7 +186,7 @@ describe('Input whole block of content', async () => {
   })
   it('should throw if key non-existant', async () => {
     let fakeKey = toHexString(randomBytes(32))
-    while (accessed[0].keys.includes(fakeKey)) {
+    while (accessed[0].keys.includes(fakeKey) === true) {
       fakeKey = toHexString(randomBytes(32))
     }
     try {

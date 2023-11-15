@@ -80,7 +80,6 @@ export abstract class BaseNetwork extends EventEmitter {
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
-    console.log(PortalNetworkRoutingTable)
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
     this.portal = client
     this.metrics = client.metrics

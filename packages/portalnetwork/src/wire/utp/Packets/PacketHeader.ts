@@ -86,6 +86,7 @@ export class SelectiveAckHeader extends Header<PacketType.ST_STATE> {
     buffer.writeUInt16BE(this.ackNr, 18)
     buffer.writeUInt8(this.selectiveAckExtension.type, 20)
     buffer.writeUInt8(this.selectiveAckExtension.len, 21)
+    //eslint-disable-next-line
     this.selectiveAckExtension.bitmask.forEach((value, idx) => {
       buffer.writeUInt8(value, 22 + idx)
     })
