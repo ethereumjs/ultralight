@@ -1,9 +1,9 @@
-import { hideBin } from 'yargs/helpers'
-import yargs from 'yargs'
+import { execSync } from 'child_process'
 import EventEmitter from 'events'
 import jayson from 'jayson/promise/index.js'
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads'
-import { execSync } from 'child_process'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
 const bridgeThread = async () => {
   const args = await yargs(hideBin(process.argv))
@@ -23,7 +23,7 @@ const bridgeThread = async () => {
       description: 'ip address of devnet',
       string: true,
       default: '127.0.0.1',
-      optional: true
+      optional: true,
     })
     .option('port', {
       description: 'starting port number',
@@ -69,13 +69,14 @@ const bridgeThread = async () => {
         return undefined
       case 'store':
         return ports[0]
-      case 'gossip':
+      case 'gossip': {
         const port = ports[current]
         current++
         if (current >= ports.length) {
           current = 0
         }
         return port
+      }
     }
   }
 
@@ -102,14 +103,14 @@ const bridgeThread = async () => {
     }
     processing.add(latest.result.number)
     const worker = new Worker('./scripts/stateBridge.ts', {
-      execArgv: ["--loader", "ts-node/esm"],
+      execArgv: ['--loader', 'ts-node/esm'],
 
       workerData: { latest, KEY: alchemyAPIKey, host: args.host, port: currentPort(), memory },
     })
-    worker.on('message', async (msg) => {
+    worker.on('message', async (msg: string) => {
       if (msg.startsWith('getProof')) {
         const p = msg.split('/')
-        const percent = (p[1] / p[2]) * 100
+        const percent = (parseInt(p[1]) / parseInt(p[2])) * 100
         progress.set(latest.result.number, [
           `|${'/'.repeat(Math.floor(percent / 4))}${'_'.repeat(25 - Math.floor(percent / 4))}|`,
           percent.toFixed(2),
@@ -118,11 +119,10 @@ const bridgeThread = async () => {
       } else if (msg.startsWith('results')) {
         const r = msg.split('/')
         results.set(latest.result.number, r.slice(1))
-      } else {
       }
       let row = 6
       for (let i = started.size - Math.min(started.size, 4); i < started.size; i++) {
-        let key = [...started.keys()][i]
+        const key = [...started.keys()][i]
         if (!key) {
           break
         }
@@ -146,7 +146,7 @@ const bridgeThread = async () => {
       }
     })
     worker.on('error', (err) => console.error(err.message))
-    worker.on('exit', (code) => {
+    worker.on('exit', () => {
       const finished = process.hrtime(start)
       processing.delete(latest.result.number)
       processed.add(latest.result.number)
@@ -162,12 +162,12 @@ const bridgeThread = async () => {
     console.log('State Network Content Bridge')
     console.log(''.repeat(process.stdout.columns))
     console.log('-'.repeat(process.stdout.columns))
-    workerTask()
+    void workerTask()
     getMissed.on('getMissed', (idx) => {
-      workerTask('0x' + parseInt(idx).toString(16))
+      void workerTask('0x' + parseInt(idx).toString(16))
     })
     setInterval(() => {
-      workerTask()
+      void workerTask()
     }, 12000)
     process.on('SIGINT', () => {
       console.log('\nshutting down...')
@@ -175,8 +175,9 @@ const bridgeThread = async () => {
     })
   } else {
     const data = workerData
+    //eslint-disable-next-line
     parentPort?.postMessage(`You said \"${data}\".`)
   }
 }
 
-bridgeThread()
+void bridgeThread()

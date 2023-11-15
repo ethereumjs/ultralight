@@ -1,15 +1,7 @@
-import { Block, BlockHeader } from '@ethereumjs/block'
-import jayson, { HttpClient } from 'jayson/promise/index.js'
-import {
-  BlockHeaderWithProof,
-  ENR,
-  fromHexString,
-  getContentId,
-  getContentKey,
-  HistoryNetworkContentType,
-  NetworkId,
-  toHexString,
-} from 'portalnetwork'
+import jayson from 'jayson/promise/index.js'
+import { BlockHeaderWithProof, fromHexString } from 'portalnetwork'
+
+import type { HttpClient } from 'jayson/promise/index.js'
 
 // Block number: 1
 const blockHeaderContent_key =
@@ -23,7 +15,7 @@ const { Client } = jayson
 
 const gossip = async () => {
   const blockHeaderContent = BlockHeaderWithProof.deserialize(
-    fromHexString(blockHeaderContent_value)
+    fromHexString(blockHeaderContent_value),
   )
   console.log(blockHeaderContent)
 
@@ -73,7 +65,7 @@ const gossip = async () => {
 }
 
 const main = async () => {
-    await gossip()
+  await gossip()
 }
 
-main()
+void main()

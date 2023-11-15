@@ -19,7 +19,7 @@ module.exports = {
     'typedoc.js',
     'docs',
     '.eslintrc.cjs',
-    'scripts/'
+    'vitest.config.*.ts'
   ],
   extends: [
     'typestrict',

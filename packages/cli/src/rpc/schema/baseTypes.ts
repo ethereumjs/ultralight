@@ -44,12 +44,10 @@ export function validateByteString(param: any, index: number, length?: number) {
 
   const address = param.slice(2)
 
-  if (length && length === 1 && address.length < 1) {
-    return {
-      code: INVALID_PARAMS,
-      message: `invalid argument ${index}: invalid length`,
-    }
-  } else if (length && address.length !== length) {
+  if (
+    (length !== undefined && length === 1 && address.length < 1) ||
+    (length !== undefined && address.length !== length)
+  ) {
     return {
       code: INVALID_PARAMS,
       message: `invalid argument ${index}: invalid length`,

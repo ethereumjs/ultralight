@@ -15,6 +15,5 @@ const main = async () => {
     const res = await ultralight.request('portal_history_getSnapshot', [bootnodeEnr.result])
     console.log(res)
   }
-  
 }
-main()
+void main()
