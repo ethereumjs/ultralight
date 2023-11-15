@@ -237,7 +237,8 @@ export class StateNetwork extends BaseNetwork {
       if (proof !== undefined) {
         const trie = new Trie({ useKeyHashing: true })
         await trie.fromProof(proof.witnesses)
-        storage = (await trie.get(fromHexString(slot.toString()))) ?? undefined
+        storage =
+          (await trie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))) ?? undefined
       }
     }
     return storage

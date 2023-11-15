@@ -336,7 +336,7 @@ describe('recursive find content', () => {
     )
     assert.isDefined(res)
     assert.equal(
-      toHexString(res!),
+      toHexString(RLP.decode(res!) as Uint8Array),
       cstp.value,
       'retrieved contract storage slot via recursive find content',
     )
