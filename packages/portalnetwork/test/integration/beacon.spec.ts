@@ -103,7 +103,7 @@ describe('Find Content tests', () => {
         await node2.stop()
         resolve(undefined)
       })
-      network2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
+      void network2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
     })
   })
   it('should find optimistic update', async () => {
@@ -703,7 +703,7 @@ describe('beacon light client sync tests', () => {
       '0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b',
     )
 
-    await network2.lightClient?.start()
+    network2.lightClient?.start()
 
     while (network2.lightClient?.status !== RunStatusCode.started) {
       await new Promise((r) => setTimeout(r, 1000))
@@ -714,7 +714,7 @@ describe('beacon light client sync tests', () => {
       'light client synced to latest epoch successfully',
     )
 
-    await network2.lightClient.stop()
+    network2.lightClient.stop()
     await node1.stop()
     await node2.stop()
   }, 30000)
@@ -828,7 +828,7 @@ describe('beacon light client sync tests', () => {
           resolve('undefined)')
         }
       })
-      network2!.addBootNode(network1?.enr!.encodeTxt())
+      void network2!.addBootNode(network1?.enr!.encodeTxt())
     })
   }, 30000)
 })

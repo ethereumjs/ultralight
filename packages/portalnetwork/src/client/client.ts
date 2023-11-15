@@ -69,7 +69,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     const config = { ...defaultConfig, ...opts.config }
     let bootnodes
-    if (opts.rebuildFromMemory && opts.db) {
+    if (opts.rebuildFromMemory === true && opts.db) {
       const prevEnrString = await opts.db.get('enr')
       const prevPrivateKey = await opts.db.get('privateKey')
       const prevPublicKey = await opts.db.get('publicKey')
@@ -90,7 +90,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
     let ma
     if (opts.config?.bindAddrs?.ip4 === undefined) {
-      if (opts.bindAddress) {
+      if (opts.bindAddress !== undefined) {
         ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
         config.enr.setLocationMultiaddr(ma)
         config.bindAddrs.ip4 = ma
@@ -117,7 +117,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         dbSize = async function () {
           // eslint-disable-next-line no-undef
           const sizeEstimate = await window.navigator.storage.estimate()
-          return sizeEstimate.usage ? sizeEstimate.usage / MEGABYTE : 0
+          return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
         }
         break
       case TransportLayer.NODE:
@@ -194,9 +194,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
         case NetworkId.BeaconLightClientNetwork:
           {
-            const syncStrategy = opts.trustedBlockRoot
-              ? SyncStrategy.TrustedBlockRoot
-              : SyncStrategy.PollNetwork
+            const syncStrategy =
+              opts.trustedBlockRoot !== undefined
+                ? SyncStrategy.TrustedBlockRoot
+                : SyncStrategy.PollNetwork
             this.networks.set(
               network,
               new BeaconLightClientNetwork(this, opts.radius, opts.trustedBlockRoot, syncStrategy),
@@ -276,10 +277,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    */
   public stop = async () => {
     await this.discv5.stop()
-    await this.discv5.removeAllListeners()
+    this.discv5.removeAllListeners()
     await this.removeAllListeners()
     await this.db.close()
-    this.refreshListeners.forEach((network) => clearInterval(network))
+    for (const network of this.refreshListeners) {
+      clearInterval(network[1])
+    }
   }
 
   public network = (): {
@@ -318,9 +321,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public storeNodeDetails = async () => {
     const peers: string[] = []
     for (const network of this.networks) {
-      ;(network[1] as any).routingTable.values().forEach((enr: ENR) => {
+      for (const enr of network[1].routingTable.values()) {
         peers.push(enr.encodeTxt())
-      })
+      }
     }
     try {
       await this.db.batch([
@@ -353,7 +356,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
     if (toHexString(message.protocol) === NetworkId.UTPNetwork) {
-      this.handleUTP(src, src.nodeId, message, message.request)
+      await this.handleUTP(src, src.nodeId, message, message.request)
       return
     }
     const network = this.networks.get(toHexString(message.protocol) as NetworkId)
@@ -402,7 +405,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
-    const messageNetwork = utpMessage ? NetworkId.UTPNetwork : networkId
+    const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
       let nodeAddr: ENR | undefined
@@ -448,6 +451,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) => {
     this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), toHexString(payload))
-    this.discv5.sendTalkResp(src, requestId, payload)
+    await this.discv5.sendTalkResp(src, requestId, payload)
   }
 }
