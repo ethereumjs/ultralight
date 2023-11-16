@@ -139,8 +139,7 @@ describe('UltralightStateManager', () => {
     assert.deepEqual(gotCode, byteCode, 'retrieved contract code from state network')
 
     const greeterInput = '0xcfae3217'
-    // @ts-expect-error There's some weird typing error buried in the state manager interface with the Account type.
-    // Just ignoring for now
+
     const evm = new EVM({ stateManager: usm })
     const res = (await evm.runCall({ data: fromHexString(greeterInput), to: address })).execResult
       .returnValue
