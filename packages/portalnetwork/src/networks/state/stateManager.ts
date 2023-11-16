@@ -1,21 +1,18 @@
 import { toHexString } from '@chainsafe/ssz'
 import { AccountCache, CacheType, StorageCache } from '@ethereumjs/statemanager'
-import { OriginalStorageCache } from '@ethereumjs/statemanager/dist/cjs/cache/originalStorageCache.js'
 import { bytesToBigInt, bytesToHex } from '@ethereumjs/util'
+
+import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
 import type { StateNetwork } from './state.js'
 import type { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
 import type { Account, Address } from '@ethereumjs/util'
 
 export class UltralightStateManager implements EVMStateManagerInterface {
-  originalStorageCache: {
-    get(address: Address, key: Uint8Array): Promise<Uint8Array>
-    clear(): void
-  }
-
   protected _contractCache: Map<string, Uint8Array>
   protected _storageCache: StorageCache
   protected _accountCache: AccountCache
+  originalStorageCache: OriginalStorageCache
   state: StateNetwork
   stateRoot: string
   stateRootBytes: Uint8Array
@@ -24,10 +21,11 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this._storageCache = new StorageCache({ size: 100000, type: CacheType.ORDERED_MAP })
     this._accountCache = new AccountCache({ size: 100000, type: CacheType.ORDERED_MAP })
 
-    this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
     this.state = stateNetwork
     this.stateRoot = ''
     this.stateRootBytes = new Uint8Array()
+
+    this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
   }
 
   clearCaches(): void {
