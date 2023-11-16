@@ -1,6 +1,12 @@
 import { toHexString } from '@chainsafe/ssz'
 import { AccountCache, CacheType, StorageCache } from '@ethereumjs/statemanager'
-import { Account, bytesToBigInt, bytesToHex } from '@ethereumjs/util'
+import {
+  Account,
+  KECCAK256_NULL,
+  KECCAK256_NULL_S,
+  bytesToBigInt,
+  bytesToHex,
+} from '@ethereumjs/util'
 
 import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
@@ -22,9 +28,8 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this._accountCache = new AccountCache({ size: 100000, type: CacheType.ORDERED_MAP })
 
     this.state = stateNetwork
-    this.stateRoot = ''
-    this.stateRootBytes = new Uint8Array()
-
+    this.stateRoot = KECCAK256_NULL_S
+    this.stateRootBytes = KECCAK256_NULL
     this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
   }
 
@@ -58,6 +63,13 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     return new UltralightStateManager(this.state)
   }
   getAccount = async (address: Address): Promise<Account | undefined> => {
+    const elem = this._accountCache?.get(address)
+    if (elem !== undefined) {
+      return elem.accountRLP !== undefined
+        ? Account.fromRlpSerializedAccount(elem.accountRLP)
+        : undefined
+    }
+
     const account = await this.state.getAccount(address.toString(), this.stateRoot)
     if (account !== undefined) this._accountCache?.put(address, account)
     return account
