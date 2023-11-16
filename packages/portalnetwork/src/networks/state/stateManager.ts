@@ -1,12 +1,12 @@
 import { toHexString } from '@chainsafe/ssz'
 import { AccountCache, CacheType, StorageCache } from '@ethereumjs/statemanager'
-import { bytesToBigInt, bytesToHex } from '@ethereumjs/util'
+import { Account, bytesToBigInt, bytesToHex } from '@ethereumjs/util'
 
 import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
 import type { StateNetwork } from './state.js'
 import type { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
-import type { Account, Address } from '@ethereumjs/util'
+import type { Address } from '@ethereumjs/util'
 
 export class UltralightStateManager implements EVMStateManagerInterface {
   protected _contractCache: Map<string, Uint8Array>
@@ -49,7 +49,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     throw new Error('Method not implemented.')
   }
   generateCanonicalGenesis(_initState: any): Promise<void> {
-    throw new Error('Method not implemented.')
+    return Promise.resolve()
   }
   getProof(_address: Address, _storageSlots?: Uint8Array[] | undefined): Promise<Proof> {
     throw new Error('Method not implemented.')
@@ -62,17 +62,29 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     if (account !== undefined) this._accountCache?.put(address, account)
     return account
   }
-  putAccount = async (_address: Address, _account?: Account | undefined): Promise<void> => {
-    return undefined
+  putAccount = async (address: Address, account?: Account | undefined): Promise<void> => {
+    if (account !== undefined) {
+      this._accountCache!.put(address, account)
+    } else {
+      this._accountCache!.del(address)
+    }
   }
-  deleteAccount(_address: Address): Promise<void> {
-    throw new Error('Method not implemented.')
+  deleteAccount = async (address: Address): Promise<void> => {
+    this._accountCache.del(address)
   }
-  modifyAccountFields(
-    _address: Address,
-    _accountFields: Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>,
-  ): Promise<void> {
-    throw new Error('Method not implemented.')
+  modifyAccountFields = async (
+    address: Address,
+    accountFields: Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>,
+  ): Promise<void> => {
+    let account = await this.getAccount(address)
+    if (!account) {
+      account = new Account()
+    }
+    account.nonce = accountFields.nonce ?? account.nonce
+    account.balance = accountFields.balance ?? account.balance
+    account.storageRoot = accountFields.storageRoot ?? account.storageRoot
+    account.codeHash = accountFields.codeHash ?? account.codeHash
+    await this.putAccount(address, account)
   }
   putContractCode = async (address: Address, value: Uint8Array): Promise<void> => {
     // Store contract code in the cache
@@ -120,11 +132,17 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this._storageCache.clearContractStorage(address)
   }
   checkpoint = async (): Promise<void> => {
-    return undefined
+    this._accountCache.checkpoint()
+    this._storageCache.checkpoint()
   }
-  commit = async (): Promise<void> => {}
-  revert(): Promise<void> {
-    throw new Error('Method not implemented.')
+  commit = async (): Promise<void> => {
+    this._accountCache.commit()
+    this._storageCache.commit()
+  }
+  revert = async (): Promise<void> => {
+    this._accountCache.revert()
+    this._storageCache.revert()
+    this._contractCache.clear()
   }
   getStateRoot = async (): Promise<Uint8Array> => {
     return this.stateRootBytes
