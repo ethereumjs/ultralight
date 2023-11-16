@@ -1,18 +1,22 @@
-import { ethers } from 'ethers'
-import { Block as ethJsBlock, BlockHeader } from '@ethereumjs/block'
-import { toHexString } from './index.js'
-import { FeeMarketEIP1559Transaction, LegacyTransaction, TypedTxData } from '@ethereumjs/tx'
-import debug from 'debug'
-
-/*** Temporary imports from @ethereumjs/block */
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { TransactionFactory } from '@ethereumjs/tx'
 import { TypeOutput, bytesToHex, setLengthLeft, toBytes, toType } from '@ethereumjs/util'
+import { VM } from '@ethereumjs/vm'
+import debug from 'debug'
+import { ethers } from 'ethers'
 
-import { Block, BlockOptions, JsonRpcBlock } from '@ethereumjs/block'
+import { toHexString } from './index.js'
 
-import type { AccessListEIP2930Transaction, TypedTransaction } from '@ethereumjs/tx'
-import { PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
-import { Log, TxReceiptType } from '../networks/index.js'
+import type { Log, TxReceiptType } from '../networks/index.js'
+import type { BlockOptions, JsonRpcBlock, Block as ethJsBlock } from '@ethereumjs/block'
+import type {
+  AccessListEIP2930Transaction,
+  FeeMarketEIP1559Transaction,
+  LegacyTransaction,
+  TypedTransaction,
+  TypedTxData,
+} from '@ethereumjs/tx'
+import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt } from '@ethereumjs/vm'
 
 export async function getBlockReceipts(
   block: Block,
@@ -25,7 +29,7 @@ export async function getBlockReceipts(
   const receipts: TxReceiptType[] = []
   for (const tx of block.transactions) {
     const txResult = await vm.runTx({
-      tx: tx,
+      tx,
       skipBalance: true,
       skipBlockGasLimitValidation: true,
       skipNonce: true,
@@ -56,15 +60,16 @@ export async function getBlockReceipts(
         from: block.transactions[idx].getSenderAddress().toString(),
         contractAddress: block.transactions[idx].getSenderAddress().toString(),
         index: idx,
-        root: (r as PreByzantiumTxReceipt).stateRoot
-          ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
-          : null,
+        root:
+          (r as PreByzantiumTxReceipt).stateRoot !== undefined
+            ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
+            : null,
         gasUsed: block.header.gasUsed,
         logsBloom: toHexString(block.header.logsBloom),
         blockHash: toHexString(block.hash()),
         hash: toHexString(block.transactions[idx].hash()),
         cumulativeGasUsed: r.cumulativeBlockGasUsed,
-        logs: logs,
+        logs,
         blockNumber: Number(block.header.number),
         effectiveGasPrice:
           block.transactions[idx].type === 0
@@ -80,7 +85,11 @@ export async function getBlockReceipts(
   return blockReceipts
 }
 
-async function getTransactionReceipt(block: Block, idx: number, provider: ethers.JsonRpcProvider) {
+export async function getTransactionReceipt(
+  block: Block,
+  idx: number,
+  provider: ethers.JsonRpcProvider,
+) {
   const receipts = await getBlockReceipts(block, provider)
   return receipts[idx]
 }
@@ -239,7 +248,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
       transactionsTrie: transactionsRoot,
       receiptTrie: receiptsRoot,
       logsBloom,
-      difficulty: difficulty,
+      difficulty,
       number,
       gasLimit,
       gasUsed,

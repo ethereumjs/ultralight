@@ -1,13 +1,17 @@
-import { ContainerType, toHexString, UintBigintType } from '@chainsafe/ssz'
-import { describe, it, assert } from 'vitest'
-import { hexToBytes, randomBytes } from '@ethereumjs/util'
+import { ProofType } from '@chainsafe/persistent-merkle-tree'
+import { ContainerType, UintBigintType, toHexString } from '@chainsafe/ssz'
+import { BlockHeader } from '@ethereumjs/block'
+import { concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
+import { readFileSync } from 'fs'
+import { assert, describe, it } from 'vitest'
+
+import { NetworkId, PortalNetwork } from '../../../src/index.js'
+import { historicalEpochs } from '../../../src/networks/history/data/epochHashes.js'
 import {
+  ContentKeyType,
+  Receipt,
   getContentId,
   getContentKey,
-  ContentKeyType,
-  HistoryNetwork,
-  Receipt,
-  TxReceiptType,
 } from '../../../src/networks/history/index.js'
 import {
   BlockHeaderWithProof,
@@ -17,12 +21,9 @@ import {
 } from '../../../src/networks/history/types.js'
 
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
-import { historicalEpochs } from '../../../src/networks/history/data/epochHashes.js'
-import { BlockHeader } from '@ethereumjs/block'
-import { readFileSync } from 'fs'
-import { PortalNetwork, NetworkId } from '../../../src/index.js'
-import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { concatBytes } from '@ethereumjs/util'
+
+import type { HistoryNetwork, TxReceiptType } from '../../../src/networks/history/index.js'
+
 describe('History Subnetwork contentKey serialization/deserialization', () => {
   it('content Key', () => {
     let blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'

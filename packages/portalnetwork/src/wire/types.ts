@@ -1,15 +1,16 @@
 import {
-  ContainerType,
-  ByteVectorType,
-  UintBigintType,
-  ByteListType,
-  UintNumberType,
   BitListType,
-  UnionType,
+  ByteListType,
+  ByteVectorType,
+  ContainerType,
   ListBasicType,
   ListCompositeType,
-  BitArray,
+  UintBigintType,
+  UintNumberType,
+  UnionType,
 } from '@chainsafe/ssz'
+
+import type { BitArray } from '@chainsafe/ssz'
 
 // Ping/Pong Custom Data type -- currently identical for State and History networks
 export const PingPongCustomDataType = new ContainerType({

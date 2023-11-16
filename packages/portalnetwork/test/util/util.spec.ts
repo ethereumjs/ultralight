@@ -1,11 +1,12 @@
-import { describe, it, assert } from 'vitest'
+import { log2Distance } from '@chainsafe/discv5'
+import { assert, describe, it } from 'vitest'
+
 import {
-  shortId,
-  generateRandomNodeIdAtDistance,
   arrayByteLength,
   dirSize,
+  generateRandomNodeIdAtDistance,
+  shortId,
 } from '../../src/util/index.js'
-import { log2Distance } from '@chainsafe/discv5'
 
 describe('utility method tests', async () => {
   const nodeId = '82418605a77ea8c8f47802d71661d3812ff64e70fd2fc5f0ff57a113185b2c41'

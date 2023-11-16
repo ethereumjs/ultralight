@@ -1,7 +1,7 @@
-import { Debugger } from 'debug'
-import { NetworkId } from '../../../networks/types.js'
-import { Packet } from './index.js'
-import { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
+import type { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
+import type { Packet } from './index.js'
+import type { NetworkId } from '../../../networks/types.js'
+import type { Debugger } from 'debug'
 
 export const BUFFER_SIZE = 512
 export enum PacketType {

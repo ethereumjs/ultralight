@@ -1,7 +1,9 @@
-import { DEFAULT_PACKET_SIZE, MAX_CWND_INCREASE_PACKETS_PER_RTT } from '../index.js'
-import { EventEmitter } from 'events'
-import { Debugger } from 'debug'
 import debug from 'debug'
+import { EventEmitter } from 'events'
+
+import { DEFAULT_PACKET_SIZE, MAX_CWND_INCREASE_PACKETS_PER_RTT } from '../index.js'
+
+import type { Debugger } from 'debug'
 
 const CCONTROL_TARGET = 100
 
@@ -56,7 +58,7 @@ export class CongestionControl extends EventEmitter {
 
   updateRTT(timestamp: number, ackNr: number): void {
     const sentTime = this.outBuffer.get(ackNr)
-    if (!sentTime) {
+    if (sentTime === undefined) {
       return
     }
     const packetRtt = timestamp - sentTime
@@ -93,10 +95,8 @@ export class CongestionControl extends EventEmitter {
     const delay = Math.abs(timeReceived - timestamp)
     this.reply_micro = delay
     this.ourDelay = delay - this.baseDelay.delay
-    if (timeReceived - this.baseDelay.timestamp > 120000) {
-      this.baseDelay = { delay: delay, timestamp: timeReceived }
-    } else if (delay < this.baseDelay.delay) {
-      this.baseDelay = { delay: delay, timestamp: timeReceived }
+    if (timeReceived - this.baseDelay.timestamp > 120000 || delay < this.baseDelay.delay) {
+      this.baseDelay = { delay, timestamp: timeReceived }
     }
     const offTarget = CCONTROL_TARGET - this.ourDelay
     const delayFactor = offTarget / CCONTROL_TARGET

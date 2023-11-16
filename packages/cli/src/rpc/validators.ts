@@ -1,4 +1,5 @@
 import { HistoryNetworkContentType, NetworkId, toHexString } from 'portalnetwork'
+
 import { isValidEnr } from '../util.js'
 
 const INVALID_PARAMS = -32602
@@ -115,7 +116,7 @@ export const validators = {
           ]}`,
         }
       }
-      if (params[index].startsWith('0x')) {
+      if (<string>params[index].startsWith('0x')) {
         params[index] = params[index].slice(2)
       }
     }

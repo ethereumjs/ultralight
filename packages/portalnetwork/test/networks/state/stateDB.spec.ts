@@ -1,22 +1,25 @@
-import { describe, it, assert } from 'vitest'
-import testdata from './content.json'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { RLP } from '@ethereumjs/rlp'
+import { randomBytes } from '@ethereumjs/util'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { assert, describe, it } from 'vitest'
+
+import { StateDB } from '../../../src/networks/state/statedb.js'
 import {
   AccountTrieProofType,
   ContractStorageTrieProofType,
-  StateNetworkContentType,
 } from '../../../src/networks/state/types.js'
 import { decodeStateNetworkContentKey } from '../../../src/networks/state/util.js'
-import { StateDB } from '../../../src/networks/state/statedb.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { RLP } from '@ethereumjs/rlp'
-import block0_meta from './testdata/block-0x11a86a9-meta.json'
+
+import testdata from './content.json'
 import block0_db from './testdata/block-0x11a86a9-db.json'
-import block1_meta from './testdata/block-0x11a86aa-meta.json'
+import block0_meta from './testdata/block-0x11a86a9-meta.json'
 import block1_db from './testdata/block-0x11a86aa-db.json'
-import block2_meta from './testdata/block-0x11a86ab-meta.json'
+import block1_meta from './testdata/block-0x11a86aa-meta.json'
 import block2_db from './testdata/block-0x11a86ab-db.json'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { randomBytes } from '@ethereumjs/util'
+import block2_meta from './testdata/block-0x11a86ab-meta.json'
+
+import type { StateNetworkContentType } from '../../../src/networks/state/types.js'
 
 describe('Input AccountTrieProof', async () => {
   const database = new StateDB()
@@ -183,7 +186,7 @@ describe('Input whole block of content', async () => {
   })
   it('should throw if key non-existant', async () => {
     let fakeKey = toHexString(randomBytes(32))
-    while (accessed[0].keys.includes(fakeKey)) {
+    while (accessed[0].keys.includes(fakeKey) === true) {
       fakeKey = toHexString(randomBytes(32))
     }
     try {

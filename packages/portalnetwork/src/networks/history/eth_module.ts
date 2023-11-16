@@ -1,17 +1,21 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block } from '@ethereumjs/block'
+import { hexToBytes } from '@ethereumjs/util'
+
+import { ContentLookup } from '../index.js'
+
 import {
-  EpochAccumulator,
-  reassembleBlock,
-  HistoryNetwork,
   BlockBodyContentType,
-  getContentKey,
+  BlockHeaderWithProof,
+  EpochAccumulator,
   HistoryNetworkContentType,
   epochRootByBlocknumber,
-  BlockHeaderWithProof,
+  getContentKey,
+  reassembleBlock,
 } from './index.js'
-import { ContentLookup, ContentLookupResponse } from '../index.js'
-import { hexToBytes } from '@ethereumjs/util'
+
+import type { HistoryNetwork } from './index.js'
+import type { ContentLookupResponse } from '../index.js'
+import type { Block } from '@ethereumjs/block'
 
 export class ETH {
   network: HistoryNetwork
@@ -30,7 +34,9 @@ export class ETH {
       // Try to find block locally
       const block = await this.network.getBlockFromDB(fromHexString(blockHash), includeTransactions)
       return block
-    } catch {}
+    } catch {
+      /** NOOP */
+    }
     const headerContentKey = hexToBytes(
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
     )
@@ -65,7 +71,9 @@ export class ETH {
           block = reassembleBlock(header, body)
         }
       }
-    } catch {}
+    } catch {
+      /** NOOP */
+    }
     return block
   }
 
@@ -74,7 +82,7 @@ export class ETH {
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     let blockHash = (await this.network.blockIndex()).get('0x' + blockNumber.toString(16))
-    if (!blockHash) {
+    if (blockHash === undefined) {
       const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
       if (!epochRootHash) {
         return undefined
@@ -91,7 +99,7 @@ export class ETH {
         blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
       }
     }
-    if (!blockHash) {
+    if (blockHash === undefined) {
       return undefined
     }
     const block = await this.getBlockByHash(blockHash, includeTransactions)

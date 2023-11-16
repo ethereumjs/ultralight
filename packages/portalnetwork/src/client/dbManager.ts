@@ -1,10 +1,13 @@
-import { NodeId, distance } from '@chainsafe/discv5'
+import { distance } from '@chainsafe/discv5'
 import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
-import { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
-import { Debugger } from 'debug'
 import { MemoryLevel } from 'memory-level'
+
 import { serializedContentKeyToContentId } from '../index.js'
-import { NetworkId } from '../index.js'
+
+import type { NetworkId } from '../index.js'
+import type { NodeId } from '@chainsafe/discv5'
+import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
+import type { Debugger } from 'debug'
 
 export class DBManager {
   nodeId: string
@@ -42,7 +45,7 @@ export class DBManager {
     const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
     return db.put(databaseKey, val, (err: any) => {
-      if (err) this.logger(`Error putting content in history DB: ${err.toString()}`)
+      if (err !== undefined) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
   }
 
@@ -82,7 +85,7 @@ export class DBManager {
     const db = this.sublevels.get(sublevel)
     if (!db) return
     for await (const key of db.keys({ gte: bigIntToHex(radius) })) {
-      db.del(key)
+      await db.del(key)
     }
   }
 
@@ -94,7 +97,7 @@ export class DBManager {
   }
 
   async close() {
-    await this.db.removeAllListeners()
+    this.db.removeAllListeners()
     await this.db.close()
   }
 

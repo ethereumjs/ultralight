@@ -1,8 +1,8 @@
 import { isFalsy } from './baseTypes.js'
 
 export * from './baseTypes.js'
-export * from './portal.js'
 export * from './content/index.js'
+export * from './portal.js'
 export const schema = {
   /**
    * Validator to allow validation of an optional value

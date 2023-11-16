@@ -1,11 +1,13 @@
-import jayson, { HttpClient } from 'jayson/promise/index.js'
-import yargs from 'yargs'
-import { hideBin } from 'yargs/helpers'
-import { fromHexString, getContentKey, HistoryNetworkContentType, NetworkId, toHexString } from 'portalnetwork'
-import { createRequire } from 'module'
-import { readFileSync } from 'fs'
 import { Block } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
+import { readFileSync } from 'fs'
+import jayson from 'jayson/promise/index.js'
+import { createRequire } from 'module'
+import { HistoryNetworkContentType, fromHexString, getContentKey, toHexString } from 'portalnetwork'
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
+
+import type { HttpClient } from 'jayson/promise/index.js'
 
 const require = createRequire(import.meta.url)
 const { Client } = jayson
@@ -72,31 +74,34 @@ const main = async () => {
   const epoch = require('./testEpoch.json')
   const epoch25 = readFileSync(
     './scripts/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
-    { encoding: 'hex' }
+    { encoding: 'hex' },
   )
 
   async function testRes(clients: HttpClient[], method: string, params: any[][]) {
     for (const [i, client] of clients.entries()) {
       const info = await client.request(method, params[i])
-      if (info.error) {
+      if (info.error !== undefined) {
         throw new Error(`${method} error: ${info.error.message}`)
       }
     }
     console.log(`ok ${method} test`)
   }
-  const epochKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, fromHexString(epoch.hash))
+  const epochKey = getContentKey(
+    HistoryNetworkContentType.EpochAccumulator,
+    fromHexString(epoch.hash),
+  )
   let res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
     epochKey,
     epoch.serialized,
   ])
-  if (res.error) {
+  if (res.error !== undefined) {
     throw new Error(`ultralight_addContentToDB error`)
   }
   res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
     '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     '0x' + epoch25,
   ])
-  if (res.error) {
+  if (res.error !== undefined) {
     throw new Error(`ultralight_addContentToDB error: ${res.error.message}}`)
   }
   console.log('ok ultralight_addContentToDB')
@@ -105,7 +110,7 @@ const main = async () => {
       blocks[x][0],
       (blocks[x][1] as any).rlp,
     ])
-    if (res.error) {
+    if (res.error !== undefined) {
       throw new Error(`ultralight_addBlockToHistory error`)
     }
   }
@@ -115,13 +120,13 @@ const main = async () => {
   const peer1Info = await peer1.request('discv5_nodeInfo', [])
   const peer2Info = await peer2.request('discv5_nodeInfo', [])
   const peer3Info = await peer3.request('discv5_nodeInfo', [])
-  if (ultralightInfo.error) {
+  if (ultralightInfo.error !== undefined) {
     throw new Error('ultralight discv5_nodeInfo error')
-  } else if (peer1Info.error) {
+  } else if (peer1Info.error !== undefined) {
     throw new Error('peer1 discv5_nodeInfo error')
-  } else if (peer2Info.error) {
+  } else if (peer2Info.error !== undefined) {
     throw new Error('peer2 discv5_nodeInfo error')
-  } else if (peer3Info.error) {
+  } else if (peer3Info.error !== undefined) {
     throw new Error('peer2 discv5_nodeInfo error')
   } else {
     console.log('ok discv5_nodeInfo test')
@@ -140,7 +145,7 @@ const main = async () => {
   await testRes(
     [clientInfo.ultralight.client, clientInfo.ultralight.client, clientInfo.ultralight.client],
     'portal_historyAddBootNode',
-    [[clientInfo.peer1.enr], [clientInfo.peer2.enr], [clientInfo.peer3.enr]]
+    [[clientInfo.peer1.enr], [clientInfo.peer2.enr], [clientInfo.peer3.enr]],
   )
   // portal_historyRoutingTableInfo
   await testRes(clients, 'portal_historyRoutingTableInfo', [[], [], [], []])
@@ -169,12 +174,16 @@ const main = async () => {
         toHexString(
           Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
             setHardfork: true,
-          }).header.serialize()
+          }).header.serialize(),
         ),
-        toHexString(Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), { setHardfork: true}).header.serialize())
-      ,
-    ],
-  ])}
+        toHexString(
+          Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
+            setHardfork: true,
+          }).header.serialize(),
+        ),
+      ],
+    ])
+  }
   // eth_getBlockByHash
   await testRes([clients[2]], 'eth_getBlockByHash', [[blocks[2][0], false]])
   // eth_getBlockByNumber
@@ -183,4 +192,4 @@ const main = async () => {
   await testRes([clients[2]], 'eth_getBlockByNumber', [['0x3e8', false]])
 }
 
-main().catch(err => console.log(err))
+main().catch((err) => console.log(err))

@@ -1,24 +1,26 @@
-import { describe, it, assert, assertType } from 'vitest'
+import { SignableENR } from '@chainsafe/discv5'
+import { RLP } from '@ethereumjs/rlp'
+import { Trie } from '@ethereumjs/trie'
+import { Account, Address, hexToBytes, randomBytes } from '@ethereumjs/util'
+import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { assert, assertType, describe, it } from 'vitest'
+
 import {
   AccountTrieProofType,
   ContractByteCodeType,
   ContractStorageTrieProofType,
   NetworkId,
   PortalNetwork,
-  StateNetwork,
   StateNetworkContentType,
   TransportLayer,
   fromHexString,
   getStateNetworkContentKey,
   toHexString,
 } from '../../src/index.js'
-import { multiaddr } from '@multiformats/multiaddr'
-import { SignableENR } from '@chainsafe/discv5'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { Account, Address, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { Trie } from '@ethereumjs/trie'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { RLP } from '@ethereumjs/rlp'
+
+import type { StateNetwork } from '../../src/index.js'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -124,7 +126,7 @@ describe('State Network wire spec tests', () => {
     })
     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
     const contentKey = getStateNetworkContentKey({
-      address: address,
+      address,
       contentType: StateNetworkContentType.AccountTrieProof,
       stateRoot: trie.root(),
     })

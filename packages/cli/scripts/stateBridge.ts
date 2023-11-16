@@ -1,20 +1,18 @@
-import jayson from 'jayson/promise/index.js'
-import { parentPort, workerData } from 'worker_threads'
-import { Alchemy, Network } from 'alchemy-sdk'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import {
-  getStateNetworkContentKey,
-  getStateNetworkContentId,
-  StateNetworkContentType,
-  AccountTrieProofType,
-  ContractStorageTrieProofType,
-  ContractStorageTrieKeyType,
-  ContractByteCodeType,
-  ContractByteCodeKeyType,
-} from 'portalnetwork'
-import { Address } from '@ethereumjs/util'
-import { AccessList } from '@ethereumjs/tx'
 import { Block } from '@ethereumjs/block'
+import { Address } from '@ethereumjs/util'
+import { Alchemy, Network } from 'alchemy-sdk'
+import jayson from 'jayson/promise/index.js'
+import {
+  AccountTrieProofType,
+  ContractByteCodeType,
+  ContractStorageTrieProofType,
+  StateNetworkContentType,
+  getStateNetworkContentKey,
+} from 'portalnetwork'
+import { parentPort, workerData } from 'worker_threads'
+
+import type { AccessList } from '@ethereumjs/tx'
 
 const config = {
   apiKey: workerData.KEY,
@@ -90,7 +88,7 @@ const generateStateNetworkContent = async () => {
   const stateroot = latest.result.stateRoot
   const receipts = await alchemy.core.getTransactionReceipts({ blockNumber: number })
   const block = await alchemy.core.getBlockWithTransactions(number)
-  
+
   const blockJson = await alchemy.core.send('eth_getBlockByNumber', [number.toString(16), false])
   const ethJSBlock = Block.fromRPC(blockJson, undefined, { setHardfork: true })
   await index(ethJSBlock)
@@ -126,7 +124,7 @@ const generateStateNetworkContent = async () => {
         const csp = ContractStorageTrieProofType.serialize(data)
         totalBytes_storage += csp.length
         totalCSP++
-        toStorage(contentkey, csp)
+        void toStorage(contentkey, csp)
       }
     }
   }
@@ -148,7 +146,7 @@ const generateStateNetworkContent = async () => {
         address: Address.fromString(c.contractAddress),
         stateRoot: fromHexString(stateroot),
       })
-      toStorage(accountProofContentKey, accountProofContent)
+      void toStorage(accountProofContentKey, accountProofContent)
       const codeHash = accountProof.codeHash
       const bytecode = await alchemy.core.getCode(c.contractAddress, number)
       const bytecodeContentkey = getStateNetworkContentKey({
@@ -159,7 +157,7 @@ const generateStateNetworkContent = async () => {
       const contractBytecode = ContractByteCodeType.serialize(fromHexString(bytecode))
       totalBytes_code += contractBytecode.length
       totalBytecode++
-      toStorage(bytecodeContentkey, contractBytecode)
+      void toStorage(bytecodeContentkey, contractBytecode)
     }
   }
 
@@ -194,10 +192,6 @@ const generateStateNetworkContent = async () => {
     const contentKey = getStateNetworkContentKey({
       address: Address.fromString(add),
       stateRoot: fromHexString(stateroot),
-      contentType: StateNetworkContentType.AccountTrieProof,
-    })
-    const contentId = getStateNetworkContentId({
-      address: Address.fromString(add),
       contentType: StateNetworkContentType.AccountTrieProof,
     })
     await toStorage(contentKey, content)

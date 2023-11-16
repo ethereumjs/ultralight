@@ -1,21 +1,24 @@
-import { LightClientTransport } from '@lodestar/light-client/transport'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { genesisData } from '@lodestar/config/networks'
 import { getCurrentSlot } from '@lodestar/light-client/utils'
-import { ForkName } from '@lodestar/params'
-import { allForks, ssz } from '@lodestar/types'
-import { BeaconLightClientNetwork } from './beacon.js'
+import { ssz } from '@lodestar/types'
+
 import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
-  LightClientForkName,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from './types.js'
-import { Debugger } from 'debug'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
-import { genesisData } from '@lodestar/config/networks'
 import { getBeaconContentKey } from './util.js'
+
+import type { BeaconLightClientNetwork } from './beacon.js'
+import type { LightClientForkName } from './types.js'
+import type { LightClientTransport } from '@lodestar/light-client/transport'
+import type { ForkName } from '@lodestar/params'
+import type { allForks } from '@lodestar/types'
+import type { Debugger } from 'debug'
 
 export class UltralightTransport implements LightClientTransport {
   network: BeaconLightClientNetwork

@@ -1,14 +1,16 @@
-import { Debugger } from 'debug'
-import { StateNetwork } from './state.js'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Trie } from '@ethereumjs/trie'
+import { Account, MapDB, concatBytes } from '@ethereumjs/util'
+
 import {
   AccountTrieProofType,
   ContractStorageTrieProofType,
   StateNetworkContentType,
 } from './types.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Account, MapDB, concatBytes } from '@ethereumjs/util'
 import { decodeStateNetworkContentKey } from './util.js'
+
+import type { StateNetwork } from './state.js'
+import type { Debugger } from 'debug'
 
 type StateRoot = string
 type StorageRoot = string
@@ -156,7 +158,7 @@ export class StateDB {
     const { witnesses } = ContractStorageTrieProofType.deserialize(content)
     const storageTrie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
     await storageTrie.fromProof(witnesses)
-    this.setStorageTrie(
+    await this.setStorageTrie(
       toHexString(stateRoot),
       toHexString(address),
       toHexString(storageTrie.root()),
@@ -351,7 +353,7 @@ export class StateDB {
     if (this.accountCodeHash.has(address)) {
       return fromHexString(this.accountCodeHash.get(address)!)
     }
-    if (!stateRoot) {
+    if (stateRoot === undefined) {
       return undefined
     }
     const account = await this.getAccount(address, stateRoot)

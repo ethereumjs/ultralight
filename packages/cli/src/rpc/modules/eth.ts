@@ -1,21 +1,22 @@
-import { Block } from '@ethereumjs/block'
 import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
-import { Debugger } from 'debug'
 import {
-  NetworkId,
-  HistoryNetwork,
-  PortalNetwork,
-  getContentKey,
-  fromHexString,
-  reassembleBlock,
   BlockHeaderWithProof,
   GET_LOGS_BLOCK_RANGE_LIMIT,
+  NetworkId,
+  fromHexString,
+  getContentKey,
   getLogs,
-  RpcTx,
+  reassembleBlock,
 } from 'portalnetwork'
+
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
-import { GetLogsParams, jsonRpcLog } from '../types.js'
-import { validators, middleware } from '../validators.js'
+import { jsonRpcLog } from '../types.js'
+import { middleware, validators } from '../validators.js'
+
+import type { GetLogsParams } from '../types.js'
+import type { Block } from '@ethereumjs/block'
+import type { Debugger } from 'debug'
+import type { HistoryNetwork, PortalNetwork, RpcTx } from 'portalnetwork'
 
 /**
  * eth_* RPC module
@@ -138,14 +139,14 @@ export class eth {
     const headerWithProof = await this._history.findContentLocally(
       fromHexString(getContentKey(0, fromHexString(blockHash))),
     )
-    if (!headerWithProof) {
+    if (headerWithProof === undefined) {
       throw new Error('Block not found')
     }
     const header = BlockHeaderWithProof.deserialize(headerWithProof).header
     const body = await this._history.findContentLocally(
       fromHexString(getContentKey(1, fromHexString(blockHash))),
     )
-    if (!body) {
+    if (body === undefined) {
       throw new Error('Block not found')
     }
     const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
@@ -239,7 +240,7 @@ export class eth {
       }
     }
     let from: Block, to: Block
-    if (blockHash) {
+    if (blockHash !== undefined) {
       try {
         from = to = (await this.getBlockByHash([blockHash, true])) as Block
       } catch (error: any) {
@@ -280,7 +281,7 @@ export class eth {
         }
       })
       let addrs
-      if (address) {
+      if (address !== undefined) {
         if (Array.isArray(address)) {
           addrs = address.map((a) => toBytes(a))
         } else {

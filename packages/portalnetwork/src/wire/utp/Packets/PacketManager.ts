@@ -1,14 +1,7 @@
-import {
-  Bytes32TimeStamp,
-  HeaderExtension,
-  HeaderInput,
-  ICreate,
-  Packet,
-  PacketOptions,
-  PacketType,
-  CongestionControl,
-} from '../index.js'
-import { Debugger } from 'debug'
+import { Bytes32TimeStamp, CongestionControl, HeaderExtension, Packet } from '../index.js'
+
+import type { HeaderInput, ICreate, PacketOptions, PacketType } from '../index.js'
+import type { Debugger } from 'debug'
 
 export class PacketManager {
   logger: Debugger
@@ -24,7 +17,7 @@ export class PacketManager {
     this.updateWindow = () => this.congestionControl.updateWindow()
   }
   createPacket<T extends PacketType>(opts: ICreate<T>): Packet<T> {
-    if (opts.extension === HeaderExtension.selectiveAck && !opts.bitmask) {
+    if (opts.extension === HeaderExtension.selectiveAck && opts.bitmask === undefined) {
       throw new Error('Selective acks must have a bitmask')
     }
     const header: HeaderInput<T> = {

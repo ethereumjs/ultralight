@@ -9,6 +9,7 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
 `npm run dev` along with any of the below parameters.  Pass `--help` as a CLI parameter for a complete list of available options.
 
 ### CLI Parameters
+```sh
   --pk                base64 string encoded protobuf serialized private key  [string]
   --bootnode          ENR of Bootnode                                        [string]
   --bindAddress       initial IP address and UDP port to bind to             [string]
@@ -22,7 +23,7 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
   --web3              web3 JSON RPC HTTP endpoint for local Ethereum node    [string]
   --networks          subnetworks to enable  (options are: `history`, `state`, `beacon`) [default: `history`]
   --trustedBlockRoot  a trusted blockroot to start light client syncing of the beacon chain [string]
-
+```
 ### Starting with the same Node ID 
 
 To start a node that has the same node ID each time, you can pass the `--pk` parameter at start-up with a base64 string encoded protobuf serialized private key.  So `ts-node-esm src/index.ts --pk=CAISINx/bjWlmCXTClX2JvDYehb8FSrE6l4MA9LGvP74XdfD` will always start the `cli` client with the node ID `2a9511ca767b7b56bb873234209557d07c5fe09382ed060b272c6a933c5658f5`.

@@ -1,34 +1,38 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { BitArray } from '@chainsafe/ssz'
-import { Debugger } from 'debug'
 import {
-  ENR,
-  NetworkId,
-  fromHexString,
-  shortId,
-  toHexString,
-  HistoryNetwork,
-  PortalNetwork,
-  HistoryNetworkContentType,
   ContentLookup,
+  ContentMessageType,
+  ENR,
+  FoundContent,
+  MessageCodes,
+  NetworkId,
   NodeLookup,
   PingPongCustomDataType,
   PortalWireMessageType,
-  MessageCodes,
-  NodesMessage,
-  ContentMessageType,
-  AcceptMessage,
   decodeHistoryNetworkContentKey,
-  FoundContent,
+  fromHexString,
+  shortId,
+  toHexString,
+} from 'portalnetwork'
+
+import { isValidId } from '../util.js'
+import { middleware, validators } from '../validators.js'
+
+import type { GetEnrResult } from '../schema/types.js'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type { Debugger } from 'debug'
+import type {
+  AcceptMessage,
   BeaconLightClientNetwork,
   BeaconLightClientNetworkContentType,
+  HistoryNetwork,
+  HistoryNetworkContentType,
+  NodesMessage,
+  PortalNetwork,
   StateNetwork,
   StateNetworkContentType,
 } from 'portalnetwork'
-import { GetEnrResult } from '../schema/types.js'
-import { isValidId } from '../util.js'
-import { middleware, validators } from '../validators.js'
-import { Multiaddr } from '@multiformats/multiaddr'
 
 const methods = [
   // state
@@ -212,7 +216,7 @@ export class portal {
     requestId: bigint,
     payload: Uint8Array,
   ) {
-    this._client.sendPortalNetworkResponse(
+    void this._client.sendPortalNetworkResponse(
       {
         nodeId,
         socketAddr,
@@ -317,8 +321,8 @@ export class portal {
       localNodeId = (err as any).message
     }
     return {
-      localNodeId: localNodeId,
-      buckets: buckets,
+      localNodeId,
+      buckets,
     }
   }
   async stateRoutingTableInfo(_params: []): Promise<any> {
@@ -335,8 +339,8 @@ export class portal {
       localNodeId = (err as any).message
     }
     return {
-      localNodeId: localNodeId,
-      buckets: buckets,
+      localNodeId,
+      buckets,
     }
   }
   async historyLookupEnr(params: [string]) {
@@ -460,7 +464,7 @@ export class portal {
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
-      this.sendPortalNetworkResponse(
+      void this.sendPortalNetworkResponse(
         dstId,
         enr.getLocationMultiaddr('udp')!,
         BigInt(requestId),
@@ -602,7 +606,7 @@ export class portal {
       value: fromHexString(content),
     })
     const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    this.sendPortalNetworkResponse(
+    void this.sendPortalNetworkResponse(
       nodeId,
       enr?.getLocationMultiaddr('udp')!,
       enr!.seq,
@@ -728,7 +732,7 @@ export class portal {
       selector: MessageCodes.ACCEPT,
       value: payload,
     })
-    this.sendPortalNetworkResponse(
+    void this.sendPortalNetworkResponse(
       _enr.nodeId,
       _enr.getLocationMultiaddr('udp')!,
       myEnr.seq,

@@ -1,6 +1,9 @@
-import { UtpSocket, ConnectionState } from '../index.js'
-import { NetworkId } from '../../../index.js'
+import { ConnectionState } from '../index.js'
+
 import { RequestCode } from './types.js'
+
+import type { NetworkId } from '../../../index.js'
+import type { UtpSocket } from '../index.js'
 
 export interface ContentRequestOptions {
   networkId: NetworkId

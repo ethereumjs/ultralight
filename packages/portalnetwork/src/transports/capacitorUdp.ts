@@ -1,14 +1,18 @@
-import { EventEmitter } from 'events'
-import { Multiaddr, multiaddr as ma } from '@multiformats/multiaddr'
+import { getSocketAddressOnENR } from '@chainsafe/discv5'
+import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { UDP } from '@frontall/capacitor-udp'
-import { decodePacket, encodePacket, IPacket } from '@chainsafe/discv5/packet'
-import {
+import { multiaddr as ma } from '@multiformats/multiaddr'
+import { EventEmitter } from 'events'
+
+import type { ENR, SocketAddress } from '@chainsafe/discv5'
+import type { IPacket } from '@chainsafe/discv5/packet'
+import type {
   IPMode,
   IRemoteInfo,
   ITransportService,
   TransportEventEmitter,
 } from '@chainsafe/discv5/transport'
-import { ENR, SocketAddress, getSocketAddressOnENR } from '@chainsafe/discv5'
+import type { Multiaddr } from '@multiformats/multiaddr'
 
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
@@ -44,7 +48,7 @@ export class CapacitorUDPTransportService
     await UDP.bind({
       socketId: this.socket.socketId,
       address: this.socket.ipv4,
-      port: port,
+      port,
     })
     UDP.addListener('receive', (ret: any) => {
       this.handleIncoming(new Uint8Array(Buffer.from(ret.buffer, 'base64')), {

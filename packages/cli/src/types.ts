@@ -1,6 +1,8 @@
-import { Block } from '@ethereumjs/block'
-import { JsonTx, TypedTransaction } from '@ethereumjs/tx'
-import { Address, bigIntToHex, bytesToHex, intToHex, utf8ToBytes } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, intToHex, utf8ToBytes } from '@ethereumjs/util'
+
+import type { Block } from '@ethereumjs/block'
+import type { JsonTx, TypedTransaction } from '@ethereumjs/tx'
+import type { Address } from '@ethereumjs/util'
 
 export type TxReceipt = PreByzantiumTxReceipt | PostByzantiumTxReceipt
 

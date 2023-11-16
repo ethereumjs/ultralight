@@ -1,30 +1,32 @@
 import { toHexString } from '@chainsafe/ssz'
+import { hexToBytes } from '@ethereumjs/util'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
-import { describe, it, assert } from 'vitest'
+import { assert, describe, it } from 'vitest'
+
 import {
   BUFFER_SIZE,
+  ContentKeyType,
   ContentRequest,
+  HeaderExtension,
+  HistoryNetworkContentType,
+  NetworkId,
+  Packet,
+  PacketType,
+  PortalNetworkUTP,
+  RequestCode,
+  UtpSocketType,
   createSocketKey,
   dropPrefixes,
   encodeWithVariantPrefix,
   getContentKey,
-  HeaderExtension,
-  ContentKeyType,
-  HistoryNetworkContentType,
-  INewRequest,
-  Packet,
-  PacketType,
-  PortalNetworkUTP,
-  NetworkId,
   randUint16,
-  RequestCode,
   startingNrs,
-  UtpSocketType,
 } from '../../../src/index.js'
-import ContentReader from '../../../src/wire/utp/Socket/ContentReader.js'
-import { hexToBytes } from '@ethereumjs/util'
+import { ContentReader } from '../../../src/wire/utp/Socket/ContentReader.js'
+
+import type { INewRequest } from '../../../src/index.js'
 
 const blocks = {
   '0x8faf8b77fedb23eb4d591433ac3643be1764209efa52ac6386e10d1a127e4220': {
@@ -141,9 +143,9 @@ describe('uTP Reader/Writer tests', () => {
       },
     })
     socket.reader = new ContentReader(2)
-    packets.forEach((packet) => {
-      socket.reader!.addPacket(packet)
-    })
+    for (const packet of packets) {
+      await socket.reader!.addPacket(packet)
+    }
     assert.equal(
       packets.length,
       socket.reader.packets.length,
@@ -163,9 +165,9 @@ describe('uTP Reader/Writer tests', () => {
       `Content Reader correctly recompiled content`,
     )
     const _reader2 = new ContentReader(2)
-    packets.reverse().forEach((packet) => {
-      _reader2.addPacket(packet)
-    })
+    for (const packet of packets.reverse()) {
+      await _reader2.addPacket(packet)
+    }
     assert.equal(_reader2.packets.length, packets.length, 'Packets added to reader')
     assert.equal(_reader2.inOrder.length, 1, 'Packets were added out of order')
     const _compiled2 = await _reader2.run()

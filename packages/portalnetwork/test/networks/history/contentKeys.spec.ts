@@ -1,12 +1,13 @@
-import { describe, it, assert } from 'vitest'
+import { hexToBytes } from '@ethereumjs/util'
+import { createRequire } from 'module'
+import { assert, describe, it } from 'vitest'
+
 import {
+  HistoryNetworkContentType,
   decodeHistoryNetworkContentKey,
   getContentId,
   getContentKey,
-  HistoryNetworkContentType,
 } from '../../../src/index.js'
-import { createRequire } from 'module'
-import { hexToBytes } from '@ethereumjs/util'
 
 const require = createRequire(import.meta.url)
 const testVectors = require('../../testData/testVectors.json')

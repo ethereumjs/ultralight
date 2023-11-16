@@ -1,23 +1,25 @@
+import { SignableENR } from '@chainsafe/discv5'
 import { Block, BlockHeader } from '@ethereumjs/block'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-import { readFileSync } from 'fs'
-import { it, assert } from 'vitest'
-import {
-  addRLPSerializedBlock,
-  BlockHeaderWithProof,
-  getContentKey,
-  HistoryNetworkContentType,
-  HistoryNetwork,
-  PortalNetwork,
-  NetworkId,
-  toHexString,
-  TransportLayer,
-} from '../../src/index.js'
-import { createRequire } from 'module'
 import { EventEmitter } from 'events'
-import { SignableENR } from '@chainsafe/discv5'
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
+import { assert, it } from 'vitest'
+
+import {
+  BlockHeaderWithProof,
+  HistoryNetworkContentType,
+  NetworkId,
+  PortalNetwork,
+  TransportLayer,
+  addRLPSerializedBlock,
+  getContentKey,
+  toHexString,
+} from '../../src/index.js'
+
+import type { HistoryNetwork } from '../../src/index.js'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [

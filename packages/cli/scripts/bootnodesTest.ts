@@ -1,12 +1,7 @@
-import { Block, BlockHeader } from '@ethereumjs/block'
-import jayson, { HttpClient } from 'jayson/promise/index.js'
-import {
-  ENR,
-  fromHexString,
-  getContentId,
-  NetworkId,
-  toHexString,
-} from 'portalnetwork'
+import { BlockHeader } from '@ethereumjs/block'
+import jayson from 'jayson/promise/index.js'
+
+import type { HttpClient } from 'jayson/promise/index.js'
 
 const testBlocks = [
   {
@@ -63,4 +58,4 @@ const main = async () => {
     console.log(BlockHeader.fromRLPSerializedHeader(find.result.data, { setHardfork: true }))
   }, 2000)
 }
-main()
+void main()

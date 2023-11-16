@@ -1,29 +1,30 @@
-import { describe, it, assert } from 'vitest'
+import { Block } from '@ethereumjs/block'
+import { assert, describe, it } from 'vitest'
+
 import {
-  HistoryNetwork,
-  PortalNetwork,
   NetworkId,
-  StateNetwork,
+  PortalNetwork,
   addRLPSerializedBlock,
   fromHexString,
   toHexString,
-} from '../../../src'
-import block0_meta from '../../networks/state/testdata/block-0x11a86a9-meta.json'
+} from '../../../src/index.js'
 import block0_db from '../../networks/state/testdata/block-0x11a86a9-db.json'
-import block1_meta from '../../networks/state/testdata/block-0x11a86aa-meta.json'
+import block0_meta from '../../networks/state/testdata/block-0x11a86a9-meta.json'
 import block1_db from '../../networks/state/testdata/block-0x11a86aa-db.json'
-import block2_meta from '../../networks/state/testdata/block-0x11a86ab-meta.json'
+import block1_meta from '../../networks/state/testdata/block-0x11a86aa-meta.json'
 import block2_db from '../../networks/state/testdata/block-0x11a86ab-db.json'
+import block2_meta from '../../networks/state/testdata/block-0x11a86ab-meta.json'
 import testBlockData from '../../networks/state/testdata/testblocks.json'
-import { Block } from '@ethereumjs/block'
+
+import type { HistoryNetwork, StateNetwork } from '../../../src'
 
 describe('shared accounts', async () => {
   for (const account0 of block0_meta.accounts) {
-    if (block1_meta.accounts.includes(account0)) {
+    if (block1_meta.accounts.includes(account0) !== undefined) {
       // it(`should have account ${account0} in block 0 and block 1`, async () => {
       //   assert.equal(true, true)
       // })
-      if (block2_meta.accounts.includes(account0)) {
+      if (block2_meta.accounts.includes(account0) !== undefined) {
         it(`${account0}`, async () => {
           assert.equal(true, true)
         })

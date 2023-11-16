@@ -1,4 +1,4 @@
-import { StateNetwork } from './state.js'
+import type { StateNetwork } from './state.js'
 
 /**
  *
@@ -10,9 +10,9 @@ import { StateNetwork } from './state.js'
  */
 export async function eth_getStorageAt(
   this: StateNetwork,
-  address: string,
-  slot: string,
-  blockTag?: string,
+  _address: string,
+  _slot: string,
+  _blockTag?: string,
 ): Promise<string | undefined> {
   return undefined
 }
@@ -26,8 +26,8 @@ export async function eth_getStorageAt(
  */
 export async function eth_getTransactionCount(
   this: StateNetwork,
-  address: string,
-  blockTag?: string,
+  _address: string,
+  _blockTag?: string,
 ): Promise<number | undefined> {
   return undefined
 }
@@ -39,7 +39,7 @@ export async function eth_getTransactionCount(
  * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
  * @returns code at a given address
  */
-export async function eth_getCode(this: StateNetwork, address: string, blockTag?: string) {
+export async function eth_getCode(this: StateNetwork, _address: string, _blockTag?: string) {
   return undefined
 }
 
@@ -61,8 +61,8 @@ export type TxCallObject = {
  */
 export async function eth_call(
   this: StateNetwork,
-  txCallObject: TxCallObject,
-  blockTag?: string,
+  _txCallObject: TxCallObject,
+  _blockTag?: string,
 ): Promise<string | undefined> {
   return undefined
 }
@@ -85,8 +85,8 @@ export type TxEstimateObject = {
  */
 export async function eth_estimateGas(
   this: StateNetwork,
-  txObject: TxEstimateObject,
-  blockTag?: string,
+  _txObject: TxEstimateObject,
+  _blockTag?: string,
 ): Promise<string | undefined> {
   return undefined
 }

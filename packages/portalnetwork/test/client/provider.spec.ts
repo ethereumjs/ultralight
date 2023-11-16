@@ -1,12 +1,13 @@
-import { it, assert } from 'vitest'
+import { SignableENR } from '@chainsafe/discv5'
+import { Block, BlockHeader } from '@ethereumjs/block'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+import { assert, it } from 'vitest'
+
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { NetworkId } from '../../src/networks/types.js'
 import { MockProvider } from '../testUtils/mockProvider.js'
-import { Block, BlockHeader } from '@ethereumjs/block'
-import { multiaddr } from '@multiformats/multiaddr'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { SignableENR } from '@chainsafe/discv5'
 
 it('Test provider functionality', async () => {
   const ma = multiaddr('/ip4/0.0.0.0/udp/1500')
@@ -20,8 +21,8 @@ it('Test provider functionality', async () => {
       bindAddrs: {
         ip4: ma,
       },
-      enr: enr,
-      peerId: peerId,
+      enr,
+      peerId,
     },
     supportedNetworks: [NetworkId.HistoryNetwork],
   })

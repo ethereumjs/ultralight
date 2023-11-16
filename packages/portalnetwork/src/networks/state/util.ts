@@ -1,5 +1,6 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
-import { Address, bigIntToBytes, concatBytes } from '@ethereumjs/util'
+import { bigIntToBytes, concatBytes } from '@ethereumjs/util'
+
 import { toHexString } from '../../util/discv5.js'
 
 import {
@@ -8,6 +9,8 @@ import {
   ContractStorageTrieKeyType,
   StateNetworkContentType,
 } from './types.js'
+
+import type { Address } from '@ethereumjs/util'
 
 export const MODULO = 2n ** 256n
 const MID = 2n ** 255n

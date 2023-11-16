@@ -1,24 +1,24 @@
+import { SignableENR } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Block } from '@ethereumjs/block'
+import { Trie } from '@ethereumjs/trie'
+import { Account, Address, bytesToInt, bytesToUtf8, randomBytes } from '@ethereumjs/util'
+import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { assert, describe, it } from 'vitest'
+
 import {
   AccountTrieProofType,
   ContractByteCodeType,
-  HistoryNetwork,
   NetworkId,
   PortalNetwork,
-  RpcTx,
-  StateNetwork,
   TransportLayer,
   UltralightStateManager,
   addRLPSerializedBlock,
 } from '../../../src/index.js'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { SignableENR } from '@chainsafe/discv5'
-import { multiaddr } from '@multiformats/multiaddr'
-import { Account, Address, bytesToInt, bytesToUtf8, randomBytes } from '@ethereumjs/util'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { Trie } from '@ethereumjs/trie'
-import { Block } from '@ethereumjs/block'
+
+import type { HistoryNetwork, RpcTx, StateNetwork } from '../../../src/index.js'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -78,17 +78,9 @@ describe('ethCall', () => {
     const proof = await trie.createProof(address.toBytes())
     const zeroProof = await trie.createProof(zero.bytes)
     const content = AccountTrieProofType.serialize({
-      balance: account!.balance,
-      nonce: account!.nonce,
-      codeHash: account!.codeHash,
-      storageRoot: account!.storageRoot,
       witnesses: proof,
     })
     const zeroContent = AccountTrieProofType.serialize({
-      balance: zeroAccount!.balance,
-      nonce: zeroAccount!.nonce,
-      codeHash: zeroAccount!.codeHash,
-      storageRoot: zeroAccount!.storageRoot,
       witnesses: zeroProof,
     })
     await state.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
@@ -96,7 +88,7 @@ describe('ethCall', () => {
     const byteCodeContent = ContractByteCodeType.serialize(byteCode)
     await state.stateDB.inputContractByteCode(address.toBytes(), codehash, byteCodeContent)
 
-    usm.setStateRoot(trie.root())
+    await usm.setStateRoot(trie.root())
     const block = Block.fromBlockData(
       { header: { stateRoot: trie.root(), number: 15537394n } },
       { setHardfork: true },
@@ -106,7 +98,7 @@ describe('ethCall', () => {
       toHexString(block.header.hash()),
       history,
     )
-    history.indexBlockhash(block.header.number, toHexString(block.header.hash()))
+    await history.indexBlockhash(block.header.number, toHexString(block.header.hash()))
 
     const greeterInput = '0xcfae3217'
 

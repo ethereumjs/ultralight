@@ -1,29 +1,31 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Block } from '@ethereumjs/block'
+import { RLP as rlp } from '@ethereumjs/rlp'
+import { hexToBytes } from '@ethereumjs/util'
+
+import { historicalEpochs } from './data/epochHashes.js'
 import {
-  BlockBodyContent,
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
   PostShanghaiBlockBody,
   PreShanghaiBlockBody,
+  SSZWithdrawal,
   sszTransactionType,
   sszUnclesType,
-  SSZWithdrawal,
-  Witnesses,
 } from './types.js'
-import { RLP as rlp } from '@ethereumjs/rlp'
-import {
-  Block,
+
+import type { HistoryNetwork } from './history.js'
+import type { BlockBodyContent, Witnesses } from './types.js'
+import type {
   BlockBytes,
   BlockHeaderBytes,
   TransactionsBytes,
   UncleHeadersBytes,
 } from '@ethereumjs/block'
-import { HistoryNetwork } from './history.js'
-import { historicalEpochs } from './data/epochHashes.js'
-import { WithdrawalBytes, hexToBytes } from '@ethereumjs/util'
+import type { WithdrawalBytes } from '@ethereumjs/util'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -41,7 +43,7 @@ export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint
     case HistoryNetworkContentType.Receipt:
     case HistoryNetworkContentType.HeaderProof:
     case HistoryNetworkContentType.EpochAccumulator: {
-      if (!hash) throw new Error('block hash is required to generate contentId')
+      if (hash === undefined) throw new Error('block hash is required to generate contentId')
       encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
       break
     }

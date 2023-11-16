@@ -1,9 +1,15 @@
-import { describe, it, assert, vi, expect } from 'vitest'
-import { createRequire } from 'module'
-const require = createRequire(import.meta.url)
+import { SignableENR } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
+import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
+import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 import { ssz } from '@lodestar/types'
+import { multiaddr } from '@multiformats/multiaddr'
+import { createRequire } from 'module'
+import { assert, describe, expect, it, vi } from 'vitest'
 
+import { NetworkId, PortalNetwork, TransportLayer } from '../../../src/index.js'
 import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
@@ -12,14 +18,10 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from '../../../src/networks/beacon/types.js'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { SignableENR } from '@chainsafe/discv5'
-import { multiaddr } from '@multiformats/multiaddr'
-import { PortalNetwork, NetworkId, TransportLayer } from '../../../src/index.js'
+
 import type { BeaconLightClientNetwork } from '../../../src/networks/beacon/index.js'
-import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
-import { genesisData } from '@lodestar/config/networks'
-import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
+
+const require = createRequire(import.meta.url)
 
 const specTestVectors = require('./specTestVectors.json')
 const config = createBeaconConfig(
@@ -250,7 +252,7 @@ describe('API tests', async () => {
     )
 
     const range = await network.findContentLocally(hexToBytes(updatesByRange.content_key))
-    const retrievedRange = await LightClientUpdatesByRange.deserialize(range!)
+    const retrievedRange = LightClientUpdatesByRange.deserialize(range!)
     const update1 = ssz.capella.LightClientUpdate.deserialize(retrievedRange[0].slice(4))
     assert.equal(
       update1.attestedHeader.beacon.slot,

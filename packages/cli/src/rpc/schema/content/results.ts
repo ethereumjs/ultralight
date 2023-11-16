@@ -1,6 +1,7 @@
 import { INVALID_PARAMS } from '../../error-code.js'
 import { baseTypes } from '../baseTypes.js'
 import { portalSchema as portal } from '../portal.js'
+
 import { content_params } from './params.js'
 
 export const results = {

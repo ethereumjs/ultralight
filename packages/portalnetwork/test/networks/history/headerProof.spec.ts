@@ -1,18 +1,22 @@
-import { describe, it, assert } from 'vitest'
+import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
+import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
+import { hexToBytes } from '@ethereumjs/util'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
+import { assert, describe, it } from 'vitest'
+
 import {
-  blockNumberToGindex,
-  blockNumberToLeafIndex,
   EpochAccumulator,
   HeaderRecordType,
   HistoricalEpochsType,
+  blockNumberToGindex,
+  blockNumberToLeafIndex,
 } from '../../../src/index.js'
-import { ByteVectorType, ContainerType, toHexString, UintBigintType } from '@chainsafe/ssz'
-import { createRequire } from 'module'
-import { createProof, ProofType, SingleProof } from '@chainsafe/persistent-merkle-tree'
-import { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposite.js'
-import { readFileSync } from 'fs'
-import { hexToBytes } from '@ethereumjs/util'
+
+import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
+import type { ByteVectorType, ContainerType, UintBigintType } from '@chainsafe/ssz'
+import type { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposite.js'
 const require = createRequire(import.meta.url)
 
 describe('Header Record Proof tests', () => {

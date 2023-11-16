@@ -1,41 +1,46 @@
-import { distance, ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
-import { ITalkReqMessage } from '@chainsafe/discv5/message'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import { toHexString, BitArray } from '@chainsafe/ssz'
-import { Union } from '@chainsafe/ssz/lib/interface.js'
-import { Debugger } from 'debug'
+import { ENR, EntryStatus, distance } from '@chainsafe/discv5'
+import { BitArray, toHexString } from '@chainsafe/ssz'
+import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { EventEmitter } from 'events'
+
 import {
-  randUint16,
-  MAX_PACKET_SIZE,
-  arrayByteLength,
-  PortalNetworkMetrics,
-  NetworkId,
-  PortalNetworkRoutingTable,
-  shortId,
-  serializedContentKeyToContentId,
-  generateRandomNodeIdAtDistance,
-  AcceptMessage,
   ContentMessageType,
+  MAX_PACKET_SIZE,
+  MessageCodes,
+  NodeLookup,
+  PingPongCustomDataType,
+  PortalNetworkRoutingTable,
+  PortalWireMessageType,
+  RequestCode,
+  arrayByteLength,
+  encodeWithVariantPrefix,
+  generateRandomNodeIdAtDistance,
+  randUint16,
+  serializedContentKeyToContentId,
+  shortId,
+} from '../index.js'
+import { FoundContent } from '../wire/types.js'
+
+import type {
+  AcceptMessage,
+  ContentRequest,
   FindContentMessage,
   FindNodesMessage,
-  MessageCodes,
+  INewRequest,
+  NetworkId,
   NodesMessage,
   OfferMessage,
   PingMessage,
-  PingPongCustomDataType,
   PongMessage,
-  PortalWireMessageType,
-  RequestCode,
-  NodeLookup,
-  StateNetworkRoutingTable,
-  encodeWithVariantPrefix,
-  INewRequest,
-  ContentRequest,
   PortalNetwork,
+  PortalNetworkMetrics,
+  StateNetworkRoutingTable,
 } from '../index.js'
-import { FoundContent } from '../wire/types.js'
-import { EventEmitter } from 'events'
-import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
+import type { SignableENR } from '@chainsafe/discv5'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { ITalkReqMessage } from '@chainsafe/discv5/message'
+import type { Union } from '@chainsafe/ssz/lib/interface.js'
+import type { Debugger } from 'debug'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
@@ -108,22 +113,22 @@ export abstract class BaseNetwork extends EventEmitter {
     )
     switch (messageType) {
       case MessageCodes.PING:
-        this.handlePing(src, id, decoded as PingMessage)
+        void this.handlePing(src, id, decoded as PingMessage)
         break
       case MessageCodes.PONG:
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
         this.metrics?.findNodesMessagesReceived.inc()
-        this.handleFindNodes(src, id, decoded as FindNodesMessage)
+        void this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
       case MessageCodes.FINDCONTENT:
         this.metrics?.findContentMessagesReceived.inc()
-        this.handleFindContent(src, id, network, decoded as FindContentMessage)
+        void this.handleFindContent(src, id, network, decoded as FindContentMessage)
         break
       case MessageCodes.OFFER:
         this.metrics?.offerMessagesReceived.inc()
-        this.handleOffer(src, id, decoded as OfferMessage)
+        void this.handleOffer(src, id, decoded as OfferMessage)
         break
       case MessageCodes.NODES:
       case MessageCodes.CONTENT:
@@ -196,7 +201,7 @@ export abstract class BaseNetwork extends EventEmitter {
       const radius = PingPongCustomDataType.deserialize(pingMessage.customPayload).radius
       this.routingTable.updateRadius(src.nodeId, radius)
     }
-    this.sendPong(src, id)
+    await this.sendPong(src, id)
   }
 
   sendPong = async (src: INodeAddress, requestId: bigint) => {
@@ -209,7 +214,7 @@ export abstract class BaseNetwork extends EventEmitter {
       value: payload,
     })
     this.logger.extend('PONG')(`Sent to ${shortId(src.nodeId, this.routingTable)}`)
-    this.sendResponse(src, requestId, pongMsg)
+    await this.sendResponse(src, requestId, pongMsg)
   }
 
   /**
@@ -222,7 +227,7 @@ export abstract class BaseNetwork extends EventEmitter {
    */
   public sendFindNodes = async (dstId: string, distances: number[]) => {
     this.metrics?.findNodesMessagesSent.inc()
-    const findNodesMsg: FindNodesMessage = { distances: distances }
+    const findNodesMsg: FindNodesMessage = { distances }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
@@ -248,11 +253,12 @@ export abstract class BaseNetwork extends EventEmitter {
       try {
         if (enrs.length > 0) {
           const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
-          const unknown = this.routingTable
-            ? notIgnored.filter(
-                (e) => !this.routingTable.getWithPending(ENR.decode(e).nodeId)?.value,
-              )
-            : notIgnored
+          const unknown =
+            this.routingTable !== undefined
+              ? notIgnored.filter(
+                  (e) => !this.routingTable.getWithPending(ENR.decode(e).nodeId)?.value,
+                )
+              : notIgnored
           // Ping node if not currently in subnetwork routing table
           for (const e of unknown) {
             const decodedEnr = ENR.decode(e)
@@ -324,10 +330,10 @@ export abstract class BaseNetwork extends EventEmitter {
           shortId(src.nodeId, this.routingTable),
         )
       }
-      this.sendResponse(src, requestId, encodedPayload)
+      await this.sendResponse(src, requestId, encodedPayload)
       this.metrics?.nodesMessagesSent.inc()
     } else {
-      this.sendResponse(src, requestId, new Uint8Array())
+      await this.sendResponse(src, requestId, new Uint8Array())
     }
   }
 
@@ -434,24 +440,24 @@ export abstract class BaseNetwork extends EventEmitter {
             this.logger(`Accepting an OFFER`)
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
             this.logger(toHexString(msg.contentKeys[0]))
-            this.sendAccept(src, requestId, contentIds, desiredKeys)
+            await this.sendAccept(src, requestId, contentIds, desiredKeys)
           } else {
             this.logger(`Declining an OFFER since no interesting content`)
-            this.sendResponse(src, requestId, new Uint8Array())
+            await this.sendResponse(src, requestId, new Uint8Array())
           }
         } catch {
           this.logger(`Something went wrong handling offer message`)
           // Send empty response if something goes wrong parsing content keys
-          this.sendResponse(src, requestId, new Uint8Array())
+          await this.sendResponse(src, requestId, new Uint8Array())
         }
         if (!offerAccepted) {
           this.logger('We already have all this content')
-          this.sendResponse(src, requestId, new Uint8Array())
+          await this.sendResponse(src, requestId, new Uint8Array())
         }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
-        this.sendResponse(src, requestId, new Uint8Array())
+        await this.sendResponse(src, requestId, new Uint8Array())
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
@@ -536,7 +542,7 @@ export abstract class BaseNetwork extends EventEmitter {
           selector: FoundContent.ENRS,
           value: encodedEnrs as Uint8Array[],
         })
-        this.sendResponse(
+        await this.sendResponse(
           src,
           requestId,
           concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
@@ -547,13 +553,13 @@ export abstract class BaseNetwork extends EventEmitter {
           value: [],
         })
         this.logger(`Found no ENRs closer to content than us`)
-        this.sendResponse(
+        await this.sendResponse(
           src,
           requestId,
           concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
         )
       }
-    } else if (value && value.length < MAX_PACKET_SIZE) {
+    } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
           toHexString(decodedContentMessage.contentKey) +
@@ -563,10 +569,10 @@ export abstract class BaseNetwork extends EventEmitter {
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
-        value: value,
+        value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
-      this.sendResponse(
+      await this.sendResponse(
         src,
         requestId,
         concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
@@ -589,7 +595,7 @@ export abstract class BaseNetwork extends EventEmitter {
       new DataView(id.buffer).setUint16(0, _id, false)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
       const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
-      this.sendResponse(
+      await this.sendResponse(
         src,
         requestId,
         concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
@@ -611,7 +617,7 @@ export abstract class BaseNetwork extends EventEmitter {
       this.routingTable.getWithPending(enr.nodeId)?.value === undefined &&
         this.logger(`adding ${nodeId} to ${this.networkName} routing table`)
       this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-      if (customPayload) {
+      if (customPayload !== undefined) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
         this.routingTable.updateRadius(nodeId, decodedPayload.radius)
       }
@@ -622,7 +628,7 @@ export abstract class BaseNetwork extends EventEmitter {
         this.routingTable.getWithPending(enr as any)?.value === undefined &&
           this.logger(`adding ${enr as any} to ${this.networkName} routing table`)
         this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-        if (customPayload) {
+        if (customPayload !== undefined) {
           const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))
           this.routingTable.updateRadius(enr.nodeId, decodedPayload.radius)
         }
@@ -677,7 +683,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.livenessCheck()
     const notFullBuckets = this.routingTable.buckets
       .map((bucket, idx) => {
-        return { bucket: bucket, distance: idx }
+        return { bucket, distance: idx }
       })
       .filter((pair) => pair.bucket.size() < 16)
       .reverse()
@@ -716,13 +722,13 @@ export abstract class BaseNetwork extends EventEmitter {
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256
       if (this.routingTable.valuesOfDistance(x).length === 0) {
-        this.sendFindNodes(enr.nodeId, [x])
+        await this.sendFindNodes(enr.nodeId, [x])
       }
     }
   }
 
   public async prune(radius: bigint) {
-    this._prune(this.networkId, radius)
+    await this._prune(this.networkId, radius)
     this.nodeRadius = radius
   }
 
@@ -750,7 +756,7 @@ export abstract class BaseNetwork extends EventEmitter {
             if (msg.contentKeys.get(0) === true) {
               accepted++
               const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
-              this.handleNewRequest({
+              await this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [contentKey],
                 peerId: peer.nodeId,
@@ -760,7 +766,9 @@ export abstract class BaseNetwork extends EventEmitter {
               })
             }
           }
-        } catch {}
+        } catch {
+          /** Noop */
+        }
       }
     }
     return accepted

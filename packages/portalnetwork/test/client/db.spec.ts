@@ -1,16 +1,17 @@
-import { it, assert } from 'vitest'
+import { distance } from '@chainsafe/discv5'
+import { bigIntToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
+import debug from 'debug'
+import { assert, it } from 'vitest'
+
 import {
-  getContentId,
-  getContentKey,
+  DBManager,
   HistoryNetworkContentType,
   NetworkId,
-  toHexString,
-  DBManager,
+  getContentId,
+  getContentKey,
   serializedContentKeyToContentId,
+  toHexString,
 } from '../../src/index.js'
-import debug from 'debug'
-import { bigIntToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { distance } from '@chainsafe/discv5'
 
 it('DBManager unit tests', async () => {
   const size = async () => {
@@ -94,7 +95,7 @@ it('DBManager unit tests', async () => {
   const oldRadius = 2n ** 256n
   const newRadius = oldRadius / 2n
   for await (const key of historyDb!.keys({ gte: bigIntToHex(newRadius) })) {
-    historyDb!.del(key)
+    await historyDb!.del(key)
   }
   const rest = (await historyDb?.keys().all())!.length
   assert.ok(
@@ -102,5 +103,5 @@ it('DBManager unit tests', async () => {
     `pruning by 50% removed ${((10000 - rest) * 100) / 10000}% of sublevel content`,
   )
   assert.equal((await db.db.keys().all()).length, 10000 + rest, 'Keys deleted only from sublevel')
-  db.close()
+  await db.close()
 })

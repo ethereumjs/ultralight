@@ -1,7 +1,10 @@
-import debug, { Debugger } from 'debug'
-import { PortalNetwork } from 'portalnetwork'
-import * as modules from './modules/index.js'
+import debug from 'debug'
+
 import { INTERNAL_ERROR } from './error-code.js'
+import * as modules from './modules/index.js'
+
+import type { Debugger } from 'debug'
+import type { PortalNetwork } from 'portalnetwork'
 
 export class RPCManager {
   public _client: PortalNetwork

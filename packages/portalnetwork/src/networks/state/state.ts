@@ -1,30 +1,34 @@
-import debug, { Debugger } from 'debug'
-import { PortalNetwork } from '../../client/client.js'
-import { BaseNetwork } from '../network.js'
-import { NetworkId } from '../types.js'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Account, Address, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import { ENR } from '@chainsafe/discv5'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Trie } from '@ethereumjs/trie'
+import { Account, Address, bytesToInt, hexToBytes } from '@ethereumjs/util'
+import debug from 'debug'
+
 import { shortId } from '../../util/util.js'
 import { RequestCode } from '../../wire/index.js'
 import {
-  FindContentMessage,
-  PortalWireMessageType,
-  MessageCodes,
   ContentMessageType,
   FoundContent,
+  MessageCodes,
+  PortalWireMessageType,
 } from '../../wire/types.js'
+import { ContentLookup } from '../contentLookup.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
+import { BaseNetwork } from '../network.js'
+import { NetworkId } from '../types.js'
+
+import { StateDB } from './statedb.js'
 import {
   AccountTrieProofType,
   ContractByteCodeType,
   ContractStorageTrieProofType,
   StateNetworkContentType,
 } from './types.js'
-import { StateDB } from './statedb.js'
 import { getStateNetworkContentKey } from './util.js'
-import { ContentLookup } from '../contentLookup.js'
-import { Trie } from '@ethereumjs/trie'
+
+import type { PortalNetwork } from '../../client/client.js'
+import type { FindContentMessage } from '../../wire/types.js'
+import type { Debugger } from 'debug'
 
 export class StateNetwork extends BaseNetwork {
   stateDB: StateDB
@@ -135,7 +139,7 @@ export class StateNetwork extends BaseNetwork {
     contentKey: string,
     content: Uint8Array,
   ) => {
-    this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
+    await this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, toHexString(content))
   }

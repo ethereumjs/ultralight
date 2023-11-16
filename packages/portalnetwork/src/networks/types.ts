@@ -1,9 +1,10 @@
 import { ByteVectorType } from '@chainsafe/ssz'
 import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { HistoryNetwork } from './history'
-import { StateNetwork } from './state'
-import { BeaconLightClientNetwork } from './beacon'
+
+import type { BeaconLightClientNetwork } from './beacon'
+import type { HistoryNetwork } from './history'
+import type { StateNetwork } from './state'
 
 const BYTE_SIZE = 256
 
@@ -99,7 +100,7 @@ export class Bloom {
    * Bitwise or blooms together.
    */
   or(bloom: Bloom) {
-    if (bloom) {
+    if (bloom !== undefined) {
       for (let i = 0; i <= BYTE_SIZE; i++) {
         this.bitvector[i] = this.bitvector[i] | bloom.bitvector[i]
       }

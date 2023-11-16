@@ -1,4 +1,4 @@
-import { Uint16 } from '../index.js'
+import type { Uint16 } from '../index.js'
 
 // 10**9	Nanosecond  ns - one billionth of a second
 // 10**6	Microsecond	µs - one millionth of a second  <------- uTP timestamp

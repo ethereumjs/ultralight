@@ -1,10 +1,11 @@
-import { describe, it, assert } from 'vitest'
-import { createRequire } from 'module'
-const require = createRequire(import.meta.url)
 import { toHexString } from '@chainsafe/ssz'
-import { ssz } from '@lodestar/types'
+import { hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
+import { ssz } from '@lodestar/types'
+import { createRequire } from 'module'
+import { assert, describe, it } from 'vitest'
+
 import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,
@@ -13,7 +14,8 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from '../../../src/networks/beacon/types.js'
-import { hexToBytes } from '@ethereumjs/util'
+
+const require = createRequire(import.meta.url)
 
 const specTestVectors = require('./specTestVectors.json')
 const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root

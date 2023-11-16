@@ -1,3 +1,5 @@
+import { toHexString } from '@chainsafe/ssz'
+import * as RLP from '@ethereumjs/rlp'
 import {
   bigIntToBytes,
   bytesToBigInt,
@@ -5,15 +7,17 @@ import {
   equalsBytes,
   hexToBytes,
   intToBytes,
-  NestedUint8Array,
   utf8ToBytes,
 } from '@ethereumjs/util'
-import * as RLP from '@ethereumjs/rlp'
+import { VM } from '@ethereumjs/vm'
+
+import { Bloom, reassembleBlock } from '../index.js'
+
+import type { Log, TxReceiptType, TxReceiptWithType } from '../index.js'
 import type { Block } from '@ethereumjs/block'
-import { Bloom, Log, TxReceiptType, TxReceiptWithType, reassembleBlock } from '../index.js'
-import { TxReceipt, PostByzantiumTxReceipt, PreByzantiumTxReceipt, VM } from '@ethereumjs/vm'
-import { TypedTransaction } from '@ethereumjs/tx'
-import { toHexString } from '@chainsafe/ssz'
+import type { TypedTransaction } from '@ethereumjs/tx'
+import type { NestedUint8Array } from '@ethereumjs/util'
+import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
 type rlpReceipt = [postStateOrStatus: Uint8Array, cumulativeGasUsed: Uint8Array, logs: Log[]]
 
@@ -73,7 +77,7 @@ export async function saveReceipts(block: Block): Promise<Uint8Array> {
   const receipts: TxReceiptType[] = []
   for (const tx of block.transactions) {
     const txResult = await vm.runTx({
-      tx: tx,
+      tx,
       skipBalance: true,
       skipBlockGasLimitValidation: true,
       skipNonce: true,
@@ -97,13 +101,13 @@ export async function getReceipts(
 ): Promise<TxReceipt[] | TxReceiptWithType[]> {
   if (!encoded) return []
   let receipts = decodeReceipts(hexToBytes(encoded))
-  if (calcBloom) {
+  if (calcBloom !== undefined) {
     receipts = receipts.map((r) => {
       r.bitvector = logsBloom(r.logs).bitvector
       return r
     })
   }
-  if (includeTxType && body) {
+  if (includeTxType && body !== undefined) {
     const block = reassembleBlock(hexToBytes(encoded), hexToBytes(body))
     receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
       r.txType = block.transactions[i].type
@@ -126,11 +130,11 @@ export async function getLogs(
     let logs: GetLogsReturn = []
     let logIndex = 0
     for (const [receiptIndex, receipt] of receipts.entries()) {
-      block &&
+      block !== undefined &&
         logs.push(
           ...receipt!.logs.map((log) => ({
             log,
-            block: block,
+            block,
             tx: block!.transactions[receiptIndex],
             txIndex: receiptIndex,
             logIndex: logIndex++,

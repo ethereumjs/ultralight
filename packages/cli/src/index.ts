@@ -1,23 +1,24 @@
-import * as fs from 'fs'
-import { PortalNetwork, NetworkId, fromHexString } from 'portalnetwork'
-import type { PeerId } from '@libp2p/interface-peer-id'
-import { multiaddr } from '@multiformats/multiaddr'
-import yargs from 'yargs/yargs'
-// eslint-disable-next-line node/file-extension-in-import
-import { hideBin } from 'yargs/helpers'
-import jayson from 'jayson/promise/index.js'
-import http from 'http'
-import * as PromClient from 'prom-client'
-import debug from 'debug'
-import { setupMetrics } from './metrics.js'
-import { addBootNode } from './util.js'
-import { Level } from 'level'
-import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { execSync } from 'child_process'
-import { RPCManager } from './rpc/rpc.js'
 import { SignableENR } from '@chainsafe/discv5'
-import { Enr } from './rpc/schema/types.js'
-import { ClientOpts } from './types.js'
+import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
+import { execSync } from 'child_process'
+import debug from 'debug'
+import * as fs from 'fs'
+import http from 'http'
+import jayson from 'jayson/promise/index.js'
+import { Level } from 'level'
+import { NetworkId, PortalNetwork, fromHexString } from 'portalnetwork'
+import * as PromClient from 'prom-client'
+import { hideBin } from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+
+import { setupMetrics } from './metrics.js'
+import { RPCManager } from './rpc/rpc.js'
+import { addBootNode } from './util.js'
+
+import type { Enr } from './rpc/schema/types.js'
+import type { ClientOpts } from './types.js'
+import type { PeerId } from '@libp2p/interface-peer-id'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -98,14 +99,15 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
 
 const main = async () => {
   const cmd = 'hostname -I'
-  const ip = args.bindAddress
-    ? args.bindAddress.split(':')[0]
-    : execSync(cmd).toString().split(' ')[0].trim()
-  const bindPort = args.bindAddress ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
+  const ip =
+    args.bindAddress !== undefined
+      ? args.bindAddress.split(':')[0]
+      : execSync(cmd).toString().split(' ')[0].trim()
+  const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
   let id: PeerId
   let web3: jayson.Client | undefined
-  if (!args.pk) {
+  if (args.pk === undefined) {
     id = await createSecp256k1PeerId()
   } else {
     id = await createFromProtobuf(fromHexString(args.pk))
@@ -123,11 +125,11 @@ const main = async () => {
 
   const metrics = setupMetrics()
   let db
-  if (args.dataDir) {
+  if (args.dataDir !== undefined) {
     db = new Level<string, string>(args.dataDir)
   }
   const config = {
-    enr: enr,
+    enr,
     peerId: id,
     config: {
       enrUpdate: true,
@@ -162,7 +164,7 @@ const main = async () => {
     networks.push(NetworkId.BeaconLightClientNetwork)
   }
   const portal = await PortalNetwork.create({
-    config: config,
+    config,
     radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
@@ -180,9 +182,9 @@ const main = async () => {
 
   if (args.metrics) {
     metricsServer = http.createServer(reportMetrics)
-    Object.entries(metrics).forEach((entry) => {
+    for (const entry of Object.entries(metrics)) {
       register.registerMetric(entry[1])
-    })
+    }
     metricsServer?.listen(args.metricsPort, rpcAddr)
     log(`Started Metrics Server address=http://${rpcAddr}:${args.metricsPort}`)
   }
@@ -190,10 +192,10 @@ const main = async () => {
   await portal.start()
 
   const bootnodes: Array<Enr> = []
-  if (args.bootnode) {
+  if (args.bootnode !== undefined) {
     bootnodes.push(args.bootnode)
   }
-  if (args.bootnodeList) {
+  if (args.bootnodeList !== undefined) {
     const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
     const bootnodeList = bootnodeData.split('\n')
     for (const bootnode of bootnodeList) {
@@ -211,10 +213,10 @@ const main = async () => {
   }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
-  if (args.web3) {
+  if (args.web3 !== undefined) {
     const [host, port] = args.web3.split(':')
     if (host && port) {
-      web3 = jayson.Client.http({ host: host, port: port })
+      web3 = jayson.Client.http({ host, port })
     }
   }
 
@@ -222,14 +224,14 @@ const main = async () => {
     const manager = new RPCManager(portal)
     const methods = manager.getMethods()
     const server = new jayson.Server(methods, {
-      router: function (method, params) {
+      router(method, params) {
         // `_methods` is not part of the jayson.Server interface but exists on the object
         // but the docs recommend this pattern for custom routing
         // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js
-        if (!this.getMethod && web3) {
+        if (this.getMethod(method) === undefined && web3) {
           return new jayson.Method(async function () {
             const res = await web3!.request(method, params)
-            if (res.result) return res.result
+            if (res.result !== undefined) return res.result
             else return res.error
           })
         } else {
@@ -255,7 +257,7 @@ const main = async () => {
   process.on('SIGINT', async () => {
     console.log('Caught close signal, shutting down...')
     await portal.stop()
-    if (metricsServer?.listening) {
+    if (metricsServer?.listening === true) {
       metricsServer.close()
     }
     process.exit()

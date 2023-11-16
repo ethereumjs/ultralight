@@ -1,32 +1,36 @@
 import { BitVectorType, toHexString } from '@chainsafe/ssz'
-import { Debugger } from 'debug'
+import { EventEmitter } from 'events'
+
 import {
+  BeaconLightClientNetworkContentType,
+  Bytes32TimeStamp,
+  ConnectionState,
+  ContentRequest,
+  HistoryNetworkContentType,
   NetworkId,
   Packet,
   PacketType,
+  RequestCode,
+  StateNetworkContentType,
   UtpSocket,
-  bitmap,
-  SelectiveAckHeader,
-  Bytes32TimeStamp,
   UtpSocketType,
-  startingNrs,
-  HistoryNetworkContentType,
-  ContentRequest,
+  bitmap,
+  createSocketKey,
+  decodeHistoryNetworkContentKey,
   dropPrefixes,
-  FinPacket,
+  startingNrs,
+} from '../../../index.js'
+
+import type {
   DataPacket,
+  FinPacket,
+  INewRequest,
+  SelectiveAckHeader,
   StatePacket,
   SynPacket,
-  createSocketKey,
-  INewRequest,
-  RequestCode,
   UtpSocketKey,
-  decodeHistoryNetworkContentKey,
-  BeaconLightClientNetworkContentType,
-  ConnectionState,
-  StateNetworkContentType,
 } from '../../../index.js'
-import { EventEmitter } from 'events'
+import type { Debugger } from 'debug'
 
 export class PortalNetworkUTP extends EventEmitter {
   openContentRequest: Map<UtpSocketKey, ContentRequest>
@@ -44,7 +48,7 @@ export class PortalNetworkUTP extends EventEmitter {
     const requestKey = this.getRequestKey(connectionId, peerId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
-      request.socket.sendResetPacket()
+      void request.socket.sendResetPacket()
       this.logger.extend('CLOSING')(`Closing uTP request with ${peerId}`)
       request.close()
       this.openContentRequest.delete(requestKey)
@@ -241,7 +245,7 @@ export class PortalNetworkUTP extends EventEmitter {
         packet.header.ackNr + 1
       }`,
     )
-    if (acked) {
+    if (acked !== undefined) {
       request.socket.updateRTT(packet.header.timestampMicroseconds, acked)
       request.socket.ackNrs.push(acked)
     }
@@ -265,7 +269,7 @@ export class PortalNetworkUTP extends EventEmitter {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ:
       case RequestCode.ACCEPT_READ:
-        return await request.socket.handleDataPacket(packet)
+        return request.socket.handleDataPacket(packet)
       default:
         throw new Error(`Why did I get a DATA packet?`)
     }

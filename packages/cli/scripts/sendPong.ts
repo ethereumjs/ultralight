@@ -1,5 +1,7 @@
-import jayson, { HttpClient } from 'jayson/promise/index.js'
+import jayson from 'jayson/promise/index.js'
 import { ENR } from 'portalnetwork'
+
+import type { HttpClient } from 'jayson/promise/index.js'
 
 const { Client } = jayson
 
@@ -27,4 +29,4 @@ const main = async () => {
   await historySendPong()
 }
 
-main()
+void main()

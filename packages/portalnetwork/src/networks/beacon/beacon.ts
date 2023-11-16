@@ -1,32 +1,4 @@
-import { Debugger } from 'debug'
-import { BaseNetwork } from '../network.js'
-import { NetworkId } from '../types.js'
-import { PortalNetwork } from '../../client/client.js'
-import debug from 'debug'
-import { Union } from '@chainsafe/ssz/lib/interface.js'
 import { toHexString } from '@chainsafe/ssz'
-import { shortId } from '../../util/util.js'
-import { createBeaconConfig, defaultChainConfig, BeaconConfig } from '@lodestar/config'
-import { genesisData } from '@lodestar/config/networks'
-import {
-  BeaconLightClientNetworkContentType,
-  LightClientBootstrapKey,
-  LightClientFinalityUpdateKey,
-  LightClientForkName,
-  LightClientOptimisticUpdateKey,
-  LightClientUpdatesByRange,
-  LightClientUpdatesByRangeKey,
-  MIN_BOOTSTRAP_VOTES,
-  SyncStrategy,
-} from './types.js'
-import {
-  AcceptMessage,
-  ContentMessageType,
-  FindContentMessage,
-  MessageCodes,
-  OfferMessage,
-  PortalWireMessageType,
-} from '../../wire/types.js'
 import {
   bytesToHex,
   bytesToInt,
@@ -35,22 +7,47 @@ import {
   intToHex,
   padToEven,
 } from '@ethereumjs/util'
-import {
-  RequestCode,
-  FoundContent,
-  randUint16,
-  MAX_PACKET_SIZE,
-  encodeWithVariantPrefix,
-} from '../../wire/index.js'
-import { ssz } from '@lodestar/types'
-
-import { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
-import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
-import { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
+import { genesisData } from '@lodestar/config/networks'
 import { Lightclient } from '@lodestar/light-client'
+import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
+import { ssz } from '@lodestar/types'
+import debug from 'debug'
+
+import { shortId } from '../../util/util.js'
+import {
+  FoundContent,
+  MAX_PACKET_SIZE,
+  RequestCode,
+  encodeWithVariantPrefix,
+  randUint16,
+} from '../../wire/index.js'
+import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../wire/types.js'
+import { BaseNetwork } from '../network.js'
+import { NetworkId } from '../types.js'
+
+import {
+  BeaconLightClientNetworkContentType,
+  LightClientBootstrapKey,
+  LightClientFinalityUpdateKey,
+  LightClientOptimisticUpdateKey,
+  LightClientUpdatesByRange,
+  LightClientUpdatesByRangeKey,
+  MIN_BOOTSTRAP_VOTES,
+  SyncStrategy,
+} from './types.js'
 import { UltralightTransport } from './ultralightTransport.js'
-import { NodeId } from '@chainsafe/discv5'
 import { getBeaconContentKey } from './util.js'
+
+import type { LightClientForkName } from './types.js'
+import type { PortalNetwork } from '../../client/client.js'
+import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
+import type { NodeId } from '@chainsafe/discv5'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { Union } from '@chainsafe/ssz/lib/interface.js'
+import type { BeaconConfig } from '@lodestar/config'
+import type { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
+import type { Debugger } from 'debug'
 
 export class BeaconLightClientNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconLightClientNetwork
@@ -248,7 +245,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   )
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
                   this.logger.extend('BOOTSTRAP')(`Terminating Light Client bootstrap process`)
-                  this.initializeLightClient(results[x][0])
+                  await this.initializeLightClient(results[x][0])
                   return
                 } catch (err) {
                   this.logger.extend('BOOTSTRAP')('Something went wrong parsing bootstrap')
@@ -297,20 +294,20 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       logger: {
         error: (msg, context, error) => {
           msg && lcLoggerError(msg)
-          context && lcLoggerError(context)
+          context !== undefined && lcLoggerError(context)
           error && lcLoggerError(error)
         },
         warn: (msg, context) => {
           msg && lcLoggerWarn(msg)
-          context && lcLoggerWarn(context)
+          context !== undefined && lcLoggerWarn(context)
         },
         info: (msg, context) => {
           msg && lcLoggerInfo(msg)
-          context && lcLoggerInfo(context)
+          context !== undefined && lcLoggerInfo(context)
         },
         debug: (msg, context) => {
           msg && lcLoggerDebug(msg)
-          context && lcLoggerDebug(context)
+          context !== undefined && lcLoggerDebug(context)
         },
       },
     })
@@ -436,19 +433,19 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             decoded = await new Promise((resolve, _reject) => {
-              this.handleNewRequest({
+              // TODO: Figure out how to clear this listener
+              this.on('ContentAdded', (contentKey, contentType, value) => {
+                if (contentKey === toHexString(key)) {
+                  resolve({ selector: 0, value: hexToBytes(value) })
+                }
+              })
+              void this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [key],
                 peerId: dstId,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
                 contents: [],
-              })
-              // TODO: Figure out how to clear this listener
-              this.on('ContentAdded', (contentKey, contentType, value) => {
-                if (contentKey === toHexString(key)) {
-                  resolve({ selector: 0, value: hexToBytes(value) })
-                }
               })
             })
             break
@@ -551,8 +548,8 @@ export class BeaconLightClientNetwork extends BaseNetwork {
 
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value || value.length === 0) {
-      this.sendResponse(src, requestId, new Uint8Array())
-    } else if (value && value.length < MAX_PACKET_SIZE) {
+      await this.sendResponse(src, requestId, new Uint8Array())
+    } else if (value !== undefined && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
           toHexString(decodedContentMessage.contentKey) +
@@ -562,10 +559,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
-        value: value,
+        value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
-      this.sendResponse(
+      await this.sendResponse(
         src,
         requestId,
         concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
@@ -588,7 +585,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       new DataView(id.buffer).setUint16(0, _id, false)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
       const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
-      this.sendResponse(
+      await this.sendResponse(
         src,
         requestId,
         concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
@@ -616,7 +613,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // optimistic update and this ensures we don't accidentally store multiple
-        await this.put(
+        this.put(
           this.networkId,
           intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           toHexString(value),
@@ -625,14 +622,14 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // finality update and this ensures we don't accidentally store multiple
-        await this.put(
+        this.put(
           this.networkId,
           intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           toHexString(value),
         )
         break
       default:
-        await this.put(this.networkId, contentKey, toHexString(value))
+        this.put(this.networkId, contentKey, toHexString(value))
     }
 
     this.logger(
@@ -868,15 +865,15 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           this.logger.extend('OFFER')(`Accepting an OFFER`)
           const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
           this.logger(toHexString(msg.contentKeys[0]))
-          this.sendAccept(src, requestId, contentIds, desiredKeys)
+          await this.sendAccept(src, requestId, contentIds, desiredKeys)
         } else {
           this.logger.extend('OFFER')(`Declining an OFFER since no interesting content`)
-          this.sendResponse(src, requestId, new Uint8Array())
+          await this.sendResponse(src, requestId, new Uint8Array())
         }
       } else {
         this.logger(`Offer Message Has No Content`)
         // Send empty response if something goes wrong parsing content keys
-        this.sendResponse(src, requestId, new Uint8Array())
+        await this.sendResponse(src, requestId, new Uint8Array())
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)

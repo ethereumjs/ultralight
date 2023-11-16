@@ -1,5 +1,7 @@
 import { execSync } from 'child_process'
-import jayson, { HttpClient } from 'jayson/promise/index.js'
+import jayson from 'jayson/promise/index.js'
+
+import type { HttpClient } from 'jayson/promise/index.js'
 
 const { Client } = jayson
 
@@ -38,25 +40,25 @@ const test = async () => {
       'Enr Added: ',
       peers.result.buckets.flat().includes(nodeIds[1].slice(2))
         ? 'pass'
-        : { expected: nodeIds[1], peers: peers.result.buckets.flat() }
+        : { expected: nodeIds[1], peers: peers.result.buckets.flat() },
     )
   }
 
-    const findContent = await ultralights[1].request('portal_stateFindContent', [enrs[0], contentKey])
-    console.log({ findContent })
+  const findContent = await ultralights[1].request('portal_stateFindContent', [enrs[0], contentKey])
+  console.log({ findContent })
 
-//   const offerContent = await ultralights[0].request('portal_stateOffer', [
-//     enrs[1],
-//     contentKey,
-//     content,
-//   ])
+  //   const offerContent = await ultralights[0].request('portal_stateOffer', [
+  //     enrs[1],
+  //     contentKey,
+  //     content,
+  //   ])
 
-//   console.log({ offerContent })
+  //   console.log({ offerContent })
 
   await new Promise((res) => {
     console.log('wait')
     setTimeout(() => {
-        console.log('waited')
+      console.log('waited')
       res(undefined)
     }, 1000)
   })

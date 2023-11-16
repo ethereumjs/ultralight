@@ -1,4 +1,5 @@
 import { toHexString } from '@chainsafe/ssz'
+
 import {
   BeaconLightClientNetworkContentType,
   LightClientBootstrapKey,

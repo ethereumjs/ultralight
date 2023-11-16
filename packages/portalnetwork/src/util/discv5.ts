@@ -1,9 +1,9 @@
 export {
-  IDiscv5CreateOptions,
-  ENR,
-  NodeId,
   createKeypairFromPeerId,
-  log2Distance,
   distance,
+  ENR,
+  IDiscv5CreateOptions,
+  log2Distance,
+  NodeId,
 } from '@chainsafe/discv5'
-export { toHexString, fromHexString } from '@chainsafe/ssz'
+export { fromHexString, toHexString } from '@chainsafe/ssz'
