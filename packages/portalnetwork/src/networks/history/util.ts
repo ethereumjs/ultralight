@@ -13,6 +13,7 @@ import {
   MERGE_BLOCK,
   PostShanghaiBlockBody,
   PreShanghaiBlockBody,
+  SHANGHAI_BLOCK,
   SSZWithdrawal,
   sszTransactionType,
   sszUnclesType,
@@ -143,7 +144,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
   } else {
     const header = BlockHeader.fromRLPSerializedHeader(rawHeader)
     let blockBuffer
-    if (header.number < MERGE_BLOCK) {
+    if (header.number < SHANGHAI_BLOCK) {
       blockBuffer = [
         rlp.decode(rawHeader) as never as BlockHeaderBytes,
         rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
