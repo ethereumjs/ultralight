@@ -10,6 +10,7 @@ import {
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
+  MERGE_BLOCK,
   PostShanghaiBlockBody,
   PreShanghaiBlockBody,
   SSZWithdrawal,
@@ -142,7 +143,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
   } else {
     const header = BlockHeader.fromRLPSerializedHeader(rawHeader)
     let blockBuffer
-    if (header.number < 15537393n) {
+    if (header.number < MERGE_BLOCK) {
       blockBuffer = [
         rlp.decode(rawHeader) as never as BlockHeaderBytes,
         rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
@@ -177,7 +178,7 @@ export const addRLPSerializedBlock = async (
     setHardfork: true,
   })
   const header = block.header
-  if (header.number < 15537393n) {
+  if (header.number < MERGE_BLOCK) {
     // Only generate proofs for pre-merge headers
     const proof: Witnesses = witnesses ?? (await network.generateInclusionProof(header.number))
     const headerProof = BlockHeaderWithProof.serialize({

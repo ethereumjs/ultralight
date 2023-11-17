@@ -9,6 +9,7 @@ import {
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
+  MERGE_BLOCK,
   PostShanghaiBlockBody,
   epochRootByBlocknumber,
   getContentKey,
@@ -57,7 +58,7 @@ export class ETH {
       if (!includeTransactions) {
         block = reassembleBlock(
           header,
-          blockNumber < 15537393n
+          blockNumber < MERGE_BLOCK
             ? BlockBodyContentType.serialize({
                 allTransactions: [],
                 sszUncles: Uint8Array.from([]),
