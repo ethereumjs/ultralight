@@ -75,6 +75,10 @@ export class eth {
       [validators.address],
       [validators.blockOption],
     ])
+    this.call = middleware(this.call.bind(this), 2, [
+      [validators.transaction(['to'])],
+      [validators.blockOption],
+    ])
   }
 
   async getBalance(params: [string, string]) {
@@ -97,6 +101,7 @@ export class eth {
   async call(params: [RpcTx, string]) {
     const [tx, blockTag] = params
     try {
+      this.logger('0x' + BigInt(blockTag).toString(16))
       const res = await this._client.ETH.ethCall(tx, BigInt(blockTag))
       return res
     } catch (err: any) {

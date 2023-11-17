@@ -106,7 +106,8 @@ describe('ethCall', () => {
       to: address.toString(),
       data: greeterInput,
     }
-    const res = await node.ETH.ethCall(tx, 15537394n)
+    const res = fromHexString(await node.ETH.ethCall(tx, 15537394n))
+
     // Decode offset in `returnValue` for start of Solidity return value
     const offset = bytesToInt(res.slice(0, 32))
     // First 32 bytes of return value are length of returned value
