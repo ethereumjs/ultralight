@@ -1,10 +1,10 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { type Block } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
 
 import { ContentLookup } from '../index.js'
 
 import {
-  BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
@@ -15,7 +15,6 @@ import {
 
 import type { HistoryNetwork } from './index.js'
 import type { ContentLookupResponse } from '../index.js'
-import type { Block } from '@ethereumjs/block'
 
 export class ETH {
   network: HistoryNetwork
@@ -53,13 +52,7 @@ export class ETH {
         header = BlockHeaderWithProof.deserialize(header as Uint8Array).header
       }
       if (!includeTransactions) {
-        block = reassembleBlock(
-          header,
-          BlockBodyContentType.serialize({
-            allTransactions: [],
-            sszUncles: Uint8Array.from([]),
-          }),
-        )
+        block = reassembleBlock(header, undefined)
         return block
       } else {
         lookup = new ContentLookup(this.network, bodyContentKey!)

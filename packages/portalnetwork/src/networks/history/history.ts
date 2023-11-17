@@ -23,7 +23,12 @@ import { NetworkId } from '../types.js'
 
 import { ETH } from './eth_module.js'
 import { GossipManager } from './gossip.js'
-import { BlockHeaderWithProof, EpochAccumulator, HistoryNetworkContentType } from './types.js'
+import {
+  BlockHeaderWithProof,
+  EpochAccumulator,
+  HistoryNetworkContentType,
+  MERGE_BLOCK,
+} from './types.js'
 import {
   blockNumberToGindex,
   epochIndexByBlocknumber,
@@ -117,11 +122,14 @@ export class HistoryNetwork extends BaseNetwork {
     if (header === undefined) {
       throw new Error('Block not found')
     }
-    const body = await this.getBlockBodyBytes(blockHash)
-    if (!body && includeTransactions) {
-      throw new Error('Block body not found')
+    let body
+    if (includeTransactions) {
+      body = await this.getBlockBodyBytes(blockHash)
+      if (!body) {
+        throw new Error('Block body not found')
+      }
     }
-    return reassembleBlock(header, body)
+    return reassembleBlock(header, body ?? undefined)
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
@@ -131,7 +139,7 @@ export class HistoryNetwork extends BaseNetwork {
     })
     const proof = headerProof.proof
 
-    if (header.number < 15537393n) {
+    if (header.number < MERGE_BLOCK) {
       // Only check for proof if pre-merge block header
       if (proof.value === null) {
         throw new Error('Received block header without proof')

@@ -778,8 +778,8 @@ export abstract class BaseNetwork extends EventEmitter {
     try {
       const content = await this.get(this.networkId, contentKey)
       return content
-    } catch {
-      this.logger('Error retrieving content from DB')
+    } catch (err: any) {
+      this.logger(`Error retrieving content from DB -- ${err.message}`)
     }
   }
 }
