@@ -1,13 +1,5 @@
 import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
-import {
-  BlockHeaderWithProof,
-  GET_LOGS_BLOCK_RANGE_LIMIT,
-  NetworkId,
-  fromHexString,
-  getContentKey,
-  getLogs,
-  reassembleBlock,
-} from 'portalnetwork'
+import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, getLogs } from 'portalnetwork'
 
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { jsonRpcLog } from '../types.js'
@@ -135,23 +127,10 @@ export class eth {
     this._client.logger(
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`,
     )
-    await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
-    const headerWithProof = await this._history.findContentLocally(
-      fromHexString(getContentKey(0, fromHexString(blockHash))),
-    )
-    if (headerWithProof === undefined) {
-      throw new Error('Block not found')
-    }
-    const header = BlockHeaderWithProof.deserialize(headerWithProof).header
-    const body = await this._history.findContentLocally(
-      fromHexString(getContentKey(1, fromHexString(blockHash))),
-    )
-    if (body === undefined) {
-      throw new Error('Block not found')
-    }
-    const block = body.length > 0 ? reassembleBlock(header, body) : reassembleBlock(header)
-    //@ts-ignore
-    return block
+    const block = await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
+    //@ts-ignore @ethereumjs/block has some weird typing discrepancy
+    if (block !== undefined) return block
+    throw new Error('Block not found')
   }
 
   /**
@@ -170,7 +149,6 @@ export class eth {
       includeTransactions,
     )
     if (block === undefined) throw new Error('block not found')
-    this.logger(block)
     //@ts-ignore
     return block
   }

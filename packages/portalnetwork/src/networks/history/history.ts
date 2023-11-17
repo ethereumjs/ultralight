@@ -117,11 +117,14 @@ export class HistoryNetwork extends BaseNetwork {
     if (header === undefined) {
       throw new Error('Block not found')
     }
-    const body = await this.getBlockBodyBytes(blockHash)
-    if (!body && includeTransactions) {
-      throw new Error('Block body not found')
+    let body
+    if (includeTransactions) {
+      body = await this.getBlockBodyBytes(blockHash)
+      if (!body) {
+        throw new Error('Block body not found')
+      }
     }
-    return reassembleBlock(header, body)
+    return reassembleBlock(header, body ?? undefined)
   }
 
   public validateHeader = async (value: Uint8Array, contentHash: string) => {
