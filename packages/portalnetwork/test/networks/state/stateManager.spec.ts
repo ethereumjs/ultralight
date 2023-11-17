@@ -5,10 +5,14 @@ import { Trie } from '@ethereumjs/trie'
 import {
   Account,
   Address,
+  bigIntToBytes,
   bytesToInt,
   bytesToUtf8,
+  equalsBytes,
   hexToBytes,
   randomBytes,
+  setLengthLeft,
+  utf8ToBytes,
 } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -135,8 +139,7 @@ describe('UltralightStateManager', () => {
     assert.deepEqual(gotCode, byteCode, 'retrieved contract code from state network')
 
     const greeterInput = '0xcfae3217'
-    // @ts-expect-error There's some weird typing error buried in the state manager interface with the Account type.
-    // Just ignoring for now
+
     const evm = new EVM({ stateManager: usm })
     const res = (await evm.runCall({ data: fromHexString(greeterInput), to: address })).execResult
       .returnValue
@@ -207,6 +210,71 @@ describe('UltralightStateManager', () => {
       toHexString(res),
       cstp.value,
       'successfully retrieved storage slot with state manager',
+    )
+  })
+  it('should store/modify bytecode, storage, and accounts in the state manager cache', async () => {
+    const node = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [NetworkId.StateNetwork],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const network = node.networks.get(NetworkId.StateNetwork) as StateNetwork
+    const usm = new UltralightStateManager(network)
+    const vitalikDotEth = Address.fromString('0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
+    let account = await usm.getAccount(vitalikDotEth)
+    assert.equal(account, undefined)
+    account = new Account(1n)
+    await usm.putAccount(vitalikDotEth, account)
+    account = undefined
+    account = await usm.getAccount(vitalikDotEth)
+    assert.equal(account?.nonce, 1n, 'able to retrieve account stored in cache')
+
+    await usm.modifyAccountFields(vitalikDotEth, { nonce: 39n })
+    assert.equal(
+      (await usm.getAccount(vitalikDotEth))?.nonce,
+      39n,
+      'modified account fields successfully',
+    )
+
+    await usm.checkpoint()
+    await usm.deleteAccount(vitalikDotEth)
+    assert.equal(
+      await usm.getAccount(vitalikDotEth),
+      undefined,
+      'account should not exist after being deleted',
+    )
+
+    await usm.revert()
+    assert.ok(
+      (await usm.getAccount(vitalikDotEth)) !== undefined,
+      'account deleted since last checkpoint should exist after revert called',
+    )
+    await usm.putContractStorage(
+      vitalikDotEth,
+      setLengthLeft(bigIntToBytes(2n), 32),
+      utf8ToBytes('abcd'),
+    )
+    const slotValue = await usm.getContractStorage(
+      vitalikDotEth,
+      setLengthLeft(bigIntToBytes(2n), 32),
+    )
+    assert.ok(equalsBytes(slotValue, utf8ToBytes('abcd')), 'should retrieve slot 2 value')
+
+    await usm.clearContractStorage(vitalikDotEth)
+    const clearedStorage = await usm.dumpStorage(vitalikDotEth)
+    assert.deepEqual({}, clearedStorage, 'storage cache should be empty after clear')
+
+    await usm.putContractCode(vitalikDotEth, hexToBytes('0x6000'))
+    assert.equal(
+      toHexString(await usm.getContractCode(vitalikDotEth)),
+      '0x6000',
+      'contract code was found in cache',
     )
   })
 })

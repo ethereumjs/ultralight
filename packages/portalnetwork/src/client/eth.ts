@@ -44,8 +44,6 @@ export class ETH {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
     const usm = new UltralightStateManager(this.state!)
-    // @ts-expect-error There's some weird typing error buried in the state manager interface with the Account type.
-    // Just ignoring for now
     const evm = new EVM({ stateManager: usm })
     await evm.stateManager.setStateRoot(fromHexString(stateRoot))
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx
