@@ -1,17 +1,13 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { type Block, BlockHeader } from '@ethereumjs/block'
+import { type Block } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
 
 import { ContentLookup } from '../index.js'
 
 import {
-  BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
-  MERGE_BLOCK,
-  PostShanghaiBlockBody,
-  SHANGHAI_BLOCK,
   epochRootByBlocknumber,
   getContentKey,
   reassembleBlock,
@@ -55,21 +51,8 @@ export class ETH {
         header = lookupResponse.content
         header = BlockHeaderWithProof.deserialize(header as Uint8Array).header
       }
-      const blockNumber = BlockHeader.fromRLPSerializedHeader(header).number
       if (!includeTransactions) {
-        block = reassembleBlock(
-          header,
-          blockNumber < SHANGHAI_BLOCK
-            ? BlockBodyContentType.serialize({
-                allTransactions: [],
-                sszUncles: Uint8Array.from([]),
-              })
-            : PostShanghaiBlockBody.serialize({
-                allTransactions: [],
-                sszUncles: Uint8Array.from([]),
-                allWithdrawals: [],
-              }),
-        )
+        block = reassembleBlock(header, undefined)
         return block
       } else {
         lookup = new ContentLookup(this.network, bodyContentKey!)
