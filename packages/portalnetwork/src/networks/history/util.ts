@@ -13,7 +13,6 @@ import {
   MERGE_BLOCK,
   PostShanghaiBlockBody,
   PreShanghaiBlockBody,
-  SHANGHAI_BLOCK,
   SSZWithdrawal,
   sszTransactionType,
   sszUnclesType,
@@ -26,7 +25,6 @@ import type {
   BlockHeaderBytes,
   TransactionsBytes,
   UncleHeadersBytes,
-  WithdrawalsBytes,
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 
