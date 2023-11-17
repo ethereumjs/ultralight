@@ -26,6 +26,9 @@ export const MAX_RECEIPT_LENGTH = 134217728 // 2 ** 27
 export const MAX_HEADER_LENGTH = 8192 // 2 ** 13
 export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 
+export const MERGE_BLOCK = 15537393n
+export const SHANGHAI_BLOCK = 17034871n
+
 /* ----------------- Enums ----------- */
 export enum HistoryNetworkContentType {
   BlockHeader = 0,

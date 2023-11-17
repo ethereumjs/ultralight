@@ -1,6 +1,6 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
 import { hexToBytes } from '@ethereumjs/util'
 
@@ -10,6 +10,7 @@ import {
   BlockHeaderWithProof,
   EpochAccumulator,
   HistoryNetworkContentType,
+  MERGE_BLOCK,
   PostShanghaiBlockBody,
   PreShanghaiBlockBody,
   SSZWithdrawal,
@@ -139,12 +140,11 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     const block = Block.fromValuesArray(valuesArray, { setHardfork: true })
     return block
   } else {
-    const blockBuffer: BlockBytes = [
-      rlp.decode(rawHeader) as never as BlockHeaderBytes,
-      rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
-      rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
-    ] as BlockBytes
-    const block = Block.fromValuesArray(blockBuffer, { setHardfork: true })
+    const header = BlockHeader.fromRLPSerializedHeader(rawHeader, {
+      setHardfork: true,
+      skipConsensusFormatValidation: false,
+    })
+    const block = Block.fromBlockData({ header }, { setHardfork: true })
     return block
   }
 }
@@ -165,7 +165,7 @@ export const addRLPSerializedBlock = async (
     setHardfork: true,
   })
   const header = block.header
-  if (header.number < 15537393n) {
+  if (header.number < MERGE_BLOCK) {
     // Only generate proofs for pre-merge headers
     const proof: Witnesses = witnesses ?? (await network.generateInclusionProof(header.number))
     const headerProof = BlockHeaderWithProof.serialize({
