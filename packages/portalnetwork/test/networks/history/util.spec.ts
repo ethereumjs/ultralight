@@ -1,11 +1,13 @@
 import { toHexString } from '@chainsafe/ssz'
-import { Block } from '@ethereumjs/block'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { Block, BlockHeader } from '@ethereumjs/block'
+import { Common, Hardfork } from '@ethereumjs/common'
+import { KECCAK256_RLP, bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { assert, assertType, describe, it } from 'vitest'
 
 import {
   ContentKeyType,
   HistoryNetworkContentType,
+  SHANGHAI_BLOCK,
   blockNumberToGindex,
   blockNumberToLeafIndex,
   decodeSszBlockBody,
@@ -118,6 +120,20 @@ describe('BlockHeader ssz serialization/deserialization with pre and post shangh
       deserializedPostBlock.allWithdrawals !== undefined &&
         deserializedPostBlock.allWithdrawals.length === 16,
       'deserialized post shanghai block body with withdrawals',
+    )
+  })
+  it('should serialize a post-shanghai block when no body is included', () => {
+    const common = new Common({ chain: 'mainnet', hardfork: Hardfork.Shanghai })
+    common.setHardfork(Hardfork.Shanghai)
+    const header = BlockHeader.fromHeaderData(
+      { number: SHANGHAI_BLOCK + 1n, timestamp: 1681338455n },
+      { setHardfork: true, common },
+    )
+    const block = reassembleBlock(header.serialize(), undefined)
+    assert.deepEqual(
+      block.header.withdrawalsRoot,
+      KECCAK256_RLP,
+      'instantiated a post shanghai block with no  body so withdrawals array is empty',
     )
   })
 })

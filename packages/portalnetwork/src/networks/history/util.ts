@@ -142,23 +142,11 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     const block = Block.fromValuesArray(valuesArray, { setHardfork: true })
     return block
   } else {
-    const header = BlockHeader.fromRLPSerializedHeader(rawHeader)
-    let blockBuffer
-    if (header.number < SHANGHAI_BLOCK) {
-      blockBuffer = [
-        rlp.decode(rawHeader) as never as BlockHeaderBytes,
-        rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
-        rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
-      ] as BlockBytes
-    } else {
-      blockBuffer = [
-        rlp.decode(rawHeader) as never as BlockHeaderBytes,
-        rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
-        rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
-        new Array(4).fill(new Uint8Array()) as WithdrawalsBytes,
-      ] as BlockBytes
-    }
-    const block = Block.fromValuesArray(blockBuffer, { setHardfork: true })
+    const header = BlockHeader.fromRLPSerializedHeader(rawHeader, {
+      setHardfork: true,
+      skipConsensusFormatValidation: false,
+    })
+    const block = Block.fromBlockData({ header }, { setHardfork: true })
     return block
   }
 }
