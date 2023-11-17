@@ -1,6 +1,6 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
 import { hexToBytes } from '@ethereumjs/util'
 
@@ -24,6 +24,7 @@ import type {
   BlockHeaderBytes,
   TransactionsBytes,
   UncleHeadersBytes,
+  WithdrawalsBytes,
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 
@@ -139,11 +140,22 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     const block = Block.fromValuesArray(valuesArray, { setHardfork: true })
     return block
   } else {
-    const blockBuffer: BlockBytes = [
-      rlp.decode(rawHeader) as never as BlockHeaderBytes,
-      rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
-      rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
-    ] as BlockBytes
+    const header = BlockHeader.fromRLPSerializedHeader(rawHeader)
+    let blockBuffer
+    if (header.number < 15537393n) {
+      blockBuffer = [
+        rlp.decode(rawHeader) as never as BlockHeaderBytes,
+        rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
+        rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
+      ] as BlockBytes
+    } else {
+      blockBuffer = [
+        rlp.decode(rawHeader) as never as BlockHeaderBytes,
+        rlp.decode(Uint8Array.from([])) as never as TransactionsBytes,
+        rlp.decode(Uint8Array.from([])) as never as UncleHeadersBytes,
+        new Array(4).fill(new Uint8Array()) as WithdrawalsBytes,
+      ] as BlockBytes
+    }
     const block = Block.fromValuesArray(blockBuffer, { setHardfork: true })
     return block
   }
