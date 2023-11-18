@@ -13,6 +13,7 @@
     "@types/node": "18.11.18",
     "@types/tape": "^4.13.2",
     "@types/yargs": "^17.0.7",
+    "alchemy-sdk": "^3.0.0",
     "eslint": "^8.6.0",
     "nodemon": "^2.0.19",
     "prettier": "^3.0.2",

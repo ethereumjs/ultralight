@@ -44,6 +44,7 @@ export class ETH {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
     const usm = new UltralightStateManager(this.state!)
+    //@ts-ignore there's something wrong with the state manager interface
     const evm = new EVM({ stateManager: usm })
     await evm.stateManager.setStateRoot(fromHexString(stateRoot))
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx

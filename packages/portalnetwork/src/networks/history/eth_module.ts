@@ -30,6 +30,7 @@ export class ETH {
     let body: any
     let block
     try {
+      this.network.logger.extend('getBlockByHash')(`Looking for ${blockHash} locally`)
       // Try to find block locally
       const block = await this.network.getBlockFromDB(fromHexString(blockHash), includeTransactions)
       return block
@@ -45,6 +46,8 @@ export class ETH {
     try {
       let lookup = new ContentLookup(this.network, headerContentKey)
       lookupResponse = await lookup.startLookup()
+      this.network.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
+      this.network.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
         return undefined
       } else {
