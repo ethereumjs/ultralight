@@ -329,7 +329,7 @@ it('eth_getBlockByNumber', async () => {
   await network2.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
   await addRLPSerializedBlock(blockRlp, blockHash, network1)
   await network1.sendPing(network2?.enr!.toENR())
-  const retrieved = await network2.ETH.getBlockByNumber(1000, false)
+  const retrieved = await node2.ETH.getBlockByNumber(1000, false)
 
   assert.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
 
