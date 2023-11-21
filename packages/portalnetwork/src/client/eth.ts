@@ -53,12 +53,12 @@ export class ETH {
    * @returns returns an @ethereumjs/block formatted `Block` object
    */
   public getBlockByNumber = async (
-    blockNumber: number | bigint | 'latest' | 'final',
+    blockNumber: number | bigint | 'latest' | 'finalized',
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     this.networkCheck([NetworkId.HistoryNetwork])
     let blockHash
-    if (blockNumber === 'latest' || blockNumber === 'final') {
+    if (blockNumber === 'latest' || blockNumber === 'finalized') {
       this.networkCheck([NetworkId.BeaconLightClientNetwork])
       let clHeader
       if (blockNumber === 'latest') {
@@ -68,7 +68,7 @@ export class ETH {
           toHexString(clHeader.execution.blockHash),
           includeTransactions,
         )
-      } else if (blockNumber === 'final') {
+      } else if (blockNumber === 'finalized') {
         clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
         if (clHeader === undefined) throw new Error('no finalized head available')
         return this.history?.ETH.getBlockByHash(

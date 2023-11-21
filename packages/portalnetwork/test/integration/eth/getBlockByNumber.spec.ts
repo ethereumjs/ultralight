@@ -90,7 +90,7 @@ describe('eth_getBlockByNumber', () => {
     await node1.stop()
     await node2.stop()
   })
-  it('should find a block using "latest" and "final"', async () => {
+  it('should find a block using "latest" and "finalized"', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1693431998000)
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
@@ -200,7 +200,7 @@ describe('eth_getBlockByNumber', () => {
     )
 
     const latest = await node1.ETH.getBlockByNumber('latest', false)
-    const finalized = await node1.ETH.getBlockByNumber('final', false)
+    const finalized = await node1.ETH.getBlockByNumber('finalized', false)
     beacon.lightClient!.stop()
 
     assert.deepEqual(latest?.hash(), headBlockblock.hash(), 'found latest block using `latest`')
