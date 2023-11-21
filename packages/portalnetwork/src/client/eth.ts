@@ -47,8 +47,9 @@ export class ETH {
     return res?.balance
   }
 
-  /**type ssz etBlockByNumber`.
-   * @param blockNumber number of block sought
+  /**
+   * Implements logic required for `eth_getBlockByNumber` JSON-RPC call
+   * @param blockNumber number of block sought, `latest`, `finalized`
    * @param includeTransactions whether to include transactions with the block
    * @returns returns an @ethereumjs/block formatted `Block` object
    */
@@ -59,6 +60,7 @@ export class ETH {
     this.networkCheck([NetworkId.HistoryNetwork])
     let blockHash
     if (blockNumber === 'latest' || blockNumber === 'finalized') {
+      // Requires beacon light client to be running to get `latest` or `finalized` blocks
       this.networkCheck([NetworkId.BeaconLightClientNetwork])
       let clHeader
       if (blockNumber === 'latest') {
