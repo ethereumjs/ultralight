@@ -148,7 +148,7 @@ export class eth {
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`,
     )
-    const block = await this._history.ETH.getBlockByNumber(
+    const block = await this._client.ETH.getBlockByNumber(
       parseInt(blockNumber),
       includeTransactions,
     )
