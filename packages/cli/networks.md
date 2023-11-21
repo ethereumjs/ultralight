@@ -51,6 +51,8 @@ To experiment with the Beacon Light Client Network, do the following:
   13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Updated state.finalizedHeader +429ms
   ```
 
+You can also call the RPC methods `beacon_getHead` and `beacon_getFinalized` to get the latest Light Client Headers for `latest` and `finalized` blocks known to the light client.
+
 ## State Network
 
 Ultralight currently supports a very minimal implementation of the State Network.  Currently, with a bridge script running to pipe in data, you can retrieve state data for accounts and contract storage that have appeared in recent blocks.  To experiment, you will need an Alchemy API key for Ethereum Mainnet.  Then, do the following:

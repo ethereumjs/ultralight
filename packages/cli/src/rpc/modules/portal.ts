@@ -16,6 +16,7 @@ import {
   toHexString,
 } from 'portalnetwork'
 
+import { INVALID_PARAMS } from '../error-code.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
@@ -423,7 +424,10 @@ export class portal {
     this.logger(`findNodes request received with these distances [${distances.toString()}]`)
     this.logger(`sending findNodes request to ${shortId(dstId)}`)
     if (!isValidId(dstId)) {
-      return 'invalid node id'
+      return {
+        code: INVALID_PARAMS,
+        message: 'invalid node id',
+      }
     }
     const res = await this._history.sendFindNodes(enr, distances)
     if (!res) {
