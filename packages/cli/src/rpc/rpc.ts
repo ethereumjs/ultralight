@@ -32,7 +32,7 @@ export class RPCManager {
    */
   private methods() {
     const methods: { [key: string]: Function } = {}
-    const mods = ['eth', 'portal', 'discv5', 'ultralight', 'web3']
+    const mods = ['beacon', 'eth', 'portal', 'discv5', 'ultralight', 'web3']
     for (const modName of mods) {
       const mod = new (modules as any)[modName](this._client, this.logger)
       const rpcMethods = RPCManager.getMethodNames((modules as any)[modName])
@@ -50,7 +50,8 @@ export class RPCManager {
         })
       }
     }
-    // this.logger(`RPC Initialized ${Object.keys(methods).join(', ')}`)
+
+    this.logger(`RPC Initialized ${Object.keys(methods).join(', ')}`)
     return methods
   }
   private _methods: { [key: string]: Function }
