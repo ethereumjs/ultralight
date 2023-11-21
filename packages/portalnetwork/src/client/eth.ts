@@ -1,11 +1,8 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Block, BlockHeader } from '@ethereumjs/block'
 import { EVM } from '@ethereumjs/evm'
-import { Address, TypeOutput, bytesToHex, intToHex, toType } from '@ethereumjs/util'
-import { ssz } from '@lodestar/types'
+import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
 
 import {
-  BeaconLightClientNetworkContentType,
   ContentLookup,
   EpochAccumulator,
   HistoryNetworkContentType,
@@ -13,12 +10,13 @@ import {
   UltralightStateManager,
   epochRootByBlocknumber,
   getContentKey,
-  reassembleBlock,
 } from '../networks/index.js'
 
 import type { PortalNetwork } from './client.js'
 import type { RpcTx } from './types.js'
 import type { BeaconLightClientNetwork, HistoryNetwork, StateNetwork } from '../networks/index.js'
+import type { Block } from '@ethereumjs/block'
+import type { capella } from '@lodestar/types'
 
 export class ETH {
   history?: HistoryNetwork
@@ -49,8 +47,7 @@ export class ETH {
     return res?.balance
   }
 
-  /**
-   * Portal Network implementation of JSON-RPC `eth_getBlockByNumber`.
+  /**type ssz etBlockByNumber`.
    * @param blockNumber number of block sought
    * @param includeTransactions whether to include transactions with the block
    * @returns returns an @ethereumjs/block formatted `Block` object
@@ -63,55 +60,21 @@ export class ETH {
     let blockHash
     if (blockNumber === 'latest' || blockNumber === 'final') {
       this.networkCheck([NetworkId.BeaconLightClientNetwork])
-      let clHeader, elHeaderData
+      let clHeader
       if (blockNumber === 'latest') {
-        clHeader = this.beacon!.lightClient?.getHead()
-        if (clHeader !== undefined) {
-          const encodedOptimisticUpdate = await this.beacon!.retrieve(
-            intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
-          )
-          if (encodedOptimisticUpdate === undefined)
-            // This shouldn't happen since we've already checked that the light client is running above so not being defined
-            // means something went wrong trying to store an optimistic update
-            throw new Error('optimstic update not stored locally')
-          // `latest` cannot mean a pre-capella block at this point so can safely assume we have an execution header in the update
-          const update = fromHexString(encodedOptimisticUpdate!)
-          elHeaderData = ssz.capella.LightClientOptimisticUpdate.deserialize(update.slice(4))
-            .attestedHeader.execution
-        } else {
-          clHeader = this.beacon!.lightClient?.getFinalized()
-          const encodedFinalityUpdate = await this.beacon!.retrieve(
-            intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
-          )
-          if (encodedFinalityUpdate === undefined)
-            // This shouldn't happen since we've already checked that the light client is running above so not being defined
-            // means something went wrong trying to store a finality update
-            throw new Error('finality update not stored locally')
-          const update = fromHexString(encodedFinalityUpdate)
-          elHeaderData = ssz.capella.LightClientFinalityUpdate.deserialize(update.slice(4))
-            .finalizedHeader.execution
-        }
-
-        const header = BlockHeader.fromHeaderData(elHeaderData, { setHardfork: true })
-        if (!includeTransactions) {
-          return Block.fromBlockData({ header })
-        } else {
-          // We do a direct recursive content lookup here instead of getBlockByHash so we don't search the network for a header we already have
-          const bodyLookup = new ContentLookup(
-            this.history!,
-            fromHexString(
-              getContentKey(HistoryNetworkContentType.BlockBody, elHeaderData.blockHash),
-            ),
-          )
-          const res = await bodyLookup.startLookup()
-          if (res !== undefined && 'content' in res) {
-            const block = reassembleBlock(header.serialize(), res.content)
-            return block
-          } else {
-            // TODO: Decide if we should return an error here since we didn't find the block body and can't return it
-            return Block.fromBlockData({ header })
-          }
-        }
+        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('light client is not tracking head')
+        return this.history?.ETH.getBlockByHash(
+          toHexString(clHeader.execution.blockHash),
+          includeTransactions,
+        )
+      } else if (blockNumber === 'final') {
+        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('no finalized head available')
+        return this.history?.ETH.getBlockByHash(
+          toHexString(clHeader.execution.blockHash),
+          includeTransactions,
+        )
       }
     }
 
