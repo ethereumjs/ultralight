@@ -49,7 +49,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
-      block = await this.historyNetwork?.ETH.getBlockByNumber(blockNum, false)
+      block = await this.portal.ETH.getBlockByNumber(blockNum, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block, this.provider)
       }
@@ -69,7 +69,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
       }
     } else if (blockTag !== 'latest') {
       const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
-      block = await this.historyNetwork?.ETH.getBlockByNumber(blockNum, true)
+      block = await this.portal.ETH.getBlockByNumber(blockNum, true)
       if (block !== undefined) {
         return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }
