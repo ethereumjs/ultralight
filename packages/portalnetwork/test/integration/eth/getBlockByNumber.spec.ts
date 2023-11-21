@@ -23,7 +23,6 @@ import {
 } from '../../../src/index.js'
 
 import type { BeaconLightClientNetwork, HistoryNetwork } from '../../../src/index.js'
-import type { capella } from '@lodestar/types'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
