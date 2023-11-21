@@ -45,7 +45,7 @@ describe('ethGetBalance using HistoryNetwork and StateNetwork', async () => {
       setHardfork: true,
     })
     await addRLPSerializedBlock(toHexString(block.serialize()), toHexString(block.hash()), history)
-    const stored = await history.ETH.getBlockByNumber(BigInt(blockNumber), true)
+    const stored = await ultralight.ETH.getBlockByNumber(BigInt(blockNumber), true)
     it(`should store block ${blockNumber}`, async () => {
       assert.isDefined(stored)
     })

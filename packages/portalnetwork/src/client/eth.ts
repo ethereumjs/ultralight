@@ -1,12 +1,22 @@
-import { fromHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { EVM } from '@ethereumjs/evm'
 import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
 
-import { NetworkId, UltralightStateManager } from '../networks/index.js'
+import {
+  ContentLookup,
+  EpochAccumulator,
+  HistoryNetworkContentType,
+  NetworkId,
+  UltralightStateManager,
+  epochRootByBlocknumber,
+  getContentKey,
+} from '../networks/index.js'
 
 import type { PortalNetwork } from './client.js'
 import type { RpcTx } from './types.js'
 import type { BeaconLightClientNetwork, HistoryNetwork, StateNetwork } from '../networks/index.js'
+import type { Block } from '@ethereumjs/block'
+import type { capella } from '@lodestar/types'
 
 export class ETH {
   history?: HistoryNetwork
@@ -21,6 +31,12 @@ export class ETH {
     this.beacon = portal.network()['0x501a']
   }
 
+  /**
+   * Implements logic required for `eth_getBalance` JSON-RPC call
+   * @param address address to be looked up
+   * @param blockNumber block number from which balance should be returned
+   * @returns returns the ETH balance of an address at the specified block number or undefined if not available
+   */
   ethGetBalance = async (address: string, blockNumber: bigint): Promise<bigint | undefined> => {
     this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
@@ -29,6 +45,69 @@ export class ETH {
     }
     const res = await this.state!.getAccount(address, stateRoot)
     return res?.balance
+  }
+
+  /**
+   * Implements logic required for `eth_getBlockByNumber` JSON-RPC call
+   * @param blockNumber number of block sought, `latest`, `finalized`
+   * @param includeTransactions whether to include transactions with the block
+   * @returns returns an @ethereumjs/block formatted `Block` object
+   */
+  public getBlockByNumber = async (
+    blockNumber: number | bigint | 'latest' | 'finalized',
+    includeTransactions: boolean,
+  ): Promise<Block | undefined> => {
+    this.networkCheck([NetworkId.HistoryNetwork])
+    let blockHash
+    if (blockNumber === 'latest' || blockNumber === 'finalized') {
+      // Requires beacon light client to be running to get `latest` or `finalized` blocks
+      this.networkCheck([NetworkId.BeaconLightClientNetwork])
+      let clHeader
+      if (blockNumber === 'latest') {
+        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('light client is not tracking head')
+        return this.history?.ETH.getBlockByHash(
+          toHexString(clHeader.execution.blockHash),
+          includeTransactions,
+        )
+      } else if (blockNumber === 'finalized') {
+        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('no finalized head available')
+        return this.history?.ETH.getBlockByHash(
+          toHexString(clHeader.execution.blockHash),
+          includeTransactions,
+        )
+      }
+    }
+
+    blockHash = (await this.history!.blockIndex()).get('0x' + blockNumber.toString(16))
+    if (blockHash === undefined) {
+      const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
+      if (!epochRootHash) {
+        return undefined
+      }
+      const lookupKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)
+      const epoch_lookup = new ContentLookup(this.history!, fromHexString(lookupKey))
+      const result = await epoch_lookup.startLookup()
+
+      if (result && 'content' in result) {
+        this.history!.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
+          `Found EpochAccumulator with header record for block ${blockNumber}`,
+        )
+        const epoch = EpochAccumulator.deserialize(result.content)
+        blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
+      }
+    }
+    if (blockHash === undefined) {
+      return undefined
+    }
+    const block = await this.history!.ETH.getBlockByHash(blockHash, includeTransactions)
+    if (block?.header.number === BigInt(blockNumber)) {
+      return block
+    } else {
+      this.history!.logger(`Block ${blockNumber} not found`)
+      return undefined
+    }
   }
 
   /**
@@ -44,6 +123,7 @@ export class ETH {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
     const usm = new UltralightStateManager(this.state!)
+    //@ts-ignore there's something wrong with the state manager interface
     const evm = new EVM({ stateManager: usm })
     await evm.stateManager.setStateRoot(fromHexString(stateRoot))
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx

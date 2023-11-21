@@ -101,7 +101,6 @@ export class eth {
   async call(params: [RpcTx, string]) {
     const [tx, blockTag] = params
     try {
-      this.logger('0x' + BigInt(blockTag).toString(16))
       const res = await this._client.ETH.ethCall(tx, BigInt(blockTag))
       return res
     } catch (err: any) {
@@ -149,7 +148,7 @@ export class eth {
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`,
     )
-    const block = await this._history.ETH.getBlockByNumber(
+    const block = await this._client.ETH.getBlockByNumber(
       parseInt(blockNumber),
       includeTransactions,
     )

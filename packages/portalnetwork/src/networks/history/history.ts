@@ -343,8 +343,8 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public async getStateRoot(blockNumber: bigint) {
-    const block = await this.ETH.getBlockByNumber(blockNumber, false)
-    if (!block) {
+    const block = await this.portal.ETH.getBlockByNumber(blockNumber, false)
+    if (block === undefined) {
       throw new Error('Block not found')
     }
     return toHexString(block.header.stateRoot)
