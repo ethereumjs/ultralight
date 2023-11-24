@@ -4,6 +4,7 @@ import { genesisData } from '@lodestar/config/networks'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
+import { writeFileSync } from 'fs'
 import jayson from 'jayson/promise/index.js'
 import {
   BeaconLightClientNetworkContentType,
@@ -45,6 +46,7 @@ const main = async () => {
   const updatesByRange = await (
     await fetch(beaconNode + `eth/v1/beacon/light_client/updates?start_period=${oldPeriod}&count=3`)
   ).json()
+  writeFileSync('range.json', JSON.stringify(updatesByRange))
   const range: Uint8Array[] = []
   for (const update of updatesByRange) {
     range.push(

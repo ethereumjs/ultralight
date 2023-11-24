@@ -1,14 +1,23 @@
 import { RunStatusCode } from '@lodestar/light-client'
 import { ssz } from '@lodestar/types'
-import { type BeaconLightClientNetwork, NetworkId, type PortalNetwork } from 'portalnetwork'
+import {
+  type BeaconLightClientNetwork,
+  BeaconLightClientNetworkContentType,
+  ContentLookup,
+  LightClientUpdatesByRangeKey,
+  NetworkId,
+  type PortalNetwork,
+  fromHexString,
+  getBeaconContentKey,
+} from 'portalnetwork'
 
 import { INTERNAL_ERROR } from '../error-code.js'
-import { middleware } from '../validators.js'
+import { middleware, validators } from '../validators.js'
 
 import type { capella } from '@lodestar/types'
 import type { Debugger } from 'debug'
 
-const methods = ['beacon_getHead', 'beacon_getFinalized']
+const methods = ['beacon_getHead', 'beacon_getFinalized', 'beacon_getLightClientUpdate']
 /**
  * beacon_* RPC module
  * @memberof module:rpc/modules
@@ -29,6 +38,9 @@ export class beacon {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.getHead = middleware(this.getHead.bind(this), 0, [])
     this.getFinalized = middleware(this.getFinalized.bind(this), 0, [])
+    this.getLightClientUpdate = middleware(this.getLightClientUpdate.bind(this), 1, [
+      validators.hex,
+    ])
   }
 
   async methods(_params: []): Promise<string[]> {
@@ -73,5 +85,33 @@ export class beacon {
     return ssz.capella.LightClientHeader.toJson(
       this._beacon.lightClient!.getFinalized() as capella.LightClientHeader,
     )
+  }
+
+  async getLightClientUpdate(params: [string]) {
+    this.logger(params)
+    const period = fromHexString(params[0])
+    this.logger(period)
+    const update = await this._beacon.retrieve(this._beacon.computeLightClientUpdateKey(period))
+    if (update !== undefined) {
+      return ssz.capella.LightClientUpdate.toJson(
+        ssz.capella.LightClientUpdate.deserialize(fromHexString(update)),
+      )
+    }
+    const lookup = new ContentLookup(
+      this._beacon,
+      fromHexString(
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+          LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(params[0]), count: 1n }),
+        ),
+      ),
+    )
+    const res = await lookup.startLookup()
+    if (res !== undefined && 'content' in Object.keys(res)) {
+      return ssz.capella.LightClientUpdate.toJson(
+        //@ts-ignore
+        ssz.capella.LightClientUpdate.deserialize(fromHexString(res.content)),
+      )
+    }
   }
 }
