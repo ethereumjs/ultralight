@@ -7,6 +7,7 @@ import {
   LightClientUpdatesByRangeKey,
   NetworkId,
   type PortalNetwork,
+  computeLightClientKeyFromPeriod,
   fromHexString,
   getBeaconContentKey,
 } from 'portalnetwork'
@@ -38,8 +39,8 @@ export class beacon {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.getHead = middleware(this.getHead.bind(this), 0, [])
     this.getFinalized = middleware(this.getFinalized.bind(this), 0, [])
-    this.getLightClientUpdate = middleware(this.getLightClientUpdate.bind(this), 1, [
-      validators.hex,
+    this.getLightClientUpdate = middleware(this.getLightClientUpdate.bind(this), 0, [
+      [validators.hex],
     ])
   }
 
@@ -88,10 +89,12 @@ export class beacon {
   }
 
   async getLightClientUpdate(params: [string]) {
-    this.logger(params)
-    const period = fromHexString(params[0])
-    this.logger(period)
-    const update = await this._beacon.retrieve(this._beacon.computeLightClientUpdateKey(period))
+    const period = Number(BigInt(params[0]))
+    const rangeKey = getBeaconContentKey(
+      BeaconLightClientNetworkContentType.LightClientUpdate,
+      fromHexString(computeLightClientKeyFromPeriod(period)),
+    )
+    const update = await this._beacon.retrieve(rangeKey)
     if (update !== undefined) {
       return ssz.capella.LightClientUpdate.toJson(
         ssz.capella.LightClientUpdate.deserialize(fromHexString(update)),

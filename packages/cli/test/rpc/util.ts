@@ -25,6 +25,9 @@ export const startRpc = async (opts?: cliConfig) => {
     ],
     { stdio: ['pipe', 'pipe', 'inherit'] },
   )
+  ultralight.on('message', (msg) => {
+    console.log(msg.toString())
+  })
   const rpc = Client.http({ host: ip, port: 8545 })
   let done = false
   while (!done) {
@@ -32,7 +35,7 @@ export const startRpc = async (opts?: cliConfig) => {
       await rpc.request(`discv5_nodeInfo`, [])
       done = true
     } catch {
-      /** Catch connection errors while waiting for node to start */
+      /** Catch connection errors while waiting for portal client to start */
     }
     await new Promise((resolve) =>
       setTimeout(() => {

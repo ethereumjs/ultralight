@@ -33,11 +33,10 @@ describe(`${method} tests`, () => {
     const period =
       '0x' +
       computeSyncPeriodAtSlot(Number(BigInt(rangeJson.data.attested_header.beacon.slot))).toString(
-        '16',
+        16,
       )
-
-    const res = await rpc.request('beacon_getLightClientUpdate', [period])
-    console.log(res)
+    const res = await rpc.request(method, [period])
+    assert.equal(res.result.signature_slot, '7807053')
     ultralight.kill(9)
-  }, 20000)
+  }, 10000)
 })
