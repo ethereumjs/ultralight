@@ -17,6 +17,7 @@ import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
+import { initStateTrie } from './genesis.js'
 import { StateDB } from './statedb.js'
 import {
   AccountTrieProofType,
@@ -48,6 +49,8 @@ export class StateNetwork extends BaseNetwork {
       },
     )
   }
+
+  public initGenesis = initStateTrie.bind(this)
 
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
