@@ -669,7 +669,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     } else {
       const forkhash = input.slice(0, 4) as Uint8Array
       const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      //@ts-ignore - typescript won't let me set `forkname` to a value from of the Forks type
       const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
         input.slice(4),
       ) as LightClientUpdate
