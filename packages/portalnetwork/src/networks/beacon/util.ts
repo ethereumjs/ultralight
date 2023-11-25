@@ -1,4 +1,5 @@
 import { toHexString } from '@chainsafe/ssz'
+import { padToEven } from '@ethereumjs/util'
 
 import {
   BeaconLightClientNetworkContentType,
@@ -42,4 +43,10 @@ export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
     default:
       throw new Error(`unknown content type ${selector}`)
   }
+}
+
+export const computeLightClientKeyFromPeriod = (period: number) => {
+  return (
+    '0x0' + BeaconLightClientNetworkContentType.LightClientUpdate + padToEven(period.toString(16))
+  )
 }
