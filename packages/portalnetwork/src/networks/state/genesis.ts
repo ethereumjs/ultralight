@@ -1,6 +1,6 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Trie } from '@ethereumjs/trie'
-import { Account, bytesToUnprefixedHex, parseGethGenesisState } from '@ethereumjs/util'
+import { Account, parseGethGenesisState } from '@ethereumjs/util'
 
 import genesis from './mainnet.json' assert { type: 'json' }
 import { distance } from './util.js'
@@ -77,17 +77,4 @@ export const genesisDBEntries = async (
 
 export async function genesisTrie(state: StateNetwork) {
   return genesisDBEntries('0x' + state.enr.nodeId, state['nodeRadius'])
-}
-
-export async function initStateTrie(this: StateNetwork) {
-  const genTrie = await genesisTrie(this)
-  const addrs = await inRadiusAccounts('0x' + this.enr.nodeId, this['nodeRadius'])
-  for (const [k, v] of genTrie) {
-    await this.stateDB.trieDB.put(k, bytesToUnprefixedHex(v as Uint8Array))
-  }
-  this.stateDB.stateRoots.add(genesis.genesisStateRoot)
-  for (const addr of addrs) {
-    this.stateDB.accounts.add(addr)
-  }
-  this.stateDB.accountTries.set(genesis.genesisStateRoot, genesis.genesisStateRoot)
 }
