@@ -143,7 +143,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     const portal = new PortalNetwork({
       config,
-      radius: 2n ** 256n,
+      radius: opts.radius ?? 2n ** 256n,
       bootnodes,
       db: opts.db,
       supportedNetworks: opts.supportedNetworks ?? [NetworkId.HistoryNetwork],

@@ -1,7 +1,7 @@
 import { ENR } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Trie } from '@ethereumjs/trie'
-import { Account, Address, bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { Account, Address, bytesToInt, bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -17,6 +17,8 @@ import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
+import { genesisTrie, inRadiusAccounts } from './genesis.js'
+import genesis from './mainnet.json' assert { type: 'json' }
 import { StateDB } from './statedb.js'
 import {
   AccountTrieProofType,
@@ -47,6 +49,22 @@ export class StateNetwork extends BaseNetwork {
         await this.store(contentType, toHexString(contentKey.slice(1)), content)
       },
     )
+  }
+
+  /**
+   * Initialize the client with the genesis state
+   */
+  public initGenesis = async () => {
+    const genTrie = await genesisTrie(this)
+    const addrs = await inRadiusAccounts('0x' + this.enr.nodeId, this['nodeRadius'])
+    for (const [k, v] of genTrie) {
+      await this.stateDB.trieDB.put(k, bytesToUnprefixedHex(v as Uint8Array))
+    }
+    this.stateDB.stateRoots.add(genesis.genesisStateRoot)
+    for (const addr of addrs) {
+      this.stateDB.accounts.add(addr)
+    }
+    this.stateDB.accountTries.set(genesis.genesisStateRoot, genesis.genesisStateRoot)
   }
 
   /**
