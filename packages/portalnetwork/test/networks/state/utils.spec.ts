@@ -32,17 +32,17 @@ describe('distance()', () => {
 describe('keyType', () => {
   const randHash = randomBytes(32)
   it('should indentify AccountTrieProof contentKey', () => {
-    const contentKey = Uint8Array.from([0, ...randHash])
+    const contentKey = Uint8Array.from([0x10, ...randHash])
     const type = keyType(contentKey)
     assert.equal(type, StateNetworkContentType.AccountTrieProof)
   })
   it('should indentify ContractStorageTrieProof contentKey', () => {
-    const contentKey = Uint8Array.from([1, ...randHash])
+    const contentKey = Uint8Array.from([0x11, ...randHash])
     const type = keyType(contentKey)
     assert.equal(type, StateNetworkContentType.ContractStorageTrieProof)
   })
   it('should indentify ContractByteCode contentKey', () => {
-    const contentKey = Uint8Array.from([2, ...randHash])
+    const contentKey = Uint8Array.from([0x12, ...randHash])
     const type = keyType(contentKey)
     assert.equal(type, StateNetworkContentType.ContractByteCode)
   })
@@ -79,7 +79,7 @@ describe('Account Trie Proof Key methods', () => {
   })
 
   it('should be identified as AccountTrieProof contentKey', () => {
-    assert.equal(contentKey_ATP[0], 0)
+    assert.equal(contentKey_ATP[0], 0x10)
     assert.equal(keyType(contentKey_ATP), StateNetworkContentType.AccountTrieProof)
   })
 
@@ -132,7 +132,7 @@ describe('Contract Storage Trie Proof Key methods', () => {
   })
 
   it('should be identified as ContractStorageTrieProof contentKey', () => {
-    assert.equal(contentKey_CSTP[0], 1)
+    assert.equal(contentKey_CSTP[0], 0x11)
     assert.equal(keyType(contentKey_CSTP), StateNetworkContentType.ContractStorageTrieProof)
   })
 
@@ -171,7 +171,7 @@ describe('Contract Byte Code Key methods', () => {
   })
 
   it('should be identified as ContractByteCode contentKey', () => {
-    assert.equal(contentKey_CBC[0], 2)
+    assert.equal(contentKey_CBC[0], 0x12)
     assert.equal(keyType(contentKey_CBC), StateNetworkContentType.ContractByteCode)
   })
 
