@@ -183,15 +183,13 @@ describe('Find Content tests', () => {
       optimisticUpdate.content_key,
       hexToBytes(optimisticUpdate.content_value),
     )
-
     const res = await network2.sendFindContent(
       node1.discv5.enr.nodeId,
       concatBytes(
-        new Uint8Array([3]),
+        new Uint8Array([0x23]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
-
     assert.equal(
       toHexString(res!.value as Uint8Array),
       optimisticUpdate.content_value,
@@ -199,7 +197,7 @@ describe('Find Content tests', () => {
     )
     const content = await network2.findContentLocally(
       concatBytes(
-        new Uint8Array([3]),
+        new Uint8Array([0x23]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
