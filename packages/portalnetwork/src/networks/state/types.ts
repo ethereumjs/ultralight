@@ -7,9 +7,9 @@ import {
 } from '@chainsafe/ssz'
 
 export enum StateNetworkContentType {
-  AccountTrieProof = 0,
-  ContractStorageTrieProof = 1,
-  ContractByteCode = 2,
+  AccountTrieProof = 16, // 0x10
+  ContractStorageTrieProof = 17, // 0x11
+  ContractByteCode = 18, // 0x12
 }
 
 /* ----------------- Types ----------- */

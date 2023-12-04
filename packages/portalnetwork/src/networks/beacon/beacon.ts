@@ -675,7 +675,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
     }
     return (
-      '0x0' + BeaconLightClientNetworkContentType.LightClientUpdate + padToEven(period.toString(16))
+      '0x' +
+      BeaconLightClientNetworkContentType.LightClientUpdate.toString(16) +
+      padToEven(period.toString(16))
     )
   }
 
