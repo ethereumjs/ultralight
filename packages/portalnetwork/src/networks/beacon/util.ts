@@ -19,8 +19,7 @@ export const getBeaconContentKey = (
   contentType: BeaconLightClientNetworkContentType,
   serializedKey: Uint8Array,
 ) => {
-  const prefix = new Uint8Array(1).fill(contentType)
-  return toHexString(prefix) + toHexString(serializedKey).slice(2)
+  return toHexString(Uint8Array.from([contentType, ...serializedKey]))
 }
 
 /**
@@ -47,6 +46,8 @@ export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
 
 export const computeLightClientKeyFromPeriod = (period: number) => {
   return (
-    '0x0' + BeaconLightClientNetworkContentType.LightClientUpdate + padToEven(period.toString(16))
+    '0x' +
+    BeaconLightClientNetworkContentType.LightClientUpdate.toString(16) +
+    padToEven(period.toString(16))
   )
 }
