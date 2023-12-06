@@ -543,13 +543,18 @@ export class portal {
           })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
     res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
-    this.logger.extend('findContent')(content)
-    return res.selector === FoundContent.ENRS
-      ? { enrs: content }
-      : {
-          content: content.length > 0 ? toHexString(content as Uint8Array) : '',
-          utpTransfer: res.selector === FoundContent.UTP,
-        }
+    const returnVal =
+      res.selector === FoundContent.ENRS
+        ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
+        : {
+            content: content.length > 0 ? toHexString(content as Uint8Array) : '',
+            utpTransfer: res.selector === FoundContent.UTP,
+          }
+    this.logger.extend('findContent')({
+      selector: FoundContent[res.selector],
+      value: returnVal,
+    })
+    return returnVal
   }
   async stateFindContent(params: [string, string]) {
     const [enr, contentKey] = params

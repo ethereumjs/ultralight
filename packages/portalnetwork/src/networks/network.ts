@@ -1,4 +1,4 @@
-import { ENR, EntryStatus, distance } from '@chainsafe/discv5'
+import { ENR, EntryStatus } from '@chainsafe/discv5'
 import { BitArray, toHexString } from '@chainsafe/ssz'
 import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
@@ -523,18 +523,13 @@ export abstract class BaseNetwork extends EventEmitter {
       // Discv5 calls for maximum of 16 nodes per NODES message
       const ENRs = this.routingTable.nearest(lookupKey, 16)
 
-      const encodedEnrs = ENRs.map((enr) => {
-        // Only include ENR if not the ENR of the requesting node and the ENR is closer to the
-        // contentId than this node
-        return enr.nodeId !== src.nodeId &&
-          distance(enr.nodeId, lookupKey) < distance(this.enr.nodeId, lookupKey)
-          ? enr.encode()
-          : undefined
-      }).filter((enr) => enr !== undefined)
+      const encodedEnrs = ENRs.filter((enr) => enr.nodeId !== src.nodeId).map((enr) => {
+        return enr.encode()
+      })
       if (encodedEnrs.length > 0) {
         this.logger(`Found ${encodedEnrs.length} closer to content than us`)
         // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-        while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > 1200) {
+        while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > MAX_PACKET_SIZE) {
           // Remove ENRs until total ENRs less than 1200 bytes
           encodedEnrs.pop()
         }
