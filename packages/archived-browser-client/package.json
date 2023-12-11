@@ -48,7 +48,6 @@
     "stream-http": "^3.2.0",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.2.8",
-    "ts-node": "^10.7.0",
     "typescript": "^4.6.3",
     "use-reducer-async": "^2.1.1",
     "webpack": "^5.72.0",

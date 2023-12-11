@@ -17,7 +17,6 @@
     "eslint": "^8.6.0",
     "nodemon": "^2.0.19",
     "prettier": "^3.0.2",
-    "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
     "tsx": "^3.12.7",
     "typescript": "^4.9.4",
@@ -56,10 +55,10 @@
     }
   },
   "scripts": {
-    "start": "ts-node --esm src/index.ts",
-    "devnet": "npx ts-node --esm scripts/devnet.ts ",
-    "dev": "npx nodemon --esm src/index.ts -- --bindAddress=127.0.0.1:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data'",
-    "dev-testnet": "npx nodemon --esm src/index.ts -- --bindAddress=0.0.0.0:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data' --bootnodeList=./bootnodes.txt",
+    "start": "tsx src/index.ts",
+    "devnet": "tsx scripts/devnet.ts ",
+    "dev": "tsx watch src/index.ts -- --bindAddress=127.0.0.1:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data'",
+    "dev-testnet": "tsx watch src/index.ts -- --bindAddress=0.0.0.0:9000 --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e --dataDir='./dist/data' --bootnodeList=./bootnodes.txt",
     "build": "tsc && cp bootnodes.txt ./dist",
     "test": "npx vitest run test/* -c=./vitest.config.unit.ts",
     "lint": "../../config/cli/lint.sh",
