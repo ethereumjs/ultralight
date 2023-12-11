@@ -19,7 +19,7 @@ More details on the local devnet can be found [here](../../DEVNET.md)
 From the repo root:
 - Run `npm run start-browser-client`
 - Run `bash packages/cli/scripts/devnet.sh -n [number of nodes you want to start]`
-- Run `npx ts-node packages/cli/scripts/seeder.ts --rpcPort=8546 --numBlocks=2 --sourceFile="/path/to/blocksData.json" --numNodes=[number of nodes you started`
+- Run `npx tsx packages/cli/scripts/seeder.ts --rpcPort=8546 --numBlocks=2 --sourceFile="/path/to/blocksData.json" --numNodes=[number of nodes you started`
 
 Grab an ENR from the logs (or else query the devnet bootnode via JSON RPC at localhost:8546)
 

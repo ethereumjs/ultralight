@@ -26,7 +26,7 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
 ```
 ### Starting with the same Node ID 
 
-To start a node that has the same node ID each time, you can pass the `--pk` parameter at start-up with a base64 string encoded protobuf serialized private key.  So `ts-node-esm src/index.ts --pk=CAISINx/bjWlmCXTClX2JvDYehb8FSrE6l4MA9LGvP74XdfD` will always start the `cli` client with the node ID `2a9511ca767b7b56bb873234209557d07c5fe09382ed060b272c6a933c5658f5`.
+To start a node that has the same node ID each time, you can pass the `--pk` parameter at start-up with a base64 string encoded protobuf serialized private key.  So `tsx src/index.ts --pk=CAISINx/bjWlmCXTClX2JvDYehb8FSrE6l4MA9LGvP74XdfD` will always start the `cli` client with the node ID `2a9511ca767b7b56bb873234209557d07c5fe09382ed060b272c6a933c5658f5`.
 
 ### Connecting to the public testnet
 
@@ -121,7 +121,7 @@ Note, all nodes are connected to each other as bootnodes for each network by def
      - `Started JSON RPC Server address=http://localhost:8545`
      - `Started JSON RPC Server address=http://localhost:8546`
 - From `./packages/cli` *( in another terminal )*
-   - `npx ts-node --esm scripts/sampleTest.ts`
+   - `npx tsx scripts/sampleTest.ts`
 
 ### RPC
 See the [RPC docs](./RPC.md) for details on the available RPC endpoints.

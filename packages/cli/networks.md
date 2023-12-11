@@ -6,7 +6,7 @@ Ultralight currently supports three subnetworks with various levels of completen
 
 The History Network is enabled by default when Ultralight starts and is devoted to storing and making available Ethereum block headers, block bodies, and receipts.  To experiment with the History Network specifically, do the following:
 - Start a local devnet - `npm run devnet -- --numNodes=5`
-- Start the History bridge script - `npx ts-node-esm scripts/bridge.ts http://[json.rpc.provider.com]` and pass in a fully qualified http URL for a JSON-RPC provider (e.g. an Infura endpoint or a local full node exposing the eth namespace of the JSON-RPC)
+- Start the History bridge script - `npx tsx scripts/bridge.ts http://[json.rpc.provider.com]` and pass in a fully qualified http URL for a JSON-RPC provider (e.g. an Infura endpoint or a local full node exposing the eth namespace of the JSON-RPC)
 - The bridge script will retrieve the latest block and inject it into the network via Ultralight RPC endpoints
 - You can then retrieve these blocks from the local devnet by making a call to the `eth_getBlockByHash` RPC endpoint on any of the nodes
 
@@ -18,8 +18,8 @@ Ultralight has an embedded Lodestar light client capable of tracking the head of
 To experiment with the Beacon Light Client Network, do the following:
 - Start a local devnet - `npm run devnet -- --networks=beacon --numNodes=[5 or more ideally]`
 - Pick your light client bootstrap method from above and follow one of the below bootstrapping methods as applicable:
-  -- Trusted Checkpoint Sync - `npx ts-node-esm scripts/beaconBridge.ts`
-  -- Bootstrap Peer Voting - `npx ts-node-esm scripts/bootstrapFinder.ts`
+  -- Trusted Checkpoint Sync - `npx tsx scripts/beaconBridge.ts`
+  -- Bootstrap Peer Voting - `npx tsx scripts/bootstrapFinder.ts`
 - Observe the logs.  If all goes well, you should see something like below eventually, which indicates that the embedded Lodestar light client has begun tracking the head of the chain and will continue to do so as long as new updates are piped in.
 
 ```sh
@@ -59,7 +59,7 @@ Ultralight currently supports a very minimal implementation of the State Network
 
 - Run `npm run devnet -- --networks=history state --numNodes=1` - this activates both the History and State networks since History is required in order to retrieve the appropriate state root to retrieve state data from.
 
-- In a separate window, run `ALCHEMY_API_KEY=[your Alchemy API key here] npx ts-node-esm scripts/bridgeThread.ts --devnet --numNodes=1`
+- In a separate window, run `ALCHEMY_API_KEY=[your Alchemy API key here] npx tsx scripts/bridgeThread.ts --devnet --numNodes=1`
 - Observe the logs. When you see below, you are ready to start querying state data.
 ```sh
 ultralight Received ultralight_addBlockToHistory with params: 0: 0x0edbb89e9235e54b9244d9d43df15d9a675a992f9cf1de4cab208e25ef50e2...,1: 0xf909bcf9023ca0bf6da7bb157049b329870ff302c80b734144de791532b980... +18s
