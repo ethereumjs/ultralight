@@ -39,3 +39,4 @@ jobs:
       - run: |
           sleep 10 &&
           npx ts-node --esm scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10 --connectNodes=false
+        working-directory: ${{ github.workspace }}/packages/cli
