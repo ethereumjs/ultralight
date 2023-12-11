@@ -223,3 +223,20 @@ export function removeDuplicateSequences(_arr: string[][]): string[][] {
 
   return result
 }
+
+export function calculateAddressRange(
+  address: bigint,
+  radius: bigint,
+): { min: bigint; max: bigint } {
+  // Ensure we're dealing with BigInts representing 32-byte values
+  address = BigInt.asUintN(256, address)
+  radius = BigInt.asUintN(256, radius)
+  // Find the maximum address by OR-ing the address with the radius.
+  // This will set all bits to 1 where the radius has 1s, potentially up to the boundary of the radius.
+  const maxAddress = BigInt.asUintN(256, address | radius)
+  // Find the minimum address by AND-ing the address with the NOT of the radius.
+  // This will clear all bits to 0 wherever the radius has 1s, potentially down to the boundary of the radius.
+  const minAddress = BigInt.asUintN(256, address & ~radius)
+
+  return { min: minAddress, max: maxAddress }
+}
