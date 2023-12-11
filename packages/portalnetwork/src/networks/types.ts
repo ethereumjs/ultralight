@@ -23,10 +23,10 @@ export enum NetworkId {
 export type SubNetwork<T extends NetworkId> = T extends '0x500a'
   ? HistoryNetwork
   : T extends '0x500b'
-  ? StateNetwork
-  : T extends '0x501a'
-  ? BeaconLightClientNetwork
-  : never
+    ? StateNetwork
+    : T extends '0x501a'
+      ? BeaconLightClientNetwork
+      : never
 
 export class Bloom {
   bitvector: Uint8Array

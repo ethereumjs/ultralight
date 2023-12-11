@@ -82,8 +82,8 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
         typeof blockTag === 'number'
           ? blockTag
           : blockTag !== 'latest'
-          ? Number(BigInt(blockTag))
-          : blockTag
+            ? Number(BigInt(blockTag))
+            : blockTag
       block = await this.fallbackProvider.send('eth_getBlockByNumber', [blockNum, true])
     }
 
