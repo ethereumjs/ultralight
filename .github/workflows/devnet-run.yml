@@ -34,9 +34,8 @@ jobs:
       - run: npm i
         working-directory: ${{ github.workspace }}
       
-      - run: npx ts-node --esm scripts/devnet.ts --numNodes=10 --ip=127.0.0.1 &
+      - run: npx tsx --esm scripts/devnet.ts --numNodes=10 --ip=127.0.0.1 &
      
       - run: |
           sleep 10 &&
-          npx ts-node --esm scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10 --connectNodes=false
-        working-directory: ${{ github.workspace }}/packages/cli
+          npx tsx scripts/seeder.ts --rpcPort=8545 --sourceFile="./blocks200000-210000.json" --numBlocks=3 --numNodes=10 --connectNodes=false
