@@ -5,7 +5,7 @@ There are a collection of scripts in the `cli` package's `scripts` directory to 
 ## Starting the devnet
 
 1. Build all packages -- `npm i`
-2. Run the devnet script from `[repo root]/packages/cli` -- `npx ts-node --esm scripts/devnet.ts --numNodes=[Number of nodes to start]`
+2. Run the devnet script from `[repo root]/packages/cli` -- `npx tsx scripts/devnet.ts --numNodes=[Number of nodes to start]`
 3. Observe logs to confirm nodes are running
 4. Press `Ctrl+c` to shutdown the devnet at any time
 
@@ -16,7 +16,7 @@ Notes:  The nodes started by the script have a JSON-RPC server enabled.  The por
 1. Start the devnet as above
 2. Run the `seeder` script -- 
 ```sh
-npx ts-node scripts/seeder.ts --rpcPort=8546 --numBlocks=[number of blocks to seed into network] --sourceFile="[path/to/json/file/with/block/data.json]" --numNodes=[number of nodes in devnet (same as above)]
+npx tsx scripts/seeder.ts --rpcPort=8546 --numBlocks=[number of blocks to seed into network] --sourceFile="[path/to/json/file/with/block/data.json]" --numNodes=[number of nodes in devnet (same as above)]
 ```
 This will load the first `numBlocks` blocks from your `sourceFile` to the node with the `rpcPort` specified.
 
