@@ -1,9 +1,10 @@
+import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Trie } from '@ethereumjs/trie'
 import { Account, parseGethGenesisState } from '@ethereumjs/util'
+import { sha256 } from 'ethereum-cryptography/sha256.js'
 
 import genesis from './mainnet.json' assert { type: 'json' }
-import { distance } from './util.js'
 
 import type { StateNetwork } from './state'
 import type { AccountState } from '@ethereumjs/util'
@@ -34,10 +35,7 @@ export const inRadiusAccounts = async (nodeId: string, radius: bigint): Promise<
   const distances: Map<bigint, string> = new Map()
   const accounts: string[] = []
   for (const account of genesisAccounts()) {
-    const d = distance(
-      BigInt(nodeId),
-      BigInt(toHexString(new Trie()['hash'](fromHexString(account[0])))),
-    )
+    const d = distance(nodeId, toHexString(sha256(fromHexString(account[0]))).slice(2))
     if (d <= radius) {
       accounts.push(account[0])
     }
@@ -76,5 +74,5 @@ export const genesisDBEntries = async (
 }
 
 export async function genesisTrie(state: StateNetwork) {
-  return genesisDBEntries('0x' + state.enr.nodeId, state['nodeRadius'])
+  return genesisDBEntries(state.enr.nodeId, state['nodeRadius'])
 }
