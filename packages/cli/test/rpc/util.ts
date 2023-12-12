@@ -13,17 +13,15 @@ export const startRpc = async (opts?: cliConfig) => {
   const rpcPort = opts?.rpcPort ?? 8545
   const networks = opts?.networks ?? ['beacon']
   const ultralight = spawn(
-    process.execPath,
+    'tsx',
     [
-      '--loader',
-      'ts-node/esm',
       'src/index.ts',
       `--rpcAddr=${ip}`,
       `--rpcPort=${rpcPort}`,
       `--bindAddress=${ip}:${port}`,
       `--networks=${networks.join(' ')}`,
     ],
-    { stdio: ['pipe', 'pipe', 'inherit'] },
+    { stdio: ['pipe', 'pipe', 'inherit'], env: process.env },
   )
   ultralight.on('message', (msg) => {
     console.log(msg.toString())

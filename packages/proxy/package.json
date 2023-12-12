@@ -6,7 +6,6 @@
     "@types/yargs": "^17.0.8",
     "eslint": "^8.6.0",
     "prettier": "^3.0.2",
-    "ts-node": "^10.2.1",
     "typescript": "^4.4.3"
   },
   "dependencies": {
@@ -16,7 +15,7 @@
     "yargs": "^17.3.0"
   },
   "scripts": {
-    "start": "ts-node --esm src/index.ts",
+    "start": "tsx src/index.ts",
     "build": "tsc",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"

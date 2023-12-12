@@ -237,8 +237,8 @@ export abstract class BaseNetwork extends EventEmitter {
       enr = dstId.startsWith('enr')
         ? ENR.decodeTxt(dstId)
         : this.routingTable.getWithPending(dstId)
-        ? this.routingTable.getWithPending(dstId)!.value
-        : this.routingTable.getValue(dstId)
+          ? this.routingTable.getWithPending(dstId)!.value
+          : this.routingTable.getValue(dstId)
     } catch (err: any) {
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
     }

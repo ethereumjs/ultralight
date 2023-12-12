@@ -108,7 +108,7 @@ const bridgeThread = async () => {
     }
     processing.add(latest.result.number)
     const worker = new Worker('./scripts/stateBridge.ts', {
-      execArgv: ['--loader', 'ts-node/esm'],
+      execArgv: ['--loader', 'tsx'],
 
       workerData: { latest, KEY: alchemyAPIKey, host: args.host, port: currentPort(), memory },
     })

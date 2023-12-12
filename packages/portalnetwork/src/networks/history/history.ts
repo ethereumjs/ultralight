@@ -169,8 +169,8 @@ export class HistoryNetwork extends BaseNetwork {
     const enr = dstId.startsWith('enr:')
       ? ENR.decodeTxt(dstId)
       : this.routingTable.getWithPending(dstId)?.value
-      ? this.routingTable.getWithPending(dstId)?.value
-      : this.routingTable.getWithPending(dstId.slice(2))?.value
+        ? this.routingTable.getWithPending(dstId)?.value
+        : this.routingTable.getWithPending(dstId.slice(2))?.value
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return

@@ -34,5 +34,8 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-simple-import-sort": "^10.0.0"
+  },
+  "dependencies": {
+    "tsx": "^4.6.2"
   }
 }
