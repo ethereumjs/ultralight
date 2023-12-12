@@ -56,7 +56,7 @@ export class StateNetwork extends BaseNetwork {
    */
   public initGenesis = async () => {
     const genTrie = await genesisTrie(this)
-    const addrs = await inRadiusAccounts('0x' + this.enr.nodeId, this['nodeRadius'])
+    const addrs = await inRadiusAccounts(this.enr.nodeId, this['nodeRadius'])
     for (const [k, v] of genTrie) {
       await this.stateDB.trieDB.put(k, bytesToUnprefixedHex(v as Uint8Array))
     }
