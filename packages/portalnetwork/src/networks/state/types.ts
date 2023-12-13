@@ -2,8 +2,10 @@ import {
   ByteListType,
   ByteVectorType,
   ContainerType,
+  ListBasicType,
   ListCompositeType,
   UintBigintType,
+  UintNumberType,
 } from '@chainsafe/ssz'
 
 export enum StateNetworkContentType {
@@ -20,8 +22,21 @@ export type Address = Bytes20
 export type StateRoot = Bytes32
 export type StateRootHex = string
 export type MPTWitnessNode = Uint8Array
+
+export type TNibble = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+export type TNibblePair = [TNibble, TNibble]
+export type TNibblesArray = Array<TNibblePair>
+
+export const NibblePair = new UintNumberType(1)
+export const Nibbles = new ListBasicType(NibblePair, 8)
+
+export type AccountTrieNodeKey = {
+  path: Uint8Array
+  nodeHash: Bytes32
+}
+
 export type AccountTrieProofKey = {
-  address: Address
+  path: Address
   stateRoot: StateRoot
 }
 export type Slot = Uint256
@@ -57,6 +72,35 @@ export const MPTWitnessesType = new ListCompositeType(MPTWitnessNodeType, 17) //
 export const AddressType = Bytes20Type
 export const StateRootType = Bytes32Type
 export const SlotType = new UintBigintType(32)
+
+export const NibbleType = new UintNumberType(1)
+export const NibblesType = new ListBasicType(NibbleType, 8)
+
+export const AccountTrieNodeKeyType = new ContainerType({
+  path: Bytes32Type,
+  nodeHash: Bytes32Type,
+})
+
+export type AccountTrieNodeOffer = {
+  witnesses: MPTWitnessNode[]
+}
+export type AccountTrieNodeRequest = {
+  node: MPTWitnessNode
+}
+
+export type AccountTrieNodeContent<T extends 'OFFER' | 'REQUEST'> = T extends 'OFFER'
+  ? AccountTrieNodeOffer
+  : AccountTrieNodeRequest
+
+export const AccountTrieNodeOfferType = new ContainerType({
+  witnesses: MPTWitnessesType,
+})
+export const AccountTrieNodeRequestType = new ContainerType({
+  node: MPTWitnessNodeType,
+})
+export type AccountTrieNodeContentType<T extends 'OFFER' | 'REQUEST'> = T extends 'OFFER'
+  ? typeof AccountTrieNodeOfferType
+  : typeof AccountTrieNodeRequestType
 
 export const AccountTrieProofKeyType = new ContainerType({
   address: Bytes20Type,
