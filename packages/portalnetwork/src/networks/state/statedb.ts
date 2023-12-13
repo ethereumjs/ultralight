@@ -58,12 +58,12 @@ export class StateDB {
     this.accounts.add(toHexString(decoded.address))
     'stateRoot' in decoded && this.stateRoots.add(toHexString(decoded.stateRoot))
     switch (decoded.contentType) {
-      case StateNetworkContentType.AccountTrieProof: {
+      case StateNetworkContentType.AccountTrieNode: {
         const { address, stateRoot } = decoded
         await this.inputAccountTrieProof(address, stateRoot, content)
         break
       }
-      case StateNetworkContentType.ContractStorageTrieProof: {
+      case StateNetworkContentType.ContractTrieNode: {
         const { address, slot, stateRoot } = decoded
         await this.inputContractStorageTrieProof(address, slot, stateRoot, content)
         break
@@ -85,7 +85,7 @@ export class StateDB {
   async getContent(contentKey: Uint8Array): Promise<Uint8Array | undefined> {
     const decoded = decodeStateNetworkContentKey(contentKey)
     switch (decoded.contentType) {
-      case StateNetworkContentType.AccountTrieProof: {
+      case StateNetworkContentType.AccountTrieNode: {
         const { address, stateRoot } = decoded
         const trie = this.getAccountTrie(toHexString(stateRoot))
         const account = await this.getAccount(toHexString(address), toHexString(stateRoot))
@@ -97,7 +97,7 @@ export class StateDB {
           witnesses: proof,
         })
       }
-      case StateNetworkContentType.ContractStorageTrieProof: {
+      case StateNetworkContentType.ContractTrieNode: {
         const { address, slot, stateRoot } = decoded
         const trie = await this.getStorageTrie(toHexString(stateRoot), toHexString(address))
         const witnesses = await trie.createProof(

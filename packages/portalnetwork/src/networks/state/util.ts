@@ -42,7 +42,7 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
     throw new Error('address is required')
   }
   switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
+    case StateNetworkContentType.AccountTrieNode: {
       if (opts.stateRoot === undefined) {
         throw new Error('stateRoot is required')
       }
@@ -52,7 +52,7 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
       })
       return Uint8Array.from([opts.contentType, ...key])
     }
-    case StateNetworkContentType.ContractStorageTrieProof: {
+    case StateNetworkContentType.ContractTrieNode: {
       if (opts.slot === undefined) {
         throw new Error(`slot is required`)
       }
@@ -84,9 +84,9 @@ export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
 export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
   switch (contentKey[0]) {
     case 16:
-      return StateNetworkContentType.AccountTrieProof
+      return StateNetworkContentType.AccountTrieNode
     case 17:
-      return StateNetworkContentType.ContractStorageTrieProof
+      return StateNetworkContentType.ContractTrieNode
     case 18:
       return StateNetworkContentType.ContractByteCode
     default:
@@ -98,12 +98,12 @@ export const decodeStateNetworkContentKey = (
   key: Uint8Array,
 ):
   | {
-      contentType: StateNetworkContentType.AccountTrieProof
+      contentType: StateNetworkContentType.AccountTrieNode
       address: Uint8Array
       stateRoot: Uint8Array
     }
   | {
-      contentType: StateNetworkContentType.ContractStorageTrieProof
+      contentType: StateNetworkContentType.ContractTrieNode
       address: Uint8Array
       slot: bigint
       stateRoot: Uint8Array
@@ -117,12 +117,12 @@ export const decodeStateNetworkContentKey = (
   switch (contentType) {
     case 'AccountTrieProof': {
       const { address, stateRoot } = AccountTrieProofKeyType.deserialize(key.slice(1))
-      return { contentType: StateNetworkContentType.AccountTrieProof, address, stateRoot }
+      return { contentType: StateNetworkContentType.AccountTrieNode, address, stateRoot }
     }
     case 'ContractStorageTrieProof': {
       const { address, slot, stateRoot } = ContractStorageTrieKeyType.deserialize(key.slice(1))
       return {
-        contentType: StateNetworkContentType.ContractStorageTrieProof,
+        contentType: StateNetworkContentType.ContractTrieNode,
         address,
         slot,
         stateRoot,
@@ -142,10 +142,10 @@ export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
     throw new Error('address is required')
   }
   switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
+    case StateNetworkContentType.AccountTrieNode: {
       return sha256(opts.address.toBytes())
     }
-    case StateNetworkContentType.ContractStorageTrieProof: {
+    case StateNetworkContentType.ContractTrieNode: {
       if (opts.slot === undefined) {
         throw new Error(`slot value required: ${opts}`)
       }

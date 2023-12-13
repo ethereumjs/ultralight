@@ -186,7 +186,7 @@ export class StateNetwork extends BaseNetwork {
     const contentKey = getStateNetworkContentKey({
       address: Address.fromString(address),
       stateRoot: fromHexString(stateRoot),
-      contentType: StateNetworkContentType.AccountTrieProof,
+      contentType: StateNetworkContentType.AccountTrieNode,
     })
     this.logger.extend('GETACCOUNT')(
       `didn't find locally. Trying to retrieve account for ${address} at stateRoot ${stateRoot} from network`,
@@ -246,7 +246,7 @@ export class StateNetwork extends BaseNetwork {
       this.logger(`Content not found locally.  Requesting from network.`)
     }
     const contentKey = getStateNetworkContentKey({
-      contentType: StateNetworkContentType.ContractStorageTrieProof,
+      contentType: StateNetworkContentType.ContractTrieNode,
       address: Address.fromString(address),
       slot,
       stateRoot: fromHexString(stateRoot),

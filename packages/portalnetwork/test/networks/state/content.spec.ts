@@ -18,7 +18,7 @@ describe('Account Trie Proof Content Type', async () => {
   const content = testdata.ATP.content
 
   const decoded = decodeStateNetworkContentKey(fromHexString(contentKey)) as {
-    contentType: StateNetworkContentType.AccountTrieProof
+    contentType: StateNetworkContentType.AccountTrieNode
     address: Uint8Array
     stateRoot: Uint8Array
   }
@@ -53,7 +53,7 @@ describe('Contract Storage Trie Proof Content Type', async () => {
   const content = testdata.CSTP.content
 
   const decoded = decodeStateNetworkContentKey(fromHexString(contentKey)) as {
-    contentType: StateNetworkContentType.ContractStorageTrieProof
+    contentType: StateNetworkContentType.ContractTrieNode
     address: Uint8Array
     slot: bigint
     stateRoot: Uint8Array

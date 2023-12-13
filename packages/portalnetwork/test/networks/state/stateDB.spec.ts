@@ -27,7 +27,7 @@ describe('Input AccountTrieProof', async () => {
   const content = fromHexString(testdata.ATP.content)
   await database.storeContent(contentKey[0], contentKey.slice(1), content)
   const { address, stateRoot } = decodeStateNetworkContentKey(contentKey) as {
-    contentType: StateNetworkContentType.AccountTrieProof
+    contentType: StateNetworkContentType.AccountTrieNode
     address: Uint8Array
     stateRoot: Uint8Array
   }
@@ -74,7 +74,7 @@ describe('Input ContractStorageProof', async () => {
   const content = fromHexString(testdata.CSTP.content)
   await database.storeContent(contentKey[0], contentKey.slice(1), content)
   const { address, stateRoot, slot } = decodeStateNetworkContentKey(contentKey) as {
-    contentType: StateNetworkContentType.ContractStorageTrieProof
+    contentType: StateNetworkContentType.ContractTrieNode
     address: Uint8Array
     stateRoot: Uint8Array
     slot: bigint

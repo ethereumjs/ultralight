@@ -35,12 +35,12 @@ describe('keyType', () => {
   it('should indentify AccountTrieProof contentKey', () => {
     const contentKey = Uint8Array.from([0x10, ...randHash])
     const type = keyType(contentKey)
-    assert.equal(type, StateNetworkContentType.AccountTrieProof)
+    assert.equal(type, StateNetworkContentType.AccountTrieNode)
   })
   it('should indentify ContractStorageTrieProof contentKey', () => {
     const contentKey = Uint8Array.from([0x11, ...randHash])
     const type = keyType(contentKey)
-    assert.equal(type, StateNetworkContentType.ContractStorageTrieProof)
+    assert.equal(type, StateNetworkContentType.ContractTrieNode)
   })
   it('should indentify ContractByteCode contentKey', () => {
     const contentKey = Uint8Array.from([0x12, ...randHash])
@@ -74,14 +74,14 @@ describe('Account Trie Proof Key methods', () => {
   })
 
   const contentKey_ATP = getStateNetworkContentKey({
-    contentType: StateNetworkContentType.AccountTrieProof,
+    contentType: StateNetworkContentType.AccountTrieNode,
     address: Address.fromString(accountAddress),
     stateRoot: fromHexString(stateRoot),
   })
 
   it('should be identified as AccountTrieProof contentKey', () => {
     assert.equal(contentKey_ATP[0], 0x10)
-    assert.equal(keyType(contentKey_ATP), StateNetworkContentType.AccountTrieProof)
+    assert.equal(keyType(contentKey_ATP), StateNetworkContentType.AccountTrieNode)
   })
 
   it('should include the serialized ssz object after a 1 byte identifier', () => {
@@ -91,14 +91,14 @@ describe('Account Trie Proof Key methods', () => {
   it('should decode back to the original object', () => {
     const decoded = decodeStateNetworkContentKey(contentKey_ATP) as any
     assert.deepEqual(Object.keys(decoded), ['contentType', 'address', 'stateRoot'])
-    assert.equal(decoded.contentType, StateNetworkContentType.AccountTrieProof)
+    assert.equal(decoded.contentType, StateNetworkContentType.AccountTrieNode)
     assert.equal(toHexString(decoded.address), accountAddress)
     assert.equal(toHexString(decoded.stateRoot), stateRoot)
   })
 
   it('should calculate contentId', () => {
     const contentId = getStateNetworkContentId({
-      contentType: StateNetworkContentType.AccountTrieProof,
+      contentType: StateNetworkContentType.AccountTrieNode,
       address: Address.fromString(accountAddress),
     })
     assert.equal(contentId.length, 32)
@@ -126,7 +126,7 @@ describe('Contract Storage Trie Proof Key methods', () => {
   })
 
   const contentKey_CSTP = getStateNetworkContentKey({
-    contentType: StateNetworkContentType.ContractStorageTrieProof,
+    contentType: StateNetworkContentType.ContractTrieNode,
     address: Address.fromString(accountAddress),
     slot,
     stateRoot: fromHexString(stateRoot),
@@ -134,7 +134,7 @@ describe('Contract Storage Trie Proof Key methods', () => {
 
   it('should be identified as ContractStorageTrieProof contentKey', () => {
     assert.equal(contentKey_CSTP[0], 0x11)
-    assert.equal(keyType(contentKey_CSTP), StateNetworkContentType.ContractStorageTrieProof)
+    assert.equal(keyType(contentKey_CSTP), StateNetworkContentType.ContractTrieNode)
   })
 
   it('should include the serialized ssz object after a 1 byte identifier', () => {
@@ -144,7 +144,7 @@ describe('Contract Storage Trie Proof Key methods', () => {
   it('should decode back to the original object', () => {
     const decoded = decodeStateNetworkContentKey(contentKey_CSTP) as any
     assert.deepEqual(Object.keys(decoded), ['contentType', 'address', 'slot', 'stateRoot'])
-    assert.equal(decoded.contentType, StateNetworkContentType.ContractStorageTrieProof)
+    assert.equal(decoded.contentType, StateNetworkContentType.ContractTrieNode)
   })
 })
 
