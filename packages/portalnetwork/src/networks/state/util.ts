@@ -240,3 +240,30 @@ export function calculateAddressRange(
 
   return { min: minAddress, max: maxAddress }
 }
+
+const NIBBLES_VALUES = [
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+] as const
+
+const MAX_PATH_BYTES = 8
+
+/**
+ * Take a bytestring of loosely packed nibbles and return them tightly packed
+ * @param path Bytestring of loosely packed nibbles
+ */
+export const tightlyPackNibbles = (path: Uint8Array): Uint8Array => {
+  if (path.length % 2 !== 0) {
+    throw new Error('path must be even length')
+  }
+  if (!path.every((v) => v in NIBBLES_VALUES)) {
+    throw new Error('path must be a bytestring of nibbles')
+  }
+  const pathValues = path.values()
+  const packedValues: number[] = []
+  for (let i = 0; i < path.length / 2; i++) {
+    const [high, low] = [pathValues.next().value, pathValues.next().value]
+    const packed = (high << 4) | low
+    packedValues.push(packed)
+  }
+  return Uint8Array.from(packedValues)
+}
