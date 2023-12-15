@@ -51,3 +51,49 @@ describe('tightly pack nibbles', () => {
   })
 })
 
+const nodeHash = fromHexString('0x' + 'abcd'.repeat(16))
+// [0xab, 0xcd, 0xab, 0xcd, ...]
+
+describe('constructTrieNodeContentId', () => {
+  it('should construct a trie node content id for a rootnode (path = [])', () => {
+    const path = Uint8Array.from(testCases[0])
+    const contentId = constructTrieNodeContentId(path, nodeHash)
+    assert.equal(contentId.length, 32)
+    assert.deepEqual(contentId, nodeHash)
+  })
+  it('should contruct a trie node content id from node with path length = 1', () => {
+    const path = Uint8Array.from(testCases[1])
+    const contentId = constructTrieNodeContentId(path, nodeHash)
+    assert.equal(contentId.length, 32)
+    const expected = fromHexString('0x' + '0b' + 'cd' + 'abcd'.repeat(15))
+    assert.deepEqual(contentId, expected)
+  })
+  it('should contruct a trie node content id from node with odd length path', () => {
+    const path = Uint8Array.from(testCases[3])
+    // [0x02, 0x0b, 0x08] -> [0x 2 b 8 _ ]
+    // node hash (trimmed)-> [0x _ _ _ dabcd... ]
+    //                       [0x 2 b 8 dabcd... ]
+    const contentId = constructTrieNodeContentId(path, nodeHash)
+    assert.equal(contentId.length, 32)
+    const str = '0x' + '2b' + '8d' + 'abcd'.repeat(15)
+    const expected = fromHexString(str)
+    assert.equal(str, toHexString(contentId))
+    assert.deepEqual(contentId, expected)
+  })
+  it('should construct a trie node content id from node with even length path', () => {
+    const path = Uint8Array.from(testCases[2])
+    // [0x01, 0x0a] -> [0x1a]
+    const contentId = constructTrieNodeContentId(path, nodeHash)
+    assert.equal(contentId.length, 32)
+    const expected = fromHexString('0x' + '1a' + 'cd' + 'abcd'.repeat(15))
+    assert.deepEqual(contentId, expected)
+  })
+  it('should construct a trie node content id from node with even length path', () => {
+    const path = Uint8Array.from(testCases[4])
+    // [0x03, 0x0c, 0x07, 0x0f] -> [0x3c, 0x7f]
+    const contentId = constructTrieNodeContentId(path, nodeHash)
+    assert.equal(contentId.length, 32)
+    const expected = fromHexString('0x' + '3c' + '7f' + 'abcd'.repeat(15))
+    assert.deepEqual(contentId, expected)
+  })
+})

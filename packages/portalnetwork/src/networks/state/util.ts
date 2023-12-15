@@ -267,3 +267,30 @@ export const tightlyPackNibbles = (path: Uint8Array): Uint8Array => {
   }
   return Uint8Array.from(packedValues)
 }
+
+export const constructTrieNodeContentId = (path: Uint8Array, nodeHash: Uint8Array) => {
+  if (nodeHash.length !== 32) {
+    throw new Error('nodeHash must be 32 bytes')
+  }
+  if (path.length > 64) {
+    throw new Error('path must be less than 64 nibbles')
+  }
+  if (!path.every((v) => v in NIBBLES_VALUES)) {
+    throw new Error('path must be a bytestring of nibbles')
+  }
+  const trimmedPath = path.slice(0, 2 * MAX_PATH_BYTES)
+  if (trimmedPath.length % 2 === 0) {
+    // path length is even
+    const packedPath = tightlyPackNibbles(trimmedPath)
+    const nodeHashLow = nodeHash.slice(packedPath.length)
+    return Uint8Array.from([...packedPath, ...nodeHashLow])
+  } else {
+    // path length is odd
+    const packedPathHigh = tightlyPackNibbles(trimmedPath.slice(0, -1))
+    const middleHigh = trimmedPath[trimmedPath.length - 1] << 4
+    const middleLow = nodeHash[packedPathHigh.length] & 0xf
+    const middleByte = middleHigh | middleLow
+    const nodeHashLow = nodeHash.slice(packedPathHigh.length + 1)
+    return Uint8Array.from([...packedPathHigh, middleByte, ...nodeHashLow])
+  }
+}
