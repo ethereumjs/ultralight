@@ -526,21 +526,21 @@ export class portal {
       res.selector === FoundContent.ENRS
         ? (res.value as Uint8Array[])
         : res.selector === FoundContent.CONTENT
-        ? (res.value as Uint8Array)
-        : await new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-              resolve(Uint8Array.from([]))
-            }, 2000)
-            this._client.uTP.on(
-              NetworkId.HistoryNetwork,
-              (_contentType: HistoryNetworkContentType, hash: string, value: Uint8Array) => {
-                if (hash.slice(2) === contentKey.slice(4)) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              },
-            )
-          })
+          ? (res.value as Uint8Array)
+          : await new Promise((resolve) => {
+              const timeout = setTimeout(() => {
+                resolve(Uint8Array.from([]))
+              }, 2000)
+              this._client.uTP.on(
+                NetworkId.HistoryNetwork,
+                (_contentType: HistoryNetworkContentType, hash: string, value: Uint8Array) => {
+                  if (hash.slice(2) === contentKey.slice(4)) {
+                    clearTimeout(timeout)
+                    resolve(value)
+                  }
+                },
+              )
+            })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
     res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
     const returnVal =
@@ -576,21 +576,21 @@ export class portal {
       res.selector === FoundContent.ENRS
         ? (res.value as Uint8Array[])
         : res.selector === FoundContent.CONTENT
-        ? (res.value as Uint8Array)
-        : await new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-              resolve(Uint8Array.from([]))
-            }, 2000)
-            this._client.uTP.on(
-              NetworkId.StateNetwork,
-              (_contentType: StateNetworkContentType, hash: string, value: Uint8Array) => {
-                if (hash.slice(2) === contentKey.slice(4)) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              },
-            )
-          })
+          ? (res.value as Uint8Array)
+          : await new Promise((resolve) => {
+              const timeout = setTimeout(() => {
+                resolve(Uint8Array.from([]))
+              }, 2000)
+              this._client.uTP.on(
+                NetworkId.StateNetwork,
+                (_contentType: StateNetworkContentType, hash: string, value: Uint8Array) => {
+                  if (hash.slice(2) === contentKey.slice(4)) {
+                    clearTimeout(timeout)
+                    resolve(value)
+                  }
+                },
+              )
+            })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
     res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
     this.logger.extend('findContent')(content)
