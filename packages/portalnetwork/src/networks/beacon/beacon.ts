@@ -436,7 +436,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey, contentType, value) => {
                 if (contentKey === toHexString(key)) {
-                  resolve({ selector: 0, value: hexToBytes(value) })
+                  resolve({ selector: 0, value })
                 }
               })
               void this.handleNewRequest({
@@ -635,7 +635,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
     )
-    this.emit('ContentAdded', contentKey, contentType, toHexString(value))
+    this.emit('ContentAdded', contentKey, contentType, value)
   }
 
   /**

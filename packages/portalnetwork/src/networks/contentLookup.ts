@@ -91,7 +91,7 @@ export class ContentLookup {
             const utpDecoder = (
               contentKey: string,
               contentType: HistoryNetworkContentType,
-              content: string,
+              content: Uint8Array,
             ) => {
               this.logger(
                 `this.contentKey: ${contentType} +  ${toHexString(this.contentKey.slice(1))}`,
@@ -102,7 +102,7 @@ export class ContentLookup {
                 contentKey === toHexString(this.contentKey.slice(1))
               ) {
                 this.network.removeListener('ContentAdded', utpDecoder)
-                resolve({ content: hexToBytes(content), utp: true })
+                resolve({ content, utp: true })
               }
             }
             this.network.on('ContentAdded', utpDecoder)

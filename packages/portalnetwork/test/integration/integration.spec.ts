@@ -124,9 +124,9 @@ it('gossip test', async () => {
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
-  network2.on('ContentAdded', async (key, contentType, content) => {
+  network2.on('ContentAdded', async (key, contentType, content: Uint8Array) => {
     if (contentType === 0) {
-      const headerWithProof = BlockHeaderWithProof.deserialize(hexToBytes(content))
+      const headerWithProof = BlockHeaderWithProof.deserialize(content)
       const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
         setHardfork: true,
       })

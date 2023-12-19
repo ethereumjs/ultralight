@@ -255,7 +255,7 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       this.put(this.networkId, getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
     }
-    this.emit('ContentAdded', hashKey, contentType, toHexString(value))
+    this.emit('ContentAdded', hashKey, contentType, value)
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
       this.gossipManager.add(hashKey, contentType)
