@@ -143,9 +143,9 @@ export const subscriptions = async (
     })
     .subscription(() => {
       return observable((emit) => {
-        const contentAdded = (key: string, contentType: number, content: string) => {
+        const contentAdded = (key: string, contentType: number, content: Uint8Array) => {
           console.groupCollapsed('onContentAdded')
-          console.dir({ key, contentType, content })
+          console.dir({ key, contentType, content: toHexString(content) })
           console.groupEnd()
           emit.next({ key, contentType, content })
         }

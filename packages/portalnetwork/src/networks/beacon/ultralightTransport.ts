@@ -258,17 +258,14 @@ export class UltralightTransport implements LightClientTransport {
   onOptimisticUpdate(
     handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
   ): void {
-    this.network.on('ContentAdded', (contentKey, contentType, content) => {
+    this.network.on('ContentAdded', (_contentKey, contentType, content: Uint8Array) => {
       if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
-        const value = hexToBytes(content)
-        const forkhash = value.slice(0, 4) as Uint8Array
+        const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
           forkhash,
         ) as LightClientForkName
         try {
-          handler(
-            ssz[forkname].LightClientOptimisticUpdate.deserialize((value as Uint8Array).slice(4)),
-          )
+          handler(ssz[forkname].LightClientOptimisticUpdate.deserialize(content.slice(4)))
         } catch (err) {
           this.logger('something went wrong trying to process Optimistic Update')
           this.logger(err)
@@ -277,17 +274,14 @@ export class UltralightTransport implements LightClientTransport {
     })
   }
   onFinalityUpdate(handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
-    this.network.on('ContentAdded', (contentKey, contentType, content) => {
+    this.network.on('ContentAdded', (_contentKey, contentType, content: Uint8Array) => {
       if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
-        const value = hexToBytes(content)
-        const forkhash = value.slice(0, 4) as Uint8Array
+        const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
           forkhash,
         ) as LightClientForkName
         try {
-          handler(
-            ssz[forkname].LightClientFinalityUpdate.deserialize((value as Uint8Array).slice(4)),
-          )
+          handler(ssz[forkname].LightClientFinalityUpdate.deserialize(content.slice(4)))
         } catch (err) {
           this.logger('something went wrong trying to process Finality Update')
           this.logger(err)

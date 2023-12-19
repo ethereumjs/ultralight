@@ -159,7 +159,7 @@ export class StateNetwork extends BaseNetwork {
   ) => {
     await this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
-    this.emit('ContentAdded', contentKey, contentType, toHexString(content))
+    this.emit('ContentAdded', contentKey, contentType, content)
   }
 
   public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
