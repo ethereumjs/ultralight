@@ -25,6 +25,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.51.0",
     "@typescript-eslint/parser": "^5.51.0",
+    "@vitest/ui": "^1.2.2",
     "eslint": "^8.33.0",
     "eslint-config-typestrict": "^1.0.5",
     "eslint-formatter-codeframe": "^7.32.1",
@@ -33,9 +34,8 @@
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^5.0.0",
-    "eslint-plugin-simple-import-sort": "^10.0.0"
-  },
-  "dependencies": {
-    "tsx": "^4.6.2"
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "tsx": "^4.6.2",
+    "vitest": "^1.2.2"
   }
 }
