@@ -1,7 +1,4 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
-import { bigIntToBytes, concatBytes } from '@ethereumjs/util'
-
-import { toHexString } from '../../util/discv5.js'
 
 import {
   AccountTrieNodeKey,
@@ -10,7 +7,13 @@ import {
   StorageTrieNodeKey,
 } from './types.js'
 
-import type { TAccountTrieNodeKey, TContractCodeKey, TStorageTrieNodeKey } from './types.js'
+import type {
+  TAccountTrieNodeKey,
+  TContractCodeKey,
+  TNibble,
+  TNibbles,
+  TStorageTrieNodeKey,
+} from './types.js'
 
 export const MODULO = 2n ** 256n
 const MID = 2n ** 255n
@@ -74,7 +77,7 @@ export class ContractCodeContentKey {
 }
 export type TStateNetworkContentKey = TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey
 export class StateNetworkContentKey {
-  encode(opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
+  static encode(opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
     if ('codeHash' in opts) {
       return ContractCodeContentKey.encode(opts)
     } else if ('address' in opts) {
@@ -83,7 +86,7 @@ export class StateNetworkContentKey {
       return AccountTrieNodeContentKey.encode(opts)
     }
   }
-  decode(key: Uint8Array): TStateNetworkContentKey {
+  static decode(key: Uint8Array): TStateNetworkContentKey {
     const type = keyType(key)
     if (type === StateNetworkContentType.ContractByteCode) {
       return ContractCodeContentKey.decode(key)
@@ -95,91 +98,14 @@ export class StateNetworkContentKey {
   }
 }
 
-export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
-  if (!opts.address) {
-    throw new Error('address is required')
+export class StateNetworkContentId {
+  static fromKeyObj(key: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
+    const bytes = StateNetworkContentKey.encode(key)
+    return sha256(bytes)
   }
-  switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieNode: {
-      return sha256(opts.address.toBytes())
-    }
-    case StateNetworkContentType.ContractTrieNode: {
-      if (opts.slot === undefined) {
-        throw new Error(`slot value required: ${opts}`)
-      }
-      return Uint8Array.from(
-        bigIntToBytes(
-          BigInt(toHexString(sha256(opts.address.toBytes()))) +
-            (BigInt(toHexString(sha256(bigIntToBytes(opts.slot)))) % MODULO),
-        ),
-      )
-    }
-    case StateNetworkContentType.ContractByteCode: {
-      if (!opts.codeHash) {
-        throw new Error('codeHash required')
-      }
-      return sha256(concatBytes(opts.address.toBytes(), opts.codeHash))
-    }
-    default:
-      throw new Error(`Content Type ${opts.contentType} not supported`)
+  static fromBytes(key: Uint8Array): Uint8Array {
+    return sha256(key)
   }
-}
-
-export function mergeArrays(arrays: string[][]): (string | string[])[] {
-  const merged = arrays[0].map((v, i) => {
-    const ambiguous = Array.from({ length: arrays.length }, (_, idx) => arrays[idx][i])
-      .map((v) => JSON.stringify(v))
-      .filter((v, i, _array) => _array.indexOf(v) === i)
-      .map((v) => JSON.parse(v))
-    return v === arrays[1][i] ? v : ambiguous
-  })
-  return merged
-}
-
-export function isSubarrayOf(a: string[], b: string[]): boolean {
-  if (a.length > b.length) {
-    return false
-  }
-  for (let i = 0; i <= b.length - a.length; i++) {
-    let found = true
-    for (let j = 0; j < a.length; j++) {
-      if (a[j] !== b[i + j]) {
-        found = false
-        break
-      }
-    }
-    if (found) {
-      return true
-    }
-  }
-  return false
-}
-export function removeDuplicateSequences(_arr: string[][]): string[][] {
-  const arr = _arr
-    .map((a) => JSON.stringify(a))
-    .filter((a, i, _array) => _array.indexOf(a) === i)
-    .map((a) => JSON.parse(a))
-  const subarrays = new Set<string[]>()
-  const result: string[][] = []
-
-  for (let i = 0; i < arr.length; i++) {
-    let isSubarray = false
-    for (let j = 0; j < arr.length; j++) {
-      if (i === j) {
-        continue
-      }
-      if (isSubarrayOf(arr[i], arr[j])) {
-        subarrays.add(arr[i])
-        isSubarray = true
-        break
-      }
-    }
-    if (!isSubarray && !subarrays.has(arr[i])) {
-      result.push(arr[i])
-    }
-  }
-
-  return result
 }
 
 export function calculateAddressRange(
@@ -199,56 +125,20 @@ export function calculateAddressRange(
   return { min: minAddress, max: maxAddress }
 }
 
-const NIBBLES_VALUES = [
-  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-] as const
-
-const MAX_PATH_BYTES = 8
-
 /**
  * Take a bytestring of loosely packed nibbles and return them tightly packed
- * @param path Bytestring of loosely packed nibbles
+ * @param nibbles array of loosely packed nibbles
+ * [1, 2, a, b] -> Nibbles(is_odd_length=false, packed_nibbles=[0x12, 0xab])
+ * [1, 2, a, b, c] -> Nibbles(is_odd_length=true, packed_nibbles=[0x01, 0x2a, 0xbc])
  */
-export const tightlyPackNibbles = (path: Uint8Array): Uint8Array => {
-  if (path.length % 2 !== 0) {
-    throw new Error('path must be even length')
-  }
-  if (!path.every((v) => v in NIBBLES_VALUES)) {
-    throw new Error('path must be a bytestring of nibbles')
-  }
-  const pathValues = path.values()
-  const packedValues: number[] = []
-  for (let i = 0; i < path.length / 2; i++) {
-    const [high, low] = [pathValues.next().value, pathValues.next().value]
-    const packed = (high << 4) | low
-    packedValues.push(packed)
-  }
-  return Uint8Array.from(packedValues)
-}
-
-export const constructTrieNodeContentId = (path: Uint8Array, nodeHash: Uint8Array) => {
-  if (nodeHash.length !== 32) {
-    throw new Error('nodeHash must be 32 bytes')
-  }
-  if (path.length > 64) {
-    throw new Error('path must be less than 64 nibbles')
-  }
-  if (!path.every((v) => v in NIBBLES_VALUES)) {
-    throw new Error('path must be a bytestring of nibbles')
-  }
-  const trimmedPath = path.slice(0, 2 * MAX_PATH_BYTES)
-  if (trimmedPath.length % 2 === 0) {
-    // path length is even
-    const packedPath = tightlyPackNibbles(trimmedPath)
-    const nodeHashLow = nodeHash.slice(packedPath.length)
-    return Uint8Array.from([...packedPath, ...nodeHashLow])
-  } else {
-    // path length is odd
-    const packedPathHigh = tightlyPackNibbles(trimmedPath.slice(0, -1))
-    const middleHigh = trimmedPath[trimmedPath.length - 1] << 4
-    const middleLow = nodeHash[packedPathHigh.length] & 0xf
-    const middleByte = middleHigh | middleLow
-    const nodeHashLow = nodeHash.slice(packedPathHigh.length + 1)
-    return Uint8Array.from([...packedPathHigh, middleByte, ...nodeHashLow])
-  }
+export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
+  const isOddLength = nibbles.length % 2 !== 0
+  const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
+  const nibblePairs = Array.from({ length: nibbleArray.length / 2 }, (_, idx) => idx).map((i) => {
+    return nibbleArray.slice(2 * i, 2 * i + 2) as [TNibble, TNibble]
+  })
+  const packedBytes = nibblePairs.map((nibbles) => {
+    return parseInt(nibbles.join(''), 16)
+  })
+  return { isOddLength, packedNibbles: Uint8Array.from(packedBytes) }
 }
