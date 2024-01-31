@@ -4,13 +4,13 @@ import { bigIntToBytes, concatBytes } from '@ethereumjs/util'
 import { toHexString } from '../../util/discv5.js'
 
 import {
-  AccountTrieProofKeyType,
-  ContractByteCodeKeyType,
-  ContractStorageTrieKeyType,
+  AccountTrieNodeKey,
+  ContractCodeKey,
   StateNetworkContentType,
+  StorageTrieNodeKey,
 } from './types.js'
 
-import type { Address } from '@ethereumjs/util'
+import type { TAccountTrieNodeKey, TContractCodeKey, TStorageTrieNodeKey } from './types.js'
 
 export const MODULO = 2n ** 256n
 const MID = 2n ** 255n
@@ -29,57 +29,7 @@ export const distance = (id1: bigint, id2: bigint): bigint => {
   return diff
 }
 
-interface ContentKeyOpts {
-  contentType: StateNetworkContentType
-  address: Address
-  stateRoot: Uint8Array
-  slot: bigint
-  codeHash: Uint8Array
-}
-
-export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
-  if (opts.address === undefined) {
-    throw new Error('address is required')
-  }
-  switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieNode: {
-      if (opts.stateRoot === undefined) {
-        throw new Error('stateRoot is required')
-      }
-      const key = AccountTrieProofKeyType.serialize({
-        address: opts.address.toBytes(),
-        stateRoot: opts.stateRoot,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    case StateNetworkContentType.ContractTrieNode: {
-      if (opts.slot === undefined) {
-        throw new Error(`slot is required`)
-      }
-      if (opts.stateRoot === undefined) {
-        throw new Error('stateRoot is required')
-      }
-      const key = ContractStorageTrieKeyType.serialize({
-        address: opts.address.toBytes(),
-        slot: opts.slot,
-        stateRoot: opts.stateRoot,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    case StateNetworkContentType.ContractByteCode: {
-      if (opts.codeHash === undefined) {
-        throw new Error('codeHash required')
-      }
-      const key = ContractByteCodeKeyType.serialize({
-        address: opts.address.toBytes(),
-        codeHash: opts.codeHash,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    default:
-      throw new Error(`Content Type ${opts.contentType} not supported`)
-  }
-}
+/* ContentKeys */
 
 export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
   switch (contentKey[0]) {
@@ -93,47 +43,55 @@ export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
       throw new Error(`Invalid content key type: ${contentKey[0]}`)
   }
 }
+export class AccountTrieNodeContentKey {
+  static encode({ path, nodeHash }: TAccountTrieNodeKey): Uint8Array {
+    const key = AccountTrieNodeKey.serialize({ path, nodeHash })
+    return Uint8Array.from([0x20, ...key])
+  }
+  static decode(key: Uint8Array): TAccountTrieNodeKey {
+    return AccountTrieNodeKey.deserialize(key.slice(1))
+  }
+}
 
-export const decodeStateNetworkContentKey = (
-  key: Uint8Array,
-):
-  | {
-      contentType: StateNetworkContentType.AccountTrieNode
-      address: Uint8Array
-      stateRoot: Uint8Array
+export class StorageTrieNodeContentKey {
+  static encode({ address, path, nodeHash }: TStorageTrieNodeKey): Uint8Array {
+    const key = StorageTrieNodeKey.serialize({ address, path, nodeHash })
+    return Uint8Array.from([0x21, ...key])
+  }
+  static decode(key: Uint8Array): TStorageTrieNodeKey {
+    return StorageTrieNodeKey.deserialize(key.slice(1))
+  }
+}
+
+export class ContractCodeContentKey {
+  static encode({ address, codeHash }: TContractCodeKey): Uint8Array {
+    const key = ContractCodeKey.serialize({ address, codeHash })
+    return Uint8Array.from([0x22, ...key])
+  }
+  static decode(key: Uint8Array): TContractCodeKey {
+    return ContractCodeKey.deserialize(key.slice(1))
+  }
+}
+export type TStateNetworkContentKey = TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey
+export class StateNetworkContentKey {
+  encode(opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
+    if ('codeHash' in opts) {
+      return ContractCodeContentKey.encode(opts)
+    } else if ('address' in opts) {
+      return StorageTrieNodeContentKey.encode(opts)
+    } else {
+      return AccountTrieNodeContentKey.encode(opts)
     }
-  | {
-      contentType: StateNetworkContentType.ContractTrieNode
-      address: Uint8Array
-      slot: bigint
-      stateRoot: Uint8Array
+  }
+  decode(key: Uint8Array): TStateNetworkContentKey {
+    const type = keyType(key)
+    if (type === StateNetworkContentType.ContractByteCode) {
+      return ContractCodeContentKey.decode(key)
+    } else if (type === StateNetworkContentType.ContractTrieNode) {
+      return StorageTrieNodeContentKey.decode(key)
+    } else {
+      return AccountTrieNodeContentKey.decode(key)
     }
-  | {
-      contentType: StateNetworkContentType.ContractByteCode
-      address: Uint8Array
-      codeHash: Uint8Array
-    } => {
-  const contentType = StateNetworkContentType[keyType(key)]
-  switch (contentType) {
-    case 'AccountTrieProof': {
-      const { address, stateRoot } = AccountTrieProofKeyType.deserialize(key.slice(1))
-      return { contentType: StateNetworkContentType.AccountTrieNode, address, stateRoot }
-    }
-    case 'ContractStorageTrieProof': {
-      const { address, slot, stateRoot } = ContractStorageTrieKeyType.deserialize(key.slice(1))
-      return {
-        contentType: StateNetworkContentType.ContractTrieNode,
-        address,
-        slot,
-        stateRoot,
-      }
-    }
-    case 'ContractByteCode': {
-      const { address, codeHash } = ContractByteCodeKeyType.deserialize(key.slice(1))
-      return { contentType: StateNetworkContentType.ContractByteCode, address, codeHash }
-    }
-    default:
-      throw new Error(`Content Type ${contentType} not supported`)
   }
 }
 
