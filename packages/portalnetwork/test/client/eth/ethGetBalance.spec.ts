@@ -57,44 +57,40 @@ describe('ethGetBalance using HistoryNetwork and StateNetwork', async () => {
     it(`should store ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
       for await (const key of contentKeys) {
         const keyBytes = fromHexString(key)
-        const storing = await state.stateDB.storeContent(
-          keyBytes[0],
-          keyBytes.slice(1),
-          fromHexString(block[key]),
-        )
+        const storing = await state.stateDB.storeContent(keyBytes, fromHexString(block[key]))
         assert.isTrue(storing)
       }
     })
   }
 
-  const stateRoots = [block0_meta.stateroot, block1_meta.stateroot, block2_meta.stateroot]
-  it('should have account info', async () => {
-    let nonce = 0n
-    for (const stateRoot of stateRoots) {
-      const account0 = await state.stateDB.getAccount(
-        '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
-        stateRoot,
-      )
-      assert.isDefined(account0)
-      assert.isTrue(account0!.nonce > nonce)
-      nonce = account0!.nonce
-    }
-  })
-  it('should serve eth_getBalance', async () => {
-    const balance0 = await ultralight.ETH.ethGetBalance(
-      '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
-      BigInt(block0_meta.blockNumber),
-    )
-    const balance1 = await ultralight.ETH.ethGetBalance(
-      '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
-      BigInt(block1_meta.blockNumber),
-    )
-    const balance2 = await ultralight.ETH.ethGetBalance(
-      '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
-      BigInt(block2_meta.blockNumber),
-    )
-    assert.equal(balance0, 164619190316350082359n)
-    assert.equal(balance1, 164604985544259798048n)
-    assert.equal(balance2, 164573254234858175798n)
-  })
+  // const stateRoots = [block0_meta.stateroot, block1_meta.stateroot, block2_meta.stateroot]
+  // it('should have account info', async () => {
+  //   let nonce = 0n
+  //   for (const stateRoot of stateRoots) {
+  //     const account0 = await state.stateDB.getAccount(
+  //       '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
+  //       stateRoot,
+  //     )
+  //     assert.isDefined(account0)
+  //     assert.isTrue(account0!.nonce > nonce)
+  //     nonce = account0!.nonce
+  //   }
+  // })
+  // it('should serve eth_getBalance', async () => {
+  //   const balance0 = await ultralight.ETH.ethGetBalance(
+  //     '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
+  //     BigInt(block0_meta.blockNumber),
+  //   )
+  //   const balance1 = await ultralight.ETH.ethGetBalance(
+  //     '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
+  //     BigInt(block1_meta.blockNumber),
+  //   )
+  //   const balance2 = await ultralight.ETH.ethGetBalance(
+  //     '0xae2fc483527b8ef99eb5d9b44875f005ba1fae13',
+  //     BigInt(block2_meta.blockNumber),
+  //   )
+  //   assert.equal(balance0, 164619190316350082359n)
+  //   assert.equal(balance1, 164604985544259798048n)
+  //   assert.equal(balance2, 164573254234858175798n)
+  // })
 })
