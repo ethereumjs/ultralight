@@ -1,12 +1,5 @@
-import { toHexString } from '@chainsafe/ssz'
 import { AccountCache, CacheType, StorageCache } from '@ethereumjs/statemanager'
-import {
-  Account,
-  KECCAK256_NULL,
-  KECCAK256_NULL_S,
-  bytesToBigInt,
-  bytesToHex,
-} from '@ethereumjs/util'
+import { Account, KECCAK256_NULL, KECCAK256_NULL_S, bytesToHex } from '@ethereumjs/util'
 
 import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
@@ -70,7 +63,8 @@ export class UltralightStateManager implements EVMStateManagerInterface {
         : undefined
     }
 
-    const account = await this.state.getAccount(address.toString(), this.stateRoot)
+    // const account = await this.state.getAccount(address.toString(), this.stateRoot)
+    const account = undefined
     if (account !== undefined) this._accountCache?.put(address, account)
     return account
   }
@@ -88,7 +82,8 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     address: Address,
     accountFields: Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>,
   ): Promise<void> => {
-    let account = await this.getAccount(address)
+    let account: Account | undefined
+    // let account = await this.getAccount(address)
     if (!account) {
       account = new Account()
     }
@@ -103,14 +98,14 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this._contractCache.set(address.toString(), value)
   }
   getContractCode = async (address: Address): Promise<Uint8Array> => {
-    let code = this._contractCache.get(address.toString())
+    const code = this._contractCache.get(address.toString())
     if (code !== undefined) return code
 
-    const account = await this.state.getAccount(address.toString(), this.stateRoot)
-    if (account !== undefined) {
-      code = await this.state.getBytecode(toHexString(account.codeHash), address.toString())
-      this._contractCache.set(address.toString(), code ?? new Uint8Array())
-    }
+    // const account = await this.state.getAccount(address.toString(), this.stateRoot)
+    // if (account !== undefined) {
+    //   code = await this.state.getBytecode(toHexString(account.codeHash), address.toString())
+    //   this._contractCache.set(address.toString(), code ?? new Uint8Array())
+    // }
     return code ?? new Uint8Array()
   }
   getContractStorage = async (address: Address, key: Uint8Array): Promise<Uint8Array> => {
@@ -119,16 +114,16 @@ export class UltralightStateManager implements EVMStateManagerInterface {
       throw new Error('Storage key must be 32 bytes long')
     }
 
-    let value = this._storageCache!.get(address, key)
+    const value = this._storageCache!.get(address, key)
     if (value !== undefined) {
       return value
     }
 
-    value = await this.state.getContractStorage(
-      address.toString(),
-      bytesToBigInt(key),
-      this.stateRoot,
-    )
+    // value = await this.state.getContractStorage(
+    //   address.toString(),
+    //   bytesToBigInt(key),
+    //   this.stateRoot,
+    // )
     await this.putContractStorage(address, key, value ?? new Uint8Array())
     return value ?? new Uint8Array()
   }
@@ -167,6 +162,6 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this.stateRoot = bytesToHex(stateRoot)
   }
   hasStateRoot = async (root: Uint8Array): Promise<boolean> => {
-    return this.state.stateDB.getAccountTrie(bytesToHex(root)) !== undefined
+    return Object.values(this.state.stateDB.stateRoots).includes(bytesToHex(root))
   }
 }
