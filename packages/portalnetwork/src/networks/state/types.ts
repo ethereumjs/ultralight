@@ -22,7 +22,25 @@ export type TPingPongPayload = { dataRadius: bigint }
 export const PingPongPayload = new ContainerType({ dataRadius: new UintBigintType(32) })
 
 /* ----------------- Paths (Nibbles) ----------- */
-export type TNibble = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+export const Nibble = {
+  0: '0',
+  1: '1',
+  2: '2',
+  3: '3',
+  4: '4',
+  5: '5',
+  6: '6',
+  7: '7',
+  8: '8',
+  9: '9',
+  a: 'a',
+  b: 'b',
+  c: 'c',
+  d: 'd',
+  e: 'e',
+  f: 'f',
+} as const
+export type TNibble = keyof typeof Nibble
 export type TNibblePair = [TNibble, TNibble] // 2 nibbles tightly packed into a single byte
 export type TPackedNibbles = Array<TNibblePair>
 export type TNibbles = {

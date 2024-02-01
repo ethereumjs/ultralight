@@ -3,6 +3,7 @@ import { digest as sha256 } from '@chainsafe/as-sha256'
 import {
   AccountTrieNodeKey,
   ContractCodeKey,
+  Nibble,
   StateNetworkContentType,
   StorageTrieNodeKey,
 } from './types.js'
@@ -132,6 +133,9 @@ export function calculateAddressRange(
  * [1, 2, a, b, c] -> Nibbles(is_odd_length=true, packed_nibbles=[0x01, 0x2a, 0xbc])
  */
 export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
+  if (!nibbles.every((nibble) => Nibble[nibble] !== undefined)) {
+    throw new Error('path must be an array of nibbles')
+  }
   const isOddLength = nibbles.length % 2 !== 0
   const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
   const nibblePairs = Array.from({ length: nibbleArray.length / 2 }, (_, idx) => idx).map((i) => {
