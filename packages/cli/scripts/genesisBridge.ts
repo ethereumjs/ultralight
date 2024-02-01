@@ -84,7 +84,7 @@ export const generateAccountTrieProofs = async (
   }
 }
 
-const index = async () => {
+const _index = async () => {
   const common = new Common({ chain: 'mainnet' })
   const blockchain = await Blockchain.create({
     common,
@@ -132,6 +132,15 @@ const index = async () => {
   )
 }
 
+// index()
+//   .then(() => {
+//     process.exit(0)
+//   })
+//   .catch((e) => {
+//     console.error(e)
+//     process.exit(1)
+//   })
+
 const fromMem = async () => {
   const data = readFileSync('./data/genesisContent.json', { encoding: 'utf-8' })
   const {
@@ -150,14 +159,6 @@ const fromMem = async () => {
   })
 }
 
-// index()
-//   .then(() => {
-//     process.exit(0)
-//   })
-//   .catch((e) => {
-//     console.error(e)
-//     process.exit(1)
-//   })
 fromMem()
   .then(() => {
     process.exit(0)
