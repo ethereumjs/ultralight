@@ -134,7 +134,7 @@ export function calculateAddressRange(
  */
 export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
   if (!nibbles.every((nibble) => Nibble[nibble] !== undefined)) {
-    throw new Error('path must be an array of nibbles')
+    throw new Error(`path: [${nibbles}] must be an array of nibbles`)
   }
   const isOddLength = nibbles.length % 2 !== 0
   const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
