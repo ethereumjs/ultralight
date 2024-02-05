@@ -85,17 +85,20 @@ const mem = async () => {
   const valueNodeProofs: Record<string, { key: string; value: string; proof: Array<string> }> = {}
 
   for (const sp of contractProof.storageProof) {
-    const proof = sp.proof as string[]
+    const proof = [...sp.proof] as string[]
     const curNode = proof.pop()!
     const curHash = toHexString(new Trie({ useKeyHashing: true })['hash'](fromHexString(curNode)))
     valueNodeProofs[curHash] = sp
     proofNodes[curHash] = curNode
     while (proof.length > 0) {
-      const curProof = proof
+      const curProof = [...proof]
       const curNode = proof.pop()!
       const curHash = toHexString(new Trie({ useKeyHashing: true })['hash'](fromHexString(curNode)))
       proofNodes[curHash] = curNode
       nodeProofs[curHash] = curProof
+      if (curProof.length < 1) {
+        throw new Error(`warning: no proof (${curProof.length})\n${curHash}`)
+      }
     }
   }
 
@@ -114,21 +117,24 @@ const mem = async () => {
     await storageTrie.database().put(fromHexString(nodeHash), fromHexString(node))
   }
   const nodeKeys: Record<string, number[]> = {}
-  const storageProof = fromHexString(stored.contractProof.storageHash)
-  storageTrie.root(storageProof)
-  console.log({ storageProof, trieRoot: toHexString(storageTrie.root()) })
+  const storageRoot = fromHexString(stored.contractProof.storageHash)
+  storageTrie.root(storageRoot)
+  console.log({
+    storageRoot: stored.contractProof.storageHash,
+    trieRoot: toHexString(storageTrie.root()),
+  })
   await storageTrie.walkAllNodes(async (node, key) => {
     const nodeHash = toHexString(storageTrie['hash'](node.serialize()))
-    console.log(nodeHash, key)
+    // console.log(nodeHash, key)
     nodeKeys[nodeHash] = key
   })
 
   const valueNodeContents = Object.entries(valueNodeProofs).map(([cur, { key, value, proof }]) => {
     console.log({
-      address: stored.address,
-      nodeHash: fromHexString(cur),
+      nodeHash: cur,
       nibbles: nodeKeys[cur],
-      path: tightlyPackNibbles(nodeKeys[cur] as TNibble[]),
+      key,
+      proof: proof.length,
     })
     const contentKey = StorageTrieNodeContentKey.encode({
       address: fromHexString(stored.address),
@@ -147,6 +153,7 @@ const mem = async () => {
       nodeHash: cur,
       key,
       value,
+      proof,
     }
   })
   const trieNodeContents = Object.entries(nodeProofs).map(([cur, proof]) => {
@@ -168,15 +175,14 @@ const mem = async () => {
     }
   })
 
-  //   console.log({
-  //     nodeHashes: Object.keys(nodeProofs),
-  //     valueNodeHashes: Object.keys(valueNodeProofs),
-  //   })
   console.log('value_node_contents', valueNodeContents.length)
   console.log('value_node_hashes:', Object.keys(valueNodeProofs).length)
   console.log('node_contents', trieNodeContents.length)
   console.log('node_hashes:', Object.keys(nodeProofs).length)
-
+  const storageProofs = valueNodeContents.map((n: any) => {
+    return n.proof.length
+  })
+  console.log(`storageProofs`, storageProofs)
   const toSave = {
     address: stored.address,
     blockNumber: stored.blockNumber,
@@ -195,6 +201,13 @@ const mem = async () => {
   writeFileSync('./data/sampleStorageContent.json', JSON.stringify(toSave, null, 2), {
     encoding: 'utf8',
   })
+  writeFileSync(
+    '../portalnetwork/test/networks/state/testdata/sampleStorageContent.json',
+    JSON.stringify(toSave, null, 2),
+    {
+      encoding: 'utf8',
+    },
+  )
 }
 
 interface IContent {
@@ -215,7 +228,10 @@ interface IContent {
 const contentMem = async () => {
   const stored = readFileSync('./data/sampleStorageContent.json', { encoding: 'utf8' })
   const storedContent: IContent = JSON.parse(stored)
-  console.log({ storedContent })
+  const storageProofs = storedContent.valueNodeContents.map((n: any) => {
+    return n.proof.length
+  })
+  console.log({ storageProofs })
 }
 
 // main()
@@ -225,10 +241,10 @@ const contentMem = async () => {
 //   })
 //   .catch((e) => console.error(e))
 
-// mem()
-//   .then(() => console.log('done'))
-//   .catch((e) => console.error(e))
-
-contentMem()
-  .then(() => console.log('done'))
+mem()
+  .then(() => {
+    contentMem()
+      .then(() => console.log('done'))
+      .catch((e) => console.error(e))
+  })
   .catch((e) => console.error(e))
