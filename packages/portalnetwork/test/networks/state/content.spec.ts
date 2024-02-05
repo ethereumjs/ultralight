@@ -1,11 +1,15 @@
+import { toHex } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Trie, decodeNode } from '@ethereumjs/trie'
+import { Uint8 } from '@lodestar/types/lib/sszTypes.js'
 import { readFileSync } from 'fs'
 import { assert, describe, expect, it } from 'vitest'
 
 import {
   AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
+  StorageTrieNodeContentKey,
+  StorageTrieNodeOffer,
 } from '../../../src/networks/state/index.js'
 
 import type { TrieNode } from '@ethereumjs/trie'
@@ -92,6 +96,18 @@ describe('Account Trie Node Content Type', async () => {
     })
   }
 })
+
+interface ITrieNodeContent {
+  contentKey: Uint8Array
+  content: Uint8Array
+}
+interface IValueNodeContent extends ITrieNodeContent {
+  address: string
+  nodeHash: Uint8Array
+  key: string
+  value: string
+}
+
 interface IContent {
   address: string
   blockNumber: string
@@ -103,8 +119,8 @@ interface IContent {
   nonce: string
   storageProofs: { key: string; value: string; proof: string[] }[]
   accountProof: string[]
-  valueNodeContents: any
-  trieNodeContents: any
+  valueNodeContents: IValueNodeContent[]
+  trieNodeContents: ITrieNodeContent[]
 }
 
 describe('Storage Trie Node Content Type', async () => {
@@ -113,10 +129,26 @@ describe('Storage Trie Node Content Type', async () => {
   })
   const storedContent: IContent = JSON.parse(stored)
   console.log({ storedContent })
+  const { address, blockNumber, stateRoot, storageHash, codeHash, blockHash } = storedContent
   it('should load sample contents', async () => {
     expect(storedContent.valueNodeContents.length).toEqual(10)
     expect(storedContent.trieNodeContents.length).toEqual(46)
   })
+  for (const c of storedContent.valueNodeContents) {
+    const { contentKey, content, nodeHash, key, value } = c
+    const decodedKey = StorageTrieNodeContentKey.decode(Uint8Array.from(Object.values(contentKey)))
+    it('should decode content key', () => {
+      expect(decodedKey).toBeDefined()
+    })
+    it('should decode to key obj', () => {
+      expect(toHexString(decodedKey.address)).toEqual(address.toLowerCase())
+      expect(toHexString(decodedKey.nodeHash)).toEqual(nodeHash)
+    })
+    const decodedContent = StorageTrieNodeOffer.deserialize(Uint8Array.from(Object.values(content)))
+    it('should deserialize content', () => {
+      expect(decodedContent).toBeDefined()
+    })
+  }
 })
 
 describe.skip('Contract Code Content Type', async () => {})
