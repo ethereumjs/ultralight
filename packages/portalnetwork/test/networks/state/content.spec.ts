@@ -129,13 +129,13 @@ describe('Storage Trie Node Content Type', async () => {
   })
   const storedContent: IContent = JSON.parse(stored)
   // console.log({ storedContent })
-  const { address, blockNumber, stateRoot, storageHash, codeHash, blockHash } = storedContent
+  const { address, stateRoot, storageHash, blockHash } = storedContent
   it('should load sample contents', async () => {
     expect(storedContent.valueNodeContents.length).toEqual(10)
     expect(storedContent.trieNodeContents.length).toEqual(46)
   })
   for (const c of storedContent.valueNodeContents) {
-    const { contentKey, content, nodeHash, key, value } = c
+    const { contentKey, content, nodeHash, value } = c
     const decodedKey = StorageTrieNodeContentKey.decode(Uint8Array.from(Object.values(contentKey)))
     it('should decode content key', () => {
       expect(decodedKey).toBeDefined()
@@ -193,13 +193,13 @@ describe('Storage Trie Node Content Type', async () => {
   for (const c of storedContent.trieNodeContents) {
     const { contentKey, content } = c
     const decodedKey = StorageTrieNodeContentKey.decode(Uint8Array.from(Object.values(contentKey)))
+    const decodedContent = StorageTrieNodeOffer.deserialize(Uint8Array.from(Object.values(content)))
     it('should decode content key', () => {
       expect(decodedKey).toBeDefined()
     })
     it('should decode to key obj', () => {
       expect(toHexString(decodedKey.address)).toEqual(address.toLowerCase())
     })
-    const decodedContent = StorageTrieNodeOffer.deserialize(Uint8Array.from(Object.values(content)))
     it('should deserialize content', () => {
       expect(decodedContent).toBeDefined()
     })
@@ -236,6 +236,27 @@ describe('Storage Trie Node Content Type', async () => {
       assert.deepEqual(account.storageRoot, fromHexString(storageHash))
     })
   }
+
+  it('should find expected values in sparse storage trie', async () => {
+    const storageTrie = new Trie({ useKeyHashing: true, root: fromHexString(storageHash) })
+    for (const { content } of storedContent.valueNodeContents) {
+      const decodedContent = StorageTrieNodeOffer.deserialize(
+        Uint8Array.from(Object.values(content)),
+      )
+      for (const bytes of decodedContent.storageProof) {
+        await storageTrie.database().put(new Trie({ useKeyHashing: true })['hash'](bytes), bytes)
+      }
+    }
+    storageTrie.root(fromHexString(storageHash))
+    for (const { key, value } of storedContent.valueNodeContents) {
+      const res = await storageTrie.get(fromHexString(key))
+      if (res) {
+        assert.deepEqual(fromHexString('0x' + padToEven(value.slice(2))), RLP.decode(res))
+      } else {
+        assert.equal(value, '0x')
+      }
+    }
+  })
 })
 
 describe.skip('Contract Code Content Type', async () => {})
