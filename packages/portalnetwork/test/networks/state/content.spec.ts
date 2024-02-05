@@ -1,7 +1,7 @@
-import { toHex } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { RLP } from '@ethereumjs/rlp'
 import { Trie, decodeNode } from '@ethereumjs/trie'
-import { Uint8 } from '@lodestar/types/lib/sszTypes.js'
+import { Account, padToEven } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
 import { assert, describe, expect, it } from 'vitest'
 
@@ -12,7 +12,7 @@ import {
   StorageTrieNodeOffer,
 } from '../../../src/networks/state/index.js'
 
-import type { TrieNode } from '@ethereumjs/trie'
+import type { LeafNode, TrieNode } from '@ethereumjs/trie'
 
 describe('Account Trie Node Content Type', async () => {
   const genesisBlock = {
@@ -128,7 +128,7 @@ describe('Storage Trie Node Content Type', async () => {
     encoding: 'utf8',
   })
   const storedContent: IContent = JSON.parse(stored)
-  console.log({ storedContent })
+  // console.log({ storedContent })
   const { address, blockNumber, stateRoot, storageHash, codeHash, blockHash } = storedContent
   it('should load sample contents', async () => {
     expect(storedContent.valueNodeContents.length).toEqual(10)
@@ -147,6 +147,93 @@ describe('Storage Trie Node Content Type', async () => {
     const decodedContent = StorageTrieNodeOffer.deserialize(Uint8Array.from(Object.values(content)))
     it('should deserialize content', () => {
       expect(decodedContent).toBeDefined()
+    })
+    it('should contain blockhash', () => {
+      expect(toHexString(decodedContent.blockHash)).toEqual(blockHash)
+    })
+    it('should contain storage proof', () => {
+      expect(decodedContent.storageProof.length).toBeGreaterThan(0)
+    })
+    it('should contain storage trie root', () => {
+      const storageRootNode = decodedContent.storageProof[0]
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](storageRootNode)
+      assert.deepEqual(nodeHash, fromHexString(storageHash))
+    })
+    it('should contain value trie node', () => {
+      const valueNode = decodedContent.storageProof.slice(-1)[0]
+      const node = decodeNode(valueNode) as LeafNode
+      try {
+        assert.deepEqual(RLP.decode(node.value()), fromHexString('0x' + padToEven(value.slice(2))))
+      } catch (err: any) {
+        throw new Error(`${err.message}\n${value}`)
+      }
+    })
+    it('should contain expected trie node', () => {
+      const expectedNode = decodedContent.storageProof.slice(-1)[0]
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](expectedNode)
+      assert.deepEqual(nodeHash, decodedKey.nodeHash)
+    })
+    it('should contain account proof', () => {
+      expect(decodedContent.accountProof).toBeDefined()
+      expect(decodedContent.accountProof.length).toBeGreaterThan(0)
+    })
+    it('account proof should contain state root node', () => {
+      const stateRootNode = decodedContent.accountProof[0]
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](stateRootNode)
+      assert.deepEqual(nodeHash, fromHexString(stateRoot))
+    })
+    it('account proof should contain account trie node', () => {
+      const accountTrieNode = decodedContent.accountProof.slice(-1)[0]
+      const node = decodeNode(accountTrieNode)
+      const accountRLP = node.value()!
+      const account = Account.fromRlpSerializedAccount(accountRLP)
+      assert.deepEqual(account.storageRoot, fromHexString(storageHash))
+    })
+  }
+  for (const c of storedContent.trieNodeContents) {
+    const { contentKey, content } = c
+    const decodedKey = StorageTrieNodeContentKey.decode(Uint8Array.from(Object.values(contentKey)))
+    it('should decode content key', () => {
+      expect(decodedKey).toBeDefined()
+    })
+    it('should decode to key obj', () => {
+      expect(toHexString(decodedKey.address)).toEqual(address.toLowerCase())
+    })
+    const decodedContent = StorageTrieNodeOffer.deserialize(Uint8Array.from(Object.values(content)))
+    it('should deserialize content', () => {
+      expect(decodedContent).toBeDefined()
+    })
+    it('should contain blockhash', () => {
+      expect(toHexString(decodedContent.blockHash)).toEqual(blockHash)
+    })
+    it('should contain storage proof', () => {
+      expect(decodedContent.storageProof.length).toBeGreaterThan(0)
+    })
+    it('should contain storage trie root', () => {
+      const storageRootNode = decodedContent.storageProof[0]
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](storageRootNode)
+      assert.deepEqual(nodeHash, fromHexString(storageHash))
+    })
+    it('should contain expected trie node', () => {
+      const expectedNode = decodedContent.storageProof.slice(-1)[0]
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](expectedNode)
+      assert.deepEqual(nodeHash, decodedKey.nodeHash)
+    })
+    it('should contain account proof', () => {
+      expect(decodedContent.accountProof).toBeDefined()
+      expect(decodedContent.accountProof.length).toBeGreaterThan(0)
+    })
+    it('account proof should contain state root node', () => {
+      const stateRootNode = decodedContent.accountProof[0]
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](stateRootNode)
+      assert.deepEqual(nodeHash, fromHexString(stateRoot))
+    })
+    it('account proof should contain account trie node', () => {
+      const accountTrieNode = decodedContent.accountProof.slice(-1)[0]
+      const node = decodeNode(accountTrieNode)
+      const accountRLP = node.value()!
+      const account = Account.fromRlpSerializedAccount(accountRLP)
+      assert.deepEqual(account.storageRoot, fromHexString(storageHash))
     })
   }
 })
