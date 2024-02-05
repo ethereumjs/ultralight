@@ -8,12 +8,38 @@ import { assert, describe, expect, it } from 'vitest'
 import {
   AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
+  ContractCodeContentKey,
+  ContractCodeOffer,
   StorageTrieNodeContentKey,
   StorageTrieNodeOffer,
 } from '../../../src/networks/state/index.js'
 
 import type { LeafNode, TrieNode } from '@ethereumjs/trie'
 
+interface ITrieNodeContent {
+  contentKey: Uint8Array
+  content: Uint8Array
+}
+interface IValueNodeContent extends ITrieNodeContent {
+  address: string
+  nodeHash: Uint8Array
+  key: string
+  value: string
+}
+interface IContent {
+  address: string
+  blockNumber: string
+  blockHash: string
+  stateRoot: string
+  storageHash: string
+  codeHash: string
+  balance: string
+  nonce: string
+  storageProofs: { key: string; value: string; proof: string[] }[]
+  accountProof: string[]
+  valueNodeContents: IValueNodeContent[]
+  trieNodeContents: ITrieNodeContent[]
+}
 describe('Account Trie Node Content Type', async () => {
   const genesisBlock = {
     stateRoot: '0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544',
@@ -96,33 +122,6 @@ describe('Account Trie Node Content Type', async () => {
     })
   }
 })
-
-interface ITrieNodeContent {
-  contentKey: Uint8Array
-  content: Uint8Array
-}
-interface IValueNodeContent extends ITrieNodeContent {
-  address: string
-  nodeHash: Uint8Array
-  key: string
-  value: string
-}
-
-interface IContent {
-  address: string
-  blockNumber: string
-  blockHash: string
-  stateRoot: string
-  storageHash: string
-  codeHash: string
-  balance: string
-  nonce: string
-  storageProofs: { key: string; value: string; proof: string[] }[]
-  accountProof: string[]
-  valueNodeContents: IValueNodeContent[]
-  trieNodeContents: ITrieNodeContent[]
-}
-
 describe('Storage Trie Node Content Type', async () => {
   const stored = readFileSync('./test/networks/state/testdata/sampleStorageContent.json', {
     encoding: 'utf8',
@@ -258,5 +257,52 @@ describe('Storage Trie Node Content Type', async () => {
     }
   })
 })
+describe.skip('Contract Code Content Type', async () => {
+  const sample: {
+    stateRoot: string
+    accountProof: string[]
+    blockHash: string
+    codeHash: string
+    address: string
+    code: string
+  } = JSON.parse(
+    readFileSync('./test/networks/state/testdata/sampleContractCode.json', {
+      encoding: 'utf-8',
+    }),
+  )
+  const keyObj = {
+    address: fromHexString(sample.address),
+    codeHash: fromHexString(sample.codeHash),
+  }
+  const contentKey = ContractCodeContentKey.encode(keyObj)
+  it('should encode contentKey', () => {
+    assert.exists(contentKey)
+    assert.equal(contentKey[0], 0x22)
+  })
 
-describe.skip('Contract Code Content Type', async () => {})
+  const accountProof = sample.accountProof.map(fromHexString)
+  const contentObj = {
+    accountProof,
+    code: fromHexString(sample.code),
+    blockHash: fromHexString(sample.blockHash),
+  }
+  const content = ContractCodeOffer.serialize(contentObj)
+
+  it('should serialize content', () => {
+    assert.exists(content)
+  })
+
+  it('should decode contentKey', () => {
+    const decoded = ContractCodeContentKey.decode(contentKey)
+    assert.deepEqual(decoded, keyObj)
+  })
+  it('should deserialize content', () => {
+    const deserialized = ContractCodeOffer.deserialize(content)
+    assert.deepEqual(deserialized, contentObj)
+    assert.deepEqual(fromHexString(sample.code), deserialized.code)
+    const stateroot = new Trie({ useKeyHashing: true })['hash'](deserialized.accountProof[0])
+    assert.deepEqual(stateroot, fromHexString(sample.stateRoot))
+    const account = Account.fromRlpSerializedAccount(deserialized.accountProof.slice(-1)[0])
+    assert.deepEqual(account.codeHash, fromHexString(sample.codeHash))
+  })
+})
