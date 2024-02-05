@@ -10,12 +10,11 @@ import {
 
 import type { TrieNode } from '@ethereumjs/trie'
 
-const genesisBlock = {
-  stateRoot: '0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544',
-  blockHash: '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3',
-}
-
 describe('Account Trie Node Content Type', async () => {
+  const genesisBlock = {
+    stateRoot: '0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544',
+    blockHash: '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3',
+  }
   const _accountNodeSamples: [string, Uint8Array][] = JSON.parse(
     readFileSync('./test/networks/state/testdata/accountNodeSamples.json', {
       encoding: 'utf-8',
@@ -93,7 +92,31 @@ describe('Account Trie Node Content Type', async () => {
     })
   }
 })
+interface IContent {
+  address: string
+  blockNumber: string
+  blockHash: string
+  stateRoot: string
+  storageHash: string
+  codeHash: string
+  balance: string
+  nonce: string
+  storageProofs: { key: string; value: string; proof: string[] }[]
+  accountProof: string[]
+  valueNodeContents: any
+  trieNodeContents: any
+}
 
-describe.skip('Storage Trie Node Content Type', async () => {})
+describe('Storage Trie Node Content Type', async () => {
+  const stored = readFileSync('./test/networks/state/testdata/sampleStorageContent.json', {
+    encoding: 'utf8',
+  })
+  const storedContent: IContent = JSON.parse(stored)
+  console.log({ storedContent })
+  it('should load sample contents', async () => {
+    expect(storedContent.valueNodeContents.length).toEqual(10)
+    expect(storedContent.trieNodeContents.length).toEqual(46)
+  })
+})
 
 describe.skip('Contract Code Content Type', async () => {})
