@@ -49,7 +49,7 @@ describe('tightly pack nibbles', () => {
       tightlyPackNibbles(looseNibbles(testCases[7]))
       assert.fail('should throw')
     } catch (err: any) {
-      assert.equal(err.message, 'path must be an array of nibbles')
+      assert.equal(err.message, `path: [${looseNibbles(testCases[7])}] must be an array of nibbles`)
     }
   })
 })
