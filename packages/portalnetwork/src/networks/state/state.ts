@@ -1,6 +1,6 @@
 import { ENR } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -15,8 +15,6 @@ import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
-import { genesisTrie, inRadiusAccounts } from './genesis.js'
-import genesis from './mainnet.json' assert { type: 'json' }
 import { StateDB } from './statedb.js'
 import { StateNetworkContentType } from './types.js'
 

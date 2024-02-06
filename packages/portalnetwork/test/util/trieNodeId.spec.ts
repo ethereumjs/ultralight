@@ -1,4 +1,3 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { assert, describe, it } from 'vitest'
 
 import { tightlyPackNibbles } from '../../src/networks/state/index.js'

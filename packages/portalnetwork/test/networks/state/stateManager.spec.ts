@@ -1,43 +1,43 @@
-import { SignableENR } from '@chainsafe/discv5/enr'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { EVM } from '@ethereumjs/evm'
-import { Trie } from '@ethereumjs/trie'
-import {
-  Account,
-  Address,
-  bigIntToBytes,
-  bytesToInt,
-  bytesToUtf8,
-  equalsBytes,
-  hexToBytes,
-  randomBytes,
-  setLengthLeft,
-  utf8ToBytes,
-} from '@ethereumjs/util'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { multiaddr } from '@multiformats/multiaddr'
-import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { assert, describe, it } from 'vitest'
+// import { SignableENR } from '@chainsafe/discv5/enr'
+// import { fromHexString, toHexString } from '@chainsafe/ssz'
+// import { EVM } from '@ethereumjs/evm'
+// import { Trie } from '@ethereumjs/trie'
+// import {
+//   Account,
+//   Address,
+//   bigIntToBytes,
+//   bytesToInt,
+//   bytesToUtf8,
+//   equalsBytes,
+//   hexToBytes,
+//   randomBytes,
+//   setLengthLeft,
+//   utf8ToBytes,
+// } from '@ethereumjs/util'
+// import { createFromProtobuf } from '@libp2p/peer-id-factory'
+// import { multiaddr } from '@multiformats/multiaddr'
+// import { keccak256 } from 'ethereum-cryptography/keccak.js'
+import { describe } from 'vitest'
 
-import { PortalNetwork } from '../../../src/client/client.js'
-import { TransportLayer } from '../../../src/client/types.js'
-import { UltralightStateManager } from '../../../src/networks/state/stateManager.js'
-import {
-  AccountTrieProofType,
-  ContractByteCodeType,
-  ContractStorageTrieProofType,
-} from '../../../src/networks/state/types.js'
-import { NetworkId } from '../../../src/networks/types.js'
+// import { PortalNetwork } from '../../../src/client/client.js'
+// import { TransportLayer } from '../../../src/client/types.js'
+// import { UltralightStateManager } from '../../../src/networks/state/stateManager.js'
+// import {
+//   AccountTrieProofType,
+//   ContractByteCodeType,
+//   ContractStorageTrieProofType,
+// } from '../../../src/networks/state/types.js'
+// import { NetworkId } from '../../../src/networks/types.js'
 
-import type { StateNetwork } from '../../../src/networks/state/state.js'
+// import type { StateNetwork } from '../../../src/networks/state/state.js'
 
-const privateKeys = [
-  '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
-]
-const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-const enr1 = SignableENR.createFromPeerId(id1)
-const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/0`)
-enr1.setLocationMultiaddr(initMa)
+// const privateKeys = [
+//   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
+// ]
+// const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+// const enr1 = SignableENR.createFromPeerId(id1)
+// const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/0`)
+// enr1.setLocationMultiaddr(initMa)
 describe.skip('UltralightStateManager', () => {
   // it('should get account from stateDB when it exists', async () => {
   //   const node = await PortalNetwork.create({
