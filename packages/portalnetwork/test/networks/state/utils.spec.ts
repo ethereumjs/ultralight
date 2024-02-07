@@ -1,5 +1,5 @@
 import { randomBytes } from '@ethereumjs/util'
-import { assert, describe, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { StateNetworkContentType } from '../../../src/networks/state/types.js'
 import {
@@ -7,7 +7,11 @@ import {
   calculateAddressRange,
   distance,
   keyType,
+  tightlyPackNibbles,
+  unpackNibbles,
 } from '../../../src/networks/state/util.js'
+
+import type { TNibble } from '../../../src/networks/state/types.js'
 
 describe('distance()', () => {
   it('should calculate distance between two values', () => {
@@ -196,4 +200,37 @@ describe('calculateAddressRange: ' + address.slice(0, 18) + '...', () => {
       max: BigInt('0x0affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'),
     })
   })
+})
+
+describe('Nibbles', () => {
+  const nibbleArrays: TNibble[][] = [
+    [0],
+    [0, 1],
+    [1, 2, 3],
+    [1, 2, 3, 4],
+    ['a', 'b', 'c'],
+    ['a', 'b', 'c', 9],
+    ['a', 'b', 'c', 10],
+    ['a', 'b', 'c', 10, 11],
+    ['a', 'b', 'c', 10, 11, 'd'],
+  ]
+
+  for (const nibbles of nibbleArrays) {
+    const packed = tightlyPackNibbles(nibbles)
+    const unpacked = unpackNibbles(packed.packedNibbles, packed.isOddLength)
+    it('should calculate packed nibbles', () => {
+      expect(packed.isOddLength).toEqual(nibbles.length % 2 !== 0)
+      expect(packed.packedNibbles.length).toEqual(Math.ceil(nibbles.length / 2))
+    })
+    it('should unpack packed nibbles', () => {
+      expect(unpacked.length).toEqual(nibbles.length)
+      for (const [idx, nibble] of nibbles.entries()) {
+        if (typeof nibble === 'string') {
+          expect(parseInt(nibble, 16)).toEqual(unpacked[idx])
+        } else {
+          expect(nibble).toEqual(unpacked[idx])
+        }
+      }
+    })
+  }
 })

@@ -132,17 +132,29 @@ export function calculateAddressRange(
  * [1, 2, a, b] -> Nibbles(is_odd_length=false, packed_nibbles=[0x12, 0xab])
  * [1, 2, a, b, c] -> Nibbles(is_odd_length=true, packed_nibbles=[0x01, 0x2a, 0xbc])
  */
-export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
-  if (!nibbles.every((nibble) => Nibble[nibble] !== undefined)) {
-    throw new Error(`path: [${nibbles}] must be an array of nibbles`)
+export const tightlyPackNibbles = (_nibbles: TNibble[]): TNibbles => {
+  if (!_nibbles.every((nibble) => Nibble[nibble] !== undefined)) {
+    throw new Error(`path: [${_nibbles}] must be an array of nibbles`)
   }
+  const nibbles: number[] = _nibbles.map((nibble) =>
+    typeof nibble === 'string' ? parseInt(nibble, 16) : nibble,
+  )
   const isOddLength = nibbles.length % 2 !== 0
-  const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
+  const nibbleArray = isOddLength ? [0, ...nibbles] : nibbles
   const nibblePairs = Array.from({ length: nibbleArray.length / 2 }, (_, idx) => idx).map((i) => {
     return nibbleArray.slice(2 * i, 2 * i + 2) as [TNibble, TNibble]
   })
-  const packedBytes = nibblePairs.map((nibbles) => {
-    return parseInt(nibbles.join(''), 16)
+  const packedBytes = nibblePairs.map(([a, b]) => {
+    return parseInt(a.toString(16) + b.toString(16), 16)
   })
   return { isOddLength, packedNibbles: Uint8Array.from(packedBytes) }
+}
+
+export const unpackNibbles = (packedNibbles: Uint8Array, isOddLength: boolean): TNibble[] => {
+  const unpacked = packedNibbles.reduce((acc, byte, _idx, _array) => {
+    acc.push((byte >>> 4) as TNibble)
+    acc.push((byte & 0x0f) as TNibble)
+    return acc
+  }, [] as TNibble[])
+  return isOddLength ? unpacked.slice(1) : unpacked
 }
