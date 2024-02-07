@@ -42,4 +42,21 @@ export class StateDB {
   async getContent(contentKey: Uint8Array): Promise<Uint8Array | undefined> {
     return this.db.get(toHexString(contentKey))
   }
+
+  storeBlock({
+    blockHash,
+    blockNumber,
+    stateRoot,
+  }: {
+    blockHash: Uint8Array
+    stateRoot?: Uint8Array
+    blockNumber?: number
+  }) {
+    if (blockNumber !== undefined) {
+      this.blocks.set(blockNumber, toHexString(blockHash))
+    }
+    if (stateRoot !== undefined) {
+      this.stateRoots.set(toHexString(blockHash), toHexString(stateRoot))
+    }
+  }
 }
