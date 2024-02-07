@@ -1,16 +1,18 @@
 import { toHexString } from '@chainsafe/ssz'
 import { MemoryLevel } from 'memory-level'
 
+import { NetworkId } from '../index.js'
+
 import type { StateNetwork } from './state.js'
 import type { Debugger } from 'debug'
 
 export class StateDB {
   db: MemoryLevel<string, Uint8Array>
   logger: Debugger | undefined
-  state?: StateNetwork
+  state: StateNetwork
   blocks: Map<number, string>
   stateRoots: Map<string, string>
-  constructor(state?: StateNetwork) {
+  constructor(state: StateNetwork) {
     this.db = new MemoryLevel({
       createIfMissing: true,
       valueEncoding: 'view',
@@ -28,7 +30,7 @@ export class StateDB {
    * @returns true if content is stored successfully
    */
   async storeContent(contentKey: Uint8Array, content: Uint8Array) {
-    await this.db.put(toHexString(contentKey), content)
+    this.state.put(NetworkId.StateNetwork, toHexString(contentKey), toHexString(content))
     return true
   }
 
