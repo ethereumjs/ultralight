@@ -1,6 +1,7 @@
-import { ENR } from '@chainsafe/discv5'
+import { ENR, distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { BranchNode, ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { bytesToHex, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -16,7 +17,13 @@ import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
 import { StateDB } from './statedb.js'
-import { StateNetworkContentType } from './types.js'
+import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
+import {
+  AccountTrieNodeContentKey,
+  StateNetworkContentId,
+  tightlyPackNibbles,
+  unpackNibbles,
+} from './util.js'
 
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
@@ -134,5 +141,53 @@ export class StateNetwork extends BaseNetwork {
     await this.stateDB.storeContent(fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, content)
+  }
+
+  async receiveAccountTrieNodeOffer(contentKey: Uint8Array, content: Uint8Array) {
+    const { path } = AccountTrieNodeContentKey.decode(contentKey)
+    const { blockHash, proof } = AccountTrieNodeOffer.deserialize(content)
+
+    await this.gossipContent(contentKey, content)
+
+    const stateRoot = new Trie({ useKeyHashing: true })['hash'](proof[0])
+    this.stateDB.storeBlock({ blockHash, stateRoot })
+
+    const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+    const newpaths = [...nibbles]
+    const nodes = [...proof]
+    nodes.pop()
+    const gossipContents: { contentKey: Uint8Array; content: Uint8Array }[] = []
+
+    while (nodes.length > 0) {
+      const rlp = nodes.pop()!
+      const curNode = decodeNode(rlp)
+      if (curNode instanceof BranchNode) {
+        newpaths.pop()
+      } else if (curNode instanceof ExtensionNode) {
+        newpaths.splice(-curNode.key().length)
+      } else {
+        throw new Error('Should have already removed leaf node from array')
+      }
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](rlp)
+      const contentKey = AccountTrieNodeContentKey.encode({
+        nodeHash,
+        path: tightlyPackNibbles(newpaths),
+      })
+      const gossipContent = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
+      gossipContents.push({ contentKey, content: gossipContent })
+      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const in_radius = distance(bytesToHex(contentId), this.enr.nodeId) < this.nodeRadius
+      if (in_radius) {
+        const toStore = AccountTrieNodeRetrieval.serialize({
+          node: rlp,
+        })
+        await this.stateDB.storeContent(contentKey, toStore)
+      }
+
+      for (const { content, contentKey } of gossipContents) {
+        await this.gossipContent(contentKey, content)
+      }
+    }
+    return gossipContents
   }
 }
