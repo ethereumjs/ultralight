@@ -5,9 +5,39 @@ import { NetworkId } from '../index.js'
 
 import type { StateNetwork } from './state.js'
 import type { Debugger } from 'debug'
-
-export class StateDB {
+export class PortalTrieDB extends MapDB<string, Uint8Array> implements DB<string, Uint8Array> {
   db: MemoryLevel<string, Uint8Array>
+  constructor(db?: MemoryLevel<string, Uint8Array>) {
+    super()
+    this.db =
+      db ??
+      new MemoryLevel({
+        createIfMissing: true,
+        valueEncoding: 'view',
+      })
+  }
+  async get(key: string) {
+    return this.db.get(key)
+  }
+  async put(key: string, value: Uint8Array) {
+    return this.db.put(key, value)
+  }
+  async del(key: string) {
+    return this.db.del(key)
+  }
+  async batch(opStack: BatchDBOp<string, Uint8Array>[]): Promise<void> {
+    for (const op of opStack) {
+      if (op.type === 'del') {
+        await this.del(op.key)
+      }
+
+      if (op.type === 'put') {
+        await this.put(op.key, op.value)
+      }
+    }
+  }
+}
+function getDatabaseContent(contentKey: Uint8Array, content: Uint8Array) {
   logger: Debugger | undefined
   state: StateNetwork
   blocks: Map<number, string>
