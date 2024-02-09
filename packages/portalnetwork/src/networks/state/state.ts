@@ -31,7 +31,7 @@ export class StateNetwork extends BaseNetwork {
     super(client, nodeRadius)
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
-    this.stateDB = new StateDB(this)
+    this.stateDB = new StateDB(client.db.sublevel(NetworkId.StateNetwork))
     this.routingTable.setLogger(this.logger)
     client.uTP.on(
       NetworkId.StateNetwork,

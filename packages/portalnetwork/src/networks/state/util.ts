@@ -22,7 +22,7 @@ import type {
   TStorageTrieNodeKey,
 } from './types.js'
 import type { BatchDBOp, DB } from '@ethereumjs/util'
-import type { MemoryLevel } from 'memory-level'
+import type { AbstractLevel } from 'abstract-level'
 
 /* ContentKeys */
 
@@ -147,22 +147,22 @@ export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8A
   return distanceA < distanceB ? nodeA : nodeB
 }
 
-export class PortalTrieDB extends MapDB<string, Uint8Array> implements DB<string, Uint8Array> {
-  db: MemoryLevel<string, Uint8Array>
-  constructor(db: MemoryLevel<string, Uint8Array>) {
+export class PortalTrieDB extends MapDB<string, string> implements DB<string, string> {
+  db: AbstractLevel<string, string, string>
+  constructor(db: AbstractLevel<string, string, string>) {
     super()
     this.db = db
   }
   async get(key: string) {
     return this.db.get(key)
   }
-  async put(key: string, value: Uint8Array) {
+  async put(key: string, value: string) {
     return this.db.put(key, value)
   }
   async del(key: string) {
     return this.db.del(key)
   }
-  async batch(opStack: BatchDBOp<string, Uint8Array>[]): Promise<void> {
+  async batch(opStack: BatchDBOp<string, string>[]): Promise<void> {
     for (const op of opStack) {
       if (op.type === 'del') {
         await this.del(op.key)
