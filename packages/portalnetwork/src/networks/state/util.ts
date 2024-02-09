@@ -151,3 +151,12 @@ export const unpackNibbles = (packedNibbles: Uint8Array, isOddLength: boolean): 
   }, [] as TNibble[])
   return isOddLength ? unpacked.slice(1) : unpacked
 }
+
+export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8Array) => {
+  if (equalsBytes(nodeA, nodeB)) {
+    return nodeA
+  }
+  const distanceA = distance(nodeId, nodeA.toString())
+  const distanceB = distance(nodeId, nodeB.toString())
+  return distanceA < distanceB ? nodeA : nodeB
+}
