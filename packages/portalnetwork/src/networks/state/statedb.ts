@@ -38,6 +38,21 @@ export class PortalTrieDB extends MapDB<string, Uint8Array> implements DB<string
   }
 }
 function getDatabaseContent(contentKey: Uint8Array, content: Uint8Array) {
+  const type = keyType(contentKey)
+  let dbContent = new Uint8Array()
+  switch (type) {
+    case StateNetworkContentType.AccountTrieNode:
+      dbContent = AccountTrieNodeRetrieval.deserialize(content).node
+      break
+    case StateNetworkContentType.ContractTrieNode:
+      dbContent = StorageTrieNodeRetrieval.deserialize(content).node
+      break
+    case StateNetworkContentType.ContractByteCode:
+      dbContent = ContractRetrieval.deserialize(content).code
+      break
+  }
+  return toHexString(dbContent)
+}
 function getDatabaseKey(contentKey: Uint8Array) {
   const type = keyType(contentKey)
   let dbKey = contentKey
