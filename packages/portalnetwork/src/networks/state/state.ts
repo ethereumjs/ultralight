@@ -196,4 +196,13 @@ export class StateNetwork extends BaseNetwork {
     const response = await lookup.startLookup()
     return response
   }
+
+  async getAccountTrieNode({ nodeHash, path }: TAccountTrieNodeKey) {
+    let content = await this.stateDB.getContent(nodeHash)
+    if (content === undefined) {
+      const contentKey = AccountTrieNodeContentKey.encode({ nodeHash, path })
+      const contentResponse = await this.lookup(contentKey)
+      content = contentResponse?.content
+    }
+  }
 }
