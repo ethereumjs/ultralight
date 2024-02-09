@@ -46,7 +46,13 @@ export class AccountTrieNodeContentKey {
     return Uint8Array.from([0x20, ...key])
   }
   static decode(key: Uint8Array): TAccountTrieNodeKey {
-    return AccountTrieNodeKey.deserialize(key.slice(1))
+    return new AccountTrieNodeContentKey(AccountTrieNodeKey.deserialize(key.slice(1)))
+  }
+  path: TNibbles
+  nodeHash: Uint8Array
+  constructor({ path, nodeHash }: TAccountTrieNodeKey) {
+    this.path = path
+    this.nodeHash = nodeHash
   }
 }
 
@@ -58,6 +64,14 @@ export class StorageTrieNodeContentKey {
   static decode(key: Uint8Array): TStorageTrieNodeKey {
     return StorageTrieNodeKey.deserialize(key.slice(1))
   }
+  address: Uint8Array
+  path: TNibbles
+  nodeHash: Uint8Array
+  constructor({ address, path, nodeHash }: TStorageTrieNodeKey) {
+    this.address = address
+    this.path = path
+    this.nodeHash = nodeHash
+  }
 }
 
 export class ContractCodeContentKey {
@@ -67,6 +81,12 @@ export class ContractCodeContentKey {
   }
   static decode(key: Uint8Array): TContractCodeKey {
     return ContractCodeKey.deserialize(key.slice(1))
+  }
+  address: Uint8Array
+  codeHash: Uint8Array
+  constructor({ address, codeHash }: TContractCodeKey) {
+    this.address = address
+    this.codeHash = codeHash
   }
 }
 export type TStateNetworkContentKey = TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey
