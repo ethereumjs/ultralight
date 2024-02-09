@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { NetworkId, PortalNetwork } from '../../../src/index.js'
 
-describe.skip('StateNetwork', async () => {
+describe('StateNetwork', async () => {
   const pk = await createSecp256k1PeerId()
   const enr1 = SignableENR.createFromPeerId(pk)
   const r = 4n
@@ -20,5 +20,8 @@ describe.skip('StateNetwork', async () => {
   const stateNetwork = ultralight.networks.get(NetworkId.StateNetwork)
   it('should start with state network', () => {
     expect(stateNetwork).toBeDefined()
+  })
+  it('should initialize with correct radius', () => {
+    expect(stateNetwork!.nodeRadius).toEqual(radius)
   })
 })
