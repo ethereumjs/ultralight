@@ -1,9 +1,23 @@
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { MapDB } from '@ethereumjs/util'
 import { MemoryLevel } from 'memory-level'
 
-import { NetworkId } from '../index.js'
+import {
+  AccountTrieNodeContentKey,
+  AccountTrieNodeRetrieval,
+  ContractCodeContentKey,
+  ContractRetrieval,
+  NetworkId,
+  StateNetworkContentId,
+  StateNetworkContentType,
+  StorageTrieNodeContentKey,
+  StorageTrieNodeRetrieval,
+  compareDistance,
+  keyType,
+} from '../index.js'
 
 import type { StateNetwork } from './state.js'
+import type { BatchDBOp, DB } from '@ethereumjs/util'
 import type { Debugger } from 'debug'
 export class PortalTrieDB extends MapDB<string, Uint8Array> implements DB<string, Uint8Array> {
   db: MemoryLevel<string, Uint8Array>
