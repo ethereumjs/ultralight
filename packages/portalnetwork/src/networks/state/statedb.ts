@@ -72,15 +72,13 @@ function getDatabaseKey(contentKey: Uint8Array) {
   return toHexString(dbKey)
 }
 export class StateDB {
+  db: PortalTrieDB
   logger: Debugger | undefined
   state: StateNetwork
   blocks: Map<number, string>
   stateRoots: Map<string, string>
   constructor(state: StateNetwork) {
-    this.db = new MemoryLevel({
-      createIfMissing: true,
-      valueEncoding: 'view',
-    })
+    this.db = new PortalTrieDB()
     this.state = state
     this.logger = state?.logger.extend('StateDB')
     this.stateRoots = new Map()
