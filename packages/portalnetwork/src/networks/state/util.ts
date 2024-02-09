@@ -21,7 +21,7 @@ import type {
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
-import type { BatchDBOp, DB } from '@ethereumjs/util'
+import type { DB } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
 
 /* ContentKeys */
@@ -154,24 +154,8 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
     this.db = db
   }
   async get(key: string) {
+    // TODO: Retrieve from network if not found locally
     return this.db.get(key)
-  }
-  async put(key: string, value: string) {
-    return this.db.put(key, value)
-  }
-  async del(key: string) {
-    return this.db.del(key)
-  }
-  async batch(opStack: BatchDBOp<string, string>[]): Promise<void> {
-    for (const op of opStack) {
-      if (op.type === 'del') {
-        await this.del(op.key)
-      }
-
-      if (op.type === 'put') {
-        await this.put(op.key, op.value)
-      }
-    }
   }
 }
 export function getDatabaseKey(contentKey: Uint8Array) {
