@@ -116,6 +116,18 @@ export class StateDB {
     }
     return fromHexString(content)
   }
+
+  async updateClosestId(contentKey: Uint8Array): Promise<Uint8Array> {
+    let contentId = StateNetworkContentId.fromBytes(contentKey)
+    if (this.closestId.has(toHexString(contentKey))) {
+      contentId = compareDistance(
+        this.state.enr.nodeId,
+        contentId,
+        this.closestId.get(toHexString(contentKey))!,
+      )
+    }
+    this.closestId.set(toHexString(contentKey), contentId)
+    return contentId
   }
 
   storeBlock({
