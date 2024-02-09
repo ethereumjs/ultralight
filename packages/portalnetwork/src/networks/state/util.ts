@@ -1,5 +1,6 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
+import { toHexString } from '@chainsafe/ssz'
 import { MapDB, equalsBytes } from '@ethereumjs/util'
 
 import {
@@ -169,4 +170,22 @@ export class PortalTrieDB extends MapDB<string, Uint8Array> implements DB<string
       }
     }
   }
+}
+export function getDatabaseKey(contentKey: Uint8Array) {
+  const type = keyType(contentKey)
+  let dbKey = contentKey
+  switch (type) {
+    case StateNetworkContentType.AccountTrieNode:
+      dbKey = AccountTrieNodeContentKey.decode(contentKey).nodeHash
+      break
+    case StateNetworkContentType.ContractTrieNode:
+      dbKey = StorageTrieNodeContentKey.decode(contentKey).nodeHash
+      break
+    case StateNetworkContentType.ContractByteCode:
+      dbKey = ContractCodeContentKey.decode(contentKey).codeHash
+      break
+    default:
+      break
+  }
+  return toHexString(dbKey)
 }
