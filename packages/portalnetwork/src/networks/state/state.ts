@@ -211,8 +211,11 @@ export class StateNetwork extends BaseNetwork {
     if (content === undefined) {
       const contentKey = AccountTrieNodeContentKey.encode({ nodeHash, path })
       const contentResponse = await this.lookup(contentKey)
-      content = contentResponse?.content
+      if (contentResponse && 'content' in contentResponse) {
+        content = contentResponse.content
+      }
     }
+    return content
   }
 
   async trieGet(root: Uint8Array, key: Uint8Array): Promise<TTrieGetResult> {
