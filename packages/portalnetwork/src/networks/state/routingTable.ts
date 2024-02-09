@@ -1,6 +1,6 @@
-import { PortalNetworkRoutingTable } from '../../client/routingTable.js'
+import { distance } from '@chainsafe/discv5'
 
-import { distance } from './util.js'
+import { PortalNetworkRoutingTable } from '../../client/routingTable.js'
 
 import type { ENR, NodeId } from '@chainsafe/discv5'
 
@@ -17,7 +17,7 @@ export class StateNetworkRoutingTable extends PortalNetworkRoutingTable {
       results.push(...bucket.values())
     }
     results.sort((a, b) => {
-      const diff = distance(BigInt(id), BigInt(a.nodeId)) - distance(BigInt(id), BigInt(b.nodeId))
+      const diff = distance(id, a.nodeId) - distance(id, b.nodeId)
       if (diff < 0) return -1
       if (diff === 0n) return 0
       return 1
