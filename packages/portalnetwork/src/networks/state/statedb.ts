@@ -94,7 +94,9 @@ export class StateDB {
    * @returns true if content is stored successfully
    */
   async storeContent(contentKey: Uint8Array, content: Uint8Array) {
-    this.state.put(NetworkId.StateNetwork, toHexString(contentKey), toHexString(content))
+    const dbKey = getDatabaseKey(contentKey)
+    const dbContent = getDatabaseContent(contentKey, content)
+    this.state.put(NetworkId.StateNetwork, dbKey, dbContent)
     return true
   }
 
