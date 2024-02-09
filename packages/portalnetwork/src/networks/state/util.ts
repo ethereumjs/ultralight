@@ -1,4 +1,6 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
+import { distance } from '@chainsafe/discv5'
+import { equalsBytes } from '@ethereumjs/util'
 
 import {
   AccountTrieNodeKey,
@@ -128,4 +130,13 @@ export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
     return parseInt(nibbles.join(''), 16)
   })
   return { isOddLength, packedNibbles: Uint8Array.from(packedBytes) }
+}
+
+export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8Array) => {
+  if (equalsBytes(nodeA, nodeB)) {
+    return nodeA
+  }
+  const distanceA = distance(nodeId, nodeA.toString())
+  const distanceB = distance(nodeId, nodeB.toString())
+  return distanceA < distanceB ? nodeA : nodeB
 }
