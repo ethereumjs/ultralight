@@ -5,10 +5,13 @@ import { MapDB, equalsBytes } from '@ethereumjs/util'
 
 import {
   AccountTrieNodeKey,
+  AccountTrieNodeRetrieval,
   ContractCodeKey,
+  ContractRetrieval,
   Nibble,
   StateNetworkContentType,
   StorageTrieNodeKey,
+  StorageTrieNodeRetrieval,
 } from './types.js'
 
 import type {
@@ -188,4 +191,20 @@ export function getDatabaseKey(contentKey: Uint8Array) {
       break
   }
   return toHexString(dbKey)
+}
+
+export function getDatabaseContent(type: StateNetworkContentType, content: Uint8Array) {
+  let dbContent = new Uint8Array()
+  switch (type) {
+    case StateNetworkContentType.AccountTrieNode:
+      dbContent = AccountTrieNodeRetrieval.deserialize(content).node
+      break
+    case StateNetworkContentType.ContractTrieNode:
+      dbContent = StorageTrieNodeRetrieval.deserialize(content).node
+      break
+    case StateNetworkContentType.ContractByteCode:
+      dbContent = ContractRetrieval.deserialize(content).code
+      break
+  }
+  return toHexString(dbContent)
 }
