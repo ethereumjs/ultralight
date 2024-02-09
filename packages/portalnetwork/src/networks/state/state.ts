@@ -205,4 +205,19 @@ export class StateNetwork extends BaseNetwork {
       content = contentResponse?.content
     }
   }
+
+  async trieGet(root: Uint8Array, key: Uint8Array): Promise<TTrieGetResult> {
+    const trie = new Trie({ useKeyHashing: true, db: this.stateDB.db })
+    trie.root(root)
+    const path = await trie.findPath(key)
+    const { node, stack, remaining } = path
+    if (node) {
+      return node
+    } else {
+      return {
+        stack,
+        remaining,
+      }
+    }
+  }
 }
