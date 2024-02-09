@@ -152,6 +152,12 @@ export class StateNetwork extends BaseNetwork {
     const stateRoot = new Trie({ useKeyHashing: true })['hash'](proof[0])
     this.stateDB.storeBlock({ blockHash, stateRoot })
 
+    const gossipContents = await this.forwardAccountTrieOffer(path, proof, blockHash)
+
+    return gossipContents
+  }
+
+  async forwardAccountTrieOffer(path: TNibbles, proof: Uint8Array[], blockHash: Uint8Array) {
     const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
     const newpaths = [...nibbles]
     const nodes = [...proof]
@@ -178,13 +184,11 @@ export class StateNetwork extends BaseNetwork {
       const contentId = StateNetworkContentId.fromBytes(contentKey)
       const in_radius = distance(bytesToHex(contentId), this.enr.nodeId) < this.nodeRadius
       if (in_radius) {
-        const toStore = AccountTrieNodeRetrieval.serialize({
-          node: rlp,
-        })
-        await this.stateDB.storeContent(contentKey, toStore)
+        // store node (by hash) since node has a known existing *ContentKey* that is in radius
+        await this.stateDB.storeContent(nodeHash, rlp)
       }
-
       for (const { content, contentKey } of gossipContents) {
+        // Gossip Node+Proof for content in peers' radius
         await this.gossipContent(contentKey, content)
       }
     }
