@@ -1,16 +1,20 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
-import { bigIntToBytes, concatBytes } from '@ethereumjs/util'
-
-import { toHexString } from '../../util/discv5.js'
 
 import {
-  AccountTrieProofKeyType,
-  ContractByteCodeKeyType,
-  ContractStorageTrieKeyType,
+  AccountTrieNodeKey,
+  ContractCodeKey,
+  Nibble,
   StateNetworkContentType,
+  StorageTrieNodeKey,
 } from './types.js'
 
-import type { Address } from '@ethereumjs/util'
+import type {
+  TAccountTrieNodeKey,
+  TContractCodeKey,
+  TNibble,
+  TNibbles,
+  TStorageTrieNodeKey,
+} from './types.js'
 
 export const MODULO = 2n ** 256n
 const MID = 2n ** 255n
@@ -29,199 +33,80 @@ export const distance = (id1: bigint, id2: bigint): bigint => {
   return diff
 }
 
-interface ContentKeyOpts {
-  contentType: StateNetworkContentType
-  address: Address
-  stateRoot: Uint8Array
-  slot: bigint
-  codeHash: Uint8Array
-}
-
-export const getStateNetworkContentKey = (opts: Partial<ContentKeyOpts>) => {
-  if (opts.address === undefined) {
-    throw new Error('address is required')
-  }
-  switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
-      if (opts.stateRoot === undefined) {
-        throw new Error('stateRoot is required')
-      }
-      const key = AccountTrieProofKeyType.serialize({
-        address: opts.address.toBytes(),
-        stateRoot: opts.stateRoot,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    case StateNetworkContentType.ContractStorageTrieProof: {
-      if (opts.slot === undefined) {
-        throw new Error(`slot is required`)
-      }
-      if (opts.stateRoot === undefined) {
-        throw new Error('stateRoot is required')
-      }
-      const key = ContractStorageTrieKeyType.serialize({
-        address: opts.address.toBytes(),
-        slot: opts.slot,
-        stateRoot: opts.stateRoot,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    case StateNetworkContentType.ContractByteCode: {
-      if (opts.codeHash === undefined) {
-        throw new Error('codeHash required')
-      }
-      const key = ContractByteCodeKeyType.serialize({
-        address: opts.address.toBytes(),
-        codeHash: opts.codeHash,
-      })
-      return Uint8Array.from([opts.contentType, ...key])
-    }
-    default:
-      throw new Error(`Content Type ${opts.contentType} not supported`)
-  }
-}
+/* ContentKeys */
 
 export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
   switch (contentKey[0]) {
     case 16:
-      return StateNetworkContentType.AccountTrieProof
+      return StateNetworkContentType.AccountTrieNode
     case 17:
-      return StateNetworkContentType.ContractStorageTrieProof
+      return StateNetworkContentType.ContractTrieNode
     case 18:
       return StateNetworkContentType.ContractByteCode
     default:
       throw new Error(`Invalid content key type: ${contentKey[0]}`)
   }
 }
-
-export const decodeStateNetworkContentKey = (
-  key: Uint8Array,
-):
-  | {
-      contentType: StateNetworkContentType.AccountTrieProof
-      address: Uint8Array
-      stateRoot: Uint8Array
-    }
-  | {
-      contentType: StateNetworkContentType.ContractStorageTrieProof
-      address: Uint8Array
-      slot: bigint
-      stateRoot: Uint8Array
-    }
-  | {
-      contentType: StateNetworkContentType.ContractByteCode
-      address: Uint8Array
-      codeHash: Uint8Array
-    } => {
-  const contentType = StateNetworkContentType[keyType(key)]
-  switch (contentType) {
-    case 'AccountTrieProof': {
-      const { address, stateRoot } = AccountTrieProofKeyType.deserialize(key.slice(1))
-      return { contentType: StateNetworkContentType.AccountTrieProof, address, stateRoot }
-    }
-    case 'ContractStorageTrieProof': {
-      const { address, slot, stateRoot } = ContractStorageTrieKeyType.deserialize(key.slice(1))
-      return {
-        contentType: StateNetworkContentType.ContractStorageTrieProof,
-        address,
-        slot,
-        stateRoot,
-      }
-    }
-    case 'ContractByteCode': {
-      const { address, codeHash } = ContractByteCodeKeyType.deserialize(key.slice(1))
-      return { contentType: StateNetworkContentType.ContractByteCode, address, codeHash }
-    }
-    default:
-      throw new Error(`Content Type ${contentType} not supported`)
+export class AccountTrieNodeContentKey {
+  static encode({ path, nodeHash }: TAccountTrieNodeKey): Uint8Array {
+    const key = AccountTrieNodeKey.serialize({ path, nodeHash })
+    return Uint8Array.from([0x20, ...key])
+  }
+  static decode(key: Uint8Array): TAccountTrieNodeKey {
+    return AccountTrieNodeKey.deserialize(key.slice(1))
   }
 }
 
-export const getStateNetworkContentId = (opts: Partial<ContentKeyOpts>) => {
-  if (!opts.address) {
-    throw new Error('address is required')
+export class StorageTrieNodeContentKey {
+  static encode({ address, path, nodeHash }: TStorageTrieNodeKey): Uint8Array {
+    const key = StorageTrieNodeKey.serialize({ address, path, nodeHash })
+    return Uint8Array.from([0x21, ...key])
   }
-  switch (opts.contentType) {
-    case StateNetworkContentType.AccountTrieProof: {
-      return sha256(opts.address.toBytes())
-    }
-    case StateNetworkContentType.ContractStorageTrieProof: {
-      if (opts.slot === undefined) {
-        throw new Error(`slot value required: ${opts}`)
-      }
-      return Uint8Array.from(
-        bigIntToBytes(
-          BigInt(toHexString(sha256(opts.address.toBytes()))) +
-            (BigInt(toHexString(sha256(bigIntToBytes(opts.slot)))) % MODULO),
-        ),
-      )
-    }
-    case StateNetworkContentType.ContractByteCode: {
-      if (!opts.codeHash) {
-        throw new Error('codeHash required')
-      }
-      return sha256(concatBytes(opts.address.toBytes(), opts.codeHash))
-    }
-    default:
-      throw new Error(`Content Type ${opts.contentType} not supported`)
+  static decode(key: Uint8Array): TStorageTrieNodeKey {
+    return StorageTrieNodeKey.deserialize(key.slice(1))
   }
 }
 
-export function mergeArrays(arrays: string[][]): (string | string[])[] {
-  const merged = arrays[0].map((v, i) => {
-    const ambiguous = Array.from({ length: arrays.length }, (_, idx) => arrays[idx][i])
-      .map((v) => JSON.stringify(v))
-      .filter((v, i, _array) => _array.indexOf(v) === i)
-      .map((v) => JSON.parse(v))
-    return v === arrays[1][i] ? v : ambiguous
-  })
-  return merged
+export class ContractCodeContentKey {
+  static encode({ address, codeHash }: TContractCodeKey): Uint8Array {
+    const key = ContractCodeKey.serialize({ address, codeHash })
+    return Uint8Array.from([0x22, ...key])
+  }
+  static decode(key: Uint8Array): TContractCodeKey {
+    return ContractCodeKey.deserialize(key.slice(1))
+  }
+}
+export type TStateNetworkContentKey = TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey
+export class StateNetworkContentKey {
+  static encode(opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
+    if ('codeHash' in opts) {
+      return ContractCodeContentKey.encode(opts)
+    } else if ('address' in opts) {
+      return StorageTrieNodeContentKey.encode(opts)
+    } else {
+      return AccountTrieNodeContentKey.encode(opts)
+    }
+  }
+  static decode(key: Uint8Array): TStateNetworkContentKey {
+    const type = keyType(key)
+    if (type === StateNetworkContentType.ContractByteCode) {
+      return ContractCodeContentKey.decode(key)
+    } else if (type === StateNetworkContentType.ContractTrieNode) {
+      return StorageTrieNodeContentKey.decode(key)
+    } else {
+      return AccountTrieNodeContentKey.decode(key)
+    }
+  }
 }
 
-export function isSubarrayOf(a: string[], b: string[]): boolean {
-  if (a.length > b.length) {
-    return false
+export class StateNetworkContentId {
+  static fromKeyObj(key: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
+    const bytes = StateNetworkContentKey.encode(key)
+    return sha256(bytes)
   }
-  for (let i = 0; i <= b.length - a.length; i++) {
-    let found = true
-    for (let j = 0; j < a.length; j++) {
-      if (a[j] !== b[i + j]) {
-        found = false
-        break
-      }
-    }
-    if (found) {
-      return true
-    }
+  static fromBytes(key: Uint8Array): Uint8Array {
+    return sha256(key)
   }
-  return false
-}
-export function removeDuplicateSequences(_arr: string[][]): string[][] {
-  const arr = _arr
-    .map((a) => JSON.stringify(a))
-    .filter((a, i, _array) => _array.indexOf(a) === i)
-    .map((a) => JSON.parse(a))
-  const subarrays = new Set<string[]>()
-  const result: string[][] = []
-
-  for (let i = 0; i < arr.length; i++) {
-    let isSubarray = false
-    for (let j = 0; j < arr.length; j++) {
-      if (i === j) {
-        continue
-      }
-      if (isSubarrayOf(arr[i], arr[j])) {
-        subarrays.add(arr[i])
-        isSubarray = true
-        break
-      }
-    }
-    if (!isSubarray && !subarrays.has(arr[i])) {
-      result.push(arr[i])
-    }
-  }
-
-  return result
 }
 
 export function calculateAddressRange(
@@ -239,4 +124,25 @@ export function calculateAddressRange(
   const minAddress = BigInt.asUintN(256, address & ~radius)
 
   return { min: minAddress, max: maxAddress }
+}
+
+/**
+ * Take a bytestring of loosely packed nibbles and return them tightly packed
+ * @param nibbles array of loosely packed nibbles
+ * [1, 2, a, b] -> Nibbles(is_odd_length=false, packed_nibbles=[0x12, 0xab])
+ * [1, 2, a, b, c] -> Nibbles(is_odd_length=true, packed_nibbles=[0x01, 0x2a, 0xbc])
+ */
+export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
+  if (!nibbles.every((nibble) => Nibble[nibble] !== undefined)) {
+    throw new Error(`path: [${nibbles}] must be an array of nibbles`)
+  }
+  const isOddLength = nibbles.length % 2 !== 0
+  const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
+  const nibblePairs = Array.from({ length: nibbleArray.length / 2 }, (_, idx) => idx).map((i) => {
+    return nibbleArray.slice(2 * i, 2 * i + 2) as [TNibble, TNibble]
+  })
+  const packedBytes = nibblePairs.map((nibbles) => {
+    return parseInt(nibbles.join(''), 16)
+  })
+  return { isOddLength, packedNibbles: Uint8Array.from(packedBytes) }
 }

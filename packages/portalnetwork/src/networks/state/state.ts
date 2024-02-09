@@ -1,7 +1,6 @@
 import { ENR } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Trie } from '@ethereumjs/trie'
-import { Account, Address, bytesToInt, bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -12,21 +11,12 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { ContentLookup } from '../contentLookup.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
-import { genesisTrie, inRadiusAccounts } from './genesis.js'
-import genesis from './mainnet.json' assert { type: 'json' }
 import { StateDB } from './statedb.js'
-import {
-  AccountTrieProofType,
-  ContractByteCodeType,
-  ContractStorageTrieProofType,
-  StateNetworkContentType,
-} from './types.js'
-import { getStateNetworkContentKey } from './util.js'
+import { StateNetworkContentType } from './types.js'
 
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
@@ -49,22 +39,6 @@ export class StateNetwork extends BaseNetwork {
         await this.store(contentType, toHexString(contentKey.slice(1)), content)
       },
     )
-  }
-
-  /**
-   * Initialize the client with the genesis state
-   */
-  public initGenesis = async () => {
-    const genTrie = await genesisTrie(this)
-    const addrs = await inRadiusAccounts(this.enr.nodeId, this['nodeRadius'])
-    for (const [k, v] of genTrie) {
-      await this.stateDB.trieDB.put(k, bytesToUnprefixedHex(v as Uint8Array))
-    }
-    this.stateDB.stateRoots.add(genesis.genesisStateRoot)
-    for (const addr of addrs) {
-      this.stateDB.accounts.add(addr)
-    }
-    this.stateDB.accountTries.set(genesis.genesisStateRoot, genesis.genesisStateRoot)
   }
 
   /**
@@ -157,112 +131,8 @@ export class StateNetwork extends BaseNetwork {
     contentKey: string,
     content: Uint8Array,
   ) => {
-    await this.stateDB.storeContent(contentType, fromHexString(contentKey), content)
+    await this.stateDB.storeContent(fromHexString(contentKey), content)
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, content)
-  }
-
-  public getAccountTrieProof = async (address: Uint8Array, stateRoot: Uint8Array) => {
-    const trie = this.stateDB.getAccountTrie(toHexString(stateRoot))
-    const proof = await trie.createProof(address)
-    return AccountTrieProofType.serialize({
-      witnesses: proof,
-    })
-  }
-
-  /**
-   * Retrieve an account from the state network
-   * @param address the hex prefixed string representation of an address
-   * @param stateRoot the stateRoot from the block at which you wish to retrieve an account's state
-   * @returns an account corresponding to `address` or undefined if not found
-   */
-  public getAccount = async (address: string, stateRoot: string) => {
-    let account
-    this.logger.extend('GETACCOUNT')(
-      `trying to retrieve account for ${address} at stateRoot ${stateRoot} locally`,
-    )
-    account = await this.stateDB.getAccount(address, stateRoot)
-    if (account !== undefined) return account
-    const contentKey = getStateNetworkContentKey({
-      address: Address.fromString(address),
-      stateRoot: fromHexString(stateRoot),
-      contentType: StateNetworkContentType.AccountTrieProof,
-    })
-    this.logger.extend('GETACCOUNT')(
-      `didn't find locally. Trying to retrieve account for ${address} at stateRoot ${stateRoot} from network`,
-    )
-    const lookup = new ContentLookup(this, contentKey)
-    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
-    if (res?.content !== undefined) {
-      const decoded = AccountTrieProofType.deserialize(res.content)
-      const trie = new Trie({ useKeyHashing: true })
-      await trie.fromProof(decoded.witnesses)
-      const accountRLP = await trie.get(fromHexString(address))
-      account = accountRLP ? Account.fromRlpSerializedAccount(accountRLP) : undefined
-    }
-    return account
-  }
-
-  /**
-   * Retrieve bytecode for a specific address
-   * @param codeHash codehash corresponding to the bytecode sought
-   * @param address for the bytecode being sought
-   * @returns returns the bytecode as a `Uint8Array` or else undefined
-   */
-  public getBytecode = async (codeHash: string, address: string) => {
-    let bytecode
-    bytecode = await this.stateDB.getContractByteCode(codeHash)
-    if (bytecode !== undefined) return bytecode
-    const contentKey = getStateNetworkContentKey({
-      codeHash: fromHexString(codeHash),
-      address: Address.fromString(address),
-      contentType: StateNetworkContentType.ContractByteCode,
-    })
-    const lookup = new ContentLookup(this, contentKey)
-    const res = (await lookup.startLookup()) as { content: Uint8Array; utp: boolean }
-    if (res.content !== undefined) {
-      bytecode = ContractByteCodeType.deserialize(res.content)
-    }
-    return bytecode
-  }
-
-  /**
-   * Retrieve a storage slot for a given account with a given stateroot
-   * @param address address for storage slot sought
-   * @param slot storage slot sought
-   * @param stateRoot stateRoot corresponding to block at which storage slot is sought
-   * @returns a storage value corresponding to `slot` or undefined
-   */
-  public getContractStorage = async (
-    address: string,
-    slot: bigint,
-    stateRoot: string,
-  ): Promise<Uint8Array | undefined> => {
-    let storage
-    try {
-      storage = await this.stateDB.getStorageAt(address, slot, stateRoot)
-      if (storage !== undefined) return storage
-    } catch {
-      this.logger(`Content not found locally.  Requesting from network.`)
-    }
-    const contentKey = getStateNetworkContentKey({
-      contentType: StateNetworkContentType.ContractStorageTrieProof,
-      address: Address.fromString(address),
-      slot,
-      stateRoot: fromHexString(stateRoot),
-    })
-    const lookup = new ContentLookup(this, contentKey)
-    let res = await lookup.startLookup()
-    if (res !== undefined) {
-      res = res as { content: Uint8Array; utp: boolean }
-      const proof = ContractStorageTrieProofType.deserialize(res.content)
-      if (proof !== undefined) {
-        const trie = new Trie({ useKeyHashing: true })
-        await trie.fromProof(proof.witnesses)
-        storage =
-          (await trie.get(fromHexString('0x' + slot.toString(16).padStart(64, '0')))) ?? undefined
-      }
-    }
-    return storage
   }
 }
