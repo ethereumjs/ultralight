@@ -77,12 +77,14 @@ export class StateDB {
   state: StateNetwork
   blocks: Map<number, string>
   stateRoots: Map<string, string>
+  closestId: Map<string, Uint8Array>
   constructor(state: StateNetwork) {
     this.db = new PortalTrieDB()
     this.state = state
     this.logger = state?.logger.extend('StateDB')
     this.stateRoots = new Map()
     this.blocks = new Map()
+    this.closestId = new Map()
   }
 
   /**
