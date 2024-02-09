@@ -116,7 +116,7 @@ export class StateNetwork extends BaseNetwork {
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const value = await this.stateDB.getContent(contentKey)
-    return value ?? hexToBytes('0x')
+    return value !== undefined ? fromHexString(value) : hexToBytes('0x')
   }
 
   public routingTableInfo = async () => {
