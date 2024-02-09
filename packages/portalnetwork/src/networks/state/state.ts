@@ -190,4 +190,10 @@ export class StateNetwork extends BaseNetwork {
     }
     return gossipContents
   }
+
+  async lookup(contentKey: Uint8Array) {
+    const lookup = new ContentLookup(this, contentKey)
+    const response = await lookup.startLookup()
+    return response
+  }
 }
