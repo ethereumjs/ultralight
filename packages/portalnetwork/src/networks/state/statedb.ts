@@ -106,7 +106,16 @@ export class StateDB {
    * @returns stored content or undefined
    */
   async getContent(contentKey: Uint8Array): Promise<Uint8Array | undefined> {
-    return this.db.get(toHexString(contentKey))
+    const dbKey = getDatabaseKey(contentKey)
+    const content = await this.state.retrieve(dbKey)
+    if (content === undefined) {
+      return undefined
+    }
+    if (content !== undefined && !this.closestId.has(toHexString(contentKey))) {
+      this.logger && this.logger(`INFO: content found but arrived via a different content key.`)
+    }
+    return fromHexString(content)
+  }
   }
 
   storeBlock({
