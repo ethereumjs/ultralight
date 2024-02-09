@@ -1,22 +1,19 @@
 import { toHexString } from '@chainsafe/ssz'
-import { MemoryLevel } from 'memory-level'
+import debug from 'debug'
 
-import type { StateNetwork } from './state.js'
+import { PortalTrieDB } from './util.js'
+
 import type { Debugger } from 'debug'
+import type { MemoryLevel } from 'memory-level'
 
 export class StateDB {
-  db: MemoryLevel<string, Uint8Array>
+  db: PortalTrieDB
   logger: Debugger | undefined
-  state?: StateNetwork
   blocks: Map<number, string>
   stateRoots: Map<string, string>
-  constructor(state?: StateNetwork) {
-    this.db = new MemoryLevel({
-      createIfMissing: true,
-      valueEncoding: 'view',
-    })
-    this.state = state
-    this.logger = state?.logger.extend('StateDB')
+  constructor(db: MemoryLevel<string, Uint8Array>, logger?: Debugger) {
+    this.db = new PortalTrieDB(db)
+    this.logger = logger ? logger.extend('StateDB') : debug('StateDB')
     this.stateRoots = new Map()
     this.blocks = new Map()
   }
