@@ -18,9 +18,6 @@ import type {
   TStorageTrieNodeKey,
 } from './types.js'
 
-export const MODULO = 2n ** 256n
-const MID = 2n ** 255n
-
 /**
  * Calculates the distance between two ids using the distance function defined here
  * https://github.com/ethereum/portal-network-specs/blob/master/state-network.md#distance-function
