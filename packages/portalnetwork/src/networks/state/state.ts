@@ -12,12 +12,13 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
+import { ContentLookup } from '../contentLookup.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
 import { StateDB } from './statedb.js'
-import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
+import { AccountTrieNodeOffer, StateNetworkContentType } from './types.js'
 import {
   AccountTrieNodeContentKey,
   StateNetworkContentId,
@@ -25,9 +26,13 @@ import {
   unpackNibbles,
 } from './util.js'
 
+import type { TAccountTrieNodeKey, TNibbles } from './types.js'
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
+import type { TrieNode } from '@ethereumjs/trie'
 import type { Debugger } from 'debug'
+
+type TTrieGetResult = TrieNode | { stack: TrieNode[]; remaining: number[] }
 
 export class StateNetwork extends BaseNetwork {
   stateDB: StateDB
