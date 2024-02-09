@@ -1,23 +1,21 @@
+import { distance } from '@chainsafe/discv5'
 import { randomBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import { StateNetworkContentType } from '../../../src/networks/state/types.js'
-import {
-  MODULO,
-  calculateAddressRange,
-  distance,
-  keyType,
-} from '../../../src/networks/state/util.js'
+import { calculateAddressRange, keyType } from '../../../src/networks/state/util.js'
 
 describe('distance()', () => {
   it('should calculate distance between two values', () => {
-    assert.ok(distance(10n, 10n) === 0n, 'calculates correct distance')
-    assert.ok(distance(5n, MODULO - 1n) === 6n, 'calculates correct distance')
-    assert.ok(distance(MODULO - 1n, 6n) === 7n, 'calculates correct distance')
-    assert.ok(distance(5n, 1n) === 4n, 'calculates correct distance')
-    assert.ok(distance(1n, 5n) === 4n, 'calculates correct distance')
-    assert.ok(distance(0n, 2n ** 255n) === 2n ** 255n, 'calculates correct distance')
-    assert.ok(distance(0n, 2n ** 255n + 1n) === 2n ** 255n - 1n, 'calculates correct distance')
+    assert.equal(distance('00', '08'), 8n, 'calculates correct distance')
+    assert.equal(distance('00', '09'), 9n, 'calculates correct distance')
+    assert.equal(distance('00', '0a'), 10n, 'calculates correct distance')
+    assert.equal(distance('01', '0a'), 11n, 'calculates correct distance')
+    assert.equal(distance('02', '0a'), 8n, 'calculates correct distance')
+    assert.equal(distance('03', '0a'), 9n, 'calculates correct distance')
+    assert.equal(distance('0a', '00'), 10n, 'calculates correct distance')
+    assert.equal(distance('0a', '01'), 11n, 'calculates correct distance')
+    assert.equal(distance('0a', '0a'), 0n, 'calculates correct distance')
   })
 })
 
