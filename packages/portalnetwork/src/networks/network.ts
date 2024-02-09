@@ -45,7 +45,7 @@ import type { Debugger } from 'debug'
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
-  private nodeRadius: bigint
+  nodeRadius: bigint
   private checkIndex: number
   abstract logger: Debugger
   abstract networkId: NetworkId
