@@ -1,6 +1,6 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
-import { equalsBytes } from '@ethereumjs/util'
+import { MapDB, equalsBytes } from '@ethereumjs/util'
 
 import {
   AccountTrieNodeKey,
@@ -17,6 +17,8 @@ import type {
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
+import type { BatchDBOp, DB } from '@ethereumjs/util'
+import type { MemoryLevel } from 'memory-level'
 
 /* ContentKeys */
 
@@ -139,4 +141,32 @@ export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8A
   const distanceA = distance(nodeId, nodeA.toString())
   const distanceB = distance(nodeId, nodeB.toString())
   return distanceA < distanceB ? nodeA : nodeB
+}
+
+export class PortalTrieDB extends MapDB<string, Uint8Array> implements DB<string, Uint8Array> {
+  db: MemoryLevel<string, Uint8Array>
+  constructor(db: MemoryLevel<string, Uint8Array>) {
+    super()
+    this.db = db
+  }
+  async get(key: string) {
+    return this.db.get(key)
+  }
+  async put(key: string, value: Uint8Array) {
+    return this.db.put(key, value)
+  }
+  async del(key: string) {
+    return this.db.del(key)
+  }
+  async batch(opStack: BatchDBOp<string, Uint8Array>[]): Promise<void> {
+    for (const op of opStack) {
+      if (op.type === 'del') {
+        await this.del(op.key)
+      }
+
+      if (op.type === 'put') {
+        await this.put(op.key, op.value)
+      }
+    }
+  }
 }
