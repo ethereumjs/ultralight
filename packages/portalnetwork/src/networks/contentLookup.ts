@@ -20,7 +20,7 @@ export type ContentLookupResponse =
       content: Uint8Array
       utp: boolean
     }
-  // | { enrs: Uint8Array[] }
+  | { enrs: Uint8Array[] }
   | undefined
 
 export class ContentLookup {
