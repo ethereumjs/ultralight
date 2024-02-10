@@ -28,11 +28,11 @@ import type { AbstractLevel } from 'abstract-level'
 
 export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
   switch (contentKey[0]) {
-    case 16:
+    case 32:
       return StateNetworkContentType.AccountTrieNode
-    case 17:
+    case 33:
       return StateNetworkContentType.ContractTrieNode
-    case 18:
+    case 34:
       return StateNetworkContentType.ContractByteCode
     default:
       throw new Error(`Invalid content key type: ${contentKey[0]}`)
