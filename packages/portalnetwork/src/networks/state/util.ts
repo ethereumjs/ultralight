@@ -160,6 +160,9 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
     // TODO: Retrieve from network if not found locally
     return this.db.get(key)
   }
+  async del(key: string) {
+    await this.db.del(key)
+  }
 }
 export function getDatabaseKey(contentKey: Uint8Array) {
   const type = keyType(contentKey)
