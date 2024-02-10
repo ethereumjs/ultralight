@@ -79,6 +79,7 @@ describe('database key / database contents', async () => {
       createIfMissing: true,
     }) as AbstractLevel<string, string, string>,
   )
+  await stateDB.db.open()
   const [sampleKey, sampleContent] = testdata[0] as [string, object]
   const sampleContentKey = StateNetworkContentKey.decode(fromHexString(sampleKey))
   const sampleContentBytes = Uint8Array.from(Object.values(sampleContent))
@@ -87,6 +88,9 @@ describe('database key / database contents', async () => {
   const { blockHash, proof } = content
   const nodeSample = proof.slice(-1)[0]
   const contentNodeSample = AccountTrieNodeRetrieval.serialize({ node: nodeSample })
+  const contentNodeSamples = proof.map((node) => {
+    AccountTrieNodeRetrieval.serialize({ node })
+  })
   it('should correctly decode sample', () => {
     expect(sampleContentKey).exist
     expect(content).exist
@@ -107,5 +111,10 @@ describe('database key / database contents', async () => {
   const retrieved = await stateDB.getContent(fromHexString(sampleKey))
   it('should put and get node using AccountTrieNode Content and Key', () => {
     assert.equal(retrieved, toHexString(nodeSample))
+  })
+  const trie = new Trie({ useKeyHashing: true, db: stateDB.db })
+  const node = await trie.database().db.get(toHexString(nodeHash))
+  it('should have trie node in trie', async () => {
+    assert.equal(node, toHexString(nodeSample))
   })
 })
