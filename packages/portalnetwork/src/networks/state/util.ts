@@ -153,6 +153,9 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
     super()
     this.db = db
   }
+  async put(key: string, value: string) {
+    return this.db.put(key, value)
+  }
   async get(key: string) {
     // TODO: Retrieve from network if not found locally
     return this.db.get(key)
