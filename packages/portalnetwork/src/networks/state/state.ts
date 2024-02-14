@@ -131,7 +131,12 @@ export class StateNetwork extends BaseNetwork {
     contentKey: string,
     content: Uint8Array,
   ) => {
-    await this.stateDB.storeContent(fromHexString(contentKey), content)
+    const fullkey = Uint8Array.from([contentType, ...fromHexString(contentKey)])
+    if (contentType === StateNetworkContentType.AccountTrieNode) {
+      await this.receiveAccountTrieNodeOffer(fullkey, content)
+    } else {
+      await this.stateDB.storeContent(fullkey, content)
+    }
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, content)
   }
