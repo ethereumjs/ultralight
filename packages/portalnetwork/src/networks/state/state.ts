@@ -135,4 +135,43 @@ export class StateNetwork extends BaseNetwork {
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, content)
   }
+  async forwardAccountTrieOffer(path: TNibbles, proof: Uint8Array[], blockHash: Uint8Array) {
+    const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+    const newpaths = [...nibbles]
+    const nodes = [...proof].slice(0, -1)
+    const gossipContents: { contentKey: Uint8Array; content: Uint8Array }[] = []
+
+    while (nodes.length > 0) {
+      const rlp = nodes.pop()!
+      const curNode = decodeNode(rlp)
+      if (curNode instanceof BranchNode) {
+        newpaths.pop()
+      } else if (curNode instanceof ExtensionNode) {
+        newpaths.splice(-curNode.key().length)
+      } else {
+        this.logger('Should only gossip upper node paths.', curNode)
+        throw new Error('Should have already removed leaf node from array')
+      }
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](rlp)
+      const contentKey = AccountTrieNodeContentKey.encode({
+        nodeHash,
+        path: tightlyPackNibbles(newpaths),
+      })
+      const gossipContent = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
+      gossipContents.push({ contentKey, content: gossipContent })
+      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const in_radius = distance(bytesToHex(contentId), this.enr.nodeId) < this.nodeRadius
+      if (in_radius) {
+        const content = AccountTrieNodeRetrieval.serialize({
+          node: rlp,
+        })
+        await this.stateDB.storeContent(contentKey, content)
+      }
+      for (const { content, contentKey } of gossipContents) {
+        // Gossip Node+Proof for content in peers' radius
+        await this.gossipContent(contentKey, content)
+      }
+    }
+    return gossipContents
+  }
 }
