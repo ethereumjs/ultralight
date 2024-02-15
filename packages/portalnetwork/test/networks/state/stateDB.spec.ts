@@ -88,9 +88,6 @@ describe('database key / database contents', async () => {
   const { blockHash, proof } = content
   const nodeSample = proof.slice(-1)[0]
   const contentNodeSample = AccountTrieNodeRetrieval.serialize({ node: nodeSample })
-  const contentNodeSamples = proof.map((node) => {
-    AccountTrieNodeRetrieval.serialize({ node })
-  })
   it('should correctly decode sample', () => {
     expect(sampleContentKey).exist
     expect(content).exist
