@@ -31,7 +31,7 @@ export class StateNetwork extends BaseNetwork {
     super(client, nodeRadius)
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
-    this.stateDB = new StateDB(this)
+    this.stateDB = new StateDB(client.db.sublevel(NetworkId.StateNetwork))
     this.routingTable.setLogger(this.logger)
     client.uTP.on(
       NetworkId.StateNetwork,
@@ -116,7 +116,7 @@ export class StateNetwork extends BaseNetwork {
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
     const value = await this.stateDB.getContent(contentKey)
-    return value ?? hexToBytes('0x')
+    return value !== undefined ? fromHexString(value) : hexToBytes('0x')
   }
 
   public routingTableInfo = async () => {

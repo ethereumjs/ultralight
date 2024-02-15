@@ -1,13 +1,17 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
-import { equalsBytes } from '@ethereumjs/util'
+import { toHexString } from '@chainsafe/ssz'
+import { MapDB, equalsBytes } from '@ethereumjs/util'
 
 import {
   AccountTrieNodeKey,
+  AccountTrieNodeRetrieval,
   ContractCodeKey,
+  ContractRetrieval,
   Nibble,
   StateNetworkContentType,
   StorageTrieNodeKey,
+  StorageTrieNodeRetrieval,
 } from './types.js'
 
 import type {
@@ -17,16 +21,18 @@ import type {
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
+import type { DB } from '@ethereumjs/util'
+import type { AbstractLevel } from 'abstract-level'
 
 /* ContentKeys */
 
 export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
   switch (contentKey[0]) {
-    case 16:
+    case 32:
       return StateNetworkContentType.AccountTrieNode
-    case 17:
+    case 33:
       return StateNetworkContentType.ContractTrieNode
-    case 18:
+    case 34:
       return StateNetworkContentType.ContractByteCode
     default:
       throw new Error(`Invalid content key type: ${contentKey[0]}`)
@@ -139,4 +145,56 @@ export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8A
   const distanceA = distance(nodeId, nodeA.toString())
   const distanceB = distance(nodeId, nodeB.toString())
   return distanceA < distanceB ? nodeA : nodeB
+}
+
+export class PortalTrieDB extends MapDB<string, string> implements DB<string, string> {
+  db: AbstractLevel<string, string, string>
+  constructor(db: AbstractLevel<string, string, string>) {
+    super()
+    this.db = db
+  }
+  async put(key: string, value: string) {
+    return this.db.put(key, value)
+  }
+  async get(key: string) {
+    // TODO: Retrieve from network if not found locally
+    return this.db.get(key)
+  }
+  async del(key: string) {
+    await this.db.del(key)
+  }
+}
+export function getDatabaseKey(contentKey: Uint8Array) {
+  const type = keyType(contentKey)
+  let dbKey = contentKey
+  switch (type) {
+    case StateNetworkContentType.AccountTrieNode:
+      dbKey = AccountTrieNodeContentKey.decode(contentKey).nodeHash
+      break
+    case StateNetworkContentType.ContractTrieNode:
+      dbKey = StorageTrieNodeContentKey.decode(contentKey).nodeHash
+      break
+    case StateNetworkContentType.ContractByteCode:
+      dbKey = ContractCodeContentKey.decode(contentKey).codeHash
+      break
+    default:
+      break
+  }
+  return toHexString(dbKey)
+}
+
+export function getDatabaseContent(type: StateNetworkContentType, content: Uint8Array) {
+  let dbContent = new Uint8Array()
+  switch (type) {
+    case StateNetworkContentType.AccountTrieNode:
+      dbContent = AccountTrieNodeRetrieval.deserialize(content).node
+      break
+    case StateNetworkContentType.ContractTrieNode:
+      dbContent = StorageTrieNodeRetrieval.deserialize(content).node
+      break
+    case StateNetworkContentType.ContractByteCode:
+      dbContent = ContractRetrieval.deserialize(content).code
+      break
+  }
+  return toHexString(dbContent)
 }

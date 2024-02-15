@@ -8,9 +8,9 @@ import {
 } from '@chainsafe/ssz'
 
 export enum StateNetworkContentType {
-  AccountTrieNode = 16, // 0x20
-  ContractTrieNode = 17, // 0x21
-  ContractByteCode = 18, // 0x22
+  AccountTrieNode = 0x20,
+  ContractTrieNode = 0x21,
+  ContractByteCode = 0x22,
 }
 
 /* ----------------- Ping.custom_data & Pong.custom_data ----------- */

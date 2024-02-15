@@ -22,17 +22,17 @@ describe('distance()', () => {
 describe('keyType', () => {
   const randHash = randomBytes(32)
   it('should indentify AccountTrieProof contentKey', () => {
-    const contentKey = Uint8Array.from([0x10, ...randHash])
+    const contentKey = Uint8Array.from([0x20, ...randHash])
     const type = keyType(contentKey)
     assert.equal(type, StateNetworkContentType.AccountTrieNode)
   })
   it('should indentify ContractStorageTrieProof contentKey', () => {
-    const contentKey = Uint8Array.from([0x11, ...randHash])
+    const contentKey = Uint8Array.from([0x21, ...randHash])
     const type = keyType(contentKey)
     assert.equal(type, StateNetworkContentType.ContractTrieNode)
   })
   it('should indentify ContractByteCode contentKey', () => {
-    const contentKey = Uint8Array.from([0x12, ...randHash])
+    const contentKey = Uint8Array.from([0x22, ...randHash])
     const type = keyType(contentKey)
     assert.equal(type, StateNetworkContentType.ContractByteCode)
   })
