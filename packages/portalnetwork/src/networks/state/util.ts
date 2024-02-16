@@ -1,7 +1,7 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
 import { toHexString } from '@chainsafe/ssz'
-import { MapDB, equalsBytes } from '@ethereumjs/util'
+import { MapDB, equalsBytes, padToEven } from '@ethereumjs/util'
 
 import {
   AccountTrieNodeKey,
@@ -130,12 +130,20 @@ export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
   const isOddLength = nibbles.length % 2 !== 0
   const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
   const nibblePairs = Array.from({ length: nibbleArray.length / 2 }, (_, idx) => idx).map((i) => {
-    return nibbleArray.slice(2 * i, 2 * i + 2) as [TNibble, TNibble]
+    return nibbleArray
+      .slice(2 * i, 2 * i + 2)
+      .map((b) => (typeof b === 'number' ? b.toString(16) : b))
   })
   const packedBytes = nibblePairs.map((nibbles) => {
     return parseInt(nibbles.join(''), 16)
   })
   return { isOddLength, packedNibbles: Uint8Array.from(packedBytes) }
+}
+
+export const unpackNibbles = (packedNibbles: Uint8Array, isOddLength: boolean) => {
+  const bytes = [...packedNibbles]
+  const byteArray = bytes.map((b) => padToEven(b.toString(16)).split('')).flat()
+  return byteArray.slice(isOddLength ? 1 : 0)
 }
 
 export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8Array) => {
