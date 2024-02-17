@@ -140,16 +140,24 @@ export class StateNetwork extends BaseNetwork {
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, content)
   }
-  async receiveAccountTrieNodeOffer(contentKey: Uint8Array, content: Uint8Array) {
+  async receiveAccountTrieNodeOffer(
+    contentKey: Uint8Array,
+    content: Uint8Array,
+  ): Promise<{
+    stored: number
+    forwarded: {
+      contentKey: Uint8Array
+      content: Uint8Array
+    }
+    gossipCount: number
+  }> {
     const { path } = AccountTrieNodeContentKey.decode(contentKey)
     const { blockHash, proof } = AccountTrieNodeOffer.deserialize(content)
-
-    const gossipContents = await this.forwardAccountTrieOffer(path, proof, blockHash)
-
-    return gossipContents
+    const forwardOffer = await this.forwardAccountTrieOffer(path, proof, blockHash)
+    const interested = await this.storeInterestedNodes(path, proof)
+    const gossipCount = await this.gossipContent(forwardOffer.contentKey, forwardOffer.content)
+    return { stored: interested.interested.length, forwarded: forwardOffer, gossipCount }
   }
-
-  async forwardAccountTrieOffer(path: TNibbles, proof: Uint8Array[], blockHash: Uint8Array) {
     const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
     const newpaths = [...nibbles]
     const nodes = [...proof].slice(0, -1)
