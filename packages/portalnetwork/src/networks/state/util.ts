@@ -206,3 +206,19 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
   }
   return toHexString(dbContent)
 }
+
+export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
+  const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+  const nodes = proof.slice(0, -1)
+  const curRlp = nodes.slice(-1)[0]
+  const curNode = decodeNode(curRlp)
+  const newpaths = nibbles.slice(
+    0,
+    curNode instanceof BranchNode ? 1 : curNode instanceof ExtensionNode ? curNode.key().length : 0,
+  )
+  return {
+    curRlp,
+    nodes,
+    newpaths,
+  }
+}
