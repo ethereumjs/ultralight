@@ -158,42 +158,42 @@ export class StateNetwork extends BaseNetwork {
     const gossipCount = await this.gossipContent(forwardOffer.contentKey, forwardOffer.content)
     return { stored: interested.interested.length, forwarded: forwardOffer, gossipCount }
   }
+
+  async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {
+    const nodes = [...proof]
     const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
     const newpaths = [...nibbles]
-    const nodes = [...proof].slice(0, -1)
-    const gossipContents: { contentKey: Uint8Array; content: Uint8Array }[] = []
-
+    const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
+    const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
     while (nodes.length > 0) {
-      const rlp = nodes.pop()!
-      const curNode = decodeNode(rlp)
+      const curRlp = nodes.pop()!
+      const curNode = decodeNode(curRlp)
       if (curNode instanceof BranchNode) {
         newpaths.pop()
-      } else if (curNode instanceof ExtensionNode) {
-        newpaths.splice(-curNode.key().length)
       } else {
-        this.logger('Should only gossip upper node paths.', curNode)
-        throw new Error('Should have already removed leaf node from array')
+        newpaths.splice(-curNode.key().length)
       }
-      const nodeHash = new Trie({ useKeyHashing: true })['hash'](rlp)
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
       const contentKey = AccountTrieNodeContentKey.encode({
         nodeHash,
-        path: tightlyPackNibbles(newpaths),
+        path: tightlyPackNibbles(newpaths as TNibble[]),
       })
-      const gossipContent = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
-      gossipContents.push({ contentKey, content: gossipContent })
       const contentId = StateNetworkContentId.fromBytes(contentKey)
-      const in_radius = distance(bytesToHex(contentId), this.enr.nodeId) < this.nodeRadius
+      const in_radius = distance(bytesToHex(contentId).slice(2), this.enr.nodeId) < this.nodeRadius
       if (in_radius) {
-        const content = AccountTrieNodeRetrieval.serialize({
-          node: rlp,
+        const dbContent = AccountTrieNodeRetrieval.serialize({
+          node: curRlp,
         })
-        await this.stateDB.storeContent(contentKey, content)
-      }
-      for (const { content, contentKey } of gossipContents) {
-        // Gossip Node+Proof for content in peers' radius
-        await this.gossipContent(contentKey, content)
+        interested.push({ contentKey, dbContent })
+      } else {
+        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
     }
-    return gossipContents
+    for (const { contentKey, dbContent } of interested) {
+      await this.stateDB.storeContent(contentKey, dbContent)
+    }
+    return { interested, notInterested }
+  }
+
   }
 }
