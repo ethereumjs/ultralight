@@ -195,5 +195,21 @@ export class StateNetwork extends BaseNetwork {
     return { interested, notInterested }
   }
 
+  async forwardAccountTrieOffer(
+    path: TNibbles,
+    proof: Uint8Array[],
+    blockHash: Uint8Array,
+  ): Promise<{
+    content: Uint8Array
+    contentKey: Uint8Array
+  }> {
+    const { curRlp, nodes, newpaths } = await nextOffer(path, proof)
+    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
+    const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+    const contentKey = AccountTrieNodeContentKey.encode({
+      nodeHash,
+      path: tightlyPackNibbles(newpaths as TNibble[]),
+    })
+    return { content, contentKey }
   }
 }
