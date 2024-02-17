@@ -107,7 +107,7 @@ describe('database key / database contents', async () => {
   await stateDB.storeContent(fromHexString(sampleKey), contentNodeSample)
   const retrieved = await stateDB.getContent(fromHexString(sampleKey))
   it('should put and get node using AccountTrieNode Content and Key', () => {
-    assert.equal(retrieved, toHexString(nodeSample))
+    assert.equal(retrieved, toHexString(contentNodeSample))
   })
   const trie = new Trie({ useKeyHashing: true, db: stateDB.db })
   const node = await trie.database().db.get(toHexString(nodeHash))
