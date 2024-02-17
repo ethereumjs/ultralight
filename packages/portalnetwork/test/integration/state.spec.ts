@@ -5,7 +5,12 @@ import { hexToBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 // import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { describe } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
+
+import { NetworkId, PortalNetwork, TransportLayer, fromHexString } from '../../src/index.js'
+import samples from '../networks/state/testdata/accountNodeSamples.json'
+
+import type { StateNetwork } from '../../src'
 
 // import {
 //   AccountTrieProofType,
@@ -30,50 +35,85 @@ const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
 const enr1 = SignableENR.createFromPeerId(id1)
 const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/0`)
 enr1.setLocationMultiaddr(initMa)
-describe.skip('State Network wire spec tests', () => {
-  //   it('should find another node', async () => {
-  //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  //     const enr1 = SignableENR.createFromPeerId(id1)
-  //     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3020`)
-  //     enr1.setLocationMultiaddr(initMa)
-  //     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  //     const enr2 = SignableENR.createFromPeerId(id2)
-  //     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3021`)
-  //     enr2.setLocationMultiaddr(initMa2)
-  //     const node1 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr1,
-  //         bindAddrs: {
-  //           ip4: initMa,
-  //         },
-  //         peerId: id1,
-  //       },
-  //     })
-  //     const node2 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr2,
-  //         bindAddrs: {
-  //           ip4: initMa2,
-  //         },
-  //         peerId: id2,
-  //       },
-  //     })
-  //     await node1.start()
-  //     await node2.start()
-  //     const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     await network1!.sendPing(network2?.enr!.toENR())
-  //     const enr = network2.routingTable.getWithPending(node1.discv5.enr.nodeId)
-  //     assert.equal(
-  //       enr?.value.nodeId,
-  //       node1.discv5.enr.nodeId,
-  //       'found another node that supports state network',
-  //     )
-  //   })
+describe('State Network wire spec tests', async () => {
+  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+  const enr1 = SignableENR.createFromPeerId(id1)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3020`)
+  enr1.setLocationMultiaddr(initMa)
+  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+  const enr2 = SignableENR.createFromPeerId(id2)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3021`)
+  enr2.setLocationMultiaddr(initMa2)
+  const node1 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedNetworks: [NetworkId.StateNetwork],
+    config: {
+      enr: enr1,
+      bindAddrs: {
+        ip4: initMa,
+      },
+      peerId: id1,
+    },
+    radius: 2n ** 254n,
+  })
+  const node2 = await PortalNetwork.create({
+    transport: TransportLayer.NODE,
+    supportedNetworks: [NetworkId.StateNetwork],
+    config: {
+      enr: enr2,
+      bindAddrs: {
+        ip4: initMa2,
+      },
+      peerId: id2,
+    },
+    radius: 2n ** 254n,
+  })
+  await node1.start()
+  await node2.start()
+  const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
+  const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
+  await network1!.sendPing(network2?.enr!.toENR())
+  const storedEnr = network2.routingTable.getWithPending(node1.discv5.enr.nodeId)
+  it('should find another node', async () => {
+    assert.equal(
+      storedEnr?.value.nodeId,
+      node1.discv5.enr.nodeId,
+      'found another node that supports state network',
+    )
+  })
+  const sample = samples.slice(-1)[0]
+  const [key, value] = sample as [string, object]
+  const content = Uint8Array.from(Object.values(value))
+  const contentKey = fromHexString(key)
+  // const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
+  // const content = AccountTrieNodeOffer.deserialize(contentBytes)
+  // const { path } = contentKey
+  // const unpacked = unpackNibbles(path.packedNibbles, path.isOddLength)
+  // const { proof, blockHash } = content
+
+  const result = await network1.receiveAccountTrieNodeOffer(contentKey, content)
+  it('should store some content', async () => {
+    expect(result.stored).toBeGreaterThan(0)
+    expect(result.stored).toEqual(2)
+  })
+  it('should gossip some content', async () => {
+    expect(result.gossipCount).toEqual(1)
+  })
+  await new Promise((r) => setTimeout(r, 200))
+  const storedInNode1: any[] = []
+  const storedInNode2: any[] = []
+  for await (const key of node1.db.db.keys()) {
+    storedInNode1.push(key)
+  }
+  for await (const key of node2.db.db.keys()) {
+    storedInNode2.push(key)
+  }
+  it('should store some nodes in node1', async () => {
+    expect(storedInNode1.length).toEqual(2)
+  })
+  it('should store some nodes in node2', async () => {
+    expect(storedInNode2.length).toEqual(1)
+  })
   //   it('should find content from another node', async () => {
   //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   //     const enr1 = SignableENR.createFromPeerId(id1)
