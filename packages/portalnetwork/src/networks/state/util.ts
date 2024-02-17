@@ -1,6 +1,7 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
 import { MapDB, equalsBytes, padToEven } from '@ethereumjs/util'
 
 import {
@@ -98,6 +99,24 @@ export class StateNetworkContentId {
   static fromBytes(key: Uint8Array): Uint8Array {
     return sha256(key)
   }
+}
+
+export function wrapDBContent(contentKey: Uint8Array, dbContent: string) {
+  const keytype = keyType(contentKey)
+  const dbBytes = fromHexString(dbContent)
+  const wrapped =
+    keytype === StateNetworkContentType.AccountTrieNode
+      ? AccountTrieNodeRetrieval.serialize({
+          node: dbBytes,
+        })
+      : keytype === StateNetworkContentType.ContractTrieNode
+        ? StorageTrieNodeRetrieval.serialize({
+            node: dbBytes,
+          })
+        : ContractRetrieval.serialize({
+            code: dbBytes,
+          })
+  return toHexString(wrapped)
 }
 
 export function calculateAddressRange(
@@ -205,4 +224,23 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
       break
   }
   return toHexString(dbContent)
+}
+
+export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
+  if (proof.length === 1) {
+    return { curRlp: proof[0], nodes: proof, newpaths: [] }
+  }
+  const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+  const nodes = proof.slice(0, -1)
+  const curRlp = nodes[nodes.length - 1]
+  const curNode = decodeNode(curRlp)
+  const newpaths = nibbles.slice(
+    0,
+    curNode instanceof BranchNode ? 1 : curNode instanceof ExtensionNode ? curNode.key().length : 0,
+  )
+  return {
+    curRlp,
+    nodes,
+    newpaths,
+  }
 }

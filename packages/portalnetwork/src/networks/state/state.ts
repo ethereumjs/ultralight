@@ -1,6 +1,7 @@
-import { ENR } from '@chainsafe/discv5'
+import { ENR, distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { BranchNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { bytesToHex, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -16,8 +17,16 @@ import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
 import { StateDB } from './statedb.js'
-import { StateNetworkContentType } from './types.js'
+import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
+import {
+  AccountTrieNodeContentKey,
+  StateNetworkContentId,
+  nextOffer,
+  tightlyPackNibbles,
+  unpackNibbles,
+} from './util.js'
 
+import type { TNibble, TNibbles } from './types.js'
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { Debugger } from 'debug'
@@ -29,6 +38,7 @@ export class StateNetwork extends BaseNetwork {
   logger: Debugger
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
+    this.nodeRadius = nodeRadius ?? 2n ** 253n
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.stateDB = new StateDB(client.db.sublevel(NetworkId.StateNetwork))
@@ -131,8 +141,85 @@ export class StateNetwork extends BaseNetwork {
     contentKey: string,
     content: Uint8Array,
   ) => {
-    await this.stateDB.storeContent(fromHexString(contentKey), content)
+    const fullkey = Uint8Array.from([contentType, ...fromHexString(contentKey)])
+    if (contentType === StateNetworkContentType.AccountTrieNode) {
+      await this.receiveAccountTrieNodeOffer(fullkey, content)
+    } else {
+      await this.stateDB.storeContent(fullkey, content)
+    }
     this.logger(`content added for: ${contentKey}`)
     this.emit('ContentAdded', contentKey, contentType, content)
+  }
+  async receiveAccountTrieNodeOffer(
+    contentKey: Uint8Array,
+    content: Uint8Array,
+  ): Promise<{
+    stored: number
+    forwarded: {
+      contentKey: Uint8Array
+      content: Uint8Array
+    }
+    gossipCount: number
+  }> {
+    const { path } = AccountTrieNodeContentKey.decode(contentKey)
+    const { blockHash, proof } = AccountTrieNodeOffer.deserialize(content)
+    const forwardOffer = await this.forwardAccountTrieOffer(path, proof, blockHash)
+    const interested = await this.storeInterestedNodes(path, proof)
+    const gossipCount = await this.gossipContent(forwardOffer.contentKey, forwardOffer.content)
+    return { stored: interested.interested.length, forwarded: forwardOffer, gossipCount }
+  }
+
+  async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {
+    const nodes = [...proof]
+    const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+    const newpaths = [...nibbles]
+    const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
+    const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
+    while (nodes.length > 0) {
+      const curRlp = nodes.pop()!
+      const curNode = decodeNode(curRlp)
+      if (curNode instanceof BranchNode) {
+        newpaths.pop()
+      } else {
+        newpaths.splice(-curNode.key().length)
+      }
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+      const contentKey = AccountTrieNodeContentKey.encode({
+        nodeHash,
+        path: tightlyPackNibbles(newpaths as TNibble[]),
+      })
+      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const in_radius = distance(bytesToHex(contentId).slice(2), this.enr.nodeId) < this.nodeRadius
+      if (in_radius) {
+        const dbContent = AccountTrieNodeRetrieval.serialize({
+          node: curRlp,
+        })
+        interested.push({ contentKey, dbContent })
+      } else {
+        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
+      }
+    }
+    for (const { contentKey, dbContent } of interested) {
+      await this.stateDB.storeContent(contentKey, dbContent)
+    }
+    return { interested, notInterested }
+  }
+
+  async forwardAccountTrieOffer(
+    path: TNibbles,
+    proof: Uint8Array[],
+    blockHash: Uint8Array,
+  ): Promise<{
+    content: Uint8Array
+    contentKey: Uint8Array
+  }> {
+    const { curRlp, nodes, newpaths } = await nextOffer(path, proof)
+    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
+    const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+    const contentKey = AccountTrieNodeContentKey.encode({
+      nodeHash,
+      path: tightlyPackNibbles(newpaths as TNibble[]),
+    })
+    return { content, contentKey }
   }
 }
