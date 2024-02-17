@@ -7,7 +7,15 @@ import { multiaddr } from '@multiformats/multiaddr'
 // import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { assert, describe, expect, it } from 'vitest'
 
-import { NetworkId, PortalNetwork, TransportLayer, fromHexString } from '../../src/index.js'
+import {
+  AccountTrieNodeContentKey,
+  AccountTrieNodeOffer,
+  AccountTrieNodeRetrieval,
+  NetworkId,
+  PortalNetwork,
+  TransportLayer,
+  fromHexString,
+} from '../../src/index.js'
 import samples from '../networks/state/testdata/accountNodeSamples.json'
 
 import type { StateNetwork } from '../../src'
@@ -35,7 +43,7 @@ const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
 const enr1 = SignableENR.createFromPeerId(id1)
 const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/0`)
 enr1.setLocationMultiaddr(initMa)
-describe('State Network wire spec tests', async () => {
+describe('AccountTrieNode Gossip / Request', async () => {
   const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3020`)
@@ -85,11 +93,10 @@ describe('State Network wire spec tests', async () => {
   const [key, value] = sample as [string, object]
   const content = Uint8Array.from(Object.values(value))
   const contentKey = fromHexString(key)
-  // const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
-  // const content = AccountTrieNodeOffer.deserialize(contentBytes)
-  // const { path } = contentKey
-  // const unpacked = unpackNibbles(path.packedNibbles, path.isOddLength)
-  // const { proof, blockHash } = content
+  const decoded = AccountTrieNodeContentKey.decode(contentKey)
+  const deserialized = AccountTrieNodeOffer.deserialize(content)
+  const { path } = decoded
+  const { proof, blockHash } = deserialized
 
   const result = await network1.receiveAccountTrieNodeOffer(contentKey, content)
   it('should store some content', async () => {
@@ -100,19 +107,35 @@ describe('State Network wire spec tests', async () => {
     expect(result.gossipCount).toEqual(1)
   })
   await new Promise((r) => setTimeout(r, 200))
-  const storedInNode1: any[] = []
-  const storedInNode2: any[] = []
+  const storedInNode1: Set<string> = new Set()
+  const storedInNode2: Set<string> = new Set()
   for await (const key of node1.db.db.keys()) {
-    storedInNode1.push(key)
+    storedInNode1.add(key)
   }
   for await (const key of node2.db.db.keys()) {
-    storedInNode2.push(key)
+    storedInNode2.add(key)
   }
+
   it('should store some nodes in node1', async () => {
-    expect(storedInNode1.length).toEqual(2)
+    expect(storedInNode1.size).toEqual(2)
   })
   it('should store some nodes in node2', async () => {
-    expect(storedInNode2.length).toEqual(1)
+    expect(storedInNode2.size).toEqual(1)
+  })
+  const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
+  const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
+  const requested = await network2.sendFindContent(node1.discv5.enr.nodeId, next.contentKey)
+  it('should request individual node from peer', () => {
+    expect(requested).toBeDefined()
+    expect(requested?.selector).toEqual(1)
+    expect(requested?.value).instanceOf(Uint8Array)
+    assert.deepEqual(requested!.value, expected, 'retrieved value is correct')
+  })
+  for await (const key of node2.db.db.keys()) {
+    storedInNode2.add(key)
+  }
+  it('should store some nodes in node2', async () => {
+    expect(storedInNode2.size).toEqual(1)
   })
   //   it('should find content from another node', async () => {
   //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
