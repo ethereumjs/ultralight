@@ -1,6 +1,6 @@
 import debug from 'debug'
 
-import { PortalTrieDB, getDatabaseContent, getDatabaseKey, keyType } from './util.js'
+import { PortalTrieDB, getDatabaseContent, getDatabaseKey, keyType, wrapDBContent } from './util.js'
 
 import type { AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
@@ -38,6 +38,7 @@ export class StateDB {
   async getContent(contentKey: Uint8Array): Promise<string | undefined> {
     const dbKey = getDatabaseKey(contentKey)
     const dbContent = await this.db.get(dbKey)
-    return dbContent
+    const content = wrapDBContent(contentKey, dbContent)
+    return content
   }
 }
