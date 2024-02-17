@@ -1,6 +1,7 @@
-import { ENR } from '@chainsafe/discv5'
+import { ENR, distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { BranchNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { bytesToHex, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -16,8 +17,16 @@ import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
 import { StateDB } from './statedb.js'
-import { StateNetworkContentType } from './types.js'
+import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
+import {
+  AccountTrieNodeContentKey,
+  StateNetworkContentId,
+  nextOffer,
+  tightlyPackNibbles,
+  unpackNibbles,
+} from './util.js'
 
+import type { TNibble, TNibbles } from './types.js'
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { Debugger } from 'debug'
@@ -29,6 +38,7 @@ export class StateNetwork extends BaseNetwork {
   logger: Debugger
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
+    this.nodeRadius = nodeRadius ?? 2n ** 253n
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.stateDB = new StateDB(client.db.sublevel(NetworkId.StateNetwork))
