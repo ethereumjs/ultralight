@@ -80,7 +80,7 @@ describe('database key / database contents', async () => {
       createIfMissing: true,
     }) as AbstractLevel<string, string, string>,
   )
-  await stateDB.db.open()
+  await stateDB._db.open()
   const [sampleKey, sampleContent] = testdata[0] as [string, object]
   const sampleContentKey = StateNetworkContentKey.decode(fromHexString(sampleKey))
   const sampleContentBytes = Uint8Array.from(Object.values(sampleContent))
@@ -110,7 +110,8 @@ describe('database key / database contents', async () => {
   it('should put and get node using AccountTrieNode Content and Key', () => {
     assert.equal(retrieved, toHexString(contentNodeSample))
   })
-  const trie = new Trie({ useKeyHashing: true, db: stateDB.db })
+  const db = new PortalTrieDB(stateDB._db)
+  const trie = new Trie({ useKeyHashing: true, db })
   const node = await trie.database().db.get(bytesToUnprefixedHex(nodeHash))
   it('should have trie node in trie', async () => {
     assert.equal(node, bytesToUnprefixedHex(nodeSample))
