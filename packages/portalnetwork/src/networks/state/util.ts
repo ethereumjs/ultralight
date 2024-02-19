@@ -22,7 +22,7 @@ import type {
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
-import type { DB } from '@ethereumjs/util'
+import type { DB, EncodingOpts } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
 
 /* ContentKeys */
@@ -103,7 +103,7 @@ export class StateNetworkContentId {
 
 export function wrapDBContent(contentKey: Uint8Array, dbContent: string) {
   const keytype = keyType(contentKey)
-  const dbBytes = fromHexString(dbContent)
+  const dbBytes = fromHexString('0x' + dbContent)
   const wrapped =
     keytype === StateNetworkContentType.AccountTrieNode
       ? AccountTrieNodeRetrieval.serialize({
@@ -176,16 +176,23 @@ export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8A
 
 export class PortalTrieDB extends MapDB<string, string> implements DB<string, string> {
   db: AbstractLevel<string, string, string>
+  temp: Map<string, string>
   constructor(db: AbstractLevel<string, string, string>) {
     super()
     this.db = db
+    this.temp = new Map()
   }
   async put(key: string, value: string) {
     return this.db.put(key, value)
   }
-  async get(key: string) {
-    // TODO: Retrieve from network if not found locally
-    return this.db.get(key)
+  async get(key: string, _opts?: EncodingOpts) {
+    try {
+      const value = await this.db.get(key)
+      return value
+    } catch (e) {
+      const found = this.temp.get(key)
+      return found
+    }
   }
   async del(key: string) {
     await this.db.del(key)
@@ -207,7 +214,7 @@ export function getDatabaseKey(contentKey: Uint8Array) {
     default:
       break
   }
-  return toHexString(dbKey)
+  return toHexString(dbKey).slice(2)
 }
 
 export function getDatabaseContent(type: StateNetworkContentType, content: Uint8Array) {
@@ -223,7 +230,7 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
       dbContent = ContractRetrieval.deserialize(content).code
       break
   }
-  return toHexString(dbContent)
+  return toHexString(dbContent).slice(2)
 }
 
 export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
