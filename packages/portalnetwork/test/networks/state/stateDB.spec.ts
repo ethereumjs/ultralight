@@ -1,4 +1,5 @@
 import { Trie, decodeNode } from '@ethereumjs/trie'
+import { bytesToUnprefixedHex } from '@ethereumjs/util'
 import { MemoryLevel } from 'memory-level'
 import { assert, describe, expect, it } from 'vitest'
 
@@ -98,7 +99,7 @@ describe('database key / database contents', async () => {
   })
   const dbKey = getDatabaseKey(fromHexString(sampleKey))
   it('should get dbKey from contentKey', () => {
-    expect(dbKey).toEqual(toHexString(nodeHash))
+    expect(dbKey).toEqual(bytesToUnprefixedHex(nodeHash))
   })
   const dbContent = getDatabaseContent(StateNetworkContentType.AccountTrieNode, contentNodeSample)
   it('should get dbContent from content', () => {
@@ -110,8 +111,8 @@ describe('database key / database contents', async () => {
     assert.equal(retrieved, toHexString(contentNodeSample))
   })
   const trie = new Trie({ useKeyHashing: true, db: stateDB.db })
-  const node = await trie.database().db.get(toHexString(nodeHash))
+  const node = await trie.database().db.get(bytesToUnprefixedHex(nodeHash))
   it('should have trie node in trie', async () => {
-    assert.equal(node, toHexString(nodeSample))
+    assert.equal(node, bytesToUnprefixedHex(nodeSample))
   })
 })
