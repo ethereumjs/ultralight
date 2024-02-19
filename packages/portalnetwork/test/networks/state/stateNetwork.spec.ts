@@ -25,7 +25,7 @@ describe('StateNetwork', async () => {
   })
   it('should instantiate StateDB', () => {
     expect((stateNetwork as StateNetwork).stateDB).exist
-    expect((stateNetwork as StateNetwork).stateDB.db).exist
+    expect((stateNetwork as StateNetwork).stateDB._db).exist
   })
   it('should connect client db to stateDB', async () => {
     ultralight.db.put(NetworkId.StateNetwork, '0x1234', 'testvalue')
