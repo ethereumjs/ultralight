@@ -1,6 +1,6 @@
 import { ENR, distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { BranchNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { BranchNode, ExtensionNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
 import { bytesToHex, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
@@ -12,6 +12,7 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
+import { ContentLookup } from '../contentLookup.js'
 import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
@@ -41,7 +42,7 @@ export class StateNetwork extends BaseNetwork {
     this.nodeRadius = nodeRadius ?? 2n ** 253n
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
-    this.stateDB = new StateDB(client.db.sublevel(NetworkId.StateNetwork))
+    this.stateDB = new StateDB(client.db.db)
     this.routingTable.setLogger(this.logger)
     client.uTP.on(
       NetworkId.StateNetwork,
@@ -221,5 +222,75 @@ export class StateNetwork extends BaseNetwork {
       path: tightlyPackNibbles(newpaths as TNibble[]),
     })
     return { content, contentKey }
+  }
+
+  async getAccount(address: string, stateroot: Uint8Array) {
+    const lookupTrie = new Trie({
+      useKeyHashing: true,
+      db: this.stateDB.db,
+    })
+    lookupTrie.root(stateroot)
+    const addressPath = toHexString(lookupTrie['hash'](fromHexString(address)))
+      .slice(2)
+      .split('')
+    const lookupFunction = async (key: Uint8Array) => {
+      const lookup = new ContentLookup(this, key)
+      const request = await lookup.startLookup()
+      const requestContent = request && 'content' in request ? request.content : undefined
+      const keyobj = AccountTrieNodeContentKey.decode(key)
+      if (requestContent === undefined) {
+        throw new Error(
+          `network doesn't have node [${unpackNibbles(
+            keyobj.path.packedNibbles,
+            keyobj.path.isOddLength,
+          )}]${toHexString(keyobj.nodeHash)}`,
+        )
+      }
+      const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
+      return { nodeHash: keyobj.nodeHash, node }
+    }
+    const hasRoot = this.stateDB.db._database.get(toHexString(stateroot).slice(2))
+    if (hasRoot === undefined) {
+      const lookup = new ContentLookup(
+        this,
+        AccountTrieNodeContentKey.encode({
+          path: tightlyPackNibbles([]),
+          nodeHash: stateroot,
+        }),
+      )
+      const request = await lookup.startLookup()
+      const requestContent = request && 'content' in request ? request.content : new Uint8Array()
+      const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
+      this.stateDB.db.temp.set(toHexString(stateroot).slice(2), toHexString(node).slice(2))
+    }
+    let accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
+    while (!accountPath.node) {
+      const consumedNibbles = accountPath.stack
+        .slice(1)
+        .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
+        .reduce((a, b) => a + b)
+      const nodePath = addressPath.slice(0, consumedNibbles)
+      const current = accountPath.stack[accountPath.stack.length - 1]
+      const nextNodeHash =
+        current instanceof BranchNode
+          ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
+          : current instanceof ExtensionNode
+            ? current.value()
+            : Uint8Array.from([])
+      if (current instanceof LeafNode) {
+        return current.value()
+      }
+      const nextContentKey = AccountTrieNodeContentKey.encode({
+        path: tightlyPackNibbles(nodePath as TNibble[]),
+        nodeHash: nextNodeHash as Uint8Array,
+      })
+      const found = await lookupFunction(nextContentKey)
+      this.stateDB.db.temp.set(
+        toHexString(found.nodeHash).slice(2),
+        toHexString(found.node).slice(2),
+      )
+      accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
+    }
+    return accountPath.node.value()
   }
 }

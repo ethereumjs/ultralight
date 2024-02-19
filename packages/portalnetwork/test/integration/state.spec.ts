@@ -1,10 +1,8 @@
 import { SignableENR } from '@chainsafe/discv5'
-// import { RLP } from '@ethereumjs/rlp'
-// import { Trie } from '@ethereumjs/trie'
-import { hexToBytes } from '@ethereumjs/util'
+import { Trie } from '@ethereumjs/trie'
+import { Account, hexToBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
-// import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { assert, describe, expect, it } from 'vitest'
 
 import {
@@ -20,29 +18,21 @@ import samples from '../networks/state/testdata/accountNodeSamples.json'
 
 import type { StateNetwork } from '../../src'
 
-// import {
-//   AccountTrieProofType,
-//   ContractByteCodeType,
-//   ContractStorageTrieProofType,
-//   NetworkId,
-//   PortalNetwork,
-//   StateNetworkContentType,
-//   TransportLayer,
-//   fromHexString,
-//   getStateNetworkContentKey,
-//   toHexString,
-// } from '../../src/index.js'
-
-// import type { StateNetwork } from '../../src/index.js'
+const trie = new Trie({ useKeyHashing: true })
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
-const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-const enr1 = SignableENR.createFromPeerId(id1)
-const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/0`)
-enr1.setLocationMultiaddr(initMa)
+const sample = samples.slice(-1)[0]
+const [key, value] = sample as [string, object]
+const content = Uint8Array.from(Object.values(value))
+const contentKey = fromHexString(key)
+const decoded = AccountTrieNodeContentKey.decode(contentKey)
+const deserialized = AccountTrieNodeOffer.deserialize(content)
+const { path } = decoded
+const { proof, blockHash } = deserialized
+
 describe('AccountTrieNode Gossip / Request', async () => {
   const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
   const enr1 = SignableENR.createFromPeerId(id1)
@@ -89,14 +79,6 @@ describe('AccountTrieNode Gossip / Request', async () => {
       'found another node that supports state network',
     )
   })
-  const sample = samples.slice(-1)[0]
-  const [key, value] = sample as [string, object]
-  const content = Uint8Array.from(Object.values(value))
-  const contentKey = fromHexString(key)
-  const decoded = AccountTrieNodeContentKey.decode(contentKey)
-  const deserialized = AccountTrieNodeOffer.deserialize(content)
-  const { path } = decoded
-  const { proof, blockHash } = deserialized
 
   const result = await network1.receiveAccountTrieNodeOffer(contentKey, content)
   it('should store some content', async () => {
@@ -137,251 +119,117 @@ describe('AccountTrieNode Gossip / Request', async () => {
   it('should store some nodes in node2', async () => {
     expect(storedInNode2.size).toEqual(1)
   })
-  //   it('should find content from another node', async () => {
-  //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  //     const enr1 = SignableENR.createFromPeerId(id1)
-  //     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
-  //     enr1.setLocationMultiaddr(initMa)
-  //     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  //     const enr2 = SignableENR.createFromPeerId(id2)
-  //     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
-  //     enr2.setLocationMultiaddr(initMa2)
-  //     const node1 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr1,
-  //         bindAddrs: {
-  //           ip4: initMa,
-  //         },
-  //         peerId: id1,
-  //       },
-  //     })
-  //     const node2 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr2,
-  //         bindAddrs: {
-  //           ip4: initMa2,
-  //         },
-  //         peerId: id2,
-  //       },
-  //     })
-  //     await node1.start()
-  //     await node2.start()
-  //     const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     await network1!.sendPing(network2?.enr!.toENR())
-  //     const pk = randomBytes(32)
-  //     const address = Address.fromPrivateKey(pk)
-  //     const account = Account.fromAccountData({ balance: 0n, nonce: 1n })
-  //     const trie = new Trie({ useKeyHashing: true })
-  //     await trie.put(address.toBytes(), account.serialize())
-  //     const proof = await trie.createProof(address.toBytes())
-  //     const content = AccountTrieProofType.serialize({
-  //       witnesses: proof,
-  //     })
-  //     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
-  //     const contentKey = getStateNetworkContentKey({
-  //       address,
-  //       contentType: StateNetworkContentType.AccountTrieProof,
-  //       stateRoot: trie.root(),
-  //     })
-  //     await network2.sendFindContent(node1.discv5.enr.nodeId, contentKey)
-  //     const gotAccount = await network2.stateDB.getAccount(
-  //       address.toString(),
-  //       toHexString(trie.root()),
-  //     )
-  //     assert.equal(gotAccount!.balance, account.balance, 'found account content on devnet')
-  //   })
-  // })
-  // describe('recursive find content', () => {
-  //   it('should recursively find an account from another node', async () => {
-  //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  //     const enr1 = SignableENR.createFromPeerId(id1)
-  //     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3042`)
-  //     enr1.setLocationMultiaddr(initMa)
-  //     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  //     const enr2 = SignableENR.createFromPeerId(id2)
-  //     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3043`)
-  //     enr2.setLocationMultiaddr(initMa2)
-  //     const node1 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr1,
-  //         bindAddrs: {
-  //           ip4: initMa,
-  //         },
-  //         peerId: id1,
-  //       },
-  //     })
-  //     const node2 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr2,
-  //         bindAddrs: {
-  //           ip4: initMa2,
-  //         },
-  //         peerId: id2,
-  //       },
-  //     })
-  //     await node1.start()
-  //     await node2.start()
-  //     const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const pk = randomBytes(32)
-  //     const address = Address.fromPrivateKey(pk)
-  //     const account = Account.fromAccountData({ balance: 0n, nonce: 1n })
-  //     const trie = new Trie({ useKeyHashing: true })
-  //     await trie.put(address.toBytes(), account.serialize())
-  //     const proof = await trie.createProof(address.toBytes())
-  //     const content = AccountTrieProofType.serialize({
-  //       witnesses: proof,
-  //     })
-  //     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
-  //     await network1!.sendPing(network2?.enr!.toENR())
-  //     const res = await network2.getAccount(address.toString(), toHexString(trie.root()))
-  //     assertType<Account>(res)
-  //     assert.equal(res.nonce, 1n, 'retrieved account via recursive find content')
-  //   })
-  //   it('should recursively find bytecode from another node', async () => {
-  //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  //     const enr1 = SignableENR.createFromPeerId(id1)
-  //     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3044`)
-  //     enr1.setLocationMultiaddr(initMa)
-  //     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  //     const enr2 = SignableENR.createFromPeerId(id2)
-  //     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3045`)
-  //     enr2.setLocationMultiaddr(initMa2)
-  //     const node1 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr1,
-  //         bindAddrs: {
-  //           ip4: initMa,
-  //         },
-  //         peerId: id1,
-  //       },
-  //     })
-  //     const node2 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr2,
-  //         bindAddrs: {
-  //           ip4: initMa2,
-  //         },
-  //         peerId: id2,
-  //       },
-  //     })
-  //     await node1.start()
-  //     await node2.start()
-  //     const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const greeterBytecode =
-  //       '0x608060405234801561000f575f80fd5b5060043610610034575f3560e01c80638da5cb5b14610038578063cfae321714610056575b5f80fd5b610040610074565b60405161004d9190610118565b60405180910390f35b61005e61009c565b60405161006b91906101bb565b60405180910390f35b5f60015f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b60606040518060400160405280600581526020017f68656c6c6f000000000000000000000000000000000000000000000000000000815250905090565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f610102826100d9565b9050919050565b610112816100f8565b82525050565b5f60208201905061012b5f830184610109565b92915050565b5f81519050919050565b5f82825260208201905092915050565b5f5b8381101561016857808201518184015260208101905061014d565b5f8484015250505050565b5f601f19601f8301169050919050565b5f61018d82610131565b610197818561013b565b93506101a781856020860161014b565b6101b081610173565b840191505092915050565b5f6020820190508181035f8301526101d38184610183565b90509291505056fea2646970667358221220945519e237b301b5baf64c20c2a39b6a8b300541470b28b0e6cfbc1568dc6f3364736f6c63430008160033'
-  //     const byteCode = fromHexString(greeterBytecode)
-  //     const pk = randomBytes(32)
-  //     const address = Address.fromPrivateKey(pk)
-  //     const codehash = keccak256(byteCode)
-  //     const account = Account.fromAccountData({ balance: 0n, nonce: 1n, codeHash: codehash })
-  //     const trie = new Trie({ useKeyHashing: true })
-  //     await trie.put(address.toBytes(), account.serialize())
-  //     const proof = await trie.createProof(address.toBytes())
-  //     const content = AccountTrieProofType.serialize({
-  //       witnesses: proof,
-  //     })
-  //     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
-  //     const byteCodeContent = ContractByteCodeType.serialize(byteCode)
-  //     await network1.stateDB.inputContractByteCode(address.toBytes(), codehash, byteCodeContent)
-  //     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
-  //     await network1!.sendPing(network2?.enr!.toENR())
-  //     const res = await network2.getBytecode(toHexString(codehash), address.toString())
-  //     assertType<Uint8Array>(res)
-  //     assert.deepEqual(res, byteCode, 'retrieved bytecode via recursive find content')
-  //   })
-  //   it('should recursively find contract storage from another node', async () => {
-  //     const cstp = (await import('../networks/state/content.json')).CSTP
-  //     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  //     const enr1 = SignableENR.createFromPeerId(id1)
-  //     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3046`)
-  //     enr1.setLocationMultiaddr(initMa)
-  //     const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  //     const enr2 = SignableENR.createFromPeerId(id2)
-  //     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3047`)
-  //     enr2.setLocationMultiaddr(initMa2)
-  //     const node1 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr1,
-  //         bindAddrs: {
-  //           ip4: initMa,
-  //         },
-  //         peerId: id1,
-  //       },
-  //     })
-  //     const node2 = await PortalNetwork.create({
-  //       transport: TransportLayer.NODE,
-  //       supportedNetworks: [NetworkId.StateNetwork],
-  //       config: {
-  //         enr: enr2,
-  //         bindAddrs: {
-  //           ip4: initMa2,
-  //         },
-  //         peerId: id2,
-  //       },
-  //     })
-  //     await node1.start()
-  //     await node2.start()
-  //     const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  //     const storageTrie = new Trie({ useKeyHashing: true })
-  //     const storageTrieProof = ContractStorageTrieProofType.deserialize(fromHexString(cstp.content))
-  //     await storageTrie.fromProof(storageTrieProof.witnesses)
-  //     const stored = await storageTrie.get(fromHexString(cstp.slot))
-  //     assert.deepEqual(RLP.decode(stored), Uint8Array.from(cstp.data), 'stored value in storage trie')
-  //     const pk = randomBytes(32)
-  //     const address = Address.fromPrivateKey(pk)
-  //     const account = Account.fromAccountData({
-  //       balance: 0n,
-  //       nonce: 1n,
-  //       storageRoot: storageTrie.root(),
-  //     })
-  //     const trie = new Trie({ useKeyHashing: true })
-  //     await trie.put(address.toBytes(), account.serialize())
-  //     const storedAccount = await trie.get(address.bytes)
-  //     assert.deepEqual(storedAccount, account.serialize(), 'stored account in account trie')
-  //     const proof = await trie.createProof(address.toBytes())
-  //     const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
-  //     const content = AccountTrieProofType.serialize({
-  //       witnesses: proof,
-  //     })
-  //     const storageContent = ContractStorageTrieProofType.serialize({
-  //       witnesses: storageProof,
-  //     })
-  //     await network1.stateDB.inputAccountTrieProof(address.toBytes(), trie.root(), content)
-  //     await network1.stateDB.inputContractStorageTrieProof(
-  //       address.bytes,
-  //       BigInt(cstp.slot),
-  //       trie.root(),
-  //       storageContent,
-  //     )
-  //     await network1!.sendPing(network2?.enr!.toENR())
-  //     const res = await network2.getContractStorage(
-  //       address.toString(),
-  //       BigInt(cstp.slot),
-  //       toHexString(trie.root()),
-  //     )
-  //     assert.isDefined(res)
-  //     assert.equal(
-  //       toHexString(RLP.decode(res!) as Uint8Array),
-  //       cstp.value,
-  //       'retrieved contract storage slot via recursive find content',
-  //     )
-  //   }, 5000)
+})
+
+describe('getAccount via network', async () => {
+  const protoBufs = [
+    '0x0a27002508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b82122508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b821a240802122091b5cbbc2bf054f913c3a344bf8ce6d19373142854eabeeffb5a3f159c44e610',
+    '0x0a2700250802122103d2a342da6a4fe1598f83df70bfcf9047e24eb7804799067c680870989e4ff0b412250802122103d2a342da6a4fe1598f83df70bfcf9047e24eb7804799067c680870989e4ff0b41a24080212202a63200954ac3c187131b79d39f16ef601d83d57f882b58acdad0dd346c06258',
+    '0x0a2700250802122103879ca6d3b9e51e746f90704496e3c36a0c473e0ec734dfa52bd8be50c7c4044c12250802122103879ca6d3b9e51e746f90704496e3c36a0c473e0ec734dfa52bd8be50c7c4044c1a24080212204d9ce45403c77746d795f6f01bafd81b5e4dfd9f7bfd6bd2edd9a06f32d86e36',
+    '0x0a270025080212210297b980a75593bc2c9f3ffc0d393a240b8d7b26465bcbc0b8a488f01202b962cd1225080212210297b980a75593bc2c9f3ffc0d393a240b8d7b26465bcbc0b8a488f01202b962cd1a24080212204c768f46d83b047fe5f7521f77b2feb3f182df96a39543f9b9b09f3c7e1a4e29',
+    '0x0a2700250802122102a80d91fa0da65157cf3e7d44cf5a070c01f5a37f5c77536c421813dbe3fe874a12250802122102a80d91fa0da65157cf3e7d44cf5a070c01f5a37f5c77536c421813dbe3fe874a1a24080212203676d8bd61041188b449f9517a51837d415f01caa10f81c7bd22febca0eadf3b',
+    '0x0a27002508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe122508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe1a24080212205be348796815dabfd5c89d2d4dba943f3314a59a47e4d21b2a1a1b66fff330da',
+  ]
+  const peerIds = await Promise.all(
+    protoBufs.map(async (protoBuf) => {
+      const peerId = await createFromProtobuf(fromHexString(protoBuf))
+      return peerId
+    }),
+  )
+  const clients = await Promise.all(
+    peerIds.map(async (peerId, i) => {
+      const enr = SignableENR.createFromPeerId(peerId)
+      const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${3022 + i}`)
+      enr.setLocationMultiaddr(initMa)
+      const node = await PortalNetwork.create({
+        transport: TransportLayer.NODE,
+        supportedNetworks: [NetworkId.StateNetwork],
+        config: {
+          enr,
+          bindAddrs: {
+            ip4: initMa,
+          },
+          peerId,
+        },
+        radius: 2n ** 255n,
+      })
+      await node.start()
+      return node
+    }),
+  )
+  const networks = clients.map(
+    (client) => client.networks.get(NetworkId.StateNetwork) as StateNetwork,
+  )
+
+  for (const [idx, network] of networks.entries()) {
+    const pong1 = await network.sendPing(clients[(idx + 1) % clients.length].discv5.enr.toENR())
+    const pong2 = await network.sendPing(clients[(idx + 2) % clients.length].discv5.enr.toENR())
+    it(`client ${idx} connects to network`, async () => {
+      expect(pong1).toBeDefined()
+      expect(pong2).toBeDefined()
+      let storedEnr = networks[(idx + 1) % clients.length].routingTable.getWithPending(
+        network.enr.nodeId,
+      )
+      assert.equal(
+        storedEnr?.value.nodeId,
+        network.enr.nodeId,
+        'found another node that supports state network',
+      )
+      storedEnr = networks[(idx + 2) % clients.length].routingTable.getWithPending(
+        network.enr.nodeId,
+      )
+      assert.equal(
+        storedEnr?.value.nodeId,
+        network.enr.nodeId,
+        'found another node that supports state network',
+      )
+    })
+  }
+  await new Promise((r) => setTimeout(r, 1000))
+  const result = await networks[0].receiveAccountTrieNodeOffer(contentKey, content)
+  await new Promise((r) => setTimeout(r, 1000))
+  it('should gossip some content', () => {
+    expect(result.gossipCount).toEqual(4)
+  })
+  const storedInNodes = await Promise.all(
+    clients.map(async (client) => {
+      const stored: Set<string> = new Set()
+      for await (const key of client.db.db.keys()) {
+        stored.add(key)
+      }
+      return stored
+    }),
+  )
+  const storedValues = storedInNodes.map((set) => [...set.values()])
+  const uniqueStored = Array.from(new Set(storedValues.flat()))
+  it('should distribute all nodes', () => {
+    expect(uniqueStored.length).toEqual(6)
+  })
+  for (const [idx, keys] of storedInNodes.entries()) {
+    it(`client ${idx} should store ${keys.size} trie nodes`, () => {
+      expect(keys.size).toBeGreaterThan(0)
+    })
+  }
+  const testClient = networks[4]
+  const testAddress = '0xe6115b13f9795f7e956502d5074567dab945ce6b'
+  const stateRoot = trie['hash'](deserialized.proof[0])
+  const found = await testClient.getAccount(testAddress, stateRoot)
+  const foundAccount = Account.fromRlpSerializedAccount(found!)
+  it('should find account data', async () => {
+    assert.deepEqual(foundAccount.balance, BigInt('0x152d02c7e14af6800000'), 'account data found')
+  })
+
+  const temp = [...testClient.stateDB.db.temp.keys()]
+  const perm: string[] = []
+  for await (const key of testClient.stateDB.db.db.keys()) {
+    perm.push(key)
+  }
+  it('should have all nodes in temp or permanent db', () => {
+    expect(temp.length + perm.length).toEqual(uniqueStored.length)
+  })
+  it('should not have temp entries also in permanent db', () => {
+    for (const key of temp) {
+      expect(perm.includes(key)).toBeFalsy()
+    }
+  })
 })
