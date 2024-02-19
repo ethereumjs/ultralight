@@ -38,6 +38,7 @@ export class StateDB {
   async getContent(contentKey: Uint8Array): Promise<string | undefined> {
     const dbKey = getDatabaseKey(contentKey)
     const dbContent = await this.db.get(dbKey)
+    if (dbContent === undefined) return dbContent
     const content = wrapDBContent(contentKey, dbContent)
     return content
   }
