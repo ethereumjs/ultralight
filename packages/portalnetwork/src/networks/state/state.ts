@@ -225,7 +225,7 @@ export class StateNetwork extends BaseNetwork {
     return { content, contentKey }
   }
 
-  async getAccount(address: string, stateroot: Uint8Array) {
+  async getAccount(address: string, stateroot: Uint8Array, deleteAfter: boolean = true) {
     const lookupTrie = new Trie({
       useKeyHashing: true,
       db: this.stateDB.db,
@@ -269,7 +269,7 @@ export class StateNetwork extends BaseNetwork {
       const consumedNibbles = accountPath.stack
         .slice(1)
         .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
-        .reduce((a, b) => a + b)
+        .reduce((a, b) => a + b, 0)
       const nodePath = addressPath.slice(0, consumedNibbles)
       const current = accountPath.stack[accountPath.stack.length - 1]
       const nextNodeHash =
@@ -291,6 +291,9 @@ export class StateNetwork extends BaseNetwork {
         toHexString(found.node).slice(2),
       )
       accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
+    }
+    if (deleteAfter) {
+      this.stateDB.db.temp.clear()
     }
     return accountPath.node.value()
   }
