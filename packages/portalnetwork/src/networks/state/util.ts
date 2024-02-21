@@ -234,9 +234,6 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
 }
 
 export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
-  if (proof.length === 0) {
-    return
-  }
   if (proof.length === 1) {
     return { curRlp: proof[0], nodes: proof, newpaths: [] }
   }
