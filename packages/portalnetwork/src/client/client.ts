@@ -389,7 +389,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     packetBuffer: Buffer,
   ) => {
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
-    await this.uTP.handleUtpPacket(packetBuffer, srcId)
+    try {
+      await this.uTP.handleUtpPacket(packetBuffer, srcId)
+    } catch (err: any) {
+      this.logger(err.message)
+    }
   }
 
   /**
