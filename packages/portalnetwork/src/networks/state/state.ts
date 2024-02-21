@@ -215,9 +215,9 @@ export class StateNetwork extends BaseNetwork {
     content: Uint8Array
     contentKey: Uint8Array
   }> {
-    const { curRlp, nodes, newpaths } = await nextOffer(path, proof)
-    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
-    const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+    const { nodes, newpaths } = await nextOffer(path, proof)
+    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: [...nodes] })
+    const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
     const contentKey = AccountTrieNodeContentKey.encode({
       nodeHash,
       path: tightlyPackNibbles(newpaths as TNibble[]),

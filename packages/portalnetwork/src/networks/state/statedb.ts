@@ -1,3 +1,4 @@
+import { toHexString } from '@chainsafe/ssz'
 import debug from 'debug'
 
 import { PortalTrieDB, getDatabaseContent, getDatabaseKey, keyType, wrapDBContent } from './util.js'
@@ -7,7 +8,7 @@ import type { Debugger } from 'debug'
 
 export class StateDB {
   db: PortalTrieDB
-  logger: Debugger | undefined
+  logger: Debugger
   blocks: Map<number, string>
   stateRoots: Map<string, string>
   constructor(db: AbstractLevel<string, string, string>, logger?: Debugger) {
@@ -37,6 +38,12 @@ export class StateDB {
    */
   async getContent(contentKey: Uint8Array): Promise<string | undefined> {
     const dbKey = getDatabaseKey(contentKey)
+    this.logger!(`getContent: \ncontentKey: ${toHexString(contentKey)}\n: dbKey: ${dbKey}\n`)
+    const allkeys = []
+    for await (const key of this.db.db.keys()) {
+      allkeys.push(key)
+    }
+    this.logger(`dbKeys: ${allkeys}`)
     const dbContent = await this.db.get(dbKey)
     if (dbContent === undefined) return dbContent
     const content = wrapDBContent(contentKey, dbContent)
