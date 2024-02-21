@@ -176,8 +176,8 @@ export class StateNetwork extends BaseNetwork {
     const newpaths = [...nibbles]
     const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
     const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
-    while (nodes.length > 0) {
-      const curRlp = nodes.pop()!
+    let curRlp = nodes.pop()
+    while (curRlp) {
       const curNode = decodeNode(curRlp)
       if (curNode instanceof BranchNode) {
         newpaths.pop()
@@ -199,6 +199,7 @@ export class StateNetwork extends BaseNetwork {
       } else {
         notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
+      curRlp = nodes.pop()
     }
     for (const { contentKey, dbContent } of interested) {
       await this.stateDB.storeContent(contentKey, dbContent)
@@ -214,9 +215,9 @@ export class StateNetwork extends BaseNetwork {
     content: Uint8Array
     contentKey: Uint8Array
   }> {
-    const { curRlp, nodes, newpaths } = await nextOffer(path, proof)
-    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: nodes })
-    const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+    const { nodes, newpaths } = await nextOffer(path, proof)
+    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: [...nodes] })
+    const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
     const contentKey = AccountTrieNodeContentKey.encode({
       nodeHash,
       path: tightlyPackNibbles(newpaths as TNibble[]),
@@ -224,7 +225,7 @@ export class StateNetwork extends BaseNetwork {
     return { content, contentKey }
   }
 
-  async getAccount(address: string, stateroot: Uint8Array) {
+  async getAccount(address: string, stateroot: Uint8Array, deleteAfter: boolean = true) {
     const lookupTrie = new Trie({
       useKeyHashing: true,
       db: this.stateDB.db,
@@ -268,7 +269,7 @@ export class StateNetwork extends BaseNetwork {
       const consumedNibbles = accountPath.stack
         .slice(1)
         .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
-        .reduce((a, b) => a + b)
+        .reduce((a, b) => a + b, 0)
       const nodePath = addressPath.slice(0, consumedNibbles)
       const current = accountPath.stack[accountPath.stack.length - 1]
       const nextNodeHash =
@@ -290,6 +291,9 @@ export class StateNetwork extends BaseNetwork {
         toHexString(found.node).slice(2),
       )
       accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
+    }
+    if (deleteAfter) {
+      this.stateDB.db.temp.clear()
     }
     return accountPath.node.value()
   }

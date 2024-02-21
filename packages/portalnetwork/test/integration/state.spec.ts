@@ -213,7 +213,7 @@ describe('getAccount via network', async () => {
   const testClient = networks[4]
   const testAddress = '0xe6115b13f9795f7e956502d5074567dab945ce6b'
   const stateRoot = trie['hash'](deserialized.proof[0])
-  const found = await testClient.getAccount(testAddress, stateRoot)
+  const found = await testClient.getAccount(testAddress, stateRoot, false)
   const foundAccount = Account.fromRlpSerializedAccount(found!)
   it('should find account data', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x152d02c7e14af6800000'), 'account data found')
