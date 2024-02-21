@@ -176,8 +176,8 @@ export class StateNetwork extends BaseNetwork {
     const newpaths = [...nibbles]
     const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
     const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
-    while (nodes.length > 0) {
-      const curRlp = nodes.pop()!
+    let curRlp = nodes.pop()
+    while (curRlp) {
       const curNode = decodeNode(curRlp)
       if (curNode instanceof BranchNode) {
         newpaths.pop()
@@ -199,6 +199,7 @@ export class StateNetwork extends BaseNetwork {
       } else {
         notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
+      curRlp = nodes.pop()
     }
     for (const { contentKey, dbContent } of interested) {
       await this.stateDB.storeContent(contentKey, dbContent)
