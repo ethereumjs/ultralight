@@ -234,12 +234,15 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
 }
 
 export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
+  if (proof.length === 0) {
+    return
+  }
   if (proof.length === 1) {
     return { curRlp: proof[0], nodes: proof, newpaths: [] }
   }
   const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
-  const nodes = proof.slice(0, -1)
-  const curRlp = nodes[nodes.length - 1]
+  const nodes = [...proof]
+  const curRlp = nodes.pop()!
   const curNode = decodeNode(curRlp)
   const newpaths = nibbles.slice(
     0,
