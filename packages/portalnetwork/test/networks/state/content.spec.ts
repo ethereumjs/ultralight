@@ -262,7 +262,7 @@ describe('Storage Trie Node Content Type', async () => {
     for (const { key, value } of storedContent.valueNodeContents) {
       const res = await storageTrie.get(fromHexString(key))
       if (res) {
-        assert.deepEqual(unprefixedHexToBytes(padToEven(value)), RLP.decode(res))
+        assert.deepEqual(unprefixedHexToBytes(padToEven(value.slice(2))), RLP.decode(res))
       } else {
         assert.equal(value, '0x')
       }
