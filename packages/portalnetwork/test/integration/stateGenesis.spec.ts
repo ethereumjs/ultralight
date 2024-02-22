@@ -1,7 +1,12 @@
 import { SignableENR, distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { Block } from '@ethereumjs/block'
+import { Chain, Common, Hardfork } from '@ethereumjs/common'
+import { getGenesis } from '@ethereumjs/genesis'
+import { DefaultStateManager } from '@ethereumjs/statemanager'
+import { BranchNode, ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
 import { Account, bytesToUnprefixedHex, padToEven } from '@ethereumjs/util'
+import { VM } from '@ethereumjs/vm'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
@@ -12,13 +17,23 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
+  applyTransactions,
   packNibbles,
 } from '../../src/index.js'
 import { genesisStateTrie, mainnet } from '../../src/networks/state/genesis.js'
 
+import rawBlocks from './testdata/rawBlocks.json'
+
 import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src/index.js'
 import type { StateDB } from '../../src/networks/state/statedb.js'
 import type { LeafNode } from '@ethereumjs/trie'
+import type {
+  Bloom,
+  PostByzantiumTxReceipt,
+  PreByzantiumTxReceipt,
+  RunBlockOpts,
+  RunTxResult,
+} from '@ethereumjs/vm'
 
 const genesisContent = async (
   trie: Trie,
@@ -345,4 +360,194 @@ describe('genesisDevnet', async () => {
       expect(emptyTemp.length).toEqual(0)
     })
   }
+})
+describe('execute Block 1', async () => {
+  const protoBufs = [
+    '0x0a27002508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b82122508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b821a240802122091b5cbbc2bf054f913c3a344bf8ce6d19373142854eabeeffb5a3f159c44e610',
+    '0x0a2700250802122103d2a342da6a4fe1598f83df70bfcf9047e24eb7804799067c680870989e4ff0b412250802122103d2a342da6a4fe1598f83df70bfcf9047e24eb7804799067c680870989e4ff0b41a24080212202a63200954ac3c187131b79d39f16ef601d83d57f882b58acdad0dd346c06258',
+    '0x0a2700250802122103879ca6d3b9e51e746f90704496e3c36a0c473e0ec734dfa52bd8be50c7c4044c12250802122103879ca6d3b9e51e746f90704496e3c36a0c473e0ec734dfa52bd8be50c7c4044c1a24080212204d9ce45403c77746d795f6f01bafd81b5e4dfd9f7bfd6bd2edd9a06f32d86e36',
+    '0x0a270025080212210297b980a75593bc2c9f3ffc0d393a240b8d7b26465bcbc0b8a488f01202b962cd1225080212210297b980a75593bc2c9f3ffc0d393a240b8d7b26465bcbc0b8a488f01202b962cd1a24080212204c768f46d83b047fe5f7521f77b2feb3f182df96a39543f9b9b09f3c7e1a4e29',
+    '0x0a2700250802122102a80d91fa0da65157cf3e7d44cf5a070c01f5a37f5c77536c421813dbe3fe874a12250802122102a80d91fa0da65157cf3e7d44cf5a070c01f5a37f5c77536c421813dbe3fe874a1a24080212203676d8bd61041188b449f9517a51837d415f01caa10f81c7bd22febca0eadf3b',
+    '0x0a27002508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe122508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe1a24080212205be348796815dabfd5c89d2d4dba943f3314a59a47e4d21b2a1a1b66fff330da',
+  ]
+  const peerIds = await Promise.all(
+    protoBufs.map(async (protoBuf) => {
+      const peerId = await createFromProtobuf(fromHexString(protoBuf))
+      return peerId
+    }),
+  )
+  const clients = await Promise.all(
+    peerIds.map(async (peerId, i) => {
+      const enr = SignableENR.createFromPeerId(peerId)
+      const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${3028 + i}`)
+      enr.setLocationMultiaddr(initMa)
+      const node = await PortalNetwork.create({
+        transport: TransportLayer.NODE,
+        supportedNetworks: [NetworkId.StateNetwork],
+        config: {
+          enr,
+          bindAddrs: {
+            ip4: initMa,
+          },
+          peerId,
+        },
+        radius: 2n ** 254n,
+      })
+      await node.start()
+      return node
+    }),
+  )
+  const networks: StateNetwork[] = clients.map(
+    (client) => client.networks.get(NetworkId.StateNetwork) as StateNetwork,
+  )
+  const trie = await genesisStateTrie()
+  const sortedNodeHashByClient = await populateGenesisDB(trie, networks)
+  const hasRoot = Object.entries(sortedNodeHashByClient)
+    .filter(([_, nodeHashes]) =>
+      nodeHashes.map((h) => toHexString(h)).includes(toHexString(trie.root())),
+    )
+    .map(([nodeId, _]) => nodeId)
+  it('should store root in 2 clients', () => {
+    expect(hasRoot.length).toBe(2)
+  })
+
+  const storedTrieNodes = Object.entries(sortedNodeHashByClient)
+    .map(([_, trieNodes]) => {
+      return trieNodes.map((node) => toHexString(node))
+    })
+    .flat()
+  const uniqueStoredTrieNodes = Array.from(new Set(storedTrieNodes))
+  it('should distribute all nodes', () => {
+    expect(uniqueStoredTrieNodes.length).toEqual(12356)
+  })
+
+  await connectNetwork(networks, clients)
+  await new Promise((r) => setTimeout(r, 1000))
+  const common = new Common({
+    chain: Chain.Mainnet,
+    hardfork: Hardfork.Chainstart,
+  })
+  const genesis = getGenesis(1)
+  const stateManager = new DefaultStateManager({
+    common,
+  })
+  const vm = await VM.create({
+    common,
+    stateManager,
+    genesisState: genesis,
+  })
+  const stateroot = await vm.stateManager.getStateRoot()
+  it('should start VM with genesis state', () => {
+    assert.deepEqual(stateroot, trie.root(), 'genesis state is loaded')
+  })
+
+  const block1raw = rawBlocks.block1raw
+  const block = Block.fromRLPSerializedBlock(fromHexString(block1raw), { setHardfork: true })
+
+  const runResult = await vm.runBlock({
+    block,
+  })
+
+  it('should run block', () => {
+    assert.deepEqual(
+      runResult.stateRoot,
+      block.header.stateRoot,
+      'successfully updates state from block',
+    )
+  })
+  const portalClientTrie = new Trie({
+    useKeyHashing: true,
+    db: networks[0].stateDB.db,
+    root: stateroot,
+  })
+  const portalStateManager = new DefaultStateManager({
+    trie: portalClientTrie,
+    common,
+    accountCacheOpts: {
+      deactivate: true,
+    },
+  })
+  const portalVM = await VM.create({
+    common,
+    stateManager: portalStateManager,
+  })
+  it('should create new VM from client database', async () => {
+    assert.deepEqual(await portalVM.stateManager.getStateRoot(), stateroot)
+  })
+  const runBlock: (
+    block: Block,
+    opts: RunBlockOpts,
+  ) => Promise<{
+    bloom: Bloom
+    gasUsed: bigint
+    receiptsRoot: Uint8Array
+    receipts: (PreByzantiumTxReceipt | PostByzantiumTxReceipt)[]
+    results: RunTxResult[]
+  }> = applyTransactions.bind(portalVM)
+  const _portalRunResult = await runBlock(block, {
+    block,
+  })
+  it('should match gas used ' + runResult.gasUsed, async () => {
+    expect(runResult.gasUsed).toEqual(_portalRunResult.gasUsed)
+  })
+  it('should match', () => {
+    assert.deepEqual(runResult.receiptsRoot, _portalRunResult.receiptsRoot)
+    assert.equal(runResult.results.length, _portalRunResult.results.length)
+  })
+  const minerAddress = block.header.coinbase
+  const minerAccount = new Account()
+  const minerReward = common.param('pow', 'minerReward')
+  const niblingReward = minerReward / BigInt(32)
+  const totalNiblingReward = niblingReward * BigInt(0)
+  const reward = minerReward + totalNiblingReward
+  minerAccount.balance += reward
+  const findMinerPath = await networks[0].findPath(stateroot, minerAddress.toString())
+  it('should find path for not existant address', () => {
+    expect(findMinerPath.node).toBeNull()
+    expect(findMinerPath.stack.length).toBeGreaterThan(0)
+    expect(findMinerPath.remaining.length).toBeGreaterThan(0)
+  })
+  const prooftrie = new Trie({ useKeyHashing: true })
+  await prooftrie.fromProof(findMinerPath.stack.map((n) => n.serialize()))
+  prooftrie.root(stateroot)
+
+  await prooftrie.put(minerAddress.bytes, minerAccount.serialize())
+
+  it('should calculate new state root', async () => {
+    assert.equal(
+      toHexString(prooftrie.root()),
+      toHexString(block.header.stateRoot),
+      'successfully updates state from block',
+    )
+  })
+  const minerPath = prooftrie['hash'](minerAddress.bytes)
+  const newNodes = await prooftrie.findPath(minerPath)
+  let consumed = 0
+  for (const s of newNodes.stack.slice(0, -1)) {
+    consumed += s instanceof BranchNode ? 1 : s.keyLength()
+  }
+  const minerNibbles = bytesToUnprefixedHex(minerPath).slice(0, consumed).split('')
+  it('should find all new nodes', () => {
+    expect(newNodes.node).toBeDefined()
+    expect(newNodes.remaining.length).toEqual(0)
+    expect(newNodes.stack.length).toEqual(4)
+    expect((<LeafNode>newNodes.node).keyLength()).toEqual(64 - consumed)
+  })
+  const newLeafKey = AccountTrieNodeContentKey.encode({
+    nodeHash: prooftrie['hash'](newNodes.node!.serialize()),
+    path: tightlyPackNibbles(minerNibbles as TNibble[]),
+  })
+  const newLeafOffer = AccountTrieNodeOffer.serialize({
+    blockHash: block.hash(),
+    proof: newNodes.stack.map((n) => n.serialize()),
+  })
+  await networks[0].gossipContent(newLeafKey, newLeafOffer)
+  const retrievedAccount = await networks[Math.floor(Math.random() * networks.length)].getAccount(
+    minerAddress.toString(),
+    block.header.stateRoot,
+  )
+  it('should retrive miner balance after leafnode gossip update', () => {
+    const retrievedMiner = Account.fromRlpSerializedAccount(retrievedAccount!)
+    expect(retrievedMiner.balance).toEqual(reward)
+  })
 })
