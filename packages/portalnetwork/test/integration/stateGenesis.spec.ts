@@ -44,6 +44,8 @@ const protoBufs = [
   '0x0a27002508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe122508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe1a24080212205be348796815dabfd5c89d2d4dba943f3314a59a47e4d21b2a1a1b66fff330da',
 ]
 
+const getClients = async (port: number) => {}
+
 const genesisContent = async (
   trie: Trie,
 ): Promise<{
