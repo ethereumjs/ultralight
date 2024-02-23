@@ -1,7 +1,10 @@
 import { ENR, distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { Chain, Common, Hardfork } from '@ethereumjs/common'
+import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { BranchNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
 import { bytesToInt, bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
+import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -18,6 +21,7 @@ import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
 import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
+import { applyTransactions } from './runBlock.js'
 import { StateDB } from './statedb.js'
 import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
 import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './util.js'
@@ -25,6 +29,8 @@ import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './u
 import type { TNibbles } from './types.js'
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
+import type { Block } from '@ethereumjs/block'
+import type { RunBlockOpts } from '@ethereumjs/vm'
 import type { Debugger } from 'debug'
 
 export class StateNetwork extends BaseNetwork {
@@ -301,5 +307,32 @@ export class StateNetwork extends BaseNetwork {
       accountPath = nextPath
     }
     return { ...accountPath }
+  }
+  async vm(stateroot: Uint8Array) {
+    const common = new Common({
+      chain: Chain.Mainnet,
+      hardfork: Hardfork.Chainstart,
+    })
+    const portalClientTrie = new Trie({
+      useKeyHashing: true,
+      db: this.stateDB.db,
+      root: stateroot,
+    })
+    const portalStateManager = new DefaultStateManager({
+      trie: portalClientTrie,
+      common,
+      accountCacheOpts: {
+        deactivate: true,
+      },
+    })
+    const portalVM = await VM.create({
+      common,
+      stateManager: portalStateManager,
+    })
+    return portalVM
+  }
+  runBlock = async (stateroot: Uint8Array, block: Block, opts: RunBlockOpts) => {
+    const vm = await this.vm(stateroot)
+    return applyTransactions.bind(vm)(block, opts)
   }
 }
