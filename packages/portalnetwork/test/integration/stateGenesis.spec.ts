@@ -44,7 +44,39 @@ const protoBufs = [
   '0x0a27002508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe122508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe1a24080212205be348796815dabfd5c89d2d4dba943f3314a59a47e4d21b2a1a1b66fff330da',
 ]
 
-const getClients = async (port: number) => {}
+const getClients = async (port: number) => {
+  const peerIds = await Promise.all(
+    protoBufs.map(async (protoBuf) => {
+      const peerId = await createFromProtobuf(fromHexString(protoBuf))
+      return peerId
+    }),
+  )
+  const clients = await Promise.all(
+    peerIds.map(async (peerId, i) => {
+      const enr = SignableENR.createFromPeerId(peerId)
+      const initMa: any = multiaddr(`/ip4/172.17.0.1/udp/${port + i}`)
+      enr.setLocationMultiaddr(initMa)
+      const node = await PortalNetwork.create({
+        transport: TransportLayer.NODE,
+        supportedNetworks: [NetworkId.StateNetwork],
+        config: {
+          enr,
+          bindAddrs: {
+            ip4: initMa,
+          },
+          peerId,
+        },
+        radius: 2n ** 254n,
+      })
+      await node.start()
+      return node
+    }),
+  )
+  const networks: StateNetwork[] = clients.map(
+    (client) => client.networks.get(NetworkId.StateNetwork) as StateNetwork,
+  )
+  return { clients, networks }
+}
 
 const genesisContent = async (
   trie: Trie,
