@@ -1,18 +1,10 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
-import { Chain, Common, Hardfork } from '@ethereumjs/common'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { BranchNode, Trie } from '@ethereumjs/trie'
 import { Account, bytesToUnprefixedHex, padToEven } from '@ethereumjs/util'
-import { VM } from '@ethereumjs/vm'
 import { assert, describe, expect, it } from 'vitest'
 
-import {
-  AccountTrieNodeContentKey,
-  AccountTrieNodeOffer,
-  applyTransactions,
-  packNibbles,
-} from '../../src/index.js'
+import { AccountTrieNodeContentKey, AccountTrieNodeOffer, packNibbles } from '../../src/index.js'
 import { genesisStateTrie, mainnet } from '../../src/networks/state/genesis.js'
 
 import rawBlocks from './testdata/rawBlocks.json'
@@ -20,13 +12,6 @@ import { connectNetwork, genesisContent, getClients, getVM, populateGenesisDB } 
 
 import type { TNibble } from '../../src/index.js'
 import type { LeafNode } from '@ethereumjs/trie'
-import type {
-  Bloom,
-  PostByzantiumTxReceipt,
-  PreByzantiumTxReceipt,
-  RunBlockOpts,
-  RunTxResult,
-} from '@ethereumjs/vm'
 
 const protoBufs = [
   '0x0a27002508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b82122508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b821a240802122091b5cbbc2bf054f913c3a344bf8ce6d19373142854eabeeffb5a3f159c44e610',
@@ -408,40 +393,7 @@ describe('execute Block 1', async () => {
       'successfully updates state from block',
     )
   })
-  const common = new Common({
-    chain: Chain.Mainnet,
-    hardfork: Hardfork.Chainstart,
-  })
-  const portalClientTrie = new Trie({
-    useKeyHashing: true,
-    db: networks[0].stateDB.db,
-    root: stateroot,
-  })
-  const portalStateManager = new DefaultStateManager({
-    trie: portalClientTrie,
-    common,
-    accountCacheOpts: {
-      deactivate: true,
-    },
-  })
-  const portalVM = await VM.create({
-    common,
-    stateManager: portalStateManager,
-  })
-  it('should create new VM from client database', async () => {
-    assert.deepEqual(await portalVM.stateManager.getStateRoot(), stateroot)
-  })
-  const runBlock: (
-    block: Block,
-    opts: RunBlockOpts,
-  ) => Promise<{
-    bloom: Bloom
-    gasUsed: bigint
-    receiptsRoot: Uint8Array
-    receipts: (PreByzantiumTxReceipt | PostByzantiumTxReceipt)[]
-    results: RunTxResult[]
-  }> = applyTransactions.bind(portalVM)
-  const _portalRunResult = await runBlock(block, {
+  const _portalRunResult = await networks[0].runBlock(stateroot, block, {
     block,
   })
   it('should match gas used ' + runResult.gasUsed, async () => {
@@ -453,7 +405,7 @@ describe('execute Block 1', async () => {
   })
   const minerAddress = block.header.coinbase
   const minerAccount = new Account()
-  const minerReward = common.param('pow', 'minerReward')
+  const minerReward = BigInt('0x4563918244f40000')
   const niblingReward = minerReward / BigInt(32)
   const totalNiblingReward = niblingReward * BigInt(0)
   const reward = minerReward + totalNiblingReward
