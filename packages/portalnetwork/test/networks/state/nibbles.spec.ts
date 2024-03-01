@@ -40,7 +40,7 @@ describe('nibbleEncoding', () => {
   for (const test of testVectors) {
     it('should pack nibbles', () => {
       const packed = packNibbles(test[0])
-      assert.deepEqual(packed, test[1])
+      assert.deepEqual([...packed], test[1])
     })
   }
 })
@@ -48,7 +48,7 @@ describe('nibbleEncoding', () => {
 describe('nibbleDecoding', () => {
   for (const test of testVectors) {
     it('should unpack nibbles', () => {
-      const unpacked = unpackNibbles(test[1])
+      const unpacked = unpackNibbles(Uint8Array.from(test[1]))
       assert.deepEqual(unpacked, test[0])
     })
   }

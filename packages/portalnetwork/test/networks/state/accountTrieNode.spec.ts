@@ -51,7 +51,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey
-  const unpacked = unpackNibbles(path.packedNibbles, path.isOddLength)
+  const unpacked = unpackNibbles(path)
   const { proof, blockHash } = content
   const { interested, notInterested } = await state.storeInterestedNodes(path, proof)
   it('Should store interested content', async () => {
@@ -83,6 +83,6 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   it(`should package forward offer for gossip`, async () => {
     const forwardOffer = await state.forwardAccountTrieOffer(path, proof, blockHash)
     const decoded = AccountTrieNodeContentKey.decode(forwardOffer.contentKey)
-    expect(decoded.path.packedNibbles.length).toBeLessThanOrEqual(path.packedNibbles.length)
+    expect(decoded.path.length).toBeLessThanOrEqual(path.length)
   })
 })
