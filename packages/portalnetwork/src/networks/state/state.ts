@@ -17,17 +17,12 @@ import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
+import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import { StateDB } from './statedb.js'
 import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
-import {
-  AccountTrieNodeContentKey,
-  StateNetworkContentId,
-  nextOffer,
-  tightlyPackNibbles,
-  unpackNibbles,
-} from './util.js'
+import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './util.js'
 
-import type { TNibble, TNibbles } from './types.js'
+import type { TNibbles } from './types.js'
 import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { Debugger } from 'debug'
@@ -172,7 +167,7 @@ export class StateNetwork extends BaseNetwork {
 
   async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {
     const nodes = [...proof]
-    const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+    const nibbles = unpackNibbles(path)
     const newpaths = [...nibbles]
     const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
     const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
@@ -187,7 +182,7 @@ export class StateNetwork extends BaseNetwork {
       const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
       const contentKey = AccountTrieNodeContentKey.encode({
         nodeHash,
-        path: tightlyPackNibbles(newpaths as TNibble[]),
+        path: packNibbles(newpaths),
       })
       const contentId = StateNetworkContentId.fromBytes(contentKey)
       const in_radius = distance(bytesToHex(contentId).slice(2), this.enr.nodeId) < this.nodeRadius
@@ -220,7 +215,7 @@ export class StateNetwork extends BaseNetwork {
     const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
     const contentKey = AccountTrieNodeContentKey.encode({
       nodeHash,
-      path: tightlyPackNibbles(newpaths as TNibble[]),
+      path: packNibbles(newpaths),
     })
     return { content, contentKey }
   }
@@ -231,9 +226,7 @@ export class StateNetwork extends BaseNetwork {
       db: this.stateDB.db,
     })
     lookupTrie.root(stateroot)
-    const addressPath = toHexString(lookupTrie['hash'](fromHexString(address)))
-      .slice(2)
-      .split('')
+    const addressPath = addressToNibbles(fromHexString(address))
     const lookupFunction = async (key: Uint8Array) => {
       const lookup = new ContentLookup(this, key)
       const request = await lookup.startLookup()
@@ -241,10 +234,9 @@ export class StateNetwork extends BaseNetwork {
       const keyobj = AccountTrieNodeContentKey.decode(key)
       if (requestContent === undefined) {
         throw new Error(
-          `network doesn't have node [${unpackNibbles(
-            keyobj.path.packedNibbles,
-            keyobj.path.isOddLength,
-          )}]${toHexString(keyobj.nodeHash)}`,
+          `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(
+            keyobj.nodeHash,
+          )}`,
         )
       }
       const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
@@ -255,7 +247,7 @@ export class StateNetwork extends BaseNetwork {
       const lookup = new ContentLookup(
         this,
         AccountTrieNodeContentKey.encode({
-          path: tightlyPackNibbles([]),
+          path: packNibbles([]),
           nodeHash: stateroot,
         }),
       )
@@ -282,7 +274,7 @@ export class StateNetwork extends BaseNetwork {
         return current.value()
       }
       const nextContentKey = AccountTrieNodeContentKey.encode({
-        path: tightlyPackNibbles(nodePath as TNibble[]),
+        path: packNibbles(nodePath),
         nodeHash: nextNodeHash as Uint8Array,
       })
       const found = await lookupFunction(nextContentKey)
