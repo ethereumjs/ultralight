@@ -1,5 +1,5 @@
 import { bytesToUnprefixedHex } from '@ethereumjs/util'
-import { sha256 } from 'ethereum-cryptography/sha256.js'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import { Nibble, type TNibble } from './types.js'
 
@@ -16,7 +16,7 @@ const nibbleToNumber = (nibble: TNibble): number => parseInt(nibble, 16)
 const numberToNibble = (number: number): TNibble => number.toString(16) as TNibble
 
 export const addressToNibbles = (address: Uint8Array): Nibbles => {
-  const hash = sha256(address)
+  const hash = keccak256(address)
   const hashStr = bytesToUnprefixedHex(hash)
   const nibbles: Nibbles = hashStr.split('') as Nibbles
   return nibbles

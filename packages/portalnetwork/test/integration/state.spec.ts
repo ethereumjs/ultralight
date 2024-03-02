@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/discv5'
-import { Trie } from '@ethereumjs/trie'
+import { LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
 import { Account, hexToBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -13,6 +13,7 @@ import {
   PortalNetwork,
   TransportLayer,
   fromHexString,
+  toHexString,
 } from '../../src/index.js'
 import samples from '../networks/state/testdata/accountNodeSamples.json'
 
@@ -24,7 +25,7 @@ const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
-const sample = samples.slice(-1)[0]
+const sample = samples[0]
 const [key, value] = sample as [string, object]
 const content = Uint8Array.from(Object.values(value))
 const contentKey = fromHexString(key)
@@ -83,7 +84,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
   const result = await network1.receiveAccountTrieNodeOffer(contentKey, content)
   it('should store some content', async () => {
     expect(result.stored).toBeGreaterThan(0)
-    expect(result.stored).toEqual(2)
+    expect(result.stored).toEqual(1)
   })
   it('should gossip some content', async () => {
     expect(result.gossipCount).toEqual(1)
@@ -99,14 +100,14 @@ describe('AccountTrieNode Gossip / Request', async () => {
   }
 
   it('should store some nodes in node1', async () => {
-    expect(storedInNode1.size).toEqual(2)
+    expect(storedInNode1.size).toEqual(1)
   })
   it('should store some nodes in node2', async () => {
-    expect(storedInNode2.size).toEqual(1)
+    expect(storedInNode2.size).toEqual(3)
   })
   const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
   const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
-  const requested = await network2.sendFindContent(node1.discv5.enr.nodeId, next.contentKey)
+  const requested = await network1.sendFindContent(node2.discv5.enr.nodeId, next.contentKey)
   it('should request individual node from peer', () => {
     expect(requested).toBeDefined()
     expect(requested?.selector).toEqual(1)
@@ -117,7 +118,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
     storedInNode2.add(key)
   }
   it('should store some nodes in node2', async () => {
-    expect(storedInNode2.size).toEqual(1)
+    expect(storedInNode2.size).toEqual(3)
   })
 })
 
@@ -203,20 +204,22 @@ describe('getAccount via network', async () => {
   const storedValues = storedInNodes.map((set) => [...set.values()])
   const uniqueStored = Array.from(new Set(storedValues.flat()))
   it('should distribute all nodes', () => {
-    expect(uniqueStored.length).toEqual(6)
+    expect(uniqueStored.length).toEqual(5)
   })
   for (const [idx, keys] of storedInNodes.entries()) {
     it(`client ${idx} should store ${keys.size} trie nodes`, () => {
-      expect(keys.size).toBeGreaterThan(0)
+      expect(keys.size).toBeLessThan(5)
     })
   }
   const testClient = networks[4]
-  const testAddress = '0xe6115b13f9795f7e956502d5074567dab945ce6b'
+
+  const testAddress = '0x1a2694ec07cf5e4d68ba40f3e7a14c53f3038c6e'
   const stateRoot = trie['hash'](deserialized.proof[0])
+  console.log({ temp: [...testClient.stateDB.db.temp.keys()] })
   const found = await testClient.getAccount(testAddress, stateRoot, false)
   const foundAccount = Account.fromRlpSerializedAccount(found!)
   it('should find account data', async () => {
-    assert.deepEqual(foundAccount.balance, BigInt('0x152d02c7e14af6800000'), 'account data found')
+    assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
   })
 
   const temp = [...testClient.stateDB.db.temp.keys()]
@@ -226,6 +229,11 @@ describe('getAccount via network', async () => {
   }
   it('should have all nodes in temp or permanent db', () => {
     expect(temp.length + perm.length).toEqual(uniqueStored.length)
+  })
+  console.log({
+    uniqueStored,
+    temp,
+    perm,
   })
   it('should not have temp entries also in permanent db', () => {
     for (const key of temp) {

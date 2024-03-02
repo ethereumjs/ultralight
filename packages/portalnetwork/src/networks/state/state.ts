@@ -278,10 +278,12 @@ export class StateNetwork extends BaseNetwork {
         nodeHash: nextNodeHash as Uint8Array,
       })
       const found = await lookupFunction(nextContentKey)
-      this.stateDB.db.temp.set(
-        toHexString(found.nodeHash).slice(2),
-        toHexString(found.node).slice(2),
-      )
+      if ((await this.stateDB.db.get(toHexString(found.nodeHash).slice(2))) === undefined) {
+        this.stateDB.db.temp.set(
+          toHexString(found.nodeHash).slice(2),
+          toHexString(found.node).slice(2),
+        )
+      }
       accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
     }
     if (deleteAfter) {
