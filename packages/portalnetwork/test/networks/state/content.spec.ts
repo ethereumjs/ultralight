@@ -174,7 +174,7 @@ describe('Storage Trie Node Content Type', async () => {
       const valueNode = decodedContent.storageProof.slice(-1)[0]
       const node = decodeNode(valueNode) as LeafNode
       try {
-        assert.deepEqual(RLP.decode(node.value()), fromHexString('0x' + padToEven(value.slice(2))))
+        assert.deepEqual(RLP.decode(node.value()), unprefixedHexToBytes(padToEven(value.slice(2))))
       } catch (err: any) {
         throw new Error(`${err.message}\n${value}`)
       }
@@ -262,7 +262,7 @@ describe('Storage Trie Node Content Type', async () => {
     for (const { key, value } of storedContent.valueNodeContents) {
       const res = await storageTrie.get(fromHexString(key))
       if (res) {
-        assert.deepEqual(fromHexString('0x' + padToEven(value.slice(2))), RLP.decode(res))
+        assert.deepEqual(unprefixedHexToBytes(padToEven(value.slice(2))), RLP.decode(res))
       } else {
         assert.equal(value, '0x')
       }

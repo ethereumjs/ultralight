@@ -1,5 +1,5 @@
 import { KeypairType, SignableENR, createKeypair } from '@chainsafe/discv5'
-import { bytesToHex } from '@ethereumjs/util'
+import { bytesToUnprefixedHex } from '@ethereumjs/util'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { describe, expect, it } from 'vitest'
 
@@ -79,12 +79,12 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
     expect(proof.length - interested.length).toEqual(notInterested.length)
     for (const { contentKey } of interested) {
       const id = StateNetworkContentId.fromBytes(contentKey)
-      const dist = distance(client.discv5.enr.nodeId, bytesToHex(id).slice(2))
+      const dist = distance(client.discv5.enr.nodeId, bytesToUnprefixedHex(id))
       expect(dist).toBeLessThan(state.nodeRadius)
     }
     for (const { contentKey } of notInterested) {
       const id = StateNetworkContentId.fromBytes(contentKey)
-      const dist = distance(client.discv5.enr.nodeId, bytesToHex(id).slice(2))
+      const dist = distance(client.discv5.enr.nodeId, bytesToUnprefixedHex(id))
       expect(dist).toBeGreaterThan(state.nodeRadius)
     }
   })

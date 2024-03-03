@@ -2,7 +2,7 @@ import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
-import { MapDB, equalsBytes } from '@ethereumjs/util'
+import { MapDB, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 
 import { unpackNibbles } from './nibbleEncoding.js'
 import {
@@ -184,7 +184,7 @@ export function getDatabaseKey(contentKey: Uint8Array) {
     default:
       break
   }
-  return toHexString(dbKey).slice(2)
+  return bytesToUnprefixedHex(dbKey)
 }
 
 export function getDatabaseContent(type: StateNetworkContentType, content: Uint8Array) {
@@ -200,7 +200,7 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
       dbContent = ContractRetrieval.deserialize(content).code
       break
   }
-  return toHexString(dbContent).slice(2)
+  return bytesToUnprefixedHex(dbContent)
 }
 
 export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {

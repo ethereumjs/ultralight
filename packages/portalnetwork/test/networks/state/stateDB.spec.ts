@@ -54,7 +54,7 @@ describe('StateDB components', async () => {
   it('should put and get trie value', async () => {
     assert.deepEqual(value, fromHexString('0x1234'), 'should find trie node in StateDB')
   })
-  const rootHex = toHexString(trie.root()).slice(2)
+  const rootHex = bytesToUnprefixedHex(trie.root())
   const tNode = await portalTrieDB.get(rootHex)
   const node = decodeNode(fromHexString(tNode!))
 
