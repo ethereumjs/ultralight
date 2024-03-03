@@ -1,7 +1,7 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { RLP } from '@ethereumjs/rlp'
 import { Trie, decodeNode } from '@ethereumjs/trie'
-import { Account, padToEven } from '@ethereumjs/util'
+import { Account, padToEven, unprefixedHexToBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
 import { assert, describe, expect, it } from 'vitest'
 
@@ -15,6 +15,12 @@ import {
 } from '../../../src/networks/state/index.js'
 
 import type { LeafNode, TrieNode } from '@ethereumjs/trie'
+
+const sampleAccounts: [string, { balance: string }][] = [
+  ['1a2694ec07cf5e4d68ba40f3e7a14c53f3038c6e', { balance: '0x3636cd06e2db3a8000' }],
+  ['4549b15979255f7e65e99b0d5604db98dfcac8bf', { balance: '0xd8d726b7177a800000' }],
+  ['40eddb448d690ed72e05c225d34fc8350fa1e4c5', { balance: '0x17b7883c06916600000' }],
+]
 
 interface ITrieNodeContent {
   contentKey: Uint8Array
@@ -59,11 +65,12 @@ describe('Account Trie Node Content Type', async () => {
   const decoded = Object.entries(samples).map(([k, v]) => {
     const key = AccountTrieNodeContentKey.decode(fromHexString(k))
     const des = AccountTrieNodeOffer.deserialize(v)
+    const proof = des.proof.map((node) => decodeNode(node))
     return {
       nodeHash: toHexString(key.nodeHash),
       path: key.path,
       blockHash: toHexString(des.blockHash),
-      proof: des.proof.map((node) => decodeNode(node)),
+      proof,
     }
   })
 
@@ -84,10 +91,7 @@ describe('Account Trie Node Content Type', async () => {
   }
   sampleTrie.root(fromHexString(genesisBlock.stateRoot))
 
-  const addrs: string[] = [
-    '0xae34861d342253194ffc6652dfde51ab44cad3fe',
-    '0xe6115b13f9795f7e956502d5074567dab945ce6b',
-  ]
+  const addrs: string[] = sampleAccounts.map(([a, _]) => a)
 
   const found: [number[], TrieNode][] = []
   await sampleTrie.walkAllNodes(async (node, key) => {
@@ -111,9 +115,17 @@ describe('Account Trie Node Content Type', async () => {
       expect(sampleTrie['hash'](sample.proof[sample.proof.length - 1].serialize()))
     })
   }
-  for (const [i, { proof }] of decoded.slice(-2).entries()) {
-    const _proof = await sampleTrie.createProof(fromHexString(addrs[i]))
-    it('trie should produce same proof as sample content', () => {
+  for (const [idx, address] of addrs.entries()) {
+    it('should find address in trie', async () => {
+      const res = await sampleTrie.get(unprefixedHexToBytes(address))
+      expect(res === null).toBeFalsy()
+      expect(res!.length).toBeGreaterThan(0)
+      const acc = Account.fromRlpSerializedAccount(res!)
+      expect(acc.balance).toEqual(BigInt(sampleAccounts[idx][1].balance))
+    })
+    const proof = decoded[idx * 2].proof
+    const _proof = await sampleTrie.createProof(unprefixedHexToBytes(address))
+    it(`trie should produce same proof (${_proof.length}) as sample content (${proof.length})`, () => {
       assert.equal(_proof.length, proof.length)
       assert.deepEqual(
         _proof,

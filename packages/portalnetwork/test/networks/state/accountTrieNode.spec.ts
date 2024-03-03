@@ -34,6 +34,26 @@ const config = {
   peerId: peerIdFromString('16Uiu2HAmV8Acjks2Y9wQ4nXFRsMMaZQ4r4i7dzKcnurYrwtg35zV'),
   r: 254,
 }
+
+describe('samples', () => {
+  const _samples = samples as [string, object][]
+  for (const [key, value] of _samples) {
+    const contentBytes = Uint8Array.from(Object.values(value))
+    const contentKeyBytes = fromHexString(key)
+    const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
+    it('should decode sample key', () => {
+      expect(contentKey.path).toBeDefined()
+      expect(contentKey.nodeHash).toBeDefined()
+    })
+
+    const content = AccountTrieNodeOffer.deserialize(contentBytes)
+    it('should decode content', () => {
+      expect(content.proof).toBeDefined()
+      expect(content.blockHash).toBeDefined()
+    })
+  }
+})
+
 describe('StateNetwork AccountTrieNode Gossip', async () => {
   const client = await PortalNetwork.create({
     supportedNetworks: [NetworkId.StateNetwork],
@@ -51,7 +71,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey
-  const unpacked = unpackNibbles(path.packedNibbles, path.isOddLength)
+  const unpacked = unpackNibbles(path)
   const { proof, blockHash } = content
   const { interested, notInterested } = await state.storeInterestedNodes(path, proof)
   it('Should store interested content', async () => {
@@ -83,6 +103,6 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   it(`should package forward offer for gossip`, async () => {
     const forwardOffer = await state.forwardAccountTrieOffer(path, proof, blockHash)
     const decoded = AccountTrieNodeContentKey.decode(forwardOffer.contentKey)
-    expect(decoded.path.packedNibbles.length).toBeLessThanOrEqual(path.packedNibbles.length)
+    expect(decoded.path.length).toBeLessThanOrEqual(path.length)
   })
 })

@@ -2,14 +2,14 @@ import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
-import { MapDB, equalsBytes, padToEven } from '@ethereumjs/util'
+import { MapDB, equalsBytes } from '@ethereumjs/util'
 
+import { unpackNibbles } from './nibbleEncoding.js'
 import {
   AccountTrieNodeKey,
   AccountTrieNodeRetrieval,
   ContractCodeKey,
   ContractRetrieval,
-  Nibble,
   StateNetworkContentType,
   StorageTrieNodeKey,
   StorageTrieNodeRetrieval,
@@ -18,7 +18,6 @@ import {
 import type {
   TAccountTrieNodeKey,
   TContractCodeKey,
-  TNibble,
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
@@ -41,7 +40,7 @@ export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
 }
 export class AccountTrieNodeContentKey {
   static encode({ path, nodeHash }: TAccountTrieNodeKey): Uint8Array {
-    const key = AccountTrieNodeKey.serialize({ path, nodeHash })
+    const key = AccountTrieNodeKey.serialize({ path: Uint8Array.from(path), nodeHash })
     return Uint8Array.from([0x20, ...key])
   }
   static decode(key: Uint8Array): TAccountTrieNodeKey {
@@ -136,35 +135,6 @@ export function calculateAddressRange(
   return { min: minAddress, max: maxAddress }
 }
 
-/**
- * Take a bytestring of loosely packed nibbles and return them tightly packed
- * @param nibbles array of loosely packed nibbles
- * [1, 2, a, b] -> Nibbles(is_odd_length=false, packed_nibbles=[0x12, 0xab])
- * [1, 2, a, b, c] -> Nibbles(is_odd_length=true, packed_nibbles=[0x01, 0x2a, 0xbc])
- */
-export const tightlyPackNibbles = (nibbles: TNibble[]): TNibbles => {
-  if (!nibbles.every((nibble) => Nibble[nibble] !== undefined)) {
-    throw new Error(`path: [${nibbles}] must be an array of nibbles`)
-  }
-  const isOddLength = nibbles.length % 2 !== 0
-  const nibbleArray = isOddLength ? ['0', ...nibbles] : nibbles
-  const nibblePairs = Array.from({ length: nibbleArray.length / 2 }, (_, idx) => idx).map((i) => {
-    return nibbleArray
-      .slice(2 * i, 2 * i + 2)
-      .map((b) => (typeof b === 'number' ? b.toString(16) : b))
-  })
-  const packedBytes = nibblePairs.map((nibbles) => {
-    return parseInt(nibbles.join(''), 16)
-  })
-  return { isOddLength, packedNibbles: Uint8Array.from(packedBytes) }
-}
-
-export const unpackNibbles = (packedNibbles: Uint8Array, isOddLength: boolean) => {
-  const bytes = [...packedNibbles]
-  const byteArray = bytes.map((b) => padToEven(b.toString(16)).split('')).flat()
-  return byteArray.slice(isOddLength ? 1 : 0)
-}
-
 export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8Array) => {
   if (equalsBytes(nodeA, nodeB)) {
     return nodeA
@@ -237,7 +207,7 @@ export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
   if (proof.length === 1) {
     return { curRlp: proof[0], nodes: proof, newpaths: [] }
   }
-  const nibbles = unpackNibbles(path.packedNibbles, path.isOddLength)
+  const nibbles = unpackNibbles(path)
   const nodes = [...proof]
   const curRlp = nodes.pop()!
   const curNode = decodeNode(curRlp)

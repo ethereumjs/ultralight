@@ -12,7 +12,7 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
-  tightlyPackNibbles,
+  packNibbles,
 } from '../../src/index.js'
 import { genesisStateTrie, mainnet } from '../../src/networks/state/genesis.js'
 
@@ -31,7 +31,7 @@ const genesisContent = async (
   await trie.walkAllNodes(async (node, key) => {
     const nodeBytes = node.serialize()
     const node_hash = trie['hash'](nodeBytes)
-    const nibbles = key as TNibble[]
+    const nibbles = key.map((n) => n.toString(16)) as TNibble[]
     nodePaths[toHexString(node_hash)] = { nodeBytes, nibbles }
   })
 
@@ -74,7 +74,7 @@ const genesisContent = async (
   }
   const leafNodeContent: [string, Uint8Array][] = leafProofs.map(
     ([nodeHash, { nibbles, proof }]) => {
-      const path = tightlyPackNibbles(nibbles as TNibble[])
+      const path = packNibbles(nibbles)
       const key: TAccountTrieNodeKey = {
         nodeHash,
         path,
@@ -91,7 +91,7 @@ const genesisContent = async (
   )
   const trieNodeContent: [string, Uint8Array][] = Object.entries(allProofs).map(
     ([nodeHash, { nibbles, proof }]) => {
-      const path = tightlyPackNibbles(nibbles as TNibble[])
+      const path = packNibbles(nibbles)
       const key: TAccountTrieNodeKey = {
         nodeHash: fromHexString(nodeHash),
         path,

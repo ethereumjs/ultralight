@@ -1,5 +1,4 @@
 import {
-  BooleanType,
   ByteListType,
   ByteVectorType,
   ContainerType,
@@ -23,42 +22,29 @@ export const PingPongPayload = new ContainerType({ dataRadius: new UintBigintTyp
 
 /* ----------------- Paths (Nibbles) ----------- */
 export const Nibble = {
-  0: '0',
-  1: '1',
-  2: '2',
-  3: '3',
-  4: '4',
-  5: '5',
-  6: '6',
-  7: '7',
-  8: '8',
-  9: '9',
-  10: 'a',
-  11: 'b',
-  12: 'c',
-  13: 'd',
-  14: 'e',
-  15: 'f',
-  a: 'a',
-  b: 'b',
-  c: 'c',
-  d: 'd',
-  e: 'e',
-  f: 'f',
-} as const
+  '0': 0,
+  '1': 1,
+  '2': 2,
+  '3': 3,
+  '4': 4,
+  '5': 5,
+  '6': 6,
+  '7': 7,
+  '8': 8,
+  '9': 9,
+  a: 10,
+  b: 11,
+  c: 12,
+  d: 13,
+  e: 14,
+  f: 15,
+}
 export type TNibble = keyof typeof Nibble
 export type TNibblePair = [TNibble, TNibble] // 2 nibbles tightly packed into a single byte
 export type TPackedNibbles = Array<TNibblePair>
-export type TNibbles = {
-  isOddLength: boolean
-  packedNibbles: Uint8Array
-}
+export type TNibbles = Uint8Array
 export const NibblePair = new UintBigintType(32)
-export const Nibbles = new ContainerType({
-  isOddLength: new BooleanType(),
-  packedNibbles: new ByteListType(32),
-})
-
+export const Nibbles = new ByteListType(33)
 /* ----------------- Merkle Patricia Tire (MPT) Proofs ----------- */
 
 export type TTrieNode = Uint8Array
