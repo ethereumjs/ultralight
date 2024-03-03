@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/discv5'
-import { LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { Trie } from '@ethereumjs/trie'
 import { Account, hexToBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -13,7 +13,6 @@ import {
   PortalNetwork,
   TransportLayer,
   fromHexString,
-  toHexString,
 } from '../../src/index.js'
 import samples from '../networks/state/testdata/accountNodeSamples.json'
 
@@ -215,7 +214,6 @@ describe('getAccount via network', async () => {
 
   const testAddress = '0x1a2694ec07cf5e4d68ba40f3e7a14c53f3038c6e'
   const stateRoot = trie['hash'](deserialized.proof[0])
-  console.log({ temp: [...testClient.stateDB.db.temp.keys()] })
   const found = await testClient.getAccount(testAddress, stateRoot, false)
   const foundAccount = Account.fromRlpSerializedAccount(found!)
   it('should find account data', async () => {
@@ -229,11 +227,6 @@ describe('getAccount via network', async () => {
   }
   it('should have all nodes in temp or permanent db', () => {
     expect(temp.length + perm.length).toEqual(uniqueStored.length)
-  })
-  console.log({
-    uniqueStored,
-    temp,
-    perm,
   })
   it('should not have temp entries also in permanent db', () => {
     for (const key of temp) {
