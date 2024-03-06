@@ -49,6 +49,11 @@ const args: any = yargs(hideBin(process.argv))
     boolean: true,
     default: false,
   })
+  .option('radius', {
+    describe: 'node radius for devnet nodes',
+    number: true,
+    default: 255,
+  })
   .strict().argv as DevnetOpts
 
 const main = async () => {
@@ -65,7 +70,7 @@ const main = async () => {
   const file = require.resolve(process.cwd() + '/dist/index.js')
   if (args.pks !== undefined) {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8' }).split('\n')
-    for (let idx = 0; idx < pks.length; idx++) {
+    for (let idx = 0; idx < Math.min(args.numNodes, pks.length); idx++) {
       const child = spawn(
         process.execPath,
         [
@@ -76,7 +81,8 @@ const main = async () => {
           `--rpcPort=${8545 + idx}`,
           `--metrics=true`,
           `--metricsPort=${18545 + idx}`,
-          `--bindAddress-${ip}:${args.port + idx}`,
+          `--bindAddress=${ip}:${args.port + idx}`,
+          `--radius=${args.radius}`,
           ...networks,
         ],
         { stdio: ['pipe', 'pipe', process.stderr] },
@@ -94,6 +100,8 @@ const main = async () => {
           `--metrics=true`,
           `--metricsPort=${18545 + x}`,
           `--bindAddress=${ip}:${args.port + x}`,
+          `--radius=${args.radius}`,
+
           ...networks,
         ],
         { stdio: ['pipe', 'pipe', process.stderr] },
