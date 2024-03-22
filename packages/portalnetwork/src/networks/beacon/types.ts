@@ -49,7 +49,7 @@ export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 5)
 
 export const HistoricalSummariesWithProof = new ContainerType({
   epoch: new UintBigintType(8),
-  historicalSummaries = new ListCompositeType(
+  historicalSummaries: new ListCompositeType(
     ssz.allForks.capella.BeaconState.fields.historicalSummaries,
     HISTORICAL_ROOTS_LIMIT,
   ),
