@@ -701,7 +701,7 @@ describe('beacon light client sync tests', () => {
       '0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b',
     )
 
-    await network2.lightClient?.start()
+    void network2.lightClient?.start()
 
     while (network2.lightClient?.status !== RunStatusCode.started) {
       await new Promise((r) => setTimeout(r, 1000))
