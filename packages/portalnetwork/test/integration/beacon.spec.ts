@@ -186,7 +186,7 @@ describe('Find Content tests', () => {
     const res = await network2.sendFindContent(
       node1.discv5.enr.nodeId,
       concatBytes(
-        new Uint8Array([0x23]),
+        new Uint8Array([0x13]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
@@ -197,7 +197,7 @@ describe('Find Content tests', () => {
     )
     const content = await network2.findContentLocally(
       concatBytes(
-        new Uint8Array([0x23]),
+        new Uint8Array([0x13]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
