@@ -5,7 +5,7 @@ import {
   UintBigintType,
   VectorCompositeType,
 } from '@chainsafe/ssz'
-import { type ForkName, HISTORICAL_ROOTS_LIMIT } from '@lodestar/params'
+import { type ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 
 import { Bytes32Type } from '../types.js'
