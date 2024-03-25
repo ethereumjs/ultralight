@@ -1,19 +1,26 @@
-import { ByteListType, ContainerType, ListCompositeType, UintBigintType } from '@chainsafe/ssz'
+import {
+  ByteListType,
+  ContainerType,
+  ListCompositeType,
+  UintBigintType,
+  VectorCompositeType,
+} from '@chainsafe/ssz'
+import { type ForkName } from '@lodestar/params'
+import { ssz } from '@lodestar/types'
 
 import { Bytes32Type } from '../types.js'
-
-import type { ForkName } from '@lodestar/params'
 
 export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 
 export const MIN_BOOTSTRAP_VOTES = 5
 
 export enum BeaconLightClientNetworkContentType {
-  LightClientBootstrap = 32, // 0x20
-  LightClientUpdatesByRange = 33, // 0x21
-  LightClientFinalityUpdate = 34, // 0x22
-  LightClientOptimisticUpdate = 35, // 0x23
-  LightClientUpdate = 36, // 0x24 (Added for convenience, not part of the Portal Network Spec)
+  LightClientBootstrap = 0x10,
+  LightClientUpdatesByRange = 0x11,
+  LightClientFinalityUpdate = 0x12,
+  LightClientOptimisticUpdate = 0x13,
+  HistoricalSummaries = 0x14,
+  LightClientUpdate = 0x15, // (Added for convenience, not part of the Portal Network Spec)
 }
 
 export type LightClientForkName = Exclude<ForkName, 'phase0' | 'bellatrix'> // ForkName subset that excludes forks that have no light client changes
@@ -34,6 +41,16 @@ export const LightClientFinalityUpdateKey = new ContainerType({
 })
 export const LightClientOptimisticUpdateKey = new ContainerType({
   signatureSlot: new UintBigintType(8),
+})
+
+export const HistoricalSummariesKey = 0n
+
+export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 5)
+
+export const HistoricalSummariesWithProof = new ContainerType({
+  epoch: new UintBigintType(8),
+  historicalSummaries: ssz.allForks.capella.BeaconState.fields.historicalSummaries,
+  proof: HistoricalSummariesProof,
 })
 
 export enum SyncStrategy {

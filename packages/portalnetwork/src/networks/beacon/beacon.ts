@@ -312,7 +312,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       },
     })
 
-    this.lightClient.start()
+    await this.lightClient.start()
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {

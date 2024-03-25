@@ -186,7 +186,7 @@ describe('Find Content tests', () => {
     const res = await network2.sendFindContent(
       node1.discv5.enr.nodeId,
       concatBytes(
-        new Uint8Array([0x23]),
+        new Uint8Array([0x13]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
@@ -197,7 +197,7 @@ describe('Find Content tests', () => {
     )
     const content = await network2.findContentLocally(
       concatBytes(
-        new Uint8Array([0x23]),
+        new Uint8Array([0x13]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
@@ -701,7 +701,7 @@ describe('beacon light client sync tests', () => {
       '0x3e733d7db0b70c17a00c125da9cce68cbdb8135c4400afedd88c17f11a3e3b7b',
     )
 
-    network2.lightClient?.start()
+    void network2.lightClient?.start()
 
     while (network2.lightClient?.status !== RunStatusCode.started) {
       await new Promise((r) => setTimeout(r, 1000))

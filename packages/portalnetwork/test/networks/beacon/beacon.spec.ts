@@ -243,7 +243,7 @@ describe('API tests', async () => {
   it('stores a LightClientUpdate locally', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
     await network.storeUpdateRange(hexToBytes(updatesByRange.content_value))
-    const storedUpdate = await network.findContentLocally(hexToBytes('0x240330'))
+    const storedUpdate = await network.findContentLocally(hexToBytes('0x150330'))
     const deserializedUpdate = ssz.capella.LightClientUpdate.deserialize(storedUpdate!.slice(4))
     assert.equal(
       deserializedUpdate.attestedHeader.beacon.slot,
