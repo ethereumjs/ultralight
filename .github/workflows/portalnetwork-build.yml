@@ -31,6 +31,8 @@ jobs:
     
       - run: npm i -g @mapbox/node-pre-gyp
 
+      - run: git submodule init
+
       - run: npm i
         working-directory: ${{ github.workspace }}
 
