@@ -1,0 +1,3 @@
+[submodule "packages/portal-spec-tests"]
+	path = packages/portal-spec-tests
+	url = https://github.com/ethereum/portal-spec-tests.git
