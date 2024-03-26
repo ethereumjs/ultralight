@@ -88,6 +88,11 @@ const args: ClientOpts = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
+  .option('radius', {
+    describe: 'node radius exponent',
+    number: true,
+    default: 255,
+  })
   .strict().argv as ClientOpts
 
 const register = new PromClient.Registry()
@@ -165,7 +170,7 @@ const main = async () => {
   }
   const portal = await PortalNetwork.create({
     config,
-    radius: 2n ** 256n - 1n,
+    radius: 2n ** BigInt(args.radius),
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
@@ -175,7 +180,7 @@ const main = async () => {
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*RPC*, *ultralight*, *Portal*')
+  portal.enableLog('*RPC*, *ultralight*')
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
@@ -245,7 +250,9 @@ const main = async () => {
               })
             }`,
           )
-          return this.getMethod(method)
+          const m = this.getMethod(method)
+          log(`MethodHandler: ${m}`)
+          return m
         }
       },
     })

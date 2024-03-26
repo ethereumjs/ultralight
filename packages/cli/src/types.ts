@@ -278,6 +278,7 @@ export interface ClientOpts {
   web3?: string
   networks?: (string | number)[]
   trustedBlockRoot?: string
+  radius: number
 }
 
 export interface DevnetOpts {

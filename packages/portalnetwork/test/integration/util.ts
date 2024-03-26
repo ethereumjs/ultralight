@@ -20,8 +20,8 @@ import {
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
 
-import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src'
-import type { StateDB } from '../../src/networks/state/statedb'
+import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src/index.js'
+import type { StateDB } from '../../src/networks/state/statedb.js'
 import type { LeafNode } from '@ethereumjs/trie'
 
 export const protoBufs = [
