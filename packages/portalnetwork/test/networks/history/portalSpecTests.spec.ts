@@ -1,3 +1,4 @@
+import { BlockHeader } from '@ethereumjs/block'
 import { TransactionFactory } from '@ethereumjs/tx'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
@@ -7,6 +8,7 @@ import { assert, describe, it } from 'vitest'
 
 import {
   BlockBodyContentType,
+  BlockHeaderWithProof,
   EpochAccumulator,
   MasterAccumulatorType,
   decodeHistoryNetworkContentKey,
@@ -55,5 +57,30 @@ describe('block body tests', () => {
       TransactionFactory.fromSerializedData(body.allTransactions[0]).hash(),
     )
     assert.equal(tx0Hash, '0x163dae461ab32787eaecdad0748c9cf5fe0a22b443bc694efae9b80e319d9559')
+  })
+})
+
+describe('header tests', () => {
+  it('should deserialize header with proof', () => {
+    const testVector: { content_key: string; content_value: string } = yaml.load(
+      readFileSync(
+        resolve(
+          __dirname,
+          '../../../../portal-spec-tests/tests/mainnet/history/headers_with_proof/1000010.yaml',
+        ),
+        {
+          encoding: 'utf-8',
+        },
+      ),
+    ) as any
+    const headerWithProof = BlockHeaderWithProof.deserialize(hexToBytes(testVector.content_value))
+    const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
+      setHardfork: true,
+    })
+    assert.equal(header.number, 1000010n)
+    assert.equal(
+      bytesToHex(headerWithProof.proof.value![0]),
+      '0xcead98e305c70563000000000000000000000000000000000000000000000000',
+    )
   })
 })
