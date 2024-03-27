@@ -58,7 +58,7 @@ The Routing Table tab is a visual representation of the client's routing table, 
 
 ### Bootnode Responses
 
-The Bootnodes tab displays the reponses from the Clients' initial attempt to reach the public bootnodes.
+The Bootnodes tab displays the responses from the Clients' initial attempt to reach the public bootnodes.
 
 ### PING/PONG
 
