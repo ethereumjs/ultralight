@@ -3,7 +3,9 @@ import { hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { ssz } from '@lodestar/types'
-import { createRequire } from 'module'
+import { readFileSync } from 'fs'
+import yaml from 'js-yaml'
+import { resolve } from 'path'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -15,18 +17,57 @@ import {
   LightClientUpdatesByRangeKey,
 } from '../../../src/networks/beacon/types.js'
 
-const require = createRequire(import.meta.url)
-
 const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot) // Genesis Validators Root
 const config = createBeaconConfig(defaultChainConfig, genesisRoot)
 
 describe('Beacon network type tests using portal network spec test vectors', () => {
-  const optimisticUpdateTestVector = require('../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/optimistic_update.json')
-  const finalityUpdateTestVector = require('../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/finality_update.json')
-  const bootstrapTestVector = require('../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/bootstrap.json')
-  const updatesByRangeTestVector = require('../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/updates.json')
-  const serializedOptimistincUpdate = hexToBytes(optimisticUpdateTestVector[0].content_value)
-  const serializedOptimistincUpdateKey = hexToBytes(optimisticUpdateTestVector[0].content_key)
+  const optimisticUpdateTestVector = yaml.load(
+    readFileSync(
+      resolve(
+        __dirname,
+        '../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/optimistic_update.yaml',
+      ),
+      {
+        encoding: 'utf-8',
+      },
+    ),
+  ) as any
+  const finalityUpdateTestVector = yaml.load(
+    readFileSync(
+      resolve(
+        __dirname,
+        '../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/finality_update.yaml',
+      ),
+      {
+        encoding: 'utf-8',
+      },
+    ),
+  ) as any
+  const bootstrapTestVector = yaml.load(
+    readFileSync(
+      resolve(
+        __dirname,
+        '../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/bootstrap.yaml',
+      ),
+      {
+        encoding: 'utf-8',
+      },
+    ),
+  ) as any
+  const updatesByRangeTestVector = yaml.load(
+    readFileSync(
+      resolve(
+        __dirname,
+        '../../../../portal-spec-tests/tests/mainnet/beacon_chain/light_client/updates.yaml',
+      ),
+      {
+        encoding: 'utf-8',
+      },
+    ),
+  ) as any
+
+  const serializedOptimistincUpdate = hexToBytes(optimisticUpdateTestVector.content_value)
+  const serializedOptimistincUpdateKey = hexToBytes(optimisticUpdateTestVector.content_key)
   BeaconLightClientNetworkContentType.LightClientOptimisticUpdate
   const forkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
 
@@ -57,8 +98,8 @@ describe('Beacon network type tests using portal network spec test vectors', () 
     )
   })
 
-  const finalityUpdate = hexToBytes(finalityUpdateTestVector[0].content_value)
-  const finalityUpdateKey = hexToBytes(finalityUpdateTestVector[0].content_key).slice(1)
+  const finalityUpdate = hexToBytes(finalityUpdateTestVector.content_value)
+  const finalityUpdateKey = hexToBytes(finalityUpdateTestVector.content_key).slice(1)
   const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
     finalityUpdate.slice(4),
   )
@@ -79,7 +120,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
     )
   })
 
-  const bootstrap = bootstrapTestVector[0]
+  const bootstrap = bootstrapTestVector
   const deserializedBootstrap = ssz.capella.LightClientBootstrap.deserialize(
     hexToBytes(bootstrap.content_value).slice(4),
   )
@@ -95,8 +136,8 @@ describe('Beacon network type tests using portal network spec test vectors', () 
       'deserialized light client bootstrap key',
     )
   })
-  const updateByRange = hexToBytes(updatesByRangeTestVector[0].content_value)
-  const updateByRangeKey = hexToBytes(updatesByRangeTestVector[0].content_key).slice(1)
+  const updateByRange = hexToBytes(updatesByRangeTestVector.content_value)
+  const updateByRangeKey = hexToBytes(updatesByRangeTestVector.content_key).slice(1)
   const deserializedRange = LightClientUpdatesByRange.deserialize(updateByRange)
 
   let numUpdatesDeserialized = 0
