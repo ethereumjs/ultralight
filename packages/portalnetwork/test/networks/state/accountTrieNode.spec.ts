@@ -1,7 +1,7 @@
-import { KeypairType, SignableENR, createKeypair } from '@chainsafe/discv5'
-import { bytesToUnprefixedHex } from '@ethereumjs/util'
-import { peerIdFromString } from '@libp2p/peer-id'
-import { describe, expect, it } from 'vitest'
+import { SignableENR, createPeerIdFromPrivateKey } from '@chainsafe/enr'
+import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
+import { secp256k1 } from '@libp2p/interface'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import {
   AccountTrieNodeContentKey,
@@ -20,20 +20,11 @@ import samples from './testdata/accountNodeSamples.json'
 
 import type { StateNetwork } from '../../../src/index.js'
 
-const keypair = createKeypair(
-  KeypairType.Secp256k1,
-  Buffer.from('0ec9a107bcf64e1213128fe9ede9a148ccf77c6e952ab87eed845df9091207f3', 'hex'),
-  Buffer.from('03f4b147e6934b23fae52ecb4f2e33d6eaa6a99e774b6184a5d2ce62413993d736', 'hex'),
-)
-const config = {
-  keypair,
-  enr: SignableENR.decodeTxt(
-    'enr:-IS4QIlbUdmqYYXh1Ga17owfX75adT0wftLk9iQNkpftJg9yDjTa4p9mGNmNSYyxIgrWPLg8gNUoSDCZPE3TSOT6SLsDgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQP0sUfmk0sj-uUuy08uM9bqpqmed0thhKXSzmJBOZPXNoN1ZHCCE4g',
-    keypair,
-  ),
-  peerId: peerIdFromString('16Uiu2HAmV8Acjks2Y9wQ4nXFRsMMaZQ4r4i7dzKcnurYrwtg35zV'),
-  r: 254,
-}
+// const keypair = createKey(
+//   keyType,
+//   Buffer.from('0ec9a107bcf64e1213128fe9ede9a148ccf77c6e952ab87eed845df9091207f3', 'hex'),
+//   Buffer.from('03f4b147e6934b23fae52ecb4f2e33d6eaa6a99e774b6184a5d2ce62413993d736', 'hex'),
+// )
 
 describe('samples', () => {
   const _samples = samples as [string, object][]
@@ -55,6 +46,17 @@ describe('samples', () => {
 })
 
 describe('StateNetwork AccountTrieNode Gossip', async () => {
+  const privateKey = hexToBytes(
+    '0x0ec9a107bcf64e1213128fe9ede9a148ccf77c6e952ab87eed845df9091207f3',
+  )
+  const config = {
+    enr: SignableENR.decodeTxt(
+      'enr:-IS4QIlbUdmqYYXh1Ga17owfX75adT0wftLk9iQNkpftJg9yDjTa4p9mGNmNSYyxIgrWPLg8gNUoSDCZPE3TSOT6SLsDgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQP0sUfmk0sj-uUuy08uM9bqpqmed0thhKXSzmJBOZPXNoN1ZHCCE4g',
+      privateKey,
+    ),
+    peerId: await createPeerIdFromPrivateKey(secp256k1, privateKey),
+    r: 254,
+  }
   const client = await PortalNetwork.create({
     supportedNetworks: [NetworkId.StateNetwork],
     radius: BigInt(2 ** config.r),
@@ -74,6 +76,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const unpacked = unpackNibbles(path)
   const { proof, blockHash } = content
   const { interested, notInterested } = await state.storeInterestedNodes(path, proof)
+
   it('Should store interested content', async () => {
     expect(interested.length).toBeGreaterThan(0)
     expect(proof.length - interested.length).toEqual(notInterested.length)

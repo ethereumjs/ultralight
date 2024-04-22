@@ -1,4 +1,4 @@
-import { SignableENR } from '@chainsafe/discv5'
+import { SignableENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'

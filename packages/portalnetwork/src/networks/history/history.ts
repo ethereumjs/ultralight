@@ -1,3 +1,4 @@
+import { ENR } from '@chainsafe/enr'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToInt, hexToBytes } from '@ethereumjs/util'
@@ -5,7 +6,6 @@ import debug from 'debug'
 
 import {
   ContentMessageType,
-  ENR,
   FoundContent,
   MessageCodes,
   PortalWireMessageType,
@@ -40,7 +40,6 @@ import {
 import type { FindContentMessage, PortalNetwork, Witnesses } from '../../index.js'
 import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type { Debugger } from 'debug'
-
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'

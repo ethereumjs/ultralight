@@ -1,9 +1,5 @@
-import {
-  Discv5,
-  SignableENR,
-  createKeypairFromPeerId,
-  createPeerIdFromKeypair,
-} from '@chainsafe/discv5'
+import { Discv5 } from '@chainsafe/discv5'
+import { SignableENR, createPeerIdFromPublicKey, createPrivateKeyFromPeerId } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
 import { peerIdFromKeys } from '@libp2p/peer-id'
@@ -30,10 +26,11 @@ import { TransportLayer } from './types.js'
 
 import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
 import type { BaseNetwork } from '../networks/network.js'
-import type { ENR, IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
+import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
-import type { PeerId, Secp256k1PeerId } from '@libp2p/interface-peer-id'
+import type { ENR, NodeId } from '@chainsafe/enr'
+import type { PeerId, Secp256k1PeerId } from '@libp2p/interface'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 
@@ -76,7 +73,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
       config.peerId = await peerIdFromKeys(hexToBytes(prevPublicKey), hexToBytes(prevPrivateKey))
 
-      config.enr = SignableENR.decodeTxt(prevEnrString, createKeypairFromPeerId(config.peerId))
+      config.enr = SignableENR.decodeTxt(
+        prevEnrString,
+        createPrivateKeyFromPeerId(config.peerId).privateKey,
+      )
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
@@ -238,7 +238,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         // corresponding to the node's observed IP/Port so that we can send outbound messages to
         // those nodes later on if needed.  This is currently used by uTP when responding to
         // FINDCONTENT requests from nodes with invalid ENRs.
-        const peerId = await createPeerIdFromKeypair(enr.keypair)
+        const peerId = await createPeerIdFromPublicKey(enr.keypairType, enr.publicKey)
         this.unverifiedSessionCache.set(
           enr.nodeId,
           multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString()),

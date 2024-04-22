@@ -1,4 +1,5 @@
-import { ENR, distance } from '@chainsafe/discv5'
+import { distance } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { DefaultStateManager } from '@ethereumjs/statemanager'

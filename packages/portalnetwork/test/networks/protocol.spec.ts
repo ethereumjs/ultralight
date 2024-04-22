@@ -1,4 +1,5 @@
-import { ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
+import { EntryStatus } from '@chainsafe/discv5'
+import { ENR, SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -17,7 +18,7 @@ import {
 } from '../../src/index.js'
 
 import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { INodeAddress } from '@chainsafe/discv5/session'
 import type { BitArray } from '@chainsafe/ssz'
 
 describe('network wire message tests', async () => {

@@ -6,7 +6,7 @@ import { EventEmitter } from 'events'
 import WebSocket from 'isomorphic-ws'
 import WebSocketAsPromised from 'websocket-as-promised'
 
-import type { ENR, SocketAddress } from '@chainsafe/discv5'
+import type { SocketAddress } from '@chainsafe/discv5'
 import type {
   IPMode,
   IRemoteInfo,
@@ -14,6 +14,7 @@ import type {
   ITransportService,
 } from '@chainsafe/discv5/lib/transport/types.js'
 import type { IPacket } from '@chainsafe/discv5/packet'
+import type { ENR } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type StrictEventEmitter from 'strict-event-emitter-types/types/src'

@@ -4,7 +4,7 @@ import { UDP } from '@frontall/capacitor-udp'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 import { EventEmitter } from 'events'
 
-import type { ENR, SocketAddress } from '@chainsafe/discv5'
+import type { SocketAddress } from '@chainsafe/discv5'
 import type { IPacket } from '@chainsafe/discv5/packet'
 import type {
   IPMode,
@@ -12,6 +12,7 @@ import type {
   ITransportService,
   TransportEventEmitter,
 } from '@chainsafe/discv5/transport'
+import type { ENR } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 
 /**
