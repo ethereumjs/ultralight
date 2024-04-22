@@ -1,4 +1,4 @@
-import { ENR } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { BitArray, toHexString } from '@chainsafe/ssz'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'

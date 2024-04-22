@@ -7,7 +7,7 @@ import { promises as fs } from 'fs'
 import * as path from 'path'
 
 import type { PortalNetworkRoutingTable } from '../client'
-import type { ENR, NodeId } from '@chainsafe/discv5'
+import type { ENR, NodeId } from '@chainsafe/enr'
 
 export const MEGABYTE = 1048576
 

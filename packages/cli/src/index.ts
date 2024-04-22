@@ -1,4 +1,4 @@
-import { SignableENR } from '@chainsafe/discv5'
+import { SignableENR } from '@chainsafe/enr'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { execSync } from 'child_process'
@@ -18,7 +18,7 @@ import { addBootNode } from './util.js'
 
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
-import type { PeerId } from '@libp2p/interface-peer-id'
+import type { PeerId } from '@libp2p/interface'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -115,13 +115,6 @@ const main = async () => {
   const enr = SignableENR.createFromPeerId(id)
   const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
-
-  process.on('uncaughtException', (err) => {
-    // Hack to catch uncaught exceptions that are thrown in async events/functions and aren't caught in
-    // main process (notably a seeming new discv5 bug where certain RPC failures aren't properly handled)
-    log(`Uncaught error: ${err.message}`)
-    log(err)
-  })
 
   const metrics = setupMetrics()
   let db

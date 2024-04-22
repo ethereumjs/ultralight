@@ -226,6 +226,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
   const MasterAccumulatorType = new ContainerType({
     historicalEpochs: HistoricalEpochsType,
   })
+
   const serialized_container = MasterAccumulatorType.serialize({
     historicalEpochs: _historicalEpochs,
   })

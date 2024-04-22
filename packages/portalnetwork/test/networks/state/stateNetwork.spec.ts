@@ -1,4 +1,4 @@
-import { SignableENR } from '@chainsafe/discv5'
+import { SignableENR } from '@chainsafe/enr'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { describe, expect, it } from 'vitest'
 

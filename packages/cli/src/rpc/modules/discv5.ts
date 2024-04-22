@@ -15,8 +15,9 @@ import type {
   isTcp,
   socketAddr,
 } from '../schema/types.js'
+import type { NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type { NodeId, PortalNetwork } from 'portalnetwork'
+import type { PortalNetwork } from 'portalnetwork'
 
 const methods = [
   'discv5_nodeInfo',

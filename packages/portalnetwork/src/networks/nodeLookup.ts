@@ -1,4 +1,5 @@
-import { ENR, EntryStatus, distance, log2Distance } from '@chainsafe/discv5'
+import { EntryStatus, distance, log2Distance } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 
 import { shortId } from '../index.js'
 

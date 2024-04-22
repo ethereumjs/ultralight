@@ -23,7 +23,8 @@
     "vitest": "^1.2.2"
   },
   "dependencies": {
-    "@chainsafe/discv5": "5.1.1",
+    "@chainsafe/discv5": "^9.0.0",
+    "@chainsafe/enr": "^3.0.0",
     "@chainsafe/ssz": "^0.14.0",
     "@ethereumjs/block": "^5.0.1",
     "@ethereumjs/rlp": "^5.0.1",
@@ -31,9 +32,9 @@
     "@ethereumjs/tx": "^5.0.1",
     "@ethereumjs/util": "^9.0.1",
     "@ethereumjs/vm": "^7.1.0",
-    "@libp2p/interface-peer-id": "^2.0.1",
-    "@libp2p/peer-id": "^2.0.1",
-    "@libp2p/peer-id-factory": "^2.0.3",
+    "@libp2p/interface": "^1.1.1",
+    "@libp2p/peer-id": "^4.0.4",
+    "@libp2p/peer-id-factory": "^4.0.3",
     "@lodestar/config": "^1.17.0",
     "@lodestar/light-client": "^1.17.0",
     "@lodestar/params": "^1.17.0",

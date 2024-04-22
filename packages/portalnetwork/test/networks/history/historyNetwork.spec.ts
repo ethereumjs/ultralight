@@ -1,4 +1,5 @@
-import { ENR, EntryStatus } from '@chainsafe/discv5'
+import { EntryStatus } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'

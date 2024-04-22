@@ -5,7 +5,7 @@ import { MemoryLevel } from 'memory-level'
 import { serializedContentKeyToContentId } from '../index.js'
 
 import type { NetworkId } from '../index.js'
-import type { NodeId } from '@chainsafe/discv5'
+import type { NodeId } from '@chainsafe/enr'
 import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
 

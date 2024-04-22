@@ -1,4 +1,5 @@
-import { ENR, EntryStatus, SignableENR } from '@chainsafe/discv5'
+import { EntryStatus } from '@chainsafe/discv5'
+import { ENR, SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'

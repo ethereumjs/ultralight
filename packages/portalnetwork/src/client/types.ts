@@ -1,6 +1,7 @@
 import type { PortalNetworkRoutingTable } from './routingTable.js'
 import type { NetworkId, StateNetworkRoutingTable } from '../index.js'
-import type { IDiscv5CreateOptions, NodeId } from '@chainsafe/discv5'
+import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
+import type { NodeId } from '@chainsafe/enr'
 import type { AbstractLevel } from 'abstract-level'
 import type EventEmitter from 'events'
 import type StrictEventEmitter from 'strict-event-emitter-types/types/src'

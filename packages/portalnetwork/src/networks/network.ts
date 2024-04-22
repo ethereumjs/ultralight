@@ -1,4 +1,5 @@
-import { ENR, EntryStatus } from '@chainsafe/discv5'
+import { EntryStatus } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { BitArray, toHexString } from '@chainsafe/ssz'
 import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
@@ -36,9 +37,9 @@ import type {
   PortalNetworkMetrics,
   StateNetworkRoutingTable,
 } from '../index.js'
-import type { SignableENR } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
+import type { SignableENR } from '@chainsafe/enr'
 import type { Union } from '@chainsafe/ssz/lib/interface.js'
 import type { Debugger } from 'debug'
 
