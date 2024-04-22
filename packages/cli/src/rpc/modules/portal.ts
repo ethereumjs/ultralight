@@ -73,9 +73,14 @@ const methods = [
   'portal_historyGetEnr',
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
+  // beacon
   'portal_beaconSendFindContent',
   'portal_beaconStore',
   'portal_beaconLocalContent',
+  'portal_beaconAddEnr',
+  'portal_beaconGetEnr',
+  'portal_beaconDeleteEnr',
+  'portal_beaconLookupEnr',
 
   // not included in portal-network-specs
   'portal_historyAddEnrs',
@@ -217,6 +222,7 @@ export class portal {
     this.beaconAddEnr = middleware(this.beaconAddEnr.bind(this), 1, [[validators.enr]])
     this.beaconGetEnr = middleware(this.beaconGetEnr.bind(this), 1, [[validators.dstId]])
     this.beaconDeleteEnr = middleware(this.beaconDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.beaconLookupEnr = middleware(this.beaconLookupEnr.bind(this), 1, [[validators.dstId]])
   }
 
   async sendPortalNetworkResponse(
@@ -890,5 +896,16 @@ export class portal {
     this.logger(`portal_beaconDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
     const remove = this._beacon.routingTable.removeById(nodeId)
     return remove !== undefined
+  }
+
+  async beaconLookupEnr(params: [string]) {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
+    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    this.logger(`Found: ${enr}`)
+    return enr ?? ''
   }
 }
