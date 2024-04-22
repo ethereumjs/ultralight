@@ -116,13 +116,6 @@ const main = async () => {
   const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
 
-  process.on('uncaughtException', (err) => {
-    // Hack to catch uncaught exceptions that are thrown in async events/functions and aren't caught in
-    // main process (notably a seeming new discv5 bug where certain RPC failures aren't properly handled)
-    log(`Uncaught error: ${err.message}`)
-    log(err)
-  })
-
   const metrics = setupMetrics()
   let db
   if (args.dataDir !== undefined) {
