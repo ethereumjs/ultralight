@@ -1,7 +1,7 @@
 import { SignableENR, createPeerIdFromPrivateKey } from '@chainsafe/enr'
 import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
 import { secp256k1 } from '@libp2p/interface'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   AccountTrieNodeContentKey,

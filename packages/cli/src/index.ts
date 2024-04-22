@@ -1,4 +1,4 @@
-import { SignableENR } from '@chainsafe/discv5'
+import { SignableENR } from '@chainsafe/enr'
 import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
 import { execSync } from 'child_process'
@@ -18,7 +18,7 @@ import { addBootNode } from './util.js'
 
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
-import type { PeerId } from '@libp2p/interface-peer-id'
+import type { PeerId } from '@libp2p/interface'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({

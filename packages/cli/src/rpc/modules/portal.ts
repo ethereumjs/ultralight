@@ -1,9 +1,9 @@
 import { EntryStatus } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import {
   ContentLookup,
   ContentMessageType,
-  ENR,
   FoundContent,
   MessageCodes,
   NetworkId,

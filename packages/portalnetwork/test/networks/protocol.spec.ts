@@ -18,7 +18,7 @@ import {
 } from '../../src/index.js'
 
 import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
-import type { INodeAddress } from '@chainsafe/discv5/session'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { BitArray } from '@chainsafe/ssz'
 
 describe('network wire message tests', async () => {
