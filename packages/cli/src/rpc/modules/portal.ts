@@ -223,6 +223,8 @@ export class portal {
     this.beaconGetEnr = middleware(this.beaconGetEnr.bind(this), 1, [[validators.dstId]])
     this.beaconDeleteEnr = middleware(this.beaconDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.beaconLookupEnr = middleware(this.beaconLookupEnr.bind(this), 1, [[validators.dstId]])
+
+    this.beaconPing = middleware(this.beaconPing.bind(this), 1, [[validators.enr]])
   }
 
   async sendPortalNetworkResponse(
@@ -907,5 +909,23 @@ export class portal {
     const enr = this._beacon.routingTable.getWithPending(nodeId)?.value.encodeTxt()
     this.logger(`Found: ${enr}`)
     return enr ?? ''
+  }
+
+  async beaconPing(params: [string]) {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    this.logger(`PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)}`)
+    const pong = await this._beacon.sendPing(encodedENR)
+    if (pong) {
+      this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+    } else {
+      this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+    }
+    return (
+      pong && {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: toHexString(pong.customPayload),
+      }
+    )
   }
 }
