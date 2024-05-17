@@ -3,7 +3,11 @@ import {
   ByteVectorType,
   ContainerType,
   ListCompositeType,
+  NoneType,
   UintBigintType,
+  UnionType,
+  VectorBasicType,
+  VectorCompositeType,
 } from '@chainsafe/ssz'
 
 export enum StateNetworkContentType {
@@ -146,3 +150,24 @@ export type StorageTrieProofKey = {
   stateRoot: StateRoot
 }
 export type CodeHash = Bytes32
+
+type BlockNumber = number
+
+const MAX_LENGTH = 2 ** 32 - 1
+
+// MAX  number of storage changes in 1 ERA file
+const MAX_STORAGE_CHANGES = 2 ** 32 - 1
+
+const AccountBalance = new UintBigintType(16)
+
+const BalanceChange = new VectorBasicType(new UintBigintType(16), 2)
+const NonceChange = new VectorBasicType(new UintBigintType(16), 2)
+const StorageChange = new VectorBasicType(new UintBigintType(32), 2)
+
+const StorageChangeList = new ListCompositeType(StorageChange, MAX_STORAGE_CHANGES)
+
+const AccountChange = new UnionType([BalanceChange, NonceChange])
+
+const AccountChangeList = new ListCompositeType(AccountChange, 2)
+
+new ListCompositeType(AccountChange, 2)
