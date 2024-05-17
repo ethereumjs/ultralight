@@ -511,7 +511,10 @@ export class portal {
     const res = await this._history.findContentLocally(fromHexString(contentKey))
     this.logger.extend(`historyLocalContent`)(`request returned ${res.length} bytes`)
     this.logger.extend(`historyLocalContent`)(`${toHexString(res)}`)
-    return res.length > 0 ? toHexString(res) : '0x'
+    if (res.length === 0) {
+      throw new Error('No content found')
+    }
+    return toHexString(res)
   }
   async stateLocalContent(params: [string]): Promise<string | undefined> {
     const [contentKey] = params
@@ -520,7 +523,10 @@ export class portal {
     const res = await this._state.findContentLocally(fromHexString(contentKey))
     this.logger.extend(`stateLocalContent`)(`request returned ${res.length} bytes`)
     this.logger.extend(`stateLocalContent`)(`${toHexString(res)}`)
-    return res.length > 0 ? toHexString(res) : '0x'
+    if (res.length === 0) {
+      throw new Error('No content found')
+    }
+    return toHexString(res)
   }
   async historyFindContent(params: [string, string]) {
     const [enr, contentKey] = params
@@ -647,12 +653,15 @@ export class portal {
     this.logger.extend('historyRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
       this.logger.extend('historyRecursiveFindContent')(`request returned { enrs: [] }`)
-      return { content: '0x', utpTransfer: false }
+      throw new Error('No content found')
     }
     if ('enrs' in res) {
       this.logger.extend('historyRecursiveFindContent')(
         `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
       )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
       return { enrs: res.enrs.map(toHexString) }
     } else {
       this.logger.extend('historyRecursiveFindContent')(
@@ -672,12 +681,15 @@ export class portal {
     this.logger.extend('stateRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
       this.logger.extend('stateRecursiveFindContent')(`request returned { enrs: [] }`)
-      return { content: '0x', utpTransfer: false }
+      throw new Error('No content found')
     }
     if ('enrs' in res) {
       this.logger.extend('stateRecursiveFindContent')(
         `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
       )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
       return { enrs: res.enrs.map(toHexString) }
     } else {
       this.logger.extend('stateRecursiveFindContent')(
