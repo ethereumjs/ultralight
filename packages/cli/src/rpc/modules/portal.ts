@@ -511,7 +511,10 @@ export class portal {
     const res = await this._history.findContentLocally(fromHexString(contentKey))
     this.logger.extend(`historyLocalContent`)(`request returned ${res.length} bytes`)
     this.logger.extend(`historyLocalContent`)(`${toHexString(res)}`)
-    return res.length > 0 ? toHexString(res) : '0x'
+    if (res.length === 0) {
+      throw new Error('No content found')
+    }
+    return toHexString(res)
   }
   async stateLocalContent(params: [string]): Promise<string | undefined> {
     const [contentKey] = params
