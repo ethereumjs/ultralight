@@ -681,12 +681,15 @@ export class portal {
     this.logger.extend('stateRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
       this.logger.extend('stateRecursiveFindContent')(`request returned { enrs: [] }`)
-      return { content: '0x', utpTransfer: false }
+      throw new Error('No content found')
     }
     if ('enrs' in res) {
       this.logger.extend('stateRecursiveFindContent')(
         `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
       )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
       return { enrs: res.enrs.map(toHexString) }
     } else {
       this.logger.extend('stateRecursiveFindContent')(
