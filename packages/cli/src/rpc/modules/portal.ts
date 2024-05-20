@@ -313,6 +313,7 @@ export class portal {
       }
       this._client.discv5.addEnr(enr)
       this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      await this._history.sendPing(enr)
       return true
     } catch {
       return false
@@ -509,9 +510,13 @@ export class portal {
     this.logger(`Received historyLocalContent request for ${contentKey}`)
 
     const res = await this._history.findContentLocally(fromHexString(contentKey))
-    this.logger.extend(`historyLocalContent`)(`request returned ${res.length} bytes`)
-    this.logger.extend(`historyLocalContent`)(`${toHexString(res)}`)
-    if (res.length === 0) {
+    this.logger.extend(`historyLocalContent`)(
+      `request returned ${res !== undefined ? res.length : 'null'} bytes`,
+    )
+    this.logger.extend(`historyLocalContent`)(
+      `${res !== undefined ? toHexString(res) : 'content not found'}`,
+    )
+    if (res === undefined) {
       throw new Error('No content found')
     }
     return toHexString(res)
@@ -569,7 +574,7 @@ export class portal {
       res.selector === FoundContent.ENRS
         ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
         : {
-            content: content.length > 0 ? toHexString(content as Uint8Array) : '',
+            content: content.length > 0 ? toHexString(content as Uint8Array) : '0x',
             utpTransfer: res.selector === FoundContent.UTP,
           }
     this.logger.extend('findContent')({
