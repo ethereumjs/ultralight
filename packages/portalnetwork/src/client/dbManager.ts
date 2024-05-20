@@ -1,5 +1,5 @@
 import { distance } from '@chainsafe/discv5'
-import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
+import { bigIntToHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { MemoryLevel } from 'memory-level'
 
 import { fromHexString, serializedContentKeyToContentId } from '../index.js'
@@ -40,7 +40,9 @@ export class DBManager {
     const databaseKey = this.databaseKey(key)
     const val = await db.get(databaseKey)
     this.logger(
-      `Got ${key} from DB with key: ${databaseKey}.  Size=${fromHexString(val).length} bytes`,
+      `Got ${key} from DB with key: ${databaseKey}.  Size=${
+        fromHexString(padToEven(val)).length
+      } bytes`,
     )
     return val
   }
@@ -51,7 +53,9 @@ export class DBManager {
     db.put(databaseKey, val, (err: any) => {
       if (err !== undefined) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
-    this.logger(`Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(val).length} bytes`)
+    this.logger(
+      `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,
+    )
   }
 
   async storeBlockIndex(blockIndex: Map<string, string>) {
