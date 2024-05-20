@@ -519,6 +519,7 @@ export abstract class BaseNetwork extends EventEmitter {
     )
 
     const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value) {
       // Discv5 calls for maximum of 16 nodes per NODES message
