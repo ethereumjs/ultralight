@@ -298,12 +298,7 @@ export class PortalNetworkUTP extends EventEmitter {
               HistoryNetworkContentType[k[0]]
             } to database`,
           )
-          if (_content.length === 0) {
-            this.logger.extend(`FINISHED`)(`Missing content...`)
-            continue
-          } else {
             this.emit(NetworkId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
-          }
         }
         break
       case NetworkId.BeaconLightClientNetwork:
