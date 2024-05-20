@@ -93,7 +93,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
-  public handle(message: ITalkReqMessage, src: INodeAddress) {
+  public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
     const network = message.protocol
     const request = message.request
@@ -114,18 +114,18 @@ export abstract class BaseNetwork extends EventEmitter {
     )
     switch (messageType) {
       case MessageCodes.PING:
-        void this.handlePing(src, id, decoded as PingMessage)
+        await this.handlePing(src, id, decoded as PingMessage)
         break
       case MessageCodes.PONG:
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
         this.metrics?.findNodesMessagesReceived.inc()
-        void this.handleFindNodes(src, id, decoded as FindNodesMessage)
+        await this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
       case MessageCodes.FINDCONTENT:
         this.metrics?.findContentMessagesReceived.inc()
-        void this.handleFindContent(src, id, network, decoded as FindContentMessage)
+        await this.handleFindContent(src, id, network, decoded as FindContentMessage)
         break
       case MessageCodes.OFFER:
         this.metrics?.offerMessagesReceived.inc()

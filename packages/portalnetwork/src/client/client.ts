@@ -369,7 +369,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       return
     }
 
-    network.handle(message, src)
+    await network.handle(message, src)
   }
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
