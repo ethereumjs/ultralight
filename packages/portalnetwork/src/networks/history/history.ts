@@ -194,6 +194,7 @@ export class HistoryNetwork extends BaseNetwork {
 
         switch (decoded.selector) {
           case FoundContent.UTP: {
+            this.streamingKey(toHexString(key))
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             await this.handleNewRequest({
