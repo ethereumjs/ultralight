@@ -168,7 +168,7 @@ export class portal {
       [validators.hex],
     ])
     this.stateRecursiveFindContent = middleware(this.stateRecursiveFindContent.bind(this), 1, [
-      [validators.contentKey],
+      [validators.hex],
     ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
       [validators.enr],
@@ -683,6 +683,11 @@ export class portal {
   async stateRecursiveFindContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('stateRecursiveFindContent')(`request received for ${contentKey}`)
+    const local = await this._state.findContentLocally(fromHexString(contentKey))
+    this.logger.extend('stateRecursiveFindContent')(`local lookup found ${local}`)
+    if (local !== undefined && local.length > 2) {
+      return { content: toHexString(local), utpTransfer: false }
+    }
     const lookup = new ContentLookup(this._state, fromHexString(contentKey))
     const res = await lookup.startLookup()
     this.logger.extend('stateRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
@@ -813,16 +818,11 @@ export class portal {
   async stateStore(params: [string, string]) {
     const [contentKey, content] = params
     try {
-      const contentKeyBytes = fromHexString(contentKey)
-      await this._state.store(
-        contentKeyBytes[0],
-        toHexString(contentKeyBytes.slice(1)),
-        fromHexString(content),
-      )
+      await this._state.stateDB.storeContent(fromHexString(contentKey), fromHexString(content))
       this.logger(`stored ${contentKey} in state network db`)
       return true
-    } catch {
-      this.logger(`stateStore failed for ${contentKey}`)
+    } catch (err: any) {
+      this.logger(`stateStore failed for ${contentKey}\nError: ${err.message}`)
       return false
     }
   }
