@@ -63,6 +63,7 @@ export class DBManager {
     db.put(databaseKey, val, (err: any) => {
       if (err !== undefined) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
+    this.streaming.delete(key)
     this.logger(
       `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,
     )
