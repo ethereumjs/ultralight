@@ -153,7 +153,7 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
     this.temp = new Map()
   }
   async put(key: string, value: string) {
-    return this.db.put(key, value)
+    await this.db.put(key, value)
   }
   async get(key: string, _opts?: EncodingOpts) {
     try {
@@ -166,6 +166,13 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
   }
   async del(key: string) {
     await this.db.del(key)
+  }
+  async keys() {
+    const keys = await this.db.keys().all()
+    return keys
+  }
+  tempKeys() {
+    return this.temp.keys()
   }
 }
 export function getDatabaseKey(contentKey: Uint8Array) {

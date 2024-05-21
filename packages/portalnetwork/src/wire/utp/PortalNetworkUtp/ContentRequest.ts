@@ -52,7 +52,6 @@ export class ContentRequest {
   }
 
   close(): void {
-    this.content = Uint8Array.from([])
     this.socket.close()
   }
 

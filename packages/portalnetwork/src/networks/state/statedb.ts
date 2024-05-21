@@ -13,9 +13,17 @@ export class StateDB {
   stateRoots: Map<string, string>
   constructor(db: AbstractLevel<string, string, string>, logger?: Debugger) {
     this.db = new PortalTrieDB(db)
-    this.logger = logger ? logger.extend('StateDB') : debug('StateDB')
+    this.logger = logger
+      ? logger.extend('StateNetwork').extend('StateDB')
+      : debug('StateNetwork').extend('StateDB')
     this.stateRoots = new Map()
     this.blocks = new Map()
+  }
+
+  async keys() {
+    const keys = await this.db.keys()
+    this.logger(`keys: ${keys.length}`)
+    return keys
   }
 
   /**
@@ -28,6 +36,11 @@ export class StateDB {
     const dbKey = getDatabaseKey(contentKey)
     const dbContent = getDatabaseContent(keyType(contentKey), content)
     await this.db.put(dbKey, dbContent)
+    this.logger(
+      `storeContent (${content.length}) bytes: \ncontentKey: ${toHexString(
+        contentKey,
+      )}\ndbKey: 0x${dbKey}\ndbSize: ${(await this.keys()).length}`,
+    )
     return true
   }
 

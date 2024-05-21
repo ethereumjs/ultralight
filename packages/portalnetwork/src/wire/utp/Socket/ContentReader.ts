@@ -3,6 +3,7 @@ import debug from 'debug'
 import type { StatePacket } from '../index.js'
 import type { Debugger } from 'debug'
 export class ContentReader {
+  bytesReceived: number
   packets: StatePacket[]
   inOrder: StatePacket[]
   reading: boolean
@@ -11,6 +12,7 @@ export class ContentReader {
   lastDataNr: number | undefined
   logger: Debugger
   constructor(startingDataNr: number) {
+    this.bytesReceived = 0
     this.packets = new Array<StatePacket>()
     this.inOrder = new Array<StatePacket>()
     this.reading = true
@@ -23,6 +25,7 @@ export class ContentReader {
 
   async addPacket(packet: StatePacket): Promise<boolean | number> {
     this.packets.push(packet)
+    this.bytesReceived += packet.payload!.length
     if (packet.header.seqNr === this.nextDataNr) {
       this.nextDataNr++
       return this.inOrder.push(packet)

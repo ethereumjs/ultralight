@@ -4,7 +4,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { BranchNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToInt, bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToInt, bytesToUnprefixedHex } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 
@@ -127,9 +127,9 @@ export class StateNetwork extends BaseNetwork {
     }
   }
 
-  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
+  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     const value = await this.stateDB.getContent(contentKey)
-    return value !== undefined ? fromHexString(value) : hexToBytes('0x')
+    return value !== undefined ? fromHexString(value) : undefined
   }
 
   public routingTableInfo = async () => {

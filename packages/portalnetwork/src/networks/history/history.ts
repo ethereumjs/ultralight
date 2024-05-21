@@ -65,9 +65,9 @@ export class HistoryNetwork extends BaseNetwork {
    * @param decodedContentMessage content key to be found
    * @returns content if available locally
    */
-  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array> => {
+  public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     const value = await this.retrieve(toHexString(contentKey))
-    return value !== undefined ? hexToBytes(value) : hexToBytes('0x')
+    return value !== undefined ? hexToBytes(value) : undefined
   }
 
   public indexBlockhash = async (number: bigint, blockHash: string) => {
@@ -182,9 +182,6 @@ export class HistoryNetwork extends BaseNetwork {
     })
     this.logger.extend('FINDCONTENT')(`Sending to ${shortId(enr)}`)
     const res = await this.sendMessage(enr, payload, this.networkId)
-    if (res.length === 0) {
-      return undefined
-    }
 
     try {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {

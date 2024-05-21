@@ -1,8 +1,8 @@
 import { distance } from '@chainsafe/discv5'
-import { bigIntToHex, hexToBytes } from '@ethereumjs/util'
+import { bigIntToHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { MemoryLevel } from 'memory-level'
 
-import { serializedContentKeyToContentId } from '../index.js'
+import { fromHexString, serializedContentKeyToContentId } from '../index.js'
 
 import type { NetworkId } from '../index.js'
 import type { NodeId } from '@chainsafe/enr'
@@ -35,18 +35,27 @@ export class DBManager {
     }
   }
 
-  get(network: NetworkId, key: string) {
+  async get(network: NetworkId, key: string) {
     const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
-    return db.get(databaseKey)
+    const val = await db.get(databaseKey)
+    this.logger(
+      `Got ${key} from DB with key: ${databaseKey}.  Size=${
+        fromHexString(padToEven(val)).length
+      } bytes`,
+    )
+    return val
   }
 
   put(network: NetworkId, key: string, val: string) {
     const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
-    return db.put(databaseKey, val, (err: any) => {
+    db.put(databaseKey, val, (err: any) => {
       if (err !== undefined) this.logger(`Error putting content in history DB: ${err.toString()}`)
     })
+    this.logger(
+      `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,
+    )
   }
 
   async storeBlockIndex(blockIndex: Map<string, string>) {
