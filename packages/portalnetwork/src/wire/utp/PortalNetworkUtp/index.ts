@@ -280,11 +280,18 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
     const keys = request.contentKeys
     const content = await request.socket.handleFinPacket(packet)
+    if (!content) {
+      request.close()
+      this.openContentRequest.delete(request.socketKey)
+      return
+    }
     let contents = [content]
     if (request.requestCode === RequestCode.ACCEPT_READ) {
       contents = dropPrefixes(content)
     }
     await this.returnContent(request.networkId, contents, keys)
+    request.close()
+    this.openContentRequest.delete(request.socketKey)
   }
   async returnContent(network: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
@@ -298,12 +305,7 @@ export class PortalNetworkUTP extends EventEmitter {
               HistoryNetworkContentType[k[0]]
             } to database`,
           )
-          if (_content.length === 0) {
-            this.logger.extend(`FINISHED`)(`Missing content...`)
-            continue
-          } else {
-            this.emit(NetworkId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
-          }
+          this.emit(NetworkId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
         }
         break
       case NetworkId.BeaconLightClientNetwork:

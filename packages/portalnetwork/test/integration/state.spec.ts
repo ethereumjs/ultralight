@@ -220,15 +220,10 @@ describe('getAccount via network', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
   })
 
-  const temp = [...testClient.stateDB.db.temp.keys()]
-  const perm: string[] = []
-  for await (const key of testClient.stateDB.db.db.keys()) {
-    perm.push(key)
-  }
-  it('should have all nodes in temp or permanent db', () => {
+  const temp = [...testClient.stateDB.db.tempKeys()]
+  const perm: string[] = await testClient.stateDB.keys()
+  it('should have all nodes in temp or permanent db', async () => {
     expect(temp.length + perm.length).toEqual(uniqueStored.length)
-  })
-  it('should not have temp entries also in permanent db', () => {
     for (const key of temp) {
       expect(perm.includes(key)).toBeFalsy()
     }

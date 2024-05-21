@@ -62,6 +62,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         allowUnverifiedSessions: true,
         requestTimeout: 3000,
         sessionEstablishTimeout: 3000,
+        lookupTimeout: 3000,
+        sessionTimeout: 3000,
+        requestRetries: 2,
       },
     }
     const config = { ...defaultConfig, ...opts.config }
@@ -369,7 +372,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       return
     }
 
-    network.handle(message, src)
+    await network.handle(message, src)
   }
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {

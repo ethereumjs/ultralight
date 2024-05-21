@@ -247,6 +247,11 @@ export class UtpSocket extends EventEmitter {
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
     await this.reader.addPacket(packet)
+    this.logger(
+      `Packet bytes: ${packet.payload!.length} bytes.  Total bytes: ${
+        this.reader.bytesReceived
+      } bytes.`,
+    )
     if (expected) {
       // Update this.ackNr to last in-order seqNr received.
       const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
@@ -269,14 +274,18 @@ export class UtpSocket extends EventEmitter {
     }
   }
 
-  async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array> {
+  async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array | undefined> {
     this.state = ConnectionState.GotFin
+    if (this.type === UtpSocketType.WRITE) {
+      this.close()
+    }
     this._clearTimeout()
     this.finNr = packet.header.seqNr
     this.logger(`Connection State: GotFin: ${this.finNr}`)
     const expected = this.ackNr + 1 === packet.header.seqNr
+    this.logger(`Expected: ${this.ackNr + 1} got ${packet.header.seqNr}`)
     if (expected) {
-      this.logger(`all data packets received.`)
+      this.logger(`all data packets received.  ${this.reader?.bytesReceived} bytes received.`)
       this.seqNr = this.seqNr + 1
       this.ackNr = packet.header.seqNr
       const _content = await this.reader!.run()

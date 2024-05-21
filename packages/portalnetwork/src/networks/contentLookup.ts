@@ -75,7 +75,8 @@ export class ContentLookup {
       }
       this.contacted.push(nearestPeer.nodeId)
       const res = await this.network.sendFindContent(nearestPeer.nodeId, this.contentKey)
-      if (!res || res.value.length < 1) {
+      if (!res) {
+        this.logger(`No response to findContent from ${shortId(nearestPeer.nodeId)}`)
         continue
       }
       switch (res.selector) {
