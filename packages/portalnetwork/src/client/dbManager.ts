@@ -37,6 +37,14 @@ export class DBManager {
   }
 
   async get(network: NetworkId, key: string) {
+    // this.streaming is a Set of contentKeys currently streaming over uTP
+    // the timeout is a safety measure to prevent the while loop from running indefinitely in case of a uTP stream failure
+    const timeout = setTimeout(() => {
+      this.streaming.delete(key)
+    }, 1000)
+    while (this.streaming.has(key)) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
     const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
     const val = await db.get(databaseKey)
@@ -45,6 +53,7 @@ export class DBManager {
         fromHexString(padToEven(val)).length
       } bytes`,
     )
+    clearTimeout(timeout)
     return val
   }
 
