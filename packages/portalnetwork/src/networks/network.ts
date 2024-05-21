@@ -65,7 +65,7 @@ export abstract class BaseNetwork extends EventEmitter {
   findEnr: (nodeId: string) => ENR | undefined
   put: (network: NetworkId, contentKey: string, content: string) => void
   get: (network: NetworkId, contentKey: string) => Promise<string>
-  streamingKey: (contentKey: string) => Set<string>
+  streamingKey: (contentKey: string) => void
   _prune: (network: NetworkId, radius: bigint) => Promise<void>
   portal: PortalNetwork
   constructor(client: PortalNetwork, radius?: bigint) {
@@ -75,7 +75,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
     this.put = client.db.put.bind(client.db)
     this.get = client.db.get.bind(client.db)
-    this.streamingKey = client.db.streaming.add.bind(client.db)
+    this.streamingKey = client.db.addToStreaming.bind(client.db)
     this.blockIndex = client.db.getBlockIndex.bind(client.db)
     this.setBlockIndex = client.db.storeBlockIndex.bind(client.db)
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)

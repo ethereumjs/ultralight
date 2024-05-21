@@ -36,9 +36,15 @@ export class DBManager {
     }
   }
 
+  addToStreaming(key: string) {
+    this.logger(`Adding ${key} to streaming`)
+    this.streaming.add(key)
+  }
+
   async get(network: NetworkId, key: string) {
     // this.streaming is a Set of contentKeys currently streaming over uTP
     // the timeout is a safety measure to prevent the while loop from running indefinitely in case of a uTP stream failure
+    this.logger(`Content ${key}.  Streaming=${this.streaming.has(key)}`)
     const timeout = setTimeout(() => {
       this.streaming.delete(key)
     }, 1000)
@@ -47,6 +53,7 @@ export class DBManager {
     }
     const db = this.sublevel(network)
     const databaseKey = this.databaseKey(key)
+    this.logger(`Getting ${key} from DB. dbKey: ${databaseKey}`)
     const val = await db.get(databaseKey)
     this.logger(
       `Got ${key} from DB with key: ${databaseKey}.  Size=${
