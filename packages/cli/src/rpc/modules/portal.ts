@@ -526,9 +526,11 @@ export class portal {
     this.logger(`Received stateLocalContent request for ${contentKey}`)
 
     const res = await this._state.findContentLocally(fromHexString(contentKey))
-    this.logger.extend(`stateLocalContent`)(`request returned ${res.length} bytes`)
-    this.logger.extend(`stateLocalContent`)(`${toHexString(res)}`)
-    if (res.length === 0) {
+    this.logger.extend(`stateLocalContent`)(`request returned ${res?.length} bytes`)
+    this.logger.extend(`stateLocalContent`)(
+      `${res !== undefined ? toHexString(res) : 'content not found'}`,
+    )
+    if (res === undefined) {
       throw new Error('No content found')
     }
     return toHexString(res)
