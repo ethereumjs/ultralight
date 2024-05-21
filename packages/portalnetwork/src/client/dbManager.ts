@@ -15,7 +15,7 @@ export class DBManager {
   logger: Debugger
   currentSize: () => Promise<number>
   sublevels: Map<NetworkId, AbstractLevel<string, string>>
-
+  streaming: Set<string>
   constructor(
     nodeId: NodeId,
     logger: Debugger,
@@ -29,6 +29,7 @@ export class DBManager {
     this.logger = logger.extend('DB')
     this.currentSize = currentSize
     this.sublevels = new Map()
+    this.streaming = new Set()
     for (const network of sublevels) {
       const sub = this.db.sublevel(network)
       this.sublevels.set(network, sub)
