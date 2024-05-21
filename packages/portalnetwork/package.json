@@ -16,7 +16,8 @@
     "coverage": "c8 npm run test",
     "coverage:all": "c8 npm run test:all",
     "lint": "../../config/cli/lint.sh",
-    "lint:fix": "../../config/cli/lint-fix.sh"
+    "lint:fix": "../../config/cli/lint-fix.sh",
+    "prepare": "npm run build"
   },
   "types": "dist/index.d.ts",
   "author": "acolytec3",
