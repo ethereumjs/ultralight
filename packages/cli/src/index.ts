@@ -14,7 +14,6 @@ import yargs from 'yargs/yargs'
 
 import { setupMetrics } from './metrics.js'
 import { RPCManager } from './rpc/rpc.js'
-import { addBootNode } from './util.js'
 
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
