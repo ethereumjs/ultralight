@@ -47,11 +47,14 @@ export const HistoricalSummariesKey = 0n
 
 export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 5)
 
-export const HistoricalSummariesWithProof = new ContainerType({
-  epoch: new UintBigintType(8),
-  historicalSummaries: ssz.allForks.capella.BeaconState.fields.historicalSummaries,
-  proof: HistoricalSummariesProof,
-})
+export const HistoricalSummariesWithProof = new ContainerType(
+  {
+    epoch: new UintBigintType(8),
+    historicalSummaries: ssz.allForks.capella.BeaconState.fields.historicalSummaries,
+    proof: HistoricalSummariesProof,
+  },
+  { typeName: 'HistoricalSummariesWithProof', jsonCase: 'eth2' },
+)
 
 export enum SyncStrategy {
   TrustedBlockRoot,

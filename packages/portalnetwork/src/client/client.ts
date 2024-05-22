@@ -68,7 +68,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       },
     }
     const config = { ...defaultConfig, ...opts.config }
-    let bootnodes
+    let bootnodes = opts.bootnodes
     if (opts.rebuildFromMemory === true && opts.db) {
       const prevEnrString = await opts.db.get('enr')
       const prevPrivateKey = await opts.db.get('privateKey')
@@ -272,6 +272,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         network.networkId,
         setInterval(() => network.bucketRefresh(), 30000),
       )
+    }
+    for (const network of this.networks) {
+      for (const enr of this.bootnodes) {
+        try {
+          await network[1].addBootNode(enr)
+          network[1].logger(`Added bootnode ${enr} to ${network[1].networkId}`)
+        } catch (error: any) {
+          throw new Error(`Error adding bootnode ${enr} to network \
+          ${network[1].networkId}: ${error.message ?? error}`)
+        }
+      }
     }
   }
 
