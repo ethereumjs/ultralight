@@ -177,10 +177,11 @@ const main = async () => {
     supportedNetworks: networks,
     dataDir: args.dataDir,
     trustedBlockRoot: args.trustedBlockRoot,
+    bootnodes,
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*RPC*, *ultralight*, *Portal*')
+  portal.enableLog('*RPC*,*ultralight*,*Portal*')
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
