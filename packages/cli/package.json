@@ -25,7 +25,7 @@
   "dependencies": {
     "@chainsafe/discv5": "^9.0.0",
     "@chainsafe/enr": "^3.0.0",
-    "@chainsafe/ssz": "^0.14.0",
+    "@chainsafe/ssz": "^0.15.1S",
     "@ethereumjs/block": "^5.0.1",
     "@ethereumjs/rlp": "^5.0.1",
     "@ethereumjs/trie": "^6.0.1",

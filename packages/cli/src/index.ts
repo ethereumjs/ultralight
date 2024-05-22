@@ -14,7 +14,6 @@ import yargs from 'yargs/yargs'
 
 import { setupMetrics } from './metrics.js'
 import { RPCManager } from './rpc/rpc.js'
-import { addBootNode } from './util.js'
 
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
@@ -156,6 +155,19 @@ const main = async () => {
   if (args.trustedBlockRoot !== undefined) {
     networks.push(NetworkId.BeaconLightClientNetwork)
   }
+
+  const bootnodes: Array<Enr> = []
+  if (args.bootnode !== undefined) {
+    bootnodes.push(args.bootnode)
+  }
+  if (args.bootnodeList !== undefined) {
+    const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
+    const bootnodeList = bootnodeData.split('\n')
+    for (const bootnode of bootnodeList) {
+      bootnodes.push(bootnode)
+    }
+  }
+
   const portal = await PortalNetwork.create({
     config,
     radius: 2n ** 256n - 1n,
@@ -165,10 +177,11 @@ const main = async () => {
     supportedNetworks: networks,
     dataDir: args.dataDir,
     trustedBlockRoot: args.trustedBlockRoot,
+    bootnodes,
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*RPC*, *ultralight*, *Portal*')
+  portal.enableLog('*RPC*,*ultralight*,*Portal*')
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
@@ -183,27 +196,6 @@ const main = async () => {
   }
 
   await portal.start()
-
-  const bootnodes: Array<Enr> = []
-  if (args.bootnode !== undefined) {
-    bootnodes.push(args.bootnode)
-  }
-  if (args.bootnodeList !== undefined) {
-    const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
-    const bootnodeList = bootnodeData.split('\n')
-    for (const bootnode of bootnodeList) {
-      bootnodes.push(bootnode)
-    }
-  }
-  try {
-    for (const network of portal.networks) {
-      for (const bootnode of bootnodes) {
-        await addBootNode(network[0], network[1], bootnode)
-      }
-    }
-  } catch (error: any) {
-    log(`${error.message ?? error}`)
-  }
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
   if (args.web3 !== undefined) {
