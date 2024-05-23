@@ -248,6 +248,12 @@ export class HistoryNetwork extends BaseNetwork {
         await this.validateHeader(value, hashKey)
       } catch (err) {
         this.logger(`Error validating header: ${(err as any).message}`)
+        // Putting anyway for now since we don't store epochs locally
+        this.put(
+          this.networkId,
+          getContentKey(contentType, hexToBytes(hashKey)),
+          toHexString(value),
+        )
       }
     } else {
       this.put(this.networkId, getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
@@ -268,7 +274,6 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public async addBlockBody(value: Uint8Array, hashKey: string, header?: Uint8Array) {
-    const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
