@@ -273,6 +273,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         setInterval(() => network.bucketRefresh(), 30000),
       )
     }
+    void this.bootstrap()
+  }
+
+  /**
+   * Tries to connect to any pre-configured bootnodes
+   */
+  public bootstrap = async () => {
     for (const network of this.networks) {
       for (const enr of this.bootnodes) {
         try {
@@ -285,7 +292,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
     }
   }
-
   /**
    * Stops the portal network client and cleans up listeners
    */
