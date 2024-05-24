@@ -42,7 +42,7 @@ export class GossipManager {
         ? this.gossipQueues[peer].push(key)
         : (this.gossipQueues[peer] = [key])
     }
-    return this.gossipQueues[peer].length
+    return this.gossipQueues[peer]?.length ?? 0
   }
 
   /**
