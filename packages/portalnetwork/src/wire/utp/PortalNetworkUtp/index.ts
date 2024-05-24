@@ -280,9 +280,11 @@ export class PortalNetworkUTP extends EventEmitter {
   async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
     const keys = request.contentKeys
     const content = await request.socket.handleFinPacket(packet)
-    if (!content) {
+    if (request.socket.type === UtpSocketType.WRITE) {
       request.close()
       this.openContentRequest.delete(request.socketKey)
+    }
+    if (!content || content.length === 0) {
       return
     }
     let contents = [content]
@@ -290,6 +292,7 @@ export class PortalNetworkUTP extends EventEmitter {
       contents = dropPrefixes(content)
     }
     await this.returnContent(request.networkId, contents, keys)
+    request.socket.close()
     request.close()
     this.openContentRequest.delete(request.socketKey)
   }
