@@ -195,11 +195,7 @@ export const addRLPSerializedBlock = async (
       headerProof,
     )
   }
-  const sszBlock = sszEncodeBlockBody(
-    Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
-      setHardfork: true,
-    }),
-  )
+  const sszBlock = sszEncodeBlockBody(block)
   await network.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())
 }
 
