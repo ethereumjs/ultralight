@@ -44,7 +44,9 @@ export class ETH {
     try {
       let lookup = new ContentLookup(this.network, headerContentKey)
       lookupResponse = await lookup.startLookup()
-      this.network.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
+      this.network.logger.extend('getBlockByHash')(
+        `Looking for BlockHeader for ${blockHash} on the network`,
+      )
       this.network.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
         return undefined
@@ -58,6 +60,10 @@ export class ETH {
       } else {
         lookup = new ContentLookup(this.network, bodyContentKey!)
         lookupResponse = await lookup.startLookup()
+        this.network.logger.extend('getBlockByHash')(
+          `Looking for BlockBody for ${blockHash} on the network`,
+        )
+        this.network.logger.extend('getBlockByHash')(lookupResponse)
         if (!lookupResponse || !('content' in lookupResponse)) {
           block = reassembleBlock(header)
         } else {

@@ -127,6 +127,7 @@ const main = async () => {
       enrUpdate: true,
       addrVotesToUpdateEnr: 5,
       allowUnverifiedSessions: true,
+      requestTimeout: 3000,
     },
     bindAddrs: {
       ip4: initMa,
@@ -181,7 +182,7 @@ const main = async () => {
   })
   portal.discv5.enableLogs()
 
-  portal.enableLog('*RPC*,*ultralight*,*Portal*')
+  portal.enableLog('*')
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined

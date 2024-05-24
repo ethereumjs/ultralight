@@ -62,12 +62,12 @@ const main = async () => {
   const pubIp = execSync(cmd).toString().split(' ')
   const ip = args.ip ?? pubIp[0]
   const children: ChildProcessByStdio<any, any, null>[] = []
-  const file = require.resolve(process.cwd() + '/dist/index.js')
+  const file = require.resolve('../src/index.js')
   if (args.pks !== undefined) {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8' }).split('\n')
     for (let idx = 0; idx < pks.length; idx++) {
       const child = spawn(
-        process.execPath,
+        'tsx',
         [
           file,
           `--rpc`,
@@ -86,7 +86,7 @@ const main = async () => {
   } else if (args.numNodes !== undefined) {
     for (let x = 0; x < args.numNodes; x++) {
       const child = spawn(
-        process.execPath,
+        'tsx',
         [
           file,
           `--rpcAddr=${ip}`,
@@ -124,7 +124,7 @@ const main = async () => {
   }
 
   // Connect nodes to other nodes in the network via `addBootNode`
-  if (args.connectNodes !== undefined) {
+  if (args.connectNodes !== false) {
     console.log('connecting nodes')
     const ultralights: jayson.HttpClient[] = []
     for (let x = 0; x < 10; x++) {

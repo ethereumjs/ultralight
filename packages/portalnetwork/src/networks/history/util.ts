@@ -165,12 +165,11 @@ export const addRLPSerializedBlock = async (
     setHardfork: true,
   })
   const header = block.header
-  if (header.number < MERGE_BLOCK) {
+  if (header.number < MERGE_BLOCK && witnesses !== undefined) {
     // Only generate proofs for pre-merge headers
-    const proof: Witnesses = witnesses ?? (await network.generateInclusionProof(header.number))
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
-      proof: { selector: 1, value: proof },
+      proof: { selector: 1, value: witnesses },
     })
     try {
       await network.validateHeader(headerProof, blockHash)
@@ -189,18 +188,10 @@ export const addRLPSerializedBlock = async (
     })
     await network.indexBlockhash(header.number, toHexString(header.hash()))
 
-    await network.store(
-      HistoryNetworkContentType.BlockHeader,
-      toHexString(header.hash()),
-      headerProof,
-    )
+    await network.store(HistoryNetworkContentType.BlockHeader, blockHash, headerProof)
   }
-  const sszBlock = sszEncodeBlockBody(
-    Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
-      setHardfork: true,
-    }),
-  )
-  await network.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())
+  const sszBlock = sszEncodeBlockBody(block)
+  await network.store(HistoryNetworkContentType.BlockBody, blockHash, sszBlock)
 }
 
 // Each EpochAccumulator is a merkle tree with 16384 leaves, and 16383 parent nodes.
