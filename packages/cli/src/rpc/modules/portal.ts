@@ -313,9 +313,6 @@ export class portal {
       }
       this._client.discv5.addEnr(enr)
       this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
-      try {
-        await this._history.sendPing(enr)
-      } catch {}
       return true
     } catch {
       return false
