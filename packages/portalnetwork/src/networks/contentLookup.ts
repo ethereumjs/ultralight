@@ -5,7 +5,8 @@ import { hexToBytes } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
-import type { HistoryNetworkContentType } from './history/types.js'
+import { HistoryNetworkContentType } from './history/types.js'
+
 import type { BaseNetwork } from './network.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
@@ -39,7 +40,7 @@ export class ContentLookup {
     this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
-    this.logger = this.network.logger.extend('lookup')
+    this.logger = this.network.logger.extend('LOOKUP')
   }
 
   /**
@@ -66,14 +67,21 @@ export class ContentLookup {
       if (this.lookupPeers.length === 0) {
         finished = true
         this.network.metrics?.failedContentLookups.inc()
-        this.logger(`failed to retrieve ${toHexString(this.contentKey)} from network`)
+        this.logger(
+          `No more peers to query.  Failed to retrieve ${toHexString(this.contentKey)} from network`,
+        )
         return
       }
       const nearestPeer = this.lookupPeers.shift()
       if (!nearestPeer) {
+        this.network.metrics?.failedContentLookups.inc()
+        this.logger(
+          `No more peers to queery.  Failed to retrieve ${toHexString(this.contentKey)} from network`,
+        )
         return
       }
       this.contacted.push(nearestPeer.nodeId)
+      this.logger(`Requesting content from ${shortId(nearestPeer.nodeId)}`)
       const res = await this.network.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
         this.logger(`No response to findContent from ${shortId(nearestPeer.nodeId)}`)
@@ -96,7 +104,7 @@ export class ContentLookup {
               content: Uint8Array,
             ) => {
               this.logger(
-                `this.contentKey: ${contentType} +  ${toHexString(this.contentKey.slice(1))}`,
+                `Received content for this contentType: ${HistoryNetworkContentType[contentType]} + contentKey: ${toHexString(this.contentKey.slice(1))}`,
               )
               this.logger(`contentType: ${contentType} contentKey: ${contentKey}, .`)
               if (
