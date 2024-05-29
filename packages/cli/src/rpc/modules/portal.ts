@@ -37,6 +37,11 @@ import type {
 
 const methods = [
   // state
+  'portal_stateAddEnr',
+  'portal_stateAddEnrs',
+  'portal_stateGetEnr',
+  'portal_stateDeleteEnr',
+  'portal_stateLookupEnr',
   'portal_statePing',
   'portal_stateRoutingTableInfo',
   'portal_stateStore',
@@ -115,6 +120,13 @@ export class portal {
     this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
     this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
+      [validators.array(validators.enr)],
+    ])
+    this.stateAddEnr = middleware(this.stateAddEnr.bind(this), 1, [[validators.enr]])
+    this.stateGetEnr = middleware(this.stateGetEnr.bind(this), 1, [[validators.dstId]])
+    this.stateLookupEnr = middleware(this.stateLookupEnr.bind(this), 1, [[validators.dstId]])
+    this.stateDeleteEnr = middleware(this.stateDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.stateAddEnrs = middleware(this.stateAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
@@ -341,6 +353,73 @@ export class portal {
       localNodeId,
       buckets,
     }
+  }
+  async stateAddEnrs(params: [string[]]): Promise<boolean> {
+    const [enrs] = params
+    const encodedENRs = enrs.map((enr) => ENR.decodeTxt(enr))
+    const shortEnrs = Object.fromEntries(
+      encodedENRs.map((enr, idx) => [idx, enr.nodeId.slice(0, 15) + '...']),
+    )
+    this.logger(`portal_stateAddEnrs request received for ${shortEnrs}`)
+    const added: number[] = []
+
+    try {
+      for (const [idx, enr] of encodedENRs.entries()) {
+        await this._state.addBootNode(enr.encodeTxt())
+        added.push(idx)
+      }
+    } catch {
+      return false
+    }
+    return true
+  }
+  async stateGetEnr(params: [string]): Promise<GetEnrResult> {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger.extend('portal_stateGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._state.routingTable.getWithPending(nodeId)?.value
+    if (enr) {
+      const enrTxt = enr.encodeTxt()
+      this.logger.extend('portal_stateGetEnr')(enrTxt)
+      return enrTxt
+    }
+    this.logger.extend('portal_stateGetEnr')('ENR not found')
+    return ''
+  }
+
+  async stateAddEnr(params: [string]): Promise<boolean> {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
+    this.logger(`portal_stateAddEnr request received for ${shortEnr}`)
+    try {
+      if (this._state.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+        return true
+      }
+      this._client.discv5.addEnr(enr)
+      this._state.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      return true
+    } catch {
+      return false
+    }
+  }
+  async stateDeleteEnr(params: [string]): Promise<boolean> {
+    const [nodeId] = params
+    this.logger(`portal_stateDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
+    const remove = this._state.routingTable.removeById(nodeId)
+    return remove !== undefined
+  }
+  async stateLookupEnr(params: [string]) {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
+    const enr = this._state.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    this.logger(`Found: ${enr}`)
+    return enr ?? ''
   }
   async stateRoutingTableInfo(_params: []): Promise<any> {
     this.logger(`portal_stateRoutingTableInfo request received.`)
