@@ -37,6 +37,11 @@ import type {
 
 const methods = [
   // state
+  'portal_stateAddEnr',
+  'portal_stateAddEnrs',
+  'portal_stateGetEnr',
+  'portal_stateDeleteEnr',
+  'portal_stateLookupEnr',
   'portal_statePing',
   'portal_stateRoutingTableInfo',
   'portal_stateStore',
