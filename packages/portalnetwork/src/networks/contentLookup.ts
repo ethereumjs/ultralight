@@ -32,7 +32,7 @@ export class ContentLookup {
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
-  private uTPlistener: any
+  private timeout: number
 
   constructor(network: BaseNetwork, contentKey: Uint8Array) {
     this.network = network
@@ -41,6 +41,7 @@ export class ContentLookup {
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
     this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
+    this.timeout = network.portal.utpTimout
   }
 
   /**
@@ -119,7 +120,7 @@ export class ContentLookup {
               this.network.removeListener('ContentAdded', utpDecoder)
               reject('block not found')
               // TODO: Set this as a configuration option
-            }, 180000)
+            }, this.timeout)
             this.network.on('ContentAdded', utpDecoder)
           })
         }
