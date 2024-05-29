@@ -160,7 +160,8 @@ export class eth {
         includeTransactions,
       )
       if (block === undefined) throw new Error('block not found')
-
+      // @ts-ignore Typescript inexplicably tries to import from the CJS build of
+      // @ethereumjs/block instead of the ESM build here
       return block
     } catch (err: any) {
       throw new Error(err.message)
