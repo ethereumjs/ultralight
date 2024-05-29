@@ -36,6 +36,7 @@ export interface PortalNetworkOpts {
   dbSize(): Promise<number>
   trustedBlockRoot?: string
   eventLog?: boolean
+  utpTimeout?: number
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, PortalNetworkEvents>

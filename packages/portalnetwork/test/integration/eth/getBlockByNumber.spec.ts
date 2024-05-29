@@ -1,4 +1,4 @@
-import { SignableENR } from '@chainsafe/discv5'
+import { SignableENR } from '@chainsafe/enr'
 import { Block } from '@ethereumjs/block'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
@@ -29,66 +29,69 @@ const privateKeys = [
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
 describe('eth_getBlockByNumber', () => {
-  it('retrieve block using number', async () => {
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
-    enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
-    enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
-      transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.HistoryNetwork],
-      config: {
-        enr: enr1,
-        bindAddrs: {
-          ip4: initMa,
+  it(
+    'retrieve block using number',
+    async () => {
+      const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+      const enr1 = SignableENR.createFromPeerId(id1)
+      const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
+      enr1.setLocationMultiaddr(initMa)
+      const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+      const enr2 = SignableENR.createFromPeerId(id2)
+      const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
+      enr2.setLocationMultiaddr(initMa2)
+      const node1 = await PortalNetwork.create({
+        transport: TransportLayer.NODE,
+        supportedNetworks: [NetworkId.HistoryNetwork],
+        config: {
+          enr: enr1,
+          bindAddrs: {
+            ip4: initMa,
+          },
+          peerId: id1,
         },
-        peerId: id1,
-      },
-    })
+      })
 
-    const node2 = await PortalNetwork.create({
-      transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.HistoryNetwork],
-      config: {
-        enr: enr2,
-        bindAddrs: {
-          ip4: initMa2,
+      const node2 = await PortalNetwork.create({
+        transport: TransportLayer.NODE,
+        supportedNetworks: [NetworkId.HistoryNetwork],
+        config: {
+          enr: enr2,
+          bindAddrs: {
+            ip4: initMa2,
+          },
+          peerId: id2,
         },
-        peerId: id2,
-      },
-    })
+      })
 
-    // node1.enableLog('*Portal*,-uTP*')
-    // node2.enableLog('*Portal*,-uTP*')
+      // node1.enableLog('*Portal*,-uTP*')
+      // node2.enableLog('*Portal*,-uTP*')
 
-    await node1.start()
-    await node2.start()
-    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+      await node1.start()
+      await node2.start()
+      const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+      const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
-    const epochData = require('../../testData/testEpoch.json')
-    const block1000 = require('../../testData/testBlock1000.json')
-    const epochHash = epochData.hash
-    const epoch = epochData.serialized
+      const epochData = require('../../testData/testEpoch.json')
+      const block1000 = require('../../testData/testBlock1000.json')
+      const epochHash = epochData.hash
+      const epoch = epochData.serialized
 
-    const blockRlp = block1000.raw
-    const blockHash = block1000.hash
+      const blockRlp = block1000.raw
+      const blockHash = block1000.hash
 
-    await network1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
-    await network2.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
-    await addRLPSerializedBlock(blockRlp, blockHash, network1)
-    await network1.sendPing(network2?.enr!.toENR())
-    const retrieved = await node2.ETH.getBlockByNumber(1000, false)
+      await network1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
+      await addRLPSerializedBlock(blockRlp, blockHash, network1)
+      await network1.sendPing(network2?.enr!.toENR())
+      const retrieved = await node2.ETH.getBlockByNumber(1000, false)
 
-    assert.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
+      assert.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')
 
-    await node1.stop()
-    await node2.stop()
-  })
+      await node1.stop()
+      await node2.stop()
+    },
+    { timeout: 30000 },
+  )
   it('should find a block using "latest" and "finalized"', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1693431998000)

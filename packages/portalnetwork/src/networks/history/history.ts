@@ -28,6 +28,7 @@ import {
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
+  sszReceiptsListType,
 } from './types.js'
 import {
   blockNumberToGindex,
@@ -241,17 +242,48 @@ export class HistoryNetwork extends BaseNetwork {
     hashKey: string,
     value: Uint8Array,
   ): Promise<void> => {
-    if (contentType === HistoryNetworkContentType.BlockBody) {
-      await this.addBlockBody(value, hashKey)
-    } else if (contentType === HistoryNetworkContentType.BlockHeader) {
-      try {
-        await this.validateHeader(value, hashKey)
-      } catch (err) {
-        this.logger(`Error validating header: ${(err as any).message}`)
+    switch (contentType) {
+      case HistoryNetworkContentType.BlockHeader: {
+        try {
+          await this.validateHeader(value, hashKey)
+        } catch (err) {
+          this.logger(`Error validating header: ${(err as any).message}`)
+        }
+        break
       }
-    } else {
-      this.put(this.networkId, getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
+      case HistoryNetworkContentType.BlockBody: {
+        await this.addBlockBody(value, hashKey)
+        break
+      }
+      case HistoryNetworkContentType.Receipt: {
+        try {
+          sszReceiptsListType.deserialize(value)
+          this.put(
+            this.networkId,
+            getContentKey(contentType, hexToBytes(hashKey)),
+            toHexString(value),
+          )
+        } catch (err: any) {
+          this.logger(`Received invalid bytes as receipt data for ${hashKey}`)
+          return
+        }
+        break
+      }
+      case HistoryNetworkContentType.EpochAccumulator: {
+        try {
+          EpochAccumulator.deserialize(value)
+          this.put(
+            this.networkId,
+            getContentKey(contentType, hexToBytes(hashKey)),
+            toHexString(value),
+          )
+        } catch (err: any) {
+          this.logger(`Received invalid bytes as Epoch Accumulator corresponding to ${hashKey}`)
+          return
+        }
+      }
     }
+
     this.emit('ContentAdded', hashKey, contentType, value)
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)

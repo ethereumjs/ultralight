@@ -17,18 +17,20 @@ import type { RpcTx } from './types.js'
 import type { BeaconLightClientNetwork, HistoryNetwork, StateNetwork } from '../networks/index.js'
 import type { Block } from '@ethereumjs/block'
 import type { capella } from '@lodestar/types'
+import type { Debugger } from 'debug'
 
 export class ETH {
   history?: HistoryNetwork
   state?: StateNetwork
   beacon?: BeaconLightClientNetwork
   activeNetworks: NetworkId[]
-
+  logger: Debugger
   constructor(portal: PortalNetwork) {
     this.activeNetworks = Object.keys(portal.network()) as NetworkId[]
     this.history = portal.network()['0x500b']
     this.state = portal.network()['0x500a']
     this.beacon = portal.network()['0x501a']
+    this.logger = portal.logger.extend(`ETH_GETBLOCKBYNUMBER`)
   }
 
   /**
@@ -83,30 +85,37 @@ export class ETH {
 
     blockHash = (await this.history!.blockIndex()).get('0x' + blockNumber.toString(16))
     if (blockHash === undefined) {
+      this.logger(`Block ${blockNumber} not in local index`)
       const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
       if (!epochRootHash) {
+        // Requested block number is greater than merge block
+        // TODO: Build logic for retrieving post-merge blocks by number
+        this.logger(`Block ${blockNumber} is post-merge block.  Cannot retrieve by number`)
         return undefined
       }
+      this.logger(
+        `Retrieving Epoch Accumulator ${bytesToHex(epochRootHash)} that contains blockhash for block ${blockNumber}`,
+      )
       const lookupKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)
       const epoch_lookup = new ContentLookup(this.history!, fromHexString(lookupKey))
       const result = await epoch_lookup.startLookup()
 
       if (result && 'content' in result) {
-        this.history!.logger.extend(`ETH_GETBLOCKBYNUMBER`)(
-          `Found EpochAccumulator with header record for block ${blockNumber}`,
-        )
+        this.logger(`Found EpochAccumulator with header record for block ${blockNumber}`)
         const epoch = EpochAccumulator.deserialize(result.content)
         blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
+        this.logger(`Block ${blockNumber} corresponds to Blockhash ${blockHash}`)
       }
     }
     if (blockHash === undefined) {
+      // This should never happen
       return undefined
     }
     const block = await this.history!.ETH.getBlockByHash(blockHash, includeTransactions)
     if (block?.header.number === BigInt(blockNumber)) {
       return block
     } else {
-      this.history!.logger(`Block ${blockNumber} not found`)
+      this.logger(`Block ${blockNumber} not found`)
       return undefined
     }
   }

@@ -1,11 +1,12 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
-import type { HistoryNetworkContentType } from './history/types.js'
+import { HistoryNetworkContentType } from './history/types.js'
+
 import type { BaseNetwork } from './network.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
@@ -31,7 +32,7 @@ export class ContentLookup {
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
-  private uTPlistener: any
+  private timeout: number
 
   constructor(network: BaseNetwork, contentKey: Uint8Array) {
     this.network = network
@@ -39,7 +40,8 @@ export class ContentLookup {
     this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
-    this.logger = this.network.logger.extend('lookup')
+    this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
+    this.timeout = network.portal.utpTimout
   }
 
   /**
@@ -49,6 +51,7 @@ export class ContentLookup {
   public startLookup = async (): Promise<ContentLookupResponse> => {
     // Don't support content lookups for networks that don't implement it (i.e. Canonical Indices)
     if (!this.network.sendFindContent) return
+    this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
     this.network.metrics?.totalContentLookups.inc()
     try {
       const res = await this.network.get(this.network.networkId, toHexString(this.contentKey))
@@ -66,14 +69,21 @@ export class ContentLookup {
       if (this.lookupPeers.length === 0) {
         finished = true
         this.network.metrics?.failedContentLookups.inc()
-        this.logger(`failed to retrieve ${toHexString(this.contentKey)} from network`)
+        this.logger(
+          `No more peers to query.  Failed to retrieve ${toHexString(this.contentKey)} from network`,
+        )
         return
       }
       const nearestPeer = this.lookupPeers.shift()
       if (!nearestPeer) {
+        this.network.metrics?.failedContentLookups.inc()
+        this.logger(
+          `No more peers to query.  Failed to retrieve ${toHexString(this.contentKey)} from network`,
+        )
         return
       }
       this.contacted.push(nearestPeer.nodeId)
+      this.logger(`Requesting content from ${shortId(nearestPeer.nodeId)}`)
       const res = await this.network.sendFindContent(nearestPeer.nodeId, this.contentKey)
       if (!res) {
         this.logger(`No response to findContent from ${shortId(nearestPeer.nodeId)}`)
@@ -89,24 +99,28 @@ export class ContentLookup {
           )
           finished = true
           nearestPeer.hasContent = true
-          return new Promise((resolve) => {
+          return new Promise((resolve, reject) => {
+            let timeout: any = undefined
             const utpDecoder = (
               contentKey: string,
               contentType: HistoryNetworkContentType,
               content: Uint8Array,
             ) => {
-              this.logger(
-                `this.contentKey: ${contentType} +  ${toHexString(this.contentKey.slice(1))}`,
-              )
-              this.logger(`contentType: ${contentType} contentKey: ${contentKey}, .`)
-              if (
-                this.contentKey[0] === contentType &&
-                contentKey === toHexString(this.contentKey.slice(1))
-              ) {
+              if (contentKey === toHexString(this.contentKey.slice(1))) {
+                this.logger(
+                  `Received content for this contentType: ${HistoryNetworkContentType[contentType]} + contentKey: ${toHexString(this.contentKey)}`,
+                )
                 this.network.removeListener('ContentAdded', utpDecoder)
+                clearTimeout(timeout)
                 resolve({ content, utp: true })
               }
             }
+            timeout = setTimeout(() => {
+              this.logger(`uTP stream timed out`)
+              this.network.removeListener('ContentAdded', utpDecoder)
+              reject('block not found')
+              // TODO: Set this as a configuration option
+            }, this.timeout)
             this.network.on('ContentAdded', utpDecoder)
           })
         }

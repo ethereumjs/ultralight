@@ -39,6 +39,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   discv5: Discv5
   networks: Map<NetworkId, BaseNetwork>
   uTP: PortalNetworkUTP
+  utpTimout: number
   db: DBManager
   bootnodes: string[]
   metrics: PortalNetworkMetrics | undefined
@@ -154,6 +155,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       metrics: opts.metrics,
       trustedBlockRoot: opts.trustedBlockRoot,
       eventLog: opts.eventLog,
+      utpTimeout: opts.utpTimeout,
     })
 
     return portal
@@ -178,6 +180,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRUCache({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
+    this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
     this.refreshListeners = new Map()
     this.db = new DBManager(
       this.discv5.enr.nodeId,

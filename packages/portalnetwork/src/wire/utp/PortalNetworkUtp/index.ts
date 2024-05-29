@@ -308,7 +308,12 @@ export class PortalNetworkUTP extends EventEmitter {
               HistoryNetworkContentType[k[0]]
             } to database`,
           )
-          this.emit(NetworkId.HistoryNetwork, k[0], decodedContentKey.blockHash, _content)
+          this.emit(
+            NetworkId.HistoryNetwork,
+            decodedContentKey.contentType,
+            decodedContentKey.blockHash,
+            _content,
+          )
         }
         break
       case NetworkId.BeaconLightClientNetwork:
