@@ -3,6 +3,7 @@ import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, getLogs } from 'portalnetwork'
 
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { jsonRpcLog } from '../types.js'
+import { callWithStackTrace } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 import type { GetLogsParams } from '../types.js'
@@ -27,31 +28,36 @@ export class eth {
     this._history = client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     this.logger = logger.extend('eth')
 
-    this.getBlockByNumber = middleware(this.getBlockByNumber.bind(this), 2, [
-      [validators.blockOption],
-      [validators.bool],
-    ])
+    this.getBlockByNumber = middleware(
+      callWithStackTrace(this.getBlockByNumber.bind(this), true),
+      2,
+      [[validators.blockOption], [validators.bool]],
+    )
 
-    this.getBlockByHash = middleware(this.getBlockByHash.bind(this), 2, [
+    this.getBlockByHash = middleware(callWithStackTrace(this.getBlockByHash.bind(this), false), 2, [
       [validators.hex, validators.blockHash],
       [validators.bool],
     ])
 
     this.getBlockTransactionCountByHash = middleware(
-      this.getBlockTransactionCountByHash.bind(this),
+      callWithStackTrace(this.getBlockTransactionCountByHash.bind(this), true),
       1,
       [[validators.hex, validators.blockHash]],
     )
 
-    this.getUncleCountByBlockNumber = middleware(this.getUncleCountByBlockNumber.bind(this), 1, [
-      [validators.hex],
-    ])
+    this.getUncleCountByBlockNumber = middleware(
+      callWithStackTrace(this.getUncleCountByBlockNumber.bind(this), false),
+      1,
+      [[validators.hex]],
+    )
 
-    this.getUncleCountByBlockNumber = middleware(this.getUncleCountByBlockNumber.bind(this), 1, [
-      [validators.hex],
-    ])
+    this.getUncleCountByBlockNumber = middleware(
+      callWithStackTrace(this.getUncleCountByBlockNumber.bind(this), false),
+      1,
+      [[validators.hex]],
+    )
 
-    this.getLogs = middleware(this.getLogs.bind(this), 1, [
+    this.getLogs = middleware(callWithStackTrace(this.getLogs.bind(this), false), 1, [
       [
         validators.object({
           fromBlock: validators.optional(validators.blockOption),
@@ -71,11 +77,11 @@ export class eth {
       ],
     ])
 
-    this.getBalance = middleware(this.getBalance.bind(this), 2, [
+    this.getBalance = middleware(callWithStackTrace(this.getBalance.bind(this), false), 2, [
       [validators.address],
       [validators.blockOption],
     ])
-    this.call = middleware(this.call.bind(this), 2, [
+    this.call = middleware(callWithStackTrace(this.call.bind(this), false), 2, [
       [validators.transaction(['to'])],
       [validators.blockOption],
     ])
