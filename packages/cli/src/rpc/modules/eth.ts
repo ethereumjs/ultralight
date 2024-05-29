@@ -148,13 +148,17 @@ export class eth {
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`,
     )
-    const block = await this._client.ETH.getBlockByNumber(
-      parseInt(blockNumber),
-      includeTransactions,
-    )
-    if (block === undefined) throw new Error('block not found')
-    //@ts-ignore
-    return block
+    try {
+      const block = await this._client.ETH.getBlockByNumber(
+        parseInt(blockNumber),
+        includeTransactions,
+      )
+      if (block === undefined) throw new Error('block not found')
+
+      return block
+    } catch (err: any) {
+      throw new Error(err.message)
+    }
   }
 
   /**
