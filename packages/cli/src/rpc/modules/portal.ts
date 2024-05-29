@@ -122,6 +122,13 @@ export class portal {
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
+    this.stateAddEnr = middleware(this.stateAddEnr.bind(this), 1, [[validators.enr]])
+    this.stateGetEnr = middleware(this.stateGetEnr.bind(this), 1, [[validators.dstId]])
+    this.stateLookupEnr = middleware(this.stateLookupEnr.bind(this), 1, [[validators.dstId]])
+    this.stateDeleteEnr = middleware(this.stateDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.stateAddEnrs = middleware(this.stateAddEnrs.bind(this), 1, [
+      [validators.array(validators.enr)],
+    ])
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
     this.statePing = middleware(this.statePing.bind(this), 1, [[validators.enr]])
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
