@@ -346,7 +346,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * @param contentKeys content keys being offered as specified by the subnetwork
    * @param networkId network ID of subnetwork being used
    */
-  public sendOffer = async (dstId: string, contentKeys: Uint8Array[]) => {
+  public sendOffer = async (dstId: string, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
     if (contentKeys.length > 0) {
       this.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
@@ -385,17 +385,24 @@ export abstract class BaseNetwork extends EventEmitter {
             this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
-            for await (const key of requestedKeys) {
-              let value = Uint8Array.from([])
-              try {
-                value = hexToBytes(await this.get(this.networkId, toHexString(key)))
-                requestedData.push(value)
-              } catch (err: any) {
-                this.logger(`Error retrieving content -- ${err.toString()}`)
-                requestedData.push(value)
+            if (content) {
+              for (const [idx, _] of requestedKeys.entries()) {
+                if (msg.contentKeys.get(idx) === true) {
+                  requestedData.push(content[idx])
+                }
+              }
+            } else {
+              for await (const key of requestedKeys) {
+                let value = Uint8Array.from([])
+                try {
+                  value = hexToBytes(await this.get(this.networkId, toHexString(key)))
+                  requestedData.push(value)
+                } catch (err: any) {
+                  this.logger(`Error retrieving content -- ${err.toString()}`)
+                  requestedData.push(value)
+                }
               }
             }
-
             const contents = encodeWithVariantPrefix(requestedData)
             await this.handleNewRequest({
               networkId: this.networkId,

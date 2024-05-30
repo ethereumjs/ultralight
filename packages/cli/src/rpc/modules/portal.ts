@@ -10,7 +10,6 @@ import {
   NodeLookup,
   PingPongCustomDataType,
   PortalWireMessageType,
-  decodeHistoryNetworkContentKey,
   fromHexString,
   shortId,
   toHexString,
@@ -789,19 +788,17 @@ export class portal {
   async historyOffer(params: [string, string, string]) {
     const [enrHex, contentKeyHex, contentValueHex] = params
     const enr = ENR.decodeTxt(enrHex)
-    const contentKey = decodeHistoryNetworkContentKey(contentKeyHex)
     if (this._history.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
       const res = await this._history.sendPing(enr)
       if (res === undefined) {
         return '0x'
       }
     }
-    await this._history.store(
-      contentKey.contentType,
-      contentKey.blockHash,
-      fromHexString(contentValueHex),
+    const res = await this._history.sendOffer(
+      enr.nodeId,
+      [fromHexString(contentKeyHex)],
+      [fromHexString(contentValueHex)],
     )
-    const res = await this._history.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
     return res
   }
   async historySendOffer(params: [string, string[]]) {
@@ -820,9 +817,11 @@ export class portal {
         return '0x'
       }
     }
-    const contentKey = fromHexString(contentKeyHex)
-    await this._state.store(contentKey[0], contentKeyHex, fromHexString(contentValueHex))
-    const res = await this._state.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
+    const res = await this._state.sendOffer(
+      enr.nodeId,
+      [fromHexString(contentKeyHex)],
+      [fromHexString(contentValueHex)],
+    )
     return res
   }
   async stateSendOffer(params: [string, string[]]) {
