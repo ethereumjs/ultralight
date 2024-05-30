@@ -820,9 +820,11 @@ export class portal {
         return '0x'
       }
     }
-    const contentKey = fromHexString(contentKeyHex)
-    await this._state.store(contentKey[0], contentKeyHex, fromHexString(contentValueHex))
-    const res = await this._state.sendOffer(enr.nodeId, [fromHexString(contentKeyHex)])
+    const res = await this._state.sendOffer(
+      enr.nodeId,
+      [fromHexString(contentKeyHex)],
+      [fromHexString(contentValueHex)],
+    )
     return res
   }
   async stateSendOffer(params: [string, string[]]) {
