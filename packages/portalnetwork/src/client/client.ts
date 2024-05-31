@@ -30,7 +30,6 @@ import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { ENR, NodeId } from '@chainsafe/enr'
-import type { PeerId, Secp256k1PeerId } from '@libp2p/interface'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 
@@ -46,14 +45,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   logger: Debugger
   ETH: ETH
   private refreshListeners: Map<NetworkId, ReturnType<typeof setInterval>>
-  private peerId: PeerId
+  private keypair: {
+    publicKey: Uint8Array
+    privateKey: Uint8Array
+  }
   private supportsRendezvous: boolean
   private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
       enr: {} as SignableENR,
-      peerId: {} as Secp256k1PeerId,
+      peerId: {} as any,
       bindAddrs: {
         ip4: multiaddr(),
       },
@@ -176,7 +178,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
-    this.peerId = opts.config.peerId as PeerId
+    this.keypair = {
+      publicKey: opts.config.peerId!.publicKey!,
+      privateKey: opts.config.peerId!.privateKey!,
+    }
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRUCache({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this.logger)
@@ -358,12 +363,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         {
           type: 'put',
           key: 'privateKey',
-          value: toHexString(this.peerId.privateKey!),
+          value: toHexString(this.keypair.privateKey),
         },
         {
           type: 'put',
           key: 'publicKey',
-          value: toHexString(this.peerId.publicKey!),
+          value: toHexString(this.keypair.publicKey),
         },
         {
           type: 'put',
