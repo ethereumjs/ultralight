@@ -4,7 +4,7 @@ This monorepo comprises an implementation of the [Portal Network spec](https://g
 
 ## Prerequisites
 
-Node v18+, NPM v7+
+Node v20+, NPM v10+
 
 ## Quick Start
 
