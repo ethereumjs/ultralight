@@ -1,4 +1,4 @@
-FROM node:18-alpine as BUILD_IMAGE
+FROM node:20-alpine as BUILD_IMAGE
 
 RUN apk update && apk add --no-cache bash g++ make git python3 && rm -rf /var/cache/apk/*
 RUN apk add --virtual .build-deps alpine-sdk jq
