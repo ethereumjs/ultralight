@@ -17,7 +17,6 @@ import { RPCManager } from './rpc/rpc.js'
 
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
-import type { PeerId } from '@libp2p/interface'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -104,7 +103,7 @@ const main = async () => {
       : execSync(cmd).toString().split(' ')[0].trim()
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
-  let id: PeerId
+  let id: any
   let web3: jayson.Client | undefined
   if (args.pk === undefined) {
     id = await createSecp256k1PeerId()
