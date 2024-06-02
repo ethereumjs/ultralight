@@ -4,7 +4,7 @@
   "description": "",
   "main": "electron/main.ts",
   "engines": {
-    "node": ">=16"
+    "node": "^20"
   },
   "scripts": {
     "start-local": "BINDADDRESS=true webpack serve",
