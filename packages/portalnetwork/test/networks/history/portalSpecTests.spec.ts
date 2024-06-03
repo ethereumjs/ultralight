@@ -10,8 +10,12 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
+  HistoryNetworkContentType,
   MasterAccumulatorType,
+  Receipt,
   decodeHistoryNetworkContentKey,
+  sszReceiptType,
+  sszReceiptsListType,
 } from '../../../src/index.js'
 
 describe('Accumulator spec tests', () => {
@@ -82,5 +86,27 @@ describe('header tests', () => {
       bytesToHex(headerWithProof.proof.value![0]),
       '0xcead98e305c70563000000000000000000000000000000000000000000000000',
     )
+  })
+})
+
+describe('receipt tests', () => {
+  it('should deserialize receipts', () => {
+    const testVector: { content_key: string; content_value: string } = yaml.load(
+      readFileSync(
+        resolve(
+          __dirname,
+          '../../../../portal-spec-tests/tests/mainnet/history/receipts/14764013.yaml',
+        ),
+        {
+          encoding: 'utf-8',
+        },
+      ),
+    ) as any
+    assert.equal(
+      decodeHistoryNetworkContentKey(testVector.content_key).contentType,
+      HistoryNetworkContentType.Receipt,
+    )
+    const receipt = sszReceiptsListType.deserialize(hexToBytes(testVector.content_value))
+    assert.equal(Receipt.fromEncodedReceipt(receipt[0]).cumulativeBlockGasUsed, 189807n)
   })
 })
