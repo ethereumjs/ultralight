@@ -140,7 +140,7 @@ describe('API tests', async () => {
 
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.BeaconLightClientNetwork],
+    supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -293,7 +293,7 @@ describe('constructor/initialization tests', async () => {
   it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.BeaconLightClientNetwork],
+      supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -313,7 +313,7 @@ describe('constructor/initialization tests', async () => {
   it('starts with a sync strategy of `trustedBootStrap` when a trusted block root is provided', async () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.BeaconLightClientNetwork],
+      supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -349,7 +349,7 @@ describe('constructor/initialization tests', async () => {
     const trustedBlockRoot = '0x8e4fc820d749f9cf352d074f784071f65483ea673d8e9b8188870e950125a582'
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.BeaconLightClientNetwork],
+      supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
       config: {
         enr: enr1,
         bindAddrs: {

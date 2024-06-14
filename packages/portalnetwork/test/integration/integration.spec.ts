@@ -57,7 +57,7 @@ it('gossip test', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -68,7 +68,7 @@ it('gossip test', async () => {
   })
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -158,7 +158,7 @@ it('FindContent', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -170,7 +170,7 @@ it('FindContent', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -226,7 +226,7 @@ it('eth_getBlockByHash', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -238,7 +238,7 @@ it('eth_getBlockByHash', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
     config: {
       enr: enr2,
       bindAddrs: {

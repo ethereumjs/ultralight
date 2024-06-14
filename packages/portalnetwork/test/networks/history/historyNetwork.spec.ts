@@ -35,7 +35,7 @@ describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () =
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
 
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
@@ -90,7 +90,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
       )
     const node = await PortalNetwork.create({
       transport: TransportLayer.WEB,
-      supportedNetworks: [NetworkId.HistoryNetwork],
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
     })
     const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const block1Rlp =
@@ -126,7 +126,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
   it('Should store and retrieve an EpochAccumulator from DB', async () => {
     const node = await PortalNetwork.create({
       transport: TransportLayer.WEB,
-      supportedNetworks: [NetworkId.HistoryNetwork],
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
     })
     const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const epochAccumulator = require('../../testData/testEpoch.json')
@@ -146,7 +146,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
 describe('store -- Block Bodies and Receipts', async () => {
   const node = await PortalNetwork.create({
     transport: TransportLayer.WEB,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const serializedBlock = testBlocks.block207686
@@ -222,7 +222,7 @@ describe('Header Proof Tests', async () => {
   const _epoch1 = EpochAccumulator.deserialize(hexToBytes(_epochRaw))
   const node = await PortalNetwork.create({
     transport: TransportLayer.WEB,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   // network.accumulator.replaceAccumulator(accumulator)

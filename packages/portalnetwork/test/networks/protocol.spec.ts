@@ -25,7 +25,7 @@ describe('network wire message tests', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
   const baseNetwork = node.networks.get(NetworkId.HistoryNetwork) as BaseNetwork
   it('BaseNetwork', async () => {
@@ -183,7 +183,7 @@ describe('handleFindNodes message handler tests', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   type sendResponse = (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>

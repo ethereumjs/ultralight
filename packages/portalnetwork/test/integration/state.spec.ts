@@ -44,7 +44,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.StateNetwork],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: 2n ** 254n }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -52,11 +52,10 @@ describe('AccountTrieNode Gossip / Request', async () => {
       },
       peerId: id1,
     },
-    radius: 2n ** 254n,
   })
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [NetworkId.StateNetwork],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: 2n ** 254n }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -64,7 +63,6 @@ describe('AccountTrieNode Gossip / Request', async () => {
       },
       peerId: id2,
     },
-    radius: 2n ** 254n,
   })
   await node1.start()
   await node2.start()
@@ -143,7 +141,7 @@ describe('getAccount via network', async () => {
       enr.setLocationMultiaddr(initMa)
       const node = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [NetworkId.StateNetwork],
+        supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: 2n ** 255n }],
         config: {
           enr,
           bindAddrs: {
@@ -151,7 +149,6 @@ describe('getAccount via network', async () => {
           },
           peerId,
         },
-        radius: 2n ** 255n,
       })
       await node.start()
       return node

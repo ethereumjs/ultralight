@@ -16,8 +16,7 @@ describe('StateNetwork', async () => {
       enr: enr1,
       peerId: pk,
     },
-    radius,
-    supportedNetworks: [NetworkId.StateNetwork],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius }],
   })
   const stateNetwork = ultralight.networks.get(NetworkId.StateNetwork)
   it('should start with state network', () => {
