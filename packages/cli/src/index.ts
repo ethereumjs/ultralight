@@ -83,6 +83,21 @@ const args: ClientOpts = yargs(hideBin(process.argv))
     array: true,
     optional: true,
   })
+  .option('radiusHistory', {
+    describe: `2^r radius for history network client`,
+    number: true,
+    default: 0,
+  })
+  .option('radiusBeacon', {
+    describe: `2^r radius for beacon network client`,
+    number: true,
+    default: 0,
+  })
+  .option('radiusState', {
+    describe: `2^r radius for state network client`,
+    number: true,
+    default: 0,
+  })
   .option('trustedBlockRoot', {
     describe: 'a trusted blockroot to start light client syncing of the beacon chain',
     string: true,
@@ -140,13 +155,22 @@ const main = async () => {
     for (const network of args.networks) {
       switch (network) {
         case 'history':
-          networks.push({ networkId: NetworkId.HistoryNetwork, radius: 1n })
+          networks.push({
+            networkId: NetworkId.HistoryNetwork,
+            radius: 2n ** BigInt(args.radiusHistory) - 1n,
+          })
           break
         case 'beacon':
-          networks.push({ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n })
+          networks.push({
+            networkId: NetworkId.BeaconLightClientNetwork,
+            radius: 2n ** BigInt(args.radiusBeacon) - 1n,
+          })
           break
         case 'state':
-          networks.push({ networkId: NetworkId.StateNetwork, radius: 1n })
+          networks.push({
+            networkId: NetworkId.StateNetwork,
+            radius: 2n ** BigInt(args.radiusState) - 1n,
+          })
           break
       }
     }
