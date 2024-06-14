@@ -21,9 +21,13 @@ export enum TransportLayer {
   MOBILE = 'mobile',
 }
 
+export interface NetworkConfig {
+  networkId: NetworkId
+  radius: bigint
+}
+
 export interface PortalNetworkOpts {
-  supportedNetworks?: NetworkId[]
-  radius?: bigint
+  supportedNetworks?: NetworkConfig[]
   bootnodes?: string[]
   db?: AbstractLevel<string, string> | undefined
   metrics?: PortalNetworkMetrics
