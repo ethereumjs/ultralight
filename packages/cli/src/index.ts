@@ -18,6 +18,7 @@ import { RPCManager } from './rpc/rpc.js'
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
 import type { PeerId } from '@libp2p/interface'
+import type { NetworkConfig } from 'portalnetwork'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -134,27 +135,27 @@ const main = async () => {
     },
     trustedBlockRoot: args.trustedBlockRoot,
   } as any
-  let networks: NetworkId[] = []
+  let networks: NetworkConfig[] = []
   if (args.networks) {
     for (const network of args.networks) {
       switch (network) {
         case 'history':
-          networks.push(NetworkId.HistoryNetwork)
+          networks.push({ networkId: NetworkId.HistoryNetwork, radius: 1n })
           break
         case 'beacon':
-          networks.push(NetworkId.BeaconLightClientNetwork)
+          networks.push({ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n })
           break
         case 'state':
-          networks.push(NetworkId.StateNetwork)
+          networks.push({ networkId: NetworkId.StateNetwork, radius: 1n })
           break
       }
     }
   } else {
-    networks = [NetworkId.HistoryNetwork]
+    networks = [{ networkId: NetworkId.HistoryNetwork, radius: 1n }]
   }
 
   if (args.trustedBlockRoot !== undefined) {
-    networks.push(NetworkId.BeaconLightClientNetwork)
+    networks.push({ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n })
   }
 
   const bootnodes: Array<Enr> = []
@@ -171,7 +172,6 @@ const main = async () => {
 
   const portal = await PortalNetwork.create({
     config,
-    radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,
