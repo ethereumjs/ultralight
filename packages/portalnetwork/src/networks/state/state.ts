@@ -46,12 +46,6 @@ export class StateNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.stateDB = new StateDB(client.db.db)
     this.routingTable.setLogger(this.logger)
-    client.uTP.on(
-      NetworkId.StateNetwork,
-      async (contentType: any, contentKey: Uint8Array, content: Uint8Array) => {
-        await this.store(contentType, toHexString(contentKey.slice(1)), content)
-      },
-    )
   }
 
   /**

@@ -74,12 +74,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
     this.routingTable.setLogger(this.logger)
-    client.uTP.on(
-      NetworkId.BeaconLightClientNetwork,
-      async (contentType: number, hash: string, value: Uint8Array) => {
-        await this.store(contentType, hash, value)
-      },
-    )
     this.on('ContentAdded', async (contentKey) => {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {

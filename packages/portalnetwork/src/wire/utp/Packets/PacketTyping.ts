@@ -1,6 +1,7 @@
 import type { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import type { Packet } from './index.js'
 import type { NetworkId } from '../../../networks/types.js'
+import type { PortalNetworkUTP } from '../index.js'
 import type { Debugger } from 'debug'
 
 export const BUFFER_SIZE = 512
@@ -98,6 +99,7 @@ export interface IData extends IPacket<PacketType.ST_DATA> {
 export type ICreate<T extends PacketType> = IBasic<T> | ISelectiveAck | IData
 
 export interface UtpSocketOptions {
+  utp: PortalNetworkUTP
   networkId: NetworkId
   remoteAddress: string
   sndId: number

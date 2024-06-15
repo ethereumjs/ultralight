@@ -1,11 +1,12 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
 import { HistoryNetworkContentType } from './history/types.js'
+import { getContentKey } from './history/util.js'
 
 import type { BaseNetwork } from './network.js'
 import type { NodeId } from '@chainsafe/enr'
@@ -106,7 +107,8 @@ export class ContentLookup {
               contentType: HistoryNetworkContentType,
               content: Uint8Array,
             ) => {
-              if (contentKey === toHexString(this.contentKey.slice(1))) {
+              const _contentKey = getContentKey(contentType, fromHexString(contentKey))
+              if (_contentKey === toHexString(this.contentKey)) {
                 this.logger(
                   `Received content for this contentType: ${HistoryNetworkContentType[contentType]} + contentKey: ${toHexString(this.contentKey)}`,
                 )

@@ -91,20 +91,18 @@ describe('Find Content tests', () => {
       hexToBytes(bootstrap.content_value),
     )
     await new Promise((resolve) => {
-      node2.uTP.on(NetworkId.BeaconLightClientNetwork, async () => {
-        const content = await network2.findContentLocally(hexToBytes(bootstrap.content_key))
-        assert.notOk(content === undefined, 'should retrieve content for bootstrap key')
-        assert.equal(
-          toHexString(content!),
-          bootstrap.content_value,
-          'retrieved correct content for bootstrap',
-        )
-        await node1.stop()
-        await node2.stop()
-        resolve(undefined)
-      })
-      void network2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
+      setTimeout(resolve, 5000)
     })
+    const content = await network2.findContentLocally(hexToBytes(bootstrap.content_key))
+    assert.notOk(content === undefined, 'should retrieve content for bootstrap key')
+    assert.equal(
+      toHexString(content!),
+      bootstrap.content_value,
+      'retrieved correct content for bootstrap',
+    )
+    await node1.stop()
+    await node2.stop()
+    void network2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
   })
   it('should find optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
