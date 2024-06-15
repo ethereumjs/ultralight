@@ -78,6 +78,7 @@ export class PortalNetworkUTP extends EventEmitter {
     content?: Uint8Array,
   ): UtpSocket {
     const socket: UtpSocket = new UtpSocket({
+      utp: this,
       networkId,
       remoteAddress,
       sndId,
@@ -87,10 +88,6 @@ export class PortalNetworkUTP extends EventEmitter {
       type: requestCode % 2 === 0 ? UtpSocketType.WRITE : UtpSocketType.READ,
       logger: this.logger,
       content,
-    })
-    socket.on('send', async (remoteAddr, msg, networkId) => {
-      await this.send(remoteAddr, msg, networkId)
-      socket.emit('sent')
     })
     return socket
   }
