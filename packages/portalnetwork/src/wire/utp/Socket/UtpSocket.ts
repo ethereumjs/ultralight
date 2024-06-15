@@ -80,16 +80,7 @@ export class UtpSocket extends EventEmitter {
 
   setWriter(seqNr: number) {
     this.setSeqNr(seqNr)
-    this.writer = new ContentWriter(this.content, seqNr, this.logger)
-    this.writer.on('send', async (packetType: PacketType, bytes?: Uint8Array) => {
-      if (packetType === PacketType.ST_DATA && bytes) {
-        await this.sendDataPacket(bytes)
-        this.writer?.emit('sent')
-      } else {
-        await this.sendFinPacket()
-        this.writer?.emit('sent')
-      }
-    })
+    this.writer = new ContentWriter(this, this.content, seqNr, this.logger)
     void this.writer.start()
   }
   setState(state: ConnectionState) {

@@ -1,9 +1,9 @@
-import { EventEmitter } from 'events'
+import { BUFFER_SIZE } from '../Packets/PacketTyping.js'
 
-import { BUFFER_SIZE, PacketType } from '../Packets/PacketTyping.js'
-
+import type { UtpSocket } from './UtpSocket.js'
 import type { Debugger } from 'debug'
-export class ContentWriter extends EventEmitter {
+export class ContentWriter {
+  socket: UtpSocket
   logger: Debugger
   startingSeqNr: number
   seqNr: number
@@ -12,8 +12,8 @@ export class ContentWriter extends EventEmitter {
   sentChunks: number[]
   dataChunks: Record<number, Uint8Array>
   dataNrs: number[]
-  constructor(content: Uint8Array, startingSeqNr: number, logger: Debugger) {
-    super()
+  constructor(socket: UtpSocket, content: Uint8Array, startingSeqNr: number, logger: Debugger) {
+    this.socket = socket
     this.content = content
     this.startingSeqNr = startingSeqNr
     this.seqNr = startingSeqNr
@@ -22,14 +22,6 @@ export class ContentWriter extends EventEmitter {
     this.dataNrs = []
     this.logger = logger.extend('WRITING')
     this.dataChunks = {}
-  }
-
-  async send(packetType: PacketType, bytes?: Uint8Array) {
-    this.logger(`Sending ${PacketType[packetType]} packet.`)
-    this.emit('send', packetType, bytes)
-    return new Promise((resolve, _reject) => {
-      this.once('sent', () => resolve(true))
-    })
   }
 
   async write(): Promise<void> {
@@ -43,8 +35,7 @@ export class ContentWriter extends EventEmitter {
         `Sending ST-DATA ${this.seqNr - this.startingSeqNr + 1}/${chunks} -- SeqNr: ${this.seqNr}`,
       )
       this.seqNr = this.sentChunks.slice(-1)[0] + 1
-
-      await this.send(PacketType.ST_DATA, bytes)
+      await this.socket.sendDataPacket(bytes)
       return
     }
     this.writing = false
