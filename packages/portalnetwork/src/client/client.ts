@@ -179,7 +179,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.peerId = opts.config.peerId as PeerId
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRUCache({ max: 2500 })
-    this.uTP = new PortalNetworkUTP(this.logger)
+    this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
     this.refreshListeners = new Map()
     this.db = new DBManager(
@@ -224,15 +224,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    this.uTP.on('Send', async (peerId: string, msg: Buffer, networkId: NetworkId) => {
-      const enr = this.networks.get(networkId)?.routingTable.getWithPending(peerId)?.value
-      try {
-        await this.sendPortalNetworkMessage(enr ?? peerId, msg, networkId, true)
-        this.uTP.emit('Sent')
-      } catch {
-        this.uTP.closeRequest(msg.readUInt16BE(2), peerId)
-      }
-    })
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
     //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
     // }
