@@ -11,6 +11,7 @@ import {
   PingPongCustomDataType,
   PortalWireMessageType,
   fromHexString,
+  getContentKey,
   shortId,
   toHexString,
 } from 'portalnetwork'
@@ -636,11 +637,12 @@ export class portal {
           : await new Promise((resolve) => {
               const timeout = setTimeout(() => {
                 resolve(Uint8Array.from([]))
-              }, 2000)
-              this._client.uTP.on(
-                NetworkId.HistoryNetwork,
-                (_contentType: HistoryNetworkContentType, hash: string, value: Uint8Array) => {
-                  if (hash.slice(2) === contentKey.slice(4)) {
+              }, 10000)
+              this._history.on(
+                'ContentAdded',
+                (hash: string, _contentType: HistoryNetworkContentType, value: Uint8Array) => {
+                  const _contentKey = getContentKey(_contentType, fromHexString(hash))
+                  if (_contentKey === contentKey) {
                     clearTimeout(timeout)
                     resolve(value)
                   }
@@ -687,9 +689,9 @@ export class portal {
               const timeout = setTimeout(() => {
                 resolve(Uint8Array.from([]))
               }, 2000)
-              this._client.uTP.on(
-                NetworkId.StateNetwork,
-                (_contentType: StateNetworkContentType, hash: string, value: Uint8Array) => {
+              this._state.on(
+                'ContentAdded',
+                (hash: string, _contentType: StateNetworkContentType, value: Uint8Array) => {
                   if (hash.slice(2) === contentKey.slice(4)) {
                     clearTimeout(timeout)
                     resolve(value)

@@ -1,5 +1,4 @@
 import { BitVectorType, toHexString } from '@chainsafe/ssz'
-import { EventEmitter } from 'events'
 
 import {
   BeaconLightClientNetworkContentType,
@@ -25,6 +24,7 @@ import type {
   DataPacket,
   FinPacket,
   INewRequest,
+  PortalNetwork,
   SelectiveAckHeader,
   StatePacket,
   SynPacket,
@@ -32,14 +32,15 @@ import type {
 } from '../../../index.js'
 import type { Debugger } from 'debug'
 
-export class PortalNetworkUTP extends EventEmitter {
+export class PortalNetworkUTP {
+  client: PortalNetwork
   openContentRequest: Map<UtpSocketKey, ContentRequest>
   logger: Debugger
   working: boolean
 
-  constructor(logger: Debugger) {
-    super()
-    this.logger = logger.extend(`uTP`)
+  constructor(client: PortalNetwork) {
+    this.client = client
+    this.logger = client.logger.extend(`uTP`)
     this.openContentRequest = new Map()
     this.working = false
   }
@@ -78,6 +79,7 @@ export class PortalNetworkUTP extends EventEmitter {
     content?: Uint8Array,
   ): UtpSocket {
     const socket: UtpSocket = new UtpSocket({
+      utp: this,
       networkId,
       remoteAddress,
       sndId,
@@ -87,10 +89,6 @@ export class PortalNetworkUTP extends EventEmitter {
       type: requestCode % 2 === 0 ? UtpSocketType.WRITE : UtpSocketType.READ,
       logger: this.logger,
       content,
-    })
-    socket.on('send', async (remoteAddr, msg, networkId) => {
-      await this.send(remoteAddr, msg, networkId)
-      socket.emit('sent')
     })
     return socket
   }
@@ -174,12 +172,12 @@ export class PortalNetworkUTP extends EventEmitter {
   }
 
   async send(peerId: string, msg: Buffer, networkId: NetworkId) {
-    this.emit('Send', peerId, msg, networkId, true)
-    return new Promise((resolve, _reject) => {
-      this.once('Sent', () => {
-        resolve(true)
-      })
-    })
+    const enr = this.client.networks.get(networkId)?.routingTable.getWithPending(peerId)?.value
+    try {
+      await this.client.sendPortalNetworkMessage(enr ?? peerId, msg, networkId, true)
+    } catch {
+      this.closeRequest(msg.readUInt16BE(2), peerId)
+    }
   }
 
   async _handleSynPacket(request: ContentRequest, packet: SynPacket): Promise<void> {
@@ -296,9 +294,10 @@ export class PortalNetworkUTP extends EventEmitter {
     request.close()
     this.openContentRequest.delete(request.socketKey)
   }
-  async returnContent(network: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
+  async returnContent(networkId: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
-    switch (network) {
+    const network = this.client.networks.get(networkId)
+    switch (networkId) {
       case NetworkId.HistoryNetwork:
         for (const [idx, k] of keys.entries()) {
           const decodedContentKey = decodeHistoryNetworkContentKey(toHexString(k))
@@ -308,12 +307,7 @@ export class PortalNetworkUTP extends EventEmitter {
               HistoryNetworkContentType[k[0]]
             } to database`,
           )
-          this.emit(
-            NetworkId.HistoryNetwork,
-            decodedContentKey.contentType,
-            decodedContentKey.blockHash,
-            _content,
-          )
+          await network!.store(decodedContentKey.contentType, decodedContentKey.blockHash, _content)
         }
         break
       case NetworkId.BeaconLightClientNetwork:
@@ -328,7 +322,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit(NetworkId.BeaconLightClientNetwork, k[0], toHexString(k), _content)
+            await network!.store(k[0], toHexString(k), _content)
           }
         }
         break
@@ -344,7 +338,7 @@ export class PortalNetworkUTP extends EventEmitter {
             this.logger.extend(`FINISHED`)(`Missing content...`)
             continue
           } else {
-            this.emit(NetworkId.StateNetwork, k[0], k, _content)
+            await network!.store(k[0], toHexString(k.slice(1)), _content)
           }
         }
         break

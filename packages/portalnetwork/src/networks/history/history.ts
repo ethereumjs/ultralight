@@ -54,12 +54,6 @@ export class HistoryNetwork extends BaseNetwork {
     this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
-    client.uTP.on(
-      NetworkId.HistoryNetwork,
-      async (contentType: number, hash: string, value: Uint8Array) => {
-        await this.store(contentType, hash, value)
-      },
-    )
   }
   /**
    *

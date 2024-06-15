@@ -1,5 +1,4 @@
 import { BitArray, BitVectorType } from '@chainsafe/ssz'
-import EventEmitter from 'events'
 
 import { bitmap } from '../../../index.js'
 import { PacketManager } from '../Packets/PacketManager.js'
@@ -9,10 +8,17 @@ import { ContentReader } from './ContentReader.js'
 import { ContentWriter } from './ContentWriter.js'
 
 import type { NetworkId } from '../../../index.js'
-import type { ICreateData, ICreatePacketOpts, Packet, UtpSocketOptions } from '../index.js'
+import type {
+  ICreateData,
+  ICreatePacketOpts,
+  Packet,
+  PortalNetworkUTP,
+  UtpSocketOptions,
+} from '../index.js'
 import type { Debugger } from 'debug'
 
-export class UtpSocket extends EventEmitter {
+export class UtpSocket {
+  utp: PortalNetworkUTP
   networkId: NetworkId
   type: UtpSocketType
   content: Uint8Array
@@ -36,7 +42,7 @@ export class UtpSocket extends EventEmitter {
   updateRTT: (packetRTT: number, ackNr: number) => void
   updateWindow: () => void
   constructor(options: UtpSocketOptions) {
-    super()
+    this.utp = options.utp
     this.networkId = options.networkId
     this.content = options.content ?? Uint8Array.from([])
     this.remoteAddress = options.remoteAddress
@@ -80,16 +86,7 @@ export class UtpSocket extends EventEmitter {
 
   setWriter(seqNr: number) {
     this.setSeqNr(seqNr)
-    this.writer = new ContentWriter(this.content, seqNr, this.logger)
-    this.writer.on('send', async (packetType: PacketType, bytes?: Uint8Array) => {
-      if (packetType === PacketType.ST_DATA && bytes) {
-        await this.sendDataPacket(bytes)
-        this.writer?.emit('sent')
-      } else {
-        await this.sendFinPacket()
-        this.writer?.emit('sent')
-      }
-    })
+    this.writer = new ContentWriter(this, this.content, seqNr, this.logger)
     void this.writer.start()
   }
   setState(state: ConnectionState) {
@@ -115,7 +112,7 @@ export class UtpSocket extends EventEmitter {
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
       `|| ackNr: ${packet.header.ackNr}`,
     )
-    this.emit('send', this.remoteAddress, msg, this.networkId, true)
+    await this.utp.send(this.remoteAddress, msg, this.networkId)
     return msg
   }
 
@@ -260,7 +257,7 @@ export class UtpSocket extends EventEmitter {
         if (this.ackNr === this.finNr) {
           this.logger(`All data packets received. Running compiler.`)
           await this.sendAckPacket()
-          this.emit('done')
+          await this.finish()
         }
       }
       // Send "Regular" ACK with the new this.ackNr
@@ -296,28 +293,20 @@ export class UtpSocket extends EventEmitter {
       return _content
     } else {
       // TODO: Else wait for all data packets.
-      return new Promise((res, _rej) => {
-        const panic = setTimeout(() => {
-          res(Uint8Array.from([]))
-        }, 5000)
-        this.once('done', async () => {
-          this.seqNr = this.seqNr + 1
-          this.ackNr = packet.header.seqNr
-          await this.sendAckPacket()
-          clearTimeout(panic)
-          let _content = await this.reader!.run()
-          this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
-          if (_content.length === 0) {
-            while (_content.length === 0) {
-              _content = await this.reader!.run()
-            }
-          }
-          this.close()
-          this._clearTimeout()
-          res(_content)
-        })
-      })
+      return
     }
+  }
+
+  async finish() {
+    let _content = await this.reader!.run()
+    this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
+    if (_content.length === 0) {
+      while (_content.length === 0) {
+        _content = await this.reader!.run()
+      }
+    }
+    this.close()
+    this._clearTimeout()
   }
 
   compare(): boolean {
@@ -330,7 +319,6 @@ export class UtpSocket extends EventEmitter {
   close(): void {
     clearInterval(this.packetManager.congestionControl.timeoutCounter)
     this.packetManager.congestionControl.removeAllListeners()
-    this.removeAllListeners()
   }
   logProgress() {
     const needed = this.writer!.dataNrs.filter((n) => !this.ackNrs.includes(n))
