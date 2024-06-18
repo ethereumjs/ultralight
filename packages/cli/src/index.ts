@@ -18,6 +18,7 @@ import { RPCManager } from './rpc/rpc.js'
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
 import type { PeerId } from '@libp2p/interface'
+import type { NetworkConfig } from 'portalnetwork'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -82,6 +83,21 @@ const args: ClientOpts = yargs(hideBin(process.argv))
     array: true,
     optional: true,
   })
+  .option('radiusHistory', {
+    describe: `2^r radius for history network client`,
+    number: true,
+    default: 0,
+  })
+  .option('radiusBeacon', {
+    describe: `2^r radius for beacon network client`,
+    number: true,
+    default: 0,
+  })
+  .option('radiusState', {
+    describe: `2^r radius for state network client`,
+    number: true,
+    default: 0,
+  })
   .option('trustedBlockRoot', {
     describe: 'a trusted blockroot to start light client syncing of the beacon chain',
     string: true,
@@ -134,27 +150,36 @@ const main = async () => {
     },
     trustedBlockRoot: args.trustedBlockRoot,
   } as any
-  let networks: NetworkId[] = []
+  let networks: NetworkConfig[] = []
   if (args.networks) {
     for (const network of args.networks) {
       switch (network) {
         case 'history':
-          networks.push(NetworkId.HistoryNetwork)
+          networks.push({
+            networkId: NetworkId.HistoryNetwork,
+            radius: 2n ** BigInt(args.radiusHistory) - 1n,
+          })
           break
         case 'beacon':
-          networks.push(NetworkId.BeaconLightClientNetwork)
+          networks.push({
+            networkId: NetworkId.BeaconLightClientNetwork,
+            radius: 2n ** BigInt(args.radiusBeacon) - 1n,
+          })
           break
         case 'state':
-          networks.push(NetworkId.StateNetwork)
+          networks.push({
+            networkId: NetworkId.StateNetwork,
+            radius: 2n ** BigInt(args.radiusState) - 1n,
+          })
           break
       }
     }
   } else {
-    networks = [NetworkId.HistoryNetwork]
+    networks = [{ networkId: NetworkId.HistoryNetwork, radius: 1n }]
   }
 
   if (args.trustedBlockRoot !== undefined) {
-    networks.push(NetworkId.BeaconLightClientNetwork)
+    networks.push({ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n })
   }
 
   const bootnodes: Array<Enr> = []
@@ -171,7 +196,6 @@ const main = async () => {
 
   const portal = await PortalNetwork.create({
     config,
-    radius: 2n ** 256n - 1n,
     //@ts-ignore Because level doesn't know how to get along with itself
     db,
     metrics,

@@ -246,7 +246,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     )
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
   const history = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const serializedBlock1 = hexToBytes(testData[1000001].content_value)

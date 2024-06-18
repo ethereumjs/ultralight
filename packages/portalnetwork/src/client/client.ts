@@ -147,10 +147,11 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     const portal = new PortalNetwork({
       config,
-      radius: opts.radius ?? 2n ** 256n,
       bootnodes,
       db: opts.db,
-      supportedNetworks: opts.supportedNetworks ?? [NetworkId.HistoryNetwork],
+      supportedNetworks: opts.supportedNetworks ?? [
+        { networkId: NetworkId.HistoryNetwork, radius: 1n },
+      ],
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
       trustedBlockRoot: opts.trustedBlockRoot,
@@ -186,17 +187,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.discv5.enr.nodeId,
       this.logger,
       opts.dbSize,
-      opts.supportedNetworks,
+      opts.supportedNetworks?.map((n) => n.networkId),
       opts.db,
     ) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
-      switch (network) {
+      switch (network.networkId) {
         case NetworkId.HistoryNetwork:
-          this.networks.set(network, new HistoryNetwork(this, opts.radius))
+          this.networks.set(network.networkId, new HistoryNetwork(this, network.radius))
           break
         case NetworkId.StateNetwork:
-          this.networks.set(network, new StateNetwork(this, opts.radius))
+          this.networks.set(network.networkId, new StateNetwork(this, network.radius))
           break
         case NetworkId.BeaconLightClientNetwork:
           {
@@ -205,8 +206,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 ? SyncStrategy.TrustedBlockRoot
                 : SyncStrategy.PollNetwork
             this.networks.set(
-              network,
-              new BeaconLightClientNetwork(this, opts.radius, opts.trustedBlockRoot, syncStrategy),
+              network.networkId,
+              new BeaconLightClientNetwork(
+                this,
+                network.radius,
+                opts.trustedBlockRoot,
+                syncStrategy,
+              ),
             )
           }
           break

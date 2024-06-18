@@ -12,7 +12,7 @@ const headerWithProofkey = '0x0088e96d4537bea4d9c05d12549907b32561d3bf31f45aae73
 
 describe('BlockIndex', async () => {
   const ultralight = await PortalNetwork.create({
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
   const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   await history.store(HistoryNetworkContentType.BlockHeader, hash, fromHexString(headerWithProof))
@@ -34,7 +34,7 @@ describe('BlockIndex', async () => {
   })
 
   const ultralight2 = await PortalNetwork.create({
-    supportedNetworks: [NetworkId.HistoryNetwork],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
     db: ultralight.db.db,
   })
   const history2 = ultralight2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
