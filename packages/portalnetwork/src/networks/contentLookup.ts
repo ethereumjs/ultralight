@@ -70,8 +70,7 @@ export class ContentLookup {
       // Process multiple peers in parallel
       const peerBatch = this.lookupPeers.splice(0, 5)
       const promises = peerBatch.map((peer) => this.processPeer(peer))
-
-      const results = await Promise.all(promises)
+      const results = await Promise.allSettled(promises)
 
       for (const result of results) {
         if (result) {
