@@ -66,22 +66,21 @@ export class ContentLookup {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
     }
-    let finished = false
-    while (!finished) {
-      if (this.lookupPeers.length === 0) {
-        finished = true
-        this.network.metrics?.failedContentLookups.inc()
-        this.logger(
-          `No more peers to query.  Failed to retrieve ${toHexString(this.contentKey)} from network`,
-        )
-        return
+    while (!this.finished && this.lookupPeers.length > 0) {
+      // Process multiple peers in parallel
+      const peerBatch = this.lookupPeers.splice(0, 5)
+      const promises = peerBatch.map((peer) => this.processPeer(peer))
+
+      const results = await Promise.all(promises)
+
+      for (const result of results) {
+        if (result) {
+          this.finished = true
+          return result
+        }
       }
-      const nearestPeer = this.lookupPeers.shift()
-      if (!nearestPeer) {
-        this.network.metrics?.failedContentLookups.inc()
-        this.logger(
-          `No more peers to query.  Failed to retrieve ${toHexString(this.contentKey)} from network`,
-        )
+    }
+  }
         return
       }
       this.contacted.push(nearestPeer.nodeId)
