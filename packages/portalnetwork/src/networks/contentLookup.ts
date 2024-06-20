@@ -34,7 +34,7 @@ export class ContentLookup {
   private contentKey: Uint8Array
   private logger: Debugger
   private timeout: number
-
+  private finished: boolean
   constructor(network: BaseNetwork, contentKey: Uint8Array) {
     this.network = network
     this.lookupPeers = []
@@ -43,6 +43,7 @@ export class ContentLookup {
     this.contentId = serializedContentKeyToContentId(contentKey)
     this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
     this.timeout = network.portal.utpTimout
+    this.finished = false
   }
 
   /**
