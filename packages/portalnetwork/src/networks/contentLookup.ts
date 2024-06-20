@@ -73,9 +73,9 @@ export class ContentLookup {
       const results = await Promise.allSettled(promises)
 
       for (const result of results) {
-        if (result) {
+        if (result.status === 'fulfilled' && result.value !== undefined) {
           this.finished = true
-          return result
+          return result.value
         }
       }
     }
