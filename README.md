@@ -17,9 +17,11 @@ de2f8:ultralight Started JSON RPC Server address=http://localhost:8545
 
 This will start a single instance of the Ultralight client running locally.  
 
-## Connecting to the testnet
+## Connecting to the devnet (developer testnet)
 
-Follow the above quickstart guide and run `npm run dev-testnet` to start the client with the current list of bootnodes.  The client will attempt to ping all of bootnodes in the provided default bootnode list.
+1. Change active folder: `cd packages/cli`
+2. Run: `npm run devnet`
+3. Client starts with the current list of bootnodes which will attempt to ping all of bootnodes in the provided default bootnode list (specified in `packages/cli/bootnodes.txt`)
 
 ### Additional Documentation
 
