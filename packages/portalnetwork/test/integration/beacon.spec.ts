@@ -45,9 +45,7 @@ describe('Find Content tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -58,9 +56,7 @@ describe('Find Content tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -72,12 +68,8 @@ describe('Find Content tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
     await network1!.sendPing(network2?.enr!.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
@@ -120,9 +112,7 @@ describe('Find Content tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -133,9 +123,7 @@ describe('Find Content tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -147,12 +135,8 @@ describe('Find Content tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     // Stub out light client
     network1.lightClient = {
@@ -230,9 +214,7 @@ describe('Find Content tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -243,9 +225,7 @@ describe('Find Content tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -257,12 +237,8 @@ describe('Find Content tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
     await network1!.sendPing(network2?.enr!.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
@@ -311,9 +287,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -324,9 +298,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -340,12 +312,8 @@ describe('OFFER/ACCEPT tests', () => {
     node2.enableLog('*BeaconLightClientNetwork')
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     // Stub out light client and set the light client's head slot value to equal our optimistic update slot
     network1.lightClient = {
@@ -435,9 +403,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -448,9 +414,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -461,12 +425,8 @@ describe('OFFER/ACCEPT tests', () => {
     })
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     // Stub out light client and set the light client's head slot value to equal our optimistic update slot
     network1.lightClient = {
@@ -538,9 +498,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -551,9 +509,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -564,12 +520,8 @@ describe('OFFER/ACCEPT tests', () => {
     })
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     await network1!.sendPing(network2?.enr!.toENR())
 
@@ -625,9 +577,7 @@ describe('beacon light client sync tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -638,9 +588,7 @@ describe('beacon light client sync tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -652,12 +600,8 @@ describe('beacon light client sync tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     const bootstrapJSON = require('./testdata/bootstrap.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJSON)
@@ -760,9 +704,7 @@ describe('beacon light client sync tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -773,9 +715,7 @@ describe('beacon light client sync tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
-      ],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -788,12 +728,8 @@ describe('beacon light client sync tests', () => {
     //   node2.enableLog('*')
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.capella)
 

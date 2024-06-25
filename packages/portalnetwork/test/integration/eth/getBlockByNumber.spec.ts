@@ -114,9 +114,7 @@ describe('eth_getBlockByNumber', () => {
 
     await node1.start()
 
-    const beacon = node1.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     const history = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const bootstrapJSON = require('../testdata/bootstrap.json').data

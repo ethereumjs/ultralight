@@ -31,9 +31,7 @@ export class beacon {
    * @param rpcManager RPC client to which the module binds
    */
   constructor(client: PortalNetwork, logger: Debugger) {
-    this._beacon = client.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    this._beacon = client.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
     this.logger = logger.extend('beacon')
 
     this.methods = middleware(this.methods.bind(this), 0, [])
