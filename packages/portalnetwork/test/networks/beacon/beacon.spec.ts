@@ -140,7 +140,7 @@ describe('API tests', async () => {
 
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -150,7 +150,7 @@ describe('API tests', async () => {
     },
   })
 
-  const network = <BeaconLightClientNetwork>node1.networks.get(NetworkId.BeaconLightClientNetwork)
+  const network = <BeaconLightClientNetwork>node1.networks.get(NetworkId.BeaconChainNetwork)
 
   it('stores and retrieves bootstrap', async () => {
     const bootstrap = specTestVectors.bootstrap['6718368']
@@ -293,7 +293,7 @@ describe('constructor/initialization tests', async () => {
   it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -302,9 +302,7 @@ describe('constructor/initialization tests', async () => {
         peerId: id1,
       },
     })
-    const beacon = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
     const listeners = beacon.portal.listeners('NodeAdded')
     assert.equal(listeners.length, 1, 'bootstrap vote listener is running')
     assert.equal(listeners[0], beacon['getBootStrapVote'])
@@ -313,7 +311,7 @@ describe('constructor/initialization tests', async () => {
   it('starts with a sync strategy of `trustedBootStrap` when a trusted block root is provided', async () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -323,9 +321,7 @@ describe('constructor/initialization tests', async () => {
       },
       trustedBlockRoot: bytesToHex(randomBytes(32)),
     })
-    const beacon = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
     const listeners = beacon.portal.listeners('NodeAdded')
     assert.equal(listeners.length, 1, 'bootstrap listener is running')
     assert.equal(listeners[0], beacon['getBootstrap'])
@@ -349,7 +345,7 @@ describe('constructor/initialization tests', async () => {
     const trustedBlockRoot = '0x8e4fc820d749f9cf352d074f784071f65483ea673d8e9b8188870e950125a582'
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -359,9 +355,7 @@ describe('constructor/initialization tests', async () => {
       },
       trustedBlockRoot,
     })
-    const beacon = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
-    ) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
 
     await beacon.initializeLightClient(trustedBlockRoot)
     assert.equal((beacon.lightClient as any).checkpointRoot, trustedBlockRoot)

@@ -199,7 +199,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         case NetworkId.StateNetwork:
           this.networks.set(network.networkId, new StateNetwork(this, network.radius))
           break
-        case NetworkId.BeaconLightClientNetwork:
+        case NetworkId.BeaconChainNetwork:
           {
             const syncStrategy =
               opts.trustedBlockRoot !== undefined
@@ -308,7 +308,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public network = (): {
     [NetworkId.HistoryNetwork]: HistoryNetwork | undefined
     [NetworkId.StateNetwork]: StateNetwork | undefined
-    [NetworkId.BeaconLightClientNetwork]: BeaconLightClientNetwork | undefined
+    [NetworkId.BeaconChainNetwork]: BeaconLightClientNetwork | undefined
   } => {
     const history = this.networks.get(NetworkId.HistoryNetwork)
       ? (this.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork)
@@ -316,13 +316,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const state = this.networks.get(NetworkId.StateNetwork)
       ? (this.networks.get(NetworkId.StateNetwork) as StateNetwork)
       : undefined
-    const beacon = this.networks.get(NetworkId.BeaconLightClientNetwork)
-      ? (this.networks.get(NetworkId.BeaconLightClientNetwork) as BeaconLightClientNetwork)
+    const beacon = this.networks.get(NetworkId.BeaconChainNetwork)
+      ? (this.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork)
       : undefined
     return {
       [NetworkId.HistoryNetwork]: history,
       [NetworkId.StateNetwork]: state,
-      [NetworkId.BeaconLightClientNetwork]: beacon,
+      [NetworkId.BeaconChainNetwork]: beacon,
     }
   }
 

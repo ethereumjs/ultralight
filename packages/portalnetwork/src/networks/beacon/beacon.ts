@@ -50,7 +50,7 @@ import type { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
 import type { Debugger } from 'debug'
 
 export class BeaconLightClientNetwork extends BaseNetwork {
-  networkId: NetworkId.BeaconLightClientNetwork
+  networkId: NetworkId.BeaconChainNetwork
   beaconConfig: BeaconConfig
   networkName = 'BeaconLightClientNetwork'
   logger: Debugger
@@ -69,7 +69,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
 
-    this.networkId = NetworkId.BeaconLightClientNetwork
+    this.networkId = NetworkId.BeaconChainNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5))
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
@@ -114,7 +114,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    */
   private getBootstrap = async (nodeId: string, network: NetworkId) => {
     // We check the network ID because NodeAdded is emitted regardless of network
-    if (network !== NetworkId.BeaconLightClientNetwork) return
+    if (network !== NetworkId.BeaconChainNetwork) return
     const decoded = await this.sendFindContent(
       nodeId,
       concatBytes(
@@ -150,7 +150,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    */
   private getBootStrapVote = async (nodeId: string, network: NetworkId) => {
     try {
-      if (network === NetworkId.BeaconLightClientNetwork) {
+      if (network === NetworkId.BeaconChainNetwork) {
         // We check the network ID because NodeAdded is emitted regardless of network
         if (this.bootstrapFinder.has(nodeId)) {
           return
@@ -802,7 +802,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             case BeaconLightClientNetworkContentType.LightClientBootstrap: {
               try {
                 // TODO: Verify the offered bootstrap isn't too old before accepting
-                await this.get(NetworkId.BeaconLightClientNetwork, toHexString(key))
+                await this.get(NetworkId.BeaconChainNetwork, toHexString(key))
                 this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
               } catch (err) {
                 offerAccepted = true
