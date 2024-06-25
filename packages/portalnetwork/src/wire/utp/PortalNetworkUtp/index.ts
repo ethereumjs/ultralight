@@ -310,7 +310,7 @@ export class PortalNetworkUTP {
           await network!.store(decodedContentKey.contentType, decodedContentKey.blockHash, _content)
         }
         break
-      case NetworkId.BeaconLightClientNetwork:
+      case NetworkId.BeaconChainNetwork:
         for (const [idx, k] of keys.entries()) {
           const _content = contents[idx]
           this.logger.extend(`FINISHED`)(

@@ -106,7 +106,7 @@ export class portal {
     this._client = client
     this._history = this._client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     this._beacon = this._client.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     this._state = this._client.networks.get(NetworkId.StateNetwork) as StateNetwork
     this.logger = logger

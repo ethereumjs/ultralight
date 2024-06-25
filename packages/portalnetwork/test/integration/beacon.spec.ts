@@ -46,7 +46,7 @@ describe('Find Content tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -59,7 +59,7 @@ describe('Find Content tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -73,10 +73,10 @@ describe('Find Content tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     await network1!.sendPing(network2?.enr!.toENR())
     assert.equal(
@@ -121,7 +121,7 @@ describe('Find Content tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -134,7 +134,7 @@ describe('Find Content tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -148,10 +148,10 @@ describe('Find Content tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     // Stub out light client
@@ -231,7 +231,7 @@ describe('Find Content tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -244,7 +244,7 @@ describe('Find Content tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -258,10 +258,10 @@ describe('Find Content tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     await network1!.sendPing(network2?.enr!.toENR())
     assert.equal(
@@ -312,7 +312,7 @@ describe('OFFER/ACCEPT tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -325,7 +325,7 @@ describe('OFFER/ACCEPT tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -341,10 +341,10 @@ describe('OFFER/ACCEPT tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     // Stub out light client and set the light client's head slot value to equal our optimistic update slot
@@ -436,7 +436,7 @@ describe('OFFER/ACCEPT tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -449,7 +449,7 @@ describe('OFFER/ACCEPT tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -462,10 +462,10 @@ describe('OFFER/ACCEPT tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     // Stub out light client and set the light client's head slot value to equal our optimistic update slot
@@ -539,7 +539,7 @@ describe('OFFER/ACCEPT tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -552,7 +552,7 @@ describe('OFFER/ACCEPT tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -565,10 +565,10 @@ describe('OFFER/ACCEPT tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     await network1!.sendPing(network2?.enr!.toENR())
@@ -626,7 +626,7 @@ describe('beacon light client sync tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -639,7 +639,7 @@ describe('beacon light client sync tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -653,10 +653,10 @@ describe('beacon light client sync tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     const bootstrapJSON = require('./testdata/bootstrap.json').data
@@ -761,7 +761,7 @@ describe('beacon light client sync tests', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr1,
@@ -774,7 +774,7 @@ describe('beacon light client sync tests', () => {
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconLightClientNetwork, radius: 2n ** 256n - 1n },
+        { networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n },
       ],
       config: {
         enr: enr2,
@@ -789,10 +789,10 @@ describe('beacon light client sync tests', () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     const network2 = node2.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.capella)

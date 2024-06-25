@@ -29,7 +29,7 @@ export class ETH {
     this.activeNetworks = Object.keys(portal.network()) as NetworkId[]
     this.history = portal.network()['0x500b']
     this.state = portal.network()['0x500a']
-    this.beacon = portal.network()['0x501a']
+    this.beacon = portal.network()['0x500c']
     this.logger = portal.logger.extend(`ETH_GETBLOCKBYNUMBER`)
   }
 
@@ -64,7 +64,7 @@ export class ETH {
     let blockHash
     if (blockNumber === 'latest' || blockNumber === 'finalized') {
       // Requires beacon light client to be running to get `latest` or `finalized` blocks
-      this.networkCheck([NetworkId.BeaconLightClientNetwork])
+      this.networkCheck([NetworkId.BeaconChainNetwork])
       let clHeader
       if (blockNumber === 'latest') {
         clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader

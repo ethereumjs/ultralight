@@ -162,7 +162,7 @@ const main = async () => {
           break
         case 'beacon':
           networks.push({
-            networkId: NetworkId.BeaconLightClientNetwork,
+            networkId: NetworkId.BeaconChainNetwork,
             radius: 2n ** BigInt(args.radiusBeacon) - 1n,
           })
           break
@@ -179,7 +179,7 @@ const main = async () => {
   }
 
   if (args.trustedBlockRoot !== undefined) {
-    networks.push({ networkId: NetworkId.BeaconLightClientNetwork, radius: 1n })
+    networks.push({ networkId: NetworkId.BeaconChainNetwork, radius: 1n })
   }
 
   const bootnodes: Array<Enr> = []

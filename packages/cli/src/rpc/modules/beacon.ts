@@ -32,7 +32,7 @@ export class beacon {
    */
   constructor(client: PortalNetwork, logger: Debugger) {
     this._beacon = client.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
     this.logger = logger.extend('beacon')
 

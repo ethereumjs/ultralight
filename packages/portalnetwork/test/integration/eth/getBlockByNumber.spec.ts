@@ -102,7 +102,7 @@ describe('eth_getBlockByNumber', () => {
 
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.BeaconLightClientNetwork, NetworkId.HistoryNetwork],
+      supportedNetworks: [NetworkId.BeaconChainNetwork, NetworkId.HistoryNetwork],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -115,7 +115,7 @@ describe('eth_getBlockByNumber', () => {
     await node1.start()
 
     const beacon = node1.networks.get(
-      NetworkId.BeaconLightClientNetwork,
+      NetworkId.BeaconChainNetwork,
     ) as BeaconLightClientNetwork
 
     const history = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
