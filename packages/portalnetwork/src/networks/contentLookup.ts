@@ -35,6 +35,8 @@ export class ContentLookup {
   private logger: Debugger
   private timeout: number
   private finished: boolean
+  private content: ContentLookupResponse
+  private pending: Set<NodeId>
   constructor(network: BaseNetwork, contentKey: Uint8Array) {
     this.network = network
     this.lookupPeers = []
@@ -44,6 +46,7 @@ export class ContentLookup {
     this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
     this.timeout = network.portal.utpTimout
     this.finished = false
+    this.pending = new Set()
   }
 
   /**
@@ -66,19 +69,25 @@ export class ContentLookup {
       const dist = distance(peer.nodeId, this.contentId)
       this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
     }
-    while (!this.finished && this.lookupPeers.length > 0) {
-      // Process multiple peers in parallel
-      const peerBatch = this.lookupPeers.splice(0, 5)
-      const promises = peerBatch.map((peer) => this.processPeer(peer))
-      const results = await Promise.allSettled(promises)
 
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value !== undefined) {
-          this.finished = true
-          return result.value
-        }
+    while (!this.finished && (this.lookupPeers.length > 0 || this.pending.size > 0)) {
+      if (this.lookupPeers.length > 0) {
+        // Ask more peers (up to 5) for content
+        const peerBatch = this.lookupPeers.splice(0, Math.max(1, 5 - this.pending.size))
+        const promises = peerBatch.map((peer) => this.processPeer(peer))
+
+        this.logger(`Asking ${promises.length} nodes for content`)
+        // Wait for first response
+        await Promise.any(promises)
+      } else {
+        this.logger(`Waiting on ${this.pending.size} content requests`)
+        this.logger(this.pending)
+        // We only have pending requests left so wait and see if they are all resolved
+        await new Promise((resolve) => setTimeout(() => resolve(undefined), this.timeout))
       }
     }
+    this.logger(`Finished lookup.  Lookup was successful: ${this.content !== undefined}`)
+    return this.content
   }
 
   private processPeer = async (peer: lookupPeer): Promise<ContentLookupResponse | void> => {
@@ -86,11 +95,14 @@ export class ContentLookup {
       return
     }
     this.contacted.push(peer.nodeId)
+    this.pending.add(peer.nodeId)
     this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
+    if (this.finished) return
     const res = await this.network.sendFindContent!(peer.nodeId, this.contentKey)
     if (this.finished) return
     if (!res) {
       this.logger(`No response to findContent from ${shortId(peer.nodeId)}`)
+      this.pending.delete(peer.nodeId)
       return
     }
     switch (res.selector) {
@@ -101,7 +113,7 @@ export class ContentLookup {
           `received uTP connection ID from ${shortId(this.network.routingTable.getValue(peer.nodeId)!)}`,
         )
         peer.hasContent = true
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           let timeout: any = undefined
           const utpDecoder = (
             contentKey: string,
@@ -115,13 +127,17 @@ export class ContentLookup {
               )
               this.network.removeListener('ContentAdded', utpDecoder)
               clearTimeout(timeout)
+              this.content = { content, utp: true }
+              this.finished = true
+              this.pending.delete(peer.nodeId)
               resolve({ content, utp: true })
             }
           }
           timeout = setTimeout(() => {
             this.logger(`uTP stream timed out`)
             this.network.removeListener('ContentAdded', utpDecoder)
-            reject('block not found')
+            this.pending.delete(peer.nodeId)
+            resolve(undefined)
           }, this.timeout)
           this.network.on('ContentAdded', utpDecoder)
         })
@@ -146,6 +162,8 @@ export class ContentLookup {
             await this.network.sendOffer(contactedPeer, [this.contentKey])
           }
         }
+        this.content = { content: res.value as Uint8Array, utp: false }
+        this.pending.delete(peer.nodeId)
         return { content: res.value as Uint8Array, utp: false }
       }
 
@@ -178,6 +196,7 @@ export class ContentLookup {
             (a, b) => Number(a.distance) - Number(b.distance),
           )
         }
+        this.pending.delete(peer.nodeId)
         return
       }
     }

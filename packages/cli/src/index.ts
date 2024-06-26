@@ -204,9 +204,9 @@ const main = async () => {
     trustedBlockRoot: args.trustedBlockRoot,
     bootnodes,
   })
-  portal.discv5.enableLogs()
+  // portal.discv5.enableLogs()
 
-  portal.enableLog('*')
+  // portal.enableLog('*')
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
