@@ -99,11 +99,14 @@ export class ContentLookup {
     this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
     if (this.finished) return
     const res = await this.network.sendFindContent!(peer.nodeId, this.contentKey)
-    if (this.finished) return
+    if (this.finished) {
+      this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
+      throw new Error('Lookup finished')
+    }
     if (!res) {
       this.logger(`No response to findContent from ${shortId(peer.nodeId)}`)
       this.pending.delete(peer.nodeId)
-      return
+      throw new Error('Continue')
     }
     switch (res.selector) {
       case 0: {
@@ -159,7 +162,7 @@ export class ContentLookup {
             )
           ) {
             // Only offer content if not already offered to this peer
-            await this.network.sendOffer(contactedPeer, [this.contentKey])
+            void this.network.sendOffer(contactedPeer, [this.contentKey])
           }
         }
         this.content = { content: res.value as Uint8Array, utp: false }
@@ -197,7 +200,7 @@ export class ContentLookup {
           )
         }
         this.pending.delete(peer.nodeId)
-        return
+        throw new Error('Continue')
       }
     }
   }
