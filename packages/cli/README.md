@@ -52,6 +52,17 @@ Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a termina
 
 Note, all nodes are connected to each other as bootnodes for each network by default.  To turn off this behavior, pass `--connectNodes=false`.
 
+### CLI Parameters
+```sh
+  --pks           text file containing private keys for nodes in devnet  [string]
+  --numNodes      number of random nodes to start                        [number] (default: 1)
+  --ip            public ip address of the node                          [string]
+  --promConfig    create prometheus scrape_target file                   [boolean] (default: false)
+  --port          starting port number                                   [number] (default: 9000)
+  --networks      supported subnetworks                                  [array] (default: [`history`, `beacon`, `state`])
+  --connectNodes  connect all nodes on network start                     [boolean] (default: false)
+```
+
 ### Using the Devnet
 #### From the command-line:
   *Make JSON-RPC calls using `curl` or `httpie`*
