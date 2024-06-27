@@ -93,6 +93,8 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
+  abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
+
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
   public async handle(message: ITalkReqMessage, src: INodeAddress) {
