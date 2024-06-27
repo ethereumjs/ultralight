@@ -89,6 +89,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
         { encoding: 'hex' },
       )
     const node = await PortalNetwork.create({
+      bindAddress: '127.0.0.1',
       transport: TransportLayer.WEB,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
     })
@@ -125,6 +126,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
 
   it('Should store and retrieve an EpochAccumulator from DB', async () => {
     const node = await PortalNetwork.create({
+      bindAddress: '127.0.0.1',
       transport: TransportLayer.WEB,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
     })
@@ -145,6 +147,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
 
 describe('store -- Block Bodies and Receipts', async () => {
   const node = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })
@@ -221,6 +224,7 @@ describe('Header Proof Tests', async () => {
     )
   const _epoch1 = EpochAccumulator.deserialize(hexToBytes(_epochRaw))
   const node = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
   })

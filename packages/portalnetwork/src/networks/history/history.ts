@@ -21,7 +21,6 @@ import {
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
-import { ETH } from './eth_module.js'
 import { GossipManager } from './gossip.js'
 import {
   BlockHeaderWithProof,
@@ -45,13 +44,11 @@ export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
   logger: Debugger
-  ETH: ETH
   gossipManager: GossipManager
   constructor(client: PortalNetwork, nodeRadius?: bigint) {
     super(client, nodeRadius)
     this.networkId = NetworkId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
-    this.ETH = new ETH(this)
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
   }
@@ -310,7 +307,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     } catch (err: any) {
       this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
-      block = await this.ETH.getBlockByHash(hashKey, false)
+      block = await this.portal.ETH.getBlockByHash(hashKey, false)
     }
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (block instanceof Block) {

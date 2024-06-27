@@ -23,7 +23,7 @@ const readId = 1111
 const writeId = 2222
 
 const _read = async (networkId: NetworkId) => {
-  const client = await PortalNetwork.create({})
+  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
   return new UtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,
@@ -37,7 +37,7 @@ const _read = async (networkId: NetworkId) => {
   })
 }
 const _write = async (networkId: NetworkId) => {
-  const client = await PortalNetwork.create({})
+  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
   return new UtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,

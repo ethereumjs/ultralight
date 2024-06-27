@@ -12,6 +12,7 @@ describe('StateNetwork', async () => {
   const r = 4n
   const radius = 2n ** (256n - r) - 1n
   const ultralight = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
     config: {
       enr: enr1,
       peerId: pk,

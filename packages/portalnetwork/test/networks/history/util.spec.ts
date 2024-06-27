@@ -51,24 +51,24 @@ describe('utility functions', () => {
   })
   it('epochRootByBlocknumber', () => {
     assert.equal(
-      toHexString(epochRootByBlocknumber(1000n)),
+      toHexString(epochRootByBlocknumber(1000n)!),
       '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
       'epochRootByBlocknumber returned correct epoch root',
     )
     assert.equal(
-      toHexString(epochRootByIndex(0)),
+      toHexString(epochRootByIndex(0)!),
       '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
       'epochRootByIndex returned correct epoch root',
     )
   })
   it('epochRootByIndex', () => {
     assert.equal(
-      toHexString(epochRootByBlocknumber(9192n)),
+      toHexString(epochRootByBlocknumber(9192n)!),
       '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
       'epochRootByBlocknumber returned correct epoch root',
     )
     assert.equal(
-      toHexString(epochRootByIndex(1)),
+      toHexString(epochRootByIndex(1)!),
       '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
       'epochRootByIndex returned correct epoch root',
     )

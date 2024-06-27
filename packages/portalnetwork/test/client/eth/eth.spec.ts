@@ -8,6 +8,7 @@ import type { StateNetwork } from '../../../src/networks/state/state.js'
 
 describe('ETH class base level API checks', async () => {
   const ultralight = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
     supportedNetworks: [
       { networkId: NetworkId.HistoryNetwork, radius: 1n },
       { networkId: NetworkId.StateNetwork, radius: 1n },
@@ -22,6 +23,7 @@ describe('ETH class base level API checks', async () => {
   })
 
   it('networkCheck should check for active/inactive networks', () => {
+    // @ts-expect-error
     assert.throws(() => ultralight.ETH['networkCheck']([NetworkId.HeaderGossipNetwork]))
     assert.doesNotThrow(() => ultralight.ETH['networkCheck']([NetworkId.StateNetwork]))
   })
