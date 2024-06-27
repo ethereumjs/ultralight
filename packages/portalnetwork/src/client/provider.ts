@@ -43,7 +43,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
   getBlock = async (blockTag: ethers.BlockTag): Promise<ethers.Block | null> => {
     let block
     if (typeof blockTag === 'string' && blockTag.length === 66) {
-      block = await this.historyNetwork?.ETH.getBlockByHash(blockTag, false)
+      block = await this.portal.ETH.getBlockByHash(blockTag, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block, this.provider)
       }
@@ -63,7 +63,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     const isBlockHash =
       ethers.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
     if (isBlockHash) {
-      block = await this.historyNetwork?.ETH.getBlockByHash(blockTag, true)
+      block = await this.portal.ETH.getBlockByHash(blockTag, true)
       if (block !== undefined) {
         return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }

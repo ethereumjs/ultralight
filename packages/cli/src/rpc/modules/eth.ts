@@ -137,7 +137,7 @@ export class eth {
     this._client.logger(
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`,
     )
-    const block = await this._history.ETH.getBlockByHash(blockHash, includeTransactions)
+    const block = await this._client.ETH.getBlockByHash(blockHash, includeTransactions)
     //@ts-ignore @ethereumjs/block has some weird typing discrepancy
     if (block !== undefined) return block
     throw new Error('Block not found')
