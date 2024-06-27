@@ -42,7 +42,7 @@ describe('eth_getBlockByNumber', () => {
       enr2.setLocationMultiaddr(initMa2)
       const node1 = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [NetworkId.HistoryNetwork],
+        supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
         config: {
           enr: enr1,
           bindAddrs: {
@@ -54,7 +54,7 @@ describe('eth_getBlockByNumber', () => {
 
       const node2 = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [NetworkId.HistoryNetwork],
+        supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
         config: {
           enr: enr2,
           bindAddrs: {
@@ -102,7 +102,10 @@ describe('eth_getBlockByNumber', () => {
 
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [NetworkId.BeaconChainNetwork, NetworkId.HistoryNetwork],
+      supportedNetworks: [
+        { networkId: NetworkId.BeaconChainNetwork, radius: 1n },
+        { networkId: NetworkId.HistoryNetwork, radius: 1n },
+      ],
       config: {
         enr: enr1,
         bindAddrs: {

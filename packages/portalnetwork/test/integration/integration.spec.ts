@@ -265,7 +265,7 @@ it('eth_getBlockByHash', async () => {
   await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, network1)
   await network1.sendPing(network2?.enr!.toENR())
 
-  const retrieved = await network2.ETH.getBlockByHash(testBlockData[29].blockHash, false)
+  const retrieved = await network2.portal.ETH.getBlockByHash(testBlockData[29].blockHash, false)
   assert.equal(
     toHexString(retrieved!.hash()),
     testBlockData[29].blockHash,
