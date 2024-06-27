@@ -1,4 +1,3 @@
-export * from './eth_module.js'
 export * from './gossip.js'
 export * from './headerAccumulator.js'
 export * from './history.js'
