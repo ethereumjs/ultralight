@@ -265,7 +265,10 @@ export class StateNetwork extends BaseNetwork {
         }),
       )
       const request = await lookup.startLookup()
-      const requestContent = request && 'content' in request ? request.content : new Uint8Array()
+      if (request === undefined || !('content' in request)) {
+        throw new Error(`network doesn't have root node ${toHexString(stateroot)}`)
+      }
+      const requestContent = request.content
       const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
       this.stateDB.db.temp.set(bytesToUnprefixedHex(stateroot), bytesToUnprefixedHex(node))
     }
