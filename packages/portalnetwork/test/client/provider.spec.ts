@@ -31,7 +31,7 @@ it('Test provider functionality', async () => {
   assert.ok(block!.number === 5000, 'retrieved block from fallback provider')
 
   // Stub getBlockByHash for unit testing
-  provider.historyNetwork.ETH.getBlockByHash = async (_hash: string) => {
+  provider.portal.ETH.getBlockByHash = async (_hash: string) => {
     return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
   }
   const block2 = await provider.getBlock(
