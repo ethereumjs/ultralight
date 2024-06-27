@@ -75,7 +75,7 @@ const _peerId = await createSecp256k1PeerId()
 const DEFAULT_RAND_ID = 1234
 
 describe('uTP Reader/Writer tests', async () => {
-  const client = await PortalNetwork.create({})
+  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
   const networkId = NetworkId.HistoryNetwork
   const content = randomBytes(sampleSize)
   const uTP = new PortalNetworkUTP(client)
@@ -237,7 +237,7 @@ describe('uTP Reader/Writer tests', async () => {
 })
 
 describe('PortalNetworkUTP test', async () => {
-  const client = await PortalNetwork.create({})
+  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
   const utp = new PortalNetworkUTP(client)
   it('createPortalNetworkUTPSocket', async () => {
     const networkId = NetworkId.HistoryNetwork

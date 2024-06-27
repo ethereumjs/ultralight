@@ -58,6 +58,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
     r: 254,
   }
   const client = await PortalNetwork.create({
+    bindAddress: '127.0.0.1',
     supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: BigInt(2 ** config.r) }],
     config: {
       enr: config.enr,
