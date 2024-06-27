@@ -23,6 +23,9 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
   --web3              web3 JSON RPC HTTP endpoint for local Ethereum node    [string]
   --networks          subnetworks to enable  (options are: `history`, `state`, `beacon`) [default: `history`]
   --trustedBlockRoot  a trusted blockroot to start light client syncing of the beacon chain [string]
+  --radiusHistory     2^r radius for history network client                  [number] [default: 0]
+  --radiusBeacon      2^r radius for beacon network client                   [number] [default: 0]
+  --radiusState       2^r radius for state network client                    [number] [default: 0]
 ```
 ### Starting with the same Node ID 
 
@@ -48,6 +51,17 @@ Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a termina
   - `npm run devnet -- --numNodes=5 --networks=history beacon`
 
 Note, all nodes are connected to each other as bootnodes for each network by default.  To turn off this behavior, pass `--connectNodes=false`.
+
+### CLI Parameters
+```sh
+  --pks           text file containing private keys for nodes in devnet  [string]
+  --numNodes      number of random nodes to start                        [number] (default: 1)
+  --ip            public ip address of the node                          [string]
+  --promConfig    create prometheus scrape_target file                   [boolean] (default: false)
+  --port          starting port number                                   [number] (default: 9000)
+  --networks      supported subnetworks                                  [array] (default: [`history`, `beacon`, `state`])
+  --connectNodes  connect all nodes on network start                     [boolean] (default: false)
+```
 
 ### Using the Devnet
 #### From the command-line:

@@ -58,7 +58,7 @@ const args: any = yargs(hideBin(process.argv))
     optional: true,
   })
   .option('connectNodes', {
-    describe: 'connet all nodes on network start',
+    describe: 'connect all nodes on network start',
     boolean: true,
     default: false,
   })
