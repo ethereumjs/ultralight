@@ -1,7 +1,7 @@
-import { EntryStatus } from '@chainsafe/discv5'
+import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
 import {
@@ -92,6 +92,8 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     }
   }
+
+  abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
 
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
@@ -435,6 +437,14 @@ export abstract class BaseNetwork extends EventEmitter {
           const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
+            const cid = bytesToUnprefixedHex(this.contentKeyToId(msg.contentKeys[x]))
+            const d = distance(cid, this.enr.nodeId)
+            if (d >= this.nodeRadius) {
+              this.logger.extend('OFFER')(
+                `Content key: ${toHexString(msg.contentKeys[x])} is outside radius.\nd=${d}\nr=${this.nodeRadius}`,
+              )
+              continue
+            }
             try {
               await this.get(this.networkId, toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)

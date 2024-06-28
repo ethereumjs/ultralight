@@ -48,6 +48,10 @@ export class StateNetwork extends BaseNetwork {
     this.routingTable.setLogger(this.logger)
   }
 
+  public contentKeyToId = (contentKey: Uint8Array): Uint8Array => {
+    return StateNetworkContentId.fromBytes(contentKey)
+  }
+
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
    * @param dstId node id of peer

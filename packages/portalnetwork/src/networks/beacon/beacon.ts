@@ -1,3 +1,4 @@
+import { digest } from '@chainsafe/as-sha256'
 import { toHexString } from '@chainsafe/ssz'
 import {
   bytesToHex,
@@ -103,6 +104,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         this.portal.on('NodeAdded', this.getBootstrap)
         break
     }
+  }
+
+  public contentKeyToId = (contentKey: Uint8Array): Uint8Array => {
+    return digest(contentKey)
   }
 
   /**

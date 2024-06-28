@@ -1,3 +1,4 @@
+import { digest } from '@chainsafe/as-sha256'
 import { ENR } from '@chainsafe/enr'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { Block, BlockHeader } from '@ethereumjs/block'
@@ -51,6 +52,10 @@ export class HistoryNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
+  }
+
+  public contentKeyToId = (contentKey: Uint8Array): Uint8Array => {
+    return digest(contentKey)
   }
   /**
    *

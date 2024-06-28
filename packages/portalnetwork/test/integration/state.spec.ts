@@ -186,7 +186,7 @@ describe('getAccount via network', async () => {
   const result = await networks[0].receiveAccountTrieNodeOffer(contentKey, content)
   await new Promise((r) => setTimeout(r, 1000))
   it('should gossip some content', () => {
-    expect(result.gossipCount).toEqual(4)
+    expect(result.gossipCount).toEqual(3)
   })
   const storedInNodes = await Promise.all(
     clients.map(async (client) => {
