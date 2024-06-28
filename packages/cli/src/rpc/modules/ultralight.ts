@@ -9,18 +9,27 @@ import { INTERNAL_ERROR } from '../error-code.js'
 import { middleware, validators } from '../validators.js'
 
 import type { Debugger } from 'debug'
-import type { HistoryNetwork, PortalNetwork } from 'portalnetwork'
+import type {
+  BeaconLightClientNetwork,
+  HistoryNetwork,
+  PortalNetwork,
+  StateNetwork,
+} from 'portalnetwork'
 
 const methods = ['ultralight_store', 'ultralight_addBlockToHistory']
 
 export class ultralight {
   private _client: PortalNetwork
-  private _history: HistoryNetwork
+  private _history?: HistoryNetwork
+  private _state?: StateNetwork
+  private _beacon?: BeaconLightClientNetwork
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = this._client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    this._history = this._client.network()[NetworkId.HistoryNetwork]
+    this._state = this._client.network()[NetworkId.StateNetwork]
+    this._beacon = this._client.network()[NetworkId.BeaconChainNetwork]
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
