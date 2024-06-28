@@ -44,6 +44,10 @@ export class ultralight {
       [validators.hex],
       [validators.blockHash],
     ])
+    this.setNetworkRadius = middleware(this.setNetworkRadius.bind(this), 2, [
+      [validators.networkId],
+      [validators.distance],
+    ])
   }
   async methods() {
     return methods
