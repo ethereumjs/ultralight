@@ -16,7 +16,13 @@ import type {
   StateNetwork,
 } from 'portalnetwork'
 
-const methods = ['ultralight_store', 'ultralight_addBlockToHistory']
+const methods = [
+  'ultralight_methods',
+  'ultralight_addContentToDB',
+  'ultralight_addBlockToHistory',
+  'ultralight_indexBlock',
+  'ultralight_setNetworkRadius',
+]
 
 export class ultralight {
   private _client: PortalNetwork
