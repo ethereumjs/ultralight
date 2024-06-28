@@ -52,9 +52,8 @@ export class ultralight {
     this.logger(`ultralight_addBlockToHistory request received`)
 
     const [blockHash, rlpHex] = params
-    const network = this._client.networks.get(NetworkId.HistoryNetwork) as never as HistoryNetwork
     try {
-      await addRLPSerializedBlock(rlpHex, blockHash, network)
+      await addRLPSerializedBlock(rlpHex, blockHash, this._history!)
       this.logger(`Block ${blockHash} added to content DB`)
       return `Block ${blockHash} added to content DB`
     } catch (err: any) {
@@ -83,7 +82,7 @@ export class ultralight {
     const [blockNum, blockHash] = params
     try {
       this.logger(`Indexed block ${BigInt(blockNum)} / ${blockNum} to ${blockHash} `)
-      await this._history.indexBlockhash(BigInt(blockNum), blockHash)
+      await this._history!.indexBlockhash(BigInt(blockNum), blockHash)
       return `Added ${blockNum} to block index`
     } catch (err: any) {
       throw {
