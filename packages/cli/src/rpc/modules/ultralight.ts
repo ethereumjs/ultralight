@@ -91,4 +91,31 @@ export class ultralight {
       }
     }
   }
+  async setNetworkRadius(params: [NetworkId, string]) {
+    const [networkId, radius] = params
+    try {
+      switch (networkId) {
+        case NetworkId.HistoryNetwork: {
+          this._history!.nodeRadius = 2n ** BigInt(parseInt(radius)) - 1n
+          return '0x' + this._history!.nodeRadius.toString(16)
+        }
+        case NetworkId.StateNetwork: {
+          this._state!.nodeRadius = 2n ** BigInt(parseInt(radius)) - 1n
+          return '0x' + this._state!.nodeRadius.toString(16)
+        }
+        case NetworkId.BeaconChainNetwork: {
+          this._beacon!.nodeRadius = 2n ** BigInt(parseInt(radius)) - 1n
+          return '0x' + this._beacon!.nodeRadius.toString(16)
+        }
+        default: {
+          throw {
+            code: INTERNAL_ERROR,
+            message: `Invalid network id ${networkId}`,
+          }
+        }
+      }
+    } catch (err: any) {
+      return `Error setting radius ${err.message.toString()}`
+    }
+  }
 }
