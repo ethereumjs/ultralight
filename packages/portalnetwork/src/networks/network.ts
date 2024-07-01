@@ -25,6 +25,7 @@ import { FoundContent } from '../wire/types.js'
 import type {
   AcceptMessage,
   ContentRequest,
+  DBManager,
   FindContentMessage,
   FindNodesMessage,
   INewRequest,
