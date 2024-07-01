@@ -54,8 +54,6 @@ export abstract class BaseNetwork extends EventEmitter {
   abstract networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
-  blockIndex: () => Promise<Map<string, string>>
-  setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -65,7 +63,6 @@ export abstract class BaseNetwork extends EventEmitter {
   ) => Promise<Uint8Array>
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
-  streamingKey: (contentKey: string) => void
   portal: PortalNetwork
   constructor(client: PortalNetwork, radius?: bigint) {
     super()
@@ -73,9 +70,6 @@ export abstract class BaseNetwork extends EventEmitter {
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
     this.db = client.db
-    this.streamingKey = client.db.addToStreaming.bind(client.db)
-    this.blockIndex = client.db.getBlockIndex.bind(client.db)
-    this.setBlockIndex = client.db.storeBlockIndex.bind(client.db)
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
     this.enr = client.discv5.enr
     this.checkIndex = 0
@@ -100,6 +94,18 @@ export abstract class BaseNetwork extends EventEmitter {
 
   public async _prune(radius: bigint) {
     await this.db.prune(this.networkId, radius)
+  }
+
+  public streamingKey(contentKey: string) {
+    this.db.addToStreaming(contentKey)
+  }
+
+  public blockIndexKey() {
+    return this.db.getBlockIndex()
+  }
+
+  public setBlockIndex(blockIndex: Map<string, string>) {
+    return this.db.storeBlockIndex(blockIndex)
   }
 
   abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
