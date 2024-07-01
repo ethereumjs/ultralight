@@ -25,6 +25,7 @@ import { FoundContent } from '../wire/types.js'
 import type {
   AcceptMessage,
   ContentRequest,
+  DBManager,
   FindContentMessage,
   FindNodesMessage,
   INewRequest,
@@ -47,13 +48,12 @@ export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
+  public db: DBManager
   private checkIndex: number
   abstract logger: Debugger
   abstract networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
-  blockIndex: () => Promise<Map<string, string>>
-  setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -63,23 +63,14 @@ export abstract class BaseNetwork extends EventEmitter {
   ) => Promise<Uint8Array>
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
-  put: (network: NetworkId, contentKey: string, content: string) => void
-  get: (network: NetworkId, contentKey: string) => Promise<string>
-  streamingKey: (contentKey: string) => void
-  _prune: (network: NetworkId, radius: bigint) => Promise<void>
   portal: PortalNetwork
   constructor(client: PortalNetwork, radius?: bigint) {
     super()
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
-    this.put = client.db.put.bind(client.db)
-    this.get = client.db.get.bind(client.db)
-    this.streamingKey = client.db.addToStreaming.bind(client.db)
-    this.blockIndex = client.db.getBlockIndex.bind(client.db)
-    this.setBlockIndex = client.db.storeBlockIndex.bind(client.db)
+    this.db = client.db
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
-    this._prune = client.db.prune.bind(client.db)
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
@@ -91,6 +82,30 @@ export abstract class BaseNetwork extends EventEmitter {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
+  }
+
+  public async put(contentKey: string, content: string) {
+    this.db.put(this.networkId, contentKey, content)
+  }
+
+  public async get(key: string) {
+    return this.db.get(this.networkId, key)
+  }
+
+  public async _prune(radius: bigint) {
+    await this.db.prune(this.networkId, radius)
+  }
+
+  public streamingKey(contentKey: string) {
+    this.db.addToStreaming(contentKey)
+  }
+
+  public blockIndex() {
+    return this.db.getBlockIndex()
+  }
+
+  public setBlockIndex(blockIndex: Map<string, string>) {
+    return this.db.storeBlockIndex(blockIndex)
   }
 
   abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
@@ -397,7 +412,7 @@ export abstract class BaseNetwork extends EventEmitter {
               for await (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
-                  value = hexToBytes(await this.get(this.networkId, toHexString(key)))
+                  value = hexToBytes(await this.get(toHexString(key)))
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -446,7 +461,7 @@ export abstract class BaseNetwork extends EventEmitter {
               continue
             }
             try {
-              await this.get(this.networkId, toHexString(msg.contentKeys[x]))
+              await this.get(toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
@@ -747,7 +762,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(radius: bigint) {
-    await this._prune(this.networkId, radius)
+    await this._prune(radius)
     this.nodeRadius = radius
   }
 
@@ -795,7 +810,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   public async retrieve(contentKey: string): Promise<string | undefined> {
     try {
-      const content = await this.get(this.networkId, contentKey)
+      const content = await this.get(contentKey)
       return content
     } catch (err: any) {
       this.logger(`Error retrieving content from DB -- ${err.message}`)

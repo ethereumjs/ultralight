@@ -29,9 +29,9 @@ describe('StateNetwork', async () => {
   })
   it('should connect client db to stateDB', async () => {
     ultralight.db.put(NetworkId.StateNetwork, '0x1234', 'testvalue')
-    const value = await stateNetwork!.get(NetworkId.StateNetwork, '0x1234')
+    const value = await stateNetwork!.get('0x1234')
     expect(value).toEqual('testvalue')
-    stateNetwork!.put(NetworkId.StateNetwork, '0xabcd', 'testvalue2')
+    await stateNetwork!.put('0xabcd', 'testvalue2')
     const value2 = await ultralight.db.get(NetworkId.StateNetwork, '0xabcd')
     expect(value2).toEqual('testvalue2')
   })
