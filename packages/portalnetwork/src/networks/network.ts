@@ -100,7 +100,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.db.addToStreaming(contentKey)
   }
 
-  public blockIndexKey() {
+  public blockIndex() {
     return this.db.getBlockIndex()
   }
 
