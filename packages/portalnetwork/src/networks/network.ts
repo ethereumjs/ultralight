@@ -76,13 +76,10 @@ export abstract class BaseNetwork extends EventEmitter {
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
     this.db = client.db
-    this.put = client.db.put.bind(client.db)
-    this.get = client.db.get.bind(client.db)
     this.streamingKey = client.db.addToStreaming.bind(client.db)
     this.blockIndex = client.db.getBlockIndex.bind(client.db)
     this.setBlockIndex = client.db.storeBlockIndex.bind(client.db)
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
-    this._prune = client.db.prune.bind(client.db)
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
@@ -94,6 +91,18 @@ export abstract class BaseNetwork extends EventEmitter {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
+  }
+
+  public async put(contentKey: string, content: string) {
+    this.db.put(this.networkId, contentKey, content)
+  }
+
+  public async get(key: string) {
+    return this.db.get(this.networkId, key)
+  }
+
+  public async _prune(radius: bigint) {
+    await this.db.prune(this.networkId, radius)
   }
 
   abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
