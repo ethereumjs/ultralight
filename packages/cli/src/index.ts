@@ -86,17 +86,17 @@ const args: ClientOpts = yargs(hideBin(process.argv))
   .option('radiusHistory', {
     describe: `2^r radius for history network client`,
     number: true,
-    default: 0,
+    default: 256,
   })
   .option('radiusBeacon', {
     describe: `2^r radius for beacon network client`,
     number: true,
-    default: 0,
+    default: 256,
   })
   .option('radiusState', {
     describe: `2^r radius for state network client`,
     number: true,
-    default: 0,
+    default: 256,
   })
   .option('trustedBlockRoot', {
     describe: 'a trusted blockroot to start light client syncing of the beacon chain',
@@ -175,11 +175,11 @@ const main = async () => {
       }
     }
   } else {
-    networks = [{ networkId: NetworkId.HistoryNetwork, radius: 1n }]
+    networks = [{ networkId: NetworkId.HistoryNetwork, radius: 256n }]
   }
 
   if (args.trustedBlockRoot !== undefined) {
-    networks.push({ networkId: NetworkId.BeaconChainNetwork, radius: 1n })
+    networks.push({ networkId: NetworkId.BeaconChainNetwork, radius: 256n })
   }
 
   const bootnodes: Array<Enr> = []
