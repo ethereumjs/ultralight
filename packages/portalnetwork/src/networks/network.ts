@@ -409,7 +409,7 @@ export abstract class BaseNetwork extends EventEmitter {
               for await (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
-                  value = hexToBytes(await this.get(this.networkId, toHexString(key)))
+                  value = hexToBytes(await this.get(toHexString(key)))
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -458,7 +458,7 @@ export abstract class BaseNetwork extends EventEmitter {
               continue
             }
             try {
-              await this.get(this.networkId, toHexString(msg.contentKeys[x]))
+              await this.get(toHexString(msg.contentKeys[x]))
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
@@ -759,7 +759,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(radius: bigint) {
-    await this._prune(this.networkId, radius)
+    await this._prune(radius)
     this.nodeRadius = radius
   }
 
@@ -807,7 +807,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   public async retrieve(contentKey: string): Promise<string | undefined> {
     try {
-      const content = await this.get(this.networkId, contentKey)
+      const content = await this.get(contentKey)
       return content
     } catch (err: any) {
       this.logger(`Error retrieving content from DB -- ${err.message}`)
