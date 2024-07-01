@@ -59,7 +59,7 @@ export class ContentLookup {
     this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
     this.network.metrics?.totalContentLookups.inc()
     try {
-      const res = await this.network.get(this.network.networkId, toHexString(this.contentKey))
+      const res = await this.network.get(toHexString(this.contentKey))
       return { content: hexToBytes(res), utp: false }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)

@@ -65,10 +65,7 @@ export abstract class BaseNetwork extends EventEmitter {
   ) => Promise<Uint8Array>
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
-  put: (network: NetworkId, contentKey: string, content: string) => void
-  get: (network: NetworkId, contentKey: string) => Promise<string>
   streamingKey: (contentKey: string) => void
-  _prune: (network: NetworkId, radius: bigint) => Promise<void>
   portal: PortalNetwork
   constructor(client: PortalNetwork, radius?: bigint) {
     super()

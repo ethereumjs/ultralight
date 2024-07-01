@@ -17,7 +17,7 @@ describe('BlockIndex', async () => {
   })
   const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   await history.store(HistoryNetworkContentType.BlockHeader, hash, fromHexString(headerWithProof))
-  const stored = await history.get(NetworkId.HistoryNetwork, headerWithProofkey)
+  const stored = await history.get(headerWithProofkey)
 
   it('should store block header', () => {
     assert.equal(stored, headerWithProof)

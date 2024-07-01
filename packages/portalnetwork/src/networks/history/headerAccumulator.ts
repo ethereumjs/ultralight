@@ -98,7 +98,6 @@ export class AccumulatorManager {
     const header = BlockHeader.fromRLPSerializedHeader(
       hexToBytes(
         await this._history.get(
-          this._history.networkId,
           getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
         ),
       ),
@@ -120,7 +119,6 @@ export class AccumulatorManager {
   }
   public generateInclusionProof = async (blockHash: string): Promise<HeaderProofInterface> => {
     const _blockHeader = await this._history.get(
-      this._history.networkId,
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
     )
     if (_blockHeader === undefined) {
@@ -138,7 +136,6 @@ export class AccumulatorManager {
         ? EpochAccumulator.serialize(this.headerAccumulator.currentEpoch.slice(0, listIdx))
         : hexToBytes(
             await this._history.get(
-              this._history.networkId,
               getContentKey(
                 HistoryNetworkContentType.EpochAccumulator,
                 this.headerAccumulator.historicalEpochs[epochIdx - 1],
@@ -162,7 +159,6 @@ export class AccumulatorManager {
     const header = BlockHeader.fromRLPSerializedHeader(
       hexToBytes(
         await this._history.get(
-          this._history.networkId,
           getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
         ),
       ),
@@ -176,7 +172,6 @@ export class AccumulatorManager {
       const epoch = EpochAccumulator.deserialize(
         hexToBytes(
           await this._history.get(
-            this._history.networkId,
             getContentKey(3, this.headerAccumulator.historicalEpochs[epochIndex - 1]),
           ),
         ),

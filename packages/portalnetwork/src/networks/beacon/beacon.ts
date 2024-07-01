@@ -612,8 +612,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // optimistic update and this ensures we don't accidentally store multiple
-        this.put(
-          this.networkId,
+        await this.put(
           intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
           toHexString(value),
         )
@@ -621,14 +620,13 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // finality update and this ensures we don't accidentally store multiple
-        this.put(
-          this.networkId,
+        await this.put(
           intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
           toHexString(value),
         )
         break
       default:
-        this.put(this.networkId, contentKey, toHexString(value))
+        await this.put(contentKey, toHexString(value))
     }
 
     this.logger(
@@ -807,7 +805,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             case BeaconLightClientNetworkContentType.LightClientBootstrap: {
               try {
                 // TODO: Verify the offered bootstrap isn't too old before accepting
-                await this.get(NetworkId.BeaconChainNetwork, toHexString(key))
+                await this.get(toHexString(key))
                 this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
               } catch (err) {
                 offerAccepted = true

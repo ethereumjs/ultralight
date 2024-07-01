@@ -190,13 +190,11 @@ describe('store -- Block Bodies and Receipts', async () => {
   const header = BlockHeaderWithProof.deserialize(
     hexToBytes(
       await network.get(
-        NetworkId.HistoryNetwork,
         getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(serializedBlock.blockHash)),
       ),
     ),
   ).header
   const body = await network.get(
-    NetworkId.HistoryNetwork,
     getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(serializedBlock.blockHash)),
   )
   const rebuilt = reassembleBlock(header, hexToBytes(body!))

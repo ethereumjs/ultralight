@@ -147,8 +147,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     await this.indexBlockhash(header.number, toHexString(header.hash()))
-    this.put(
-      this.networkId,
+    await this.put(
       getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
       toHexString(value),
     )
@@ -254,11 +253,7 @@ export class HistoryNetwork extends BaseNetwork {
       case HistoryNetworkContentType.Receipt: {
         try {
           sszReceiptsListType.deserialize(value)
-          this.put(
-            this.networkId,
-            getContentKey(contentType, hexToBytes(hashKey)),
-            toHexString(value),
-          )
+          await this.put(getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
         } catch (err: any) {
           this.logger(`Received invalid bytes as receipt data for ${hashKey}`)
           return
@@ -268,11 +263,7 @@ export class HistoryNetwork extends BaseNetwork {
       case HistoryNetworkContentType.EpochAccumulator: {
         try {
           EpochAccumulator.deserialize(value)
-          this.put(
-            this.networkId,
-            getContentKey(contentType, hexToBytes(hashKey)),
-            toHexString(value),
-          )
+          await this.put(getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
         } catch (err: any) {
           this.logger(`Received invalid bytes as Epoch Accumulator corresponding to ${hashKey}`)
           return
@@ -316,7 +307,7 @@ export class HistoryNetwork extends BaseNetwork {
     }
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (block instanceof Block) {
-      this.put(this.networkId, bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, toHexString(value))
       // TODO: Decide when and if to build and store receipts.
       //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
       // if (block.transactions.length > 0) {
@@ -325,7 +316,7 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
-      this.put(this.networkId, bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, toHexString(value))
       // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
       // as it's against spec
       return
