@@ -48,6 +48,7 @@ export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
+  public db: DBManager
   private checkIndex: number
   abstract logger: Debugger
   abstract networkId: NetworkId
@@ -74,6 +75,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
+    this.db = client.db
     this.put = client.db.put.bind(client.db)
     this.get = client.db.get.bind(client.db)
     this.streamingKey = client.db.addToStreaming.bind(client.db)
