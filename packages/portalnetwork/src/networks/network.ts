@@ -1,6 +1,7 @@
+import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { BitArray, toHexString } from '@chainsafe/ssz'
+import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
 import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
@@ -95,30 +96,28 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async put(contentKey: string, content: string) {
-    this.db.put(this.networkId, contentKey, content)
+    this.db.put(contentKey, content)
+  }
+
+  public async del(contentKey: string) {
+    await this.db.del(contentKey)
   }
 
   public async get(key: string) {
-    return this.db.get(this.networkId, key)
+    return this.db.get(key)
   }
 
   public async _prune(radius: bigint) {
-    await this.db.prune(this.networkId, radius)
+    await this.db.prune(radius)
   }
 
   public streamingKey(contentKey: string) {
     this.db.addToStreaming(contentKey)
   }
 
-  public blockIndex() {
-    return this.db.getBlockIndex()
+  public contentKeyToId(contentKey: string): string {
+    return bytesToUnprefixedHex(digest(fromHexString(contentKey)))
   }
-
-  public setBlockIndex(blockIndex: Map<string, string>) {
-    return this.db.storeBlockIndex(blockIndex)
-  }
-
-  abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
 
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
@@ -462,7 +461,7 @@ export abstract class BaseNetwork extends EventEmitter {
           const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
-            const cid = bytesToUnprefixedHex(this.contentKeyToId(msg.contentKeys[x]))
+            const cid = this.contentKeyToId(toHexString(msg.contentKeys[x]))
             const d = distance(cid, this.enr.nodeId)
             if (d >= this.nodeRadius) {
               this.logger.extend('OFFER')(
