@@ -238,6 +238,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           break
       }
     }
+    for (const network of this.networks.values()) {
+      this.db.sublevels.set(network.networkId, network.db)
+    }
 
     this.ETH = new ETH(this)
 
