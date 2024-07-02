@@ -22,10 +22,12 @@ import {
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
 
+import { NetworkDB } from './networkDB.js'
+
 import type {
   AcceptMessage,
+  BaseNetworkConfig,
   ContentRequest,
-  DBManager,
   FindContentMessage,
   FindNodesMessage,
   INewRequest,
@@ -48,10 +50,10 @@ export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
-  public db: DBManager
+  public db: NetworkDB
   private checkIndex: number
-  abstract logger: Debugger
-  abstract networkId: NetworkId
+  public logger: Debugger
+  public networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
@@ -66,10 +68,11 @@ export abstract class BaseNetwork extends EventEmitter {
   portal: PortalNetwork
   constructor({ client, networkId, db, radius, maxStorage }: BaseNetworkConfig) {
     super()
+    this.networkId = networkId
+    this.logger = client.logger.extend(this.constructor.name)
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
-    this.db = client.db
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
     this.enr = client.discv5.enr
     this.checkIndex = 0
@@ -77,6 +80,13 @@ export abstract class BaseNetwork extends EventEmitter {
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
     this.portal = client
     this.metrics = client.metrics
+    this.db = new NetworkDB({
+      networkId: this.networkId,
+      nodeId: this.enr.nodeId,
+      contentId: this.contentKeyToId,
+      db,
+      logger: this.logger,
+    })
     if (this.metrics) {
       this.metrics.knownHistoryNodes.collect = () => {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
