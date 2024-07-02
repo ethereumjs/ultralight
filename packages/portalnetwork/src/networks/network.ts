@@ -52,6 +52,7 @@ export abstract class BaseNetwork extends EventEmitter {
   public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
   public db: NetworkDB
+  public maxStorage: number
   private checkIndex: number
   public logger: Debugger
   public networkId: NetworkId
@@ -78,6 +79,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
+    this.maxStorage = maxStorage ?? 1024
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
     this.portal = client
     this.metrics = client.metrics
