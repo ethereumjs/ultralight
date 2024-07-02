@@ -187,7 +187,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.discv5.enr.nodeId,
       this.logger,
       opts.dbSize,
-      opts.supportedNetworks?.map((n) => n.networkId),
       opts.db,
     ) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
@@ -200,7 +199,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               client: this,
               networkId: NetworkId.HistoryNetwork,
               radius: network.radius,
-              db: undefined,
+              db: network.db,
             }),
           )
           break
@@ -211,7 +210,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               client: this,
               networkId: NetworkId.StateNetwork,
               radius: network.radius,
-              db: undefined,
+              db: network.db,
             }),
           )
           break
@@ -229,7 +228,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 radius: network.radius,
                 trustedBlockRoot: opts.trustedBlockRoot,
                 sync: syncStrategy,
-                db: undefined,
+                db: network.db,
               }),
             )
           }
