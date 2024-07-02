@@ -194,10 +194,26 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
         case NetworkId.HistoryNetwork:
-          this.networks.set(network.networkId, new HistoryNetwork(this, network.radius))
+          this.networks.set(
+            network.networkId,
+            new HistoryNetwork({
+              client: this,
+              networkId: NetworkId.HistoryNetwork,
+              radius: network.radius,
+              db: undefined,
+            }),
+          )
           break
         case NetworkId.StateNetwork:
-          this.networks.set(network.networkId, new StateNetwork(this, network.radius))
+          this.networks.set(
+            network.networkId,
+            new StateNetwork({
+              client: this,
+              networkId: NetworkId.StateNetwork,
+              radius: network.radius,
+              db: undefined,
+            }),
+          )
           break
         case NetworkId.BeaconChainNetwork:
           {
@@ -207,12 +223,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 : SyncStrategy.PollNetwork
             this.networks.set(
               network.networkId,
-              new BeaconLightClientNetwork(
-                this,
-                network.radius,
-                opts.trustedBlockRoot,
-                syncStrategy,
-              ),
+              new BeaconLightClientNetwork({
+                client: this,
+                networkId: NetworkId.BeaconChainNetwork,
+                radius: network.radius,
+                trustedBlockRoot: opts.trustedBlockRoot,
+                sync: syncStrategy,
+                db: undefined,
+              }),
             )
           }
           break
