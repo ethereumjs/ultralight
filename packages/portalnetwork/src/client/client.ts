@@ -183,12 +183,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
     this.refreshListeners = new Map()
-    this.db = new DBManager(
-      this.discv5.enr.nodeId,
-      this.logger,
-      opts.dbSize,
-      opts.db,
-    ) as DBManager
+    this.db = new DBManager(this.discv5.enr.nodeId, this.logger, opts.dbSize, opts.db) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
