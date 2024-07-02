@@ -126,8 +126,16 @@ export class NetworkDB {
    * Find the size of the data directory
    * @returns the size of the data directory in bytes
    */
-  size(): number {
-    if (this.dataDir === undefined) throw new Error('No data directory specified')
+  async size(): Promise<number> {
+    if (this.dataDir === undefined) {
+      const _db = this.db as MemoryLevel<string, string>
+      let size = 0
+      for await (const [key, value] of _db.iterator()) {
+        size += fromHexString(key).length
+        size += fromHexString(value).length
+      }
+      return size
+    }
     try {
       const files = fs.readdirSync(this.dataDir)
       let size = 0
