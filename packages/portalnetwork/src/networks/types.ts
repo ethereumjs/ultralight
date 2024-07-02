@@ -5,6 +5,16 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import type { BeaconLightClientNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
+import type { PortalNetwork } from '../client'
+import type { AbstractLevel } from 'abstract-level'
+
+export interface BaseNetworkConfig {
+  client: PortalNetwork
+  networkId: NetworkId
+  db?: { db: AbstractLevel<string, string>; path: string }
+  radius?: bigint
+  maxStorage?: number
+}
 
 const BYTE_SIZE = 256
 

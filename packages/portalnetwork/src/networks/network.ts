@@ -64,7 +64,7 @@ export abstract class BaseNetwork extends EventEmitter {
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
   portal: PortalNetwork
-  constructor(client: PortalNetwork, radius?: bigint) {
+  constructor({ client, networkId, db, radius, maxStorage }: BaseNetworkConfig) {
     super()
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)

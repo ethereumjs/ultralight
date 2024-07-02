@@ -38,7 +38,7 @@ import {
   getContentKey,
 } from './util.js'
 
-import type { FindContentMessage, PortalNetwork, Witnesses } from '../../index.js'
+import type { BaseNetworkConfig, FindContentMessage, Witnesses } from '../../index.js'
 import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type { Debugger } from 'debug'
 export class HistoryNetwork extends BaseNetwork {
@@ -46,8 +46,8 @@ export class HistoryNetwork extends BaseNetwork {
   networkName = 'HistoryNetwork'
   logger: Debugger
   gossipManager: GossipManager
-  constructor(client: PortalNetwork, nodeRadius?: bigint) {
-    super(client, nodeRadius)
+  constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
+    super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
     this.networkId = NetworkId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.gossipManager = new GossipManager(this)

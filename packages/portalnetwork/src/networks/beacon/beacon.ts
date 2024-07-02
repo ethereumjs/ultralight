@@ -40,8 +40,7 @@ import {
 import { UltralightTransport } from './ultralightTransport.js'
 import { getBeaconContentKey } from './util.js'
 
-import type { LightClientForkName } from './types.js'
-import type { PortalNetwork } from '../../client/client.js'
+import type { BeaconChainNetworkConfig, LightClientForkName } from './types.js'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { NodeId } from '@chainsafe/enr'
@@ -59,13 +58,15 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   bootstrapFinder: Map<NodeId, string[] | {}>
   syncStrategy: SyncStrategy = SyncStrategy.PollNetwork
   trustedBlockRoot: string | undefined
-  constructor(
-    client: PortalNetwork,
-    nodeRadius?: bigint,
-    trustedBlockRoot?: string,
-    sync?: SyncStrategy,
-  ) {
-    super(client, nodeRadius)
+  constructor({
+    client,
+    db,
+    radius,
+    maxStorage,
+    trustedBlockRoot,
+    sync,
+  }: BeaconChainNetworkConfig) {
+    super({ client, db, radius, maxStorage, networkId: NetworkId.BeaconChainNetwork })
     // This config is used to identify the Beacon Chain fork any given light client update is from
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)

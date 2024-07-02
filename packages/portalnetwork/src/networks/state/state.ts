@@ -28,8 +28,8 @@ import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType
 import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './util.js'
 
 import type { TNibbles } from './types.js'
-import type { PortalNetwork } from '../../client/client.js'
 import type { FindContentMessage } from '../../wire/types.js'
+import type { BaseNetworkConfig } from '../index.js'
 import type { Block } from '@ethereumjs/block'
 import type { RunBlockOpts } from '@ethereumjs/vm'
 import type { Debugger } from 'debug'
@@ -39,9 +39,8 @@ export class StateNetwork extends BaseNetwork {
   networkId: NetworkId.StateNetwork
   networkName = 'StateNetwork'
   logger: Debugger
-  constructor(client: PortalNetwork, nodeRadius?: bigint) {
-    super(client, nodeRadius)
-    this.nodeRadius = nodeRadius ?? 2n ** 253n
+  constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
+    super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.stateDB = new StateDB(client.db.db)
