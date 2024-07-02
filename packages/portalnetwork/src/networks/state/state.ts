@@ -47,8 +47,8 @@ export class StateNetwork extends BaseNetwork {
     this.routingTable.setLogger(this.logger)
   }
 
-  public contentKeyToId = (contentKey: Uint8Array): Uint8Array => {
-    return StateNetworkContentId.fromBytes(contentKey)
+  public contentKeyToId = (contentKey: string): string => {
+    return bytesToUnprefixedHex(StateNetworkContentId.fromBytes(fromHexString(contentKey)))
   }
 
   /**
