@@ -153,33 +153,74 @@ const main = async () => {
   let networks: NetworkConfig[] = []
   if (args.networks) {
     for (const network of args.networks) {
+      let networkdb
+      if (args.dataDir !== undefined) {
+        networkdb = {
+          db: new Level<string, string>(args.dataDir + '/' + network),
+          dir: args.dataDir + '/' + network,
+        }
+      }
+
       switch (network) {
         case 'history':
           networks.push({
             networkId: NetworkId.HistoryNetwork,
             radius: 2n ** BigInt(args.radiusHistory) - 1n,
+            //@ts-ignore Because level doesn't know how to get along with itself
+            db: networkdb,
           })
           break
         case 'beacon':
           networks.push({
             networkId: NetworkId.BeaconChainNetwork,
             radius: 2n ** BigInt(args.radiusBeacon) - 1n,
+            //@ts-ignore Because level doesn't know how to get along with itself
+            db: networkdb,
           })
           break
         case 'state':
           networks.push({
             networkId: NetworkId.StateNetwork,
             radius: 2n ** BigInt(args.radiusState) - 1n,
+            //@ts-ignore Because level doesn't know how to get along with itself
+            db: networkdb,
           })
           break
       }
     }
   } else {
-    networks = [{ networkId: NetworkId.HistoryNetwork, radius: 256n }]
+    let networkdb
+    if (args.dataDir !== undefined) {
+      networkdb = {
+        db: new Level<string, string>(args.dataDir + '/' + 'history'),
+        dir: args.dataDir + '/' + 'history',
+      }
+    }
+
+    networks = [
+      {
+        networkId: NetworkId.HistoryNetwork,
+        radius: 256n,
+        //@ts-ignore Because level doesn't know how to get along with itself
+        db: networkdb,
+      },
+    ]
   }
 
   if (args.trustedBlockRoot !== undefined) {
-    networks.push({ networkId: NetworkId.BeaconChainNetwork, radius: 256n })
+    let networkdb
+    if (args.dataDir !== undefined) {
+      networkdb = {
+        db: new Level<string, string>(args.dataDir + '/' + 'beacon'),
+        dir: args.dataDir + '/' + 'beacon',
+      }
+    }
+    networks.push({
+      networkId: NetworkId.BeaconChainNetwork,
+      radius: 256n,
+      //@ts-ignore Because level doesn't know how to get along with itself
+      db: networkdb,
+    })
   }
 
   const bootnodes: Array<Enr> = []
