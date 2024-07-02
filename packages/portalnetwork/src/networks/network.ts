@@ -58,6 +58,8 @@ export abstract class BaseNetwork extends EventEmitter {
   public networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
+  public blockIndex: () => Promise<Map<string, string>>
+  public setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -76,6 +78,12 @@ export abstract class BaseNetwork extends EventEmitter {
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
+    this.blockIndex = () => {
+      return client.db.getBlockIndex()
+    }
+    this.setBlockIndex = (blockIndex: Map<string, string>) => {
+      return client.db.storeBlockIndex(blockIndex)
+    }
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
