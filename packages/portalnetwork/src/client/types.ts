@@ -26,7 +26,7 @@ export interface NetworkConfig {
   radius: bigint
   db?: {
     db: AbstractLevel<string, string>
-    dir: string
+    path: string
   }
 }
 
