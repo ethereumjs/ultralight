@@ -1,10 +1,8 @@
-import { distance } from '@chainsafe/discv5'
-import { bigIntToHex, hexToBytes, padToEven } from '@ethereumjs/util'
+import { bigIntToHex } from '@ethereumjs/util'
 import { MemoryLevel } from 'memory-level'
 
-import { fromHexString, serializedContentKeyToContentId } from '../index.js'
-
 import type { NetworkId } from '../index.js'
+import type { NetworkDB } from '../networks/networkDB.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
@@ -14,13 +12,11 @@ export class DBManager {
   db: AbstractLevel<string, string>
   logger: Debugger
   currentSize: () => Promise<number>
-  sublevels: Map<NetworkId, AbstractLevel<string, string>>
-  streaming: Set<string>
+  sublevels: Map<NetworkId, NetworkDB>
   constructor(
     nodeId: NodeId,
     logger: Debugger,
     currentSize: () => Promise<number>,
-    sublevels: NetworkId[] = [],
     db?: AbstractLevel<string>,
   ) {
     //@ts-ignore Because level doesn't know how to get along with itself
@@ -29,51 +25,22 @@ export class DBManager {
     this.logger = logger.extend('DB')
     this.currentSize = currentSize
     this.sublevels = new Map()
-    this.streaming = new Set()
-    for (const network of sublevels) {
-      const sub = this.db.sublevel(network)
-      this.sublevels.set(network, sub)
+  }
+
+  async get(key: string, network?: NetworkId) {
+    if (network !== undefined) {
+      const db = this.sublevel(network)
+      return db.get(key)
     }
+    return this.db.get(key)
   }
 
-  addToStreaming(key: string) {
-    this.logger(`Adding ${key} to streaming`)
-    this.streaming.add(key)
-  }
-
-  async get(network: NetworkId, key: string) {
-    // this.streaming is a Set of contentKeys currently streaming over uTP
-    // the timeout is a safety measure to prevent the while loop from running indefinitely in case of a uTP stream failure
-    this.logger(`Content ${key}.  Streaming=${this.streaming.has(key)}`)
-    const timeout = setTimeout(() => {
-      this.streaming.delete(key)
-    }, 1000)
-    while (this.streaming.has(key)) {
-      await new Promise((resolve) => setTimeout(resolve, 100))
+  async put(key: string, val: string, network?: NetworkId) {
+    if (network !== undefined) {
+      const db = this.sublevel(network)
+      return db.put(key, val)
     }
-    const db = this.sublevel(network)
-    const databaseKey = this.databaseKey(key)
-    this.logger(`Getting ${key} from DB. dbKey: ${databaseKey}`)
-    const val = await db.get(databaseKey)
-    this.logger(
-      `Got ${key} from DB with key: ${databaseKey}.  Size=${
-        fromHexString(padToEven(val)).length
-      } bytes`,
-    )
-    clearTimeout(timeout)
-    return val
-  }
-
-  put(network: NetworkId, key: string, val: string) {
-    const db = this.sublevel(network)
-    const databaseKey = this.databaseKey(key)
-    db.put(databaseKey, val, (err: any) => {
-      if (err !== undefined) this.logger(`Error putting content in history DB: ${err.toString()}`)
-    })
-    this.streaming.delete(key)
-    this.logger(
-      `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,
-    )
+    return this.db.put(key, val)
   }
 
   async storeBlockIndex(blockIndex: Map<string, string>) {
@@ -93,26 +60,25 @@ export class DBManager {
     return (db as any).batch(ops)
   }
 
-  del(network: NetworkId, key: string) {
-    const db = this.sublevel(network)
-    const databaseKey = this.databaseKey(key)
-    return db.del(databaseKey)
-  }
-  databaseKey(key: string) {
-    const contentId = serializedContentKeyToContentId(hexToBytes(key))
-    const d = BigInt.asUintN(32, distance(contentId.slice(2), this.nodeId))
-    return bigIntToHex(d)
+  async del(key: string, network?: NetworkId) {
+    if (network !== undefined) {
+      const db = this.sublevel(network)
+      return db.del(key)
+    }
+    return this.db.del(key)
   }
 
   sublevel(network: NetworkId) {
     return this.sublevels.get(network)!
   }
 
-  async prune(sublevel: NetworkId, radius: bigint) {
-    const db = this.sublevels.get(sublevel)
-    if (!db) return
-    for await (const key of db.keys({ gte: bigIntToHex(radius) })) {
-      await db.del(key)
+  async prune(radius: bigint, network?: NetworkId) {
+    if (network !== undefined) {
+      await this.sublevel(network).prune(radius)
+    } else {
+      for await (const key of this.db.keys({ gte: bigIntToHex(radius) })) {
+        await this.db.del(key)
+      }
     }
   }
 
@@ -130,5 +96,8 @@ export class DBManager {
 
   async closeAll() {
     await this.close()
+    for (const sublevel of this.sublevels.values()) {
+      await sublevel.close()
+    }
   }
 }

@@ -1,6 +1,7 @@
+import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { BitArray, toHexString } from '@chainsafe/ssz'
+import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
 import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
@@ -22,10 +23,12 @@ import {
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
 
+import { NetworkDB } from './networkDB.js'
+
 import type {
   AcceptMessage,
+  BaseNetworkConfig,
   ContentRequest,
-  DBManager,
   FindContentMessage,
   FindNodesMessage,
   INewRequest,
@@ -48,12 +51,15 @@ export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
   public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
-  public db: DBManager
+  public db: NetworkDB
+  public maxStorage: number
   private checkIndex: number
-  abstract logger: Debugger
-  abstract networkId: NetworkId
+  public logger: Debugger
+  public networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
+  public blockIndex: () => Promise<Map<string, string>>
+  public setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -64,19 +70,34 @@ export abstract class BaseNetwork extends EventEmitter {
   sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
   findEnr: (nodeId: string) => ENR | undefined
   portal: PortalNetwork
-  constructor(client: PortalNetwork, radius?: bigint) {
+  constructor({ client, networkId, db, radius, maxStorage }: BaseNetworkConfig) {
     super()
+    this.networkId = networkId
+    this.logger = client.logger.extend(this.constructor.name)
     this.sendMessage = client.sendPortalNetworkMessage.bind(client)
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
-    this.db = client.db
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
+    this.blockIndex = () => {
+      return client.db.getBlockIndex()
+    }
+    this.setBlockIndex = (blockIndex: Map<string, string>) => {
+      return client.db.storeBlockIndex(blockIndex)
+    }
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
+    this.maxStorage = maxStorage ?? 1024
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
     this.portal = client
     this.metrics = client.metrics
+    this.db = new NetworkDB({
+      networkId: this.networkId,
+      nodeId: this.enr.nodeId,
+      contentId: this.contentKeyToId,
+      db,
+      logger: this.logger,
+    })
     if (this.metrics) {
       this.metrics.knownHistoryNodes.collect = () => {
         this.metrics?.knownHistoryNodes.set(this.routingTable.size)
@@ -85,30 +106,28 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async put(contentKey: string, content: string) {
-    this.db.put(this.networkId, contentKey, content)
+    this.db.put(contentKey, content)
+  }
+
+  public async del(contentKey: string) {
+    await this.db.del(contentKey)
   }
 
   public async get(key: string) {
-    return this.db.get(this.networkId, key)
+    return this.db.get(key)
   }
 
   public async _prune(radius: bigint) {
-    await this.db.prune(this.networkId, radius)
+    await this.db.prune(radius)
   }
 
   public streamingKey(contentKey: string) {
     this.db.addToStreaming(contentKey)
   }
 
-  public blockIndex() {
-    return this.db.getBlockIndex()
+  public contentKeyToId(contentKey: string): string {
+    return bytesToUnprefixedHex(digest(fromHexString(contentKey)))
   }
-
-  public setBlockIndex(blockIndex: Map<string, string>) {
-    return this.db.storeBlockIndex(blockIndex)
-  }
-
-  abstract contentKeyToId: (contentKey: Uint8Array) => Uint8Array
 
   abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
 
@@ -452,7 +471,7 @@ export abstract class BaseNetwork extends EventEmitter {
           const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
-            const cid = bytesToUnprefixedHex(this.contentKeyToId(msg.contentKeys[x]))
+            const cid = this.contentKeyToId(toHexString(msg.contentKeys[x]))
             const d = distance(cid, this.enr.nodeId)
             if (d >= this.nodeRadius) {
               this.logger.extend('OFFER')(

@@ -10,6 +10,13 @@ import { ssz } from '@lodestar/types'
 
 import { Bytes32Type } from '../types.js'
 
+import type { BaseNetworkConfig } from '../types.js'
+
+export interface BeaconChainNetworkConfig extends BaseNetworkConfig {
+  trustedBlockRoot?: string
+  sync?: SyncStrategy
+}
+
 export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 
 export const MIN_BOOTSTRAP_VOTES = 5

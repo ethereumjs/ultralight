@@ -24,6 +24,10 @@ export enum TransportLayer {
 export interface NetworkConfig {
   networkId: NetworkId
   radius: bigint
+  db?: {
+    db: AbstractLevel<string, string>
+    path: string
+  }
 }
 
 export interface PortalNetworkOpts {

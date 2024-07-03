@@ -116,7 +116,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
     )
     const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(block1Hash))
 
-    const val = await node.db.get(NetworkId.HistoryNetwork, contentKey)
+    const val = await network.get(contentKey)
     const headerWith = BlockHeaderWithProof.deserialize(hexToBytes(val))
     const header = BlockHeader.fromRLPSerializedHeader(headerWith.header, {
       setHardfork: true,

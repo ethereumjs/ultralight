@@ -183,21 +183,31 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
     this.refreshListeners = new Map()
-    this.db = new DBManager(
-      this.discv5.enr.nodeId,
-      this.logger,
-      opts.dbSize,
-      opts.supportedNetworks?.map((n) => n.networkId),
-      opts.db,
-    ) as DBManager
+    this.db = new DBManager(this.discv5.enr.nodeId, this.logger, opts.dbSize, opts.db) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
         case NetworkId.HistoryNetwork:
-          this.networks.set(network.networkId, new HistoryNetwork(this, network.radius))
+          this.networks.set(
+            network.networkId,
+            new HistoryNetwork({
+              client: this,
+              networkId: NetworkId.HistoryNetwork,
+              radius: network.radius,
+              db: network.db,
+            }),
+          )
           break
         case NetworkId.StateNetwork:
-          this.networks.set(network.networkId, new StateNetwork(this, network.radius))
+          this.networks.set(
+            network.networkId,
+            new StateNetwork({
+              client: this,
+              networkId: NetworkId.StateNetwork,
+              radius: network.radius,
+              db: network.db,
+            }),
+          )
           break
         case NetworkId.BeaconChainNetwork:
           {
@@ -207,12 +217,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 : SyncStrategy.PollNetwork
             this.networks.set(
               network.networkId,
-              new BeaconLightClientNetwork(
-                this,
-                network.radius,
-                opts.trustedBlockRoot,
-                syncStrategy,
-              ),
+              new BeaconLightClientNetwork({
+                client: this,
+                networkId: NetworkId.BeaconChainNetwork,
+                radius: network.radius,
+                trustedBlockRoot: opts.trustedBlockRoot,
+                sync: syncStrategy,
+                db: network.db,
+              }),
             )
           }
           break
@@ -220,6 +232,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
           this.supportsRendezvous = true
           break
       }
+    }
+    for (const network of this.networks.values()) {
+      this.db.sublevels.set(network.networkId, network.db)
     }
 
     this.ETH = new ETH(this)
