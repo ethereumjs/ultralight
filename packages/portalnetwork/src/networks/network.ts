@@ -2,7 +2,13 @@ import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import {
+  bigIntToHex,
+  bytesToInt,
+  bytesToUnprefixedHex,
+  concatBytes,
+  hexToBytes,
+} from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
 import {
@@ -124,7 +130,10 @@ export abstract class BaseNetwork extends EventEmitter {
     const size = await this.db.size()
     while (size > this.maxStorage) {
       const radius = this.nodeRadius / 2n
-      await this.db.prune(radius)
+      for await (const [key, value] of this.db.db.iterator({ gte: bigIntToHex(radius) })) {
+        void this.gossipContent(fromHexString(key), fromHexString(value))
+        await this.db.del(key)
+      }
       this.nodeRadius = radius
     }
   }
