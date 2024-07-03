@@ -117,8 +117,16 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.db.get(key)
   }
 
-  public async _prune(radius: bigint) {
-    await this.db.prune(radius)
+  public async prune(newMaxStorage?: number) {
+    if (newMaxStorage !== undefined) {
+      this.maxStorage = newMaxStorage
+    }
+    const size = await this.db.size()
+    while (size > this.maxStorage) {
+      const radius = this.nodeRadius / 2n
+      await this.db.prune(radius)
+      this.nodeRadius = radius
+    }
   }
 
   public streamingKey(contentKey: string) {
@@ -778,11 +786,6 @@ export abstract class BaseNetwork extends EventEmitter {
         await this.sendFindNodes(enr.nodeId, [x])
       }
     }
-  }
-
-  public async prune(radius: bigint) {
-    await this._prune(radius)
-    this.nodeRadius = radius
   }
 
   // Gossip (OFFER) content to any interested peers.
