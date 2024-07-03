@@ -23,7 +23,7 @@ export enum TransportLayer {
 
 export interface NetworkConfig {
   networkId: NetworkId
-  maxStorage: number
+  maxStorage?: number
   db?: {
     db: AbstractLevel<string, string>
     path: string
