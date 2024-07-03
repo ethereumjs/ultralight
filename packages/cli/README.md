@@ -23,9 +23,9 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
   --web3              web3 JSON RPC HTTP endpoint for local Ethereum node    [string]
   --networks          subnetworks to enable  (options are: `history`, `state`, `beacon`) [default: `history`]
   --trustedBlockRoot  a trusted blockroot to start light client syncing of the beacon chain [string]
-  --radiusHistory     2^r radius for history network client                  [number] [default: 0]
-  --radiusBeacon      2^r radius for beacon network client                   [number] [default: 0]
-  --radiusState       2^r radius for state network client                    [number] [default: 0]
+  --storageHistory    Storage space allocated to HistoryNetwork DB in MB      [number] [default: 1024]
+  --storageBeacon     Storage space allocated to BeaconChainNetwork DB in MB  [number] [default: 1024]
+  --storageState      Storage space allocated to StateNetwork DB in MB        [number] [default: 1024]
 ```
 ### Starting with the same Node ID 
 
