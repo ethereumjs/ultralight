@@ -83,20 +83,20 @@ const args: ClientOpts = yargs(hideBin(process.argv))
     array: true,
     optional: true,
   })
-  .option('radiusHistory', {
-    describe: `2^r radius for history network client`,
+  .option('storageHistory', {
+    describe: `Storage space allocated to HistoryNetwork DB in MB`,
     number: true,
-    default: 256,
+    default: 1024,
   })
-  .option('radiusBeacon', {
-    describe: `2^r radius for beacon network client`,
+  .option('storageBeacon', {
+    describe: `Storage space allocated to BeaconChainNetwork DB in MB`,
     number: true,
-    default: 256,
+    default: 1024,
   })
-  .option('radiusState', {
-    describe: `2^r radius for state network client`,
+  .option('storageState', {
+    describe: `Storage space allocated to StateNetwork DB in MB`,
     number: true,
-    default: 256,
+    default: 1024,
   })
   .option('trustedBlockRoot', {
     describe: 'a trusted blockroot to start light client syncing of the beacon chain',
@@ -165,7 +165,7 @@ const main = async () => {
         case 'history':
           networks.push({
             networkId: NetworkId.HistoryNetwork,
-            radius: 2n ** BigInt(args.radiusHistory) - 1n,
+            maxStorage: args.storageHistory,
             //@ts-ignore Because level doesn't know how to get along with itself
             db: networkdb,
           })
@@ -173,7 +173,7 @@ const main = async () => {
         case 'beacon':
           networks.push({
             networkId: NetworkId.BeaconChainNetwork,
-            radius: 2n ** BigInt(args.radiusBeacon) - 1n,
+            maxStorage: args.storageBeacon,
             //@ts-ignore Because level doesn't know how to get along with itself
             db: networkdb,
           })
@@ -181,7 +181,7 @@ const main = async () => {
         case 'state':
           networks.push({
             networkId: NetworkId.StateNetwork,
-            radius: 2n ** BigInt(args.radiusState) - 1n,
+            maxStorage: args.storageState,
             //@ts-ignore Because level doesn't know how to get along with itself
             db: networkdb,
           })
@@ -200,7 +200,7 @@ const main = async () => {
     networks = [
       {
         networkId: NetworkId.HistoryNetwork,
-        radius: 256n,
+        maxStorage: args.storageHistory,
         //@ts-ignore Because level doesn't know how to get along with itself
         db: networkdb,
       },
@@ -217,7 +217,7 @@ const main = async () => {
     }
     networks.push({
       networkId: NetworkId.BeaconChainNetwork,
-      radius: 256n,
+      maxStorage: args.storageBeacon,
       //@ts-ignore Because level doesn't know how to get along with itself
       db: networkdb,
     })
