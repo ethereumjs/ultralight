@@ -16,17 +16,19 @@ interface NetworkDBConfig {
   db?: { db: AbstractLevel<string, string>; path: string }
   logger?: Debugger
   contentId?: (contentKey: string) => string
+  maxStorage?: number
 }
 
 export class NetworkDB {
   db: AbstractLevel<string, string>
+  maxStorage: number
   networkId: NetworkId
   nodeId: string
   streaming: Set<string>
   contentId: (contentKey: string) => string
   logger: Debugger
   dataDir?: string
-  constructor({ networkId, nodeId, db, logger, contentId }: NetworkDBConfig) {
+  constructor({ networkId, nodeId, db, logger, contentId, maxStorage }: NetworkDBConfig) {
     this.networkId = networkId
     this.nodeId = nodeId ?? '0'.repeat(64)
     this.db = db?.db ?? (new MemoryLevel() as any)
@@ -38,6 +40,7 @@ export class NetworkDB {
       function (contentKey: string) {
         return contentKey
       }
+    this.maxStorage = maxStorage ?? 1024
   }
 
   /**
