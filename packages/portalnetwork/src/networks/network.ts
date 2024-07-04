@@ -44,7 +44,6 @@ import type {
   PingMessage,
   PongMessage,
   PortalNetwork,
-  PortalNetworkMetrics,
   StateNetworkRoutingTable,
 } from '../index.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
@@ -52,6 +51,7 @@ import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Union } from '@chainsafe/ssz/lib/interface.js'
 import type { Debugger } from 'debug'
+import type * as PromClient from 'prom-client'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
@@ -533,6 +533,20 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
+    }
+    if (this.portal.metrics !== undefined) {
+      const totalOffers = (
+        await (this.portal.metrics.offerMessagesReceived as PromClient.Counter).get()
+      ).values[0]
+      this.logger.extend('METRICS')({ totalOffers })
+      if (totalOffers.value % 50 === 0) {
+        void this.prune()
+      }
+    } else if (Math.random() * 50 <= 1) {
+      const size = await this.db.size()
+      if (size > this.maxStorage) {
+        void this.prune()
+      }
     }
   }
 
