@@ -166,7 +166,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return
     }
-    this.metrics?.findContentMessagesSent.inc()
+    this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDCONTENT,
@@ -177,7 +177,7 @@ export class HistoryNetwork extends BaseNetwork {
 
     try {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
-        this.metrics?.contentMessagesReceived.inc()
+        this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentKey = decodeHistoryNetworkContentKey(toHexString(key))
