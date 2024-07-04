@@ -55,7 +55,6 @@ import type { Debugger } from 'debug'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
-  public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
   public db: NetworkDB
   public maxStorage: number
@@ -96,7 +95,6 @@ export abstract class BaseNetwork extends EventEmitter {
     this.maxStorage = maxStorage ?? 1024
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
     this.portal = client
-    this.metrics = client.metrics
     this.db = new NetworkDB({
       networkId: this.networkId,
       nodeId: this.enr.nodeId,
@@ -104,9 +102,9 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    if (this.metrics) {
-      this.metrics.knownHistoryNodes.collect = () => {
-        this.metrics?.knownHistoryNodes.set(this.routingTable.size)
+    if (this.portal.metrics) {
+      this.portal.metrics.knownHistoryNodes.collect = () => {
+        this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
   }
@@ -175,15 +173,15 @@ export abstract class BaseNetwork extends EventEmitter {
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
-        this.metrics?.findNodesMessagesReceived.inc()
+        this.portal.metrics?.findNodesMessagesReceived.inc()
         await this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
       case MessageCodes.FINDCONTENT:
-        this.metrics?.findContentMessagesReceived.inc()
+        this.portal.metrics?.findContentMessagesReceived.inc()
         await this.handleFindContent(src, id, network, decoded as FindContentMessage)
         break
       case MessageCodes.OFFER:
-        this.metrics?.offerMessagesReceived.inc()
+        this.portal.metrics?.offerMessagesReceived.inc()
         void this.handleOffer(src, id, decoded as OfferMessage)
         break
       case MessageCodes.NODES:
@@ -282,7 +280,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * @returns a {@link `NodesMessage`} or undefined
    */
   public sendFindNodes = async (dstId: string, distances: number[]) => {
-    this.metrics?.findNodesMessagesSent.inc()
+    this.portal.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDNODES,
@@ -303,7 +301,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     const res = await this.sendMessage(enr, payload, this.networkId)
     if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
-      this.metrics?.nodesMessagesReceived.inc()
+      this.portal.metrics?.nodesMessagesReceived.inc()
       const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
       const enrs = decoded.enrs ?? []
       try {
@@ -387,7 +385,7 @@ export abstract class BaseNetwork extends EventEmitter {
         )
       }
       await this.sendResponse(src, requestId, encodedPayload)
-      this.metrics?.nodesMessagesSent.inc()
+      this.portal.metrics?.nodesMessagesSent.inc()
     } else {
       await this.sendResponse(src, requestId, new Uint8Array())
     }
@@ -401,7 +399,7 @@ export abstract class BaseNetwork extends EventEmitter {
    */
   public sendOffer = async (dstId: string, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
     if (contentKeys.length > 0) {
-      this.metrics?.offerMessagesSent.inc()
+      this.portal.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
         contentKeys,
       }
@@ -423,7 +421,7 @@ export abstract class BaseNetwork extends EventEmitter {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
           if (decoded.selector === MessageCodes.ACCEPT) {
-            this.metrics?.acceptMessagesReceived.inc()
+            this.portal.metrics?.acceptMessagesReceived.inc()
             const msg = decoded.value as AcceptMessage
             const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
             // Initiate uTP streams with serving of requested content
@@ -549,7 +547,7 @@ export abstract class BaseNetwork extends EventEmitter {
       `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
     )
 
-    this.metrics?.acceptMessagesSent.inc()
+    this.portal.metrics?.acceptMessagesSent.inc()
     await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
@@ -583,7 +581,7 @@ export abstract class BaseNetwork extends EventEmitter {
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
-    this.metrics?.contentMessagesSent.inc()
+    this.portal.metrics?.contentMessagesSent.inc()
 
     this.logger(
       `Received FindContent request for contentKey: ${toHexString(
