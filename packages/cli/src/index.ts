@@ -156,7 +156,7 @@ const main = async () => {
       let networkdb
       if (args.dataDir !== undefined) {
         networkdb = {
-          db: new Level<string, string>(args.dataDir + '/' + network),
+          db: new Level<string, string>(args.dataDir + '/' + network, { createIfMissing: true }),
           path: args.dataDir + '/' + network,
         }
       }
@@ -192,7 +192,7 @@ const main = async () => {
     let networkdb
     if (args.dataDir !== undefined) {
       networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + 'history'),
+        db: new Level<string, string>(args.dataDir + '/' + 'history', { createIfMissing: true }),
         path: args.dataDir + '/' + 'history',
       }
     }
@@ -211,7 +211,7 @@ const main = async () => {
     let networkdb
     if (args.dataDir !== undefined) {
       networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + 'beacon'),
+        db: new Level<string, string>(args.dataDir + '/' + 'beacon', { createIfMissing: true }),
         path: args.dataDir + '/' + 'beacon',
       }
     }
