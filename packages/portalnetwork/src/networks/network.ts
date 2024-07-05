@@ -123,17 +123,21 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(newMaxStorage?: number) {
-    if (newMaxStorage !== undefined) {
-      this.maxStorage = newMaxStorage
-    }
-    const size = await this.db.size()
-    while (size > this.maxStorage) {
-      const radius = this.nodeRadius / 2n
-      for await (const [key, value] of this.db.db.iterator({ gte: bigIntToHex(radius) })) {
-        void this.gossipContent(fromHexString(key), fromHexString(value))
-        await this.db.del(key)
+    try {
+      if (newMaxStorage !== undefined) {
+        this.maxStorage = newMaxStorage
       }
-      this.nodeRadius = radius
+      const size = await this.db.size()
+      while (size > this.maxStorage) {
+        const radius = this.nodeRadius / 2n
+        for await (const [key, value] of this.db.db.iterator({ gte: bigIntToHex(radius) })) {
+          void this.gossipContent(fromHexString(key), fromHexString(value))
+          await this.db.del(key)
+        }
+        this.nodeRadius = radius
+      }
+    } catch (err: any) {
+      this.logger(`Error pruning content: ${err.message}`)
     }
   }
 
