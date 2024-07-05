@@ -277,9 +277,9 @@ export interface ClientOpts {
   dataDir?: string
   web3?: string
   networks?: (string | number)[]
-  radiusHistory: number
-  radiusBeacon: number
-  radiusState: number
+  storageHistory: number
+  storageBeacon: number
+  storageState: number
   trustedBlockRoot?: string
 }
 

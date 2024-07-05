@@ -1,4 +1,3 @@
-import { bigIntToHex } from '@ethereumjs/util'
 import { MemoryLevel } from 'memory-level'
 
 import type { NetworkId } from '../index.js'
@@ -70,16 +69,6 @@ export class DBManager {
 
   sublevel(network: NetworkId) {
     return this.sublevels.get(network)!
-  }
-
-  async prune(radius: bigint, network?: NetworkId) {
-    if (network !== undefined) {
-      await this.sublevel(network).prune(radius)
-    } else {
-      for await (const key of this.db.keys({ gte: bigIntToHex(radius) })) {
-        await this.db.del(key)
-      }
-    }
   }
 
   async open() {

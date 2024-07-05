@@ -57,7 +57,7 @@ export class ContentLookup {
     // Don't support content lookups for networks that don't implement it (i.e. Canonical Indices)
     if (!this.network.sendFindContent) return
     this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
-    this.network.metrics?.totalContentLookups.inc()
+    this.network.portal.metrics?.totalContentLookups.inc()
     try {
       const res = await this.network.get(toHexString(this.contentKey))
       return { content: hexToBytes(res), utp: false }
@@ -151,7 +151,7 @@ export class ContentLookup {
         // findContent returned data sought
         this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
         peer.hasContent = true
-        this.network.metrics?.successfulContentLookups.inc()
+        this.network.portal.metrics?.successfulContentLookups.inc()
 
         // Offer content to neighbors who should have had content but don't if we receive content directly
         for (const contactedPeer of this.contacted) {

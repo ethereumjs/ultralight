@@ -44,7 +44,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: 2n ** 254n }],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -55,7 +55,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
   })
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: 2n ** 254n }],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -68,6 +68,8 @@ describe('AccountTrieNode Gossip / Request', async () => {
   await node2.start()
   const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
   const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
+  network1.nodeRadius = 2n ** 254n - 1n
+  network2.nodeRadius = 2n ** 254n - 1n
   await network1!.sendPing(network2?.enr!.toENR())
   const storedEnr = network2.routingTable.getWithPending(node1.discv5.enr.nodeId)
   it('should find another node', async () => {
@@ -141,7 +143,7 @@ describe('getAccount via network', async () => {
       enr.setLocationMultiaddr(initMa)
       const node = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: 2n ** 255n }],
+        supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
         config: {
           enr,
           bindAddrs: {
@@ -159,6 +161,7 @@ describe('getAccount via network', async () => {
   )
 
   for (const [idx, network] of networks.entries()) {
+    network.nodeRadius = 2n ** 255n - 1n
     const pong1 = await network.sendPing(clients[(idx + 1) % clients.length].discv5.enr.toENR())
     const pong2 = await network.sendPing(clients[(idx + 2) % clients.length].discv5.enr.toENR())
     it(`client ${idx} connects to network`, async () => {

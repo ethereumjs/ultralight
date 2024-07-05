@@ -407,7 +407,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       this.logger.extend('FINDCONTENT')(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return
     }
-    this.metrics?.findContentMessagesSent.inc()
+    this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDCONTENT,
@@ -420,7 +420,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
 
     try {
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
-        this.metrics?.contentMessagesReceived.inc()
+        this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         let decoded = ContentMessageType.deserialize(res.subarray(1))
         switch (decoded.selector) {
@@ -533,7 +533,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
-    this.metrics?.contentMessagesSent.inc()
+    this.portal.metrics?.contentMessagesSent.inc()
 
     this.logger(
       `Received FindContent request for contentKey: ${toHexString(
@@ -708,7 +708,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    */
   public override sendOffer = async (dstId: string, contentKeys: Uint8Array[]) => {
     if (contentKeys.length > 0) {
-      this.metrics?.offerMessagesSent.inc()
+      this.portal.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
         contentKeys,
       }
@@ -729,7 +729,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
           if (decoded.selector === MessageCodes.ACCEPT) {
-            this.metrics?.acceptMessagesReceived.inc()
+            this.portal.metrics?.acceptMessagesReceived.inc()
             const msg = decoded.value as AcceptMessage
             const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
             // Initiate uTP streams with serving of requested content

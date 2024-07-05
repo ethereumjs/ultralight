@@ -150,7 +150,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       bootnodes,
       db: opts.db,
       supportedNetworks: opts.supportedNetworks ?? [
-        { networkId: NetworkId.HistoryNetwork, radius: 1n },
+        { networkId: NetworkId.HistoryNetwork, maxStorage: 1024 },
       ],
       dbSize: dbSize as () => Promise<number>,
       metrics: opts.metrics,
@@ -193,7 +193,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             new HistoryNetwork({
               client: this,
               networkId: NetworkId.HistoryNetwork,
-              radius: network.radius,
+              maxStorage: network.maxStorage,
               db: network.db,
             }),
           )
@@ -204,7 +204,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
             new StateNetwork({
               client: this,
               networkId: NetworkId.StateNetwork,
-              radius: network.radius,
+              maxStorage: network.maxStorage,
               db: network.db,
             }),
           )
@@ -220,7 +220,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               new BeaconLightClientNetwork({
                 client: this,
                 networkId: NetworkId.BeaconChainNetwork,
-                radius: network.radius,
+                maxStorage: network.maxStorage,
                 trustedBlockRoot: opts.trustedBlockRoot,
                 sync: syncStrategy,
                 db: network.db,
@@ -264,7 +264,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(this.unverifiedSessionCache.get(enr.nodeId))
       }
     })
-
     if (opts.metrics) {
       this.metrics = opts.metrics
       this.metrics.knownDiscv5Nodes.collect = () =>

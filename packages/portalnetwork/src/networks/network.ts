@@ -2,7 +2,13 @@ import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import {
+  bigIntToHex,
+  bytesToInt,
+  bytesToUnprefixedHex,
+  concatBytes,
+  hexToBytes,
+} from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
 import {
@@ -38,7 +44,6 @@ import type {
   PingMessage,
   PongMessage,
   PortalNetwork,
-  PortalNetworkMetrics,
   StateNetworkRoutingTable,
 } from '../index.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
@@ -46,10 +51,10 @@ import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Union } from '@chainsafe/ssz/lib/interface.js'
 import type { Debugger } from 'debug'
+import type * as PromClient from 'prom-client'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
-  public metrics: PortalNetworkMetrics | undefined
   public nodeRadius: bigint
   public db: NetworkDB
   public maxStorage: number
@@ -90,7 +95,6 @@ export abstract class BaseNetwork extends EventEmitter {
     this.maxStorage = maxStorage ?? 1024
     this.routingTable = new PortalNetworkRoutingTable(this.enr.nodeId)
     this.portal = client
-    this.metrics = client.metrics
     this.db = new NetworkDB({
       networkId: this.networkId,
       nodeId: this.enr.nodeId,
@@ -98,9 +102,10 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    if (this.metrics) {
-      this.metrics.knownHistoryNodes.collect = () => {
-        this.metrics?.knownHistoryNodes.set(this.routingTable.size)
+    void this.prune()
+    if (this.portal.metrics) {
+      this.portal.metrics.knownHistoryNodes.collect = () => {
+        this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
   }
@@ -117,8 +122,23 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.db.get(key)
   }
 
-  public async _prune(radius: bigint) {
-    await this.db.prune(radius)
+  public async prune(newMaxStorage?: number) {
+    try {
+      if (newMaxStorage !== undefined) {
+        this.maxStorage = newMaxStorage
+      }
+      const size = await this.db.size()
+      while (size > this.maxStorage) {
+        const radius = this.nodeRadius / 2n
+        for await (const [key, value] of this.db.db.iterator({ gte: bigIntToHex(radius) })) {
+          void this.gossipContent(fromHexString(key), fromHexString(value))
+          await this.db.del(key)
+        }
+        this.nodeRadius = radius
+      }
+    } catch (err: any) {
+      this.logger(`Error pruning content: ${err.message}`)
+    }
   }
 
   public streamingKey(contentKey: string) {
@@ -158,15 +178,15 @@ export abstract class BaseNetwork extends EventEmitter {
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
-        this.metrics?.findNodesMessagesReceived.inc()
+        this.portal.metrics?.findNodesMessagesReceived.inc()
         await this.handleFindNodes(src, id, decoded as FindNodesMessage)
         break
       case MessageCodes.FINDCONTENT:
-        this.metrics?.findContentMessagesReceived.inc()
+        this.portal.metrics?.findContentMessagesReceived.inc()
         await this.handleFindContent(src, id, network, decoded as FindContentMessage)
         break
       case MessageCodes.OFFER:
-        this.metrics?.offerMessagesReceived.inc()
+        this.portal.metrics?.offerMessagesReceived.inc()
         void this.handleOffer(src, id, decoded as OfferMessage)
         break
       case MessageCodes.NODES:
@@ -265,7 +285,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * @returns a {@link `NodesMessage`} or undefined
    */
   public sendFindNodes = async (dstId: string, distances: number[]) => {
-    this.metrics?.findNodesMessagesSent.inc()
+    this.portal.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDNODES,
@@ -286,7 +306,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     const res = await this.sendMessage(enr, payload, this.networkId)
     if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
-      this.metrics?.nodesMessagesReceived.inc()
+      this.portal.metrics?.nodesMessagesReceived.inc()
       const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
       const enrs = decoded.enrs ?? []
       try {
@@ -370,7 +390,7 @@ export abstract class BaseNetwork extends EventEmitter {
         )
       }
       await this.sendResponse(src, requestId, encodedPayload)
-      this.metrics?.nodesMessagesSent.inc()
+      this.portal.metrics?.nodesMessagesSent.inc()
     } else {
       await this.sendResponse(src, requestId, new Uint8Array())
     }
@@ -384,7 +404,7 @@ export abstract class BaseNetwork extends EventEmitter {
    */
   public sendOffer = async (dstId: string, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
     if (contentKeys.length > 0) {
-      this.metrics?.offerMessagesSent.inc()
+      this.portal.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
         contentKeys,
       }
@@ -406,7 +426,7 @@ export abstract class BaseNetwork extends EventEmitter {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
           if (decoded.selector === MessageCodes.ACCEPT) {
-            this.metrics?.acceptMessagesReceived.inc()
+            this.portal.metrics?.acceptMessagesReceived.inc()
             const msg = decoded.value as AcceptMessage
             const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
             // Initiate uTP streams with serving of requested content
@@ -519,6 +539,20 @@ export abstract class BaseNetwork extends EventEmitter {
     } catch {
       this.logger(`Error Processing OFFER msg`)
     }
+    if (this.portal.metrics !== undefined) {
+      const totalOffers = (
+        await (this.portal.metrics.offerMessagesReceived as PromClient.Counter).get()
+      ).values[0]
+      this.logger.extend('METRICS')({ totalOffers })
+      if (totalOffers.value % 50 === 0) {
+        void this.prune()
+      }
+    } else if (Math.random() * 50 <= 1) {
+      const size = await this.db.size()
+      if (size > this.maxStorage) {
+        void this.prune()
+      }
+    }
   }
 
   protected sendAccept = async (
@@ -532,7 +566,7 @@ export abstract class BaseNetwork extends EventEmitter {
       `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
     )
 
-    this.metrics?.acceptMessagesSent.inc()
+    this.portal.metrics?.acceptMessagesSent.inc()
     await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
@@ -566,7 +600,7 @@ export abstract class BaseNetwork extends EventEmitter {
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
-    this.metrics?.contentMessagesSent.inc()
+    this.portal.metrics?.contentMessagesSent.inc()
 
     this.logger(
       `Received FindContent request for contentKey: ${toHexString(
@@ -778,11 +812,6 @@ export abstract class BaseNetwork extends EventEmitter {
         await this.sendFindNodes(enr.nodeId, [x])
       }
     }
-  }
-
-  public async prune(radius: bigint) {
-    await this._prune(radius)
-    this.nodeRadius = radius
   }
 
   // Gossip (OFFER) content to any interested peers.
