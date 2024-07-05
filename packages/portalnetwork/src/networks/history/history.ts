@@ -136,6 +136,7 @@ export class HistoryNetwork extends BaseNetwork {
       if (proof.value === null) {
         throw new Error('Received block header without proof')
       }
+      // Only check proofs on pre-merge headers
       if (Array.isArray(proof.value)) {
         try {
           this.verifyInclusionProof(proof.value, contentHash, header.number)

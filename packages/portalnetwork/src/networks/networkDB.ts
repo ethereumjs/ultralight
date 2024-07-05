@@ -72,13 +72,15 @@ export class NetworkDB {
    * @param key Content Key - 0x prefixed hex string
    * @param val Content - 0x prefixed hex string
    */
-  put(key: string, val: string) {
+  async put(key: string, val: string) {
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     const databaseKey = this.databaseKey(key)
-    this.db.put(databaseKey, val, (err: any) => {
-      if (err !== undefined) this.logger(`Error putting content in DB: ${err.toString()}`)
-    })
+    try {
+      await this.db.put(databaseKey, val)
+    } catch (err: any) {
+      this.logger(`Error putting content in DB: ${err.toString()}`)
+    }
     this.streaming.delete(key)
     this.logger(
       `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,

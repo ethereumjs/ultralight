@@ -269,7 +269,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     {
       type: ProofType.single,
       gindex: EpochAccumulator.tree_getLeafGindices(1n, tree)[(1000001 % 8192) * 2],
-      witnesses: headerWithProof.proof.value!,
+      witnesses: headerWithProof.proof.value! as Uint8Array[],
       leaf: deserializedHeader.hash(),
     },
     hexToBytes(epochHash),

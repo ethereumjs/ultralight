@@ -76,7 +76,7 @@ export const toJSON = (contentKey: Uint8Array, res: Uint8Array) => {
       const proof =
         blockHeaderWithProof.proof.selector === 0
           ? []
-          : blockHeaderWithProof.proof.value?.map((p) => toHexString(p))
+          : (blockHeaderWithProof.proof.value as Uint8Array[])?.map((p) => toHexString(p))
       content = { header, proof }
       break
     }
