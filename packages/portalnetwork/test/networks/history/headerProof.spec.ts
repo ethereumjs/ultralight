@@ -20,7 +20,7 @@ import type { ListCompositeTreeView } from '@chainsafe/ssz/lib/view/listComposit
 const require = createRequire(import.meta.url)
 
 describe('Header Record Proof tests', () => {
-  const accumulatorRaw = readFileSync('./src/networks/history/data/merge_macc.bin', {
+  const accumulatorRaw = readFileSync('./test/networks/history/testData/merge_macc.bin', {
     encoding: 'hex',
   })
   const accumulator = '0x' + accumulatorRaw.slice(8)
