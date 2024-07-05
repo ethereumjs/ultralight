@@ -219,7 +219,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
 describe('Header With Proof serialization/deserialization tests', async () => {
   const masterAccumulator =
     '0x' +
-    readFileSync('./src/networks/history/data/merge_macc.bin', {
+    readFileSync('./testData/merge_macc.bin', {
       encoding: 'hex',
     })
   const _historicalEpochs = HistoricalEpochsType.deserialize(hexToBytes(masterAccumulator).slice(4))
