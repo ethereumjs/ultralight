@@ -10,12 +10,12 @@ import {
   getContentKey,
 } from '../index.js'
 
-import accumulator from './data/master.js'
+import { historicalEpochs } from './data/epochHashes.js'
 
 import type { HeaderProofInterface, HeaderRecord, HistoryNetwork } from '../index.js'
 import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
 
-const mainnetHistoricalEpochs: Uint8Array[] = accumulator.map((hash: string) => {
+const mainnetHistoricalEpochs: Uint8Array[] = historicalEpochs.map((hash: string) => {
   return hexToBytes(hash)
 })
 

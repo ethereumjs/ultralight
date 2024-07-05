@@ -111,7 +111,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async put(contentKey: string, content: string) {
-    this.db.put(contentKey, content)
+    await this.db.put(contentKey, content)
   }
 
   public async del(contentKey: string) {

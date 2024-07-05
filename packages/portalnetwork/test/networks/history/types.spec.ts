@@ -219,7 +219,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
 describe('Header With Proof serialization/deserialization tests', async () => {
   const masterAccumulator =
     '0x' +
-    readFileSync('./src/networks/history/data/merge_macc.bin', {
+    readFileSync('./test/networks/history/testData/merge_macc.bin', {
       encoding: 'hex',
     })
   const _historicalEpochs = HistoricalEpochsType.deserialize(hexToBytes(masterAccumulator).slice(4))
@@ -269,7 +269,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     {
       type: ProofType.single,
       gindex: EpochAccumulator.tree_getLeafGindices(1n, tree)[(1000001 % 8192) * 2],
-      witnesses: headerWithProof.proof.value!,
+      witnesses: headerWithProof.proof.value! as Uint8Array[],
       leaf: deserializedHeader.hash(),
     },
     hexToBytes(epochHash),
