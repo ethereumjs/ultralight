@@ -10,9 +10,13 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
+  HistoricalRootsBlockProof,
   MasterAccumulatorType,
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
+
+// Helper function to clean up yaml in `portal-spec-tests` where hex strings aren't properly quoted
+const addDoubleQuotes = (str: string) => str.replace(/0x[0-9a-fA-F]+/g, (match) => `"${match}"`)
 
 describe('Accumulator spec tests', () => {
   it('should deserialize the master accumulator', () => {
@@ -60,8 +64,8 @@ describe('block body tests', () => {
   })
 })
 
-describe('header tests', () => {
-  it('should deserialize header with proof', () => {
+describe('pre-merge header tests', () => {
+  it('should deserialize pre-merge header with proof', () => {
     const testVector: { content_key: string; content_value: string } = yaml.load(
       readFileSync(
         resolve(
@@ -83,4 +87,35 @@ describe('header tests', () => {
       '0xcead98e305c70563000000000000000000000000000000000000000000000000',
     )
   })
+})
+
+describe('post merge header proof tests', () => {
+  it('should serialize and deserialize a HistoralRootsBlockProof')
+  const testString = readFileSync(
+    resolve(
+      __dirname,
+      '../../../../portal-spec-tests/tests/mainnet/history/headers_with_proof/block_proofs_bellatrix/beacon_block_proof-15539558-cdf9ed89b0c43cda17398dc4da9cfc505e5ccd19f7c39e3b43474180f1051e01.yaml',
+    ),
+    {
+      encoding: 'utf-8',
+    },
+  )
+  const testVector: {
+    execution_block_header: string
+    beacon_block_body_proof: string
+    beacon_block_body_root: string
+    beacon_block_header_proof: string
+    beacon_block_header_root: string
+    historical_roots_proof: string
+    slot: string
+  } = yaml.load(addDoubleQuotes(testString)) as any
+  const historicalRootsHeaderProof = HistoricalRootsBlockProof.fromJson({
+    beaconBlockBodyProof: testVector.beacon_block_body_proof,
+    beaconBlockHeaderProof: testVector.beacon_block_header_proof,
+    historicalRootsProof: testVector.historical_roots_proof,
+    slot: testVector.slot,
+    beaconBlockHeaderRoot: testVector.beacon_block_header_root,
+    beaconBlockBodyRoot: testVector.beacon_block_body_root,
+  })
+  assert.equal(historicalRootsHeaderProof.slot, 4702208n)
 })
