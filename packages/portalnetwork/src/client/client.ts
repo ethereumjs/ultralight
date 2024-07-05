@@ -264,7 +264,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.logger(this.unverifiedSessionCache.get(enr.nodeId))
       }
     })
-
     if (opts.metrics) {
       this.metrics = opts.metrics
       this.metrics.knownDiscv5Nodes.collect = () =>
