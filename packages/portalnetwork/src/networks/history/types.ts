@@ -163,12 +163,6 @@ export const sszReceiptType = new ByteListType(MAX_RECEIPT_LENGTH)
 export const sszReceiptsListType = new ListCompositeType(sszReceiptType, MAX_TRANSACTION_COUNT)
 
 export const AccumulatorProofType = new VectorCompositeType(Bytes32Type, 15)
-export const BlockHeaderProofType = new UnionType([new NoneType(), AccumulatorProofType])
-
-export const BlockHeaderWithProof = new ContainerType({
-  header: new ByteListType(MAX_HEADER_LENGTH),
-  proof: BlockHeaderProofType,
-})
 
 export const SSZWithdrawal = new ByteListType(192)
 export type TAllWithdrawals = Uint8Array[]
@@ -179,4 +173,30 @@ export const PostShanghaiBlockBody = new ContainerType({
   allTransactions: allTransactionsType,
   sszUncles: sszUnclesType,
   allWithdrawals: AllWithdrawals,
+})
+
+/** Post-merge pre-Capella block header proof types */
+export const SlotType = new UintBigintType(8)
+export const BeaconBlockBodyProof = new VectorCompositeType(Bytes32Type, 8)
+export const BeaconBlockHeaderProof = new VectorCompositeType(Bytes32Type, 8)
+export const HistoricalRootsProof = new VectorCompositeType(Bytes32Type, 14)
+
+export const HistoricalRootsBlockProof = new ContainerType({
+  beaconBlockBodyProof: BeaconBlockBodyProof,
+  beaconBlockBodyRoot: Bytes32Type,
+  beaconBlockHeaderProof: BeaconBlockHeaderProof,
+  beaconBlockHeaderRoot: Bytes32Type,
+  historicalRootsProof: HistoricalRootsProof,
+  slot: SlotType,
+})
+
+export const BlockHeaderProofType = new UnionType([
+  new NoneType(),
+  AccumulatorProofType,
+  HistoricalRootsBlockProof,
+])
+
+export const BlockHeaderWithProof = new ContainerType({
+  header: new ByteListType(MAX_HEADER_LENGTH),
+  proof: BlockHeaderProofType,
 })
