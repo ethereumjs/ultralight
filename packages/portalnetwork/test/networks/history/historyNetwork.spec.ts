@@ -35,7 +35,7 @@ describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () =
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
 
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
@@ -69,8 +69,8 @@ describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () =
   // TODO: Write good `handleFindContent` tests
 
   td.reset()
-
-  await network.store(HistoryNetworkContentType.BlockHeader, block1Hash, hexToBytes(block1Rlp))
+  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(block1Hash))
+  await network.store(headerKey, hexToBytes(block1Rlp))
   const contentKey = ContentKeyType.serialize(
     concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockHeader]), hexToBytes(block1Hash)),
   )
@@ -82,30 +82,26 @@ describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () =
 
 describe('store -- Headers and Epoch Accumulators', async () => {
   it('Should store and retrieve block header from DB', async () => {
+    const epochKey = '0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218'
     const epoch =
       '0x' +
-      readFileSync(
-        './test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-        { encoding: 'hex' },
-      )
+      readFileSync(`./test/networks/history/testData/${epochKey}.portalcontent`, {
+        encoding: 'hex',
+      })
     const node = await PortalNetwork.create({
       bindAddress: '127.0.0.1',
       transport: TransportLayer.WEB,
-      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     })
     const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const block1Rlp =
       '0xf90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353857ab860dbc0a1dde64b41b5cd3a532bf3a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008503ff80000001821388808455ba422499476574682f76312e302e302f6c696e75782f676f312e342e32a0969b900de27b6ac6a67742365dd65f55a0526c41fd18e1b16f1a1215c2e66f5988539bd4979fef1ec4'
     const block1Hash = '0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'
-    await network.store(
-      HistoryNetworkContentType.EpochAccumulator,
-      '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
-      hexToBytes(epoch),
-    )
+    await network.store(epochKey, hexToBytes(epoch))
     const proof = await network.generateInclusionProof(1n)
+    const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(block1Hash))
     await network.store(
-      HistoryNetworkContentType.BlockHeader,
-      block1Hash,
+      headerKey,
       BlockHeaderWithProof.serialize({
         header: hexToBytes(block1Rlp),
         proof: {
@@ -128,18 +124,14 @@ describe('store -- Headers and Epoch Accumulators', async () => {
     const node = await PortalNetwork.create({
       bindAddress: '127.0.0.1',
       transport: TransportLayer.WEB,
-      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     })
     const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const epochAccumulator = require('../../testData/testEpoch.json')
     const rebuilt = EpochAccumulator.deserialize(hexToBytes(epochAccumulator.serialized))
     const hashRoot = EpochAccumulator.hashTreeRoot(rebuilt)
     const contentKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, hashRoot)
-    await network.store(
-      HistoryNetworkContentType.EpochAccumulator,
-      toHexString(hashRoot),
-      hexToBytes(epochAccumulator.serialized),
-    )
+    await network.store(contentKey, hexToBytes(epochAccumulator.serialized))
     const fromDB = await network.retrieve(contentKey)
     assert.equal(fromDB, epochAccumulator.serialized, 'Retrieve EpochAccumulator test passed.')
   })
@@ -149,7 +141,7 @@ describe('store -- Block Bodies and Receipts', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const serializedBlock = testBlocks.block207686
@@ -162,8 +154,8 @@ describe('store -- Block Bodies and Receipts', async () => {
       { encoding: 'hex' },
     )
   const epochHash = '0x987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa'
-
-  await network.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
+  const epochKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, hexToBytes(epochHash))
+  await network.store(epochKey, hexToBytes(epoch))
   const _epochHash = toHexString(epochRootByBlocknumber(207686n)!)
   it('Should store and retrieve a block body from DB', async () => {
     assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
@@ -177,16 +169,16 @@ describe('store -- Block Bodies and Receipts', async () => {
       value: proof,
     },
   })
-  await network.store(
+  const headerKey = getContentKey(
     HistoryNetworkContentType.BlockHeader,
-    serializedBlock.blockHash,
-    headerWithProof,
+    hexToBytes(serializedBlock.blockHash),
   )
-  await network.store(
+  await network.store(headerKey, headerWithProof)
+  const bodyKey = getContentKey(
     HistoryNetworkContentType.BlockBody,
-    serializedBlock.blockHash,
-    sszEncodeBlockBody(block),
+    hexToBytes(serializedBlock.blockHash),
   )
+  await network.store(bodyKey, sszEncodeBlockBody(block))
   const header = BlockHeaderWithProof.deserialize(
     hexToBytes(
       await network.get(
@@ -224,17 +216,17 @@ describe('Header Proof Tests', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   // network.accumulator.replaceAccumulator(accumulator)
+  const epochKey = getContentKey(
+    HistoryNetworkContentType.EpochAccumulator,
+    hexToBytes(_epoch1Hash),
+  )
   it('HistoryNetwork can create and verify proofs for a HeaderRecord from an EpochAccumulator', async () => {
     const _block1000 = require('../../testData/testBlock1000.json')
-    await network.store(
-      HistoryNetworkContentType.EpochAccumulator,
-      _epoch1Hash,
-      hexToBytes(_epochRaw),
-    )
+    await network.store(epochKey, hexToBytes(_epochRaw))
     const proof = await network.generateInclusionProof(1000n)
     const headerWith = BlockHeaderWithProof.serialize({
       header: hexToBytes(_block1000.rawHeader),
@@ -243,7 +235,11 @@ describe('Header Proof Tests', async () => {
         value: proof,
       },
     })
-    await network.store(HistoryNetworkContentType.BlockHeader, _block1000.hash, headerWith)
+    const headerKey = getContentKey(
+      HistoryNetworkContentType.BlockHeader,
+      hexToBytes(_block1000.hash),
+    )
+    await network.store(headerKey, headerWith)
     assert.equal(proof.length, 15, 'Proof has correct size')
     assert.ok(
       network.verifyInclusionProof(proof, _block1000.hash, 1000n),

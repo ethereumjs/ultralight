@@ -57,7 +57,7 @@ it('gossip test', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -68,7 +68,7 @@ it('gossip test', async () => {
   })
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -91,8 +91,7 @@ it('gossip test', async () => {
     'node1 added node2 to routing table',
   )
   await network1.store(
-    HistoryNetworkContentType.EpochAccumulator,
-    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     hexToBytes(epoch25),
   )
   // await network2.store(
@@ -115,11 +114,8 @@ it('gossip test', async () => {
         value: proof,
       },
     })
-    await network1.store(
-      HistoryNetworkContentType.BlockHeader,
-      toHexString(testBlock.hash()),
-      headerWith,
-    )
+    const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, testBlock.hash())
+    await network1.store(headerKey, headerWith)
   }
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
@@ -158,7 +154,7 @@ it('FindContent', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -170,7 +166,7 @@ it('FindContent', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -186,8 +182,7 @@ it('FindContent', async () => {
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
   await network1.store(
-    HistoryNetworkContentType.EpochAccumulator,
-    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     hexToBytes(epoch25),
   )
   assert.equal(
@@ -226,7 +221,7 @@ it('eth_getBlockByHash', async () => {
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -238,7 +233,7 @@ it('eth_getBlockByHash', async () => {
 
   const node2 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 2n ** 256n - 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
       enr: enr2,
       bindAddrs: {
@@ -253,8 +248,7 @@ it('eth_getBlockByHash', async () => {
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   await network1.store(
-    HistoryNetworkContentType.EpochAccumulator,
-    '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
+    '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
     hexToBytes(epoch25),
   )
   assert.equal(
