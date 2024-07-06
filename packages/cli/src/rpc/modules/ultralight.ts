@@ -61,8 +61,8 @@ export class ultralight {
       `ultralight_addContentToDB request received for ${HistoryNetworkContentType[type]} ${contentKey}`,
     )
     try {
-      await this._history.store(type, '0x' + contentKey.slice(4), fromHexString(value))
-      this.logger(`${type} value for 0x${contentKey.slice(4)} added to content DB`)
+      await this._history.store(contentKey, fromHexString(value))
+      this.logger(`${type} value for ${contentKey} added to content DB`)
       return `${type} value for ${contentKey} added to content DB`
     } catch (err: any) {
       this.logger(`Error trying to load content to DB. ${err.message.toString()}`)
