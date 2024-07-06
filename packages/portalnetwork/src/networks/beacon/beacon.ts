@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   bytesToHex,
   bytesToInt,
@@ -233,11 +233,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   // Verify bootstrap is valid
                   ssz[fork].LightClientBootstrap.deserialize((res.value as Uint8Array).slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
-                  await this.store(
-                    BeaconLightClientNetworkContentType.LightClientBootstrap,
-                    bootstrapKey,
-                    res.value as Uint8Array,
-                  )
+                  await this.store(bootstrapKey, res.value as Uint8Array)
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
                   this.logger.extend('BOOTSTRAP')(`Terminating Light Client bootstrap process`)
                   await this.initializeLightClient(results[x][0])
@@ -465,7 +461,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   this.logger(
                     `received LightClientOptimisticUpdate content corresponding to ${contentKey}`,
                   )
-                  await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                  await this.store(contentKey, decoded.value as Uint8Array)
                   break
                 case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
                   try {
@@ -479,7 +475,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   this.logger(
                     `received LightClientFinalityUpdate content corresponding to ${contentKey}`,
                   )
-                  await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                  await this.store(contentKey, decoded.value as Uint8Array)
                   break
                 case BeaconLightClientNetworkContentType.LightClientBootstrap:
                   try {
@@ -493,7 +489,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   this.logger(
                     `received LightClientBootstrap content corresponding to ${contentKey}`,
                   )
-                  await this.store(key[0], contentKey, decoded.value as Uint8Array)
+                  await this.store(contentKey, decoded.value as Uint8Array)
                   break
                 case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
                   try {
@@ -594,11 +590,8 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param contentKey the network level content key formatted as a prefixed hex string
    * @param value the Uint8Array corresponding to the SSZ serialized value being stored
    */
-  public store = async (
-    contentType: BeaconLightClientNetworkContentType,
-    contentKey: string,
-    value: Uint8Array,
-  ): Promise<void> => {
+  public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
+    const contentType = fromHexString(contentKey)[0]
     switch (contentType) {
       case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
         // We need to call `storeUpdateRange` to ensure we store each individual
@@ -639,11 +632,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   public storeUpdateRange = async (range: Uint8Array) => {
     const deserializedRange = LightClientUpdatesByRange.deserialize(range)
     for (const update of deserializedRange) {
-      await this.store(
-        BeaconLightClientNetworkContentType.LightClientUpdate,
-        this.computeLightClientUpdateKey(update),
-        update,
-      )
+      await this.store(this.computeLightClientUpdateKey(update), update)
     }
   }
 

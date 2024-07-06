@@ -207,7 +207,7 @@ export class HistoryNetwork extends BaseNetwork {
               `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.store(contentType, contentHash, decoded.value as Uint8Array)
+              await this.store(toHexString(key), decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -231,11 +231,10 @@ export class HistoryNetwork extends BaseNetwork {
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
-  public store = async (
-    contentType: HistoryNetworkContentType,
-    hashKey: string,
-    value: Uint8Array,
-  ): Promise<void> => {
+  public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
+    const _contentKey = fromHexString(contentKey)
+    const contentType = _contentKey[0]
+    const hashKey = toHexString(_contentKey.slice(1))
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
@@ -281,7 +280,8 @@ export class HistoryNetwork extends BaseNetwork {
   public async saveReceipts(block: Block) {
     this.logger.extend('BLOCK_BODY')(`added for block #${block.header.number}`)
     const receipts = await saveReceipts(block)
-    await this.store(HistoryNetworkContentType.Receipt, toHexString(block.hash()), receipts)
+    const contentKey = getContentKey(HistoryNetworkContentType.Receipt, block.hash())
+    await this.store(contentKey, receipts)
     return decodeReceipts(receipts)
   }
 
