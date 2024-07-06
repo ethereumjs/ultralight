@@ -149,7 +149,7 @@ export abstract class BaseNetwork extends EventEmitter {
     return bytesToUnprefixedHex(digest(fromHexString(contentKey)))
   }
 
-  abstract store(contentType: any, hashKey: string, value: Uint8Array): Promise<void>
+  abstract store(contentKey: string, value: Uint8Array): Promise<void>
 
   public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
