@@ -123,12 +123,13 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(newMaxStorage?: number) {
+    const MB = 1000000
     try {
       if (newMaxStorage !== undefined) {
         this.maxStorage = newMaxStorage
       }
       const size = await this.db.size()
-      while (size > this.maxStorage) {
+      while (size > this.maxStorage * MB) {
         const radius = this.nodeRadius / 2n
         for await (const [key, value] of this.db.db.iterator({ gte: bigIntToHex(radius) })) {
           void this.gossipContent(fromHexString(key), fromHexString(value))
