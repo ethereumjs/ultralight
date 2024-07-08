@@ -107,7 +107,7 @@ export class StateNetwork extends BaseNetwork {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.store(key[0], toHexString(key.slice(1)), decoded.value as Uint8Array)
+              await this.store(toHexString(key), decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -136,17 +136,14 @@ export class StateNetwork extends BaseNetwork {
     }
   }
 
-  public store = async (
-    contentType: StateNetworkContentType,
-    contentKey: string,
-    content: Uint8Array,
-  ) => {
+  public store = async (contentKey: string, content: Uint8Array) => {
+    const _contentKey = fromHexString(contentKey)
+    const contentType = _contentKey[0]
     try {
-      const fullkey = Uint8Array.from([contentType, ...fromHexString(contentKey)])
       if (contentType === StateNetworkContentType.AccountTrieNode) {
-        await this.receiveAccountTrieNodeOffer(fullkey, content)
+        await this.receiveAccountTrieNodeOffer(_contentKey, content)
       } else {
-        await this.stateDB.storeContent(fullkey, content)
+        await this.stateDB.storeContent(_contentKey, content)
       }
       this.logger(`content added for: ${contentKey}`)
       this.emit('ContentAdded', contentKey, contentType, content)

@@ -140,7 +140,7 @@ describe('API tests', async () => {
 
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
-    supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
     config: {
       enr: enr1,
       bindAddrs: {
@@ -155,11 +155,7 @@ describe('API tests', async () => {
   it('stores and retrieves bootstrap', async () => {
     const bootstrap = specTestVectors.bootstrap['6718368']
 
-    await network.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
-      bootstrap.content_key,
-      hexToBytes(bootstrap.content_value),
-    )
+    await network.store(bootstrap.content_key, hexToBytes(bootstrap.content_value))
     const retrievedBootstrap = await network.findContentLocally(hexToBytes(bootstrap.content_key))
 
     assert.equal(
@@ -172,11 +168,7 @@ describe('API tests', async () => {
 
   it('stores and retrieves finality update', async () => {
     const finalityUpdate = specTestVectors.finalityUpdate['6718368']
-    await network.store(
-      BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
-      finalityUpdate.content_key,
-      hexToBytes(finalityUpdate.content_value),
-    )
+    await network.store(finalityUpdate.content_key, hexToBytes(finalityUpdate.content_value))
 
     network.lightClient = {
       //@ts-ignore
@@ -207,11 +199,7 @@ describe('API tests', async () => {
 
   it('stores and retrieves optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    await network.store(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-      optimisticUpdate.content_key,
-      hexToBytes(optimisticUpdate.content_value),
-    )
+    await network.store(optimisticUpdate.content_key, hexToBytes(optimisticUpdate.content_value))
 
     network.lightClient = {
       //@ts-ignore
@@ -264,11 +252,7 @@ describe('API tests', async () => {
 
   it('stores and retrieves a batch of LightClientUpdates', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
-    await network.store(
-      BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
-      updatesByRange.content_key,
-      hexToBytes(updatesByRange.content_value),
-    )
+    await network.store(updatesByRange.content_key, hexToBytes(updatesByRange.content_value))
 
     const reconstructedRange = await network['constructLightClientRange'](
       hexToBytes(updatesByRange.content_key).slice(1),
@@ -293,7 +277,7 @@ describe('constructor/initialization tests', async () => {
   it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -311,7 +295,7 @@ describe('constructor/initialization tests', async () => {
   it('starts with a sync strategy of `trustedBootStrap` when a trusted block root is provided', async () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -345,7 +329,7 @@ describe('constructor/initialization tests', async () => {
     const trustedBlockRoot = '0x8e4fc820d749f9cf352d074f784071f65483ea673d8e9b8188870e950125a582'
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {

@@ -1,7 +1,12 @@
 import { fromHexString } from '@chainsafe/ssz'
 import { assert, describe, it } from 'vitest'
 
-import { HistoryNetworkContentType, NetworkId, PortalNetwork } from '../../../src/index.js'
+import {
+  HistoryNetworkContentType,
+  NetworkId,
+  PortalNetwork,
+  getContentKey,
+} from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
 
@@ -13,10 +18,11 @@ const headerWithProofkey = '0x0088e96d4537bea4d9c05d12549907b32561d3bf31f45aae73
 describe('BlockIndex', async () => {
   const ultralight = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  await history.store(HistoryNetworkContentType.BlockHeader, hash, fromHexString(headerWithProof))
+  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))
+  await history.store(headerKey, fromHexString(headerWithProof))
   const stored = await history.get(headerWithProofkey)
 
   it('should store block header', () => {
@@ -36,7 +42,7 @@ describe('BlockIndex', async () => {
 
   const ultralight2 = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     db: ultralight.db.db,
   })
   const history2 = ultralight2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork

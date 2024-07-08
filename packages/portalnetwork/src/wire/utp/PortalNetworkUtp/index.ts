@@ -1,21 +1,16 @@
 import { BitVectorType, toHexString } from '@chainsafe/ssz'
 
 import {
-  BeaconLightClientNetworkContentType,
   Bytes32TimeStamp,
   ConnectionState,
   ContentRequest,
-  HistoryNetworkContentType,
-  NetworkId,
   Packet,
   PacketType,
   RequestCode,
-  StateNetworkContentType,
   UtpSocket,
   UtpSocketType,
   bitmap,
   createSocketKey,
-  decodeHistoryNetworkContentKey,
   dropPrefixes,
   startingNrs,
 } from '../../../index.js'
@@ -24,6 +19,7 @@ import type {
   DataPacket,
   FinPacket,
   INewRequest,
+  NetworkId,
   PortalNetwork,
   SelectiveAckHeader,
   StatePacket,
@@ -296,52 +292,13 @@ export class PortalNetworkUTP {
   }
   async returnContent(networkId: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)
-    const network = this.client.networks.get(networkId)
-    switch (networkId) {
-      case NetworkId.HistoryNetwork:
-        for (const [idx, k] of keys.entries()) {
-          const decodedContentKey = decodeHistoryNetworkContentKey(toHexString(k))
-          const _content = contents[idx]
-          this.logger.extend(`FINISHED`)(
-            `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
-              HistoryNetworkContentType[k[0]]
-            } to database`,
-          )
-          await network!.store(decodedContentKey.contentType, decodedContentKey.blockHash, _content)
-        }
-        break
-      case NetworkId.BeaconChainNetwork:
-        for (const [idx, k] of keys.entries()) {
-          const _content = contents[idx]
-          this.logger.extend(`FINISHED`)(
-            `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
-              BeaconLightClientNetworkContentType[k[0]]
-            } to database`,
-          )
-          if (_content.length === 0) {
-            this.logger.extend(`FINISHED`)(`Missing content...`)
-            continue
-          } else {
-            await network!.store(k[0], toHexString(k), _content)
-          }
-        }
-        break
-      case NetworkId.StateNetwork:
-        for (const [idx, k] of keys.entries()) {
-          const _content = contents[idx]
-          this.logger.extend(`FINISHED`)(
-            `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending ${
-              StateNetworkContentType[k[0]]
-            } to database`,
-          )
-          if (_content.length === 0) {
-            this.logger.extend(`FINISHED`)(`Missing content...`)
-            continue
-          } else {
-            await network!.store(k[0], toHexString(k.slice(1)), _content)
-          }
-        }
-        break
+    const network = this.client.networks.get(networkId)!
+    for (const [idx, k] of keys.entries()) {
+      const _content = contents[idx]
+      this.logger.extend(`FINISHED`)(
+        `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending content type: ${k[0]} to database`,
+      )
+      await network.store(toHexString(k), _content)
     }
   }
 }

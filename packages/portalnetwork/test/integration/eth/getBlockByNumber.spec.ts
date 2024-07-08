@@ -19,6 +19,7 @@ import {
   TransportLayer,
   addRLPSerializedBlock,
   getBeaconContentKey,
+  getContentKey,
   toHexString,
 } from '../../../src/index.js'
 
@@ -42,7 +43,7 @@ describe('eth_getBlockByNumber', () => {
       enr2.setLocationMultiaddr(initMa2)
       const node1 = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+        supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
         config: {
           enr: enr1,
           bindAddrs: {
@@ -54,7 +55,7 @@ describe('eth_getBlockByNumber', () => {
 
       const node2 = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+        supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
         config: {
           enr: enr2,
           bindAddrs: {
@@ -79,8 +80,8 @@ describe('eth_getBlockByNumber', () => {
 
       const blockRlp = block1000.raw
       const blockHash = block1000.hash
-
-      await network1.store(HistoryNetworkContentType.EpochAccumulator, epochHash, hexToBytes(epoch))
+      const epochKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash)
+      await network1.store(epochKey, hexToBytes(epoch))
       await addRLPSerializedBlock(blockRlp, blockHash, network1)
       await network1.sendPing(network2?.enr!.toENR())
       const retrieved = await node2.ETH.getBlockByNumber(1000, false)
@@ -103,8 +104,8 @@ describe('eth_getBlockByNumber', () => {
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
       supportedNetworks: [
-        { networkId: NetworkId.BeaconChainNetwork, radius: 1n },
-        { networkId: NetworkId.HistoryNetwork, radius: 1n },
+        { networkId: NetworkId.BeaconChainNetwork },
+        { networkId: NetworkId.HistoryNetwork },
       ],
       config: {
         enr: enr1,
@@ -147,7 +148,6 @@ describe('eth_getBlockByNumber', () => {
     const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
 
     await beacon.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
@@ -176,7 +176,6 @@ describe('eth_getBlockByNumber', () => {
     await beacon.storeUpdateRange(updatesByRange)
 
     await beacon.store(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({

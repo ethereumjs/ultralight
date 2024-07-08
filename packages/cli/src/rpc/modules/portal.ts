@@ -26,7 +26,6 @@ import type { Debugger } from 'debug'
 import type {
   AcceptMessage,
   BeaconLightClientNetwork,
-  BeaconLightClientNetworkContentType,
   HistoryNetwork,
   HistoryNetworkContentType,
   NodesMessage,
@@ -879,11 +878,7 @@ export class portal {
   async historyStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
-      await this._history.store(
-        contentKey[0] as HistoryNetworkContentType,
-        toHexString(contentKey.slice(1)),
-        content,
-      )
+      await this._history.store(toHexString(contentKey), content)
       return true
     } catch {
       return false
@@ -893,11 +888,7 @@ export class portal {
     const [contentKey, content] = params
     try {
       const contentKeyBytes = fromHexString(contentKey)
-      await this._state.store(
-        contentKeyBytes[0],
-        toHexString(contentKeyBytes.slice(1)),
-        fromHexString(content),
-      )
+      await this._state.store(toHexString(contentKeyBytes), fromHexString(content))
       this.logger(`stored ${contentKey} in state network db`)
       return true
     } catch {
@@ -917,11 +908,7 @@ export class portal {
   async beaconStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
-      await this._beacon.store(
-        contentKey[0] as BeaconLightClientNetworkContentType,
-        toHexString(contentKey),
-        content,
-      )
+      await this._beacon.store(toHexString(contentKey), content)
       return true
     } catch (e) {
       console.log(e)

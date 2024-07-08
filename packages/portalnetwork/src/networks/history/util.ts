@@ -165,6 +165,7 @@ export const addRLPSerializedBlock = async (
     setHardfork: true,
   })
   const header = block.header
+  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
   if (header.number < MERGE_BLOCK) {
     // Only generate proofs for pre-merge headers
     const proof: Witnesses = witnesses ?? (await network.generateInclusionProof(header.number))
@@ -177,11 +178,7 @@ export const addRLPSerializedBlock = async (
     } catch {
       throw new Error('Header proof failed validation')
     }
-    await network.store(
-      HistoryNetworkContentType.BlockHeader,
-      toHexString(header.hash()),
-      headerProof,
-    )
+    await network.store(headerKey, headerProof)
   } else {
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
@@ -189,11 +186,7 @@ export const addRLPSerializedBlock = async (
     })
     await network.indexBlockhash(header.number, toHexString(header.hash()))
 
-    await network.store(
-      HistoryNetworkContentType.BlockHeader,
-      toHexString(header.hash()),
-      headerProof,
-    )
+    await network.store(headerKey, headerProof)
   }
   const sszBlock = sszEncodeBlockBody(block)
   await network.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())

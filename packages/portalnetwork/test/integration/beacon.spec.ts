@@ -45,7 +45,7 @@ describe('Find Content tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -56,7 +56,7 @@ describe('Find Content tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -81,11 +81,7 @@ describe('Find Content tests', () => {
 
     const bootstrap = specTestVectors.bootstrap['6718368']
 
-    await network1.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
-      bootstrap.content_key,
-      hexToBytes(bootstrap.content_value),
-    )
+    await network1.store(bootstrap.content_key, hexToBytes(bootstrap.content_value))
     await new Promise((resolve) => {
       setTimeout(resolve, 5000)
     })
@@ -112,7 +108,7 @@ describe('Find Content tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -123,7 +119,7 @@ describe('Find Content tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -168,11 +164,7 @@ describe('Find Content tests', () => {
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
       'node1 added node2 to routing table',
     )
-    await network1.store(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-      optimisticUpdate.content_key,
-      hexToBytes(optimisticUpdate.content_value),
-    )
+    await network1.store(optimisticUpdate.content_key, hexToBytes(optimisticUpdate.content_value))
     const res = await network2.sendFindContent(
       node1.discv5.enr.nodeId,
       concatBytes(
@@ -214,7 +206,7 @@ describe('Find Content tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -225,7 +217,7 @@ describe('Find Content tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -287,7 +279,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -298,7 +290,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -348,7 +340,6 @@ describe('OFFER/ACCEPT tests', () => {
       'node1 added node2 to routing table',
     )
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
@@ -403,7 +394,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -414,7 +405,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -466,7 +457,6 @@ describe('OFFER/ACCEPT tests', () => {
       LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
     )
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       staleOptimisticUpdateContentKey,
       hexToBytes(optimisticUpdate.content_value),
     )
@@ -498,7 +488,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -509,7 +499,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -532,7 +522,6 @@ describe('OFFER/ACCEPT tests', () => {
       }),
     )
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrapKey,
       concatBytes(
         network1.beaconConfig.forkName2ForkDigest(ForkName.capella),
@@ -577,7 +566,7 @@ describe('beacon light client sync tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -588,7 +577,7 @@ describe('beacon light client sync tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -630,7 +619,6 @@ describe('beacon light client sync tests', () => {
     const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
 
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
@@ -645,7 +633,6 @@ describe('beacon light client sync tests', () => {
     await network1.storeUpdateRange(updatesByRange)
 
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
@@ -704,7 +691,7 @@ describe('beacon light client sync tests', () => {
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -715,7 +702,7 @@ describe('beacon light client sync tests', () => {
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
-      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork, radius: 2n ** 256n - 1n }],
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -772,13 +759,11 @@ describe('beacon light client sync tests', () => {
       }),
     )
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
       rangeKey,
       LightClientUpdatesByRange.serialize([update1, update2, update3, update4]),
     )
 
     await network1.store(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
       bootstrapKey,
       concatBytes(
         network1.beaconConfig.forkName2ForkDigest(ForkName.capella),
