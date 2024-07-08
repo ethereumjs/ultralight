@@ -18,6 +18,7 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
+  fromHexString,
   getBeaconContentKey,
   getContentKey,
   toHexString,
@@ -80,7 +81,10 @@ describe('eth_getBlockByNumber', () => {
 
       const blockRlp = block1000.raw
       const blockHash = block1000.hash
-      const epochKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash)
+      const epochKey = getContentKey(
+        HistoryNetworkContentType.EpochAccumulator,
+        fromHexString(epochHash),
+      )
       await network1.store(epochKey, hexToBytes(epoch))
       await addRLPSerializedBlock(blockRlp, blockHash, network1)
       await network1.sendPing(network2?.enr!.toENR())
