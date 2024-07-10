@@ -23,6 +23,7 @@ const methods = [
   'ultralight_indexBlock',
   'ultralight_setNetworkRadius',
   'ultralight_getNetworkRadius',
+  'ultralight_getNetworkStorageInfo',
 ]
 
 export class ultralight {
@@ -56,6 +57,9 @@ export class ultralight {
       [validators.distance],
     ])
     this.getNetworkRadius = middleware(this.getNetworkRadius.bind(this), 1, [
+      [validators.networkId],
+    ])
+    this.getNetworkStorageInfo = middleware(this.getNetworkStorageInfo.bind(this), 1, [
       [validators.networkId],
     ])
   }
@@ -142,5 +146,20 @@ export class ultralight {
       }
     }
     return { radius: '0x' + network.nodeRadius.toString(16) }
+  }
+  async getNetworkStorageInfo(params: [NetworkId]) {
+    const [networkId] = params
+    const network = this._client.networks.get(networkId)
+    if (!network) {
+      throw {
+        code: INTERNAL_ERROR,
+        message: `Invalid network id ${networkId}`,
+      }
+    }
+    return {
+      maxStorage: network.maxStorage,
+      dbSize: await network.db.size(),
+      radius: '0x' + network.nodeRadius.toString(16),
+    }
   }
 }
