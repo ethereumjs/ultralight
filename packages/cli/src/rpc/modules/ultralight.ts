@@ -26,6 +26,7 @@ const methods = [
   'ultralight_getNetworkStorageInfo',
   'ultralight_getNetworkDBSize',
   'ultralight_pruneNetworkDB',
+  'ultralight_setNetworkStorage',
 ]
 
 export class ultralight {
@@ -68,6 +69,10 @@ export class ultralight {
       [validators.networkId],
     ])
     this.pruneNetworkDB = middleware(this.pruneNetworkDB.bind(this), 1, [[validators.networkId]])
+    this.setNetworkStorage = middleware(this.setNetworkStorage.bind(this), 2, [
+      [validators.networkId],
+      [validators.megabytes],
+    ])
   }
   async methods() {
     return methods
@@ -192,6 +197,22 @@ export class ultralight {
     await network.prune()
     return {
       maxStorage: network.maxStorage,
+      dbSize: await network.db.size(),
+      radius: '0x' + network.nodeRadius.toString(16),
+    }
+  }
+  async setNetworkStorage(params: [NetworkId, number]) {
+    const [networkId, maxStorage] = params
+    const network = this._client.networks.get(networkId)
+    if (!network) {
+      throw {
+        code: INTERNAL_ERROR,
+        message: `Invalid network id ${networkId}`,
+      }
+    }
+    await network.prune(maxStorage)
+    return {
+      maxStorage,
       dbSize: await network.db.size(),
       radius: '0x' + network.nodeRadius.toString(16),
     }
