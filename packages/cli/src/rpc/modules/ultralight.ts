@@ -22,6 +22,7 @@ const methods = [
   'ultralight_addBlockToHistory',
   'ultralight_indexBlock',
   'ultralight_setNetworkRadius',
+  'ultralight_getNetworkRadius',
 ]
 
 export class ultralight {
@@ -53,6 +54,9 @@ export class ultralight {
     this.setNetworkRadius = middleware(this.setNetworkRadius.bind(this), 2, [
       [validators.networkId],
       [validators.distance],
+    ])
+    this.getNetworkRadius = middleware(this.getNetworkRadius.bind(this), 1, [
+      [validators.networkId],
     ])
   }
   async methods() {
@@ -127,5 +131,16 @@ export class ultralight {
     } catch (err: any) {
       return `Error setting radius ${err.message.toString()}`
     }
+  }
+  async getNetworkRadius(params: [NetworkId]) {
+    const [networkId] = params
+    const network = this._client.networks.get(networkId)
+    if (!network) {
+      throw {
+        code: INTERNAL_ERROR,
+        message: `Invalid network id ${networkId}`,
+      }
+    }
+    return { radius: '0x' + network.nodeRadius.toString(16) }
   }
 }
