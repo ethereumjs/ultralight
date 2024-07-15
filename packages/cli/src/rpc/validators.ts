@@ -328,6 +328,25 @@ export const validators = {
       }
     }
   },
+  /**
+   * MB validator to check if type is positive integer
+   * @param params parameters of method
+   * @param index index of parameter
+   */
+  get megabytes() {
+    return (params: any[], index: number) => {
+      if (
+        typeof params[index] !== 'number' ||
+        params[index] < 1 ||
+        !Number.isInteger(params[index])
+      ) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not whole number megabytes`,
+        }
+      }
+    }
+  },
 
   /**
    * validator to ensure required transaction fields are present, and checks for valid address and hex values.
