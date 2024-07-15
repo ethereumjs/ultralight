@@ -715,7 +715,7 @@ export class portal {
               this._state.on(
                 'ContentAdded',
                 (hash: string, _contentType: StateNetworkContentType, value: Uint8Array) => {
-                  if (hash.slice(2) === contentKey.slice(4)) {
+                  if (hash === contentKey) {
                     clearTimeout(timeout)
                     resolve(value)
                   }
