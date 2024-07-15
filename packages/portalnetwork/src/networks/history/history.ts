@@ -323,21 +323,26 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
-    try {
-      const epochHash = epochRootByBlocknumber(blockNumber)
-      const epoch = await this.retrieve(
-        getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash!),
-      )
-      const accumulator = EpochAccumulator.deserialize(hexToBytes(epoch!))
-      const tree = EpochAccumulator.value_toTree(accumulator)
-      const proofInput: SingleProofInput = {
-        type: ProofType.single,
-        gindex: blockNumberToGindex(blockNumber),
+    if (blockNumber < MERGE_BLOCK) {
+      try {
+        const epochHash = epochRootByBlocknumber(blockNumber)
+        const epoch = await this.retrieve(
+          getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash!),
+        )
+        const accumulator = EpochAccumulator.deserialize(hexToBytes(epoch!))
+        const tree = EpochAccumulator.value_toTree(accumulator)
+        const proofInput: SingleProofInput = {
+          type: ProofType.single,
+          gindex: blockNumberToGindex(blockNumber),
+        }
+        const proof = createProof(tree, proofInput) as SingleProof
+        return proof.witnesses
+      } catch (err: any) {
+        throw new Error('Error generating inclusion proof: ' + (err as any).message)
       }
-      const proof = createProof(tree, proofInput) as SingleProof
-      return proof.witnesses
-    } catch (err: any) {
-      throw new Error('Error generating inclusion proof: ' + (err as any).message)
+    } else {
+      // TODO: Implement inclusion proof generation for post-merge blocks
+      return []
     }
   }
 
@@ -346,15 +351,20 @@ export class HistoryNetwork extends BaseNetwork {
     blockHash: string,
     blockNumber: bigint,
   ): boolean {
-    const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
-    const proof: Proof = {
-      type: ProofType.single,
-      gindex: blockNumberToGindex(blockNumber),
-      witnesses,
-      leaf: hexToBytes(blockHash),
+    if (blockNumber < MERGE_BLOCK) {
+      const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
+      const proof: Proof = {
+        type: ProofType.single,
+        gindex: blockNumberToGindex(blockNumber),
+        witnesses,
+        leaf: hexToBytes(blockHash),
+      }
+      EpochAccumulator.createFromProof(proof, target)
+      return true
+    } else {
+      // TODO: Implement verification for post-merge blocks
+      return true
     }
-    EpochAccumulator.createFromProof(proof, target)
-    return true
   }
 
   public async getStateRoot(blockNumber: bigint) {

@@ -219,3 +219,14 @@ export const epochRootByIndex = (index: number) => {
 export const epochRootByBlocknumber = (blockNumber: bigint) => {
   return epochRootByIndex(epochIndexByBlocknumber(blockNumber))
 }
+
+// Returns the index of a slot in a Historical Batch (i.e. an epoch of 8192 beacon block roots/state roots)
+export const slotToHistoricalBatchIndex = (slot: bigint) => {
+  return slot - (slot / 8192n) * 8192n
+}
+
+// Returns the historical batch / era number a slot occurs in
+// Note - this returns the zero indexed batch number (since historical_roots is a zero indexed array)
+export const slotToHistoricalBatch = (slot: bigint) => {
+  return slot / 8192n
+}
