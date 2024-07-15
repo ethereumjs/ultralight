@@ -186,12 +186,6 @@ export const validators = {
           message: `invalid argument ${index}: hex string without 0x prefix`,
         }
       }
-      if (params[index].length !== 68) {
-        return {
-          code: INVALID_PARAMS,
-          message: `invalid argument ${index}: content key must be 33 bytes`,
-        }
-      }
     }
   },
 
