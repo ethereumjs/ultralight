@@ -1,7 +1,7 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex, equalsBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import jayson from 'jayson/promise/index.js'
 import { HistoricalRootsBlockProof } from 'portalnetwork'
 import { cwd } from 'process'
@@ -18,9 +18,7 @@ const main = async () => {
     cwd() + '/scripts/historicalBatches/historical_batch-574-3c0da77d.ssz',
   )
   const postMergeBatch = ssz.phase0.HistoricalBatch.deserialize(Buffer.from(historicalBatch))
-  let roots = ''
-  for (const root of postMergeBatch.blockRoots) roots += bytesToHex(root) + '\n'
-  writeFileSync('./blockHex.txt', roots)
+
   const merge_slot = 4700013 // The Beacon Chain slot number corresponding to the merge block
   const merge_block_index = 5997 // The index of the merge block blockRoot in the historical batch for era 574 (where the merge occurred)
   console.log('Retrieving beacon block...')
@@ -31,6 +29,7 @@ const main = async () => {
     'executionPayload',
     'blockHash',
   ])
+
   const beaconBlockProof = createProof(ssz.bellatrix.BeaconBlock.toView(block).node, {
     gindex: elBlockHashPath.gindex,
     type: ProofType.single,
@@ -53,7 +52,7 @@ const main = async () => {
     beaconBlockHeaderProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
     beaconBlockHeaderRoot: bytesToHex(ssz.bellatrix.BeaconBlock.value_toTree(block).root),
   })
-  console.log(headerProof.slot)
+  console.log(HistoricalRootsBlockProof.toJson(headerProof))
 }
 
 main().catch((err) => {
