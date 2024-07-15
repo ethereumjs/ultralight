@@ -10,13 +10,9 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  HistoricalRootsBlockProof,
   MasterAccumulatorType,
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
-
-// Helper function to clean up yaml in `portal-spec-tests` where hex strings aren't properly quoted
-const addDoubleQuotes = (str: string) => str.replace(/0x[0-9a-fA-F]+/g, (match) => `"${match}"`)
 
 describe('Accumulator spec tests', () => {
   it('should deserialize the master accumulator', () => {
