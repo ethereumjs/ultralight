@@ -14,6 +14,8 @@ import {
   HistoricalRootsBlockProof,
   blockNumberToGindex,
   blockNumberToLeafIndex,
+  slotToHistoricalBatch,
+  slotToHistoricalBatchIndex,
 } from '../../../src/index.js'
 import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
 
@@ -149,8 +151,8 @@ describe('Bellatrix - Capella header proof tests', () => {
   it('should deserialize proof', () => {
     const postMergeProof = HistoricalRootsBlockProof.fromJson(postMergeProofJson)
     assert.equal(postMergeProof.slot, 4700013n)
-    const batchIndex = postMergeProof.slot - (postMergeProof.slot / 8192n) * 8192n // The index of the merge block blockRoot in the historical batch for historical batch/era 574 (where the merge occurred)
-    // TODO: Convert above to a helper like EpochToGIndex
+    const batchIndex = slotToHistoricalBatchIndex(postMergeProof.slot)
+    // The index of the merge block blockRoot in the historical batch for historical batch/era 574 (where the merge occurred)
     const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
       'blockRoots',
       Number(batchIndex),
@@ -163,7 +165,25 @@ describe('Bellatrix - Capella header proof tests', () => {
     })
     assert.deepEqual(
       reconstructedBatch.hashTreeRoot(),
-      hexToBytes(historicalRoots[Number(postMergeProof.slot / 8192n)]), // this works because the actual historical epoch is 574 but bigInt division always gives you a floor and our historical_roots array is zero indexed
+      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(postMergeProof.slot))]),
+      // this works because the actual historical epoch is 574 but bigInt division always gives you a floor and our historical_roots array is zero indexed
     )
+
+    const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
+      'body',
+      'executionPayload',
+      'blockHash',
+    ])
+    const mergeBlockElBlockHash = hexToBytes(
+      '0x56a9bb0302da44b8c0b3df540781424684c3af04d0b7a38d72842b762076a664',
+    )
+    const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
+      witnesses: postMergeProof.beaconBlockHeaderProof,
+      type: ProofType.single,
+      gindex: elBlockHashPath.gindex,
+      leaf: mergeBlockElBlockHash,
+    })
+
+    assert.deepEqual(reconstructedBlock.hashTreeRoot(), postMergeProof.beaconBlockHeaderRoot)
   })
 })
