@@ -91,10 +91,10 @@ describe('AccountTrieNode Gossip / Request', async () => {
   await new Promise((r) => setTimeout(r, 200))
   const storedInNode1: Set<string> = new Set()
   const storedInNode2: Set<string> = new Set()
-  for await (const key of node1.db.db.keys()) {
+  for await (const key of network1.db.db.keys()) {
     storedInNode1.add(key)
   }
-  for await (const key of node2.db.db.keys()) {
+  for await (const key of network2.db.db.keys()) {
     storedInNode2.add(key)
   }
 
@@ -113,7 +113,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
     expect(requested?.value).instanceOf(Uint8Array)
     assert.deepEqual(requested!.value, expected, 'retrieved value is correct')
   })
-  for await (const key of node2.db.db.keys()) {
+  for await (const key of network2.db.db.keys()) {
     storedInNode2.add(key)
   }
   it('should store some nodes in node2', async () => {
@@ -192,9 +192,9 @@ describe('getAccount via network', async () => {
     expect(result.gossipCount).toEqual(3)
   })
   const storedInNodes = await Promise.all(
-    clients.map(async (client) => {
+    networks.map(async (network) => {
       const stored: Set<string> = new Set()
-      for await (const key of client.db.db.keys()) {
+      for await (const key of network.db.db.keys()) {
         stored.add(key)
       }
       return stored
