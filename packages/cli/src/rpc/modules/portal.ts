@@ -143,6 +143,10 @@ export class portal {
       [validators.enr],
       [validators.array(validators.distance)],
     ])
+    this.stateFindNodes = middleware(this.stateFindNodes.bind(this), 2, [
+      [validators.enr],
+      [validators.array(validators.distance)],
+    ])
     this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.distance)],
@@ -532,6 +536,26 @@ export class portal {
     this.logger(enrs)
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
+  async stateFindNodes(params: [string, number[]]) {
+    const [enr, distances] = params
+    const dstId = ENR.decodeTxt(enr).nodeId
+    this.logger(`stateFindNodes request received with these distances [${distances.toString()}]`)
+    this.logger(`sending stateFindNodes request to ${shortId(dstId)}`)
+    if (!isValidId(dstId)) {
+      return {
+        code: INVALID_PARAMS,
+        message: 'invalid node id',
+      }
+    }
+    const res = await this._state.sendFindNodes(enr, distances)
+    if (!res) {
+      return []
+    }
+    const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
+    this.logger(`stateFindNodes request returned ${res?.total} enrs:`)
+    this.logger(enrs)
+    return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
+  }
   async historySendFindNodes(params: [string, number[]]) {
     const [dstId, distances] = params
     this.logger(`portal_historySendFindNodes`)
@@ -691,7 +715,7 @@ export class portal {
               this._state.on(
                 'ContentAdded',
                 (hash: string, _contentType: StateNetworkContentType, value: Uint8Array) => {
-                  if (hash.slice(2) === contentKey.slice(4)) {
+                  if (hash === contentKey) {
                     clearTimeout(timeout)
                     resolve(value)
                   }

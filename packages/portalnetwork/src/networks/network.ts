@@ -828,32 +828,48 @@ export abstract class BaseNetwork extends EventEmitter {
       selector: MessageCodes.OFFER,
       value: offerMsg,
     })
+    const offered = await Promise.allSettled(
+      peers.map(async (peer) => {
+        this.logger.extend(`gossipContent`)(
+          `Offering ${toHexString(contentKey)} to ${shortId(peer.nodeId)}`,
+        )
+        const res = await this.sendMessage(peer, payload, this.networkId)
+        return [peer, res]
+      }),
+    )
     let accepted = 0
-    for (const peer of peers) {
-      const res = await this.sendMessage(peer, payload, this.networkId)
-      if (res.length > 0) {
-        try {
-          const decoded = PortalWireMessageType.deserialize(res)
-          if (decoded.selector === MessageCodes.ACCEPT) {
-            const msg = decoded.value as AcceptMessage
-            if (msg.contentKeys.get(0) === true) {
-              accepted++
-              const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
-              await this.handleNewRequest({
-                networkId: this.networkId,
-                contentKeys: [contentKey],
-                peerId: peer.nodeId,
-                connectionId: id,
-                requestCode: RequestCode.OFFER_WRITE,
-                contents: [encodeWithVariantPrefix([content])],
-              })
+    for (const offer of offered) {
+      if (offer.status === 'fulfilled') {
+        const [peer, res] = offer.value as [ENR, Uint8Array]
+        if (res.length > 0) {
+          try {
+            const decoded = PortalWireMessageType.deserialize(res)
+            if (decoded.selector === MessageCodes.ACCEPT) {
+              const msg = decoded.value as AcceptMessage
+              if (msg.contentKeys.get(0) === true) {
+                this.logger.extend(`gossipContent`)(
+                  `${toHexString(contentKey)} accepted by ${shortId(peer.nodeId)}`,
+                )
+                accepted++
+                this.logger.extend(`gossipContent`)(`accepted: ${accepted}`)
+                const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
+                void this.handleNewRequest({
+                  networkId: this.networkId,
+                  contentKeys: [contentKey],
+                  peerId: peer.nodeId,
+                  connectionId: id,
+                  requestCode: RequestCode.OFFER_WRITE,
+                  contents: [encodeWithVariantPrefix([content])],
+                })
+              }
             }
+          } catch {
+            /** Noop */
           }
-        } catch {
-          /** Noop */
         }
       }
     }
+    this.logger.extend(`gossipContent`)(`total: accepted: ${accepted}`)
     return accepted
   }
 

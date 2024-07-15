@@ -5,7 +5,6 @@ import { hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
-import { HistoryNetworkContentType } from './history/types.js'
 import { getContentKey } from './history/util.js'
 
 import type { BaseNetwork } from './network.js'
@@ -118,16 +117,13 @@ export class ContentLookup {
         peer.hasContent = true
         return new Promise((resolve) => {
           let timeout: any = undefined
-          const utpDecoder = (
-            contentKey: string,
-            contentType: HistoryNetworkContentType,
-            content: Uint8Array,
-          ) => {
+          const utpDecoder = (contentKey: string, contentType: number, content: Uint8Array) => {
             const _contentKey = getContentKey(contentType, fromHexString(contentKey))
-            if (_contentKey === toHexString(this.contentKey)) {
-              this.logger(
-                `Received content for this contentType: ${HistoryNetworkContentType[contentType]} + contentKey: ${toHexString(this.contentKey)}`,
-              )
+            if (
+              contentKey === toHexString(this.contentKey) ||
+              _contentKey === toHexString(this.contentKey)
+            ) {
+              this.logger(`Received content for this contentKey: ${toHexString(this.contentKey)}`)
               this.network.removeListener('ContentAdded', utpDecoder)
               clearTimeout(timeout)
               this.content = { content, utp: true }
