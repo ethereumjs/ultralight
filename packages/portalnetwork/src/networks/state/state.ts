@@ -43,7 +43,7 @@ export class StateNetwork extends BaseNetwork {
     super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
-    this.stateDB = new StateDB(client.db.db)
+    this.stateDB = new StateDB(this.db.db)
     this.routingTable.setLogger(this.logger)
   }
 

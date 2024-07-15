@@ -33,14 +33,11 @@ export class StateDB {
    * @returns true if content is stored successfully
    */
   async storeContent(contentKey: Uint8Array, content: Uint8Array) {
+    const log = this.logger.extend('storeContent')
+    log(`called with contentKey: ${toHexString(contentKey)} and content: [${content.length} bytes]`)
     const dbKey = getDatabaseKey(contentKey)
     const dbContent = getDatabaseContent(keyType(contentKey), content)
     await this.db.put(dbKey, dbContent)
-    this.logger(
-      `storeContent (${content.length}) bytes: \ncontentKey: ${toHexString(
-        contentKey,
-      )}\ndbKey: 0x${dbKey}\ndbSize: ${(await this.keys()).length}`,
-    )
     return true
   }
 

@@ -9,9 +9,11 @@ import {
   AccountTrieNodeKey,
   AccountTrieNodeRetrieval,
   ContractCodeKey,
+  ContractCodeOffer,
   ContractRetrieval,
   StateNetworkContentType,
   StorageTrieNodeKey,
+  StorageTrieNodeOffer,
   StorageTrieNodeRetrieval,
 } from './types.js'
 
@@ -201,10 +203,18 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
       dbContent = AccountTrieNodeRetrieval.deserialize(content).node
       break
     case StateNetworkContentType.ContractTrieNode:
-      dbContent = StorageTrieNodeRetrieval.deserialize(content).node
+      try {
+        dbContent = StorageTrieNodeRetrieval.deserialize(content).node
+      } catch {
+        dbContent = StorageTrieNodeOffer.deserialize(content).storageProof.slice(-1)[0]
+      }
       break
     case StateNetworkContentType.ContractByteCode:
-      dbContent = ContractRetrieval.deserialize(content).code
+      try {
+        dbContent = ContractCodeOffer.deserialize(content).code
+      } catch {
+        dbContent = ContractRetrieval.deserialize(content).code
+      }
       break
   }
   return bytesToUnprefixedHex(dbContent)
