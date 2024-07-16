@@ -82,7 +82,7 @@ export class ultralight {
 
     const [blockHash, rlpHex] = params
     try {
-      await addRLPSerializedBlock(rlpHex, blockHash, this._history!)
+      await addRLPSerializedBlock(rlpHex, blockHash, this._history!, [])
       this.logger(`Block ${blockHash} added to content DB`)
       return `Block ${blockHash} added to content DB`
     } catch (err: any) {

@@ -92,6 +92,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
       toHexString(ethJSBlock.serialize()),
       block.hash,
       this.historyNetwork,
+      [], // I'm too lazy to fix this right now
     )
     const ethersBlock = await ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
     return ethersBlock

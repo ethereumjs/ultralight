@@ -1,10 +1,13 @@
 import { digest } from '@chainsafe/as-sha256'
+import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
-import { hexToBytes } from '@ethereumjs/util'
+import { equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { ssz } from '@lodestar/types'
 
 import { historicalEpochs } from './data/epochHashes.js'
+import { historicalRoots } from './data/historicalRoots.js'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
@@ -20,6 +23,13 @@ import {
 
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
+import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
+import type {
+  ByteVectorType,
+  UintBigintType,
+  ValueOfFields,
+  VectorCompositeType,
+} from '@chainsafe/ssz'
 import type {
   BlockBytes,
   BlockHeaderBytes,
@@ -159,7 +169,7 @@ export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
   network: HistoryNetwork,
-  witnesses?: Witnesses,
+  witnesses: Witnesses,
 ) => {
   const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
@@ -167,8 +177,7 @@ export const addRLPSerializedBlock = async (
   const header = block.header
   const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
   if (header.number < MERGE_BLOCK) {
-    // Only generate proofs for pre-merge headers
-    const proof: Witnesses = witnesses ?? (await network.generateInclusionProof(header.number))
+    const proof: Witnesses = witnesses
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
       proof: { selector: 1, value: proof },
@@ -229,4 +238,88 @@ export const slotToHistoricalBatchIndex = (slot: bigint) => {
 // Note - this returns the zero indexed batch number (since historical_roots is a zero indexed array)
 export const slotToHistoricalBatch = (slot: bigint) => {
   return slot / 8192n
+}
+
+export const verifyPreMergeHeaderProof = (
+  witnesses: Uint8Array[],
+  blockHash: string,
+  blockNumber: bigint,
+): boolean => {
+  try {
+    const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
+    const proof: Proof = {
+      type: ProofType.single,
+      gindex: blockNumberToGindex(blockNumber),
+      witnesses,
+      leaf: hexToBytes(blockHash),
+    }
+    EpochAccumulator.createFromProof(proof, target)
+    return true
+  } catch (_err) {
+    return false
+  }
+}
+
+export const verifyPreCapellaHeaderProof = (
+  proof: ValueOfFields<{
+    beaconBlockHeaderProof: VectorCompositeType<ByteVectorType>
+    beaconBlockHeaderRoot: ByteVectorType
+    historicalRootsProof: VectorCompositeType<ByteVectorType>
+    slot: UintBigintType
+  }>,
+  elBlockHash: Uint8Array,
+) => {
+  const batchIndex = slotToHistoricalBatchIndex(proof.slot)
+  const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
+    'blockRoots',
+    Number(batchIndex),
+  ])
+  const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
+    witnesses: proof.historicalRootsProof,
+    type: ProofType.single,
+    gindex: historicalRootsPath.gindex,
+    leaf: proof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+  })
+  if (
+    !equalsBytes(
+      reconstructedBatch.hashTreeRoot(),
+      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
+    )
+  )
+    return false
+
+  const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
+    'body',
+    'executionPayload',
+    'blockHash',
+  ])
+  const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
+    witnesses: proof.beaconBlockHeaderProof,
+    type: ProofType.single,
+    gindex: elBlockHashPath.gindex,
+    leaf: elBlockHash,
+  })
+
+  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockHeaderRoot)) return false
+  return true
+}
+
+export const generatePreMergeHeaderProof = async (
+  blockNumber: bigint,
+  epochAccumulator: Uint8Array,
+): Promise<Witnesses> => {
+  if (blockNumber > MERGE_BLOCK)
+    throw new Error('cannot generate preMerge header for post merge block')
+  try {
+    const accumulator = EpochAccumulator.deserialize(epochAccumulator)
+    const tree = EpochAccumulator.value_toTree(accumulator)
+    const proofInput: SingleProofInput = {
+      type: ProofType.single,
+      gindex: blockNumberToGindex(blockNumber),
+    }
+    const proof = createProof(tree, proofInput) as SingleProof
+    return proof.witnesses
+  } catch (err: any) {
+    throw new Error('Error generating inclusion proof: ' + (err as any).message)
+  }
 }

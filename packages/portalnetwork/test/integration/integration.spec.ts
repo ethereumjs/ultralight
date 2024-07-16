@@ -15,6 +15,7 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
+  generatePreMergeHeaderProof,
   getContentKey,
   toHexString,
 } from '../../src/index.js'
@@ -105,7 +106,7 @@ it('gossip test', async () => {
     'epoch 25 added',
   )
   for await (const [_idx, testBlock] of testBlocks.entries()) {
-    const proof = await network1.generateInclusionProof(testBlock.header.number)
+    const proof = await generatePreMergeHeaderProof(testBlock.header.number, hexToBytes(epoch25))
     assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
     const headerWith = BlockHeaderWithProof.serialize({
       header: testBlock.header.serialize(),
@@ -190,7 +191,16 @@ it('FindContent', async () => {
     epoch25,
     'epoch 25 added',
   )
-  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, network1)
+  const witnesses = await generatePreMergeHeaderProof(
+    BigInt(testBlockData[29].number),
+    hexToBytes(epoch25),
+  )
+  await addRLPSerializedBlock(
+    testBlockData[29].rlp,
+    testBlockData[29].blockHash,
+    network1,
+    witnesses,
+  )
   await network1.sendPing(network2?.enr!.toENR())
 
   const res = await network2.sendFindContent(
@@ -256,7 +266,16 @@ it('eth_getBlockByHash', async () => {
     epoch25,
     'epoch 25 added',
   )
-  await addRLPSerializedBlock(testBlockData[29].rlp, testBlockData[29].blockHash, network1)
+  const witnesses = await generatePreMergeHeaderProof(
+    BigInt(testBlockData[29].number),
+    hexToBytes(epoch25),
+  )
+  await addRLPSerializedBlock(
+    testBlockData[29].rlp,
+    testBlockData[29].blockHash,
+    network1,
+    witnesses,
+  )
   await network1.sendPing(network2?.enr!.toENR())
 
   const retrieved = await network2.portal.ETH.getBlockByHash(testBlockData[29].blockHash, false)
