@@ -78,12 +78,12 @@ const main = async () => {
       : []
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
-  const ip = '0.0.0.0'
+  const ip = pubIp[0]
   const children: ChildProcessByStdio<any, any, null>[] = []
   const file = require.resolve(process.cwd() + '/dist/index.js')
   if (args.pks !== undefined) {
     const pks = fs.readFileSync(args.pks, { encoding: 'utf8' }).split('\n')
-    for (let idx = 0; idx < pks.length; idx++) {
+    for (let idx = 0; idx < Math.min(args.numNodes, pks.length); idx++) {
       const child = spawn(
         process.execPath,
         [
@@ -94,7 +94,7 @@ const main = async () => {
           `--rpcPort=${8545 + idx}`,
           `--metrics=true`,
           `--metricsPort=${18545 + idx}`,
-          `--bindAddress-${ip}:${args.port + idx}`,
+          `--bindAddress=${ip}:${args.port + idx}`,
           ...networks,
         ],
         { stdio: ['pipe', 'pipe', process.stderr] },
@@ -142,7 +142,7 @@ const main = async () => {
   }
 
   // Connect nodes to other nodes in the network via `addBootNode`
-  if (args.connectNodes !== undefined) {
+  if (args.connectNodes === true) {
     console.log('connecting nodes')
     const ultralights: jayson.HttpClient[] = []
     for (let x = 0; x < 10; x++) {
@@ -159,7 +159,7 @@ const main = async () => {
       }
     }
   }
-  if (args.connectBootNodes !== undefined) {
+  if (args.connectBootNodes === true) {
     console.log('connecting to  bootnodes')
     for (let x = 0; x < args.numNodes; x++) {
       const ultralight = Client.http({ host: ip, port: 8545 + x })

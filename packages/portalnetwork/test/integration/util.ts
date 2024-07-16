@@ -21,8 +21,8 @@ import {
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
 
-import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src'
-import type { StateDB } from '../../src/networks/state/statedb'
+import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src/index.js'
+import type { StateDB } from '../../src/networks/state/statedb.js'
 import type { LeafNode } from '@ethereumjs/trie'
 
 export const protoBufs = [
@@ -48,7 +48,7 @@ export const getClients = async (port: number) => {
       enr.setLocationMultiaddr(initMa)
       const node = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [NetworkId.StateNetwork],
+        supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
         config: {
           enr,
           bindAddrs: {
@@ -56,7 +56,6 @@ export const getClients = async (port: number) => {
           },
           peerId,
         },
-        radius: 2n ** 255n,
       })
       await node.start()
       return node
