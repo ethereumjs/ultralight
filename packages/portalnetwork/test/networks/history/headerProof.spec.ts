@@ -18,6 +18,7 @@ import {
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
   slotToHistoricalBatchIndex,
+  verifyPreCapellaHeaderProof,
 } from '../../../src/index.js'
 import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
 
@@ -168,7 +169,6 @@ describe('Bellatrix - Capella header proof tests', () => {
     assert.deepEqual(
       reconstructedBatch.hashTreeRoot(),
       hexToBytes(historicalRoots[Number(slotToHistoricalBatch(postMergeProof.slot))]),
-      // this works because the actual historical epoch is 574 but bigInt division always gives you a floor and our historical_roots array is zero indexed
     )
 
     const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
@@ -207,35 +207,8 @@ describe('Bellatrix - Capella header proof tests', () => {
       beaconBlockHeaderRoot: testVector.beacon_block_root,
       executionBlockHeader: testVector.execution_block_header,
     })
-    const batchIndex = slotToHistoricalBatchIndex(fluffyProof.slot)
-    const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
-      'blockRoots',
-      Number(batchIndex),
-    ])
-    const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
-      witnesses: fluffyProof.historicalRootsProof,
-      type: ProofType.single,
-      gindex: historicalRootsPath.gindex,
-      leaf: fluffyProof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
-    })
-    assert.deepEqual(
-      reconstructedBatch.hashTreeRoot(),
-      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(fluffyProof.slot))]),
-      // this works because the actual historical epoch is 574 but bigInt division always gives you a floor and our historical_roots array is zero indexed
+    assert.ok(
+      verifyPreCapellaHeaderProof(fluffyProof, hexToBytes(testVector.execution_block_header)),
     )
-
-    const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
-      'body',
-      'executionPayload',
-      'blockHash',
-    ])
-    const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
-      witnesses: fluffyProof.beaconBlockHeaderProof,
-      type: ProofType.single,
-      gindex: elBlockHashPath.gindex,
-      leaf: hexToBytes(testVector.execution_block_header),
-    })
-
-    assert.deepEqual(reconstructedBlock.hashTreeRoot(), fluffyProof.beaconBlockHeaderRoot)
   })
 })

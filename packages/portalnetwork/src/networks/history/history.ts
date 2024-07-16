@@ -27,12 +27,14 @@ import {
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
+  SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
 import {
   blockNumberToGindex,
   epochRootByBlocknumber,
   getContentKey,
+  verifyPreCapellaHeaderProof,
   verifyPreMergeHeaderProof,
 } from './util.js'
 
@@ -140,7 +142,18 @@ export class HistoryNetwork extends BaseNetwork {
         try {
           verifyPreMergeHeaderProof(proof.value, contentHash, header.number)
         } catch {
-          throw new Error('Received block header with invalid proof')
+          throw new Error('Received pre-merge block header with invalid proof')
+        }
+      } else {
+        if (header.number < SHANGHAI_BLOCK) {
+          if (proof.value === null) {
+            this.logger('Received post-merge block without proof')
+          }
+          try {
+            verifyPreCapellaHeaderProof(proof.value, header.hash())
+          } catch {
+            throw new Error('Received post-merge block header with invalid proof')
+          }
         }
       }
     }

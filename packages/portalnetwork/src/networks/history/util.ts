@@ -3,13 +3,16 @@ import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
-import { hexToBytes } from '@ethereumjs/util'
+import { equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { ssz } from '@lodestar/types'
 
 import { historicalEpochs } from './data/epochHashes.js'
+import { historicalRoots } from './data/historicalRoots.js'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
+  HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   MERGE_BLOCK,
   PostShanghaiBlockBody,
@@ -22,6 +25,12 @@ import {
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
 import type { Proof } from '@chainsafe/persistent-merkle-tree'
+import type {
+  ByteVectorType,
+  UintBigintType,
+  ValueOfFields,
+  VectorCompositeType,
+} from '@chainsafe/ssz'
 import type {
   BlockBytes,
   BlockHeaderBytes,
@@ -251,4 +260,48 @@ export const verifyPreMergeHeaderProof = (
   } catch (_err) {
     return false
   }
+}
+
+export const verifyPreCapellaHeaderProof = (
+  proof: ValueOfFields<{
+    beaconBlockHeaderProof: VectorCompositeType<ByteVectorType>
+    beaconBlockHeaderRoot: ByteVectorType
+    historicalRootsProof: VectorCompositeType<ByteVectorType>
+    slot: UintBigintType
+  }>,
+  elBlockHash: Uint8Array,
+) => {
+  const batchIndex = slotToHistoricalBatchIndex(proof.slot)
+  const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
+    'blockRoots',
+    Number(batchIndex),
+  ])
+  const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
+    witnesses: proof.historicalRootsProof,
+    type: ProofType.single,
+    gindex: historicalRootsPath.gindex,
+    leaf: proof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+  })
+  if (
+    !equalsBytes(
+      reconstructedBatch.hashTreeRoot(),
+      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
+    )
+  )
+    return false
+
+  const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
+    'body',
+    'executionPayload',
+    'blockHash',
+  ])
+  const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
+    witnesses: proof.beaconBlockHeaderProof,
+    type: ProofType.single,
+    gindex: elBlockHashPath.gindex,
+    leaf: elBlockHash,
+  })
+
+  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockHeaderRoot)) return false
+  return true
 }
