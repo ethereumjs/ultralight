@@ -21,6 +21,7 @@ import {
   reassembleBlock,
   sszEncodeBlockBody,
   toHexString,
+  verifyPreMergeHeaderProof,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -224,7 +225,7 @@ describe('Header Proof Tests', async () => {
     HistoryNetworkContentType.EpochAccumulator,
     hexToBytes(_epoch1Hash),
   )
-  it('HistoryNetwork can create and verify proofs for a HeaderRecord from an EpochAccumulator', async () => {
+  it('HistoryNetwork can create and verify proofs for a pre-merge HeaderRecord from an EpochAccumulator', async () => {
     const _block1000 = require('../../testData/testBlock1000.json')
     await network.store(epochKey, hexToBytes(_epochRaw))
     const proof = await network.generateInclusionProof(1000n)
@@ -242,9 +243,8 @@ describe('Header Proof Tests', async () => {
     await network.store(headerKey, headerWith)
     assert.equal(proof.length, 15, 'Proof has correct size')
     assert.ok(
-      network.verifyInclusionProof(proof, _block1000.hash, 1000n),
-      'History Network verified an inclusion proof from a historical epoch.',
+      verifyPreMergeHeaderProof(proof, _block1000.hash, 1000n),
+      'History Network verified an pre-merge header proof from a historical epoch.',
     )
-    assert.ok(true, 'TODO: fix this test')
   })
 })

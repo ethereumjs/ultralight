@@ -1,4 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
+import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
@@ -20,6 +21,7 @@ import {
 
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
+import type { Proof } from '@chainsafe/persistent-merkle-tree'
 import type {
   BlockBytes,
   BlockHeaderBytes,
@@ -229,4 +231,24 @@ export const slotToHistoricalBatchIndex = (slot: bigint) => {
 // Note - this returns the zero indexed batch number (since historical_roots is a zero indexed array)
 export const slotToHistoricalBatch = (slot: bigint) => {
   return slot / 8192n
+}
+
+export const verifyPreMergeHeaderProof = (
+  witnesses: Uint8Array[],
+  blockHash: string,
+  blockNumber: bigint,
+): boolean => {
+  try {
+    const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
+    const proof: Proof = {
+      type: ProofType.single,
+      gindex: blockNumberToGindex(blockNumber),
+      witnesses,
+      leaf: hexToBytes(blockHash),
+    }
+    EpochAccumulator.createFromProof(proof, target)
+    return true
+  } catch (_err) {
+    return false
+  }
 }

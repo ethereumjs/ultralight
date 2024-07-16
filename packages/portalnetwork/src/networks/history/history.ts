@@ -31,14 +31,13 @@ import {
 } from './types.js'
 import {
   blockNumberToGindex,
-  epochIndexByBlocknumber,
   epochRootByBlocknumber,
-  epochRootByIndex,
   getContentKey,
+  verifyPreMergeHeaderProof,
 } from './util.js'
 
 import type { BaseNetworkConfig, FindContentMessage, Witnesses } from '../../index.js'
-import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
+import type { SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type { Debugger } from 'debug'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -139,7 +138,7 @@ export class HistoryNetwork extends BaseNetwork {
       // Only check proofs on pre-merge headers
       if (Array.isArray(proof.value)) {
         try {
-          this.verifyInclusionProof(proof.value, contentHash, header.number)
+          verifyPreMergeHeaderProof(proof.value, contentHash, header.number)
         } catch {
           throw new Error('Received block header with invalid proof')
         }
@@ -343,27 +342,6 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       // TODO: Implement inclusion proof generation for post-merge blocks
       return []
-    }
-  }
-
-  public verifyInclusionProof(
-    witnesses: Uint8Array[],
-    blockHash: string,
-    blockNumber: bigint,
-  ): boolean {
-    if (blockNumber < MERGE_BLOCK) {
-      const target = epochRootByIndex(epochIndexByBlocknumber(blockNumber))
-      const proof: Proof = {
-        type: ProofType.single,
-        gindex: blockNumberToGindex(blockNumber),
-        witnesses,
-        leaf: hexToBytes(blockHash),
-      }
-      EpochAccumulator.createFromProof(proof, target)
-      return true
-    } else {
-      // TODO: Implement verification for post-merge blocks
-      return true
     }
   }
 
