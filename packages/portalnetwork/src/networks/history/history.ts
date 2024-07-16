@@ -1,5 +1,4 @@
 import { ENR } from '@chainsafe/enr'
-import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
@@ -30,16 +29,9 @@ import {
   SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
-import {
-  blockNumberToGindex,
-  epochRootByBlocknumber,
-  getContentKey,
-  verifyPreCapellaHeaderProof,
-  verifyPreMergeHeaderProof,
-} from './util.js'
+import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
-import type { BaseNetworkConfig, FindContentMessage, Witnesses } from '../../index.js'
-import type { SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
+import type { BaseNetworkConfig, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
