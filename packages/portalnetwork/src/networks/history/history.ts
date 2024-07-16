@@ -137,23 +137,22 @@ export class HistoryNetwork extends BaseNetwork {
       if (proof.value === null) {
         throw new Error('Received block header without proof')
       }
-      // Only check proofs on pre-merge headers
       if (Array.isArray(proof.value)) {
         try {
           verifyPreMergeHeaderProof(proof.value, contentHash, header.number)
         } catch {
           throw new Error('Received pre-merge block header with invalid proof')
         }
-      } else {
-        if (header.number < SHANGHAI_BLOCK) {
-          if (proof.value === null) {
-            this.logger('Received post-merge block without proof')
-          }
-          try {
-            verifyPreCapellaHeaderProof(proof.value, header.hash())
-          } catch {
-            throw new Error('Received post-merge block header with invalid proof')
-          }
+      }
+    } else {
+      if (header.number < SHANGHAI_BLOCK) {
+        if (proof.value === null) {
+          this.logger('Received post-merge block without proof')
+        }
+        try {
+          verifyPreCapellaHeaderProof(proof.value as any, header.hash())
+        } catch {
+          throw new Error('Received post-merge block header with invalid proof')
         }
       }
     }
@@ -335,6 +334,8 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
+    // TODO: Remove this from the class and convert to a utility method.  Headers with proof should be provided
+    // by bridges.  Ultralight shouldn't need to generate these internally
     if (blockNumber < MERGE_BLOCK) {
       try {
         const epochHash = epochRootByBlocknumber(blockNumber)
@@ -352,10 +353,8 @@ export class HistoryNetwork extends BaseNetwork {
       } catch (err: any) {
         throw new Error('Error generating inclusion proof: ' + (err as any).message)
       }
-    } else {
-      // TODO: Implement inclusion proof generation for post-merge blocks
-      return []
     }
+    return []
   }
 
   public async getStateRoot(blockNumber: bigint) {

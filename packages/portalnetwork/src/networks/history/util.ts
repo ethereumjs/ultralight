@@ -12,7 +12,6 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   MERGE_BLOCK,
   PostShanghaiBlockBody,

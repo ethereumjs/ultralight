@@ -1,6 +1,5 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { Block, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
@@ -12,10 +11,12 @@ import {
   BlockHeaderWithProof,
   ContentKeyType,
   EpochAccumulator,
+  HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   NetworkId,
   PortalNetwork,
   TransportLayer,
+  blockHeaderFromRpc,
   epochRootByBlocknumber,
   getContentKey,
   reassembleBlock,
@@ -205,27 +206,44 @@ describe('store -- Block Bodies and Receipts', async () => {
   })
 })
 
-describe('Header Proof Tests', async () => {
-  const _epoch1Hash = '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218'
-  const _epochRaw =
-    '0x' +
-    readFileSync(
-      './test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
-      { encoding: 'hex' },
-    )
-  const _epoch1 = EpochAccumulator.deserialize(hexToBytes(_epochRaw))
+describe('Header Tests', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  // network.accumulator.replaceAccumulator(accumulator)
-  const epochKey = getContentKey(
-    HistoryNetworkContentType.EpochAccumulator,
-    hexToBytes(_epoch1Hash),
-  )
+
+  it('should validate header proofs', async () => {
+    const headerJson = require('./testData/mergeBlockHeader.json')
+    const header = blockHeaderFromRpc(headerJson, { setHardfork: true })
+    const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, header.hash())
+    const headerProofJson = require('./testData/mergeBlockHeaderProof.json')
+    const headerProof = HistoricalRootsBlockProof.fromJson(headerProofJson)
+    const serializedHeaderWithProof = BlockHeaderWithProof.serialize({
+      header: header.serialize(),
+      proof: { selector: 2, value: headerProof },
+    })
+    try {
+      const res = network.validateHeader(serializedHeaderWithProof, headerKey)
+      assert.ok(res, 'validated post-merge proof')
+    } catch (err) {
+      assert.fail(err.message)
+    }
+  })
   it('HistoryNetwork can create and verify proofs for a pre-merge HeaderRecord from an EpochAccumulator', async () => {
+    const _epoch1Hash = '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218'
+    const _epochRaw =
+      '0x' +
+      readFileSync(
+        './test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
+        { encoding: 'hex' },
+      )
+    const _epoch1 = EpochAccumulator.deserialize(hexToBytes(_epochRaw))
+    const epochKey = getContentKey(
+      HistoryNetworkContentType.EpochAccumulator,
+      hexToBytes(_epoch1Hash),
+    )
     const _block1000 = require('../../testData/testBlock1000.json')
     await network.store(epochKey, hexToBytes(_epochRaw))
     const proof = await network.generateInclusionProof(1000n)
