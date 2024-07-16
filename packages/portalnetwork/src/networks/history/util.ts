@@ -1,5 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
-import { ProofType } from '@chainsafe/persistent-merkle-tree'
+import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
@@ -23,7 +23,7 @@ import {
 
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
-import type { Proof } from '@chainsafe/persistent-merkle-tree'
+import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type {
   ByteVectorType,
   UintBigintType,
@@ -169,7 +169,7 @@ export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
   network: HistoryNetwork,
-  witnesses?: Witnesses,
+  witnesses: Witnesses,
 ) => {
   const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
@@ -177,8 +177,7 @@ export const addRLPSerializedBlock = async (
   const header = block.header
   const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
   if (header.number < MERGE_BLOCK) {
-    // Only generate proofs for pre-merge headers
-    const proof: Witnesses = witnesses ?? (await network.generateInclusionProof(header.number))
+    const proof: Witnesses = witnesses
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
       proof: { selector: 1, value: proof },
@@ -303,4 +302,24 @@ export const verifyPreCapellaHeaderProof = (
 
   if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockHeaderRoot)) return false
   return true
+}
+
+export const generatePreMergeHeaderProof = async (
+  blockNumber: bigint,
+  epochAccumulator: Uint8Array,
+): Promise<Witnesses> => {
+  if (blockNumber > MERGE_BLOCK)
+    throw new Error('cannot generate preMerge header for post merge block')
+  try {
+    const accumulator = EpochAccumulator.deserialize(epochAccumulator)
+    const tree = EpochAccumulator.value_toTree(accumulator)
+    const proofInput: SingleProofInput = {
+      type: ProofType.single,
+      gindex: blockNumberToGindex(blockNumber),
+    }
+    const proof = createProof(tree, proofInput) as SingleProof
+    return proof.witnesses
+  } catch (err: any) {
+    throw new Error('Error generating inclusion proof: ' + (err as any).message)
+  }
 }

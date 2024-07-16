@@ -333,30 +333,6 @@ export class HistoryNetwork extends BaseNetwork {
     }
   }
 
-  public generateInclusionProof = async (blockNumber: bigint): Promise<Witnesses> => {
-    // TODO: Remove this from the class and convert to a utility method.  Headers with proof should be provided
-    // by bridges.  Ultralight shouldn't need to generate these internally
-    if (blockNumber < MERGE_BLOCK) {
-      try {
-        const epochHash = epochRootByBlocknumber(blockNumber)
-        const epoch = await this.retrieve(
-          getContentKey(HistoryNetworkContentType.EpochAccumulator, epochHash!),
-        )
-        const accumulator = EpochAccumulator.deserialize(hexToBytes(epoch!))
-        const tree = EpochAccumulator.value_toTree(accumulator)
-        const proofInput: SingleProofInput = {
-          type: ProofType.single,
-          gindex: blockNumberToGindex(blockNumber),
-        }
-        const proof = createProof(tree, proofInput) as SingleProof
-        return proof.witnesses
-      } catch (err: any) {
-        throw new Error('Error generating inclusion proof: ' + (err as any).message)
-      }
-    }
-    return []
-  }
-
   public async getStateRoot(blockNumber: bigint) {
     const block = await this.portal.ETH.getBlockByNumber(blockNumber, false)
     if (block === undefined) {
