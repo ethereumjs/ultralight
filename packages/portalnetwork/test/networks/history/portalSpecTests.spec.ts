@@ -10,6 +10,7 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
+  HistoricalRootsBlockProof,
   MasterAccumulatorType,
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
@@ -99,20 +100,16 @@ describe('pre-merge header tests', () => {
 //   )
 //   const testVector: {
 //     execution_block_header: string
-//     beacon_block_body_proof: string
-//     beacon_block_body_root: string
 //     beacon_block_header_proof: string
 //     beacon_block_header_root: string
 //     historical_roots_proof: string
 //     slot: string
-//   } = yaml.load(addDoubleQuotes(testString)) as any
+//   } = yaml.load(testString) as any
 //   const historicalRootsHeaderProof = HistoricalRootsBlockProof.fromJson({
-//     beaconBlockBodyProof: testVector.beacon_block_body_proof,
 //     beaconBlockHeaderProof: testVector.beacon_block_header_proof,
 //     historicalRootsProof: testVector.historical_roots_proof,
 //     slot: testVector.slot,
 //     beaconBlockHeaderRoot: testVector.beacon_block_header_root,
-//     beaconBlockBodyRoot: testVector.beacon_block_body_root,
 //   })
 //   assert.equal(historicalRootsHeaderProof.slot, 4702208n)
 // })
