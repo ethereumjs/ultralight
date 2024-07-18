@@ -163,7 +163,7 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
  * Takes an RLP encoded block as a hex string and adds the block header and block body to the `portal` content DB
  * @param rlpHex RLP encoded block as hex string
  * @param blockHash block hash as 0x prefixed hex string
- * @param portal a running `PortalNetwork` client
+ * @param network a running `PortalNetwork` client
  */
 export const addRLPSerializedBlock = async (
   rlpHex: string,
@@ -185,7 +185,7 @@ export const addRLPSerializedBlock = async (
     try {
       await network.validateHeader(headerProof, blockHash)
     } catch {
-      throw new Error('Header proof failed validation')
+      network.logger('Header proof failed validation while loading block from RLP')
     }
     await network.store(headerKey, headerProof)
   } else {
