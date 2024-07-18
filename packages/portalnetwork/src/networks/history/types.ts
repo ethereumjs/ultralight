@@ -9,6 +9,7 @@ import {
   VectorCompositeType,
 } from '@chainsafe/ssz'
 import { MAX_WITHDRAWALS_PER_PAYLOAD } from '@lodestar/params'
+import { Bytes32 } from '@lodestar/types/lib/sszTypes.js'
 
 import { Bytes32Type } from '../types.js'
 
@@ -187,10 +188,20 @@ export const HistoricalRootsBlockProof = new ContainerType({
   slot: SlotType,
 })
 
+export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 13)
+
+export const HistoricalSummariesBlockProof = new ContainerType({
+  beaconBlockProof: BeaconBlockProof,
+  beceanBlockRoot: Bytes32Type,
+  historicalSummariesProof: HistoricalSummariesProof,
+  slot: SlotType,
+})
+
 export const BlockHeaderProofType = new UnionType([
   new NoneType(),
   AccumulatorProofType,
   HistoricalRootsBlockProof,
+  HistoricalSummariesBlockProof,
 ])
 
 export const BlockHeaderWithProof = new ContainerType({
