@@ -238,6 +238,7 @@ export class HistoryNetwork extends BaseNetwork {
     const _contentKey = fromHexString(contentKey)
     const contentType = _contentKey[0]
     const hashKey = toHexString(_contentKey.slice(1))
+    this.logger.extend('STORE')(`Storing ${contentKey} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
@@ -254,7 +255,7 @@ export class HistoryNetwork extends BaseNetwork {
       case HistoryNetworkContentType.Receipt: {
         try {
           sszReceiptsListType.deserialize(value)
-          await this.put(getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
+          await this.put(contentKey, toHexString(value))
         } catch (err: any) {
           this.logger(`Received invalid bytes as receipt data for ${hashKey}`)
           return
@@ -264,7 +265,7 @@ export class HistoryNetwork extends BaseNetwork {
       case HistoryNetworkContentType.EpochAccumulator: {
         try {
           EpochAccumulator.deserialize(value)
-          await this.put(getContentKey(contentType, hexToBytes(hashKey)), toHexString(value))
+          await this.put(contentKey, toHexString(value))
         } catch (err: any) {
           this.logger(`Received invalid bytes as Epoch Accumulator corresponding to ${hashKey}`)
           return
@@ -272,7 +273,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
 
-    this.emit('ContentAdded', hashKey, contentType, value)
+    this.emit('ContentAdded', contentKey, contentType, value)
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
       this.gossipManager.add(hashKey, contentType)
