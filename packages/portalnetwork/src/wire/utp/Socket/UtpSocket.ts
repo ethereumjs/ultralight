@@ -207,15 +207,13 @@ export class UtpSocket {
   }
 
   async handleStatePacket(ackNr: number, timestamp: number): Promise<void> {
-    this.state === ConnectionState.Connected || this.setState(ConnectionState.Connected)
     if (ackNr === this.finNr) {
       await this.handleFinAck()
       return
     }
-    if (this.type === 'read') {
+    if (this.state === ConnectionState.SynSent) {
+      this.state = ConnectionState.Connected
       this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
-      const startingSeqNr = this.getSeqNr()
-      this.setReader(startingSeqNr)
       await this.sendAckPacket()
     } else {
       this.updateAckNrs(ackNr)
