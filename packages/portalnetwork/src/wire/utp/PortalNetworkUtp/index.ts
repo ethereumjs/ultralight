@@ -265,7 +265,36 @@ export class PortalNetworkUTP {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ:
       case RequestCode.ACCEPT_READ:
-        return request.socket.handleDataPacket(packet)
+        await request.socket.handleDataPacket(packet)
+        while (request.socket.reader!.contents.length > 0) {
+          const key = request.contentKeys.shift()!
+          const value = request.socket.reader!.contents.shift()!
+          this.logger(
+            `Storing: ${toHexString(key)}.  ${request.contentKeys.length} still streaming.`,
+          )
+          await this.returnContent(request.networkId, [value], [key])
+          if (request.contentKeys.length === 0) {
+            request.socket.close()
+            request.close()
+            this.openContentRequest.delete(request.socketKey)
+          }
+          if (request.socket.state === ConnectionState.GotFin) {
+            for (let i = request.socket.reader!.startingDataNr; i < request.socket.finNr!; i++) {
+              if (request.socket.reader!.packets[i] === undefined) {
+                return
+              }
+              await this.returnContent(
+                request.networkId,
+                [Uint8Array.from(request.socket.reader!.bytes)],
+                request.contentKeys,
+              )
+              request.socket.close()
+              request.close()
+              this.openContentRequest.delete(request.socketKey)
+            }
+          }
+        }
+        return
       default:
         throw new Error(`Why did I get a DATA packet?`)
     }

@@ -228,7 +228,7 @@ export class UtpSocket {
     }
   }
 
-  async handleDataPacket(packet: Packet<PacketType.ST_DATA>): Promise<void> {
+  async handleDataPacket(packet: Packet<PacketType.ST_DATA>): Promise<void | Uint8Array> {
     this._clearTimeout()
     if (this.state !== ConnectionState.GotFin) {
       this.state = ConnectionState.Connected
@@ -242,6 +242,7 @@ export class UtpSocket {
     this.setSeqNr(this.getSeqNr() + 1)
     if (!this.reader) {
       this.reader = new ContentReader(packet.header.seqNr)
+      this.reader.bytesExpected = Infinity
     }
     // Add the packet.seqNr to this.ackNrs at the relative index, regardless of order received.
     if (this.ackNrs[0] === undefined) {
@@ -253,7 +254,7 @@ export class UtpSocket {
       )
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
-    await this.reader.addPacket(packet)
+    this.reader.addPacket(packet)
     this.logger(
       `Packet bytes: ${packet.payload!.length} bytes.  Total bytes: ${
         this.reader.bytesReceived
@@ -267,7 +268,7 @@ export class UtpSocket {
         if (this.ackNr === this.finNr) {
           this.logger(`All data packets received. Running compiler.`)
           await this.sendAckPacket()
-          await this.finish()
+          return this.finish()
         }
       }
       // Send "Regular" ACK with the new this.ackNr
