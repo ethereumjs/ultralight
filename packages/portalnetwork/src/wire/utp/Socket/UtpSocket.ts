@@ -182,8 +182,21 @@ export class UtpSocket {
     this.setState(ConnectionState.SynRecv)
     this.logger(`Connection State: SynRecv`)
     this.setAckNr(seqNr)
-    this.type === UtpSocketType.READ ? this.setReader(2) : this.setWriter(seqNr - 1)
+    if (this.type === UtpSocketType.READ) {
+      // This initiates an OFFER.
+      // The first DATA packet will have seqNr + 1
+      this.setReader(seqNr + 1)
+      await this.sendSynAckPacket()
+    } else {
+      // This initiates a FINDCONTENT request.
+      // Set a random seqNr and send a SYN-ACK.  Do not increment seqNr.
+      // The first DATA packet will have the same seqNr.
+      this.setSeqNr(randUint16())
+      this.logger(`Setting seqNr to ${this.seqNr}.  Sending SYN-ACK`)
     await this.sendSynAckPacket()
+      this.logger(`SYN-ACK sent.  Starting DATA stream.`)
+      this.setWriter(this.seqNr)
+    }
   }
 
   async handleFinAck(): Promise<boolean> {
