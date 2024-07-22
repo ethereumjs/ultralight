@@ -11,7 +11,6 @@ import {
   PingPongCustomDataType,
   PortalWireMessageType,
   fromHexString,
-  getContentKey,
   shortId,
   toHexString,
 } from 'portalnetwork'

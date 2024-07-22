@@ -11,7 +11,6 @@ import {
   UtpSocketType,
   bitmap,
   createSocketKey,
-  dropPrefixes,
   startingNrs,
 } from '../../../index.js'
 
@@ -311,9 +310,9 @@ export class PortalNetworkUTP {
       const content = await request.socket.handleFinPacket(packet, true)
       if (!content) return
       await this.returnContent(request.networkId, [content], request.contentKeys)
-    request.socket.close()
-    request.close()
-    this.openContentRequest.delete(request.socketKey)
+      request.socket.close()
+      request.close()
+      this.openContentRequest.delete(request.socketKey)
     } else {
       await request.socket.handleFinPacket(packet)
     }

@@ -2,7 +2,7 @@ import { BitArray, BitVectorType } from '@chainsafe/ssz'
 
 import { bitmap } from '../../../index.js'
 import { PacketManager } from '../Packets/PacketManager.js'
-import { ConnectionState, PacketType, UtpSocketType } from '../index.js'
+import { ConnectionState, PacketType, UtpSocketType, randUint16 } from '../index.js'
 
 import { ContentReader } from './ContentReader.js'
 import { ContentWriter } from './ContentWriter.js'
@@ -193,7 +193,7 @@ export class UtpSocket {
       // The first DATA packet will have the same seqNr.
       this.setSeqNr(randUint16())
       this.logger(`Setting seqNr to ${this.seqNr}.  Sending SYN-ACK`)
-    await this.sendSynAckPacket()
+      await this.sendSynAckPacket()
       this.logger(`SYN-ACK sent.  Starting DATA stream.`)
       this.setWriter(this.seqNr)
     }
