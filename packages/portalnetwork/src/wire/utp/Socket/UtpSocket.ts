@@ -85,7 +85,6 @@ export class UtpSocket {
   }
 
   setWriter(seqNr: number) {
-    this.setSeqNr(seqNr)
     this.writer = new ContentWriter(this, this.content, seqNr, this.logger)
     void this.writer.start()
   }
@@ -94,7 +93,7 @@ export class UtpSocket {
   }
 
   setReader(startingSeqNr: number) {
-    this.reader = new ContentReader(startingSeqNr - 1)
+    this.reader = new ContentReader(startingSeqNr, this.logger)
   }
 
   _clearTimeout() {
