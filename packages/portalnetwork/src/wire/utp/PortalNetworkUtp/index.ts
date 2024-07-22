@@ -303,23 +303,20 @@ export class PortalNetworkUTP {
     request.socket.close()
   }
   async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
-    const keys = request.contentKeys
-    const content = await request.socket.handleFinPacket(packet)
     if (request.socket.type === UtpSocketType.WRITE) {
       request.close()
       this.openContentRequest.delete(request.socketKey)
     }
-    if (!content || content.length === 0) {
-      return
-    }
-    let contents = [content]
-    if (request.requestCode === RequestCode.ACCEPT_READ) {
-      contents = dropPrefixes(content)
-    }
-    await this.returnContent(request.networkId, contents, keys)
+    if (request.requestCode === RequestCode.FINDCONTENT_READ) {
+      const content = await request.socket.handleFinPacket(packet, true)
+      if (!content) return
+      await this.returnContent(request.networkId, [content], request.contentKeys)
     request.socket.close()
     request.close()
     this.openContentRequest.delete(request.socketKey)
+    } else {
+      await request.socket.handleFinPacket(packet)
+    }
   }
   async returnContent(networkId: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)

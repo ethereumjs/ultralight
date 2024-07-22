@@ -282,42 +282,45 @@ export class UtpSocket {
     }
   }
 
-  async handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<Uint8Array | undefined> {
+  async handleFinPacket(
+    packet: Packet<PacketType.ST_FIN>,
+    compile?: boolean,
+  ): Promise<Uint8Array | undefined> {
     this.state = ConnectionState.GotFin
     if (this.type === UtpSocketType.WRITE) {
       this.close()
+      this._clearTimeout()
+      return
     }
-    this._clearTimeout()
     this.finNr = packet.header.seqNr
-    this.logger(`Connection State: GotFin: ${this.finNr}`)
+    this.reader!.lastDataNr = this.finNr - 1
+    this.logger.extend('FIN')(`Connection State: GotFin: ${this.finNr}`)
     const expected = this.ackNr + 1 === packet.header.seqNr
-    this.logger(`Expected: ${this.ackNr + 1} got ${packet.header.seqNr}`)
     if (expected) {
-      this.logger(`all data packets received.  ${this.reader?.bytesReceived} bytes received.`)
+      this.logger.extend('FIN')(
+        `all data packets received.  ${this.reader?.bytesReceived} bytes received.`,
+      )
       this.seqNr = this.seqNr + 1
       this.ackNr = packet.header.seqNr
-      const _content = await this.reader!.run()
-      this.reader = undefined
-      this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
-      this.close()
       await this.sendAckPacket()
-      return _content
+      this.close()
+      this._clearTimeout()
+      if (compile === true) {
+        return this.finish()
+      }
     } else {
+      this.logger.extend('FIN')(`Expected: ${this.ackNr + 1} got ${packet.header.seqNr}`)
       // TODO: Else wait for all data packets.
       return
     }
   }
 
-  async finish() {
-    let _content = await this.reader!.run()
-    this.logger(`Packet payloads compiled into ${_content.length} bytes.  Sending FIN-ACK`)
-    if (_content.length === 0) {
-      while (_content.length === 0) {
-        _content = await this.reader!.run()
-      }
-    }
+  async finish(): Promise<Uint8Array> {
+    const _content = this.reader!.bytes
+    this.logger.extend('READING')(`Returning ${_content.length} bytes.`)
     this.close()
     this._clearTimeout()
+    return Uint8Array.from(_content)
   }
 
   compare(): boolean {
