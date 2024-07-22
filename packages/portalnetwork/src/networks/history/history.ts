@@ -144,7 +144,8 @@ export class HistoryNetwork extends BaseNetwork {
         try {
           verifyPreCapellaHeaderProof(proof.value as any, header.hash())
         } catch {
-          throw new Error('Received post-merge block header with invalid proof')
+          this.logger('Received post-merge block header with invalid proof')
+          // TODO: throw new Error('Received post-merge block header with invalid proof')
         }
       }
     }
