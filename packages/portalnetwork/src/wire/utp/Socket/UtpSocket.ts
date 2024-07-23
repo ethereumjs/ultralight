@@ -268,7 +268,7 @@ export class UtpSocket {
         if (this.ackNr === this.finNr) {
           this.logger(`All data packets received. Running compiler.`)
           await this.sendAckPacket()
-          return this.finish()
+          return this.close(true)
         }
       }
       // Send "Regular" ACK with the new this.ackNr
@@ -288,9 +288,7 @@ export class UtpSocket {
   ): Promise<Uint8Array | undefined> {
     this.state = ConnectionState.GotFin
     if (this.type === UtpSocketType.WRITE) {
-      this.close()
-      this._clearTimeout()
-      return
+      return this.close()
     }
     this.finNr = packet.header.seqNr
     this.reader!.lastDataNr = this.finNr - 1
@@ -303,23 +301,18 @@ export class UtpSocket {
       this.seqNr = this.seqNr + 1
       this.ackNr = packet.header.seqNr
       await this.sendAckPacket()
-      this.close()
-      this._clearTimeout()
-      if (compile === true) {
-        return this.finish()
-      }
+      return this.close(compile)
     } else {
       this.logger.extend('FIN')(`Expected: ${this.ackNr + 1} got ${packet.header.seqNr}`)
-      // TODO: Else wait for all data packets.
+      // Else wait for all data packets.
+      // TODO: Do we ever ACK the FIN packet?  Does our peer care?
       return
     }
   }
 
-  async finish(): Promise<Uint8Array> {
+  compile(): Uint8Array {
     const _content = this.reader!.bytes
     this.logger.extend('READING')(`Returning ${_content.length} bytes.`)
-    this.close()
-    this._clearTimeout()
     return Uint8Array.from(_content)
   }
 
@@ -330,9 +323,13 @@ export class UtpSocket {
     return false
   }
 
-  close(): void {
+  close(compile: boolean = false): Uint8Array | undefined {
     clearInterval(this.packetManager.congestionControl.timeoutCounter)
     this.packetManager.congestionControl.removeAllListeners()
+    this._clearTimeout()
+    if (compile === true) {
+      return this.compile()
+    }
   }
   logProgress() {
     const needed = this.writer!.dataNrs.filter((n) => !this.ackNrs.includes(n))
