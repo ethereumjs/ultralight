@@ -24,6 +24,8 @@ describe('historicalSummaries', () => {
         .toView(historicalSummaries)
         .hashTreeRoot(),
     })
+
+    // Verifies that the root of the historicalSummaries state proof matches the state root of the finalityUpdate for the same epoch
     assert.deepEqual(
       finalizedHeader.finalizedHeader.beacon.stateRoot,
       reconstructedState.hashTreeRoot(),
