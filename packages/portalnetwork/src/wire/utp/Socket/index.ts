@@ -1,3 +1,5 @@
 export * from './congestionControl.js'
+export * from './ContentReader.js'
+export * from './ContentWriter.js'
 export * from './socketTyping.js'
 export * from './UtpSocket.js'

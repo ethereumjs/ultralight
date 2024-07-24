@@ -11,7 +11,6 @@ import {
   UtpSocketType,
   bitmap,
   createSocketKey,
-  dropPrefixes,
   startingNrs,
 } from '../../../index.js'
 
@@ -192,6 +191,8 @@ export class PortalNetworkUTP {
       case RequestCode.FINDCONTENT_READ: {
         if (request.socket.state === ConnectionState.SynSent) {
           request.socket.setAckNr(packet.header.seqNr)
+          request.socket.setReader(packet.header.seqNr)
+          request.socket.reader!.bytesExpected = Infinity
           break
         } else {
           throw new Error('READ socket should not get acks')
@@ -204,7 +205,7 @@ export class PortalNetworkUTP {
         if (packet.header.seqNr === request.socket.finNr) {
           break
         }
-        if (packet.header.ackNr === request.socket.getSeqNr()) {
+        if (request.socket.state === ConnectionState.SynSent) {
           request.socket.setAckNr(packet.header.seqNr - 1)
           request.socket.setSeqNr(packet.header.ackNr + 1)
           request.socket.logger(
@@ -263,7 +264,36 @@ export class PortalNetworkUTP {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ:
       case RequestCode.ACCEPT_READ:
-        return request.socket.handleDataPacket(packet)
+        await request.socket.handleDataPacket(packet)
+        while (request.socket.reader!.contents.length > 0) {
+          const key = request.contentKeys.shift()!
+          const value = request.socket.reader!.contents.shift()!
+          this.logger(
+            `Storing: ${toHexString(key)}.  ${request.contentKeys.length} still streaming.`,
+          )
+          await this.returnContent(request.networkId, [value], [key])
+          if (request.contentKeys.length === 0) {
+            request.socket.close()
+            request.close()
+            this.openContentRequest.delete(request.socketKey)
+          }
+          if (request.socket.state === ConnectionState.GotFin) {
+            for (let i = request.socket.reader!.startingDataNr; i < request.socket.finNr!; i++) {
+              if (request.socket.reader!.packets[i] === undefined) {
+                return
+              }
+              await this.returnContent(
+                request.networkId,
+                [Uint8Array.from(request.socket.reader!.bytes)],
+                request.contentKeys,
+              )
+              request.socket.close()
+              request.close()
+              this.openContentRequest.delete(request.socketKey)
+            }
+          }
+        }
+        return
       default:
         throw new Error(`Why did I get a DATA packet?`)
     }
@@ -272,23 +302,20 @@ export class PortalNetworkUTP {
     request.socket.close()
   }
   async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
-    const keys = request.contentKeys
-    const content = await request.socket.handleFinPacket(packet)
     if (request.socket.type === UtpSocketType.WRITE) {
       request.close()
       this.openContentRequest.delete(request.socketKey)
     }
-    if (!content || content.length === 0) {
-      return
+    if (request.requestCode === RequestCode.FINDCONTENT_READ) {
+      const content = await request.socket.handleFinPacket(packet, true)
+      if (!content) return
+      await this.returnContent(request.networkId, [content], request.contentKeys)
+      request.socket.close()
+      request.close()
+      this.openContentRequest.delete(request.socketKey)
+    } else {
+      await request.socket.handleFinPacket(packet)
     }
-    let contents = [content]
-    if (request.requestCode === RequestCode.ACCEPT_READ) {
-      contents = dropPrefixes(content)
-    }
-    await this.returnContent(request.networkId, contents, keys)
-    request.socket.close()
-    request.close()
-    this.openContentRequest.delete(request.socketKey)
   }
   async returnContent(networkId: NetworkId, contents: Uint8Array[], keys: Uint8Array[]) {
     this.logger(`Decompressing stream into ${keys.length} pieces of content`)

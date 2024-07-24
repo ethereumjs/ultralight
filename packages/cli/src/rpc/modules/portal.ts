@@ -11,7 +11,6 @@ import {
   PingPongCustomDataType,
   PortalWireMessageType,
   fromHexString,
-  getContentKey,
   shortId,
   toHexString,
 } from 'portalnetwork'
@@ -663,8 +662,11 @@ export class portal {
               }, 10000)
               this._history.on(
                 'ContentAdded',
-                (hash: string, _contentType: HistoryNetworkContentType, value: Uint8Array) => {
-                  const _contentKey = getContentKey(_contentType, fromHexString(hash))
+                (
+                  _contentKey: string,
+                  _contentType: HistoryNetworkContentType,
+                  value: Uint8Array,
+                ) => {
                   if (_contentKey === contentKey) {
                     clearTimeout(timeout)
                     resolve(value)
