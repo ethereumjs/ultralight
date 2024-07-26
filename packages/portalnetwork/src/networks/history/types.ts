@@ -9,7 +9,6 @@ import {
   VectorCompositeType,
 } from '@chainsafe/ssz'
 import { MAX_WITHDRAWALS_PER_PAYLOAD } from '@lodestar/params'
-import { Bytes32 } from '@lodestar/types/lib/sszTypes.js'
 
 import { Bytes32Type } from '../types.js'
 

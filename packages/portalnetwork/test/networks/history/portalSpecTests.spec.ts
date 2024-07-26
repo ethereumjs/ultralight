@@ -10,7 +10,6 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  HistoricalRootsBlockProof,
   MasterAccumulatorType,
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
