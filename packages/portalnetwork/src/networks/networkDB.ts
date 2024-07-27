@@ -63,7 +63,7 @@ export class NetworkDB {
    * @returns database key
    */
   databaseKey(contentKey: string): string {
-    const contentId = this.contentId(contentKey)
+    const contentId = this.contentId(contentKey).slice(2)
     const d = BigInt.asUintN(32, distance(contentId, this.nodeId))
     return bigIntToHex(d)
   }
@@ -136,7 +136,7 @@ export class NetworkDB {
       const _db = this.db as MemoryLevel<string, string>
       let size = 0
       for await (const [key, value] of _db.iterator()) {
-        size += fromHexString(key).length
+        size += fromHexString('0x' + padToEven(key.slice(2))).length
         size += fromHexString(value).length
       }
       return size
