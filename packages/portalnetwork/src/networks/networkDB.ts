@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { bigIntToHex, padToEven } from '@ethereumjs/util'
+import { padToEven } from '@ethereumjs/util'
 import debug from 'debug'
 import fs from 'fs'
 import { MemoryLevel } from 'memory-level'
@@ -149,9 +149,15 @@ export class NetworkDB {
    * Prune DB content to a new radius
    * @param radius node radius
    */
-  async prune(radius: bigint): Promise<void> {
-    for await (const key of this.db.keys({ gte: bigIntToHex(radius) })) {
-      await this.db.del(key)
+  async prune(radius: bigint): Promise<[string, string][]> {
+    const toDelete: [string, string][] = []
+    for await (const [key, value] of this.db.iterator()) {
+      const d = distance(this.nodeId, this.contentId(key))
+      if (d > radius) {
+        toDelete.push([key, value])
+        await this.db.del(key)
+      }
     }
+    return toDelete
   }
 }

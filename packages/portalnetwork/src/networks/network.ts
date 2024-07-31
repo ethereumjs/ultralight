@@ -128,18 +128,23 @@ export abstract class BaseNetwork extends EventEmitter {
       if (newMaxStorage !== undefined) {
         this.maxStorage = newMaxStorage
       }
-      const size = await this.db.size()
+      let size = await this.db.size()
+      const toDelete: [string, string][] = []
       while (size > this.maxStorage * MB) {
         const radius = this.nodeRadius / 2n
-        for await (const [key, value] of this.db.db.iterator({ gte: bigIntToHex(radius) })) {
-          void this.gossipContent(fromHexString(key), fromHexString(value))
-          await this.db.del(key)
-        }
+        const pruned = await this.db.prune(radius)
+        toDelete.push(...pruned)
         this.nodeRadius = radius
+        size = await this.db.size()
+      }
+      for (const [key, val] of toDelete) {
+        void this.gossipContent(fromHexString(key), fromHexString(val))
       }
     } catch (err: any) {
       this.logger(`Error pruning content: ${err.message}`)
+      return `Error pruning content: ${err.message}`
     }
+    return this.db.size()
   }
 
   public streamingKey(contentKey: string) {
