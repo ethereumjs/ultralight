@@ -58,16 +58,6 @@ export class NetworkDB {
     await this.db.close()
   }
   /**
-   * Derive the database key from the content key
-   * @param contentKey 0x prefixed hex string
-   * @returns database key
-   */
-  databaseKey(contentKey: string): string {
-    const contentId = this.contentId(contentKey).slice(2)
-    const d = BigInt.asUintN(32, distance(contentId, this.nodeId))
-    return bigIntToHex(d)
-  }
-  /**
    * Put content in the database
    * @param key Content Key - 0x prefixed hex string
    * @param val Content - 0x prefixed hex string
