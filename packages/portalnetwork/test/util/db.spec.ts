@@ -1,3 +1,4 @@
+import { distance } from '@chainsafe/discv5'
 import { bigIntToHex, bytesToHex, randomBytes } from '@ethereumjs/util'
 import debug from 'debug'
 import { assert, describe, expect, it } from 'vitest'
@@ -40,8 +41,11 @@ describe('networkdb', async () => {
   })
   const r = 2n ** 255n - 1n
   let i = 0
-  for await (const _ of historyDB.db.iterator({ gte: bigIntToHex(r) })) {
-    i++
+  for await (const [key] of historyDB.db.keys()) {
+    const d = distance(nodeId, historyDB.contentId(key))
+    if (d > r) {
+      i++
+    }
   }
   const size1 = await historyDB.size()
   it('should have total size', () => {
@@ -56,7 +60,7 @@ describe('networkdb', async () => {
   for await (const _ of historyDB.db.iterator()) {
     e++
   }
-  it('should have pruned all', () => {
+  it(`should have ${e} / ${length} remaining`, () => {
     expect(e).toEqual(length - i)
   })
 })
