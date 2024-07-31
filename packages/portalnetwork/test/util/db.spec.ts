@@ -1,5 +1,5 @@
 import { distance } from '@chainsafe/discv5'
-import { bigIntToHex, bytesToHex, randomBytes } from '@ethereumjs/util'
+import { bytesToHex, randomBytes } from '@ethereumjs/util'
 import debug from 'debug'
 import { assert, describe, expect, it } from 'vitest'
 

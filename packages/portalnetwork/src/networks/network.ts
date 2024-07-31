@@ -2,13 +2,7 @@ import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
-import {
-  bigIntToHex,
-  bytesToInt,
-  bytesToUnprefixedHex,
-  concatBytes,
-  hexToBytes,
-} from '@ethereumjs/util'
+import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
 import {
