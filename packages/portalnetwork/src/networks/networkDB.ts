@@ -65,16 +65,13 @@ export class NetworkDB {
   async put(key: string, val: string) {
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
-    const databaseKey = this.databaseKey(key)
     try {
-      await this.db.put(databaseKey, val)
+      await this.db.put(key, val)
     } catch (err: any) {
       this.logger(`Error putting content in DB: ${err.toString()}`)
     }
     this.streaming.delete(key)
-    this.logger(
-      `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,
-    )
+    this.logger(`Put ${key} in DB.  Size=${fromHexString(padToEven(val)).length} bytes`)
   }
   /**
    * Get a value from the database by key.
@@ -91,13 +88,10 @@ export class NetworkDB {
     while (this.streaming.has(key)) {
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
-    const databaseKey = this.databaseKey(key)
-    this.logger(`Getting ${key} from DB. dbKey: ${databaseKey}`)
-    const val = await this.db.get(databaseKey)
+    this.logger(`Getting ${key} from DB`)
+    const val = await this.db.get(key)
     this.logger(
-      `Got ${key} from DB with key: ${databaseKey}.  Size=${
-        fromHexString(padToEven(val)).length
-      } bytes`,
+      `Got ${key} from DB with key: ${key}.  Size=${fromHexString(padToEven(val)).length} bytes`,
     )
     clearTimeout(timeout)
     return val
@@ -107,8 +101,7 @@ export class NetworkDB {
    * @param key Content Key - 0x prefixed hex string
    */
   async del(key: string): Promise<void> {
-    const databaseKey = this.databaseKey(key)
-    await this.db.del(databaseKey)
+    await this.db.del(key)
   }
   /**
    * Perform multiple put and/or del operations in bulk.
