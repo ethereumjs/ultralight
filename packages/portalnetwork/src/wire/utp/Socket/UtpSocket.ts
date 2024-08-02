@@ -135,8 +135,8 @@ export class UtpSocket {
       pType: PacketType.ST_SYN,
       connectionId: pktId ?? this.rcvConnectionId,
     })
-    await this.sendPacket<PacketType.ST_SYN>(p)
     this.state = ConnectionState.SynSent
+    await this.sendPacket<PacketType.ST_SYN>(p)
   }
   async sendAckPacket(bitmask?: Uint8Array): Promise<void> {
     const packet = bitmask
@@ -211,21 +211,18 @@ export class UtpSocket {
       await this.handleFinAck()
       return
     }
-    if (this.state === ConnectionState.SynSent) {
-      this.state = ConnectionState.Connected
-      this.logger(`SYN-ACK received for FINDCONTENT request  Waiting for DATA.`)
-      await this.sendAckPacket()
-    } else {
-      this.updateAckNrs(ackNr)
-      this.updateRTT(timestamp, ackNr)
-      this.packetManager.updateWindow()
-      this.logProgress()
-      if (this.compare()) {
-        await this.sendFinPacket()
-        return
-      }
-      await this.writer!.write()
+    if (this.type === UtpSocketType.READ) {
+      return
     }
+    this.updateAckNrs(ackNr)
+    this.updateRTT(timestamp, ackNr)
+    this.packetManager.updateWindow()
+    this.logProgress()
+    if (this.compare()) {
+      await this.sendFinPacket()
+      return
+    }
+    await this.writer!.write()
   }
 
   async handleDataPacket(packet: Packet<PacketType.ST_DATA>): Promise<void | Uint8Array> {
