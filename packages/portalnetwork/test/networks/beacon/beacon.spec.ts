@@ -174,22 +174,26 @@ describe('API tests', async () => {
     ).data
     const finalizedHeader =
       ssz.allForksLightClient.altair.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
-    const epoch = BigInt(finalityUpdateJson.attested_header.beacon.slot) / 8192n
+    // stub out lightclient to return finalized header we want
+    network.lightClient = {
+      //@ts-ignore
+      getFinalized: () => {
+        return {
+          beacon: {
+            slot: finalizedHeader.finalizedHeader.beacon.slot,
+            stateRoot: finalizedHeader.finalizedHeader.beacon.stateRoot,
+          },
+        }
+      },
+    }
+    const epoch = BigInt(finalityUpdateJson.finalized_header.beacon.slot) / 8192n
     const historicalSummariesKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.HistoricalSummaries,
       HistoricalSummariesKey.serialize({
         epoch,
       }),
     )
-    await network.store(
-      getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
-        LightClientFinalityUpdateKey.serialize({
-          finalitySlot: BigInt(finalizedHeader.attestedHeader.beacon.slot),
-        }),
-      ),
-      ssz.altair.LightClientFinalityUpdate.serialize(finalizedHeader),
-    )
+
     await network.store(
       historicalSummariesKey,
       HistoricalSummariesWithProof.serialize({

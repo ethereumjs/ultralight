@@ -94,8 +94,7 @@ describe('Find Content tests', () => {
     )
     await node1.stop()
     await node2.stop()
-    void network2.sendFindContent(node1.discv5.enr.nodeId, hexToBytes(bootstrap.content_key))
-  })
+  }, 10000)
   it('should find optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))

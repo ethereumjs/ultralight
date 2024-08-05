@@ -630,21 +630,15 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         )
         break
       case BeaconLightClientNetworkContentType.HistoricalSummaries: {
-        // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
         const summaries = HistoricalSummariesWithProof.deserialize(value)
 
-        // Retrieve Finality Update from DB to verify HistoricalSummaries proof is current
-        const finalityUpdateHex = await this.retrieve(
-          intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
-        )
-        if (finalityUpdateHex === undefined) {
+        // Retrieve Finality Update from lightclient to verify HistoricalSummaries proof is current
+        const finalityUpdate = this.lightClient?.getFinalized()
+        if (finalityUpdate === undefined) {
           this.logger(`Unable to find finality update in order to verify Historical Summaries`)
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
           return
         } else {
-          const finalityUpdate = ssz.altair.LightClientFinalityUpdate.deserialize(
-            hexToBytes(finalityUpdateHex),
-          )
           const reconstructedState = ssz.capella.BeaconState.createFromProof({
             type: ProofType.single,
             gindex: ssz.capella.BeaconState.getPathInfo(['historicalSummaries']).gindex,
@@ -654,10 +648,8 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               .hashTreeRoot(),
           })
           if (
-            equalsBytes(
-              finalityUpdate.finalizedHeader.beacon.stateRoot,
-              reconstructedState.hashTreeRoot(),
-            ) === false
+            equalsBytes(finalityUpdate.beacon.stateRoot, reconstructedState.hashTreeRoot()) ===
+            false
           ) {
             // The state root for the Historical Summaries proof should match the stateroot found in the most
             // recent LightClientFinalityUpdate or we can't trust it
@@ -669,6 +661,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             this.logger(`Historical Summaries State Proof root matches current Finality Update`)
           }
         }
+        // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
         await this.put(
           intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries),
           toHexString(value),
