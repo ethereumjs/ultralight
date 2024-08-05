@@ -1,8 +1,10 @@
+import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import {
   bytesToHex,
   bytesToInt,
   concatBytes,
+  equalsBytes,
   hexToBytes,
   intToHex,
   padToEven,
@@ -29,6 +31,7 @@ import { NetworkId } from '../types.js'
 import {
   BeaconLightClientNetworkContentType,
   HistoricalSummariesKey,
+  HistoricalSummariesWithProof,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
@@ -40,7 +43,7 @@ import {
 import { UltralightTransport } from './ultralightTransport.js'
 import { getBeaconContentKey } from './util.js'
 
-import type { BeaconChainNetworkConfig, LightClientForkName } from './types.js'
+import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { NodeId } from '@chainsafe/enr'
@@ -58,8 +61,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   bootstrapFinder: Map<NodeId, string[] | {}>
   syncStrategy: SyncStrategy = SyncStrategy.PollNetwork
   trustedBlockRoot: string | undefined
-  historicalSummaries = []
+  historicalSummaries: HistoricalSummaries = []
   historicalSummariesEpoch = 0n // The epoch that our local HistoricalSummaries is current to
+  // TODO: Decide if we should store the proof for the Historical Summaries in memory or just in the DB
+  historicalSummariesProof: Uint8Array[] = [] // The proof associated with our local HistoricalSummaries
   constructor({
     client,
     db,
@@ -388,7 +393,14 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             }
           }
         }
-
+        break
+      case BeaconLightClientNetworkContentType.HistoricalSummaries:
+        // We store the HistoricalSummaries in memory so it can be used by History Network to verify post-Capella proofs
+        value = HistoricalSummariesWithProof.serialize({
+          epoch: this.historicalSummariesEpoch,
+          historicalSummaries: this.historicalSummaries,
+          proof: this.historicalSummariesProof,
+        })
         break
       default:
         value = await this.retrieve(toHexString(contentKey))
@@ -617,13 +629,57 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           toHexString(value),
         )
         break
-      case BeaconLightClientNetworkContentType.HistoricalSummaries:
+      case BeaconLightClientNetworkContentType.HistoricalSummaries: {
         // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
+        const summaries = HistoricalSummariesWithProof.deserialize(value)
+
+        // Retrieve Finality Update from DB to verify HistoricalSummaries proof is current
+        const finalityUpdateHex = await this.retrieve(
+          intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+        )
+        if (finalityUpdateHex === undefined) {
+          this.logger(`Unable to find finality update in order to verify Historical Summaries`)
+          // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
+          return
+        } else {
+          const finalityUpdate = ssz.altair.LightClientFinalityUpdate.deserialize(
+            hexToBytes(finalityUpdateHex),
+          )
+          const reconstructedState = ssz.capella.BeaconState.createFromProof({
+            type: ProofType.single,
+            gindex: ssz.capella.BeaconState.getPathInfo(['historicalSummaries']).gindex,
+            witnesses: summaries.proof,
+            leaf: ssz.deneb.BeaconState.fields.historicalSummaries
+              .toView(summaries.historicalSummaries)
+              .hashTreeRoot(),
+          })
+          if (
+            equalsBytes(
+              finalityUpdate.finalizedHeader.beacon.stateRoot,
+              reconstructedState.hashTreeRoot(),
+            ) === false
+          ) {
+            // The state root for the Historical Summaries proof should match the stateroot found in the most
+            // recent LightClientFinalityUpdate or we can't trust it
+            this.logger(
+              `Historical Summaries State Proof root does not match current Finality Update`,
+            )
+            return
+          } else {
+            this.logger(`Historical Summaries State Proof root matches current Finality Update`)
+          }
+        }
         await this.put(
           intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries),
           toHexString(value),
         )
+
+        // Store the Historical Summaries data in memory so can be accessed easily by the History Network
+        this.historicalSummaries = summaries.historicalSummaries
+        this.historicalSummariesEpoch = summaries.epoch
+        this.historicalSummariesProof = summaries.proof
         break
+      }
       default:
         await this.put(contentKey, toHexString(value))
     }
@@ -853,16 +909,16 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               break
             }
             case BeaconLightClientNetworkContentType.HistoricalSummaries: {
-              // Only accept if we either don't have a HistoricalSummaries object already stored or if offered data corresponds to
-              // more recent epoch than we already have
+              // Only accept if offered HistoricalSummaries epoch corresponds to our current finalityUpdate epoch (otherwise we can't verify)
               if (
-                this.historicalSummaries.length === 0 ||
-                HistoricalSummariesKey.deserialize(key).epoch > this.historicalSummariesEpoch
+                this.lightClient &&
+                HistoricalSummariesKey.deserialize(key).epoch ===
+                  BigInt(this.lightClient?.getFinalized().beacon.slot / 8192)
               ) {
                 offerAccepted = true
                 contentIds[x] = true
                 this.logger.extend('OFFER')(
-                  `Found a more up to date HistoricalSummaries object from ${shortId(
+                  `Found a an up to date HistoricalSummaries object from ${shortId(
                     src.nodeId,
                     this.routingTable,
                   )}`,

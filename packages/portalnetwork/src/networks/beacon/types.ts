@@ -67,3 +67,8 @@ export enum SyncStrategy {
   TrustedBlockRoot,
   PollNetwork,
 }
+
+export type HistoricalSummaries = Array<{
+  blockSummaryRoot: Uint8Array
+  stateSummaryRoot: Uint8Array
+}>
