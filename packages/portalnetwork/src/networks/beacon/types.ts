@@ -50,7 +50,7 @@ export const LightClientOptimisticUpdateKey = new ContainerType({
   signatureSlot: new UintBigintType(8),
 })
 
-export const HistoricalSummariesKey = 0n
+export const HistoricalSummariesKey = new ContainerType({ epoch: new UintBigintType(8) })
 
 export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 5)
 
