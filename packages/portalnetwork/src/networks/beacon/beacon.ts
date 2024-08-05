@@ -28,6 +28,7 @@ import { NetworkId } from '../types.js'
 
 import {
   BeaconLightClientNetworkContentType,
+  HistoricalSummariesKey,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
@@ -57,6 +58,8 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   bootstrapFinder: Map<NodeId, string[] | {}>
   syncStrategy: SyncStrategy = SyncStrategy.PollNetwork
   trustedBlockRoot: string | undefined
+  historicalSummaries = []
+  historicalSummariesEpoch = 0n // The epoch that our local HistoricalSummaries is current to
   constructor({
     client,
     db,
@@ -614,6 +617,13 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           toHexString(value),
         )
         break
+      case BeaconLightClientNetworkContentType.HistoricalSummaries:
+        // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
+        await this.put(
+          intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries),
+          toHexString(value),
+        )
+        break
       default:
         await this.put(contentKey, toHexString(value))
     }
@@ -841,6 +851,23 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
               // TODO: See if any of the updates in the range are missing and either ACCEPT or send FINDCONTENT for the missing range
               break
+            }
+            case BeaconLightClientNetworkContentType.HistoricalSummaries: {
+              // Only accept if we either don't have a HistoricalSummaries object already stored or if offered data corresponds to
+              // more recent epoch than we already have
+              if (
+                this.historicalSummaries.length === 0 ||
+                HistoricalSummariesKey.deserialize(key).epoch > this.historicalSummariesEpoch
+              ) {
+                offerAccepted = true
+                contentIds[x] = true
+                this.logger.extend('OFFER')(
+                  `Found a more up to date HistoricalSummaries object from ${shortId(
+                    src.nodeId,
+                    this.routingTable,
+                  )}`,
+                )
+              }
             }
           }
         }
