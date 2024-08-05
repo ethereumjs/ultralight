@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { fromHexString } from '@chainsafe/ssz'
-import { bigIntToHex, padToEven } from '@ethereumjs/util'
+import { padToEven } from '@ethereumjs/util'
 import debug from 'debug'
 import fs from 'fs'
 import { MemoryLevel } from 'memory-level'
@@ -58,16 +58,6 @@ export class NetworkDB {
     await this.db.close()
   }
   /**
-   * Derive the database key from the content key
-   * @param contentKey 0x prefixed hex string
-   * @returns database key
-   */
-  databaseKey(contentKey: string): string {
-    const contentId = this.contentId(contentKey).slice(2)
-    const d = BigInt.asUintN(32, distance(contentId, this.nodeId))
-    return bigIntToHex(d)
-  }
-  /**
    * Put content in the database
    * @param key Content Key - 0x prefixed hex string
    * @param val Content - 0x prefixed hex string
@@ -75,16 +65,13 @@ export class NetworkDB {
   async put(key: string, val: string) {
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
-    const databaseKey = this.databaseKey(key)
     try {
-      await this.db.put(databaseKey, val)
+      await this.db.put(key, val)
     } catch (err: any) {
       this.logger(`Error putting content in DB: ${err.toString()}`)
     }
     this.streaming.delete(key)
-    this.logger(
-      `Put ${key} in DB as ${databaseKey}.  Size=${fromHexString(padToEven(val)).length} bytes`,
-    )
+    this.logger(`Put ${key} in DB.  Size=${fromHexString(padToEven(val)).length} bytes`)
   }
   /**
    * Get a value from the database by key.
@@ -101,13 +88,10 @@ export class NetworkDB {
     while (this.streaming.has(key)) {
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
-    const databaseKey = this.databaseKey(key)
-    this.logger(`Getting ${key} from DB. dbKey: ${databaseKey}`)
-    const val = await this.db.get(databaseKey)
+    this.logger(`Getting ${key} from DB`)
+    const val = await this.db.get(key)
     this.logger(
-      `Got ${key} from DB with key: ${databaseKey}.  Size=${
-        fromHexString(padToEven(val)).length
-      } bytes`,
+      `Got ${key} from DB with key: ${key}.  Size=${fromHexString(padToEven(val)).length} bytes`,
     )
     clearTimeout(timeout)
     return val
@@ -117,8 +101,7 @@ export class NetworkDB {
    * @param key Content Key - 0x prefixed hex string
    */
   async del(key: string): Promise<void> {
-    const databaseKey = this.databaseKey(key)
-    await this.db.del(databaseKey)
+    await this.db.del(key)
   }
   /**
    * Perform multiple put and/or del operations in bulk.
@@ -166,9 +149,15 @@ export class NetworkDB {
    * Prune DB content to a new radius
    * @param radius node radius
    */
-  async prune(radius: bigint): Promise<void> {
-    for await (const key of this.db.keys({ gte: bigIntToHex(radius) })) {
-      await this.db.del(key)
+  async prune(radius: bigint): Promise<[string, string][]> {
+    const toDelete: [string, string][] = []
+    for await (const [key, value] of this.db.iterator()) {
+      const d = distance(this.nodeId, this.contentId(key))
+      if (d > radius) {
+        toDelete.push([key, value])
+        await this.db.del(key)
+      }
     }
+    return toDelete
   }
 }

@@ -193,7 +193,7 @@ export class PortalNetworkUTP {
           request.socket.setAckNr(packet.header.seqNr)
           request.socket.setReader(packet.header.seqNr)
           request.socket.reader!.bytesExpected = Infinity
-          break
+          return
         } else {
           throw new Error('READ socket should not get acks')
         }
@@ -201,7 +201,7 @@ export class PortalNetworkUTP {
       case RequestCode.FOUNDCONTENT_WRITE:
         break
       case RequestCode.OFFER_WRITE:
-        request.socket.logger(`socket.seqNr: ${request.socket.getSeqNr()}`)
+        request.socket.logger(`(${request.socket.state})socket.seqNr: ${request.socket.getSeqNr()}`)
         if (packet.header.seqNr === request.socket.finNr) {
           break
         }

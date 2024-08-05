@@ -168,8 +168,8 @@ export class ultralight {
       }
     }
     return {
-      maxStorage: network.maxStorage,
-      dbSize: await network.db.size(),
+      maxStorage: network.maxStorage + 'MB',
+      dbSize: (await network.db.size()) / 1000000 + 'MB',
       radius: '0x' + network.nodeRadius.toString(16),
     }
   }
@@ -196,8 +196,8 @@ export class ultralight {
     }
     await network.prune()
     return {
-      maxStorage: network.maxStorage,
-      dbSize: await network.db.size(),
+      maxStorage: network.maxStorage + 'MB',
+      dbSize: (await network.db.size()) / 1000000 + 'MB',
       radius: '0x' + network.nodeRadius.toString(16),
     }
   }
@@ -212,8 +212,8 @@ export class ultralight {
     }
     await network.prune(maxStorage)
     return {
-      maxStorage,
-      dbSize: await network.db.size(),
+      maxStorage: network.maxStorage + 'MB',
+      dbSize: (await network.db.size()) / 1000000 + 'MB',
       radius: '0x' + network.nodeRadius.toString(16),
     }
   }
