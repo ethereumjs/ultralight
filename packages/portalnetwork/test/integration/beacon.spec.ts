@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
+import { bigIntToHex, concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
 import { RunStatusCode } from '@lodestar/light-client'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
@@ -11,7 +11,10 @@ import { assert, describe, it, vi } from 'vitest'
 
 import {
   BeaconLightClientNetworkContentType,
+  HistoricalSummariesKey,
+  HistoricalSummariesWithProof,
   LightClientBootstrapKey,
+  LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
@@ -779,4 +782,135 @@ describe('beacon light client sync tests', () => {
       void network2!.addBootNode(network1?.enr!.encodeTxt())
     })
   }, 30000)
+})
+
+describe('historicalSummaries verification', () => {
+  it('should sync two light clients to present and then gossip HistoricalSummaries', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
+    vi.setSystemTime(1722959051100)
+    const bootstrapJson =
+      require('./testdata/historicalSummaries/bootstrap0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3.json').data
+    const bootstrap = ssz.deneb.LightClientBootstrap.fromJson(bootstrapJson)
+
+    const finalityUpdatejson = require('./testdata/historicalSUmmaries/finality_update.json').data
+    const finalityUpdate = ssz.deneb.LightClientFinalityUpdate.fromJson(finalityUpdatejson)
+    const optimisticUpdateJson =
+      require('./testdata/historicalSummaries/optimistic_update.json').data
+    const optimisticUpdate = ssz.deneb.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
+    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
+    const enr1 = SignableENR.createFromPeerId(id1)
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30027`)
+    enr1.setLocationMultiaddr(initMa)
+    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
+    const enr2 = SignableENR.createFromPeerId(id2)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30028`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        peerId: id1,
+      },
+    })
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        peerId: id2,
+      },
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+
+    const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.deneb)
+
+    await network1.store(
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientBootstrap,
+        LightClientBootstrapKey.serialize({
+          blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
+        }),
+      ),
+      concatBytes(capellaForkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)),
+    )
+
+    await network1.store(
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        LightClientOptimisticUpdateKey.serialize({
+          signatureSlot: BigInt(optimisticUpdate.signatureSlot),
+        }),
+      ),
+      concatBytes(
+        capellaForkDigest,
+        ssz.deneb.LightClientOptimisticUpdate.serialize(optimisticUpdate),
+      ),
+    )
+
+    await network1!.sendPing(network2?.enr!.toENR())
+    assert.equal(
+      network1?.routingTable.getWithPending(
+        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      )?.value.nodeId,
+      '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      'node1 added node2 to routing table',
+    )
+
+    await network1.initializeLightClient(
+      '0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3',
+    )
+    await network2.initializeLightClient(
+      '0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3',
+    )
+
+    await network1.store(
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+        LightClientFinalityUpdateKey.serialize({
+          finalitySlot: BigInt(finalityUpdate.signatureSlot),
+        }),
+      ),
+      concatBytes(capellaForkDigest, ssz.deneb.LightClientFinalityUpdate.serialize(finalityUpdate)),
+    )
+
+    while (network2.lightClient?.status !== RunStatusCode.started) {
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+    assert.equal(
+      network2.lightClient.status,
+      RunStatusCode.started,
+      'light client synced to latest epoch successfully',
+    )
+
+    const epoch = BigInt(Math.floor(9677824 / 8192))
+    const historicalSummariesJson = require('./testdata/historicalSummaries/historicalSummaries_slot_9677824.json')
+    const historicalSummariesProofJson = require('./testdata/historicalSummaries/historicalSummariesStateProof_slot_9677824.json')
+    const hsWProof = HistoricalSummariesWithProof.fromJson({
+      epoch: bigIntToHex(epoch),
+      historical_summaries: historicalSummariesJson,
+      proof: historicalSummariesProofJson,
+    })
+    await network1.store(
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.HistoricalSummaries,
+        HistoricalSummariesKey.serialize({ epoch }),
+      ),
+      HistoricalSummariesWithProof.serialize(hsWProof),
+    )
+    while (network2.historicalSummaries.length === 0) {
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+    assert.equal(network2.historicalSummariesEpoch, 1181n)
+  }, 15000)
 })

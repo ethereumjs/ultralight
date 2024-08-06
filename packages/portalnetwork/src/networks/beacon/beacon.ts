@@ -394,14 +394,23 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           }
         }
         break
-      case BeaconLightClientNetworkContentType.HistoricalSummaries:
+      case BeaconLightClientNetworkContentType.HistoricalSummaries: {
+        const key = HistoricalSummariesKey.deserialize(contentKey.slice(1))
+        this.logger.extend('FINDLOCALLY')(
+          `looking for Historical Summaries for epoch ${key.epoch.toString(10)} `,
+        )
         // We store the HistoricalSummaries in memory so it can be used by History Network to verify post-Capella proofs
-        value = HistoricalSummariesWithProof.serialize({
-          epoch: this.historicalSummariesEpoch,
-          historicalSummaries: this.historicalSummaries,
-          proof: this.historicalSummariesProof,
-        })
+        if (this.historicalSummaries.length > 0) {
+          value = HistoricalSummariesWithProof.serialize({
+            epoch: this.historicalSummariesEpoch,
+            historicalSummaries: this.historicalSummaries,
+            proof: this.historicalSummariesProof,
+          })
+        } else {
+          this.logger.extend('FINDLOCALLY')('Historical Summaries is not stored locally')
+        }
         break
+      }
       default:
         value = await this.retrieve(toHexString(contentKey))
     }
@@ -902,16 +911,19 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               break
             }
             case BeaconLightClientNetworkContentType.HistoricalSummaries: {
+              const epoch = HistoricalSummariesKey.deserialize(key.slice(1)).epoch
               // Only accept if offered HistoricalSummaries epoch corresponds to our current finalityUpdate epoch (otherwise we can't verify)
+              this.logger.extend('OFFER')(
+                `Received an offer for Historical Summaries for epoch ${epoch.toString(10)}`,
+              )
               if (
                 this.lightClient &&
-                HistoricalSummariesKey.deserialize(key).epoch ===
-                  BigInt(this.lightClient?.getFinalized().beacon.slot / 8192)
+                epoch === BigInt(Math.floor(this.lightClient?.getFinalized().beacon.slot / 8192))
               ) {
                 offerAccepted = true
                 contentIds[x] = true
                 this.logger.extend('OFFER')(
-                  `Found a an up to date HistoricalSummaries object from ${shortId(
+                  `Found an up to date HistoricalSummaries object from ${shortId(
                     src.nodeId,
                     this.routingTable,
                   )}`,
