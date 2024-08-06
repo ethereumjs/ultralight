@@ -85,12 +85,12 @@ export const AccountTrieNodeRetrieval = new ContainerType({
 /* ----------------- Contract Trie Node --------------------- */
 
 export type TStorageTrieNodeKey = {
-  address: Bytes20
+  addressHash: Bytes32
   path: TNibbles
   nodeHash: Bytes32
 }
 export const StorageTrieNodeKey = new ContainerType({
-  address: new ByteVectorType(20),
+  addressHash: new ByteVectorType(32),
   path: Nibbles,
   nodeHash: new ByteVectorType(32),
 })
@@ -114,11 +114,11 @@ export const StorageTrieNodeRetrieval = new ContainerType({
 /* ----------------- Contract Code --------------------- */
 
 export type TContractCodeKey = {
-  address: Bytes20
+  addressHash: Bytes32
   codeHash: Bytes32
 }
 export const ContractCodeKey = new ContainerType({
-  address: new ByteVectorType(20),
+  addressHash: new ByteVectorType(32),
   codeHash: new ByteVectorType(32),
 })
 export type TContractOffer = {
@@ -141,12 +141,13 @@ type Bytes32 = Uint8Array
 export type Bytes20 = Uint8Array
 export type Uint256 = BigInt
 export type Address = Bytes20
+export type AddressHash = Bytes32
 export type StateRoot = Bytes32
 export type StateRootHex = string
 export type MPTWitnessNode = Uint8Array
 export type Slot = Uint256
 export type StorageTrieProofKey = {
-  address: Address
+  addressHash: AddressHash
   slot: Slot
   stateRoot: StateRoot
 }

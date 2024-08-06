@@ -51,8 +51,8 @@ export class AccountTrieNodeContentKey {
 }
 
 export class StorageTrieNodeContentKey {
-  static encode({ address, path, nodeHash }: TStorageTrieNodeKey): Uint8Array {
-    const key = StorageTrieNodeKey.serialize({ address, path, nodeHash })
+  static encode({ addressHash, path, nodeHash }: TStorageTrieNodeKey): Uint8Array {
+    const key = StorageTrieNodeKey.serialize({ addressHash, path, nodeHash })
     return Uint8Array.from([0x21, ...key])
   }
   static decode(key: Uint8Array): TStorageTrieNodeKey {
@@ -61,8 +61,8 @@ export class StorageTrieNodeContentKey {
 }
 
 export class ContractCodeContentKey {
-  static encode({ address, codeHash }: TContractCodeKey): Uint8Array {
-    const key = ContractCodeKey.serialize({ address, codeHash })
+  static encode({ addressHash, codeHash }: TContractCodeKey): Uint8Array {
+    const key = ContractCodeKey.serialize({ addressHash, codeHash })
     return Uint8Array.from([0x22, ...key])
   }
   static decode(key: Uint8Array): TContractCodeKey {
@@ -74,7 +74,7 @@ export class StateNetworkContentKey {
   static encode(opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
     if ('codeHash' in opts) {
       return ContractCodeContentKey.encode(opts)
-    } else if ('address' in opts) {
+    } else if ('addressHash' in opts) {
       return StorageTrieNodeContentKey.encode(opts)
     } else {
       return AccountTrieNodeContentKey.encode(opts)
