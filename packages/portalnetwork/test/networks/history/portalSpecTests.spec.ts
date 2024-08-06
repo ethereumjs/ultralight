@@ -10,7 +10,7 @@ import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
-  MasterAccumulatorType,
+  HistoricalHashesAccumulator,
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
 
@@ -19,17 +19,17 @@ describe('Accumulator spec tests', () => {
     const acc = readFileSync(
       resolve(
         __dirname,
-        '../../../../portal-spec-tests/tests/mainnet/history/accumulator/finished_accumulator.ssz',
+        '../../../../portal-spec-tests/tests/mainnet/history/accumulator/historical_hashes_accumulator.ssz',
       ),
     )
-    const masterAccumulator = MasterAccumulatorType.deserialize(acc)
+    const masterAccumulator = HistoricalHashesAccumulator.deserialize(acc)
     assert.equal(masterAccumulator.historicalEpochs.length, 1897)
   })
   it('should deserialize an epoch accumulator', () => {
     const acc = readFileSync(
       resolve(
         __dirname,
-        '../../../../portal-spec-tests/tests/mainnet/history/accumulator/epoch-accumulator-00122.ssz',
+        '../../../../portal-spec-tests/tests/mainnet/history/accumulator/epoch-record-00122.ssz',
       ),
     )
     const epochAccumulator = EpochAccumulator.deserialize(acc)
