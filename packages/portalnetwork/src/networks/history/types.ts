@@ -151,6 +151,10 @@ export const EpochAccumulator = new ListCompositeType(HeaderRecordType, EPOCH_SI
 export const MasterAccumulatorType = new ContainerType({
   historicalEpochs: HistoricalEpochsType,
 })
+export const HistoricalHashesAccumulator = new ContainerType({
+  historicalEpochs: HistoricalEpochsType,
+  currentEpoch: EpochAccumulator,
+})
 export const sszTransactionType = new ByteListType(MAX_TRANSACTION_LENGTH)
 export const allTransactionsType = new ListCompositeType(sszTransactionType, MAX_TRANSACTION_COUNT)
 export const sszUnclesType = new ByteListType(MAX_ENCODED_UNCLES_LENGTH)
