@@ -158,7 +158,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       eventLog: opts.eventLog,
       utpTimeout: opts.utpTimeout,
     })
-
+    for (const network of portal.networks.values()) {
+      try {
+        // Check for stored radius in db
+        const storedRadius = await network.db.db.get('radius')
+        await network.setRadius(BigInt(storedRadius))
+      } catch {
+        continue
+      }
+      await network.prune()
+    }
     return portal
   }
 
@@ -281,6 +290,14 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.discv5.start()
     await this.db.open()
     for (const network of this.networks.values()) {
+      try {
+        // Check for stored radius in db
+        const storedRadius = await network.db.db.get('radius')
+        await network.setRadius(BigInt(storedRadius))
+      } catch {
+        continue
+      }
+      await network.prune()
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
         network.networkId,

@@ -3,6 +3,7 @@ import { ENR, SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
 import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
 import { multiaddr } from '@multiformats/multiaddr'
+import { MemoryLevel } from 'memory-level'
 import * as td from 'testdouble'
 import { assert, describe, it } from 'vitest'
 
@@ -20,12 +21,13 @@ import {
 import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { BitArray } from '@chainsafe/ssz'
+import type { AbstractLevel } from 'abstract-level'
 
 describe('network wire message tests', async () => {
   const node = await PortalNetwork.create({
     bindAddress: '192.168.0.1',
     transport: TransportLayer.WEB,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const baseNetwork = node.networks.get(NetworkId.HistoryNetwork) as BaseNetwork
   it('BaseNetwork', async () => {
@@ -282,5 +284,26 @@ describe('handleFindNodes message handler tests', async () => {
       true,
       'Nodes response contained 10 ENRs even though requested nodes in 12 buckets since nodes max payload size met',
     )
+  })
+})
+
+describe('stored radius', async () => {
+  const r = 2n ** 254n - 1n
+  const db = new MemoryLevel<string, string>()
+  await db.put('radius', r.toString())
+  const node = await PortalNetwork.create({
+    bindAddress: '192.168.0.1',
+    transport: TransportLayer.WEB,
+    supportedNetworks: [
+      {
+        networkId: NetworkId.HistoryNetwork,
+        db: { db: db as AbstractLevel<string, string>, path: '' },
+      },
+    ],
+  })
+  const history = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  const radius = history.nodeRadius
+  it('should have correct radius', () => {
+    assert.equal(radius, r, 'correct radius')
   })
 })

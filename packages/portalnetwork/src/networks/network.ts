@@ -96,7 +96,6 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    void this.prune()
     if (this.portal.metrics) {
       this.portal.metrics.knownHistoryNodes.collect = () => {
         this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
@@ -116,6 +115,11 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.db.get(key)
   }
 
+  async setRadius(radius: bigint) {
+    this.nodeRadius = radius
+    await this.db.db.put('radius', radius.toString())
+  }
+
   public async prune(newMaxStorage?: number) {
     const MB = 1000000
     try {
@@ -128,7 +132,7 @@ export abstract class BaseNetwork extends EventEmitter {
         const radius = this.nodeRadius / 2n
         const pruned = await this.db.prune(radius)
         toDelete.push(...pruned)
-        this.nodeRadius = radius
+        await this.setRadius(radius)
         size = await this.db.size()
       }
       for (const [key, val] of toDelete) {
