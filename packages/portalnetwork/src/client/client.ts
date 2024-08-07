@@ -158,7 +158,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       eventLog: opts.eventLog,
       utpTimeout: opts.utpTimeout,
     })
-
+    for (const network of portal.networks.values()) {
+      try {
+        // Check for stored radius in db
+        const storedRadius = await network.db.db.get('radius')
+        await network.setRadius(BigInt(storedRadius))
+      } catch {
+        continue
+      }
+      await network.prune()
+    }
     return portal
   }
 
