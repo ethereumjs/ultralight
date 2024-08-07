@@ -117,7 +117,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   async setRadius(radius: bigint) {
     this.nodeRadius = radius
-    await this.db.put('radius', radius.toString())
+    await this.db.db.put('radius', radius.toString())
   }
 
   public async prune(newMaxStorage?: number) {

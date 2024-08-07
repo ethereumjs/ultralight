@@ -283,7 +283,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     for (const network of this.networks.values()) {
       try {
         // Check for stored radius in db
-        const storedRadius = await network.db.get('radius')
+        const storedRadius = await network.db.db.get('radius')
         await network.setRadius(BigInt(storedRadius))
       } catch {
         continue
