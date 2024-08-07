@@ -116,6 +116,11 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.db.get(key)
   }
 
+  async setRadius(radius: bigint) {
+    this.nodeRadius = radius
+    await this.db.put('radius', radius.toString())
+  }
+
   public async prune(newMaxStorage?: number) {
     const MB = 1000000
     try {
@@ -128,7 +133,7 @@ export abstract class BaseNetwork extends EventEmitter {
         const radius = this.nodeRadius / 2n
         const pruned = await this.db.prune(radius)
         toDelete.push(...pruned)
-        this.nodeRadius = radius
+        await this.setRadius(radius)
         size = await this.db.size()
       }
       for (const [key, val] of toDelete) {
