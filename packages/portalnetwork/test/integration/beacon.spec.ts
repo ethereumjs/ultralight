@@ -792,7 +792,7 @@ describe('historicalSummaries verification', () => {
       require('./testdata/historicalSummaries/bootstrap0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3.json').data
     const bootstrap = ssz.deneb.LightClientBootstrap.fromJson(bootstrapJson)
 
-    const finalityUpdatejson = require('./testdata/historicalSUmmaries/finality_update.json').data
+    const finalityUpdatejson = require('./testdata/historicalSummaries/finality_update.json').data
     const finalityUpdate = ssz.deneb.LightClientFinalityUpdate.fromJson(finalityUpdatejson)
     const optimisticUpdateJson =
       require('./testdata/historicalSummaries/optimistic_update.json').data
