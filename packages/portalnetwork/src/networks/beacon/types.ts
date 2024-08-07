@@ -50,15 +50,15 @@ export const LightClientOptimisticUpdateKey = new ContainerType({
   signatureSlot: new UintBigintType(8),
 })
 
-export const HistoricalSummariesKey = 0n
+export const HistoricalSummariesKey = new ContainerType({ epoch: new UintBigintType(8) })
 
-export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 5)
+export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 5)
 
 export const HistoricalSummariesWithProof = new ContainerType(
   {
     epoch: new UintBigintType(8),
     historicalSummaries: ssz.allForks.capella.BeaconState.fields.historicalSummaries,
-    proof: HistoricalSummariesProof,
+    proof: HistoricalSummariesStateProof,
   },
   { typeName: 'HistoricalSummariesWithProof', jsonCase: 'eth2' },
 )
@@ -67,3 +67,8 @@ export enum SyncStrategy {
   TrustedBlockRoot,
   PollNetwork,
 }
+
+export type HistoricalSummaries = Array<{
+  blockSummaryRoot: Uint8Array
+  stateSummaryRoot: Uint8Array
+}>

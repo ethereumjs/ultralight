@@ -2,21 +2,24 @@ import { SignableENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { createFromProtobuf } from '@libp2p/peer-id-factory'
-import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
-import { genesisData } from '@lodestar/config/networks'
 import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
 import { createRequire } from 'module'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { NetworkId, PortalNetwork, TransportLayer } from '../../../src/index.js'
+import {
+  NetworkId,
+  PortalNetwork,
+  TransportLayer,
+  getBeaconContentKey,
+} from '../../../src/index.js'
 import {
   BeaconLightClientNetworkContentType,
-  LightClientBootstrapKey,
+  HistoricalSummariesKey,
+  HistoricalSummariesWithProof,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
-  LightClientUpdatesByRangeKey,
 } from '../../../src/networks/beacon/types.js'
 
 import type { BeaconLightClientNetwork } from '../../../src/networks/beacon/index.js'
@@ -24,111 +27,6 @@ import type { BeaconLightClientNetwork } from '../../../src/networks/beacon/inde
 const require = createRequire(import.meta.url)
 
 const specTestVectors = require('./specTestVectors.json')
-const config = createBeaconConfig(
-  defaultChainConfig,
-  hexToBytes(genesisData.mainnet.genesisValidatorsRoot),
-)
-
-describe('portal network spec test vectors', () => {
-  const serializedOptimistincUpdate = hexToBytes(
-    specTestVectors.optimisticUpdate['6718463'].content_value,
-  )
-  const serializedOptimistincUpdateKey = hexToBytes(
-    specTestVectors.optimisticUpdate['6718463'].content_key,
-  )
-  const forkDigest = ssz.ForkDigest.deserialize(serializedOptimistincUpdate.slice(0, 4))
-
-  it('forkDigest2ForkName', () => {
-    assert.equal(config.forkDigest2ForkName(forkDigest), 'capella', 'derived correct fork')
-  })
-
-  const deserializedOptimisticUpdate = ssz.capella.LightClientOptimisticUpdate.deserialize(
-    serializedOptimistincUpdate.slice(4),
-  )
-  const optimisticUpdateKey = LightClientOptimisticUpdateKey.deserialize(
-    serializedOptimistincUpdateKey.slice(1),
-  )
-
-  it('deserializes optimistic update', () => {
-    assert.equal(
-      deserializedOptimisticUpdate.attestedHeader.beacon.slot,
-      6718463,
-      'deserialized optimistic update',
-    )
-  })
-
-  it('deserializes optimistic update key', () => {
-    assert.equal(
-      optimisticUpdateKey.signatureSlot,
-      6718464n,
-      'correctly deserialized optimistic update key',
-    )
-  })
-
-  const finalityUpdate = hexToBytes(specTestVectors.finalityUpdate['6718368'].content_value)
-  const finalityUpdateKey = hexToBytes(specTestVectors.finalityUpdate['6718368'].content_key).slice(
-    1,
-  )
-  const deserializedFinalityUpdate = ssz.capella.LightClientFinalityUpdate.deserialize(
-    finalityUpdate.slice(4),
-  )
-
-  it('deserializes finality update', () => {
-    assert.equal(
-      deserializedFinalityUpdate.attestedHeader.beacon.slot,
-      6718463,
-      'deserialized finality update',
-    )
-  })
-
-  it('deserializes finality update key', () => {
-    assert.equal(
-      LightClientFinalityUpdateKey.deserialize(finalityUpdateKey).finalitySlot,
-      6718368n,
-      'deserialized finality update key',
-    )
-  })
-  const bootstrap = specTestVectors.bootstrap['6718368']
-  const deserializedBootstrap = ssz.capella.LightClientBootstrap.deserialize(
-    hexToBytes(bootstrap.content_value).slice(4),
-  )
-  const bootstrapKey = hexToBytes(bootstrap.content_key).slice(1)
-  it('deserializes bootstrap', () => {
-    assert.equal(deserializedBootstrap.header.beacon.slot, 6718368, 'deserialized bootstrap')
-  })
-
-  it('deserializes bootstrap key', () => {
-    assert.equal(
-      toHexString(LightClientBootstrapKey.deserialize(bootstrapKey).blockHash),
-      '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
-      'deserialized light client bootstrap key',
-    )
-  })
-  const updateByRange = hexToBytes(specTestVectors.updateByRange['6684738'].content_value)
-  const updateByRangeKey = hexToBytes(specTestVectors.updateByRange['6684738'].content_key).slice(1)
-  const deserializedRange = LightClientUpdatesByRange.deserialize(updateByRange)
-
-  let numUpdatesDeserialized = 0
-  for (const update of deserializedRange) {
-    const forkdigest = update.slice(0, 4)
-    const forkname = config.forkDigest2ForkName(forkdigest)
-    //@ts-ignore - typescript won't let me set `forkname` to a value from of the Forks type
-    ssz[forkname].LightClientUpdate.deserialize(update.slice(4)).attestedHeader.beacon.slot
-    numUpdatesDeserialized++
-  }
-  it('deserializes update by range', () => {
-    assert.equal(numUpdatesDeserialized, 4, 'deserialized LightClientUpdatesByRange')
-  })
-
-  it('deserializes update by range key', () => {
-    assert.equal(
-      LightClientUpdatesByRangeKey.deserialize(updateByRangeKey).count,
-      4n,
-      'deserialized update by range key',
-    )
-  })
-})
-
 describe('API tests', async () => {
   const privateKeys = [
     '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -263,6 +161,52 @@ describe('API tests', async () => {
       'stored and reconstructed a LightClientUpdatesByRange object',
     )
   })
+
+  it('stores and retrieves a HistoricalSummariesWithProof object', async () => {
+    const summariesProofJson = (
+      await import('./testData/historicalSummariesProof_slot_9583072.json')
+    ).default
+    const summariesJson = (await import('./testData/historicalSummaries_slot_9583072.json')).default
+    const historicalSummaries =
+      ssz.deneb.BeaconState.fields.historicalSummaries.fromJson(summariesJson)
+    const finalityUpdateJson = (
+      await import('./testData/lightClientFinalityUpdate_slot_9583072.json')
+    ).data
+    const finalizedHeader =
+      ssz.allForksLightClient.altair.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
+    // stub out lightclient to return finalized header we want
+    network.lightClient = {
+      //@ts-ignore
+      getFinalized: () => {
+        return {
+          beacon: {
+            slot: finalizedHeader.finalizedHeader.beacon.slot,
+            stateRoot: finalizedHeader.finalizedHeader.beacon.stateRoot,
+          },
+        }
+      },
+    }
+    const epoch = BigInt(finalityUpdateJson.finalized_header.beacon.slot) / 8192n
+    const historicalSummariesKey = getBeaconContentKey(
+      BeaconLightClientNetworkContentType.HistoricalSummaries,
+      HistoricalSummariesKey.serialize({
+        epoch,
+      }),
+    )
+
+    await network.store(
+      historicalSummariesKey,
+      HistoricalSummariesWithProof.serialize({
+        epoch,
+        historicalSummaries,
+        proof: summariesProofJson.map((el) => hexToBytes(el)),
+      }),
+    )
+    const res = HistoricalSummariesWithProof.deserialize(
+      (await network.findContentLocally(hexToBytes(historicalSummariesKey))) as Uint8Array,
+    )
+    assert.equal(res.epoch, 1169n)
+  })
 })
 
 describe('constructor/initialization tests', async () => {
@@ -311,7 +255,7 @@ describe('constructor/initialization tests', async () => {
     assert.equal(listeners[0], beacon['getBootstrap'])
   })
 
-  it('initializes the light client `initializeLightClient` is provided', async () => {
+  it('initializes the light client when `trustedBlockRoot` is provided', async () => {
     vi.mock('@lodestar/light-client', () => {
       return {
         Lightclient: {
