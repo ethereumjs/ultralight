@@ -648,7 +648,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
           return
         } else {
-          const reconstructedState = ssz.capella.BeaconState.createFromProof({
+          const reconstructedStateMerkleTree = ssz.capella.BeaconState.createFromProof({
             type: ProofType.single,
             gindex: ssz.capella.BeaconState.getPathInfo(['historicalSummaries']).gindex,
             witnesses: summaries.proof,
@@ -657,8 +657,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               .hashTreeRoot(),
           })
           if (
-            equalsBytes(finalityUpdate.beacon.stateRoot, reconstructedState.hashTreeRoot()) ===
-            false
+            equalsBytes(
+              finalityUpdate.beacon.stateRoot,
+              reconstructedStateMerkleTree.hashTreeRoot(),
+            ) === false
           ) {
             // The state root for the Historical Summaries proof should match the stateroot found in the most
             // recent LightClientFinalityUpdate or we can't trust it
