@@ -288,6 +288,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       } catch {
         continue
       }
+      await network.prune()
       // Start kbucket refresh on 30 second interval
       this.refreshListeners.set(
         network.networkId,

@@ -96,7 +96,6 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    void this.prune()
     if (this.portal.metrics) {
       this.portal.metrics.knownHistoryNodes.collect = () => {
         this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
