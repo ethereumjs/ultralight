@@ -304,6 +304,47 @@ export const verifyPreCapellaHeaderProof = (
   return true
 }
 
+export const verifyPostCapellaHeaderProof = (
+  proof: ValueOfFields<{
+    beaconBlockHeaderProof: VectorCompositeType<ByteVectorType>
+    beaconBlockHeaderRoot: ByteVectorType
+    historicalSummariesProof: VectorCompositeType<ByteVectorType>
+    slot: UintBigintType
+  }>,
+  elBlockHash: Uint8Array,
+) => {
+  const batchIndex = slotToHistoricalBatchIndex(proof.slot)
+  const blockSummaryRootPath = ssz.phase0.HistoricalBlockRoots.getPathInfo([Number(batchIndex)])
+  const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
+    witnesses: proof.historicalSummariesProof,
+    type: ProofType.single,
+    gindex: blockSummaryRootPath.gindex,
+    leaf: proof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+  })
+  if (
+    !equalsBytes(
+      reconstructedBatch.hashTreeRoot(),
+      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
+    )
+  )
+    return false
+
+  const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
+    'body',
+    'executionPayload',
+    'blockHash',
+  ])
+  const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
+    witnesses: proof.beaconBlockHeaderProof,
+    type: ProofType.single,
+    gindex: elBlockHashPath.gindex,
+    leaf: elBlockHash,
+  })
+
+  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockHeaderRoot)) return false
+  return true
+}
+
 export const generatePreMergeHeaderProof = async (
   blockNumber: bigint,
   epochAccumulator: Uint8Array,

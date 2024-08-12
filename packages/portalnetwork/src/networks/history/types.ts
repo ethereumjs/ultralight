@@ -195,7 +195,7 @@ export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 13)
 
 export const HistoricalSummariesBlockProof = new ContainerType({
   beaconBlockProof: BeaconBlockProof,
-  beceanBlockRoot: Bytes32Type,
+  beaconBlockRoot: Bytes32Type,
   historicalSummariesProof: HistoricalSummariesProof,
   slot: SlotType,
 })

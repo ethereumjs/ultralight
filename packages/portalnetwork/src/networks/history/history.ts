@@ -147,6 +147,11 @@ export class HistoryNetwork extends BaseNetwork {
           this.logger('Received post-merge block header with invalid proof')
           // TODO: throw new Error('Received post-merge block header with invalid proof')
         }
+      } else {
+        // Post Capella block
+        if (!this.portal.networks.has(NetworkId.BeaconChainNetwork)) {
+          this.logger('Received post-capella block but do not have access to HistoricalSummaries')
+        }
       }
     }
     await this.indexBlockhash(header.number, toHexString(header.hash()))
