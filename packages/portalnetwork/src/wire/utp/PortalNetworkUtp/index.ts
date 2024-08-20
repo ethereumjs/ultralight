@@ -272,11 +272,6 @@ export class PortalNetworkUTP {
             `Storing: ${toHexString(key)}.  ${request.contentKeys.length} still streaming.`,
           )
           await this.returnContent(request.networkId, [value], [key])
-          if (request.contentKeys.length === 0) {
-            request.socket.close()
-            request.close()
-            this.openContentRequest.delete(request.socketKey)
-          }
           if (request.socket.state === ConnectionState.GotFin) {
             for (let i = request.socket.reader!.startingDataNr; i < request.socket.finNr!; i++) {
               if (request.socket.reader!.packets[i] === undefined) {
@@ -287,9 +282,6 @@ export class PortalNetworkUTP {
                 [Uint8Array.from(request.socket.reader!.bytes)],
                 request.contentKeys,
               )
-              request.socket.close()
-              request.close()
-              this.openContentRequest.delete(request.socketKey)
             }
           }
         }
