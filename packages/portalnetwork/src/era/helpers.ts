@@ -36,3 +36,12 @@ export const readSlotIndex = (bytes: Uint8Array) => {
     slotOffsets,
   }
 }
+
+export const getEraIndexes = (eraContents: Uint8Array) => {
+  const stateSlotIndex = readSlotIndex(eraContents)
+  const blockSlotIndex = readSlotIndex(eraContents.slice(0, stateSlotIndex.recordStart))
+  return {
+    stateSlotIndex,
+    blockSlotIndex,
+  }
+}

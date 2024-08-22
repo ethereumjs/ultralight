@@ -1,7 +1,13 @@
 import { readFileSync } from 'fs'
 import { assert, beforeAll, describe, it } from 'vitest'
 
-import { EraTypes, readEntry, readSlotIndex } from '../../src/era/index.js'
+import {
+  EraTypes,
+  getEraIndexes,
+  readEntry,
+  readEraFile,
+  readSlotIndex,
+} from '../../src/era/index.js'
 describe('parse entries', () => {
   let data: Uint8Array
   beforeAll(() => {
@@ -40,5 +46,10 @@ describe('parse entries', () => {
       'Should get 1 element, slot offset for state',
     )
     assert.equal(stateSlotIndex.startSlot, 9691136)
+  })
+  it('should read contents of era file', () => {
+    const indices = getEraIndexes(data)
+    assert.equal(indices.blockSlotIndex.startSlot, 9682944)
+    assert.equal(indices.stateSlotIndex.startSlot, 9691136)
   })
 })
