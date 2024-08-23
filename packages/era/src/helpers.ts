@@ -6,7 +6,6 @@ import { Duplex } from 'stream'
 import { EraTypes } from './types.js'
 
 import type { SlotIndex, e2StoreEntry } from './types.js'
-import type { ValueOfFields } from '@chainsafe/ssz'
 
 /**
  * Reads the first e2Store formatted entry from a string of bytes
@@ -107,7 +106,7 @@ export const getEraIndexes = (
 /**
  *
  * @param compressedState a bytestring representing a snappy frame format compressed ssz serialized BeaconState
- * @returns a decompressed BeaconState object
+ * @returns a decompressed BeaconState object of the same time as returned by {@link ssz.deneb.BeaconState.deserialize()}
  * @throws if BeaconState cannot be found
  */
 export const decompressBeaconState = async (
@@ -160,6 +159,6 @@ export const decompressBeaconState = async (
     })
     stream.pipe(unsnappy)
   })
-  // @ts-ignore  TODO: Figure out the correct typing for BeaconState.deserialize()
-  return state as any as ValueOfFields<typeof ssz.deneb.BeaconState.fields>
+  // TODO: Figure out the correct typing for BeaconState.deserialize()
+  return state as any
 }
