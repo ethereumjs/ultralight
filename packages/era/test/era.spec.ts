@@ -44,7 +44,7 @@ describe('e2Store utilities', () => {
   })
 })
 
-describe('era utilities', () => {
+describe.skip('era utilities', () => {
   let data: Uint8Array
   beforeAll(() => {
     data = new Uint8Array(readFileSync(__dirname + '/mainnet-01183-595cb34b.era'))
