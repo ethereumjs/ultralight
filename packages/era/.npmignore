@@ -1,0 +1,8 @@
+test
+docs
+diagrams
+*eslint*
+tsconfig*
+vitest.config*
+prettier.config.cjs
+*.era

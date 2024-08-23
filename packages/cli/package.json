@@ -15,6 +15,7 @@
     "@types/yargs": "^17.0.7",
     "@vitest/ui": "^1.2.2",
     "alchemy-sdk": "^3.0.0",
+    "e2store": "^0.0.1",
     "eslint": "^8.6.0",
     "nodemon": "^2.0.19",
     "prettier": "^3.0.2",
