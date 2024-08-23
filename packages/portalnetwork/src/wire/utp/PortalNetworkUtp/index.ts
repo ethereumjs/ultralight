@@ -263,6 +263,30 @@ export class PortalNetworkUTP {
   async _handleDataPacket(request: ContentRequest, packet: DataPacket) {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ:
+        await request.socket.handleDataPacket(packet)
+        if (request.socket.state === ConnectionState.GotFin) {
+          // FIN packet number marks the end of data stream
+          if (request.socket.finNr === undefined) {
+            throw new Error('Failed to record FIN packet number')
+          }
+          // Check if all packets have been received from startingDataNr to finNr
+          for (let i = request.socket.finNr - 1; i >= request.socket.reader!.startingDataNr; i--) {
+            if (request.socket.reader!.packets[i] === undefined) {
+              // If any packet is missing, return and wait for out of order packet
+              return
+            }
+          }
+          // If all packets have been received, return content
+          await this.returnContent(
+            request.networkId,
+            [Uint8Array.from(request.socket.reader!.bytes)],
+            request.contentKeys,
+          )
+          request.socket.close()
+          request.close()
+          this.openContentRequest.delete(request.socketKey)
+        }
+        return
       case RequestCode.ACCEPT_READ:
         await request.socket.handleDataPacket(packet)
         while (request.socket.reader!.contents.length > 0) {
@@ -272,26 +296,6 @@ export class PortalNetworkUTP {
             `Storing: ${toHexString(key)}.  ${request.contentKeys.length} still streaming.`,
           )
           await this.returnContent(request.networkId, [value], [key])
-          if (request.contentKeys.length === 0) {
-            request.socket.close()
-            request.close()
-            this.openContentRequest.delete(request.socketKey)
-          }
-          if (request.socket.state === ConnectionState.GotFin) {
-            for (let i = request.socket.reader!.startingDataNr; i < request.socket.finNr!; i++) {
-              if (request.socket.reader!.packets[i] === undefined) {
-                return
-              }
-              await this.returnContent(
-                request.networkId,
-                [Uint8Array.from(request.socket.reader!.bytes)],
-                request.contentKeys,
-              )
-              request.socket.close()
-              request.close()
-              this.openContentRequest.delete(request.socketKey)
-            }
-          }
         }
         return
       default:
