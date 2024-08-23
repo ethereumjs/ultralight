@@ -1,5 +1,5 @@
 {
-  "name": "era",
+  "name": "@ultralight/era",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
