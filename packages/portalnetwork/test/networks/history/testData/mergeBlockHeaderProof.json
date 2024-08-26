@@ -1,5 +1,5 @@
 {
-  "beaconBlockHeaderProof": [
+  "beaconBlockProof": [
     "0xf9ef008aaf996dccd1c871c7e937f25d66e057e52773fbe2497090c114231acf",
     "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
     "0xc509278046c6beda4e1bd6ad1fc633a601c165d0e4d2e785779cb7795b46e973",
@@ -12,7 +12,7 @@
     "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
     "0xdddc5486061cefe3acad95f32d73ebf53a2ad92b59d1ef346f8f983192f3090a"
   ],
-  "beaconBlockHeaderRoot": "0x810a00400a80cdffc11ffdcf17ac404ac4dba215b95221955a9dfddf163d0b0d",
+  "beaconBlockRoot": "0x810a00400a80cdffc11ffdcf17ac404ac4dba215b95221955a9dfddf163d0b0d",
   "historicalRootsProof": [
     "0x60e751f7d2cf0ae24b195bda37e9add56a7d8c4b75469c018c0f912518c3bae8",
     "0x6c4c3a3055eec20335724f435b2d663c45f0c2fb43e5da8fef7e57e2568dcc27",

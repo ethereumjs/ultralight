@@ -3,7 +3,7 @@ import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
-import { bytesToHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { equalsBytes, hexToBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
 
 import { historicalEpochs } from './data/epochHashes.js'
@@ -22,7 +22,7 @@ import {
 } from './types.js'
 
 import type { HistoryNetwork } from './history.js'
-import type { BeaconBlockProof, BlockBodyContent, Witnesses } from './types.js'
+import type { BlockBodyContent, Witnesses } from './types.js'
 import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type {
   ByteVectorType,
@@ -262,8 +262,8 @@ export const verifyPreMergeHeaderProof = (
 
 export const verifyPreCapellaHeaderProof = (
   proof: ValueOfFields<{
-    beaconBlockHeaderProof: VectorCompositeType<ByteVectorType>
-    beaconBlockHeaderRoot: ByteVectorType
+    beaconBlockProof: VectorCompositeType<ByteVectorType>
+    beaconBlockRoot: ByteVectorType
     historicalRootsProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
   }>,
@@ -278,7 +278,7 @@ export const verifyPreCapellaHeaderProof = (
     witnesses: proof.historicalRootsProof,
     type: ProofType.single,
     gindex: historicalRootsPath.gindex,
-    leaf: proof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+    leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
   })
   if (
     !equalsBytes(
@@ -294,13 +294,13 @@ export const verifyPreCapellaHeaderProof = (
     'blockHash',
   ])
   const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
-    witnesses: proof.beaconBlockHeaderProof,
+    witnesses: proof.beaconBlockProof,
     type: ProofType.single,
     gindex: elBlockHashPath.gindex,
     leaf: elBlockHash,
   })
 
-  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockHeaderRoot)) return false
+  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
   return true
 }
 

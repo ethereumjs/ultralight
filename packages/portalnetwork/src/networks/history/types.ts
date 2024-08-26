@@ -185,8 +185,8 @@ export const BeaconBlockProof = new VectorCompositeType(Bytes32Type, 11)
 export const HistoricalRootsProof = new VectorCompositeType(Bytes32Type, 14)
 
 export const HistoricalRootsBlockProof = new ContainerType({
-  beaconBlockHeaderProof: BeaconBlockProof,
-  beaconBlockHeaderRoot: Bytes32Type,
+  beaconBlockProof: BeaconBlockProof,
+  beaconBlockRoot: Bytes32Type,
   historicalRootsProof: HistoricalRootsProof,
   slot: SlotType,
 })

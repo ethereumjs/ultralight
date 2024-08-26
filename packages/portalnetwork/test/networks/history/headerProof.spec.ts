@@ -20,7 +20,6 @@ import {
   slotToHistoricalBatch,
   slotToHistoricalBatchIndex,
   verifyPostCapellaHeaderProof,
-  verifyPostCapellaHeaderProomf,
   verifyPreCapellaHeaderProof,
 } from '../../../src/index.js'
 import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
@@ -167,7 +166,7 @@ describe('Bellatrix - Capella header proof tests', () => {
       witnesses: postMergeProof.historicalRootsProof,
       type: ProofType.single,
       gindex: historicalRootsPath.gindex,
-      leaf: postMergeProof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+      leaf: postMergeProof.beaconBlockRoot, // This should be the leaf value this proof is verifying
     })
     assert.deepEqual(
       reconstructedBatch.hashTreeRoot(),
@@ -183,13 +182,13 @@ describe('Bellatrix - Capella header proof tests', () => {
       '0x56a9bb0302da44b8c0b3df540781424684c3af04d0b7a38d72842b762076a664',
     )
     const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
-      witnesses: postMergeProof.beaconBlockHeaderProof,
+      witnesses: postMergeProof.beaconBlockProof,
       type: ProofType.single,
       gindex: elBlockHashPath.gindex,
       leaf: mergeBlockElBlockHash,
     })
 
-    assert.deepEqual(reconstructedBlock.hashTreeRoot(), postMergeProof.beaconBlockHeaderRoot)
+    assert.deepEqual(reconstructedBlock.hashTreeRoot(), postMergeProof.beaconBlockRoot)
   })
 
   it('should verify a fluffy proof', () => {
@@ -204,10 +203,10 @@ describe('Bellatrix - Capella header proof tests', () => {
       slot: string
     } = yaml.load(testString) as any
     const fluffyProof = HistoricalRootsBlockProof.fromJson({
-      beaconBlockHeaderProof: testVector.beacon_block_proof,
+      beaconBlockProof: testVector.beacon_block_proof,
       historicalRootsProof: testVector.historical_roots_proof,
       slot: testVector.slot,
-      beaconBlockHeaderRoot: testVector.beacon_block_root,
+      beaconBlockRoot: testVector.beacon_block_root,
       executionBlockHeader: testVector.execution_block_header,
     })
     assert.ok(
