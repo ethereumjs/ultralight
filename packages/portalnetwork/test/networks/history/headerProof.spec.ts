@@ -7,17 +7,20 @@ import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
 import { createRequire } from 'module'
 import { resolve } from 'path'
-import { assert, describe, it } from 'vitest'
+import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
   EpochAccumulator,
   HeaderRecordType,
   HistoricalEpochsType,
   HistoricalRootsBlockProof,
+  HistoricalSummariesBlockProof,
   blockNumberToGindex,
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
   slotToHistoricalBatchIndex,
+  verifyPostCapellaHeaderProof,
+  verifyPostCapellaHeaderProomf,
   verifyPreCapellaHeaderProof,
 } from '../../../src/index.js'
 import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
@@ -209,6 +212,35 @@ describe('Bellatrix - Capella header proof tests', () => {
     })
     assert.ok(
       verifyPreCapellaHeaderProof(fluffyProof, hexToBytes(testVector.execution_block_header)),
+    )
+  })
+})
+
+describe('it should verify a post-Capella header proof', () => {
+  let proof
+  beforeAll(async () => {
+    proof = await import('./testData/slot9682944Proof.json')
+  })
+  it('should instantiate a proof from json', () => {
+    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    assert.equal(headerProof.slot, proof.slot)
+  })
+  it('should verify a post-capella header proof', async () => {
+    const historicalSummariesJson = await import(
+      './testData/historicalSummaries_at_slot_9814016.json'
+    )
+
+    const historicalSummaries = ssz.capella.BeaconState.fields.historicalSummaries.fromJson(
+      historicalSummariesJson.default,
+    )
+
+    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    assert.ok(
+      verifyPostCapellaHeaderProof(
+        headerProof,
+        hexToBytes('0xb2044cada59c3479ed264454466610e84fa852547138ccc12a874e921779a983'),
+        historicalSummaries,
+      ),
     )
   })
 })
