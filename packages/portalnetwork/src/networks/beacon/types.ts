@@ -57,7 +57,8 @@ export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type
 export const HistoricalSummariesWithProof = new ContainerType(
   {
     epoch: new UintBigintType(8),
-    historicalSummaries: ssz.allForks.capella.BeaconState.fields.historicalSummaries,
+    // TODO: Figure out if there's a way to make this for "all forks post capella"
+    historicalSummaries: ssz.capella.BeaconState.fields.historicalSummaries,
     proof: HistoricalSummariesStateProof,
   },
   { typeName: 'HistoricalSummariesWithProof', jsonCase: 'eth2' },

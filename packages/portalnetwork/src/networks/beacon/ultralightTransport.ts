@@ -17,7 +17,12 @@ import type { BeaconLightClientNetwork } from './beacon.js'
 import type { LightClientForkName } from './types.js'
 import type { LightClientTransport } from '@lodestar/light-client/transport'
 import type { ForkName } from '@lodestar/params'
-import type { allForks } from '@lodestar/types'
+import type {
+  LightClientBootstrap,
+  LightClientFinalityUpdate,
+  LightClientOptimisticUpdate,
+  LightClientUpdate,
+} from '@lodestar/types'
 import type { Debugger } from 'debug'
 
 export class UltralightTransport implements LightClientTransport {
@@ -30,7 +35,7 @@ export class UltralightTransport implements LightClientTransport {
   async getUpdates(
     startPeriod: number,
     count: number,
-  ): Promise<{ version: ForkName; data: allForks.LightClientUpdate }[]> {
+  ): Promise<{ version: ForkName; data: LightClientUpdate }[]> {
     const range = []
     this.logger(
       `requesting lightClientUpdatesByRange starting with period ${startPeriod} and count ${count}`,
@@ -73,7 +78,7 @@ export class UltralightTransport implements LightClientTransport {
   }
   async getOptimisticUpdate(): Promise<{
     version: ForkName
-    data: allForks.LightClientOptimisticUpdate
+    data: LightClientOptimisticUpdate
   }> {
     let optimisticUpdate, forkname
     const currentSlot = BigInt(
@@ -133,7 +138,7 @@ export class UltralightTransport implements LightClientTransport {
   }
   async getFinalityUpdate(): Promise<{
     version: ForkName
-    data: allForks.LightClientFinalityUpdate
+    data: LightClientFinalityUpdate
   }> {
     let finalityUpdate, forkname
 
@@ -198,7 +203,7 @@ export class UltralightTransport implements LightClientTransport {
   }
   async getBootstrap(
     blockRoot: string,
-  ): Promise<{ version: ForkName; data: allForks.LightClientBootstrap }> {
+  ): Promise<{ version: ForkName; data: LightClientBootstrap }> {
     let forkname, bootstrap
     const localBootstrap = await this.network.findContentLocally(
       hexToBytes(
@@ -255,9 +260,7 @@ export class UltralightTransport implements LightClientTransport {
     }
   }
 
-  onOptimisticUpdate(
-    handler: (optimisticUpdate: allForks.LightClientOptimisticUpdate) => void,
-  ): void {
+  onOptimisticUpdate(handler: (optimisticUpdate: LightClientOptimisticUpdate) => void): void {
     this.network.on('ContentAdded', (_contentKey, contentType, content: Uint8Array) => {
       if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
         const forkhash = content.slice(0, 4)
@@ -273,7 +276,7 @@ export class UltralightTransport implements LightClientTransport {
       }
     })
   }
-  onFinalityUpdate(handler: (finalityUpdate: allForks.LightClientFinalityUpdate) => void): void {
+  onFinalityUpdate(handler: (finalityUpdate: LightClientFinalityUpdate) => void): void {
     this.network.on('ContentAdded', (_contentKey, contentType, content: Uint8Array) => {
       if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
         const forkhash = content.slice(0, 4)
