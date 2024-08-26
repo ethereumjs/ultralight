@@ -1,6 +1,11 @@
+import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
+import { bytesToHex } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
 import { decompressBeaconState, getEraIndexes, readEntry } from 'e2store'
 import { readFileSync } from 'fs'
+import { HistoricalSummariesBlockProof } from 'portalnetwork'
+
+import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
 
 const main = async () => {
   const data = new Uint8Array(readFileSync('./mainnet-01183-595cb34b.era'))
@@ -9,9 +14,8 @@ const main = async () => {
     data.slice(indices.stateSlotIndex.recordStart + indices.stateSlotIndex.slotOffsets[0]),
   )
   const state = await decompressBeaconState(stateEntry.data)
-  console.log(state.slot)
-  console.log()
-  const block = ssz.deneb.BeaconBlock.fromJson(res.message)
+  const blockIndexInBlockRoots = 0
+  const block = ssz.deneb.BeaconBlock.fromJson((await import('../block.json')).data.message)
   const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
     'body',
     'executionPayload',
@@ -23,24 +27,24 @@ const main = async () => {
     type: ProofType.single,
   }) as SingleProof
 
-  const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
-    'blockRoots',
-    merge_block_index,
+  const historicalRootsPath = ssz.capella.BeaconState.fields.blockRoots.getPathInfo([
+    blockIndexInBlockRoots,
   ])
-  console.log(
-    `Merge Block blockRoot: ${bytesToHex(ssz.bellatrix.BeaconBlock.value_toTree(block).root)} and found in era 574 historicalBatch ${equalsBytes(ssz.bellatrix.BeaconBlock.value_toTree(block).root, postMergeBatch.blockRoots[merge_block_index])}`,
-  )
-  const historicalRootsProof = createProof(ssz.phase0.HistoricalBatch.toView(postMergeBatch).node, {
-    gindex: historicalRootsPath.gindex,
-    type: ProofType.single,
-  }) as SingleProof
-  const headerProof = HistoricalRootsBlockProof.fromJson({
-    slot: merge_slot,
-    historicalRootsProof: historicalRootsProof.witnesses.map((witness) => bytesToHex(witness)),
-    beaconBlockHeaderProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
-    beaconBlockHeaderRoot: bytesToHex(ssz.bellatrix.BeaconBlock.value_toTree(block).root),
+
+  const historicalRootsProof = createProof(
+    ssz.capella.BeaconState.fields.blockRoots.toView(state.blockRoots).node,
+    {
+      gindex: historicalRootsPath.gindex,
+      type: ProofType.single,
+    },
+  ) as SingleProof
+  const headerProof = HistoricalSummariesBlockProof.fromJson({
+    slot: block.slot,
+    historicalSummariesProof: historicalRootsProof.witnesses.map((witness) => bytesToHex(witness)),
+    beaconBlockProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
+    beaconBlockRoot: bytesToHex(ssz.capella.BeaconBlock.value_toTree(block).root),
   })
-  console.log(HistoricalRootsBlockProof.toJson(headerProof))
+  console.log(HistoricalSummariesBlockProof.toJson(headerProof))
 }
 
 void main()
