@@ -7,3 +7,4 @@ lib
 targets.json
 capacitor.config.json
 coverage
+*.era
