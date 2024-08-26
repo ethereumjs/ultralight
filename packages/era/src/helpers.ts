@@ -1,4 +1,5 @@
 import { concatBytes, equalsBytes } from '@ethereumjs/util'
+import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
 import { UnsnappyStream } from 'snappystream'
 import { Duplex } from 'stream'
@@ -6,6 +7,7 @@ import { Duplex } from 'stream'
 import { EraTypes } from './types.js'
 
 import type { SlotIndex, e2StoreEntry } from './types.js'
+import type { BeaconState } from '@lodestar/types'
 
 /**
  * Reads the first e2Store formatted entry from a string of bytes
@@ -111,7 +113,10 @@ export const getEraIndexes = (
  */
 export const decompressBeaconState = async (
   compressedState: Uint8Array,
-): Promise<typeof ssz.deneb.BeaconState.fields> => {
+  startSlot: number,
+): Promise<BeaconState> => {
+  const forkConfig = createChainForkConfig({})
+  const fork = forkConfig.getForkName(startSlot)
   const unsnappy = new UnsnappyStream()
   const stream = new Duplex()
   const destroy = () => {
@@ -131,7 +136,7 @@ export const decompressBeaconState = async (
   const state = await new Promise((resolve, reject) => {
     unsnappy.on('data', (data: Uint8Array) => {
       try {
-        const state = ssz.deneb.BeaconState.deserialize(data)
+        const state = ssz[fork].BeaconState.deserialize(data)
         destroy()
         resolve(state)
         // eslint-disable-next-line
@@ -139,7 +144,7 @@ export const decompressBeaconState = async (
     })
     unsnappy.on('end', (data: any) => {
       try {
-        const state = ssz.deneb.BeaconState.deserialize(data)
+        const state = ssz[fork].BeaconState.deserialize(data)
         destroy()
         resolve(state)
       } catch (err: any) {
@@ -149,7 +154,7 @@ export const decompressBeaconState = async (
     })
     unsnappy.on('close', (data: any) => {
       try {
-        const state = ssz.deneb.BeaconState.deserialize(data)
+        const state = ssz[fork].BeaconState.deserialize(data)
         destroy()
         resolve(state)
       } catch (err: any) {
@@ -159,6 +164,5 @@ export const decompressBeaconState = async (
     })
     stream.pipe(unsnappy)
   })
-  // TODO: Figure out the correct typing for BeaconState.deserialize()
-  return state as any
+  return state as BeaconState
 }

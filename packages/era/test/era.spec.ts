@@ -44,7 +44,7 @@ describe('e2Store utilities', () => {
   })
 })
 
-describe.skip('era utilities', () => {
+describe('era utilities', () => {
   let data: Uint8Array
   beforeAll(() => {
     data = new Uint8Array(readFileSync(__dirname + '/mainnet-01183-595cb34b.era'))
@@ -80,7 +80,9 @@ describe.skip('era utilities', () => {
   })
 })
 
-describe('it should be able to extract beacon state from an era file', () => {
+// Download mainnet-01183-595cb34b.era from https://mainnet.era.nimbus.team/ and place
+// it in the era/test directory to run this test
+describe.skip('it should be able to extract beacon state from an era file', () => {
   let data
   beforeAll(() => {
     data = new Uint8Array(readFileSync(__dirname + '/mainnet-01183-595cb34b.era'))
@@ -92,7 +94,7 @@ describe('it should be able to extract beacon state from an era file', () => {
     )
     assert.deepEqual(stateEntry.type, EraTypes.CompressedBeaconState)
 
-    const state = await decompressBeaconState(stateEntry.data)
+    const state = await decompressBeaconState(stateEntry.data, indices.stateSlotIndex.startSlot)
     assert.equal(state.slot as any as Number, 9691136)
   }, 150000)
 })

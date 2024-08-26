@@ -13,7 +13,7 @@ const main = async () => {
   const stateEntry = readEntry(
     data.slice(indices.stateSlotIndex.recordStart + indices.stateSlotIndex.slotOffsets[0]),
   )
-  const state = await decompressBeaconState(stateEntry.data)
+  const state = await decompressBeaconState(stateEntry.data, indices.stateSlotIndex.startSlot)
   const blockIndexInBlockRoots = 0
   const block = ssz.deneb.BeaconBlock.fromJson((await import('../block.json')).data.message)
   const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
