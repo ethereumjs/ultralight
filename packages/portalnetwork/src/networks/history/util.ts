@@ -37,6 +37,7 @@ import type {
   UncleHeadersBytes,
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
+import type { ForkConfig } from '@lodestar/config'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -313,12 +314,14 @@ export const verifyPostCapellaHeaderProof = (
   }>,
   elBlockHash: Uint8Array,
   historicalSummaries: { blockSummaryRoot: Uint8Array; stateSummaryRoot: Uint8Array }[],
+  chainConfig: ForkConfig,
 ) => {
   const eraIndex = slotToHistoricalBatchIndex(proof.slot)
-  const historicalSummariesPath = ssz.capella.BeaconState.fields.blockRoots.getPathInfo([
+  const forkName = chainConfig.getForkName(Number(proof.slot))
+  const historicalSummariesPath = ssz[forkName].BeaconState.fields.blockRoots.getPathInfo([
     Number(eraIndex),
   ])
-  const reconstructedBatch = ssz.capella.BeaconState.fields.blockRoots.createFromProof({
+  const reconstructedBatch = ssz[forkName].BeaconState.fields.blockRoots.createFromProof({
     witnesses: proof.historicalSummariesProof,
     type: ProofType.single,
     gindex: historicalSummariesPath.gindex,
@@ -328,17 +331,17 @@ export const verifyPostCapellaHeaderProof = (
   if (
     !equalsBytes(
       reconstructedBatch.hashTreeRoot(),
-      historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - 757].blockSummaryRoot,
+      historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - 758].blockSummaryRoot,
     )
-  )
+  ) {
     return false
-
-  const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
+  }
+  const elBlockHashPath = ssz[forkName].BeaconBlock.getPathInfo([
     'body',
     'executionPayload',
     'blockHash',
   ])
-  const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
+  const reconstructedBlock = ssz[forkName].BeaconBlock.createFromProof({
     witnesses: proof.beaconBlockProof,
     type: ProofType.single,
     gindex: elBlockHashPath.gindex,

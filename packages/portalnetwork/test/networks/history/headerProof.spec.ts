@@ -2,6 +2,7 @@ import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
+import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
 import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
@@ -216,6 +217,7 @@ describe('Bellatrix - Capella header proof tests', () => {
 })
 
 describe('it should verify a post-Capella header proof', () => {
+  const forkConfig = createChainForkConfig({})
   let proof
   beforeAll(async () => {
     proof = await import('./testData/slot9682944Proof.json')
@@ -225,11 +227,9 @@ describe('it should verify a post-Capella header proof', () => {
     assert.equal(headerProof.slot, proof.slot)
   })
   it('should verify a post-capella header proof', async () => {
-    const historicalSummariesJson = await import(
-      './testData/historicalSummaries_at_slot_9814016.json'
-    )
+    const historicalSummariesJson = await import('./testData/Historical_Summaries_Era_1198.json')
 
-    const historicalSummaries = ssz.capella.BeaconState.fields.historicalSummaries.fromJson(
+    const historicalSummaries = ssz.deneb.BeaconState.fields.historicalSummaries.fromJson(
       historicalSummariesJson.default,
     )
 
@@ -239,6 +239,7 @@ describe('it should verify a post-Capella header proof', () => {
         headerProof,
         hexToBytes('0xb2044cada59c3479ed264454466610e84fa852547138ccc12a874e921779a983'),
         historicalSummaries,
+        forkConfig,
       ),
     )
   })

@@ -1,7 +1,7 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex } from '@ethereumjs/util'
 import { getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
-import { ssz } from '@lodestar/types'
+import { ssz, sszTypesFor } from '@lodestar/types'
 import { decompressBeaconState, getEraIndexes, readEntry } from 'e2store'
 import { readFileSync } from 'fs'
 import { HistoricalSummariesBlockProof } from 'portalnetwork'
@@ -20,34 +20,35 @@ const main = async () => {
   const blockIndexInBlockRoots = 0
   const blockJson = (await import('../block.json')).data.message
   const blockFork = forkConfig.getForkName(parseInt(blockJson.slot))
-  const block = ssz[blockFork].BeaconBlock.fromJson(blockJson)
-  const elBlockHashPath = ssz[blockFork].BeaconBlock.getPathInfo([
+  const block = sszTypesFor(blockFork).BeaconBlock.fromJson(blockJson)
+  const elBlockHashPath = sszTypesFor(blockFork).BeaconBlock.getPathInfo([
     'body',
     'executionPayload',
     'blockHash',
   ])
 
-  const beaconBlockProof = createProof(ssz[blockFork].BeaconBlock.toView(block).node, {
+  const beaconBlockProof = createProof(sszTypesFor(blockFork).BeaconBlock.toView(block).node, {
     gindex: elBlockHashPath.gindex,
     type: ProofType.single,
   }) as SingleProof
 
-  const historicalRootsPath = ssz[stateFork].BeaconState.fields.blockRoots.getPathInfo([
+  const blockRootsPath = ssz[stateFork].BeaconState.fields.blockRoots.getPathInfo([
     blockIndexInBlockRoots,
   ])
 
-  const historicalRootsProof = createProof(
+  const blockRootsProof = createProof(
     ssz[stateFork].BeaconState.fields.blockRoots.toView(state.blockRoots).node,
     {
-      gindex: historicalRootsPath.gindex,
+      gindex: blockRootsPath.gindex,
       type: ProofType.single,
     },
   ) as SingleProof
+
   const headerProof = HistoricalSummariesBlockProof.fromJson({
     slot: block.slot,
-    historicalSummariesProof: historicalRootsProof.witnesses.map((witness) => bytesToHex(witness)),
+    historicalSummariesProof: blockRootsProof.witnesses.map((witness) => bytesToHex(witness)),
     beaconBlockProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
-    beaconBlockRoot: bytesToHex(ssz[blockFork].BeaconBlock.toView(block).hashTreeRoot()),
+    beaconBlockRoot: bytesToHex(sszTypesFor(blockFork).BeaconBlock.toView(block).hashTreeRoot()),
   })
   console.log(HistoricalSummariesBlockProof.toJson(headerProof))
 }

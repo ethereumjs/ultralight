@@ -181,7 +181,7 @@ export const PostShanghaiBlockBody = new ContainerType({
 
 /** Post-merge pre-Capella block header proof types */
 export const SlotType = new UintBigintType(8)
-export const BeaconBlockProof = new VectorCompositeType(Bytes32Type, 11)
+export const BeaconBlockProof = new ListCompositeType(Bytes32Type, 12)
 export const HistoricalRootsProof = new VectorCompositeType(Bytes32Type, 14)
 
 export const HistoricalRootsBlockProof = new ContainerType({
