@@ -1,5 +1,6 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex } from '@ethereumjs/util'
+import { getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
 import { decompressBeaconState, getEraIndexes, readEntry } from 'e2store'
 import { readFileSync } from 'fs'
@@ -13,26 +14,30 @@ const main = async () => {
   const stateEntry = readEntry(
     data.slice(indices.stateSlotIndex.recordStart + indices.stateSlotIndex.slotOffsets[0]),
   )
+  const forkConfig = getChainForkConfigFromNetwork('mainnet')
+  const stateFork = forkConfig.getForkName(indices.stateSlotIndex.startSlot)
   const state = await decompressBeaconState(stateEntry.data, indices.stateSlotIndex.startSlot)
   const blockIndexInBlockRoots = 0
-  const block = ssz.deneb.BeaconBlock.fromJson((await import('../block.json')).data.message)
-  const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
+  const blockJson = (await import('../block.json')).data.message
+  const blockFork = forkConfig.getForkName(parseInt(blockJson.slot))
+  const block = ssz[blockFork].BeaconBlock.fromJson(blockJson)
+  const elBlockHashPath = ssz[blockFork].BeaconBlock.getPathInfo([
     'body',
     'executionPayload',
     'blockHash',
   ])
 
-  const beaconBlockProof = createProof(ssz.bellatrix.BeaconBlock.toView(block).node, {
+  const beaconBlockProof = createProof(ssz[blockFork].BeaconBlock.toView(block).node, {
     gindex: elBlockHashPath.gindex,
     type: ProofType.single,
   }) as SingleProof
 
-  const historicalRootsPath = ssz.capella.BeaconState.fields.blockRoots.getPathInfo([
+  const historicalRootsPath = ssz[stateFork].BeaconState.fields.blockRoots.getPathInfo([
     blockIndexInBlockRoots,
   ])
 
   const historicalRootsProof = createProof(
-    ssz.capella.BeaconState.fields.blockRoots.toView(state.blockRoots).node,
+    ssz[stateFork].BeaconState.fields.blockRoots.toView(state.blockRoots).node,
     {
       gindex: historicalRootsPath.gindex,
       type: ProofType.single,
@@ -42,7 +47,7 @@ const main = async () => {
     slot: block.slot,
     historicalSummariesProof: historicalRootsProof.witnesses.map((witness) => bytesToHex(witness)),
     beaconBlockProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
-    beaconBlockRoot: bytesToHex(ssz.capella.BeaconBlock.value_toTree(block).root),
+    beaconBlockRoot: bytesToHex(ssz[blockFork].BeaconBlock.toView(block).hashTreeRoot()),
   })
   console.log(HistoricalSummariesBlockProof.toJson(headerProof))
 }
