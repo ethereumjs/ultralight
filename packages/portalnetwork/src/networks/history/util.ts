@@ -11,6 +11,7 @@ import { historicalRoots } from './data/historicalRoots.js'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
+  CAPELLA_ERA,
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -26,6 +27,7 @@ import type { BlockBodyContent, Witnesses } from './types.js'
 import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type {
   ByteVectorType,
+  ListCompositeType,
   UintBigintType,
   ValueOfFields,
   VectorCompositeType,
@@ -307,7 +309,7 @@ export const verifyPreCapellaHeaderProof = (
 
 export const verifyPostCapellaHeaderProof = (
   proof: ValueOfFields<{
-    beaconBlockProof: VectorCompositeType<ByteVectorType>
+    beaconBlockProof: ListCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
     historicalSummariesProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
@@ -331,7 +333,9 @@ export const verifyPostCapellaHeaderProof = (
   if (
     !equalsBytes(
       reconstructedBatch.hashTreeRoot(),
-      historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - 758].blockSummaryRoot,
+      // The HistoricalSummaries array starts with era 758 so we have to subtract that from the actual
+      // era in which a slot occurs when retrieving the index in the Historical Summaries Array
+      historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - CAPELLA_ERA].blockSummaryRoot,
     )
   ) {
     return false
