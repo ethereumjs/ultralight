@@ -172,8 +172,7 @@ describe('API tests', async () => {
     const finalityUpdateJson = (
       await import('./testData/lightClientFinalityUpdate_slot_9583072.json')
     ).data
-    const finalizedHeader =
-      ssz.allForksLightClient.altair.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
+    const finalizedHeader = ssz.altair.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
     // stub out lightclient to return finalized header we want
     network.lightClient = {
       //@ts-ignore

@@ -11,6 +11,7 @@ import { historicalRoots } from './data/historicalRoots.js'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
+  CAPELLA_ERA,
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -26,6 +27,7 @@ import type { BlockBodyContent, Witnesses } from './types.js'
 import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type {
   ByteVectorType,
+  ListCompositeType,
   UintBigintType,
   ValueOfFields,
   VectorCompositeType,
@@ -37,6 +39,7 @@ import type {
   UncleHeadersBytes,
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
+import type { ForkConfig } from '@lodestar/config'
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
@@ -262,8 +265,8 @@ export const verifyPreMergeHeaderProof = (
 
 export const verifyPreCapellaHeaderProof = (
   proof: ValueOfFields<{
-    beaconBlockHeaderProof: VectorCompositeType<ByteVectorType>
-    beaconBlockHeaderRoot: ByteVectorType
+    beaconBlockProof: VectorCompositeType<ByteVectorType>
+    beaconBlockRoot: ByteVectorType
     historicalRootsProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
   }>,
@@ -278,7 +281,7 @@ export const verifyPreCapellaHeaderProof = (
     witnesses: proof.historicalRootsProof,
     type: ProofType.single,
     gindex: historicalRootsPath.gindex,
-    leaf: proof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+    leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
   })
   if (
     !equalsBytes(
@@ -294,13 +297,62 @@ export const verifyPreCapellaHeaderProof = (
     'blockHash',
   ])
   const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
-    witnesses: proof.beaconBlockHeaderProof,
+    witnesses: proof.beaconBlockProof,
     type: ProofType.single,
     gindex: elBlockHashPath.gindex,
     leaf: elBlockHash,
   })
 
-  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockHeaderRoot)) return false
+  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
+  return true
+}
+
+export const verifyPostCapellaHeaderProof = (
+  proof: ValueOfFields<{
+    beaconBlockProof: ListCompositeType<ByteVectorType>
+    beaconBlockRoot: ByteVectorType
+    historicalSummariesProof: VectorCompositeType<ByteVectorType>
+    slot: UintBigintType
+  }>,
+  elBlockHash: Uint8Array,
+  historicalSummaries: { blockSummaryRoot: Uint8Array; stateSummaryRoot: Uint8Array }[],
+  chainConfig: ForkConfig,
+) => {
+  const eraIndex = slotToHistoricalBatchIndex(proof.slot)
+  const forkName = chainConfig.getForkName(Number(proof.slot))
+  const historicalSummariesPath = ssz[forkName].BeaconState.fields.blockRoots.getPathInfo([
+    Number(eraIndex),
+  ])
+  const reconstructedBatch = ssz[forkName].BeaconState.fields.blockRoots.createFromProof({
+    witnesses: proof.historicalSummariesProof,
+    type: ProofType.single,
+    gindex: historicalSummariesPath.gindex,
+    leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
+  })
+
+  if (
+    !equalsBytes(
+      reconstructedBatch.hashTreeRoot(),
+      // The HistoricalSummaries array starts with era 758 so we have to subtract that from the actual
+      // era in which a slot occurs when retrieving the index in the Historical Summaries Array
+      historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - CAPELLA_ERA].blockSummaryRoot,
+    )
+  ) {
+    return false
+  }
+  const elBlockHashPath = ssz[forkName].BeaconBlock.getPathInfo([
+    'body',
+    'executionPayload',
+    'blockHash',
+  ])
+  const reconstructedBlock = ssz[forkName].BeaconBlock.createFromProof({
+    witnesses: proof.beaconBlockProof,
+    type: ProofType.single,
+    gindex: elBlockHashPath.gindex,
+    leaf: elBlockHash,
+  })
+
+  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
   return true
 }
 

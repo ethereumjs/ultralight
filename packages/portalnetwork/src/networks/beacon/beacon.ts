@@ -49,7 +49,7 @@ import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { Union } from '@chainsafe/ssz/lib/interface.js'
 import type { BeaconConfig } from '@lodestar/config'
-import type { LightClientUpdate } from '@lodestar/types/lib/allForks/types.js'
+import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
 
 export class BeaconLightClientNetwork extends BaseNetwork {
@@ -648,11 +648,12 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
           return
         } else {
+          // TODO: Make this future proof with forkConfig
           const reconstructedStateMerkleTree = ssz.capella.BeaconState.createFromProof({
             type: ProofType.single,
             gindex: ssz.capella.BeaconState.getPathInfo(['historicalSummaries']).gindex,
             witnesses: summaries.proof,
-            leaf: ssz.deneb.BeaconState.fields.historicalSummaries
+            leaf: ssz.capella.BeaconState.fields.historicalSummaries
               .toView(summaries.historicalSummaries)
               .hashTreeRoot(),
           })

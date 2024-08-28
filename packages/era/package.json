@@ -1,5 +1,5 @@
 {
-  "name": "@ultralight/era",
+  "name": "e2store",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
@@ -22,9 +22,10 @@
   "license": "MIT",
   "dependencies": {
     "@chainsafe/ssz": "^0.15.1",
-    "@lodestar/types": "^1.17.0",
-    "snappystream": "^2.1.1",
-    "@ethereumjs/util": "^9.0.3"
+    "@ethereumjs/util": "^9.0.3",
+    "@lodestar/config": "^1.21.0",
+    "@lodestar/types": "^1.21.0",
+    "snappystream": "^2.1.1"
   },
   "devDependencies": {
     "@vitest/ui": "^1.2.2",

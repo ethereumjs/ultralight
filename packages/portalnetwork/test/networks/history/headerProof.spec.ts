@@ -2,22 +2,25 @@ import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
+import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
 import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
 import { createRequire } from 'module'
 import { resolve } from 'path'
-import { assert, describe, it } from 'vitest'
+import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
   EpochAccumulator,
   HeaderRecordType,
   HistoricalEpochsType,
   HistoricalRootsBlockProof,
+  HistoricalSummariesBlockProof,
   blockNumberToGindex,
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
   slotToHistoricalBatchIndex,
+  verifyPostCapellaHeaderProof,
   verifyPreCapellaHeaderProof,
 } from '../../../src/index.js'
 import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
@@ -164,7 +167,7 @@ describe('Bellatrix - Capella header proof tests', () => {
       witnesses: postMergeProof.historicalRootsProof,
       type: ProofType.single,
       gindex: historicalRootsPath.gindex,
-      leaf: postMergeProof.beaconBlockHeaderRoot, // This should be the leaf value this proof is verifying
+      leaf: postMergeProof.beaconBlockRoot, // This should be the leaf value this proof is verifying
     })
     assert.deepEqual(
       reconstructedBatch.hashTreeRoot(),
@@ -180,13 +183,13 @@ describe('Bellatrix - Capella header proof tests', () => {
       '0x56a9bb0302da44b8c0b3df540781424684c3af04d0b7a38d72842b762076a664',
     )
     const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
-      witnesses: postMergeProof.beaconBlockHeaderProof,
+      witnesses: postMergeProof.beaconBlockProof,
       type: ProofType.single,
       gindex: elBlockHashPath.gindex,
       leaf: mergeBlockElBlockHash,
     })
 
-    assert.deepEqual(reconstructedBlock.hashTreeRoot(), postMergeProof.beaconBlockHeaderRoot)
+    assert.deepEqual(reconstructedBlock.hashTreeRoot(), postMergeProof.beaconBlockRoot)
   })
 
   it('should verify a fluffy proof', () => {
@@ -201,14 +204,43 @@ describe('Bellatrix - Capella header proof tests', () => {
       slot: string
     } = yaml.load(testString) as any
     const fluffyProof = HistoricalRootsBlockProof.fromJson({
-      beaconBlockHeaderProof: testVector.beacon_block_proof,
+      beaconBlockProof: testVector.beacon_block_proof,
       historicalRootsProof: testVector.historical_roots_proof,
       slot: testVector.slot,
-      beaconBlockHeaderRoot: testVector.beacon_block_root,
+      beaconBlockRoot: testVector.beacon_block_root,
       executionBlockHeader: testVector.execution_block_header,
     })
     assert.ok(
       verifyPreCapellaHeaderProof(fluffyProof, hexToBytes(testVector.execution_block_header)),
+    )
+  })
+})
+
+describe('it should verify a post-Capella header proof', () => {
+  const forkConfig = createChainForkConfig({})
+  let proof
+  beforeAll(async () => {
+    proof = await import('./testData/slot9682944Proof.json')
+  })
+  it('should instantiate a proof from json', () => {
+    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    assert.equal(headerProof.slot, proof.slot)
+  })
+  it('should verify a post-capella header proof', async () => {
+    const historicalSummariesJson = await import('./testData/Historical_Summaries_Era_1198.json')
+
+    const historicalSummaries = ssz.deneb.BeaconState.fields.historicalSummaries.fromJson(
+      historicalSummariesJson.default,
+    )
+
+    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    assert.ok(
+      verifyPostCapellaHeaderProof(
+        headerProof,
+        hexToBytes('0xb2044cada59c3479ed264454466610e84fa852547138ccc12a874e921779a983'),
+        historicalSummaries,
+        forkConfig,
+      ),
     )
   })
 })

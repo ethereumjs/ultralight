@@ -24,8 +24,8 @@ describe(`${method} tests`, () => {
       ),
     )
     const rangeHex = toHexString(
-      ssz.allForksLightClient.capella.LightClientUpdate.serialize(
-        ssz.allForksLightClient.capella.LightClientUpdate.fromJson(rangeJson.data),
+      ssz.capella.LightClientUpdate.serialize(
+        ssz.capella.LightClientUpdate.fromJson(rangeJson.data),
       ),
     )
     await rpc.request('portal_beaconStore', [rangeKey, rangeHex])

@@ -29,6 +29,8 @@ export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 export const MERGE_BLOCK = 15537393n
 export const SHANGHAI_BLOCK = 17034871n
 
+export const CAPELLA_ERA = 758 // The era/period in which the Capella fork happened on CL
+
 /* ----------------- Enums ----------- */
 export enum HistoryNetworkContentType {
   BlockHeader = 0,
@@ -181,12 +183,12 @@ export const PostShanghaiBlockBody = new ContainerType({
 
 /** Post-merge pre-Capella block header proof types */
 export const SlotType = new UintBigintType(8)
-export const BeaconBlockProof = new VectorCompositeType(Bytes32Type, 11)
+export const BeaconBlockProof = new ListCompositeType(Bytes32Type, 12)
 export const HistoricalRootsProof = new VectorCompositeType(Bytes32Type, 14)
 
 export const HistoricalRootsBlockProof = new ContainerType({
-  beaconBlockHeaderProof: BeaconBlockProof,
-  beaconBlockHeaderRoot: Bytes32Type,
+  beaconBlockProof: BeaconBlockProof,
+  beaconBlockRoot: Bytes32Type,
   historicalRootsProof: HistoricalRootsProof,
   slot: SlotType,
 })
@@ -195,7 +197,7 @@ export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 13)
 
 export const HistoricalSummariesBlockProof = new ContainerType({
   beaconBlockProof: BeaconBlockProof,
-  beceanBlockRoot: Bytes32Type,
+  beaconBlockRoot: Bytes32Type,
   historicalSummariesProof: HistoricalSummariesProof,
   slot: SlotType,
 })
