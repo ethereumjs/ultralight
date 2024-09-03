@@ -80,7 +80,7 @@ const args: ClientOpts = yargs(hideBin(process.argv))
   })
   .option('networks', {
     describe: 'subnetworks to enable',
-    array: true,
+    string: true,
     optional: true,
   })
   .option('storageHistory', {
@@ -151,8 +151,9 @@ const main = async () => {
     trustedBlockRoot: args.trustedBlockRoot,
   } as any
   let networks: NetworkConfig[] = []
-  if (args.networks) {
-    for (const network of args.networks) {
+  if (args.networks !== undefined) {
+    const active = args.networks.split(',')
+    for (const network of active) {
       let networkdb
       if (args.dataDir !== undefined) {
         networkdb = {
@@ -301,7 +302,7 @@ const main = async () => {
       },
     })
     server.http().listen(args.rpcPort, rpcAddr)
-
+    log(`Started Portal Client on Networks: ${networks.map((n) => n.networkId).join(', ')}`)
     log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
   }
 
