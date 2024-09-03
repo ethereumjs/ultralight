@@ -53,8 +53,8 @@ const args: any = yargs(hideBin(process.argv))
   })
   .option('networks', {
     describe: 'supported subnetworks',
-    array: true,
-    default: ['history', 'beacon', 'state'],
+    string: true,
+    default: 'history,beacon,state',
     optional: true,
   })
   .option('connectNodes', {
@@ -72,10 +72,10 @@ const args: any = yargs(hideBin(process.argv))
 const main = async () => {
   console.log(`starting ${args.numNodes} nodes`)
 
-  const networks =
-    args.networks !== false
-      ? (args.networks as Array<string>).map((network) => `--networks=${network}`)
-      : []
+  // const networks =
+  //   args.networks !== false
+  //     ? (args.networks as Array<string>).map((network) => `--networks=${network}`)
+  //     : []
   const cmd = 'hostname -I'
   const pubIp = execSync(cmd).toString().split(' ')
   const ip = '0.0.0.0'
@@ -95,7 +95,7 @@ const main = async () => {
           `--metrics=true`,
           `--metricsPort=${18545 + idx}`,
           `--bindAddress-${ip}:${args.port + idx}`,
-          ...networks,
+          `--networks=${args.networks}`,
         ],
         { stdio: ['pipe', 'pipe', process.stderr] },
       )
@@ -112,7 +112,7 @@ const main = async () => {
           `--metrics=true`,
           `--metricsPort=${18545 + x}`,
           `--bindAddress=${ip}:${args.port + x}`,
-          ...networks,
+          `--networks=${args.networks}`,
         ],
         { stdio: ['pipe', 'pipe', process.stderr] },
       )
