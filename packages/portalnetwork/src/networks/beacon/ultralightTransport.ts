@@ -1,3 +1,4 @@
+import { fromHexString } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 import { getCurrentSlot } from '@lodestar/light-client/utils'
@@ -261,7 +262,8 @@ export class UltralightTransport implements LightClientTransport {
   }
 
   onOptimisticUpdate(handler: (optimisticUpdate: LightClientOptimisticUpdate) => void): void {
-    this.network.on('ContentAdded', (_contentKey, contentType, content: Uint8Array) => {
+    this.network.on('ContentAdded', (_contentKey, content: Uint8Array) => {
+      const contentType = fromHexString(_contentKey)[0]
       if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
         const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
@@ -277,7 +279,8 @@ export class UltralightTransport implements LightClientTransport {
     })
   }
   onFinalityUpdate(handler: (finalityUpdate: LightClientFinalityUpdate) => void): void {
-    this.network.on('ContentAdded', (_contentKey, contentType, content: Uint8Array) => {
+    this.network.on('ContentAdded', (_contentKey, content: Uint8Array) => {
+      const contentType = fromHexString(_contentKey)[0]
       if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
         const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(

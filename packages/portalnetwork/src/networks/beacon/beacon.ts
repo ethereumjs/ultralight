@@ -449,7 +449,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             decoded = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
-              this.on('ContentAdded', (contentKey, contentType, value) => {
+              this.on('ContentAdded', (contentKey, value) => {
                 if (contentKey === toHexString(key)) {
                   resolve({ selector: 0, value })
                 }
@@ -692,7 +692,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     this.logger(
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
     )
-    this.emit('ContentAdded', contentKey, contentType, value)
+    this.emit('ContentAdded', contentKey, value)
   }
 
   /**

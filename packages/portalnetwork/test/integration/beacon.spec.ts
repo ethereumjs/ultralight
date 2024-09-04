@@ -21,6 +21,7 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
+  fromHexString,
   getBeaconContentKey,
   toHexString,
 } from '../../src/index.js'
@@ -350,7 +351,8 @@ describe('OFFER/ACCEPT tests', () => {
     )
 
     await new Promise((resolve) => {
-      network2.on('ContentAdded', (contentKey, contentType) => {
+      network2.on('ContentAdded', (contentKey) => {
+        const contentType = fromHexString(contentKey)[0]
         if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)
           // Update the light client stub to report the new "optimistic head"
           network2.lightClient = {

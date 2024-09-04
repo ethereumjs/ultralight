@@ -146,7 +146,7 @@ export class StateNetwork extends BaseNetwork {
         await this.stateDB.storeContent(_contentKey, content)
       }
       this.logger(`content added for: ${contentKey}`)
-      this.emit('ContentAdded', contentKey, contentType, content)
+      this.emit('ContentAdded', contentKey, content)
     } catch (err: any) {
       this.logger(`Error storing content: ${err.message}`)
     }
