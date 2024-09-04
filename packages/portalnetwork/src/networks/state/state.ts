@@ -160,14 +160,12 @@ export class StateNetwork extends BaseNetwork {
       contentKey: Uint8Array
       content: Uint8Array
     }
-    gossipCount: number
   }> {
     const { path } = AccountTrieNodeContentKey.decode(contentKey)
     const { blockHash, proof } = AccountTrieNodeOffer.deserialize(content)
     const forwardOffer = await this.forwardAccountTrieOffer(path, proof, blockHash)
     const interested = await this.storeInterestedNodes(path, proof)
-    const gossipCount = await this.gossipContent(forwardOffer.contentKey, forwardOffer.content)
-    return { stored: interested.interested.length, forwarded: forwardOffer, gossipCount }
+    return { stored: interested.interested.length, forwarded: forwardOffer }
   }
 
   async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {

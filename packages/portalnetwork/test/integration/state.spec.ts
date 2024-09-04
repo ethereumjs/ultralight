@@ -80,30 +80,17 @@ describe('AccountTrieNode Gossip / Request', async () => {
     )
   })
 
-  const result = await network1.receiveAccountTrieNodeOffer(contentKey, content)
+  const result1 = await network1.receiveAccountTrieNodeOffer(contentKey, content)
+  const result2 = await network2.receiveAccountTrieNodeOffer(contentKey, content)
   it('should store some content', async () => {
-    expect(result.stored).toBeGreaterThan(0)
-    expect(result.stored).toEqual(1)
+    expect(result1.stored).toBeGreaterThan(0)
+    expect(result1.stored).toEqual(1)
   })
-  it('should gossip some content', async () => {
-    expect(result.gossipCount).toEqual(1)
+  it('should store some content', async () => {
+    expect(result2.stored).toBeGreaterThan(0)
+    expect(result2.stored).toEqual(3)
   })
-  await new Promise((r) => setTimeout(r, 200))
-  const storedInNode1: Set<string> = new Set()
-  const storedInNode2: Set<string> = new Set()
-  for await (const key of network1.db.db.keys()) {
-    storedInNode1.add(key)
-  }
-  for await (const key of network2.db.db.keys()) {
-    storedInNode2.add(key)
-  }
 
-  it('should store some nodes in node1', async () => {
-    expect(storedInNode1.size).toEqual(1)
-  })
-  it('should store some nodes in node2', async () => {
-    expect(storedInNode2.size).toEqual(3)
-  })
   const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
   const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
   const requested = await network1.sendFindContent(node2.discv5.enr.nodeId, next.contentKey)
@@ -112,12 +99,6 @@ describe('AccountTrieNode Gossip / Request', async () => {
     expect(requested?.selector).toEqual(1)
     expect(requested?.value).instanceOf(Uint8Array)
     assert.deepEqual(requested!.value, expected, 'retrieved value is correct')
-  })
-  for await (const key of network2.db.db.keys()) {
-    storedInNode2.add(key)
-  }
-  it('should store some nodes in node2', async () => {
-    expect(storedInNode2.size).toEqual(3)
   })
 })
 
@@ -186,11 +167,13 @@ describe('getAccount via network', async () => {
     })
   }
   await new Promise((r) => setTimeout(r, 1000))
-  const result = await networks[0].receiveAccountTrieNodeOffer(contentKey, content)
+  await networks[0].receiveAccountTrieNodeOffer(contentKey, content)
+  await networks[1].receiveAccountTrieNodeOffer(contentKey, content)
+  await networks[2].receiveAccountTrieNodeOffer(contentKey, content)
+  await networks[3].receiveAccountTrieNodeOffer(contentKey, content)
+  await networks[4].receiveAccountTrieNodeOffer(contentKey, content)
+  await networks[5].receiveAccountTrieNodeOffer(contentKey, content)
   await new Promise((r) => setTimeout(r, 1000))
-  it('should gossip some content', () => {
-    expect(result.gossipCount).toEqual(3)
-  })
   const storedInNodes = await Promise.all(
     networks.map(async (network) => {
       const stored: Set<string> = new Set()
