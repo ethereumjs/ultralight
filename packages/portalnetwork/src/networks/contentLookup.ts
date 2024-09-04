@@ -1,11 +1,9 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import { hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
-
-import { getContentKey } from './history/util.js'
 
 import type { BaseNetwork } from './network.js'
 import type { NodeId } from '@chainsafe/enr'
@@ -117,12 +115,8 @@ export class ContentLookup {
         peer.hasContent = true
         return new Promise((resolve) => {
           let timeout: any = undefined
-          const utpDecoder = (contentKey: string, contentType: number, content: Uint8Array) => {
-            const _contentKey = getContentKey(contentType, fromHexString(contentKey))
-            if (
-              contentKey === toHexString(this.contentKey) ||
-              _contentKey === toHexString(this.contentKey)
-            ) {
+          const utpDecoder = (contentKey: string, content: Uint8Array) => {
+            if (contentKey === toHexString(this.contentKey)) {
               this.logger(`Received content for this contentKey: ${toHexString(this.contentKey)}`)
               this.network.removeListener('ContentAdded', utpDecoder)
               clearTimeout(timeout)
