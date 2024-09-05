@@ -107,7 +107,7 @@ export class StateNetwork extends BaseNetwork {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
             )
             try {
-              await this.store(toHexString(key), decoded.value as Uint8Array)
+              await this.stateDB.storeContent(key, decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
