@@ -197,7 +197,7 @@ describe('getAccount via network', async () => {
 
   const testAddress = '0x1a2694ec07cf5e4d68ba40f3e7a14c53f3038c6e'
   const stateRoot = trie['hash'](deserialized.proof[0])
-  const found = await testClient.getAccount(testAddress, stateRoot, false)
+  const found = await testClient.getAccount(testAddress, stateRoot, true)
   if (found === undefined) {
     it('failed', () => {
       assert.fail('failed to find account data')
@@ -211,7 +211,8 @@ describe('getAccount via network', async () => {
 
   const temp = [...testClient.stateDB.db.tempKeys()]
   const perm: string[] = await testClient.stateDB.keys()
-  it('should have all nodes in temp or permanent db', async () => {
+  console.log({ temp, perm })
+  it(`should have all ${uniqueStored.length} nodes in temp or permanent db`, async () => {
     expect(temp.length + perm.length).toEqual(uniqueStored.length)
     for (const key of temp) {
       expect(perm.includes(key)).toBeFalsy()
