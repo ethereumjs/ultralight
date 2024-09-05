@@ -26,11 +26,9 @@ import type {
   AcceptMessage,
   BeaconLightClientNetwork,
   HistoryNetwork,
-  HistoryNetworkContentType,
   NodesMessage,
   PortalNetwork,
   StateNetwork,
-  StateNetworkContentType,
 } from 'portalnetwork'
 
 const methods = [
@@ -660,19 +658,12 @@ export class portal {
               const timeout = setTimeout(() => {
                 resolve(Uint8Array.from([]))
               }, 10000)
-              this._history.on(
-                'ContentAdded',
-                (
-                  _contentKey: string,
-                  _contentType: HistoryNetworkContentType,
-                  value: Uint8Array,
-                ) => {
-                  if (_contentKey === contentKey) {
-                    clearTimeout(timeout)
-                    resolve(value)
-                  }
-                },
-              )
+              this._history.on('ContentAdded', (_contentKey: string, value: Uint8Array) => {
+                if (_contentKey === contentKey) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              })
             })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
     res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
@@ -714,15 +705,12 @@ export class portal {
               const timeout = setTimeout(() => {
                 resolve(Uint8Array.from([]))
               }, 2000)
-              this._state.on(
-                'ContentAdded',
-                (hash: string, _contentType: StateNetworkContentType, value: Uint8Array) => {
-                  if (hash === contentKey) {
-                    clearTimeout(timeout)
-                    resolve(value)
-                  }
-                },
-              )
+              this._state.on('ContentAdded', (hash: string, value: Uint8Array) => {
+                if (hash === contentKey) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              })
             })
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
     res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
