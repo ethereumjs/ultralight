@@ -23,13 +23,18 @@ import { NetworkId } from '../types.js'
 import { GossipManager } from './gossip.js'
 import {
   BlockHeaderWithProof,
-  EpochAccumulator,
+  BlockNumberKey,
   HistoryNetworkContentType,
   MERGE_BLOCK,
   SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
-import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
+import {
+  BlockHeaderByNumberKey,
+  getContentKey,
+  verifyPreCapellaHeaderProof,
+  verifyPreMergeHeaderProof,
+} from './util.js'
 
 import type { BaseNetworkConfig, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
@@ -71,11 +76,40 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns the bytes or Blockheader if found or else undefined
    */
   public getBlockHeaderFromDB = async (
-    blockHash: Uint8Array,
+    opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     asBytes = true,
   ): Promise<Uint8Array | BlockHeader | undefined> => {
-    const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
-    const value = await this.retrieve(contentKey)
+    let value: string | undefined
+    if ('blockHash' in opt) {
+      // Check for block header by hash
+      const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, opt.blockHash)
+      value = await this.retrieve(contentKey)
+      if (value === undefined) {
+        // Header not stored by hash, check block index for known block number
+        const blockNumber = (await this.blockIndex()).get(toHexString(opt.blockHash))
+        if (blockNumber !== undefined) {
+          // Block number known, look for header by number
+          const blockHeaderKey = BlockHeaderByNumberKey(BigInt(blockNumber))
+          value = await this.retrieve(toHexString(blockHeaderKey))
+        }
+      }
+    } else {
+      // Check for block header by number
+      const blockHeaderKey = BlockHeaderByNumberKey(opt.blockNumber)
+      value = await this.retrieve(toHexString(blockHeaderKey))
+      if (value === undefined) {
+        // Header not stored by number, check block index for known block hash
+        const blockHash = (await this.blockIndex()).get('0x' + opt.blockNumber.toString(16))
+        if (blockHash !== undefined) {
+          // Block hash known, look for header by hash
+          const contentKey = getContentKey(
+            HistoryNetworkContentType.BlockHeader,
+            fromHexString(blockHash),
+          )
+          value = await this.retrieve(contentKey)
+        }
+      }
+    }
     const header =
       value !== undefined
         ? BlockHeaderWithProof.deserialize(fromHexString(value)).header
@@ -101,21 +135,21 @@ export class HistoryNetwork extends BaseNetwork {
    * @throws if the block isn't found in the DB
    */
   public getBlockFromDB = async (
-    blockHash: Uint8Array,
+    opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     includeTransactions = true,
   ): Promise<Block> => {
-    const header = (await this.getBlockHeaderFromDB(blockHash)) as Uint8Array
+    const header = (await this.getBlockHeaderFromDB(opt)) as BlockHeader
     if (header === undefined) {
       throw new Error('Block not found')
     }
     let body
     if (includeTransactions) {
-      body = await this.getBlockBodyBytes(blockHash)
+      body = await this.getBlockBodyBytes(header.hash())
       if (!body) {
         throw new Error('Block body not found')
       }
     }
-    return reassembleBlock(header, body ?? undefined)
+    return reassembleBlock(header.serialize(), body ?? undefined)
   }
 
   public validateHeader = async (
@@ -300,7 +334,6 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public async addBlockBody(value: Uint8Array, hashKey: string, header?: Uint8Array) {
-    const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
@@ -310,7 +343,9 @@ export class HistoryNetwork extends BaseNetwork {
       if (header) {
         block = reassembleBlock(header, value)
       } else {
-        const headerBytes = (await this.getBlockHeaderFromDB(fromHexString(hashKey))) as Uint8Array
+        const headerBytes = (await this.getBlockHeaderFromDB({
+          blockHash: fromHexString(hashKey),
+        })) as Uint8Array
         // Verify we can construct a valid block from the header and body provided
         block = reassembleBlock(headerBytes!, value)
       }
