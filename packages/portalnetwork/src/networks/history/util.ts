@@ -11,6 +11,7 @@ import { historicalRoots } from './data/historicalRoots.js'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
+  BlockNumberKey,
   CAPELLA_ERA,
   EpochAccumulator,
   HistoryNetworkContentType,
@@ -40,6 +41,10 @@ import type {
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
+
+export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
+  return Uint8Array.from([0x03, ...BlockNumberKey.serialize({ blockNumber })])
+}
 
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
