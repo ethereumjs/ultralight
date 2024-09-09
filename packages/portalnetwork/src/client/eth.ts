@@ -89,6 +89,13 @@ export class ETH {
       this.history!.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
       this.history!.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
+        // Header not found by hash, try to find by number if known
+        const blockIndex = await this.history!.blockIndex()
+        const blockNumber = blockIndex.get(blockHash)
+        if (blockNumber !== undefined) {
+          const block = await this.getBlockByNumber(BigInt(blockNumber), includeTransactions)
+          return block
+        }
         return undefined
       } else {
         header = lookupResponse.content
