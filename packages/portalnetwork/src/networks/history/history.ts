@@ -60,6 +60,7 @@ export class HistoryNetwork extends BaseNetwork {
     const blockNumber = '0x' + number.toString(16)
     const blockindex = await this.blockIndex()
     blockindex.set(blockNumber, blockHash)
+    blockindex.set(blockHash, blockNumber)
     await this.setBlockIndex(blockindex)
   }
 
