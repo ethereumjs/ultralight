@@ -187,8 +187,7 @@ export class HistoryNetwork extends BaseNetwork {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
-        const contentKey = decodeHistoryNetworkContentKey(toHexString(key))
-        const contentHash = contentKey.blockHash
+        const contentKey = decodeHistoryNetworkContentKey(key)
         const contentType = contentKey.contentType
 
         switch (decoded.selector) {
@@ -208,7 +207,7 @@ export class HistoryNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             this.logger(
-              `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentHash}`,
+              `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
             )
             try {
               await this.store(toHexString(key), decoded.value as Uint8Array)

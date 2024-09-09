@@ -83,12 +83,33 @@ export const getContentId = (contentType: HistoryNetworkContentType, hash: strin
 
   return toHexString(digest(encodedKey))
 }
-export const decodeHistoryNetworkContentKey = (contentKey: string) => {
-  const contentType = parseInt(contentKey.slice(0, 4))
-  const blockHash = '0x' + contentKey.slice(4)
+export const decodeHistoryNetworkContentKey = (
+  contentKey: Uint8Array,
+):
+  | {
+      contentType:
+        | HistoryNetworkContentType.BlockHeader
+        | HistoryNetworkContentType.BlockBody
+        | HistoryNetworkContentType.Receipt
+        | HistoryNetworkContentType.HeaderProof
+      keyOpt: Uint8Array
+    }
+  | {
+      contentType: HistoryNetworkContentType.BlockHeaderByNumber
+      keyOpt: bigint
+    } => {
+  const contentType: HistoryNetworkContentType = contentKey[0]
+  if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
+    const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
+    return {
+      contentType,
+      keyOpt: blockNumber,
+    }
+  }
+  const blockHash = contentKey.slice(1)
   return {
     contentType,
-    blockHash,
+    keyOpt: blockHash,
   }
 }
 
