@@ -244,19 +244,20 @@ export class HistoryNetwork extends BaseNetwork {
   public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
     const _contentKey = fromHexString(contentKey)
     const contentType = _contentKey[0]
-    const hashKey = toHexString(_contentKey.slice(1))
+    const hashKey = _contentKey.slice(1)
     this.logger.extend('STORE')(`Storing ${contentKey} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
-          await this.validateHeader(value, hashKey)
+          await this.validateHeader(value, { blockHash: toHexString(hashKey) })
+          await this.put(contentKey, toHexString(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
         break
       }
       case HistoryNetworkContentType.BlockBody: {
-        await this.addBlockBody(value, hashKey)
+        await this.addBlockBody(value, toHexString(hashKey))
         break
       }
       case HistoryNetworkContentType.Receipt: {
@@ -269,14 +270,15 @@ export class HistoryNetwork extends BaseNetwork {
         }
         break
       }
-      case HistoryNetworkContentType.EpochAccumulator: {
+      case HistoryNetworkContentType.BlockHeaderByNumber: {
+        const { blockNumber } = BlockNumberKey.deserialize(hashKey)
         try {
-          EpochAccumulator.deserialize(value)
+          await this.validateHeader(value, { blockNumber })
           await this.put(contentKey, toHexString(value))
-        } catch (err: any) {
-          this.logger(`Received invalid bytes as Epoch Accumulator corresponding to ${hashKey}`)
-          return
+        } catch (err) {
+          this.logger(`Error validating header: ${(err as any).message}`)
         }
+        break
       }
     }
 
