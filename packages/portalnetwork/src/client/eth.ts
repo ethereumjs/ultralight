@@ -112,6 +112,28 @@ export class ETH {
     }
     return block
   }
+
+  getBlockByTag = async (
+    blockTag: 'latest' | 'finalized',
+    includeTransactions: boolean,
+  ): Promise<Block | undefined> => {
+    // Requires beacon light client to be running to get `latest` or `finalized` blocks
+    this.networkCheck([NetworkId.BeaconChainNetwork])
+    let clHeader
+    switch (blockTag) {
+      case 'latest': {
+        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('light client is not tracking head')
+        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+      }
+      case 'finalized': {
+        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('no finalized head available')
+        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+      }
+    }
+  }
+
   /**
    * Implements logic required for `eth_getBlockByNumber` JSON-RPC call
    * @param blockNumber number of block sought, `latest`, `finalized`
@@ -123,19 +145,8 @@ export class ETH {
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     this.networkCheck([NetworkId.HistoryNetwork])
-    let blockHash
     if (blockNumber === 'latest' || blockNumber === 'finalized') {
-      // Requires beacon light client to be running to get `latest` or `finalized` blocks
-      this.networkCheck([NetworkId.BeaconChainNetwork])
-      let clHeader
-      if (blockNumber === 'latest') {
-        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
-        if (clHeader === undefined) throw new Error('light client is not tracking head')
-        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
-      } else if (blockNumber === 'finalized') {
-        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
-        if (clHeader === undefined) throw new Error('no finalized head available')
-        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+      return this.getBlockByTag(blockNumber, includeTransactions)
       }
     }
 
