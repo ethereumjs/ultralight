@@ -1,4 +1,5 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
+import { toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
 
@@ -136,10 +137,7 @@ export class AccumulatorManager {
         ? EpochAccumulator.serialize(this.headerAccumulator.currentEpoch.slice(0, listIdx))
         : hexToBytes(
             await this._history.get(
-              getContentKey(
-                HistoryNetworkContentType.EpochAccumulator,
-                this.headerAccumulator.historicalEpochs[epochIdx - 1],
-              ),
+              toHexString(this.headerAccumulator.historicalEpochs[epochIdx - 1]),
             ),
           )
     const epochView = EpochAccumulator.deserializeToView(epoch)
