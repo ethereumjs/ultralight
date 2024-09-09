@@ -49,21 +49,28 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
  * @param contentKey an object containing the and `blockHash` used to generate the content Key
- * @param contentType a number identifying the type of content (block header, block body, receipt, epochAccumulator)
- * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
+ * @param contentType a number identifying the type of content (block header, block body, receipt, header_by_number)
+ * @param key the hash of the content represented (i.e. block hash for header, body, or receipt, or block number for header_by_number)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint8Array): string => {
+export const getContentKey = (
+  contentType: HistoryNetworkContentType,
+  key: Uint8Array | bigint,
+): string => {
   let encodedKey
-  const prefix = new Uint8Array(1).fill(contentType)
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeader:
     case HistoryNetworkContentType.BlockBody:
     case HistoryNetworkContentType.Receipt:
-    case HistoryNetworkContentType.HeaderProof:
-    case HistoryNetworkContentType.EpochAccumulator: {
-      if (hash === undefined) throw new Error('block hash is required to generate contentId')
-      encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
+    case HistoryNetworkContentType.HeaderProof: {
+      if (!(key instanceof Uint8Array))
+        throw new Error('block hash is required to generate contentId')
+      encodedKey = toHexString([contentType, ...key])
+      break
+    }
+    case HistoryNetworkContentType.BlockHeaderByNumber: {
+      if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
+      encodedKey = toHexString(BlockHeaderByNumberKey(key))
       break
     }
     default:
