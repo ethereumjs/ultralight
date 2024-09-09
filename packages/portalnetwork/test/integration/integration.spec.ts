@@ -93,22 +93,6 @@ describe('gossip test', async () => {
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
       'node1 added node2 to routing table',
     )
-    await network1.store(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-      hexToBytes(epoch25),
-    )
-    // await network2.store(
-    //   HistoryNetworkContentType.EpochAccumulator,
-    //   '0xf216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-    //   hexToBytes(epoch25)
-    // )
-    assert.equal(
-      await network1.retrieve(
-        '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-      ),
-      epoch25,
-      'epoch 25 added',
-    )
     for await (const [_idx, testBlock] of testBlocks.entries()) {
       const proof = await generatePreMergeHeaderProof(testBlock.header.number, hexToBytes(epoch25))
       assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
@@ -190,17 +174,6 @@ describe('gossip test', async () => {
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
-    await network1.store(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-      hexToBytes(epoch25),
-    )
-    assert.equal(
-      await network1.retrieve(
-        '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-      ),
-      epoch25,
-      'epoch 25 added',
-    )
     const witnesses = await generatePreMergeHeaderProof(
       BigInt(testBlockData[29].number),
       hexToBytes(epoch25),
@@ -274,17 +247,6 @@ describe('gossip test', async () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    await network1.store(
-      '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-      hexToBytes(epoch25),
-    )
-    assert.equal(
-      await network1.retrieve(
-        '0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70',
-      ),
-      epoch25,
-      'epoch 25 added',
-    )
     const witnesses = await generatePreMergeHeaderProof(
       BigInt(testBlockData[29].number),
       hexToBytes(epoch25),

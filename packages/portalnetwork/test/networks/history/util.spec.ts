@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
 import { KECCAK256_RLP, bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
@@ -28,7 +28,7 @@ describe('utility functions', () => {
   )
   it('contentId functions', () => {
     assert.equal(
-      getContentId(HistoryNetworkContentType.BlockHeader, block1Hash),
+      getContentId(HistoryNetworkContentType.BlockHeader, fromHexString(block1Hash)),
       serializedContentKeyToContentId(block1headerContentKey),
       'produced same content id',
     )
