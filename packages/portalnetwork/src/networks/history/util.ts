@@ -219,7 +219,7 @@ export const addRLPSerializedBlock = async (
       proof: { selector: 1, value: proof },
     })
     try {
-      await network.validateHeader(headerProof, blockHash)
+      await network.validateHeader(headerProof, { blockHash })
     } catch {
       network.logger('Header proof failed validation while loading block from RLP')
     }
