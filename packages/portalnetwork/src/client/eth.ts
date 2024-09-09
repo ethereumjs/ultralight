@@ -70,7 +70,7 @@ export class ETH {
       this.history!.logger.extend('getBlockByHash')(`Looking for ${blockHash} locally`)
       // Try to find block locally
       const block = await this.history!.getBlockFromDB(
-        fromHexString(blockHash),
+        { blockHash: fromHexString(blockHash) },
         includeTransactions,
       )
       return block
