@@ -181,6 +181,10 @@ export const PostShanghaiBlockBody = new ContainerType({
   allWithdrawals: AllWithdrawals,
 })
 
+export const BlockNumberKey = new ContainerType({
+  blockNumber: new UintBigintType(8),
+})
+
 /** Post-merge pre-Capella block header proof types */
 export const SlotType = new UintBigintType(8)
 export const BeaconBlockProof = new ListCompositeType(Bytes32Type, 12)
