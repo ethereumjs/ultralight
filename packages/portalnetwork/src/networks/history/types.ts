@@ -36,7 +36,7 @@ export enum HistoryNetworkContentType {
   BlockHeader = 0,
   BlockBody = 1,
   Receipt = 2,
-  EpochAccumulator = 3,
+  BlockHeaderByNumber = 3,
   HeaderProof = 4,
 }
 export enum HistoryNetworkRetrievalMechanism {
