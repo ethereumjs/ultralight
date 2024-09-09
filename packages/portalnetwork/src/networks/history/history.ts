@@ -117,7 +117,10 @@ export class HistoryNetwork extends BaseNetwork {
     return reassembleBlock(header, body ?? undefined)
   }
 
-  public validateHeader = async (value: Uint8Array, contentHash: string) => {
+  public validateHeader = async (
+    value: Uint8Array,
+    validation: { blockHash: string } | { blockNumber: bigint },
+  ) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
       setHardfork: true,
@@ -131,7 +134,15 @@ export class HistoryNetwork extends BaseNetwork {
       }
       if (Array.isArray(proof.value)) {
         try {
-          verifyPreMergeHeaderProof(proof.value, contentHash, header.number)
+          if ('blockHash' in validation) {
+            verifyPreMergeHeaderProof(proof.value, validation.blockHash, header.number)
+          } else {
+            verifyPreMergeHeaderProof(
+              proof.value,
+              toHexString(header.hash()),
+              validation.blockNumber,
+            )
+          }
         } catch {
           throw new Error('Received pre-merge block header with invalid proof')
         }
@@ -150,10 +161,6 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     await this.indexBlockhash(header.number, toHexString(header.hash()))
-    await this.put(
-      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
-      toHexString(value),
-    )
   }
 
   /**
