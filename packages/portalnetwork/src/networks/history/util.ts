@@ -78,11 +78,11 @@ export const getContentKey = (
   }
   return encodedKey
 }
-export const getContentId = (contentType: HistoryNetworkContentType, hash: string) => {
-  const encodedKey = hexToBytes(getContentKey(contentType, hexToBytes(hash)))
-
+export const getContentId = (contentType: HistoryNetworkContentType, key: Uint8Array | bigint) => {
+  const encodedKey = hexToBytes(getContentKey(contentType, key))
   return toHexString(digest(encodedKey))
 }
+
 export const decodeHistoryNetworkContentKey = (
   contentKey: Uint8Array,
 ):
