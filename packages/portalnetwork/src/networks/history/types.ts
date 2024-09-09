@@ -43,7 +43,7 @@ export enum HistoryNetworkRetrievalMechanism {
   BlockHeaderByHash = 0,
   BlockBodyByHash = 1,
   BlockReceiptsByHash = 3,
-  EpochAccumulatorByHash = 4,
+  BlockHeaderByNumber = 4,
 }
 
 /* ----------------- Interfaces ----------- */
