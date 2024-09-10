@@ -139,13 +139,6 @@ describe('store -- Block Bodies and Receipts', async () => {
       './test/networks/history/testData/0x03987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa.portalcontent',
       { encoding: 'hex' },
     )
-  // const epochHash = '0x987cb6206e5bae4b68ce0eeb6c05ae090d02b7331e47d1705a2a515ac88475aa'
-  // const epochKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, hexToBytes(epochHash))
-  // await network.store(epochKey, hexToBytes(epoch))
-  // const _epochHash = toHexString(epochRootByBlocknumber(207686n)!)
-  // it('Should store and retrieve a block body from DB', async () => {
-  //   assert.equal(epochHash, _epochHash, 'Epoch hash matches expected value')
-  // })
 
   const proof = await generatePreMergeHeaderProof(207686n, hexToBytes(epoch))
   const headerWithProof = BlockHeaderWithProof.serialize({
