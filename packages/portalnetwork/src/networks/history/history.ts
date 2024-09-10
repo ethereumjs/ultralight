@@ -78,7 +78,7 @@ export class HistoryNetwork extends BaseNetwork {
   public getBlockHeaderFromDB = async (
     opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     asBytes = true,
-  ): Promise<Uint8Array | BlockHeader | undefined> => {
+  ): Promise<undefined | (Uint8Array | BlockHeader)> => {
     let value: string | undefined
     if ('blockHash' in opt) {
       // Check for block header by hash
@@ -110,15 +110,11 @@ export class HistoryNetwork extends BaseNetwork {
         }
       }
     }
-    const header =
-      value !== undefined
-        ? BlockHeaderWithProof.deserialize(fromHexString(value)).header
-        : undefined
-    return header !== undefined
-      ? asBytes
-        ? header
-        : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
-      : undefined
+    if (value === undefined) return undefined
+    const header = BlockHeaderWithProof.deserialize(fromHexString(value)).header
+    return asBytes === true
+      ? header
+      : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
   }
 
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
@@ -138,13 +134,14 @@ export class HistoryNetwork extends BaseNetwork {
     opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     includeTransactions = true,
   ): Promise<Block> => {
-    const header = (await this.getBlockHeaderFromDB(opt)) as BlockHeader
+    let header = await this.getBlockHeaderFromDB(opt, false)
     if (header === undefined) {
       throw new Error('Block not found')
     }
+    header = header as BlockHeader
     let body
     if (includeTransactions) {
-      body = await this.getBlockBodyBytes(header.hash())
+      body = await this.getBlockBodyBytes(header.mixHash)
       if (!body) {
         throw new Error('Block body not found')
       }
