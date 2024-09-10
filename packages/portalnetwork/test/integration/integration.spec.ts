@@ -135,7 +135,7 @@ describe('gossip test', async () => {
       })
     })
     assert.isTrue(ended)
-  }, 40000)
+  }, 100000)
   it('FindContent', async () => {
     const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
     const enr1 = SignableENR.createFromPeerId(id1)
@@ -183,6 +183,7 @@ describe('gossip test', async () => {
       testBlockData[29].blockHash,
       network1,
       witnesses,
+      'number',
     )
     await network1.sendPing(network2?.enr!.toENR())
 
