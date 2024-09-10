@@ -207,15 +207,22 @@ export const addRLPSerializedBlock = async (
   blockHash: string,
   network: HistoryNetwork,
   witnesses: Witnesses,
+  storeBy: 'hash' | 'number' | 'closest' = 'closest',
 ) => {
   const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
   const headerHashKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-  const headerNumberKey = getContentKey(HistoryNetworkContentType.BlockHeader, block.header.number)
+  const headerNumberKey = getContentKey(
+    HistoryNetworkContentType.BlockHeaderByNumber,
+    block.header.number,
+  )
   const headerHashId = getContentId(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-  const headerNumberId = getContentId(HistoryNetworkContentType.BlockHeader, block.header.number)
+  const headerNumberId = getContentId(
+    HistoryNetworkContentType.BlockHeaderByNumber,
+    block.header.number,
+  )
   const closer: 'hash' | 'number' =
     distance(network.enr.nodeId, headerHashId) < distance(network.enr.nodeId, headerNumberId)
       ? 'hash'
@@ -232,9 +239,13 @@ export const addRLPSerializedBlock = async (
     } catch {
       network.logger('Header proof failed validation while loading block from RLP')
     }
-    closer === 'hash'
+    storeBy === 'hash'
       ? await network.store(headerHashKey, headerProof)
-      : await network.store(headerNumberKey, headerProof)
+      : storeBy === 'number'
+        ? await network.store(headerNumberKey, headerProof)
+        : closer === 'hash'
+          ? await network.store(headerHashKey, headerProof)
+          : await network.store(headerNumberKey, headerProof)
   } else {
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
@@ -242,9 +253,13 @@ export const addRLPSerializedBlock = async (
     })
     await network.indexBlockhash(header.number, toHexString(header.hash()))
 
-    closer === 'hash'
+    storeBy === 'hash'
       ? await network.store(headerHashKey, headerProof)
-      : await network.store(headerNumberKey, headerProof)
+      : storeBy === 'number'
+        ? await network.store(headerNumberKey, headerProof)
+        : closer === 'hash'
+          ? await network.store(headerHashKey, headerProof)
+          : await network.store(headerNumberKey, headerProof)
   }
   const sszBlock = sszEncodeBlockBody(block)
   await network.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())

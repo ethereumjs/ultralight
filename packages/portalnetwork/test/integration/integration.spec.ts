@@ -190,8 +190,8 @@ describe('gossip test', async () => {
       node1.discv5.enr.nodeId,
       hexToBytes(
         getContentKey(
-          HistoryNetworkContentType.BlockHeader,
-          hexToBytes(testBlockData[29].blockHash),
+          HistoryNetworkContentType.BlockHeaderByNumber,
+          BigInt(testBlockData[29].number),
         ),
       ),
     )
@@ -256,6 +256,7 @@ describe('gossip test', async () => {
       testBlockData[29].blockHash,
       network1,
       witnesses,
+      'hash',
     )
     await network1.sendPing(network2?.enr!.toENR())
 

@@ -86,8 +86,8 @@ export class ETH {
     try {
       let lookup = new ContentLookup(this.history!, headerContentKey)
       lookupResponse = await lookup.startLookup()
-      this.history!.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
-      this.history!.logger.extend('getBlockByHash')(lookupResponse)
+      this.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
+      this.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
         // Header not found by hash, try to find by number if known
         const blockIndex = await this.history!.blockIndex()
