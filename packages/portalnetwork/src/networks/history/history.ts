@@ -206,6 +206,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     await this.indexBlockhash(header.number, toHexString(header.hash()))
+    return header.hash()
   }
 
   /**
