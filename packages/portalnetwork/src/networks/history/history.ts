@@ -319,8 +319,10 @@ export class HistoryNetwork extends BaseNetwork {
       case HistoryNetworkContentType.BlockHeaderByNumber: {
         const { blockNumber } = BlockNumberKey.deserialize(hashKey)
         try {
-          await this.validateHeader(value, { blockNumber })
-          await this.put(contentKey, toHexString(value))
+          const blockHash = await this.validateHeader(value, { blockNumber })
+          // Store block header using 0x00 key type
+          const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
+          await this.put(hashKey, toHexString(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
