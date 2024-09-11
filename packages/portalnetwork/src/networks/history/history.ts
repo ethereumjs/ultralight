@@ -57,6 +57,19 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns content if available locally
    */
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
+    const contentType = contentKey[0]
+    if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
+      const blockNumber = decodeHistoryNetworkContentKey(contentKey).keyOpt.toString()
+      const index = await this.blockIndex()
+      const blockHash = index.get(blockNumber)
+      if (blockHash === undefined) {
+        return undefined
+      }
+      const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash))
+      const value = await this.retrieve(hashKey)
+      return value !== undefined ? hexToBytes(value) : undefined
+    }
+
     const value = await this.retrieve(toHexString(contentKey))
     return value !== undefined ? hexToBytes(value) : undefined
   }
