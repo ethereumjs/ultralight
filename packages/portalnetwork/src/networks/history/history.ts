@@ -54,7 +54,7 @@ export class HistoryNetwork extends BaseNetwork {
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     const contentType = contentKey[0]
     if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
-      const blockNumber = decodeHistoryNetworkContentKey(contentKey).keyOpt.toString()
+      const blockNumber = '0x' + decodeHistoryNetworkContentKey(contentKey).keyOpt.toString(16)
       const index = await this.blockIndex()
       const blockHash = index.get(blockNumber)
       if (blockHash === undefined) {

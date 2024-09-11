@@ -192,7 +192,7 @@ export class ETH {
     } else {
       // Header not found by number.  If block hash is known, search for header by hash
       const blockIndex = await this.history!.blockIndex()
-      const blockHash = blockIndex.get(blockNumber.toString())
+      const blockHash = blockIndex.get('0x' + blockNumber.toString(16))
       if (blockHash !== undefined) {
         return this.getBlockByHash(blockHash, includeTransactions)
       }
