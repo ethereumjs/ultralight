@@ -29,12 +29,7 @@ import {
   SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
-import {
-  BlockHeaderByNumberKey,
-  getContentKey,
-  verifyPreCapellaHeaderProof,
-  verifyPreMergeHeaderProof,
-} from './util.js'
+import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
 import type { BaseNetworkConfig, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
@@ -92,39 +87,13 @@ export class HistoryNetwork extends BaseNetwork {
     opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     asBytes = true,
   ): Promise<undefined | (Uint8Array | BlockHeader)> => {
-    let value: string | undefined
-    if ('blockHash' in opt) {
-      // Check for block header by hash
-      const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, opt.blockHash)
-      value = await this.retrieve(contentKey)
-      if (value === undefined) {
-        // Header not stored by hash, check block index for known block number
-        const blockNumber = (await this.blockIndex()).get(toHexString(opt.blockHash))
-        if (blockNumber !== undefined) {
-          // Block number known, look for header by number
-          const blockHeaderKey = BlockHeaderByNumberKey(BigInt(blockNumber))
-          value = await this.retrieve(toHexString(blockHeaderKey))
-        }
-      }
-    } else {
-      // Check for block header by number
-      const blockHeaderKey = BlockHeaderByNumberKey(opt.blockNumber)
-      value = await this.retrieve(toHexString(blockHeaderKey))
-      if (value === undefined) {
-        // Header not stored by number, check block index for known block hash
-        const blockHash = (await this.blockIndex()).get('0x' + opt.blockNumber.toString(16))
-        if (blockHash !== undefined) {
-          // Block hash known, look for header by hash
-          const contentKey = getContentKey(
-            HistoryNetworkContentType.BlockHeader,
-            fromHexString(blockHash),
-          )
-          value = await this.retrieve(contentKey)
-        }
-      }
-    }
+    const contentKey =
+      'blockHash' in opt
+        ? getContentKey(HistoryNetworkContentType.BlockHeader, opt.blockHash)
+        : getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, opt.blockNumber)
+    const value = await this.findContentLocally(fromHexString(contentKey))
     if (value === undefined) return undefined
-    const header = BlockHeaderWithProof.deserialize(fromHexString(value)).header
+    const header = BlockHeaderWithProof.deserialize(value).header
     return asBytes === true
       ? header
       : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
