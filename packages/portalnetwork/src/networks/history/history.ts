@@ -290,12 +290,12 @@ export class HistoryNetwork extends BaseNetwork {
   public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
     const _contentKey = fromHexString(contentKey)
     const contentType = _contentKey[0]
-    const hashKey = _contentKey.slice(1)
+    const keyOpt = _contentKey.slice(1)
     this.logger.extend('STORE')(`Storing ${contentKey} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
-          await this.validateHeader(value, { blockHash: toHexString(hashKey) })
+          await this.validateHeader(value, { blockHash: toHexString(keyOpt) })
           await this.put(contentKey, toHexString(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
@@ -303,7 +303,7 @@ export class HistoryNetwork extends BaseNetwork {
         break
       }
       case HistoryNetworkContentType.BlockBody: {
-        await this.addBlockBody(value, toHexString(hashKey))
+        await this.addBlockBody(value, toHexString(keyOpt))
         break
       }
       case HistoryNetworkContentType.Receipt: {
@@ -311,18 +311,19 @@ export class HistoryNetwork extends BaseNetwork {
           sszReceiptsListType.deserialize(value)
           await this.put(contentKey, toHexString(value))
         } catch (err: any) {
-          this.logger(`Received invalid bytes as receipt data for ${hashKey}`)
+          this.logger(`Received invalid bytes as receipt data for ${keyOpt}`)
           return
         }
         break
       }
       case HistoryNetworkContentType.BlockHeaderByNumber: {
-        const { blockNumber } = BlockNumberKey.deserialize(hashKey)
+        const { blockNumber } = BlockNumberKey.deserialize(keyOpt)
         try {
           const blockHash = await this.validateHeader(value, { blockNumber })
           // Store block header using 0x00 key type
           const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
           await this.put(hashKey, toHexString(value))
+          this.emit('ContentAdded', hashKey, value)
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
@@ -333,9 +334,9 @@ export class HistoryNetwork extends BaseNetwork {
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network (except header accumulators)
-      this.gossipManager.add(hashKey, contentType)
+      this.gossipManager.add(keyOpt, contentType)
     }
-    this.logger(`${HistoryNetworkContentType[contentType]} added for ${hashKey}`)
+    this.logger(`${HistoryNetworkContentType[contentType]} added for ${keyOpt}`)
   }
 
   public async saveReceipts(block: Block) {
