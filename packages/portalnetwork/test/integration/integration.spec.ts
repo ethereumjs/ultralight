@@ -182,7 +182,6 @@ describe('FindContent', async () => {
     testBlockData[29].blockHash,
     network1,
     witnesses,
-    'number',
   )
   await network1.sendPing(network2?.enr!.toENR())
 
@@ -258,7 +257,6 @@ describe('eth_getBlockByHash', async () => {
     testBlockData[29].blockHash,
     network1,
     witnesses,
-    'hash',
   )
   await network1.sendPing(network2?.enr!.toENR())
 

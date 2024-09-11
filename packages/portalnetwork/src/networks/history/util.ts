@@ -1,5 +1,4 @@
 import { digest } from '@chainsafe/as-sha256'
-import { distance } from '@chainsafe/discv5'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
@@ -207,27 +206,12 @@ export const addRLPSerializedBlock = async (
   blockHash: string,
   network: HistoryNetwork,
   witnesses: Witnesses,
-  storeBy: 'hash' | 'number' | 'closest' = 'closest',
 ) => {
   const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
-  const headerHashKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-  const headerNumberKey = getContentKey(
-    HistoryNetworkContentType.BlockHeaderByNumber,
-    block.header.number,
-  )
-  const headerHashId = getContentId(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-  const headerNumberId = getContentId(
-    HistoryNetworkContentType.BlockHeaderByNumber,
-    block.header.number,
-  )
-  const closer: 'hash' | 'number' =
-    distance(network.enr.nodeId, headerHashId) < distance(network.enr.nodeId, headerNumberId)
-      ? 'hash'
-      : 'number'
-
+  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
   if (header.number < MERGE_BLOCK) {
     const proof: Witnesses = witnesses
     const headerProof = BlockHeaderWithProof.serialize({
@@ -239,13 +223,7 @@ export const addRLPSerializedBlock = async (
     } catch {
       network.logger('Header proof failed validation while loading block from RLP')
     }
-    storeBy === 'hash'
-      ? await network.store(headerHashKey, headerProof)
-      : storeBy === 'number'
-        ? await network.store(headerNumberKey, headerProof)
-        : closer === 'hash'
-          ? await network.store(headerHashKey, headerProof)
-          : await network.store(headerNumberKey, headerProof)
+    await network.store(headerKey, headerProof)
   } else {
     const headerProof = BlockHeaderWithProof.serialize({
       header: header.serialize(),
@@ -253,13 +231,7 @@ export const addRLPSerializedBlock = async (
     })
     await network.indexBlockhash(header.number, toHexString(header.hash()))
 
-    storeBy === 'hash'
-      ? await network.store(headerHashKey, headerProof)
-      : storeBy === 'number'
-        ? await network.store(headerNumberKey, headerProof)
-        : closer === 'hash'
-          ? await network.store(headerHashKey, headerProof)
-          : await network.store(headerNumberKey, headerProof)
+    await network.store(headerKey, headerProof)
   }
   const sszBlock = sszEncodeBlockBody(block)
   await network.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())
