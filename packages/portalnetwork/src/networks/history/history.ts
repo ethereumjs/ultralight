@@ -324,6 +324,10 @@ export class HistoryNetwork extends BaseNetwork {
           const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
           await this.put(hashKey, toHexString(value))
           this.emit('ContentAdded', hashKey, value)
+          if (this.routingTable.values().length > 0) {
+            // Gossip new content to network
+            this.gossipManager.add(fromHexString(hashKey), contentType)
+          }
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
@@ -333,7 +337,7 @@ export class HistoryNetwork extends BaseNetwork {
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      // Gossip new content to network (except header accumulators)
+      // Gossip new content to network
       this.gossipManager.add(keyOpt, contentType)
     }
     this.logger(`${HistoryNetworkContentType[contentType]} added for ${keyOpt}`)
