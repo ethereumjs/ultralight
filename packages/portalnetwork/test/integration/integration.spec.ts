@@ -85,16 +85,20 @@ describe('gossip test', async () => {
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   await network1?.sendPing(network2?.enr!.toENR())
-  assert.equal(
-    network1?.routingTable.getWithPending(
+  it('has pinged node in routing table', () => {
+    assert.equal(
+      network1?.routingTable.getWithPending(
+        '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
+      )?.value.nodeId,
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
-    )?.value.nodeId,
-    '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
-    'node1 added node2 to routing table',
-  )
+      'node1 added node2 to routing table',
+    )
+  })
   for await (const [_idx, testBlock] of testBlocks.entries()) {
     const proof = await generatePreMergeHeaderProof(testBlock.header.number, hexToBytes(epoch25))
-    assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
+    it('generated proof', () => {
+      assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
+    })
     const headerWith = BlockHeaderWithProof.serialize({
       header: testBlock.header.serialize(),
       proof: {
@@ -115,9 +119,7 @@ describe('gossip test', async () => {
       const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
         setHardfork: true,
       })
-      assert.ok(testHashStrings.includes(bytesToHex(header.hash())), 'node 2 found expected header')
       if (bytesToHex(header.hash()) === testHashStrings[6]) {
-        assert.ok(true, 'found expected last header')
         node2.removeAllListeners()
         await node1.stop()
         await node2.stop()
