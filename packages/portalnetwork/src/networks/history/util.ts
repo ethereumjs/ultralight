@@ -43,7 +43,10 @@ import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
 
 export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
-  return Uint8Array.from([0x03, ...BlockNumberKey.serialize({ blockNumber })])
+  return Uint8Array.from([
+    HistoryNetworkContentType.BlockHeaderByNumber,
+    ...BlockNumberKey.serialize({ blockNumber }),
+  ])
 }
 
 /**
