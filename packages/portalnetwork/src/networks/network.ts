@@ -103,6 +103,17 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
+  public async blockNumberToHash(blockNumber: bigint): Promise<string | undefined> {
+    const blockIndex = await this.blockIndex()
+    return blockIndex.get('0x' + blockNumber.toString(16))
+  }
+
+  public async blockHashToNumber(blockHash: string): Promise<bigint | undefined> {
+    const blockIndex = await this.blockIndex()
+    const blockNumber = blockIndex.get(blockHash)
+    return blockNumber === undefined ? undefined : BigInt(blockNumber)
+  }
+
   public async put(contentKey: string, content: string) {
     await this.db.put(contentKey, content)
   }
