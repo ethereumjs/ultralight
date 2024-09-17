@@ -57,7 +57,6 @@ export abstract class BaseNetwork extends EventEmitter {
   public networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
-  public blockHashIndex: Map<string, string>
   handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
   sendMessage: (
     enr: ENR | string,
@@ -76,7 +75,6 @@ export abstract class BaseNetwork extends EventEmitter {
     this.sendResponse = client.sendPortalNetworkResponse.bind(client)
     this.findEnr = client.discv5.findEnr.bind(client.discv5)
     this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
-    this.blockHashIndex = new Map()
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
@@ -95,15 +93,6 @@ export abstract class BaseNetwork extends EventEmitter {
         this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
-  }
-
-  public blockNumberToHash(blockNumber: bigint): string | undefined {
-    return this.blockHashIndex.get('0x' + blockNumber.toString(16))
-  }
-
-  public blockHashToNumber(blockHash: string): bigint | undefined {
-    const blockNumber = this.blockHashIndex.get(blockHash)
-    return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
   public async put(contentKey: string, content: string) {
