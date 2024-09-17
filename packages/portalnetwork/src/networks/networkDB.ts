@@ -5,7 +5,7 @@ import debug from 'debug'
 import fs from 'fs'
 import { MemoryLevel } from 'memory-level'
 
-import { HistoryNetworkContentType, type NetworkId } from './index.js'
+import { type NetworkId } from './index.js'
 
 import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
@@ -165,7 +165,7 @@ export class NetworkDB {
           const blockHash = '0x' + key.slice(4)
           const blockNumber = blockIndex.get(blockHash)!
           const numberKey = Uint8Array.from([
-            HistoryNetworkContentType.BlockHeaderByNumber,
+            0x03,
             ...new ContainerType({ blockNumber: new UintBigintType(8) }).serialize({
               blockNumber: BigInt(blockNumber),
             }),
