@@ -24,7 +24,7 @@ it('Test provider functionality', async () => {
       enr,
       peerId,
     },
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
 
   const block = await provider.getBlock(5000)

@@ -220,7 +220,7 @@ describe('it should verify a post-Capella header proof', () => {
   const forkConfig = createChainForkConfig({})
   let proof
   beforeAll(async () => {
-    proof = await import('./testData/slot9682944Proof.json')
+    proof = (await import('./testData/slot9682944Proof.json')).default
   })
   it('should instantiate a proof from json', () => {
     const headerProof = HistoricalSummariesBlockProof.fromJson(proof)

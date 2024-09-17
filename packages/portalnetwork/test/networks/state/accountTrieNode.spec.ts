@@ -59,7 +59,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   }
   const client = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
-    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius: BigInt(2 ** config.r) }],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {
       enr: config.enr,
       peerId: config.peerId,

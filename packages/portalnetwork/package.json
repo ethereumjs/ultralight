@@ -13,6 +13,7 @@
     "docs": "typedoc src/index.ts",
     "test": "npx vitest run test/* -c=./vitest.config.unit.ts",
     "test:integration": "npx vitest run ./test/integration/*.spec.ts -c=./vitest.config.integration.ts",
+    "typecheck": "tsc -p ./tsconfig.types.json",
     "coverage": "c8 npm run test",
     "coverage:all": "c8 npm run test:all",
     "lint": "../../config/cli/lint.sh",

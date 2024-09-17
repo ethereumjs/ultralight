@@ -224,9 +224,9 @@ describe('Storage Trie Node', async () => {
   ) as any
   it('serializes a content value', () => {
     const serialized = StorageTrieNodeOffer.serialize({
-      accountProof: storageTrieNodeData.account_proof.map((x) => fromHexString(x)),
+      accountProof: storageTrieNodeData.account_proof.map((x: string) => fromHexString(x)),
       blockHash: fromHexString(storageTrieNodeData.block_hash),
-      storageProof: storageTrieNodeData.storage_proof.map((x) => fromHexString(x)),
+      storageProof: storageTrieNodeData.storage_proof.map((x: string) => fromHexString(x)),
     })
     assert.equal(storageTrieNodeData.content_value, toHexString(serialized))
   })

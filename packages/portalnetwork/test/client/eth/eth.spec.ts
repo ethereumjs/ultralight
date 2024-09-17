@@ -10,8 +10,8 @@ describe('ETH class base level API checks', async () => {
   const ultralight = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
     supportedNetworks: [
-      { networkId: NetworkId.HistoryNetwork, radius: 1n },
-      { networkId: NetworkId.StateNetwork, radius: 1n },
+      { networkId: NetworkId.HistoryNetwork },
+      { networkId: NetworkId.StateNetwork },
     ],
   })
   const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
