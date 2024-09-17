@@ -295,7 +295,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         const storedRadius = await network.db.db.get('radius')
         await network.setRadius(BigInt(storedRadius))
       } catch {
-        continue
+        // No action
       }
       await network.prune()
       // Start kbucket refresh on 30 second interval
