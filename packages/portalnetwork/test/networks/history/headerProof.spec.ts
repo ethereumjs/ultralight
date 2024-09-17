@@ -218,9 +218,9 @@ describe('Bellatrix - Capella header proof tests', () => {
 
 describe('it should verify a post-Capella header proof', () => {
   const forkConfig = createChainForkConfig({})
-  let proof
+  let proof: any
   beforeAll(async () => {
-    proof = (await import('./testData/slot9682944Proof.json')).default
+    proof = await import('./testData/slot9682944Proof.json')
   })
   it('should instantiate a proof from json', () => {
     const headerProof = HistoricalSummariesBlockProof.fromJson(proof)

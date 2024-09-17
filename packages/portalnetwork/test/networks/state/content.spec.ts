@@ -157,7 +157,9 @@ describe('Contract ByteCode', async () => {
   ) as any
   it('serializes a content value', () => {
     const serialized = ContractCodeOffer.serialize({
-      accountProof: contractByteCodeWithProofData.account_proof.map((x) => fromHexString(x)),
+      accountProof: contractByteCodeWithProofData.account_proof.map((x: string) =>
+        fromHexString(x),
+      ),
       blockHash: fromHexString(contractByteCodeWithProofData.block_hash),
       code: fromHexString(contractByteCodeWithProofData.bytecode),
     })
@@ -199,7 +201,7 @@ describe('Storage Trie Node', async () => {
     const contentKey = StorageTrieNodeContentKey.encode({
       addressHash,
       nodeHash: fromHexString(storageTrieNodeKeyData.node_hash),
-      path: packNibbles(storageTrieNodeKeyData.path.map((x) => x.toString(16))),
+      path: packNibbles(storageTrieNodeKeyData.path.map((x: number) => x.toString(16))),
     })
     assert.equal(storageTrieNodeKeyData.content_key, toHexString(contentKey))
   })
@@ -207,7 +209,7 @@ describe('Storage Trie Node', async () => {
     const contentId = StateNetworkContentId.fromKeyObj({
       addressHash: keccak256(fromHexString(storageTrieNodeKeyData.address)),
       nodeHash: fromHexString(storageTrieNodeKeyData.node_hash),
-      path: packNibbles(storageTrieNodeKeyData.path.map((x) => x.toString(16))),
+      path: packNibbles(storageTrieNodeKeyData.path.map((x: number) => x.toString(16))),
     })
     assert.equal(storageTrieNodeKeyData.content_id, toHexString(contentId))
   })

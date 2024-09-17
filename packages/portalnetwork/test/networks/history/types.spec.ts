@@ -284,8 +284,12 @@ describe('Header With Proof serialization/deserialization tests', async () => {
       'stored epoch hash matches valid epoch',
     )
   })
-  const total_difficulty = new UintBigintType(32).deserialize(headerWithProof.proof.value![0])
-  const total_difficulty2 = new UintBigintType(32).deserialize(headerWithProof2.proof.value![0])
+  const total_difficulty = new UintBigintType(32).deserialize(
+    (headerWithProof.proof.value! as Uint8Array[])[0],
+  )
+  const total_difficulty2 = new UintBigintType(32).deserialize(
+    (headerWithProof2.proof.value! as Uint8Array[])[0],
+  )
   it('should calculate total difficulty', () => {
     assert.equal(
       total_difficulty2 - total_difficulty,
