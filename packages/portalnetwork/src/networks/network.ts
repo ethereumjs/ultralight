@@ -59,24 +59,11 @@ export abstract class BaseNetwork extends EventEmitter {
   public enr: SignableENR
   public blockIndex: () => Promise<Map<string, string>>
   public setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
-  handleNewRequest: (request: INewRequest) => Promise<ContentRequest>
-  sendMessage: (
-    enr: ENR | string,
-    payload: Uint8Array,
-    networkId: NetworkId,
-    utpMessage?: boolean,
-  ) => Promise<Uint8Array>
-  sendResponse: (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
-  findEnr: (nodeId: string) => ENR | undefined
   portal: PortalNetwork
   constructor({ client, networkId, db, radius, maxStorage }: BaseNetworkConfig) {
     super()
     this.networkId = networkId
     this.logger = client.logger.extend(this.constructor.name)
-    this.sendMessage = client.sendPortalNetworkMessage.bind(client)
-    this.sendResponse = client.sendPortalNetworkResponse.bind(client)
-    this.findEnr = client.discv5.findEnr.bind(client.discv5)
-    this.handleNewRequest = client.uTP.handleNewRequest.bind(client.uTP)
     this.blockIndex = () => {
       return client.db.getBlockIndex()
     }
@@ -101,6 +88,24 @@ export abstract class BaseNetwork extends EventEmitter {
         this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
+  }
+
+  async handleNewRequest(request: INewRequest): Promise<ContentRequest> {
+    return this.portal.uTP.handleNewRequest(request)
+  }
+  async sendMessage(
+    enr: ENR | string,
+    payload: Uint8Array,
+    networkId: NetworkId,
+    utpMessage?: boolean,
+  ): Promise<Uint8Array> {
+    return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
+  }
+  sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
+    return this.portal.sendPortalNetworkResponse(src, requestId, payload)
+  }
+  findEnr(nodeId: string): ENR | undefined {
+    return this.portal.discv5.findEnr(nodeId)
   }
 
   public async blockNumberToHash(blockNumber: bigint): Promise<string | undefined> {
