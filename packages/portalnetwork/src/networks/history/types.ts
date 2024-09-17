@@ -36,14 +36,14 @@ export enum HistoryNetworkContentType {
   BlockHeader = 0,
   BlockBody = 1,
   Receipt = 2,
-  EpochAccumulator = 3,
+  BlockHeaderByNumber = 3,
   HeaderProof = 4,
 }
 export enum HistoryNetworkRetrievalMechanism {
   BlockHeaderByHash = 0,
   BlockBodyByHash = 1,
   BlockReceiptsByHash = 3,
-  EpochAccumulatorByHash = 4,
+  BlockHeaderByNumber = 4,
 }
 
 /* ----------------- Interfaces ----------- */
@@ -179,6 +179,10 @@ export const PostShanghaiBlockBody = new ContainerType({
   allTransactions: allTransactionsType,
   sszUncles: sszUnclesType,
   allWithdrawals: AllWithdrawals,
+})
+
+export const BlockNumberKey = new ContainerType({
+  blockNumber: new UintBigintType(8),
 })
 
 /** Post-merge pre-Capella block header proof types */

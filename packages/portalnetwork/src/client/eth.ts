@@ -1,15 +1,15 @@
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { EVM } from '@ethereumjs/evm'
 import { Address, TypeOutput, bytesToHex, hexToBytes, toType } from '@ethereumjs/util'
+import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {
+  BlockHeaderByNumberKey,
   BlockHeaderWithProof,
   ContentLookup,
-  EpochAccumulator,
   HistoryNetworkContentType,
   NetworkId,
   UltralightStateManager,
-  epochRootByBlocknumber,
   getContentKey,
   reassembleBlock,
 } from '../networks/index.js'
@@ -37,7 +37,7 @@ export class ETH {
     this.history = portal.network()['0x500b']
     this.state = portal.network()['0x500a']
     this.beacon = portal.network()['0x500c']
-    this.logger = portal.logger.extend(`ETH_GETBLOCKBYNUMBER`)
+    this.logger = portal.logger.extend(`ETH`)
   }
 
   /**
@@ -70,7 +70,7 @@ export class ETH {
       this.history!.logger.extend('getBlockByHash')(`Looking for ${blockHash} locally`)
       // Try to find block locally
       const block = await this.history!.getBlockFromDB(
-        fromHexString(blockHash),
+        { blockHash: fromHexString(blockHash) },
         includeTransactions,
       )
       return block
@@ -86,9 +86,16 @@ export class ETH {
     try {
       let lookup = new ContentLookup(this.history!, headerContentKey)
       lookupResponse = await lookup.startLookup()
-      this.history!.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
-      this.history!.logger.extend('getBlockByHash')(lookupResponse)
+      this.logger.extend('getBlockByHash')(`Looking for ${blockHash} on the network`)
+      this.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
+        // Header not found by hash, try to find by number if known
+        const blockIndex = await this.history!.blockIndex()
+        const blockNumber = blockIndex.get(blockHash)
+        if (blockNumber !== undefined) {
+          const block = await this.getBlockByNumber(BigInt(blockNumber), includeTransactions)
+          return block
+        }
         return undefined
       } else {
         header = lookupResponse.content
@@ -112,6 +119,28 @@ export class ETH {
     }
     return block
   }
+
+  getBlockByTag = async (
+    blockTag: 'latest' | 'finalized',
+    includeTransactions: boolean,
+  ): Promise<Block | undefined> => {
+    // Requires beacon light client to be running to get `latest` or `finalized` blocks
+    this.networkCheck([NetworkId.BeaconChainNetwork])
+    let clHeader
+    switch (blockTag) {
+      case 'latest': {
+        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('light client is not tracking head')
+        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+      }
+      case 'finalized': {
+        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
+        if (clHeader === undefined) throw new Error('no finalized head available')
+        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+      }
+    }
+  }
+
   /**
    * Implements logic required for `eth_getBlockByNumber` JSON-RPC call
    * @param blockNumber number of block sought, `latest`, `finalized`
@@ -123,56 +152,49 @@ export class ETH {
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     this.networkCheck([NetworkId.HistoryNetwork])
-    let blockHash
     if (blockNumber === 'latest' || blockNumber === 'finalized') {
-      // Requires beacon light client to be running to get `latest` or `finalized` blocks
-      this.networkCheck([NetworkId.BeaconChainNetwork])
-      let clHeader
-      if (blockNumber === 'latest') {
-        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
-        if (clHeader === undefined) throw new Error('light client is not tracking head')
-        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
-      } else if (blockNumber === 'finalized') {
-        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
-        if (clHeader === undefined) throw new Error('no finalized head available')
-        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
-      }
+      return this.getBlockByTag(blockNumber, includeTransactions)
     }
 
-    blockHash = (await this.history!.blockIndex()).get('0x' + blockNumber.toString(16))
-    if (blockHash === undefined) {
-      this.logger(`Block ${blockNumber} not in local index`)
-      const epochRootHash = epochRootByBlocknumber(BigInt(blockNumber))
-      if (!epochRootHash) {
-        // Requested block number is greater than merge block
-        // TODO: Build logic for retrieving post-merge blocks by number
-        this.logger(`Block ${blockNumber} is post-merge block.  Cannot retrieve by number`)
-        return undefined
-      }
-      this.logger(
-        `Retrieving Epoch Accumulator ${bytesToHex(epochRootHash)} that contains blockhash for block ${blockNumber}`,
+    // Try to find block locally
+    try {
+      const block = await this.history!.getBlockFromDB(
+        { blockNumber: BigInt(blockNumber) },
+        includeTransactions,
       )
-      const lookupKey = getContentKey(HistoryNetworkContentType.EpochAccumulator, epochRootHash)
-      const epoch_lookup = new ContentLookup(this.history!, fromHexString(lookupKey))
-      const result = await epoch_lookup.startLookup()
-
-      if (result && 'content' in result) {
-        this.logger(`Found EpochAccumulator with header record for block ${blockNumber}`)
-        const epoch = EpochAccumulator.deserialize(result.content)
-        blockHash = toHexString(epoch[Number(blockNumber) % 8192].blockHash)
-        this.logger(`Block ${blockNumber} corresponds to Blockhash ${blockHash}`)
-      }
-    }
-    if (blockHash === undefined) {
-      // This should never happen
-      return undefined
-    }
-    const block = await this.getBlockByHash(blockHash, includeTransactions)
-    if (block?.header.number === BigInt(blockNumber)) {
       return block
+    } catch {
+      this.logger(`Block ${blockNumber} not found locally - looking on the network`)
+    }
+
+    // Try to find header on the network via block number
+    let header: Uint8Array | undefined
+
+    const headerNumberContentKey = BlockHeaderByNumberKey(BigInt(blockNumber))
+    const lookup = new ContentLookup(this.history!, headerNumberContentKey)
+    const lookupResponse = await lookup.startLookup()
+
+    if (lookupResponse && 'content' in lookupResponse) {
+      // Header found by number.  Now get the body via hash
+      header = BlockHeaderWithProof.deserialize(lookupResponse.content).header
+      const hash = keccak256(header)
+      const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hash)
+      const bodyLookup = new ContentLookup(this.history!, fromHexString(bodyContentKey))
+      const bodyLookupResponse = await bodyLookup.startLookup()
+      if (bodyLookupResponse && 'content' in bodyLookupResponse) {
+        // Body found by hash.  Reassemble block
+        const body = bodyLookupResponse.content
+        return reassembleBlock(header, body)
+      } else {
+        // Body not found by hash.  Reassemble block without body
+        return reassembleBlock(header)
+      }
     } else {
-      this.logger(`Block ${blockNumber} not found`)
-      return undefined
+      // Header not found by number.  If block hash is known, search for header by hash
+      const blockHash = await this.history!.blockNumberToHash(BigInt(blockNumber))
+      if (blockHash !== undefined) {
+        return this.getBlockByHash(blockHash, includeTransactions)
+      }
     }
   }
 

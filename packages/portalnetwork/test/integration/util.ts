@@ -48,7 +48,7 @@ export const getClients = async (port: number) => {
       enr.setLocationMultiaddr(initMa)
       const node = await PortalNetwork.create({
         transport: TransportLayer.NODE,
-        supportedNetworks: [NetworkId.StateNetwork],
+        supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
         config: {
           enr,
           bindAddrs: {
@@ -56,7 +56,6 @@ export const getClients = async (port: number) => {
           },
           peerId,
         },
-        radius: 2n ** 255n,
       })
       await node.start()
       return node

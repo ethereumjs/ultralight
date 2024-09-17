@@ -12,6 +12,7 @@ import {
   EpochAccumulator,
   HistoricalHashesAccumulator,
   decodeHistoryNetworkContentKey,
+  fromHexString,
 } from '../../../src/index.js'
 
 describe('Accumulator spec tests', () => {
@@ -50,7 +51,7 @@ describe('block body tests', () => {
         },
       ),
     ) as any
-    const key = decodeHistoryNetworkContentKey(testVector.content_key)
+    const key = decodeHistoryNetworkContentKey(fromHexString(testVector.content_key))
     assert.equal(key.contentType, 1)
     const body = BlockBodyContentType.deserialize(hexToBytes(testVector.content_value))
     const tx0Hash = bytesToHex(

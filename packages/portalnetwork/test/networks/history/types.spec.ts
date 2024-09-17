@@ -1,5 +1,5 @@
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { ContainerType, UintBigintType, toHexString } from '@chainsafe/ssz'
+import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
@@ -30,7 +30,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     let encodedKey = ContentKeyType.serialize(
       concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockHeader]), hexToBytes(blockHash)),
     )
-    let contentId = getContentId(HistoryNetworkContentType.BlockHeader, blockHash)
+    let contentId = getContentId(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash))
     assert.equal(
       toHexString(encodedKey),
       '0x00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -45,7 +45,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     encodedKey = ContentKeyType.serialize(
       concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockBody]), hexToBytes(blockHash)),
     )
-    contentId = getContentId(HistoryNetworkContentType.BlockBody, blockHash)
+    contentId = getContentId(HistoryNetworkContentType.BlockBody, fromHexString(blockHash))
     assert.equal(
       toHexString(encodedKey),
       '0x01d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -60,7 +60,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     encodedKey = ContentKeyType.serialize(
       concatBytes(Uint8Array.from([HistoryNetworkContentType.Receipt]), hexToBytes(blockHash)),
     )
-    contentId = getContentId(HistoryNetworkContentType.Receipt, blockHash)
+    contentId = getContentId(HistoryNetworkContentType.Receipt, fromHexString(blockHash))
     assert.equal(
       toHexString(encodedKey),
       '0x02d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
@@ -300,6 +300,10 @@ describe('Header With Proof serialization/deserialization tests', async () => {
       'deserialized header number matches test vector',
     )
     assert.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
-    assert.ok(history.validateHeader(serializedBlock1, toHexString(deserializedHeader.hash())))
+    assert.ok(
+      history.validateHeader(serializedBlock1, {
+        blockHash: toHexString(deserializedHeader.hash()),
+      }),
+    )
   })
 })

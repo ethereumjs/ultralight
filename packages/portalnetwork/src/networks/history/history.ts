@@ -23,7 +23,7 @@ import { NetworkId } from '../types.js'
 import { GossipManager } from './gossip.js'
 import {
   BlockHeaderWithProof,
-  EpochAccumulator,
+  BlockNumberKey,
   HistoryNetworkContentType,
   MERGE_BLOCK,
   SHANGHAI_BLOCK,
@@ -52,6 +52,18 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns content if available locally
    */
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
+    const contentType = contentKey[0]
+    if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
+      const blockNumber = decodeHistoryNetworkContentKey(contentKey).keyOpt
+      const blockHash = await this.blockNumberToHash(<bigint>blockNumber)
+      if (blockHash === undefined) {
+        return undefined
+      }
+      const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash))
+      const value = await this.retrieve(hashKey)
+      return value !== undefined ? hexToBytes(value) : undefined
+    }
+
     const value = await this.retrieve(toHexString(contentKey))
     return value !== undefined ? hexToBytes(value) : undefined
   }
@@ -60,6 +72,7 @@ export class HistoryNetwork extends BaseNetwork {
     const blockNumber = '0x' + number.toString(16)
     const blockindex = await this.blockIndex()
     blockindex.set(blockNumber, blockHash)
+    blockindex.set(blockHash, blockNumber)
     await this.setBlockIndex(blockindex)
   }
 
@@ -70,20 +83,19 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns the bytes or Blockheader if found or else undefined
    */
   public getBlockHeaderFromDB = async (
-    blockHash: Uint8Array,
+    opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     asBytes = true,
-  ): Promise<Uint8Array | BlockHeader | undefined> => {
-    const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
-    const value = await this.retrieve(contentKey)
-    const header =
-      value !== undefined
-        ? BlockHeaderWithProof.deserialize(fromHexString(value)).header
-        : undefined
-    return header !== undefined
-      ? asBytes
-        ? header
-        : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
-      : undefined
+  ): Promise<undefined | (Uint8Array | BlockHeader)> => {
+    const contentKey =
+      'blockHash' in opt
+        ? getContentKey(HistoryNetworkContentType.BlockHeader, opt.blockHash)
+        : getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, opt.blockNumber)
+    const value = await this.findContentLocally(fromHexString(contentKey))
+    if (value === undefined) return undefined
+    const header = BlockHeaderWithProof.deserialize(value).header
+    return asBytes === true
+      ? header
+      : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
   }
 
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
@@ -100,24 +112,28 @@ export class HistoryNetwork extends BaseNetwork {
    * @throws if the block isn't found in the DB
    */
   public getBlockFromDB = async (
-    blockHash: Uint8Array,
+    opt: { blockHash: Uint8Array } | { blockNumber: bigint },
     includeTransactions = true,
   ): Promise<Block> => {
-    const header = (await this.getBlockHeaderFromDB(blockHash)) as Uint8Array
+    let header = await this.getBlockHeaderFromDB(opt, false)
     if (header === undefined) {
       throw new Error('Block not found')
     }
+    header = header as BlockHeader
     let body
     if (includeTransactions) {
-      body = await this.getBlockBodyBytes(blockHash)
+      body = await this.getBlockBodyBytes(header.mixHash)
       if (!body) {
         throw new Error('Block body not found')
       }
     }
-    return reassembleBlock(header, body ?? undefined)
+    return reassembleBlock(header.serialize(), body ?? undefined)
   }
 
-  public validateHeader = async (value: Uint8Array, contentHash: string) => {
+  public validateHeader = async (
+    value: Uint8Array,
+    validation: { blockHash: string } | { blockNumber: bigint },
+  ) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
     const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
       setHardfork: true,
@@ -131,7 +147,15 @@ export class HistoryNetwork extends BaseNetwork {
       }
       if (Array.isArray(proof.value)) {
         try {
-          verifyPreMergeHeaderProof(proof.value, contentHash, header.number)
+          if ('blockHash' in validation) {
+            verifyPreMergeHeaderProof(proof.value, validation.blockHash, header.number)
+          } else {
+            verifyPreMergeHeaderProof(
+              proof.value,
+              toHexString(header.hash()),
+              validation.blockNumber,
+            )
+          }
         } catch {
           throw new Error('Received pre-merge block header with invalid proof')
         }
@@ -150,10 +174,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     await this.indexBlockhash(header.number, toHexString(header.hash()))
-    await this.put(
-      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(contentHash)),
-      toHexString(value),
-    )
+    return header.hash()
   }
 
   /**
@@ -187,8 +208,7 @@ export class HistoryNetwork extends BaseNetwork {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
-        const contentKey = decodeHistoryNetworkContentKey(toHexString(key))
-        const contentHash = contentKey.blockHash
+        const contentKey = decodeHistoryNetworkContentKey(key)
         const contentType = contentKey.contentType
 
         switch (decoded.selector) {
@@ -208,7 +228,7 @@ export class HistoryNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             this.logger(
-              `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentHash}`,
+              `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
             )
             try {
               await this.store(toHexString(key), decoded.value as Uint8Array)
@@ -238,19 +258,20 @@ export class HistoryNetwork extends BaseNetwork {
   public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
     const _contentKey = fromHexString(contentKey)
     const contentType = _contentKey[0]
-    const hashKey = toHexString(_contentKey.slice(1))
+    const keyOpt = _contentKey.slice(1)
     this.logger.extend('STORE')(`Storing ${contentKey} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
-          await this.validateHeader(value, hashKey)
+          await this.validateHeader(value, { blockHash: toHexString(keyOpt) })
+          await this.put(contentKey, toHexString(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
         break
       }
       case HistoryNetworkContentType.BlockBody: {
-        await this.addBlockBody(value, hashKey)
+        await this.addBlockBody(value, toHexString(keyOpt))
         break
       }
       case HistoryNetworkContentType.Receipt: {
@@ -258,28 +279,36 @@ export class HistoryNetwork extends BaseNetwork {
           sszReceiptsListType.deserialize(value)
           await this.put(contentKey, toHexString(value))
         } catch (err: any) {
-          this.logger(`Received invalid bytes as receipt data for ${hashKey}`)
+          this.logger(`Received invalid bytes as receipt data for ${keyOpt}`)
           return
         }
         break
       }
-      case HistoryNetworkContentType.EpochAccumulator: {
+      case HistoryNetworkContentType.BlockHeaderByNumber: {
+        const { blockNumber } = BlockNumberKey.deserialize(keyOpt)
         try {
-          EpochAccumulator.deserialize(value)
-          await this.put(contentKey, toHexString(value))
-        } catch (err: any) {
-          this.logger(`Received invalid bytes as Epoch Accumulator corresponding to ${hashKey}`)
-          return
+          const blockHash = await this.validateHeader(value, { blockNumber })
+          // Store block header using 0x00 key type
+          const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
+          await this.put(hashKey, toHexString(value))
+          this.emit('ContentAdded', hashKey, value)
+          if (this.routingTable.values().length > 0) {
+            // Gossip new content to network
+            this.gossipManager.add(fromHexString(hashKey), contentType)
+          }
+        } catch (err) {
+          this.logger(`Error validating header: ${(err as any).message}`)
         }
+        break
       }
     }
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      // Gossip new content to network (except header accumulators)
-      this.gossipManager.add(hashKey, contentType)
+      // Gossip new content to network
+      this.gossipManager.add(keyOpt, contentType)
     }
-    this.logger(`${HistoryNetworkContentType[contentType]} added for ${hashKey}`)
+    this.logger(`${HistoryNetworkContentType[contentType]} added for ${keyOpt}`)
   }
 
   public async saveReceipts(block: Block) {
@@ -291,7 +320,6 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public async addBlockBody(value: Uint8Array, hashKey: string, header?: Uint8Array) {
-    const _bodyKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
@@ -301,7 +329,9 @@ export class HistoryNetwork extends BaseNetwork {
       if (header) {
         block = reassembleBlock(header, value)
       } else {
-        const headerBytes = (await this.getBlockHeaderFromDB(fromHexString(hashKey))) as Uint8Array
+        const headerBytes = (await this.getBlockHeaderFromDB({
+          blockHash: fromHexString(hashKey),
+        })) as Uint8Array
         // Verify we can construct a valid block from the header and body provided
         block = reassembleBlock(headerBytes!, value)
       }

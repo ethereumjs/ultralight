@@ -11,6 +11,7 @@ import { historicalRoots } from './data/historicalRoots.js'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
+  BlockNumberKey,
   CAPELLA_ERA,
   EpochAccumulator,
   HistoryNetworkContentType,
@@ -41,24 +42,38 @@ import type {
 import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
 
+export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
+  return Uint8Array.from([
+    HistoryNetworkContentType.BlockHeaderByNumber,
+    ...BlockNumberKey.serialize({ blockNumber }),
+  ])
+}
+
 /**
  * Generates the Content ID used to calculate the distance between a node ID and the content Key
  * @param contentKey an object containing the and `blockHash` used to generate the content Key
- * @param contentType a number identifying the type of content (block header, block body, receipt, epochAccumulator)
- * @param hash the hash of the content represented (i.e. block hash for header, body, or receipt, or root hash for accumulators)
+ * @param contentType a number identifying the type of content (block header, block body, receipt, header_by_number)
+ * @param key the hash of the content represented (i.e. block hash for header, body, or receipt, or block number for header_by_number)
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
-export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint8Array): string => {
+export const getContentKey = (
+  contentType: HistoryNetworkContentType,
+  key: Uint8Array | bigint,
+): string => {
   let encodedKey
-  const prefix = new Uint8Array(1).fill(contentType)
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeader:
     case HistoryNetworkContentType.BlockBody:
     case HistoryNetworkContentType.Receipt:
-    case HistoryNetworkContentType.HeaderProof:
-    case HistoryNetworkContentType.EpochAccumulator: {
-      if (hash === undefined) throw new Error('block hash is required to generate contentId')
-      encodedKey = toHexString(prefix) + toHexString(hash).slice(2)
+    case HistoryNetworkContentType.HeaderProof: {
+      if (!(key instanceof Uint8Array))
+        throw new Error('block hash is required to generate contentId')
+      encodedKey = toHexString([contentType, ...key])
+      break
+    }
+    case HistoryNetworkContentType.BlockHeaderByNumber: {
+      if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
+      encodedKey = toHexString(BlockHeaderByNumberKey(key))
       break
     }
     default:
@@ -66,17 +81,38 @@ export const getContentKey = (contentType: HistoryNetworkContentType, hash: Uint
   }
   return encodedKey
 }
-export const getContentId = (contentType: HistoryNetworkContentType, hash: string) => {
-  const encodedKey = hexToBytes(getContentKey(contentType, hexToBytes(hash)))
-
+export const getContentId = (contentType: HistoryNetworkContentType, key: Uint8Array | bigint) => {
+  const encodedKey = hexToBytes(getContentKey(contentType, key))
   return toHexString(digest(encodedKey))
 }
-export const decodeHistoryNetworkContentKey = (contentKey: string) => {
-  const contentType = parseInt(contentKey.slice(0, 4))
-  const blockHash = '0x' + contentKey.slice(4)
+
+export const decodeHistoryNetworkContentKey = (
+  contentKey: Uint8Array,
+):
+  | {
+      contentType:
+        | HistoryNetworkContentType.BlockHeader
+        | HistoryNetworkContentType.BlockBody
+        | HistoryNetworkContentType.Receipt
+        | HistoryNetworkContentType.HeaderProof
+      keyOpt: Uint8Array
+    }
+  | {
+      contentType: HistoryNetworkContentType.BlockHeaderByNumber
+      keyOpt: bigint
+    } => {
+  const contentType: HistoryNetworkContentType = contentKey[0]
+  if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
+    const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
+    return {
+      contentType,
+      keyOpt: blockNumber,
+    }
+  }
+  const blockHash = contentKey.slice(1)
   return {
     contentType,
-    blockHash,
+    keyOpt: blockHash,
   }
 }
 
@@ -186,7 +222,7 @@ export const addRLPSerializedBlock = async (
       proof: { selector: 1, value: proof },
     })
     try {
-      await network.validateHeader(headerProof, blockHash)
+      await network.validateHeader(headerProof, { blockHash })
     } catch {
       network.logger('Header proof failed validation while loading block from RLP')
     }

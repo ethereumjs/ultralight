@@ -17,7 +17,6 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { ContentLookup } from '../contentLookup.js'
-import { decodeHistoryNetworkContentKey } from '../history/util.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
@@ -84,9 +83,7 @@ export class StateNetwork extends BaseNetwork {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
-        const contentKey = decodeHistoryNetworkContentKey(toHexString(key))
-        const contentHash = contentKey.blockHash
-        const contentType = contentKey.contentType
+        const contentType = key[0]
 
         switch (decoded.selector) {
           case FoundContent.UTP: {
@@ -104,7 +101,7 @@ export class StateNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             this.logger(
-              `received ${StateNetworkContentType[contentType]} content corresponding to ${contentHash}`,
+              `received ${StateNetworkContentType[contentType]} content corresponding to ${toHexString(key)}`,
             )
             try {
               await this.stateDB.storeContent(key, decoded.value as Uint8Array)

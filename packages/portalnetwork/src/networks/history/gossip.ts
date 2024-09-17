@@ -58,12 +58,12 @@ export class GossipManager {
 
   /**
    * Adds new content to the gossip queue of the 5 nearest peers
-   * @param hash blockHash or epochHash
-   * @param contentType
+   * @param keyOpt blockHash or blockNumber
+   * @param contentType HistoryNetworkContentType
    */
-  public add(hash: string, contentType: HistoryNetworkContentType): void {
-    const id = getContentId(contentType, hash)
-    const key = getContentKey(contentType, hexToBytes(hash))
+  public add(keyOpt: Uint8Array | bigint, contentType: HistoryNetworkContentType): void {
+    const id = getContentId(contentType, keyOpt)
+    const key = getContentKey(contentType, keyOpt)
     const peers = this.history.routingTable.nearest(id, 5)
     for (const peer of peers) {
       const size = this.enqueue(peer.nodeId, hexToBytes(key))

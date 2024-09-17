@@ -1,5 +1,5 @@
 import { distance } from '@chainsafe/discv5'
-import { fromHexString } from '@chainsafe/ssz'
+import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { padToEven } from '@ethereumjs/util'
 import debug from 'debug'
 import fs from 'fs'
@@ -149,13 +149,40 @@ export class NetworkDB {
    * Prune DB content to a new radius
    * @param radius node radius
    */
-  async prune(radius: bigint): Promise<[string, string][]> {
+  async prune(
+    radius: bigint,
+    blockIndex: Map<string, string> = new Map(),
+  ): Promise<[string, string][]> {
     const toDelete: [string, string][] = []
     for await (const [key, value] of this.db.iterator()) {
+      // Calculate distance between node and content
       const d = distance(this.nodeId, this.contentId(key))
+      // If content is out of radius -- delete content
       if (d > radius) {
-        toDelete.push([key, value])
-        await this.db.del(key)
+        // Before deleting BlockHeaderWithProof (0x00) -- Check if BlockHeaderByNumber contentKey is in radius
+        if (key.startsWith('0x00')) {
+          // First find the block number from block index
+          const blockHash = '0x' + key.slice(4)
+          const blockNumber = blockIndex.get(blockHash)!
+          const numberKey = Uint8Array.from([
+            0x03,
+            ...new ContainerType({ blockNumber: new UintBigintType(8) }).serialize({
+              blockNumber: BigInt(blockNumber),
+            }),
+          ])
+          const numberId = this.contentId(toHexString(numberKey))
+          const numberDistance = distance(this.nodeId, numberId)
+
+          // If BOTH content keys are out of radius -- delete BlockHeaderWithProof.  Add both keys to delete list (for gossip)
+          if (numberDistance > radius) {
+            toDelete.push([toHexString(numberKey), value])
+            toDelete.push([key, value])
+            await this.db.del(key)
+          }
+        } else {
+          toDelete.push([key, value])
+          await this.db.del(key)
+        }
       }
     }
     return toDelete
