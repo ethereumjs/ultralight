@@ -17,50 +17,50 @@ const keyVals = Array.from({ length }, () => {
   }
 })
 
-describe('networkdb', async () => {
+describe('networkdb', () => {
   const historyDB = new NetworkDB({
     networkId: NetworkId.HistoryNetwork,
     nodeId,
     logger: debug('TEST'),
   })
 
-  const size0 = await historyDB.size()
-  it('should have size 0', () => {
+  it('should have size 0', async () => {
+    const size0 = await historyDB.size()
     assert.equal(size0, 0)
   })
 
-  for (const { key, value } of keyVals) {
-    await historyDB.put(bytesToHex(key), bytesToHex(value))
-  }
-  let j = 0
-  for await (const _ of historyDB.db.iterator()) {
-    j++
-  }
-  it('should have put all', () => {
-    expect(j).toEqual(length)
-  })
-  const r = 2n ** 255n - 1n
-  let i = 0
-  for await (const [key] of historyDB.db.keys()) {
-    const d = distance(nodeId, historyDB.contentId(key))
-    if (d > r) {
-      i++
+  it('should correctly put/prune', async () => {
+    for (const { key, value } of keyVals) {
+      await historyDB.put(bytesToHex(key), bytesToHex(value))
     }
-  }
-  const size1 = await historyDB.size()
-  it('should have total size', () => {
-    expect(size1).toBeGreaterThan(length * 1000)
-  })
-  await historyDB.prune(r)
-  const size2 = await historyDB.size()
-  it('should have pruned size', () => {
-    expect(size2).toBeLessThan(size1)
-  })
-  let e = 0
-  for await (const _ of historyDB.db.iterator()) {
-    e++
-  }
-  it(`should have ${e} / ${length} remaining`, () => {
-    expect(e).toEqual(length - i)
+    let j = 0
+    for await (const _ of historyDB.db.iterator()) {
+      j++
+    }
+    expect(j).toEqual(length) // should have put all values
+
+    const r = 2n ** 255n - 1n
+    let i = 0
+    for await (const [key] of historyDB.db.keys()) {
+      const d = distance(nodeId, historyDB.contentId(key))
+      if (d > r) {
+        i++
+      }
+    }
+
+    const size1 = await historyDB.size()
+    expect(size1).toBeGreaterThan(length * 1000) // should have a total size greater than `length`
+
+    await historyDB.prune(r)
+    const size2 = await historyDB.size()
+
+    expect(size2).toBeLessThan(size1) // expect DB to prune values outside of radius
+
+    let e = 0
+    for await (const _ of historyDB.db.iterator()) {
+      e++
+    }
+
+    expect(e).toEqual(length - i) // expect remaining values to be <= radius
   })
 })

@@ -9,15 +9,13 @@ import type { StateNetwork } from '../../../src/index.js'
 describe('StateNetwork', async () => {
   const pk = await createSecp256k1PeerId()
   const enr1 = SignableENR.createFromPeerId(pk)
-  const r = 4n
-  const radius = 2n ** (256n - r) - 1n
   const ultralight = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
     config: {
       enr: enr1,
       peerId: pk,
     },
-    supportedNetworks: [{ networkId: NetworkId.StateNetwork, radius }],
+    supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
   })
   const stateNetwork = ultralight.networks.get(NetworkId.StateNetwork)
   it('should start with state network', () => {

@@ -206,7 +206,7 @@ describe('Header Tests', async () => {
         blockHash: toHexString(header.hash()),
       })
       assert.ok(res, 'validated post-merge proof')
-    } catch (err) {
+    } catch (err: any) {
       assert.fail(err.message)
     }
     await network.store(headerKey, serializedHeaderWithProof)

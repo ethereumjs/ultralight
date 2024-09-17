@@ -132,6 +132,7 @@ describe('genesisDevnet', async () => {
       expect(foundAccount.balance).toBeGreaterThan(0n)
       assert.deepEqual(
         foundAccount.balance,
+        // @ts-ignore disregard string index type complaints since we can't easily configure a giant list of addresses as a type
         BigInt(mainnet.alloc[testAddress].balance),
         'account data found',
       )

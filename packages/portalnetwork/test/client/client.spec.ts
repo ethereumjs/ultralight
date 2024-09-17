@@ -6,7 +6,7 @@ describe('Client unit tests', () => {
     const node = await PortalNetwork.create({
       bindAddress: '192.168.0.1',
       transport: TransportLayer.WEB,
-      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork, radius: 1n }],
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     })
     assert.equal(
       node.discv5.enr.getLocationMultiaddr('udp')!.toOptions().host,

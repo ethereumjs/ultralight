@@ -80,7 +80,7 @@ describe('pre-merge header tests', () => {
     })
     assert.equal(header.number, 1000010n)
     assert.equal(
-      bytesToHex(headerWithProof.proof.value![0]),
+      bytesToHex((headerWithProof.proof.value! as Uint8Array[])[0]),
       '0xcead98e305c70563000000000000000000000000000000000000000000000000',
     )
   })

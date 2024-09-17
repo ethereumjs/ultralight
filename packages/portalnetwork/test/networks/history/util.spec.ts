@@ -110,12 +110,16 @@ describe('BlockHeader ssz serialization/deserialization with pre and post shangh
     assertType<Uint8Array>(preEncoded)
     assertType<Uint8Array>(postEncoded)
 
-    const deserializedPreBlock = decodeSszBlockBody(preEncoded, false)
+    const deserializedPreBlock = decodeSszBlockBody(
+      preEncoded,
+      false,
+    ) as PostShanghaiBlockBodyContent
+
     const deserializedPostBlock = decodeSszBlockBody(
       postEncoded,
       true,
     ) as PostShanghaiBlockBodyContent
-    assert.equal(deserializedPreBlock['allWithdrawals'], undefined)
+    assert.equal(deserializedPreBlock.allWithdrawals, undefined)
     assert.ok(
       deserializedPostBlock.allWithdrawals !== undefined &&
         deserializedPostBlock.allWithdrawals.length === 16,
