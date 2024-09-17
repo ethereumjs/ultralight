@@ -111,7 +111,7 @@ export class ultralight {
     const [blockNum, blockHash] = params
     try {
       this.logger(`Indexed block ${BigInt(blockNum)} / ${blockNum} to ${blockHash} `)
-      await this._history!.indexBlockhash(BigInt(blockNum), blockHash)
+      await this._history!.indexBlockHash(BigInt(blockNum), blockHash)
       return `Added ${blockNum} to block index`
     } catch (err: any) {
       throw {
