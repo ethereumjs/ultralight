@@ -28,14 +28,13 @@ describe('BlockIndex', async () => {
   it('should store block header', () => {
     assert.equal(stored, headerWithProof)
   })
-  it('should save block index', async () => {
+  it('should save block index', () => {
     const numberHex = '0x' + BigInt(1).toString(16)
-    const index = await history.blockIndex()
-    assert.isTrue(index.has(numberHex))
-    assert.equal(index.get(numberHex), hash)
+    assert.isTrue(history.blockHashIndex.has(numberHex))
+    assert.equal(history.blockHashIndex.get(numberHex), hash)
   })
   it('should store blockIndex in DB', async () => {
-    const expected = Array.from(await history.blockIndex())
+    const expected = Array.from(history.blockHashIndex)
     const stored = JSON.parse(await ultralight.db.db.get('block_index'))
     assert.deepEqual(stored, expected)
   })
@@ -45,10 +44,11 @@ describe('BlockIndex', async () => {
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     db: ultralight.db.db,
   })
+  await ultralight2.start()
   const history2 = ultralight2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   it('should start with blockIndex in DB', async () => {
-    const expected = await history.blockIndex()
-    const stored = await history2.blockIndex()
-    assert.deepEqual(stored, expected)
+    const expected = history.blockHashIndex
+    const stored = history2.blockHashIndex
+    assert.deepEqual(stored, expected, `Expected ${expected.size} but got ${stored.size}`)
   })
 })

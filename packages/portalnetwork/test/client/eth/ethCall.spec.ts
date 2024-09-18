@@ -88,7 +88,7 @@ describe.skip('ethCall', () => {
   //     toHexString(block.header.hash()),
   //     history,
   //   )
-  //   await history.indexBlockhash(block.header.number, toHexString(block.header.hash()))
+  //   await history.indexBlockHash(block.header.number, toHexString(block.header.hash()))
   //   const greeterInput = '0xcfae3217'
   //   const tx: RpcTx = {
   //     to: address.toString(),

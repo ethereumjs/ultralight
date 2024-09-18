@@ -289,13 +289,17 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public start = async () => {
     await this.discv5.start()
     await this.db.open()
+    const storedIndex = await this.db.getBlockIndex()
     for (const network of this.networks.values()) {
       try {
         // Check for stored radius in db
         const storedRadius = await network.db.db.get('radius')
         await network.setRadius(BigInt(storedRadius))
       } catch {
-        continue
+        // No action
+      }
+      if (network instanceof HistoryNetwork) {
+        network.blockHashIndex = storedIndex
       }
       await network.prune()
       // Start kbucket refresh on 30 second interval

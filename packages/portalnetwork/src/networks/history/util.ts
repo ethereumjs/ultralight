@@ -232,7 +232,7 @@ export const addRLPSerializedBlock = async (
       header: header.serialize(),
       proof: { selector: 0, value: null },
     })
-    await network.indexBlockhash(header.number, toHexString(header.hash()))
+    await network.indexBlockHash(header.number, toHexString(header.hash()))
 
     await network.store(headerKey, headerProof)
   }

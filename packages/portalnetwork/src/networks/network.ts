@@ -57,19 +57,12 @@ export abstract class BaseNetwork extends EventEmitter {
   public networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
-  public blockIndex: () => Promise<Map<string, string>>
-  public setBlockIndex: (blockIndex: Map<string, string>) => Promise<void>
+
   portal: PortalNetwork
   constructor({ client, networkId, db, radius, maxStorage }: BaseNetworkConfig) {
     super()
     this.networkId = networkId
     this.logger = client.logger.extend(this.constructor.name)
-    this.blockIndex = () => {
-      return client.db.getBlockIndex()
-    }
-    this.setBlockIndex = (blockIndex: Map<string, string>) => {
-      return client.db.storeBlockIndex(blockIndex)
-    }
     this.enr = client.discv5.enr
     this.checkIndex = 0
     this.nodeRadius = radius ?? 2n ** 256n - 1n
@@ -115,17 +108,6 @@ export abstract class BaseNetwork extends EventEmitter {
   }
   findEnr(nodeId: string): ENR | undefined {
     return this.portal.discv5.findEnr(nodeId)
-  }
-
-  public async blockNumberToHash(blockNumber: bigint): Promise<string | undefined> {
-    const blockIndex = await this.blockIndex()
-    return blockIndex.get('0x' + blockNumber.toString(16))
-  }
-
-  public async blockHashToNumber(blockHash: string): Promise<bigint | undefined> {
-    const blockIndex = await this.blockIndex()
-    const blockNumber = blockIndex.get(blockHash)
-    return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
   public async put(contentKey: string, content: string) {

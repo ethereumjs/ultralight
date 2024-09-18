@@ -38,12 +38,23 @@ export class HistoryNetwork extends BaseNetwork {
   networkName = 'HistoryNetwork'
   logger: Debugger
   gossipManager: GossipManager
+  public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
     this.networkId = NetworkId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
+    this.blockHashIndex = new Map()
+  }
+
+  public blockNumberToHash(blockNumber: bigint): string | undefined {
+    return this.blockHashIndex.get('0x' + blockNumber.toString(16))
+  }
+
+  public blockHashToNumber(blockHash: string): bigint | undefined {
+    const blockNumber = this.blockHashIndex.get(blockHash)
+    return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
   /**
@@ -55,7 +66,7 @@ export class HistoryNetwork extends BaseNetwork {
     const contentType = contentKey[0]
     if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
       const blockNumber = decodeHistoryNetworkContentKey(contentKey).keyOpt
-      const blockHash = await this.blockNumberToHash(<bigint>blockNumber)
+      const blockHash = this.blockNumberToHash(<bigint>blockNumber)
       if (blockHash === undefined) {
         return undefined
       }
@@ -68,12 +79,11 @@ export class HistoryNetwork extends BaseNetwork {
     return value !== undefined ? hexToBytes(value) : undefined
   }
 
-  public indexBlockhash = async (number: bigint, blockHash: string) => {
+  public indexBlockHash = async (number: bigint, blockHash: string) => {
     const blockNumber = '0x' + number.toString(16)
-    const blockindex = await this.blockIndex()
-    blockindex.set(blockNumber, blockHash)
-    blockindex.set(blockHash, blockNumber)
-    await this.setBlockIndex(blockindex)
+    this.blockHashIndex.set(blockNumber, blockHash)
+    this.blockHashIndex.set(blockHash, blockNumber)
+    await this.portal.db.storeBlockIndex(this.blockHashIndex)
   }
 
   /**
@@ -173,7 +183,7 @@ export class HistoryNetwork extends BaseNetwork {
         }
       }
     }
-    await this.indexBlockhash(header.number, toHexString(header.hash()))
+    await this.indexBlockHash(header.number, toHexString(header.hash()))
     return header.hash()
   }
 
