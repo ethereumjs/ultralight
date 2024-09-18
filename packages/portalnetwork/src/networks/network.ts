@@ -93,6 +93,14 @@ export abstract class BaseNetwork extends EventEmitter {
   async handleNewRequest(request: INewRequest): Promise<ContentRequest> {
     return this.portal.uTP.handleNewRequest(request)
   }
+
+  /**
+   * Send a properly formatted Portal Network message to another node
+   * @param dstId `NodeId` of message recipient
+   * @param payload `Uint8Array` serialized payload of message
+   * @param networkId subnetwork ID of subnetwork message is being sent on
+   * @returns response from `dstId` as `Buffer` or null `Buffer`
+   */
   async sendMessage(
     enr: ENR | string,
     payload: Uint8Array,
@@ -101,6 +109,7 @@ export abstract class BaseNetwork extends EventEmitter {
   ): Promise<Uint8Array> {
     return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
   }
+
   sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
