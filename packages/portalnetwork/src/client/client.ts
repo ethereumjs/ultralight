@@ -454,9 +454,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   /**
    *
    * @param dstId `NodeId` of message recipient
-   * @param payload `Buffer` serialized payload of message
+   * @param payload `Uint8Array` serialized payload of message
    * @param networkId subnetwork ID of subnetwork message is being sent on
-   * @returns response from `dstId` as `Buffer` or null `Buffer`
+   * @returns response from `dstId` as `Uint8Array` or empty array
    */
   public sendPortalNetworkMessage = async (
     enr: ENR | string,
