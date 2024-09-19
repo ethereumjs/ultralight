@@ -830,7 +830,7 @@ export abstract class BaseNetwork extends EventEmitter {
   public async gossipContent(contentKey: Uint8Array, content: Uint8Array): Promise<number> {
     const peers = this.routingTable
       .values()
-      .filter((e) => !this.routingTable.contentKeyKnownToPeer(e.nodeId, toHexString(contentKey)))
+      .filter((e) => !this.routingTable.contentKeyKnownToPeer(e.nodeId, contentKey))
     const offerMsg: OfferMessage = {
       contentKeys: [contentKey],
     }

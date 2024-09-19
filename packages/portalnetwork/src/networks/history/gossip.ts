@@ -1,5 +1,3 @@
-import { toHexString } from '@chainsafe/ssz'
-
 import { getContentId, getContentKey } from './util.js'
 
 import type { HistoryNetwork } from './history.js'
@@ -39,7 +37,7 @@ export class GossipManager {
     if (this.gossipQueues[peer] === undefined) {
       this.gossipQueues[peer] = []
     }
-    if (!this.history.routingTable.contentKeyKnownToPeer(peer, toHexString(key))) {
+    if (!this.history.routingTable.contentKeyKnownToPeer(peer, key)) {
       this.gossipQueues[peer].push(key)
     }
     return this.gossipQueues[peer].length
