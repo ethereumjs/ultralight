@@ -100,11 +100,9 @@ export class beacon {
     }
     const lookup = new ContentLookup(
       this._beacon,
-      fromHexString(
-        getBeaconContentKey(
-          BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
-          LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(params[0]), count: 1n }),
-        ),
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+        LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(params[0]), count: 1n }),
       ),
     )
     const res = await lookup.startLookup()

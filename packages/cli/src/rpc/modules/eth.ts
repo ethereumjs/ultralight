@@ -1,4 +1,4 @@
-import { bigIntToHex, intToHex, toBytes } from '@ethereumjs/util'
+import { bigIntToHex, hexToBytes, intToHex, toBytes } from '@ethereumjs/util'
 import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, getLogs } from 'portalnetwork'
 
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
@@ -137,7 +137,7 @@ export class eth {
     this._client.logger(
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`,
     )
-    const block = await this._client.ETH.getBlockByHash(blockHash, includeTransactions)
+    const block = await this._client.ETH.getBlockByHash(hexToBytes(blockHash), includeTransactions)
     //@ts-ignore @ethereumjs/block has some weird typing discrepancy
     if (block !== undefined) return block
     throw new Error('Block not found')
