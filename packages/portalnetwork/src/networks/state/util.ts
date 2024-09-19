@@ -2,7 +2,7 @@ import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
-import { MapDB, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
+import { MapDB, bytesToHex, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 
 import { unpackNibbles } from './nibbleEncoding.js'
 import {
@@ -154,10 +154,16 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
     this.db = db
     this.temp = new Map()
   }
-  async put(key: string, value: string) {
+  async put(key: string | Uint8Array, value: string) {
+    if (key instanceof Uint8Array) {
+      key = bytesToHex(key)
+    }
     await this.db.put(key, value)
   }
-  async get(key: string, _opts?: EncodingOpts) {
+  async get(key: string | Uint8Array, _opts?: EncodingOpts) {
+    if (key instanceof Uint8Array) {
+      key = bytesToHex(key)
+    }
     try {
       const value = await this.db.get(key)
       return value
@@ -166,7 +172,10 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
       return found
     }
   }
-  async del(key: string) {
+  async del(key: string | Uint8Array) {
+    if (key instanceof Uint8Array) {
+      key = bytesToHex(key)
+    }
     await this.db.del(key)
   }
   async keys() {

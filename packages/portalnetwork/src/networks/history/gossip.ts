@@ -1,5 +1,4 @@
 import { toHexString } from '@chainsafe/ssz'
-import { hexToBytes } from '@ethereumjs/util'
 
 import { getContentId, getContentKey } from './util.js'
 
@@ -66,7 +65,7 @@ export class GossipManager {
     const key = getContentKey(contentType, keyOpt)
     const peers = this.history.routingTable.nearest(id, 5)
     for (const peer of peers) {
-      const size = this.enqueue(peer.nodeId, hexToBytes(key))
+      const size = this.enqueue(peer.nodeId, key)
       if (size >= this.pulse) {
         this.gossip(peer.nodeId)
       }

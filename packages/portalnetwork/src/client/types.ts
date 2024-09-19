@@ -9,8 +9,8 @@ import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
 export interface PortalNetworkEvents {
   NodeAdded: (nodeId: NodeId, networkId: NetworkId) => void
   NodeRemoved: (nodeId: NodeId, networkId: NetworkId) => void
-  ContentAdded: (key: string, contentType: number, content: string) => void
-  Verified: (key: string, verified: boolean) => void
+  ContentAdded: (key: Uint8Array, contentType: number, content: string) => void
+  Verified: (key: Uint8Array, verified: boolean) => void
   SendTalkReq: (nodeId: string, requestId: string, payload: string) => void
   SendTalkResp: (nodeId: string, requestId: string, payload: string) => void
 }

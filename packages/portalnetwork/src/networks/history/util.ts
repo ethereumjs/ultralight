@@ -3,7 +3,7 @@ import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
-import { equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
 
 import { historicalEpochs } from './data/epochHashes.js'
@@ -59,7 +59,7 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
   key: Uint8Array | bigint,
-): string => {
+): Uint8Array => {
   let encodedKey
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeader:
@@ -68,12 +68,12 @@ export const getContentKey = (
     case HistoryNetworkContentType.HeaderProof: {
       if (!(key instanceof Uint8Array))
         throw new Error('block hash is required to generate contentId')
-      encodedKey = toHexString([contentType, ...key])
+      encodedKey = Uint8Array.from([contentType, ...key])
       break
     }
     case HistoryNetworkContentType.BlockHeaderByNumber: {
       if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
-      encodedKey = toHexString(BlockHeaderByNumberKey(key))
+      encodedKey = BlockHeaderByNumberKey(key)
       break
     }
     default:
@@ -82,8 +82,8 @@ export const getContentKey = (
   return encodedKey
 }
 export const getContentId = (contentType: HistoryNetworkContentType, key: Uint8Array | bigint) => {
-  const encodedKey = hexToBytes(getContentKey(contentType, key))
-  return toHexString(digest(encodedKey))
+  const encodedKey = getContentKey(contentType, key)
+  return bytesToUnprefixedHex(digest(encodedKey))
 }
 
 export const decodeHistoryNetworkContentKey = (
@@ -237,7 +237,7 @@ export const addRLPSerializedBlock = async (
     await network.store(headerKey, headerProof)
   }
   const sszBlock = sszEncodeBlockBody(block)
-  await network.addBlockBody(sszBlock, toHexString(header.hash()), header.serialize())
+  await network.addBlockBody(sszBlock, header.hash(), header.serialize())
 }
 
 // Each EpochAccumulator is a merkle tree with 16384 leaves, and 16383 parent nodes.
