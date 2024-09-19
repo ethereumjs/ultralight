@@ -57,7 +57,7 @@ describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () =
   td.when(
     network.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
   ).thenResolve(findContentResponse)
-  const res = await network.sendFindContent(decodedEnr.nodeId, hexToBytes(key))
+  const res = await network.sendFindContent(decodedEnr.nodeId, key)
   it('should send a FINDCONTENT message', () => {
     assert.deepEqual(
       res?.value,

@@ -21,7 +21,6 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
-  fromHexString,
   getBeaconContentKey,
   toHexString,
 } from '../../src/index.js'
@@ -85,7 +84,7 @@ describe('Find Content tests', () => {
 
     const bootstrap = specTestVectors.bootstrap['6718368']
 
-    await network1.store(bootstrap.content_key, hexToBytes(bootstrap.content_value))
+    await network1.store(hexToBytes(bootstrap.content_key), hexToBytes(bootstrap.content_value))
     await new Promise((resolve) => {
       setTimeout(resolve, 5000)
     })
@@ -167,7 +166,10 @@ describe('Find Content tests', () => {
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
       'node1 added node2 to routing table',
     )
-    await network1.store(optimisticUpdate.content_key, hexToBytes(optimisticUpdate.content_value))
+    await network1.store(
+      hexToBytes(optimisticUpdate.content_key),
+      hexToBytes(optimisticUpdate.content_value),
+    )
     const res = await network2.sendFindContent(
       node1.discv5.enr.nodeId,
       concatBytes(
@@ -351,8 +353,8 @@ describe('OFFER/ACCEPT tests', () => {
     )
 
     await new Promise((resolve) => {
-      network2.on('ContentAdded', (contentKey) => {
-        const contentType = fromHexString(contentKey)[0]
+      network2.on('ContentAdded', (contentKey: Uint8Array) => {
+        const contentType = contentKey[0]
         if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)
           // Update the light client stub to report the new "optimistic head"
           network2.lightClient = {
@@ -369,11 +371,9 @@ describe('OFFER/ACCEPT tests', () => {
       })
     })
     const content = await network2.findContentLocally(
-      hexToBytes(
-        getBeaconContentKey(
-          BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
-          LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
-        ),
+      getBeaconContentKey(
+        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
 
@@ -466,11 +466,11 @@ describe('OFFER/ACCEPT tests', () => {
     )
 
     const acceptedOffers = await network1.sendOffer(network2.enr.nodeId, [
-      hexToBytes(staleOptimisticUpdateContentKey),
+      staleOptimisticUpdateContentKey,
     ])
     assert.equal(acceptedOffers, undefined, 'no content was accepted by node 2')
     const content = await network2.retrieve(
-      intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+      hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
     )
 
     assert.equal(content, undefined, 'should not retrieve content for stale optimistic update key')
@@ -533,11 +533,11 @@ describe('OFFER/ACCEPT tests', () => {
       ),
     )
 
-    await network1.sendOffer(network2.enr.nodeId, [hexToBytes(bootstrapKey)])
+    await network1.sendOffer(network2.enr.nodeId, [bootstrapKey])
 
     await new Promise((resolve) => {
-      network2.on('ContentAdded', (key) => {
-        assert.equal(key, bootstrapKey, 'successfully gossipped bootstrap')
+      network2.on('ContentAdded', (key: Uint8Array) => {
+        assert.deepEqual(key, bootstrapKey, 'successfully gossipped bootstrap')
         resolve(undefined)
       })
     })
