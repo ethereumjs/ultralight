@@ -15,7 +15,7 @@ interface NetworkDBConfig {
   nodeId?: string
   db?: { db: AbstractLevel<string, string>; path: string }
   logger?: Debugger
-  contentId?: (contentKey: string) => string
+  contentId?: (contentKey: Uint8Array) => string
   maxStorage?: number
 }
 
@@ -25,7 +25,7 @@ export class NetworkDB {
   networkId: NetworkId
   nodeId: string
   streaming: Set<string>
-  contentId: (contentKey: string) => string
+  contentId: (contentKey: Uint8Array) => string
   logger: Debugger
   dataDir?: string
   constructor({ networkId, nodeId, db, logger, contentId, maxStorage }: NetworkDBConfig) {
@@ -37,8 +37,8 @@ export class NetworkDB {
     this.logger = logger?.extend('DB') ?? debug(`${this.networkId}DB`)
     this.contentId =
       contentId ??
-      function (contentKey: string) {
-        return contentKey
+      function (contentKey: Uint8Array) {
+        return toHexString(contentKey)
       }
     this.maxStorage = maxStorage ?? 1024
   }
@@ -62,7 +62,13 @@ export class NetworkDB {
    * @param key Content Key - 0x prefixed hex string
    * @param val Content - 0x prefixed hex string
    */
-  async put(key: string, val: string) {
+  async put(key: string | Uint8Array, val: string | Uint8Array) {
+    if (key instanceof Uint8Array) {
+      key = toHexString(key)
+    }
+    if (val instanceof Uint8Array) {
+      val = toHexString(val)
+    }
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     try {
@@ -78,12 +84,15 @@ export class NetworkDB {
    * @param key Content Key 0x prefixed hex string
    * @returns content as 0x prefixed hex string
    */
-  async get(key: string) {
+  async get(key: string | Uint8Array) {
+    if (key instanceof Uint8Array) {
+      key = toHexString(key)
+    }
     // this.streaming is a Set of contentKeys currently streaming over uTP
     // the timeout is a safety measure to prevent the while loop from running indefinitely in case of a uTP stream failure
     this.logger(`Content ${key}.  Streaming=${this.streaming.has(key)}`)
     const timeout = setTimeout(() => {
-      this.streaming.delete(key)
+      this.streaming.delete(<string>key)
     }, 1000)
     while (this.streaming.has(key)) {
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -100,7 +109,10 @@ export class NetworkDB {
    * Delete an entry by key.
    * @param key Content Key - 0x prefixed hex string
    */
-  async del(key: string): Promise<void> {
+  async del(key: string | Uint8Array): Promise<void> {
+    if (key instanceof Uint8Array) {
+      key = toHexString(key)
+    }
     await this.db.del(key)
   }
   /**
@@ -141,7 +153,10 @@ export class NetworkDB {
    * Add content key to streaming buffer
    * @param key Content Key - 0x prefixed hex string
    */
-  addToStreaming(key: string): void {
+  addToStreaming(key: string | Uint8Array): void {
+    if (key instanceof Uint8Array) {
+      key = toHexString(key)
+    }
     this.logger(`Adding ${key} to streaming`)
     this.streaming.add(key)
   }
@@ -156,7 +171,7 @@ export class NetworkDB {
     const toDelete: [string, string][] = []
     for await (const [key, value] of this.db.iterator()) {
       // Calculate distance between node and content
-      const d = distance(this.nodeId, this.contentId(key))
+      const d = distance(this.nodeId, this.contentId(fromHexString(key)))
       // If content is out of radius -- delete content
       if (d > radius) {
         // Before deleting BlockHeaderWithProof (0x00) -- Check if BlockHeaderByNumber contentKey is in radius
@@ -170,7 +185,7 @@ export class NetworkDB {
               blockNumber: BigInt(blockNumber),
             }),
           ])
-          const numberId = this.contentId(toHexString(numberKey))
+          const numberId = this.contentId(numberKey)
           const numberDistance = distance(this.nodeId, numberId)
 
           // If BOTH content keys are out of radius -- delete BlockHeaderWithProof.  Add both keys to delete list (for gossip)
