@@ -15,7 +15,7 @@ const keyVals: {
   value: Uint8Array
 }[] = Array.from({ length }, () => {
   return {
-    key: randomBytes(33),
+    key: Uint8Array.from([0x05, ...randomBytes(32)]),
     value: randomBytes(1000),
   }
 })
