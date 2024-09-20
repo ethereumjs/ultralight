@@ -1,4 +1,4 @@
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
@@ -18,9 +18,9 @@ describe('ContentKey and ContentId', () => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.blockHeader
     const contentKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
     const contentId = getContentId(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash))
-    const decoded = decodeHistoryNetworkContentKey(fromHexString(contentKey))
+    const decoded = decodeHistoryNetworkContentKey(contentKey)
 
-    assert.equal(contentKey, contentKeyHex, 'encoded content key')
+    assert.equal(bytesToHex(contentKey), contentKeyHex, 'encoded content key')
     assert.equal(contentId, contentIdHex, 'encoded content id')
     assert.deepEqual(decoded.keyOpt, fromHexString(blockHash), 'decoded hash from content key')
     assert.equal(
@@ -33,9 +33,9 @@ describe('ContentKey and ContentId', () => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.blockBody
     const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash))
     const contentId = getContentId(HistoryNetworkContentType.BlockBody, fromHexString(blockHash))
-    const decoded = decodeHistoryNetworkContentKey(fromHexString(contentKey))
+    const decoded = decodeHistoryNetworkContentKey(contentKey)
 
-    assert.equal(contentKey, contentKeyHex, 'encoded content key')
+    assert.equal(bytesToHex(contentKey), contentKeyHex, 'encoded content key')
     assert.equal(contentId, contentIdHex, 'encoded content id')
     assert.deepEqual(decoded.keyOpt, fromHexString(blockHash), 'decoded hash from content key')
     assert.equal(
@@ -48,9 +48,9 @@ describe('ContentKey and ContentId', () => {
     const { blockHash, contentKeyHex, contentIdHex } = testVectors.receipts
     const contentKey = getContentKey(HistoryNetworkContentType.Receipt, hexToBytes(blockHash))
     const contentId = getContentId(HistoryNetworkContentType.Receipt, fromHexString(blockHash))
-    const decoded = decodeHistoryNetworkContentKey(fromHexString(contentKey))
+    const decoded = decodeHistoryNetworkContentKey(contentKey)
 
-    assert.equal(contentKey, contentKeyHex, 'encoded content key')
+    assert.equal(bytesToHex(contentKey), contentKeyHex, 'encoded content key')
     assert.equal(contentId, contentIdHex, 'encoded content id')
     assert.deepEqual(decoded.keyOpt, fromHexString(blockHash), 'decoded hash from content key')
     assert.equal(
@@ -63,8 +63,8 @@ describe('ContentKey and ContentId', () => {
     const { blockNumber, contentKeyHex, contentIdHex } = testVectors.blockHeaderByNumber
     const contentKey = getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, 1000n)
     const contentId = getContentId(HistoryNetworkContentType.BlockHeaderByNumber, 1000n)
-    const decoded = decodeHistoryNetworkContentKey(fromHexString(contentKey))
-    assert.equal(contentKey, contentKeyHex, 'encoded content key')
+    const decoded = decodeHistoryNetworkContentKey(contentKey)
+    assert.equal(bytesToHex(contentKey), contentKeyHex, 'encoded content key')
     assert.equal(contentId, contentIdHex, 'encoded content id')
     assert.deepEqual(decoded.keyOpt, BigInt(blockNumber), 'decoded block number from content key')
     assert.equal(

@@ -46,8 +46,8 @@ export class StateNetwork extends BaseNetwork {
     this.routingTable.setLogger(this.logger)
   }
 
-  public contentKeyToId = (contentKey: string): string => {
-    return bytesToUnprefixedHex(StateNetworkContentId.fromBytes(fromHexString(contentKey)))
+  public contentKeyToId = (contentKey: Uint8Array): string => {
+    return bytesToUnprefixedHex(StateNetworkContentId.fromBytes(contentKey))
   }
 
   /**
@@ -133,14 +133,13 @@ export class StateNetwork extends BaseNetwork {
     }
   }
 
-  public store = async (contentKey: string, content: Uint8Array) => {
-    const _contentKey = fromHexString(contentKey)
-    const contentType = _contentKey[0]
+  public store = async (contentKey: Uint8Array, content: Uint8Array) => {
+    const contentType = contentKey[0]
     try {
       if (contentType === StateNetworkContentType.AccountTrieNode) {
-        await this.receiveAccountTrieNodeOffer(_contentKey, content)
+        await this.receiveAccountTrieNodeOffer(contentKey, content)
       } else {
-        await this.stateDB.storeContent(_contentKey, content)
+        await this.stateDB.storeContent(contentKey, content)
       }
       this.logger(`content added for: ${contentKey}`)
       this.emit('ContentAdded', contentKey, content)

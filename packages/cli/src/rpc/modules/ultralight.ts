@@ -1,9 +1,5 @@
-import {
-  HistoryNetworkContentType,
-  NetworkId,
-  addRLPSerializedBlock,
-  fromHexString,
-} from 'portalnetwork'
+import { hexToBytes } from '@ethereumjs/util'
+import { HistoryNetworkContentType, NetworkId, addRLPSerializedBlock } from 'portalnetwork'
 
 import { INTERNAL_ERROR } from '../error-code.js'
 import { middleware, validators } from '../validators.js'
@@ -98,7 +94,7 @@ export class ultralight {
       `ultralight_addContentToDB request received for ${HistoryNetworkContentType[type]} ${contentKey}`,
     )
     try {
-      await this._history!.store(contentKey, fromHexString(value))
+      await this._history!.store(hexToBytes(contentKey), hexToBytes(value))
       this.logger(`${type} value for ${contentKey} added to content DB`)
       return `${type} value for ${contentKey} added to content DB`
     } catch (err: any) {

@@ -1,5 +1,5 @@
 import { distance } from '@chainsafe/discv5'
-import { bytesToHex, randomBytes } from '@ethereumjs/util'
+import { hexToBytes, randomBytes } from '@ethereumjs/util'
 import debug from 'debug'
 import { assert, describe, expect, it } from 'vitest'
 
@@ -10,7 +10,10 @@ const nodeId = '80'.repeat(32)
 
 const length = 20
 
-const keyVals = Array.from({ length }, () => {
+const keyVals: {
+  key: Uint8Array
+  value: Uint8Array
+}[] = Array.from({ length }, () => {
   return {
     key: randomBytes(33),
     value: randomBytes(1000),
@@ -31,7 +34,7 @@ describe('networkdb', () => {
 
   it('should correctly put/prune', async () => {
     for (const { key, value } of keyVals) {
-      await historyDB.put(bytesToHex(key), bytesToHex(value))
+      await historyDB.put(key, value)
     }
     let j = 0
     for await (const _ of historyDB.db.iterator()) {
@@ -41,8 +44,8 @@ describe('networkdb', () => {
 
     const r = 2n ** 255n - 1n
     let i = 0
-    for await (const [key] of historyDB.db.keys()) {
-      const d = distance(nodeId, historyDB.contentId(key))
+    for await (const key of historyDB.db.keys()) {
+      const d = distance(nodeId, historyDB.contentId(hexToBytes(key)))
       if (d > r) {
         i++
       }

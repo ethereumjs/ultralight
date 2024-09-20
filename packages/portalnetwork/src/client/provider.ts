@@ -1,3 +1,4 @@
+import { hexToBytes } from '@ethereumjs/util'
 import { ethers } from 'ethers'
 
 import { addRLPSerializedBlock } from '../networks/index.js'
@@ -43,7 +44,8 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
   getBlock = async (blockTag: ethers.BlockTag): Promise<ethers.Block | null> => {
     let block
     if (typeof blockTag === 'string' && blockTag.length === 66) {
-      block = await this.portal.ETH.getBlockByHash(blockTag, false)
+      const blockHash = hexToBytes(blockTag)
+      block = await this.portal.ETH.getBlockByHash(blockHash, false)
       if (block !== undefined) {
         return ethJsBlockToEthersBlock(block, this.provider)
       }
@@ -63,7 +65,8 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
     const isBlockHash =
       ethers.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
     if (isBlockHash) {
-      block = await this.portal.ETH.getBlockByHash(blockTag, true)
+      const blockHash = hexToBytes(blockTag)
+      block = await this.portal.ETH.getBlockByHash(blockHash, true)
       if (block !== undefined) {
         return ethJsBlockToEthersBlockWithTxs(block, this.provider)
       }

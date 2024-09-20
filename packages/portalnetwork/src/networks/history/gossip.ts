@@ -1,6 +1,3 @@
-import { toHexString } from '@chainsafe/ssz'
-import { hexToBytes } from '@ethereumjs/util'
-
 import { getContentId, getContentKey } from './util.js'
 
 import type { HistoryNetwork } from './history.js'
@@ -40,7 +37,7 @@ export class GossipManager {
     if (this.gossipQueues[peer] === undefined) {
       this.gossipQueues[peer] = []
     }
-    if (!this.history.routingTable.contentKeyKnownToPeer(peer, toHexString(key))) {
+    if (!this.history.routingTable.contentKeyKnownToPeer(peer, key)) {
       this.gossipQueues[peer].push(key)
     }
     return this.gossipQueues[peer].length
@@ -66,7 +63,7 @@ export class GossipManager {
     const key = getContentKey(contentType, keyOpt)
     const peers = this.history.routingTable.nearest(id, 5)
     for (const peer of peers) {
-      const size = this.enqueue(peer.nodeId, hexToBytes(key))
+      const size = this.enqueue(peer.nodeId, key)
       if (size >= this.pulse) {
         this.gossip(peer.nodeId)
       }

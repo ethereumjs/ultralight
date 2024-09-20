@@ -1,3 +1,4 @@
+import { bytesToHex } from '@ethereumjs/util'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
 import {
@@ -28,7 +29,7 @@ describe(`${method} tests`, () => {
         ssz.capella.LightClientUpdate.fromJson(rangeJson.data),
       ),
     )
-    await rpc.request('portal_beaconStore', [rangeKey, rangeHex])
+    await rpc.request('portal_beaconStore', [bytesToHex(rangeKey), rangeHex])
 
     const period =
       '0x' +

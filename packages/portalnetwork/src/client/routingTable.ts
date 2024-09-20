@@ -5,7 +5,7 @@ import type { Debugger } from 'debug'
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>
-  private gossipMap: Map<NodeId, Set<string>>
+  private gossipMap: Map<NodeId, Set<Uint8Array>>
   private ignored: [number, NodeId][]
   constructor(nodeId: NodeId) {
     super(nodeId)
@@ -43,11 +43,11 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
    * @param contentKey hex prefixed string representation of content key
    * @returns boolean indicating if node has already been OFFERed `contentKey` already
    */
-  public contentKeyKnownToPeer = (nodeId: NodeId, contentKey: string) => {
+  public contentKeyKnownToPeer = (nodeId: NodeId, contentKey: Uint8Array) => {
     let gossipList = this.gossipMap.get(nodeId)
     if (!gossipList) {
       // If no gossipList exists, create new one for `nodeId` and add contentKey to it
-      gossipList = new Set<string>()
+      gossipList = new Set<Uint8Array>()
       gossipList.add(contentKey)
       this.gossipMap.set(nodeId, gossipList)
       return false

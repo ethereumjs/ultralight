@@ -892,7 +892,7 @@ export class portal {
   async historyStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
-      await this._history.store(toHexString(contentKey), content)
+      await this._history.store(contentKey, content)
       return true
     } catch {
       return false
@@ -902,7 +902,7 @@ export class portal {
     const [contentKey, content] = params
     try {
       const contentKeyBytes = fromHexString(contentKey)
-      await this._state.store(toHexString(contentKeyBytes), fromHexString(content))
+      await this._state.store(contentKeyBytes, fromHexString(content))
       this.logger(`stored ${contentKey} in state network db`)
       return true
     } catch {
@@ -922,7 +922,7 @@ export class portal {
   async beaconStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
-      await this._beacon.store(toHexString(contentKey), content)
+      await this._beacon.store(contentKey, content)
       return true
     } catch (e) {
       console.log(e)

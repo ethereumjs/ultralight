@@ -329,7 +329,7 @@ export class PortalNetworkUTP {
       this.logger.extend(`FINISHED`)(
         `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending content type: ${k[0]} to database`,
       )
-      await network.store(toHexString(k), _content)
+      await network.store(k, _content)
     }
   }
 }

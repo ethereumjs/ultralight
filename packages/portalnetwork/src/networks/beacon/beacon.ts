@@ -1,5 +1,5 @@
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { toHexString } from '@chainsafe/ssz'
 import {
   bytesToHex,
   bytesToInt,
@@ -83,7 +83,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
     this.routingTable.setLogger(this.logger)
-    this.on('ContentAdded', async (contentKey) => {
+    this.on('ContentAdded', async (contentKey: Uint8Array) => {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
         const peer = this.routingTable.random()
@@ -91,7 +91,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           peer !== undefined &&
           !this.routingTable.contentKeyKnownToPeer(peer.nodeId, contentKey)
         ) {
-          await this.sendOffer(peer.nodeId, [hexToBytes(contentKey)])
+          await this.sendOffer(peer.nodeId, [contentKey])
         }
       }
     })
@@ -172,11 +172,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         )
 
         // Request the range of Light Client Updates extending back 4 sync periods
-        const rangeKey = hexToBytes(
-          getBeaconContentKey(
-            BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
-            LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
-          ),
+        const rangeKey = getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+          LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
         )
         this.logger.extend('BOOTSTRAP')(
           `Requesting recent LightClientUpdates from ${shortId(nodeId, this.routingTable)}`,
@@ -232,7 +230,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               `found a consensus bootstrap candidate ${results[x][0]}`,
             )
             for (const vote of votes) {
-              const res = await this.sendFindContent(vote[0], hexToBytes(bootstrapKey))
+              const res = await this.sendFindContent(vote[0], bootstrapKey)
               if (res !== undefined) {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
@@ -341,12 +339,12 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
           value = await this.retrieve(
-            intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
           )
         } else if (this.lightClient === undefined) {
           // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
           value = await this.retrieve(
-            intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
           )
           this.logger.extend('FINDLOCALLY')(
             `light client is not running, retrieving whatever we have - ${
@@ -373,12 +371,12 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // We only store the most recent finality update so only retrieve the finality update if the slot
           // in the key is less than or equal to the current finalized slot known to our light client
           value = await this.retrieve(
-            intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
           )
         } else if (this.lightClient === undefined) {
           // If the light client isn't initialized, we just blindly store and retrieve the finality update we have
           value = await this.retrieve(
-            intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
           )
           if (value !== undefined) {
             const decoded = hexToBytes(value)
@@ -412,7 +410,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         break
       }
       default:
-        value = await this.retrieve(toHexString(contentKey))
+        value = await this.retrieve(contentKey)
     }
 
     return value instanceof Uint8Array ? value : hexToBytes(value ?? '0x')
@@ -449,8 +447,8 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             decoded = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
-              this.on('ContentAdded', (contentKey, value) => {
-                if (contentKey === toHexString(key)) {
+              this.on('ContentAdded', (contentKey: Uint8Array, value) => {
+                if (equalsBytes(contentKey, key)) {
                   resolve({ selector: 0, value })
                 }
               })
@@ -467,7 +465,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             {
-              const contentKey = toHexString(key)
               const forkhash = decoded.value.slice(0, 4) as Uint8Array
               const forkname = this.beaconConfig.forkDigest2ForkName(
                 forkhash,
@@ -483,9 +480,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                     break
                   }
                   this.logger(
-                    `received LightClientOptimisticUpdate content corresponding to ${contentKey}`,
+                    `received LightClientOptimisticUpdate content corresponding to ${bytesToHex(key)}`,
                   )
-                  await this.store(contentKey, decoded.value as Uint8Array)
+                  await this.store(key, decoded.value as Uint8Array)
                   break
                 case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
                   try {
@@ -497,9 +494,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                     break
                   }
                   this.logger(
-                    `received LightClientFinalityUpdate content corresponding to ${contentKey}`,
+                    `received LightClientFinalityUpdate content corresponding to ${bytesToHex(key)}`,
                   )
-                  await this.store(contentKey, decoded.value as Uint8Array)
+                  await this.store(key, decoded.value as Uint8Array)
                   break
                 case BeaconLightClientNetworkContentType.LightClientBootstrap:
                   try {
@@ -511,9 +508,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                     break
                   }
                   this.logger(
-                    `received LightClientBootstrap content corresponding to ${contentKey}`,
+                    `received LightClientBootstrap content corresponding to ${bytesToHex(key)}`,
                   )
-                  await this.store(contentKey, decoded.value as Uint8Array)
+                  await this.store(key, decoded.value as Uint8Array)
                   break
                 case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
                   try {
@@ -523,13 +520,15 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                     break
                   }
                   this.logger(
-                    `received LightClientUpdatesByRange content corresponding to ${contentKey}`,
+                    `received LightClientUpdatesByRange content corresponding to ${bytesToHex(key)}`,
                   )
                   await this.storeUpdateRange(decoded.value as Uint8Array)
                   break
 
                 default:
-                  this.logger(`received unexpected content type corresponding to ${contentKey}`)
+                  this.logger(
+                    `received unexpected content type corresponding to ${bytesToHex(key)}`,
+                  )
                   break
               }
             }
@@ -614,8 +613,8 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param contentKey the network level content key formatted as a prefixed hex string
    * @param value the Uint8Array corresponding to the SSZ serialized value being stored
    */
-  public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
-    const contentType = fromHexString(contentKey)[0]
+  public store = async (contentKey: Uint8Array, value: Uint8Array): Promise<void> => {
+    const contentType = contentKey[0]
     switch (contentType) {
       case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
         // We need to call `storeUpdateRange` to ensure we store each individual
@@ -626,7 +625,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // optimistic update and this ensures we don't accidentally store multiple
         await this.put(
-          intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate),
+          hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
           toHexString(value),
         )
         break
@@ -634,7 +633,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // finality update and this ensures we don't accidentally store multiple
         await this.put(
-          intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate),
+          hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
           toHexString(value),
         )
         break
@@ -675,7 +674,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         }
         // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
         await this.put(
-          intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries),
+          hexToBytes(intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries)),
           toHexString(value),
         )
 
@@ -727,10 +726,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       ) as LightClientUpdate
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
     }
-    return (
+    return hexToBytes(
       '0x' +
-      BeaconLightClientNetworkContentType.LightClientUpdate.toString(16) +
-      padToEven(period.toString(16))
+        BeaconLightClientNetworkContentType.LightClientUpdate.toString(16) +
+        padToEven(period.toString(16)),
     )
   }
 
@@ -861,7 +860,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             case BeaconLightClientNetworkContentType.LightClientBootstrap: {
               try {
                 // TODO: Verify the offered bootstrap isn't too old before accepting
-                await this.get(toHexString(key))
+                await this.get(key)
                 this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
               } catch (err) {
                 offerAccepted = true

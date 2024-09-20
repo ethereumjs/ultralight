@@ -1,4 +1,3 @@
-import { toHexString } from '@chainsafe/ssz'
 import { padToEven } from '@ethereumjs/util'
 
 import {
@@ -19,7 +18,7 @@ export const getBeaconContentKey = (
   contentType: BeaconLightClientNetworkContentType,
   serializedKey: Uint8Array,
 ) => {
-  return toHexString(Uint8Array.from([contentType, ...serializedKey]))
+  return Uint8Array.from([contentType, ...serializedKey])
 }
 
 /**

@@ -110,15 +110,15 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.portal.discv5.findEnr(nodeId)
   }
 
-  public async put(contentKey: string, content: string) {
+  public async put(contentKey: Uint8Array, content: string) {
     await this.db.put(contentKey, content)
   }
 
-  public async del(contentKey: string) {
+  public async del(contentKey: Uint8Array) {
     await this.db.del(contentKey)
   }
 
-  public async get(key: string) {
+  public async get(key: Uint8Array) {
     return this.db.get(key)
   }
 
@@ -152,15 +152,15 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.db.size()
   }
 
-  public streamingKey(contentKey: string) {
+  public streamingKey(contentKey: Uint8Array) {
     this.db.addToStreaming(contentKey)
   }
 
-  public contentKeyToId(contentKey: string): string {
-    return bytesToUnprefixedHex(digest(fromHexString(contentKey)))
+  public contentKeyToId(contentKey: Uint8Array): string {
+    return bytesToUnprefixedHex(digest(contentKey))
   }
 
-  abstract store(contentKey: string, value: Uint8Array): Promise<void>
+  abstract store(contentKey: Uint8Array, value: Uint8Array): Promise<void>
 
   public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
@@ -462,7 +462,7 @@ export abstract class BaseNetwork extends EventEmitter {
               for await (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
-                  value = hexToBytes(await this.get(toHexString(key)))
+                  value = hexToBytes(await this.get(key))
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -502,7 +502,7 @@ export abstract class BaseNetwork extends EventEmitter {
           const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
 
           for (let x = 0; x < msg.contentKeys.length; x++) {
-            const cid = this.contentKeyToId(toHexString(msg.contentKeys[x]))
+            const cid = this.contentKeyToId(msg.contentKeys[x])
             const d = distance(cid, this.enr.nodeId)
             if (d >= this.nodeRadius) {
               this.logger.extend('OFFER')(
@@ -511,7 +511,7 @@ export abstract class BaseNetwork extends EventEmitter {
               continue
             }
             try {
-              await this.get(toHexString(msg.contentKeys[x]))
+              await this.get(msg.contentKeys[x])
               this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
             } catch (err) {
               offerAccepted = true
@@ -526,7 +526,7 @@ export abstract class BaseNetwork extends EventEmitter {
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
             this.logger(toHexString(msg.contentKeys[0]))
             for (const k of desiredKeys) {
-              this.streamingKey(toHexString(k))
+              this.streamingKey(k)
             }
             await this.sendAccept(src, requestId, contentIds, desiredKeys)
           } else {
@@ -830,7 +830,7 @@ export abstract class BaseNetwork extends EventEmitter {
   public async gossipContent(contentKey: Uint8Array, content: Uint8Array): Promise<number> {
     const peers = this.routingTable
       .values()
-      .filter((e) => !this.routingTable.contentKeyKnownToPeer(e.nodeId, toHexString(contentKey)))
+      .filter((e) => !this.routingTable.contentKeyKnownToPeer(e.nodeId, contentKey))
     const offerMsg: OfferMessage = {
       contentKeys: [contentKey],
     }
@@ -883,7 +883,7 @@ export abstract class BaseNetwork extends EventEmitter {
     return accepted
   }
 
-  public async retrieve(contentKey: string): Promise<string | undefined> {
+  public async retrieve(contentKey: Uint8Array): Promise<string | undefined> {
     try {
       const content = await this.get(contentKey)
       return content

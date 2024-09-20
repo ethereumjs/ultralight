@@ -1,3 +1,4 @@
+import { hexToBytes } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak'
 import { assert, describe, it } from 'vitest'
 
@@ -10,7 +11,6 @@ import {
   PortalNetwork,
   decodeHistoryNetworkContentKey,
   fromHexString,
-  toHexString,
 } from '../../../src/index.js'
 
 import testdata from './testData/headerWithProof.json'
@@ -45,8 +45,8 @@ describe('Retrieve Block Header By Number', async () => {
   client.networks.set(NetworkId.HistoryNetwork, history)
   client.ETH.history = history
 
-  await history.store(toHexString(contentKey100001), HWP1000001)
-  await history.store(toHexString(contentKey100002), HWP1000002)
+  await history.store(contentKey100001, HWP1000001)
+  await history.store(contentKey100002, HWP1000002)
 
   it('Should retrieve block header by number', async () => {
     const header = await history.getBlockHeaderFromDB({ blockNumber: 1000001n })
@@ -99,12 +99,12 @@ describe('Retrieve Block Header By Number', async () => {
   })
 
   it('Should retrieve locally via eth_getBlockByHash', async () => {
-    const block = await client.ETH.getBlockByHash(hash100001, false)
+    const block = await client.ETH.getBlockByHash(hexToBytes(hash100001), false)
     assert.isDefined(block)
     assert.deepEqual(block!.header.serialize(), header100001)
   })
   it('Should retrieve locally via eth_getBlockByHash', async () => {
-    const block = await client.ETH.getBlockByHash(hash100002, false)
+    const block = await client.ETH.getBlockByHash(hexToBytes(hash100002), false)
     assert.isDefined(block)
     assert.deepEqual(block!.header.serialize(), header100002)
   })

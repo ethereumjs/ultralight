@@ -1,6 +1,6 @@
 import { ENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToInt, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import {
@@ -11,7 +11,6 @@ import {
   RequestCode,
   decodeHistoryNetworkContentKey,
   decodeReceipts,
-  fromHexString,
   reassembleBlock,
   saveReceipts,
   shortId,
@@ -48,12 +47,15 @@ export class HistoryNetwork extends BaseNetwork {
     this.blockHashIndex = new Map()
   }
 
-  public blockNumberToHash(blockNumber: bigint): string | undefined {
-    return this.blockHashIndex.get('0x' + blockNumber.toString(16))
+  public blockNumberToHash(blockNumber: bigint): Uint8Array | undefined {
+    const number = '0x' + blockNumber.toString(16)
+    return this.blockHashIndex.has(number)
+      ? hexToBytes(this.blockHashIndex.get(number)!)
+      : undefined
   }
 
-  public blockHashToNumber(blockHash: string): bigint | undefined {
-    const blockNumber = this.blockHashIndex.get(blockHash)
+  public blockHashToNumber(blockHash: Uint8Array): bigint | undefined {
+    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash))
     return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
@@ -70,12 +72,12 @@ export class HistoryNetwork extends BaseNetwork {
       if (blockHash === undefined) {
         return undefined
       }
-      const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash))
+      const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
       const value = await this.retrieve(hashKey)
       return value !== undefined ? hexToBytes(value) : undefined
     }
 
-    const value = await this.retrieve(toHexString(contentKey))
+    const value = await this.retrieve(contentKey)
     return value !== undefined ? hexToBytes(value) : undefined
   }
 
@@ -100,7 +102,7 @@ export class HistoryNetwork extends BaseNetwork {
       'blockHash' in opt
         ? getContentKey(HistoryNetworkContentType.BlockHeader, opt.blockHash)
         : getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, opt.blockNumber)
-    const value = await this.findContentLocally(fromHexString(contentKey))
+    const value = await this.findContentLocally(contentKey)
     if (value === undefined) return undefined
     const header = BlockHeaderWithProof.deserialize(value).header
     return asBytes === true
@@ -223,7 +225,7 @@ export class HistoryNetwork extends BaseNetwork {
 
         switch (decoded.selector) {
           case FoundContent.UTP: {
-            this.streamingKey(toHexString(key))
+            this.streamingKey(key)
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             await this.handleNewRequest({
@@ -241,7 +243,7 @@ export class HistoryNetwork extends BaseNetwork {
               `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
             )
             try {
-              await this.store(toHexString(key), decoded.value as Uint8Array)
+              await this.store(key, decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -265,10 +267,9 @@ export class HistoryNetwork extends BaseNetwork {
    * @param value - hex string representing RLP encoded blockheader, block body, or block receipt
    * @throws if `blockHash` or `value` is not hex string
    */
-  public store = async (contentKey: string, value: Uint8Array): Promise<void> => {
-    const _contentKey = fromHexString(contentKey)
-    const contentType = _contentKey[0]
-    const keyOpt = _contentKey.slice(1)
+  public store = async (contentKey: Uint8Array, value: Uint8Array): Promise<void> => {
+    const contentType = contentKey[0]
+    const keyOpt = contentKey.slice(1)
     this.logger.extend('STORE')(`Storing ${contentKey} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
@@ -281,7 +282,7 @@ export class HistoryNetwork extends BaseNetwork {
         break
       }
       case HistoryNetworkContentType.BlockBody: {
-        await this.addBlockBody(value, toHexString(keyOpt))
+        await this.addBlockBody(value, keyOpt)
         break
       }
       case HistoryNetworkContentType.Receipt: {
@@ -304,7 +305,7 @@ export class HistoryNetwork extends BaseNetwork {
           this.emit('ContentAdded', hashKey, value)
           if (this.routingTable.values().length > 0) {
             // Gossip new content to network
-            this.gossipManager.add(fromHexString(hashKey), contentType)
+            this.gossipManager.add(hashKey, contentType)
           }
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
@@ -329,7 +330,7 @@ export class HistoryNetwork extends BaseNetwork {
     return decodeReceipts(receipts)
   }
 
-  public async addBlockBody(value: Uint8Array, hashKey: string, header?: Uint8Array) {
+  public async addBlockBody(value: Uint8Array, hashKey: Uint8Array, header?: Uint8Array) {
     if (value.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
@@ -340,16 +341,18 @@ export class HistoryNetwork extends BaseNetwork {
         block = reassembleBlock(header, value)
       } else {
         const headerBytes = (await this.getBlockHeaderFromDB({
-          blockHash: fromHexString(hashKey),
+          blockHash: hashKey,
         })) as Uint8Array
         // Verify we can construct a valid block from the header and body provided
         block = reassembleBlock(headerBytes!, value)
       }
     } catch (err: any) {
-      this.logger(`Block Header for ${shortId(hashKey)} not found locally.  Querying network...`)
+      this.logger(
+        `Block Header for ${shortId(bytesToHex(hashKey))} not found locally.  Querying network...`,
+      )
       block = await this.portal.ETH.getBlockByHash(hashKey, false)
     }
-    const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(hashKey))
+    const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
       await this.put(bodyContentKey, toHexString(value))
       // TODO: Decide when and if to build and store receipts.

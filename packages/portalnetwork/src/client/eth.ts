@@ -1,6 +1,6 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { fromHexString } from '@chainsafe/ssz'
 import { EVM } from '@ethereumjs/evm'
-import { Address, TypeOutput, bytesToHex, hexToBytes, toType } from '@ethereumjs/util'
+import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {
@@ -58,7 +58,7 @@ export class ETH {
   }
 
   public getBlockByHash = async (
-    blockHash: string,
+    blockHash: Uint8Array,
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     let lookupResponse: ContentLookupResponse
@@ -69,19 +69,14 @@ export class ETH {
       this.networkCheck([NetworkId.HistoryNetwork])
       this.history!.logger.extend('getBlockByHash')(`Looking for ${blockHash} locally`)
       // Try to find block locally
-      const block = await this.history!.getBlockFromDB(
-        { blockHash: fromHexString(blockHash) },
-        includeTransactions,
-      )
+      const block = await this.history!.getBlockFromDB({ blockHash }, includeTransactions)
       return block
     } catch {
       /** NOOP */
     }
-    const headerContentKey = hexToBytes(
-      getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash)),
-    )
+    const headerContentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
     const bodyContentKey = includeTransactions
-      ? hexToBytes(getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash)))
+      ? getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
       : undefined
     try {
       let lookup = new ContentLookup(this.history!, headerContentKey)
@@ -130,12 +125,12 @@ export class ETH {
       case 'latest': {
         clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
         if (clHeader === undefined) throw new Error('light client is not tracking head')
-        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+        return this.getBlockByHash(clHeader.execution.blockHash, includeTransactions)
       }
       case 'finalized': {
         clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
         if (clHeader === undefined) throw new Error('no finalized head available')
-        return this.getBlockByHash(toHexString(clHeader.execution.blockHash), includeTransactions)
+        return this.getBlockByHash(clHeader.execution.blockHash, includeTransactions)
       }
     }
   }
@@ -178,7 +173,7 @@ export class ETH {
       header = BlockHeaderWithProof.deserialize(lookupResponse.content).header
       const hash = keccak256(header)
       const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hash)
-      const bodyLookup = new ContentLookup(this.history!, fromHexString(bodyContentKey))
+      const bodyLookup = new ContentLookup(this.history!, bodyContentKey)
       const bodyLookupResponse = await bodyLookup.startLookup()
       if (bodyLookupResponse && 'content' in bodyLookupResponse) {
         // Body found by hash.  Reassemble block

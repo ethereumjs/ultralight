@@ -66,7 +66,10 @@ describe('API tests', async () => {
 
   it('stores and retrieves finality update', async () => {
     const finalityUpdate = specTestVectors.finalityUpdate['6718368']
-    await network.store(finalityUpdate.content_key, hexToBytes(finalityUpdate.content_value))
+    await network.store(
+      hexToBytes(finalityUpdate.content_key),
+      hexToBytes(finalityUpdate.content_value),
+    )
 
     network.lightClient = {
       //@ts-ignore
@@ -97,7 +100,10 @@ describe('API tests', async () => {
 
   it('stores and retrieves optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    await network.store(optimisticUpdate.content_key, hexToBytes(optimisticUpdate.content_value))
+    await network.store(
+      hexToBytes(optimisticUpdate.content_key),
+      hexToBytes(optimisticUpdate.content_value),
+    )
 
     network.lightClient = {
       //@ts-ignore
@@ -115,6 +121,7 @@ describe('API tests', async () => {
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718464n }),
       ),
     )
+    console.log({ retrievedOptimisticUpdate })
 
     assert.equal(
       ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))
@@ -202,7 +209,7 @@ describe('API tests', async () => {
       }),
     )
     const res = HistoricalSummariesWithProof.deserialize(
-      (await network.findContentLocally(hexToBytes(historicalSummariesKey))) as Uint8Array,
+      (await network.findContentLocally(historicalSummariesKey)) as Uint8Array,
     )
     assert.equal(res.epoch, 1169n)
   })

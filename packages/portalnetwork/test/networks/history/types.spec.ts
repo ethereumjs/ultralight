@@ -1,7 +1,7 @@
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
-import { concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
 import { assert, describe, it } from 'vitest'
 
@@ -38,7 +38,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     )
     assert.equal(
       contentId,
-      '0x3e86b3767b57402ea72e369ae0496ce47cc15be685bec3b4726b9f316e3895fe',
+      '3e86b3767b57402ea72e369ae0496ce47cc15be685bec3b4726b9f316e3895fe',
       'block header content ID matches',
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
@@ -53,7 +53,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     )
     assert.equal(
       contentId,
-      '0xebe414854629d60c58ddd5bf60fd72e41760a5f7a463fdcb169f13ee4a26786b',
+      'ebe414854629d60c58ddd5bf60fd72e41760a5f7a463fdcb169f13ee4a26786b',
       'block body content ID matches',
     )
     blockHash = '0xd1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d'
@@ -68,7 +68,7 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     )
     assert.equal(
       contentId,
-      '0xa888f4aafe9109d495ac4d4774a6277c1ada42035e3da5e10a04cc93247c04a4',
+      'a888f4aafe9109d495ac4d4774a6277c1ada42035e3da5e10a04cc93247c04a4',
       'receipt content ID matches',
     )
   })
@@ -303,7 +303,11 @@ describe('Header With Proof serialization/deserialization tests', async () => {
       1000001n,
       'deserialized header number matches test vector',
     )
-    assert.equal(contentKey, testData[1000001].content_key, 'generated expected content key')
+    assert.equal(
+      bytesToHex(contentKey),
+      testData[1000001].content_key,
+      'generated expected content key',
+    )
     assert.ok(
       history.validateHeader(serializedBlock1, {
         blockHash: toHexString(deserializedHeader.hash()),

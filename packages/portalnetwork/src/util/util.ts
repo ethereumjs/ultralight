@@ -1,7 +1,6 @@
 import { digest } from '@chainsafe/as-sha256'
 import { fromHex, toHex } from '@chainsafe/discv5'
-import { toHexString } from '@chainsafe/ssz'
-import { bytesToUtf8 } from '@ethereumjs/util'
+import { bytesToUnprefixedHex, bytesToUtf8 } from '@ethereumjs/util'
 import { toBigIntBE, toBufferBE } from 'bigint-buffer'
 import { promises as fs } from 'fs'
 import * as path from 'path'
@@ -53,7 +52,7 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
  */
 export const serializedContentKeyToContentId = (contentKey: Uint8Array) => {
-  return toHexString(digest(contentKey))
+  return bytesToUnprefixedHex(digest(contentKey))
 }
 
 export const dirSize = async (directory: string) => {

@@ -1,7 +1,7 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
-import { hexToBytes, short } from '@ethereumjs/util'
+import { equalsBytes, hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
@@ -56,7 +56,7 @@ export class ContentLookup {
     this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
-      const res = await this.network.get(toHexString(this.contentKey))
+      const res = await this.network.get(this.contentKey)
       return { content: hexToBytes(res), utp: false }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
@@ -115,8 +115,8 @@ export class ContentLookup {
         peer.hasContent = true
         return new Promise((resolve) => {
           let timeout: any = undefined
-          const utpDecoder = (contentKey: string, content: Uint8Array) => {
-            if (contentKey === toHexString(this.contentKey)) {
+          const utpDecoder = (contentKey: Uint8Array, content: Uint8Array) => {
+            if (equalsBytes(contentKey, this.contentKey)) {
               this.logger(`Received content for this contentKey: ${toHexString(this.contentKey)}`)
               this.network.removeListener('ContentAdded', utpDecoder)
               clearTimeout(timeout)
@@ -145,12 +145,7 @@ export class ContentLookup {
 
         // Offer content to neighbors who should have had content but don't if we receive content directly
         for (const contactedPeer of this.contacted) {
-          if (
-            !this.network.routingTable.contentKeyKnownToPeer(
-              contactedPeer,
-              toHexString(this.contentKey),
-            )
-          ) {
+          if (!this.network.routingTable.contentKeyKnownToPeer(contactedPeer, this.contentKey)) {
             // Only offer content if not already offered to this peer
             void this.network.sendOffer(contactedPeer, [this.contentKey])
           }

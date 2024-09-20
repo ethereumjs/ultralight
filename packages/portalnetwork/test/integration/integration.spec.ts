@@ -15,7 +15,6 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
-  fromHexString,
   generatePreMergeHeaderProof,
   getContentKey,
   toHexString,
@@ -112,8 +111,8 @@ describe('gossip test', async () => {
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
-  network2.on('ContentAdded', async (key, content: Uint8Array) => {
-    const contentType = fromHexString(key)[0]
+  network2.on('ContentAdded', async (key: Uint8Array, content: Uint8Array) => {
+    const contentType = key[0]
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(content)
       const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
@@ -189,12 +188,7 @@ describe('FindContent', async () => {
 
   const res = await network2.sendFindContent(
     node1.discv5.enr.nodeId,
-    hexToBytes(
-      getContentKey(
-        HistoryNetworkContentType.BlockHeaderByNumber,
-        BigInt(testBlockData[29].number),
-      ),
-    ),
+    getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, BigInt(testBlockData[29].number)),
   )
   const headerWithProof = BlockHeaderWithProof.deserialize(res!.value as Uint8Array)
   const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
@@ -262,7 +256,10 @@ describe('eth_getBlockByHash', async () => {
   )
   await network1.sendPing(network2?.enr!.toENR())
 
-  const retrieved = await network2.portal.ETH.getBlockByHash(testBlockData[29].blockHash, false)
+  const retrieved = await network2.portal.ETH.getBlockByHash(
+    hexToBytes(testBlockData[29].blockHash),
+    false,
+  )
 
   await node1.stop()
   await node2.stop()
