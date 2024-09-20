@@ -270,7 +270,7 @@ export class HistoryNetwork extends BaseNetwork {
   public store = async (contentKey: Uint8Array, value: Uint8Array): Promise<void> => {
     const contentType = contentKey[0]
     const keyOpt = contentKey.slice(1)
-    this.logger.extend('STORE')(`Storing ${contentKey} (${value.length} bytes)`)
+    this.logger.extend('STORE')(`Storing ${bytesToHex(contentKey)} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
@@ -290,7 +290,7 @@ export class HistoryNetwork extends BaseNetwork {
           sszReceiptsListType.deserialize(value)
           await this.put(contentKey, toHexString(value))
         } catch (err: any) {
-          this.logger(`Received invalid bytes as receipt data for ${keyOpt}`)
+          this.logger(`Received invalid bytes as receipt data for ${bytesToHex(keyOpt)}`)
           return
         }
         break
@@ -319,7 +319,7 @@ export class HistoryNetwork extends BaseNetwork {
       // Gossip new content to network
       this.gossipManager.add(keyOpt, contentType)
     }
-    this.logger(`${HistoryNetworkContentType[contentType]} added for ${keyOpt}`)
+    this.logger(`${HistoryNetworkContentType[contentType]} added for ${bytesToHex(keyOpt)}`)
   }
 
   public async saveReceipts(block: Block) {
