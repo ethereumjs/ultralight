@@ -1,6 +1,7 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
+import { bytesToHex } from '@ethereumjs/util'
 import {
   ContentLookup,
   ContentMessageType,
@@ -658,8 +659,8 @@ export class portal {
               const timeout = setTimeout(() => {
                 resolve(Uint8Array.from([]))
               }, 10000)
-              this._history.on('ContentAdded', (_contentKey: string, value: Uint8Array) => {
-                if (_contentKey === contentKey) {
+              this._history.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
+                if (bytesToHex(_contentKey) === contentKey) {
                   clearTimeout(timeout)
                   resolve(value)
                 }
@@ -705,8 +706,8 @@ export class portal {
               const timeout = setTimeout(() => {
                 resolve(Uint8Array.from([]))
               }, 2000)
-              this._state.on('ContentAdded', (hash: string, value: Uint8Array) => {
-                if (hash === contentKey) {
+              this._state.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
+                if (bytesToHex(_contentKey) === contentKey) {
                   clearTimeout(timeout)
                   resolve(value)
                 }
