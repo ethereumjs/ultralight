@@ -626,7 +626,12 @@ export abstract class BaseNetwork extends EventEmitter {
       // Discv5 calls for maximum of 16 nodes per NODES message
       const ENRs = this.routingTable.nearest(lookupKey, 16)
 
-      const encodedEnrs = ENRs.filter((enr) => enr.nodeId !== src.nodeId).map((enr) => {
+      const encodedEnrs = ENRs.filter((enr) => {
+        // exclude requesting node's own ENR
+        enr.nodeId !== src.nodeId &&
+          // exclude ENRs that are further from content than us
+          distance(enr.nodeId, lookupKey) < distance(this.enr.nodeId, lookupKey)
+      }).map((enr) => {
         return enr.encode()
       })
       if (encodedEnrs.length > 0) {
