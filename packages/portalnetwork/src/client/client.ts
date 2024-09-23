@@ -26,7 +26,7 @@ import { TransportLayer } from './types.js'
 
 import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
 import type { BaseNetwork } from '../networks/network.js'
-import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
+import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { ENR, NodeId } from '@chainsafe/enr'
@@ -52,7 +52,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
-      enr: {} as SignableENR,
+      enr: {} as SignableENRInput,
       peerId: {} as Secp256k1PeerId,
       bindAddrs: {
         ip4: multiaddr(),
