@@ -131,7 +131,7 @@ const main = async () => {
     if (args.pk === undefined) {
       privateKey = await keys.generateKeyPair('secp256k1')
     } else {
-      privateKey = keys.privateKeyFromRaw(hexToBytes('0x' + args.pk.slice(-64)))
+      privateKey = keys.privateKeyFromRaw(hexToBytes(args.pk).slice(-32))
     }
   } catch (err: any) {
     throw new Error(`Error using pk: ${args.pk}\n${err.message}`)
