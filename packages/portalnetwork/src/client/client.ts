@@ -1,9 +1,8 @@
 import { Discv5 } from '@chainsafe/discv5'
-import { SignableENR, createPeerIdFromPublicKey, createPrivateKeyFromPeerId } from '@chainsafe/enr'
+import { SignableENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
-import { peerIdFromKeys } from '@libp2p/peer-id'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
 import { EventEmitter } from 'events'
@@ -30,7 +29,6 @@ import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { ENR, NodeId } from '@chainsafe/enr'
-import type { PeerId, Secp256k1PeerId } from '@libp2p/interface'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 
@@ -46,14 +44,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   logger: Debugger
   ETH: ETH
   private refreshListeners: Map<NetworkId, ReturnType<typeof setInterval>>
-  private peerId: PeerId
   private supportsRendezvous: boolean
   private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
-      enr: {} as SignableENRInput,
-      peerId: {} as Secp256k1PeerId,
+      enr: opts.config?.enr ?? ({} as SignableENRInput),
+      privateKey: opts.config?.privateKey ?? (await keys.generateKeyPair('secp256k1')),
       bindAddrs: {
         ip4: multiaddr(),
       },
@@ -73,20 +70,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     if (opts.rebuildFromMemory === true && opts.db) {
       const prevEnrString = await opts.db.get('enr')
       const prevPrivateKey = await opts.db.get('privateKey')
-      const prevPublicKey = await opts.db.get('publicKey')
-
-      config.peerId = await peerIdFromKeys(hexToBytes(prevPublicKey), hexToBytes(prevPrivateKey))
-
-      config.enr = SignableENR.decodeTxt(
-        prevEnrString,
-        createPrivateKeyFromPeerId(config.peerId).privateKey,
-      )
+      config.enr = SignableENR.decodeTxt(prevEnrString, hexToBytes(prevPrivateKey))
       const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
       bootnodes =
         opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
     } else if (opts.config?.enr === undefined) {
-      config.peerId = opts.config?.peerId ?? (await createSecp256k1PeerId())
-      config.enr = SignableENR.createFromPeerId(config.peerId)
+      config.enr = SignableENR.createV4(config.privateKey.raw)
 
       bootnodes = opts.bootnodes
     } else {
@@ -186,7 +175,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
-    this.peerId = opts.config.peerId as PeerId
     this.supportsRendezvous = false
     this.unverifiedSessionCache = new LRUCache({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this)
@@ -265,7 +253,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         // corresponding to the node's observed IP/Port so that we can send outbound messages to
         // those nodes later on if needed.  This is currently used by uTP when responding to
         // FINDCONTENT requests from nodes with invalid ENRs.
-        const peerId = await createPeerIdFromPublicKey(enr.keypairType, enr.publicKey)
+        const peerId = enr.peerId
         this.unverifiedSessionCache.set(
           enr.nodeId,
           multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString()),
@@ -390,12 +378,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         {
           type: 'put',
           key: 'privateKey',
-          value: toHexString(this.peerId.privateKey!),
+          value: toHexString(this.discv5.enr.privateKey!),
         },
         {
           type: 'put',
           key: 'publicKey',
-          value: toHexString(this.peerId.publicKey!),
+          value: toHexString(this.discv5.enr.publicKey!),
         },
         {
           type: 'put',
