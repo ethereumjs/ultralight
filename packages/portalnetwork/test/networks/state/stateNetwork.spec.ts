@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { describe, expect, it } from 'vitest'
 
 import { NetworkId, PortalNetwork } from '../../../src/index.js'
@@ -7,13 +7,13 @@ import { NetworkId, PortalNetwork } from '../../../src/index.js'
 import type { StateNetwork } from '../../../src/index.js'
 
 describe('StateNetwork', async () => {
-  const pk = await createSecp256k1PeerId()
-  const enr1 = SignableENR.createFromPeerId(pk)
+  const pk = await keys.generateKeyPair('secp256k1')
+  const enr1 = SignableENR.createFromPrivateKey(pk)
   const ultralight = await PortalNetwork.create({
     bindAddress: '127.0.0.1',
     config: {
       enr: enr1,
-      peerId: pk,
+      privateKey: pk,
     },
     supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
   })

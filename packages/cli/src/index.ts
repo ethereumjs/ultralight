@@ -1,5 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
-import { createFromProtobuf, createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { hexToBytes } from '@ethereumjs/util'
+import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { execSync } from 'child_process'
 import debug from 'debug'
@@ -7,7 +8,7 @@ import * as fs from 'fs'
 import http from 'http'
 import jayson from 'jayson/promise/index.js'
 import { Level } from 'level'
-import { NetworkId, PortalNetwork, fromHexString } from 'portalnetwork'
+import { NetworkId, PortalNetwork } from 'portalnetwork'
 import * as PromClient from 'prom-client'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
@@ -17,7 +18,6 @@ import { RPCManager } from './rpc/rpc.js'
 
 import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
-import type { PeerId } from '@libp2p/interface'
 import type { NetworkConfig } from 'portalnetwork'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
@@ -111,6 +111,11 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
   res.writeHead(200)
   res.end(await register.metrics())
 }
+type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
+  ...args: any
+) => Promise<infer R>
+  ? R
+  : any
 
 const main = async () => {
   const cmd = 'hostname -I'
@@ -120,14 +125,18 @@ const main = async () => {
       : execSync(cmd).toString().split(' ')[0].trim()
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
-  let id: PeerId
+  let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
   let web3: jayson.Client | undefined
-  if (args.pk === undefined) {
-    id = await createSecp256k1PeerId()
-  } else {
-    id = await createFromProtobuf(fromHexString(args.pk))
+  try {
+    if (args.pk === undefined) {
+      privateKey = await keys.generateKeyPair('secp256k1')
+    } else {
+      privateKey = keys.privateKeyFromRaw(hexToBytes(args.pk).slice(-32))
+    }
+  } catch (err: any) {
+    throw new Error(`Error using pk: ${args.pk}\n${err.message}`)
   }
-  const enr = SignableENR.createFromPeerId(id)
+  const enr = SignableENR.createFromPrivateKey(privateKey)
   const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
 
@@ -138,7 +147,7 @@ const main = async () => {
   }
   const config = {
     enr,
-    peerId: id,
+    privateKey,
     config: {
       enrUpdate: true,
       addrVotesToUpdateEnr: 5,

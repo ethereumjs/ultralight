@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
 import { createRequire } from 'module'
@@ -27,12 +27,10 @@ import type { BeaconLightClientNetwork } from '../../../src/networks/beacon/inde
 const require = createRequire(import.meta.url)
 
 const specTestVectors = require('./specTestVectors.json')
+const privateKeys = ['0x08021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd']
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]))
+const enr1 = SignableENR.createFromPrivateKey(pk1)
 describe('API tests', async () => {
-  const privateKeys = [
-    '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
-  ]
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
 
@@ -44,7 +42,7 @@ describe('API tests', async () => {
       bindAddrs: {
         ip4: initMa,
       },
-      peerId: id1,
+      privateKey: pk1,
     },
   })
 
@@ -216,11 +214,6 @@ describe('API tests', async () => {
 })
 
 describe('constructor/initialization tests', async () => {
-  const privateKeys = [
-    '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
-  ]
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
 
@@ -233,7 +226,7 @@ describe('constructor/initialization tests', async () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
@@ -251,7 +244,7 @@ describe('constructor/initialization tests', async () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
       trustedBlockRoot: bytesToHex(randomBytes(32)),
     })
@@ -285,7 +278,7 @@ describe('constructor/initialization tests', async () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
       trustedBlockRoot,
     })

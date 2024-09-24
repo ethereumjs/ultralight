@@ -14,7 +14,6 @@
 //   setLengthLeft,
 //   utf8ToBytes,
 // } from '@ethereumjs/util'
-// import { createFromProtobuf } from '@libp2p/peer-id-factory'
 // import { multiaddr } from '@multiformats/multiaddr'
 // import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { describe } from 'vitest'

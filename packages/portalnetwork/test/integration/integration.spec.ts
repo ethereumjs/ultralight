@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { EventEmitter } from 'events'
 import { readFileSync } from 'fs'
@@ -47,13 +47,13 @@ const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
   return toHexString(testHash)
 })
 
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
+const enr1 = SignableENR.createFromPrivateKey(pk1)
+const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
+const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('gossip test', async () => {
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5000`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5001`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -64,7 +64,7 @@ describe('gossip test', async () => {
       bindAddrs: {
         ip4: initMa,
       },
-      peerId: id1,
+      privateKey: pk1,
     },
   })
   const node2 = await PortalNetwork.create({
@@ -75,7 +75,7 @@ describe('gossip test', async () => {
       bindAddrs: {
         ip4: initMa2,
       },
-      peerId: id2,
+      privateKey: pk2,
     },
   })
 
@@ -137,12 +137,8 @@ describe('gossip test', async () => {
 }, 40000)
 
 describe('FindContent', async () => {
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3070`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3071`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -153,7 +149,7 @@ describe('FindContent', async () => {
       bindAddrs: {
         ip4: initMa,
       },
-      peerId: id1,
+      privateKey: pk1,
     },
   })
 
@@ -165,7 +161,7 @@ describe('FindContent', async () => {
       bindAddrs: {
         ip4: initMa2,
       },
-      peerId: id2,
+      privateKey: pk2,
     },
   })
 
@@ -208,12 +204,8 @@ describe('FindContent', async () => {
 })
 
 describe('eth_getBlockByHash', async () => {
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3080`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3081`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -224,7 +216,7 @@ describe('eth_getBlockByHash', async () => {
       bindAddrs: {
         ip4: initMa,
       },
-      peerId: id1,
+      privateKey: pk1,
     },
   })
 
@@ -236,7 +228,7 @@ describe('eth_getBlockByHash', async () => {
       bindAddrs: {
         ip4: initMa2,
       },
-      peerId: id2,
+      privateKey: pk2,
     },
   })
 

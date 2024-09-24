@@ -1,6 +1,6 @@
-import { SignableENR, createPeerIdFromPrivateKey } from '@chainsafe/enr'
+import { SignableENR } from '@chainsafe/enr'
 import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
-import { secp256k1 } from '@libp2p/interface'
+import { keys } from '@libp2p/crypto'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -54,7 +54,6 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
       'enr:-IS4QIlbUdmqYYXh1Ga17owfX75adT0wftLk9iQNkpftJg9yDjTa4p9mGNmNSYyxIgrWPLg8gNUoSDCZPE3TSOT6SLsDgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQP0sUfmk0sj-uUuy08uM9bqpqmed0thhKXSzmJBOZPXNoN1ZHCCE4g',
       privateKey,
     ),
-    peerId: await createPeerIdFromPrivateKey(secp256k1, privateKey),
     r: 254,
   }
   const client = await PortalNetwork.create({
@@ -62,7 +61,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
     supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {
       enr: config.enr,
-      peerId: config.peerId,
+      privateKey: keys.privateKeyFromRaw(config.enr.privateKey),
     },
   })
   const state = client.networks.get(NetworkId.StateNetwork) as StateNetwork
