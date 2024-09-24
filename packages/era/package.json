@@ -21,7 +21,7 @@
   "author": "acolytec3",
   "license": "MIT",
   "dependencies": {
-    "@chainsafe/ssz": "^0.15.1",
+    "@chainsafe/ssz": "^0.17.1",
     "@ethereumjs/util": "^9.0.3",
     "@lodestar/config": "^1.21.0",
     "@lodestar/types": "^1.21.0",
