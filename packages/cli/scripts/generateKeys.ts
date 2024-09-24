@@ -1,8 +1,7 @@
-import { createSecp256k1PeerId, exportToProtobuf } from '@libp2p/peer-id-factory'
+import { bytesToHex } from '@ethereumjs/util'
+import { keys } from '@libp2p/crypto'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-
-import { toHexString } from '../../portalnetwork/dist/index.js'
 
 const args: any = yargs(hideBin(process.argv)).option('numKeys', {
   describe: 'number of private keys to generate',
@@ -12,8 +11,8 @@ const args: any = yargs(hideBin(process.argv)).option('numKeys', {
 
 const main = async () => {
   for (let x = 0; x < args.numKeys; x++) {
-    const id = await createSecp256k1PeerId()
-    console.log(toHexString(exportToProtobuf(id)))
+    const id = await keys.generateKeyPair('secp256k1')
+    console.log(bytesToHex(id.raw))
   }
 }
 
