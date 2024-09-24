@@ -3,7 +3,6 @@
 // import { Block } from '@ethereumjs/block'
 // import { Trie } from '@ethereumjs/trie'
 // import { Account, Address, bytesToInt, bytesToUtf8, randomBytes } from '@ethereumjs/util'
-// import { createFromProtobuf } from '@libp2p/peer-id-factory'
 // import { multiaddr } from '@multiformats/multiaddr'
 // import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import { describe } from 'vitest'

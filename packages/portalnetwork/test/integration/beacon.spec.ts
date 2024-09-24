@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
 import { bigIntToHex, concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { RunStatusCode } from '@lodestar/light-client'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ForkName } from '@lodestar/params'
@@ -36,14 +36,14 @@ const privateKeys = [
 
 const specTestVectors = require('../networks/beacon/specTestVectors.json')
 
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).subarray(-36))
+const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).subarray(-36))
+const enr1 = SignableENR.createFromPrivateKey(pk1)
+const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('Find Content tests', () => {
   it('should find bootstrap content', async () => {
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -54,7 +54,7 @@ describe('Find Content tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -65,7 +65,7 @@ describe('Find Content tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 
@@ -100,12 +100,8 @@ describe('Find Content tests', () => {
   }, 10000)
   it('should find optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -116,7 +112,7 @@ describe('Find Content tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -127,7 +123,7 @@ describe('Find Content tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 
@@ -201,12 +197,8 @@ describe('Find Content tests', () => {
 
   it('should find LightClientUpdatesByRange update', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3004`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3005`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -217,7 +209,7 @@ describe('Find Content tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -228,7 +220,7 @@ describe('Find Content tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 
@@ -274,12 +266,8 @@ describe('Find Content tests', () => {
 describe('OFFER/ACCEPT tests', () => {
   it('offers optimistic updates to another node', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30022`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30023`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -290,7 +278,7 @@ describe('OFFER/ACCEPT tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -301,7 +289,7 @@ describe('OFFER/ACCEPT tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 
@@ -388,12 +376,8 @@ describe('OFFER/ACCEPT tests', () => {
   }, 10000)
   it('offers a stale optimistic update to another node that is declined', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -404,7 +388,7 @@ describe('OFFER/ACCEPT tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -415,7 +399,7 @@ describe('OFFER/ACCEPT tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
     await node1.start()
@@ -482,12 +466,8 @@ describe('OFFER/ACCEPT tests', () => {
   it('gossips a bootstrap to another node', async () => {
     const bootstrapJson = require('./testdata/bootstrap2.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -498,7 +478,7 @@ describe('OFFER/ACCEPT tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -509,7 +489,7 @@ describe('OFFER/ACCEPT tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
     await node1.start()
@@ -560,12 +540,8 @@ describe('beacon light client sync tests', () => {
      */
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1693431998000)
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/31824`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/31825`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -576,7 +552,7 @@ describe('beacon light client sync tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -587,7 +563,7 @@ describe('beacon light client sync tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 
@@ -684,13 +660,8 @@ describe('beacon light client sync tests', () => {
     const range = require('./testdata/range.json')
     const bootstrapJson = require('./testdata/bootstrap2.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
-
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -701,7 +672,7 @@ describe('beacon light client sync tests', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -712,7 +683,7 @@ describe('beacon light client sync tests', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
     node1.enableLog('*BeaconLightClientNetwork,-uTP')
@@ -799,12 +770,8 @@ describe('historicalSummaries verification', () => {
     const optimisticUpdateJson =
       require('./testdata/historicalSummaries/optimistic_update.json').data
     const optimisticUpdate = ssz.deneb.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30027`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30028`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -815,7 +782,7 @@ describe('historicalSummaries verification', () => {
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
     const node2 = await PortalNetwork.create({
@@ -826,7 +793,7 @@ describe('historicalSummaries verification', () => {
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 

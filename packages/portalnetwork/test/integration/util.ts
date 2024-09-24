@@ -5,9 +5,9 @@ import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToUnprefixedHex, padToEven } from '@ethereumjs/util'
+import { bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, expect, it } from 'vitest'
 
@@ -35,15 +35,10 @@ export const protoBufs = [
 ]
 
 export const getClients = async (port: number) => {
-  const peerIds = await Promise.all(
-    protoBufs.map(async (protoBuf) => {
-      const peerId = await createFromProtobuf(fromHexString(protoBuf))
-      return peerId
-    }),
-  )
   const clients = await Promise.all(
-    peerIds.map(async (peerId, i) => {
-      const enr = SignableENR.createFromPeerId(peerId)
+    protoBufs.map(async (pk, i) => {
+      const privateKey = privateKeyFromProtobuf(hexToBytes(pk).slice(-36))
+      const enr = SignableENR.createV4(hexToBytes(pk))
       const initMa: any = multiaddr(`/ip4/172.17.0.1/udp/${port + i}`)
       enr.setLocationMultiaddr(initMa)
       const node = await PortalNetwork.create({
@@ -54,7 +49,7 @@ export const getClients = async (port: number) => {
           bindAddrs: {
             ip4: initMa,
           },
-          peerId,
+          privateKey,
         },
       })
       await node.start()

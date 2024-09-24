@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, it } from 'vitest'
 
@@ -11,8 +11,8 @@ import { MockProvider } from '../testUtils/mockProvider.js'
 
 it('Test provider functionality', async () => {
   const ma = multiaddr('/ip4/0.0.0.0/udp/1500')
-  const peerId = await createSecp256k1PeerId()
-  const enr = SignableENR.createFromPeerId(peerId)
+  const privateKey = await keys.generateKeyPair('secp256k1')
+  const enr = SignableENR.createFromPrivateKey(privateKey)
   enr.setLocationMultiaddr(ma)
   const provider = await UltralightProvider.create(new MockProvider(), {
     bindAddress: '0.0.0.0',
@@ -22,7 +22,7 @@ it('Test provider functionality', async () => {
         ip4: ma,
       },
       enr,
-      peerId,
+      privateKey,
     },
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
@@ -31,7 +31,7 @@ it('Test provider functionality', async () => {
   assert.ok(block!.number === 5000, 'retrieved block from fallback provider')
 
   // Stub getBlockByHash for unit testing
-  provider.portal.ETH.getBlockByHash = async (_hash: string) => {
+  provider.portal.ETH.getBlockByHash = async (_hash: Uint8Array) => {
     return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
   }
   const block2 = await provider.getBlock(

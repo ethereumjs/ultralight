@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Trie } from '@ethereumjs/trie'
 import { Account, hexToBytes } from '@ethereumjs/util'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
 
@@ -33,13 +33,13 @@ const deserialized = AccountTrieNodeOffer.deserialize(content)
 const { path } = decoded
 const { proof, blockHash } = deserialized
 
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
+const enr1 = SignableENR.createFromPrivateKey(pk1)
+const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
+const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('AccountTrieNode Gossip / Request', async () => {
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3020`)
   enr1.setLocationMultiaddr(initMa)
-  const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-  const enr2 = SignableENR.createFromPeerId(id2)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3021`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
@@ -50,7 +50,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
       bindAddrs: {
         ip4: initMa,
       },
-      peerId: id1,
+      privateKey: pk1,
     },
   })
   const node2 = await PortalNetwork.create({
@@ -61,7 +61,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
       bindAddrs: {
         ip4: initMa2,
       },
-      peerId: id2,
+      privateKey: pk2,
     },
   })
   await node1.start()
@@ -111,15 +111,10 @@ describe('getAccount via network', async () => {
     '0x0a2700250802122102a80d91fa0da65157cf3e7d44cf5a070c01f5a37f5c77536c421813dbe3fe874a12250802122102a80d91fa0da65157cf3e7d44cf5a070c01f5a37f5c77536c421813dbe3fe874a1a24080212203676d8bd61041188b449f9517a51837d415f01caa10f81c7bd22febca0eadf3b',
     '0x0a27002508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe122508021221030bc06a165852567cd1f47728741e44aa8c1445e2f64176866a42f658bb9f13fe1a24080212205be348796815dabfd5c89d2d4dba943f3314a59a47e4d21b2a1a1b66fff330da',
   ]
-  const peerIds = await Promise.all(
-    protoBufs.map(async (protoBuf) => {
-      const peerId = await createFromProtobuf(fromHexString(protoBuf))
-      return peerId
-    }),
-  )
   const clients = await Promise.all(
-    peerIds.map(async (peerId, i) => {
-      const enr = SignableENR.createFromPeerId(peerId)
+    protoBufs.map(async (protobuf, i) => {
+      const pk = keys.privateKeyFromProtobuf(hexToBytes(protobuf).slice(-36))
+      const enr = SignableENR.createFromPrivateKey(pk)
       const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${3022 + i}`)
       enr.setLocationMultiaddr(initMa)
       const node = await PortalNetwork.create({
@@ -130,7 +125,7 @@ describe('getAccount via network', async () => {
           bindAddrs: {
             ip4: initMa,
           },
-          peerId,
+          privateKey: pk,
         },
       })
       await node.start()

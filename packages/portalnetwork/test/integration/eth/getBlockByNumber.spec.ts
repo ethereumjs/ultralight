@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Block } from '@ethereumjs/block'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
-import { createFromProtobuf } from '@libp2p/peer-id-factory'
+import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 import { RunStatusCode } from '@lodestar/light-client'
 import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
@@ -30,15 +30,15 @@ const privateKeys = [
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
 
+const pk1 = privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
+const enr1 = SignableENR.createFromPrivateKey(pk1)
+const pk2 = privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
+const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe(
   'retrieve block using number',
   async () => {
-    const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-    const enr1 = SignableENR.createFromPeerId(id1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
     enr1.setLocationMultiaddr(initMa)
-    const id2 = await createFromProtobuf(hexToBytes(privateKeys[1]))
-    const enr2 = SignableENR.createFromPeerId(id2)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await PortalNetwork.create({
@@ -49,7 +49,7 @@ describe(
         bindAddrs: {
           ip4: initMa,
         },
-        peerId: id1,
+        privateKey: pk1,
       },
     })
 
@@ -61,7 +61,7 @@ describe(
         bindAddrs: {
           ip4: initMa2,
         },
-        peerId: id2,
+        privateKey: pk2,
       },
     })
 
@@ -95,8 +95,6 @@ describe(
 describe('should find a block using "latest" and "finalized"', async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
   vi.setSystemTime(1693431998000)
-  const id1 = await createFromProtobuf(hexToBytes(privateKeys[0]))
-  const enr1 = SignableENR.createFromPeerId(id1)
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/31826`)
   enr1.setLocationMultiaddr(initMa)
 
@@ -111,7 +109,7 @@ describe('should find a block using "latest" and "finalized"', async () => {
       bindAddrs: {
         ip4: initMa,
       },
-      peerId: id1,
+      privateKey: pk1,
     },
   })
 

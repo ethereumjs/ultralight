@@ -1,7 +1,7 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR, SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { MemoryLevel } from 'memory-level'
 import * as td from 'testdouble'
@@ -19,7 +19,6 @@ import {
 } from '../../src/index.js'
 
 import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { BitArray } from '@chainsafe/ssz'
 import type { AbstractLevel } from 'abstract-level'
 
@@ -188,7 +187,7 @@ describe('handleFindNodes message handler tests', async () => {
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  type sendResponse = (src: INodeAddress, requestId: bigint, payload: Uint8Array) => Promise<void>
+  type sendResponse = (src: any, requestId: bigint, payload: Uint8Array) => Promise<void>
   network.sendResponse = td.func<sendResponse>()
 
   const sortedEnrs: ENR[] = []
@@ -196,8 +195,8 @@ describe('handleFindNodes message handler tests', async () => {
   it('test FindNodes', async () => {
     for (let x = 239; x < 257; x++) {
       const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, x)
-      const peerId = await createSecp256k1PeerId()
-      const enr = SignableENR.createFromPeerId(peerId)
+      const privKey = await keys.generateKeyPair('secp256k1')
+      const enr = SignableENR.createFromPrivateKey(privKey)
       const remoteEnr = enr.toENR()
       ;(remoteEnr as any).nodeId = id
       sortedEnrs.push(remoteEnr)
@@ -244,8 +243,8 @@ describe('handleFindNodes message handler tests', async () => {
     td.reset()
 
     const id = generateRandomNodeIdAtDistance(node.discv5.enr.nodeId, 255)
-    const peerId = await createSecp256k1PeerId()
-    const enr = SignableENR.createFromPeerId(peerId)
+    const privKey = await keys.generateKeyPair('secp256k1')
+    const enr = SignableENR.createFromPrivateKey(privKey)
     enr.encode()
     ;(enr as any)._nodeId = id
     network.routingTable.insertOrUpdate(enr.toENR(), EntryStatus.Connected)
