@@ -749,7 +749,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     const count = Number(rangeKey.count)
     const start = Number(rangeKey.startPeriod)
     const range = []
-    console.log(count, start)
+
     for (let x = start; x < start + count; x++) {
       const update = await this.retrieve(this.computeLightClientUpdateKey(x))
       if (update === undefined) {
