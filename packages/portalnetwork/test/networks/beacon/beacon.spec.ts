@@ -119,7 +119,6 @@ describe('API tests', async () => {
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718464n }),
       ),
     )
-    console.log({ retrievedOptimisticUpdate })
 
     assert.equal(
       ssz.capella.LightClientOptimisticUpdate.deserialize(retrievedOptimisticUpdate!.slice(4))

@@ -315,6 +315,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     let value
     let key
+
     switch (contentKey[0]) {
       case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
         try {
@@ -322,7 +323,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         } catch {
           // We catch here in case we don't have all of the updates requested by the range
           // in which case we shouldn't return any content
-          value = new Uint8Array()
         }
         break
       case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
@@ -413,7 +413,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         value = await this.retrieve(contentKey)
     }
 
-    return value instanceof Uint8Array ? value : hexToBytes(value ?? '0x')
+    return value instanceof Uint8Array ? value : value !== undefined ? hexToBytes(value) : undefined
   }
 
   public sendFindContent = async (
@@ -749,6 +749,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     const count = Number(rangeKey.count)
     const start = Number(rangeKey.startPeriod)
     const range = []
+    console.log(count, start)
     for (let x = start; x < start + count; x++) {
       const update = await this.retrieve(this.computeLightClientUpdateKey(x))
       if (update === undefined) {
