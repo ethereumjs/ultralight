@@ -1,5 +1,11 @@
-node_modules
+packages/archived-browser-client
 packages/browser-client
+packages/era
+packages/portal-spec-tests
 packages/proxy
+packages/ui
 .github
 .vscode
+build
+config
+scripts
