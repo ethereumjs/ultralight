@@ -616,7 +616,7 @@ export class portal {
       `${res !== undefined ? toHexString(res) : 'content not found'}`,
     )
     if (res === undefined) {
-      throw new Error('No content found')
+      return '0x'
     }
     return toHexString(res)
   }
@@ -933,7 +933,15 @@ export class portal {
 
   async beaconLocalContent(params: [string]) {
     const [contentKey] = params
+    this.logger.extend(`beaconLocalContent`)(`Received request for ${contentKey}`)
+
     const content = await this._beacon.findContentLocally(fromHexString(contentKey))
+    this.logger.extend(`beaconLocalContent`)(
+      `request returned ${content !== undefined ? content.length : 'null'} bytes`,
+    )
+    this.logger.extend(`beaconLocalContent`)(
+      `retrieved content: ${content !== undefined ? toHexString(content) : 'content not found'}`,
+    )
     if (content !== undefined) return toHexString(content)
     else return '0x'
   }
