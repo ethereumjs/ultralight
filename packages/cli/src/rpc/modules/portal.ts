@@ -77,6 +77,7 @@ const methods = [
   'portal_historyLookupEnr',
   // beacon
   'portal_beaconSendFindContent',
+  'portal_beaconFindContent',
   'portal_beaconStore',
   'portal_beaconLocalContent',
   'portal_beaconAddEnr',
@@ -687,6 +688,7 @@ export class portal {
     })
     return returnVal
   }
+
   async stateFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
@@ -926,6 +928,53 @@ export class portal {
     return '0x'
   }
 
+  async beaconFindContent(params: [string, string]) {
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    if (!this._history.routingTable.getWithPending(nodeId)?.value) {
+      const pong = await this._beacon.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
+    const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
+    this.logger.extend('findContent')(
+      `request returned type: ${res ? FoundContent[res.selector] : res}`,
+    )
+    if (!res) {
+      return { enrs: [] }
+    }
+    const content: Uint8Array | Uint8Array[] =
+      res.selector === FoundContent.ENRS
+        ? (res.value as Uint8Array[])
+        : res.selector === FoundContent.CONTENT
+          ? (res.value as Uint8Array)
+          : await new Promise((resolve) => {
+              const timeout = setTimeout(() => {
+                resolve(Uint8Array.from([]))
+              }, 10000)
+              this._history.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
+                if (bytesToHex(_contentKey) === contentKey) {
+                  clearTimeout(timeout)
+                  resolve(value)
+                }
+              })
+            })
+    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
+    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+    const returnVal =
+      res.selector === FoundContent.ENRS
+        ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
+        : {
+            content: content.length > 0 ? toHexString(content as Uint8Array) : '0x',
+            utpTransfer: res.selector === FoundContent.UTP,
+          }
+    this.logger.extend('findContent')({
+      selector: FoundContent[res.selector],
+      value: returnVal,
+    })
+    return returnVal
+  }
   async beaconStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
