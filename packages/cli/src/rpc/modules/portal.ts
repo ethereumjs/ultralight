@@ -616,7 +616,10 @@ export class portal {
       `${res !== undefined ? toHexString(res) : 'content not found'}`,
     )
     if (res === undefined) {
-      throw new Error('No content found')
+      throw {
+        code: -32009,
+        message: 'no content found',
+      }
     }
     return toHexString(res)
   }
@@ -630,7 +633,10 @@ export class portal {
       `${res !== undefined ? toHexString(res) : 'content not found'}`,
     )
     if (res === undefined) {
-      throw new Error('No content found')
+      throw {
+        code: -32009,
+        message: 'no content found',
+      }
     }
     return toHexString(res)
   }
@@ -943,7 +949,10 @@ export class portal {
       `retrieved content: ${content !== undefined ? toHexString(content) : 'content not found'}`,
     )
     if (content !== undefined) return toHexString(content)
-    throw new Error('no content found')
+    throw {
+      code: -32009,
+      message: 'no content found',
+    }
   }
 
   async beaconAddBootNode(params: [string]): Promise<boolean> {
