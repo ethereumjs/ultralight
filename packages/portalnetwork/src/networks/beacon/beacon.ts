@@ -689,7 +689,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     }
 
     this.logger(
-      `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${contentKey}`,
+      `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${bytesToHex(contentKey)}`,
     )
     this.emit('ContentAdded', contentKey, value)
   }
