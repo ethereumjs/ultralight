@@ -30,7 +30,7 @@ const main = async () => {
   const stored = await ultralights[0].request('portal_beaconLocalContent', [contentKey])
   console.log(stored.result)
 
-  const gossipBody = await ultralights[1].request('portal_beaconFindContent', [enrs[1], contentKey])
+  const gossipBody = await ultralights[1].request('portal_beaconFindContent', [enrs[0], contentKey])
   console.log(gossipBody)
   await new Promise((res) => {
     setTimeout(res, 1000)
