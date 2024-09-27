@@ -8,6 +8,7 @@ import {
   hexToBytes,
   intToHex,
   padToEven,
+  short,
 } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
@@ -348,7 +349,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           )
           this.logger.extend('FINDLOCALLY')(
             `light client is not running, retrieving whatever we have - ${
-              value ?? 'nothing found'
+              value !== undefined ? short(value) : 'nothing found'
             }`,
           )
         } else {

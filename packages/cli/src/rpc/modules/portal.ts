@@ -1,7 +1,7 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
-import { bytesToHex } from '@ethereumjs/util'
+import { bytesToHex, short } from '@ethereumjs/util'
 import {
   ContentLookup,
   ContentMessageType,
@@ -219,7 +219,10 @@ export class portal {
       [validators.dstId],
       [validators.hex],
     ])
-
+    this.beaconFindContent = middleware(this.beaconFindContent.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
     this.beaconStore = middleware(this.beaconStore.bind(this), 2, [
       [validators.hex],
       [validators.hex],
@@ -931,12 +934,16 @@ export class portal {
   async beaconFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
-    if (!this._history.routingTable.getWithPending(nodeId)?.value) {
+    this.logger.extend('findContent')(
+      `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
+    )
+    if (!this._beacon.routingTable.getWithPending(nodeId)?.value) {
       const pong = await this._beacon.sendPing(enr)
       if (!pong) {
         return ''
       }
     }
+
     const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
     this.logger.extend('findContent')(
       `request returned type: ${res ? FoundContent[res.selector] : res}`,
@@ -995,7 +1002,7 @@ export class portal {
       `request returned ${content !== undefined ? content.length : 'null'} bytes`,
     )
     this.logger.extend(`beaconLocalContent`)(
-      `retrieved content: ${content !== undefined ? toHexString(content) : 'content not found'}`,
+      `retrieved content: ${content !== undefined ? short(toHexString(content)) : 'content not found'}`,
     )
     if (content !== undefined) return toHexString(content)
     throw {
