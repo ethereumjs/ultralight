@@ -72,7 +72,7 @@ const args: any = yargs(hideBin(process.argv))
 const main = async () => {
   console.log(`starting ${args.numNodes} nodes`)
 
-  const ip = '0.0.0.0'
+  const ip = '127.0.0.1'
   const children: ChildProcessByStdio<any, any, null>[] = []
 
   const file = require.resolve('../src/index.ts')

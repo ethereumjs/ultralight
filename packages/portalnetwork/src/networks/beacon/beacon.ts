@@ -450,6 +450,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
                 if (equalsBytes(contentKey, key)) {
+                  this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
                   resolve({ selector: 0, value })
                 }
               })

@@ -660,24 +660,19 @@ export class portal {
     if (!res) {
       return { enrs: [] }
     }
-    const content: Uint8Array | Uint8Array[] =
-      res.selector === FoundContent.ENRS
-        ? (res.value as Uint8Array[])
-        : res.selector === FoundContent.CONTENT
-          ? (res.value as Uint8Array)
-          : await new Promise((resolve) => {
-              const timeout = setTimeout(() => {
-                resolve(Uint8Array.from([]))
-              }, 10000)
-              this._history.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
-                if (bytesToHex(_contentKey) === contentKey) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              })
-            })
+    let content: Uint8Array | Uint8Array[] = []
+    switch (res.selector) {
+      case FoundContent.ENRS:
+        content = res.value as Uint8Array[]
+        break
+      case FoundContent.CONTENT:
+      case FoundContent.UTP:
+        content = res.value as Uint8Array
+        break
+    }
+
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+
     const returnVal =
       res.selector === FoundContent.ENRS
         ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
@@ -708,24 +703,19 @@ export class portal {
     if (!res) {
       return { enrs: [] }
     }
-    const content: Uint8Array | Uint8Array[] =
-      res.selector === FoundContent.ENRS
-        ? (res.value as Uint8Array[])
-        : res.selector === FoundContent.CONTENT
-          ? (res.value as Uint8Array)
-          : await new Promise((resolve) => {
-              const timeout = setTimeout(() => {
-                resolve(Uint8Array.from([]))
-              }, 2000)
-              this._state.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
-                if (bytesToHex(_contentKey) === contentKey) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              })
-            })
+    let content: Uint8Array | Uint8Array[] = []
+    switch (res.selector) {
+      case FoundContent.ENRS:
+        content = res.value as Uint8Array[]
+        break
+      case FoundContent.CONTENT:
+      case FoundContent.UTP:
+        content = res.value as Uint8Array
+        break
+    }
+
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+
     this.logger.extend('findContent')(content)
     return res.selector === FoundContent.ENRS
       ? { enrs: content }
@@ -948,27 +938,23 @@ export class portal {
     this.logger.extend('findContent')(
       `request returned type: ${res ? FoundContent[res.selector] : res}`,
     )
+
     if (!res) {
       return { enrs: [] }
     }
-    const content: Uint8Array | Uint8Array[] =
-      res.selector === FoundContent.ENRS
-        ? (res.value as Uint8Array[])
-        : res.selector === FoundContent.CONTENT
-          ? (res.value as Uint8Array)
-          : await new Promise((resolve) => {
-              const timeout = setTimeout(() => {
-                resolve(Uint8Array.from([]))
-              }, 10000)
-              this._history.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
-                if (bytesToHex(_contentKey) === contentKey) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              })
-            })
+    let content: Uint8Array | Uint8Array[] = []
+    switch (res.selector) {
+      case FoundContent.ENRS:
+        content = res.value as Uint8Array[]
+        break
+      case FoundContent.CONTENT:
+      case FoundContent.UTP:
+        content = res.value as Uint8Array
+        break
+    }
+
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+
     const returnVal =
       res.selector === FoundContent.ENRS
         ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
@@ -982,6 +968,7 @@ export class portal {
     })
     return returnVal
   }
+
   async beaconStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
