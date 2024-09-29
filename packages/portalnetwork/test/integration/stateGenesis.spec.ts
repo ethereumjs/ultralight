@@ -1,4 +1,4 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import { BranchNode, Trie } from '@ethereumjs/trie'
 import { Account, bytesToUnprefixedHex, padToEven } from '@ethereumjs/util'
@@ -24,19 +24,19 @@ describe('genesisContent', async () => {
   let invalid = 0
   for (const leaf of result.leafNodeContent) {
     const [key, value] = leaf
-    const contentKey = AccountTrieNodeContentKey.decode(fromHexString(key))
+    const contentKey = AccountTrieNodeContentKey.decode(hexToBytes(key))
     const deserialized = AccountTrieNodeOffer.deserialize(value)
     const r = t['hash'](deserialized.proof[0])
     const l = t['hash'](deserialized.proof[deserialized.proof.length - 1])
     try {
       assert.deepEqual(
         deserialized.blockHash,
-        fromHexString('0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
+        hexToBytes('0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
       )
       assert.deepEqual(contentKey.nodeHash, l)
       assert.deepEqual(
         r,
-        fromHexString('0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544'),
+        hexToBytes('0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544'),
       )
       valid++
     } catch {
@@ -52,12 +52,12 @@ describe('genesisContent', async () => {
   it('should have no invalid proofs for all accounts', async () => {
     expect(invalid).toEqual(0)
   })
-  t.root(fromHexString('0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544'))
+  t.root(hexToBytes('0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544'))
   let fails = 0
   let pass = 0
   for await (const [add, bal] of Object.entries(mainnet.alloc)) {
     const address = '0x' + padToEven(add)
-    const accountVal = await t.get(fromHexString(address))
+    const accountVal = await t.get(hexToBytes(address))
     try {
       const account = Account.fromRlpSerializedAccount(accountVal!)
       expect(account.balance).toEqual(BigInt(bal.balance))
@@ -80,7 +80,7 @@ describe('genesisDevnet', async () => {
   const sortedNodeHashByClient = await populateGenesisDB(trie, networks)
   const hasRoot = Object.entries(sortedNodeHashByClient)
     .filter(([_, nodeHashes]) =>
-      nodeHashes.map((h) => toHexString(h)).includes(toHexString(trie.root())),
+      nodeHashes.map((h) => bytesToHex(h)).includes(bytesToHex(trie.root())),
     )
     .map(([nodeId, _]) => nodeId)
   it('should store root in some clients', () => {
@@ -90,7 +90,7 @@ describe('genesisDevnet', async () => {
 
   const storedTrieNodes = Object.entries(sortedNodeHashByClient)
     .map(([_, trieNodes]) => {
-      return trieNodes.map((node) => toHexString(node))
+      return trieNodes.map((node) => bytesToHex(node))
     })
     .flat()
   const uniqueStoredTrieNodes = Array.from(new Set(storedTrieNodes))
@@ -149,7 +149,7 @@ describe('execute Block 1', async () => {
   const sortedNodeHashByClient = await populateGenesisDB(trie, networks)
   const hasRoot = Object.entries(sortedNodeHashByClient)
     .filter(([_, nodeHashes]) =>
-      nodeHashes.map((h) => toHexString(h)).includes(toHexString(trie.root())),
+      nodeHashes.map((h) => bytesToHex(h)).includes(bytesToHex(trie.root())),
     )
     .map(([nodeId, _]) => nodeId)
   it('should store root in some clients', () => {
@@ -159,7 +159,7 @@ describe('execute Block 1', async () => {
 
   const storedTrieNodes = Object.entries(sortedNodeHashByClient)
     .map(([_, trieNodes]) => {
-      return trieNodes.map((node) => toHexString(node))
+      return trieNodes.map((node) => bytesToHex(node))
     })
     .flat()
   const uniqueStoredTrieNodes = Array.from(new Set(storedTrieNodes))
@@ -176,7 +176,7 @@ describe('execute Block 1', async () => {
   })
 
   const block1raw = rawBlocks.block1raw
-  const block = Block.fromRLPSerializedBlock(fromHexString(block1raw), { setHardfork: true })
+  const block = Block.fromRLPSerializedBlock(hexToBytes(block1raw), { setHardfork: true })
 
   const runResult = await vm.runBlock({
     block,
@@ -220,8 +220,8 @@ describe('execute Block 1', async () => {
 
   it('should calculate new state root', async () => {
     assert.equal(
-      toHexString(prooftrie.root()),
-      toHexString(block.header.stateRoot),
+      bytesToHex(prooftrie.root()),
+      bytesToHex(block.header.stateRoot),
       'successfully updates state from block',
     )
   })

@@ -21,7 +21,7 @@ import {
   getContentKey,
   reassembleBlock,
   sszEncodeBlockBody,
-  toHexString,
+  bytesToHex,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -203,7 +203,7 @@ describe('Header Tests', async () => {
     })
     try {
       const res = network.validateHeader(serializedHeaderWithProof, {
-        blockHash: toHexString(header.hash()),
+        blockHash: bytesToHex(header.hash()),
       })
       assert.ok(res, 'validated post-merge proof')
     } catch (err: any) {

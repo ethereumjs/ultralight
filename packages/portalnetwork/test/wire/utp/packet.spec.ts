@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { bytesToHex } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
@@ -163,7 +163,7 @@ export function encodingTest(
       )
     }
     const encodedPacket = testPacket.encode()
-    assert.equal(toHexString(encodedPacket), expectedResult, 'Packet encoding test passed')
+    assert.equal(bytesToHex(encodedPacket), expectedResult, 'Packet encoding test passed')
     const testHeader = testPacket.header
     const decodedPacket = Packet.fromBuffer(Buffer.from(expectedResult.slice(2), 'hex'))
     const decodedHeader = decodedPacket.header
@@ -191,8 +191,8 @@ export function encodingTest(
     // }
     if (packetType === PacketType.ST_DATA) {
       assert.equal(
-        toHexString(Buffer.from(testData.payload!)),
-        toHexString(Buffer.from(Uint8Array.from(decodedPacket.payload!))),
+        bytesToHex(Buffer.from(testData.payload!)),
+        bytesToHex(Buffer.from(Uint8Array.from(decodedPacket.payload!))),
         `Successfully encoded and decoded DATA Packet payload.`,
       )
     }

@@ -14,7 +14,6 @@ import {
   reassembleBlock,
   saveReceipts,
   shortId,
-  toHexString,
 } from '../../index.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
@@ -164,7 +163,7 @@ export class HistoryNetwork extends BaseNetwork {
           } else {
             verifyPreMergeHeaderProof(
               proof.value,
-              toHexString(header.hash()),
+              bytesToHex(header.hash()),
               validation.blockNumber,
             )
           }
@@ -185,7 +184,7 @@ export class HistoryNetwork extends BaseNetwork {
         }
       }
     }
-    await this.indexBlockHash(header.number, toHexString(header.hash()))
+    await this.indexBlockHash(header.number, bytesToHex(header.hash()))
     return header.hash()
   }
 
@@ -274,8 +273,8 @@ export class HistoryNetwork extends BaseNetwork {
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
         try {
-          await this.validateHeader(value, { blockHash: toHexString(keyOpt) })
-          await this.put(contentKey, toHexString(value))
+          await this.validateHeader(value, { blockHash: bytesToHex(keyOpt) })
+          await this.put(contentKey, bytesToHex(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
@@ -288,7 +287,7 @@ export class HistoryNetwork extends BaseNetwork {
       case HistoryNetworkContentType.Receipt: {
         try {
           sszReceiptsListType.deserialize(value)
-          await this.put(contentKey, toHexString(value))
+          await this.put(contentKey, bytesToHex(value))
         } catch (err: any) {
           this.logger(`Received invalid bytes as receipt data for ${bytesToHex(keyOpt)}`)
           return
@@ -301,7 +300,7 @@ export class HistoryNetwork extends BaseNetwork {
           const blockHash = await this.validateHeader(value, { blockNumber })
           // Store block header using 0x00 key type
           const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
-          await this.put(hashKey, toHexString(value))
+          await this.put(hashKey, bytesToHex(value))
           this.emit('ContentAdded', hashKey, value)
           if (this.routingTable.values().length > 0) {
             // Gossip new content to network
@@ -354,7 +353,7 @@ export class HistoryNetwork extends BaseNetwork {
     }
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
-      await this.put(bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, bytesToHex(value))
       // TODO: Decide when and if to build and store receipts.
       //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
       // if (block.transactions.length > 0) {
@@ -363,7 +362,7 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
-      await this.put(bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, bytesToHex(value))
       // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
       // as it's against spec
       return
@@ -375,6 +374,6 @@ export class HistoryNetwork extends BaseNetwork {
     if (block === undefined) {
       throw new Error('Block not found')
     }
-    return toHexString(block.header.stateRoot)
+    return bytesToHex(block.header.stateRoot)
   }
 }

@@ -8,7 +8,7 @@ import {
   NetworkId,
   type PortalNetwork,
   computeLightClientKeyFromPeriod,
-  fromHexString,
+  hexToBytes,
   getBeaconContentKey,
 } from 'portalnetwork'
 
@@ -90,12 +90,12 @@ export class beacon {
     const period = Number(BigInt(params[0]))
     const rangeKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.LightClientUpdate,
-      fromHexString(computeLightClientKeyFromPeriod(period)),
+      hexToBytes(computeLightClientKeyFromPeriod(period)),
     )
     const update = await this._beacon.retrieve(rangeKey)
     if (update !== undefined) {
       return ssz.capella.LightClientUpdate.toJson(
-        ssz.capella.LightClientUpdate.deserialize(fromHexString(update)),
+        ssz.capella.LightClientUpdate.deserialize(hexToBytes(update)),
       )
     }
     const lookup = new ContentLookup(
@@ -109,7 +109,7 @@ export class beacon {
     if (res !== undefined && 'content' in Object.keys(res)) {
       return ssz.capella.LightClientUpdate.toJson(
         //@ts-ignore
-        ssz.capella.LightClientUpdate.deserialize(fromHexString(res.content)),
+        ssz.capella.LightClientUpdate.deserialize(hexToBytes(res.content)),
       )
     }
   }

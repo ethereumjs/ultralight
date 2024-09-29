@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { bytesToHex } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
@@ -131,7 +131,7 @@ describe('Beacon network type tests using portal network spec test vectors', () 
 
   it('deserializes bootstrap key', () => {
     assert.equal(
-      toHexString(LightClientBootstrapKey.deserialize(bootstrapKey).blockHash),
+      bytesToHex(LightClientBootstrapKey.deserialize(bootstrapKey).blockHash),
       '0xbd9f42d9a42d972bdaf4dee84e5b419dd432b52867258acb7bcc7f567b6e3af1',
       'deserialized light client bootstrap key',
     )

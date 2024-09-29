@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { bytesToHex } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { PortalTrieDB, getDatabaseContent, getDatabaseKey, keyType, wrapDBContent } from './util.js'
@@ -34,7 +34,7 @@ export class StateDB {
    */
   async storeContent(contentKey: Uint8Array, content: Uint8Array) {
     const log = this.logger.extend('storeContent')
-    log(`called with contentKey: ${toHexString(contentKey)} and content: [${content.length} bytes]`)
+    log(`called with contentKey: ${bytesToHex(contentKey)} and content: [${content.length} bytes]`)
     const dbKey = getDatabaseKey(contentKey)
     const dbContent = getDatabaseContent(keyType(contentKey), content)
     await this.db.put(dbKey, dbContent)
@@ -48,7 +48,7 @@ export class StateDB {
    */
   async getContent(contentKey: Uint8Array): Promise<string | undefined> {
     const dbKey = getDatabaseKey(contentKey)
-    this.logger!(`getContent: \ncontentKey: ${toHexString(contentKey)}\n: dbKey: ${dbKey}\n`)
+    this.logger!(`getContent: \ncontentKey: ${bytesToHex(contentKey)}\n: dbKey: ${dbKey}\n`)
     const allkeys = []
     for await (const key of this.db.db.keys()) {
       allkeys.push(key)

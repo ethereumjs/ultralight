@@ -1,10 +1,9 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { BranchNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToInt, bytesToUnprefixedHex } from '@ethereumjs/util'
+import { bytesToInt, bytesToUnprefixedHex, hexToBytes, bytesToHex } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 
@@ -101,7 +100,7 @@ export class StateNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             this.logger(
-              `received ${StateNetworkContentType[contentType]} content corresponding to ${toHexString(key)}`,
+              `received ${StateNetworkContentType[contentType]} content corresponding to ${bytesToHex(key)}`,
             )
             try {
               await this.stateDB.storeContent(key, decoded.value as Uint8Array)
@@ -123,7 +122,7 @@ export class StateNetwork extends BaseNetwork {
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     const value = await this.stateDB.getContent(contentKey)
-    return value !== undefined ? fromHexString(value) : undefined
+    return value !== undefined ? hexToBytes(value) : undefined
   }
 
   public routingTableInfo = async () => {
@@ -191,7 +190,7 @@ export class StateNetwork extends BaseNetwork {
         })
         interested.push({ contentKey, dbContent })
       } else {
-        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
+        notInterested.push({ contentKey, nodeHash: bytesToHex(nodeHash) })
       }
       curRlp = nodes.pop()
     }
@@ -236,7 +235,7 @@ export class StateNetwork extends BaseNetwork {
     const keyobj = AccountTrieNodeContentKey.decode(key)
     if (request === undefined || !('content' in request)) {
       throw new Error(
-        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
+        `network doesn't have node [${unpackNibbles(keyobj.path)}]${bytesToHex(keyobj.nodeHash)}`,
       )
     }
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
@@ -248,7 +247,7 @@ export class StateNetwork extends BaseNetwork {
       db: this.stateDB.db,
     })
     lookupTrie.root(stateroot)
-    const addressPath = addressToNibbles(fromHexString(address))
+    const addressPath = addressToNibbles(hexToBytes(address))
     const hasRoot = this.stateDB.db._database.get(bytesToUnprefixedHex(stateroot))
     if (hasRoot === undefined) {
       const lookup = new ContentLookup(
@@ -260,13 +259,13 @@ export class StateNetwork extends BaseNetwork {
       )
       const request = await lookup.startLookup()
       if (request === undefined || !('content' in request)) {
-        throw new Error(`network doesn't have root node ${toHexString(stateroot)}`)
+        throw new Error(`network doesn't have root node ${bytesToHex(stateroot)}`)
       }
       const requestContent = request.content
       const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
       this.stateDB.db.temp.set(bytesToUnprefixedHex(stateroot), bytesToUnprefixedHex(node))
     }
-    let accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
+    let accountPath = await lookupTrie.findPath(lookupTrie['hash'](hexToBytes(address)))
     while (!accountPath.node) {
       const consumedNibbles = accountPath.stack
         .slice(1)
@@ -290,13 +289,13 @@ export class StateNetwork extends BaseNetwork {
         nodeHash: nextNodeHash as Uint8Array,
       })
       const found = await this.lookupTrieNode(nextContentKey)
-      if ((await this.stateDB.db.get(toHexString(found.nodeHash).slice(2))) === undefined) {
+      if ((await this.stateDB.db.get(bytesToHex(found.nodeHash).slice(2))) === undefined) {
         this.stateDB.db.temp.set(
           bytesToUnprefixedHex(found.nodeHash),
           bytesToUnprefixedHex(found.node),
         )
       }
-      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
+      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](hexToBytes(address)))
       if (nextPath.stack.length === accountPath.stack.length) {
         return { ...nextPath }
       }

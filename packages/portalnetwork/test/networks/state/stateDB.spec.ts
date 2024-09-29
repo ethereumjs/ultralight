@@ -9,10 +9,10 @@ import {
   PortalTrieDB,
   StateNetworkContentKey,
   StateNetworkContentType,
-  fromHexString,
+  hexToBytes,
   getDatabaseContent,
   getDatabaseKey,
-  toHexString,
+  bytesToHex,
 } from '../../../src/index.js'
 import { StateDB } from '../../../src/networks/state/statedb.js'
 
@@ -48,25 +48,25 @@ describe('StateDB components', async () => {
   const tKey = '0xabcd'
   const tVal = '0x1234'
 
-  await trie.put(fromHexString(tKey), fromHexString(tVal))
-  const value = await trie.get(fromHexString(tKey))
+  await trie.put(hexToBytes(tKey), hexToBytes(tVal))
+  const value = await trie.get(hexToBytes(tKey))
 
   it('should put and get trie value', async () => {
-    assert.deepEqual(value, fromHexString('0x1234'), 'should find trie node in StateDB')
+    assert.deepEqual(value, hexToBytes('0x1234'), 'should find trie node in StateDB')
   })
   const rootHex = bytesToUnprefixedHex(trie.root())
   const tNode = await portalTrieDB.get(rootHex)
-  const node = decodeNode(fromHexString(tNode!))
+  const node = decodeNode(hexToBytes(tNode!))
 
   it('should find trie node in db', () => {
     assert.deepEqual(node.value(), value, 'should find trie node in StateDB')
-    assert.deepEqual(node.value(), fromHexString('0x1234'), 'should find trie node in StateDB')
+    assert.deepEqual(node.value(), hexToBytes('0x1234'), 'should find trie node in StateDB')
   })
 
   it('should delete node from trie database', async () => {
     await portalTrieDB.del(rootHex)
     try {
-      await trie.get(fromHexString(tKey), true)
+      await trie.get(hexToBytes(tKey), true)
       assert.fail('value should be deleted from trie')
     } catch {
       assert.ok('deleted value deleted')
@@ -82,7 +82,7 @@ describe('database key / database contents', async () => {
   )
   await stateDB.db.open()
   const [sampleKey, sampleContent] = testdata[0] as [string, object]
-  const sampleContentKey = StateNetworkContentKey.decode(fromHexString(sampleKey))
+  const sampleContentKey = StateNetworkContentKey.decode(hexToBytes(sampleKey))
   const sampleContentBytes = Uint8Array.from(Object.values(sampleContent))
   const content = AccountTrieNodeOffer.deserialize(sampleContentBytes)
   const { nodeHash, path } = sampleContentKey as TAccountTrieNodeKey
@@ -97,18 +97,18 @@ describe('database key / database contents', async () => {
     expect(blockHash).exist
     expect(proof).exist
   })
-  const dbKey = getDatabaseKey(fromHexString(sampleKey))
+  const dbKey = getDatabaseKey(hexToBytes(sampleKey))
   it('should get dbKey from contentKey', () => {
     expect(dbKey).toEqual(bytesToUnprefixedHex(nodeHash))
   })
   const dbContent = getDatabaseContent(StateNetworkContentType.AccountTrieNode, contentNodeSample)
   it('should get dbContent from content', () => {
-    assert.deepEqual(fromHexString(dbContent), nodeSample)
+    assert.deepEqual(hexToBytes(dbContent), nodeSample)
   })
-  await stateDB.storeContent(fromHexString(sampleKey), contentNodeSample)
-  const retrieved = await stateDB.getContent(fromHexString(sampleKey))
+  await stateDB.storeContent(hexToBytes(sampleKey), contentNodeSample)
+  const retrieved = await stateDB.getContent(hexToBytes(sampleKey))
   it('should put and get node using AccountTrieNode Content and Key', () => {
-    assert.equal(retrieved, toHexString(contentNodeSample))
+    assert.equal(retrieved, bytesToHex(contentNodeSample))
   })
   const trie = new Trie({ useKeyHashing: true, db: stateDB.db })
   const node = await trie.database().db.get(bytesToUnprefixedHex(nodeHash))

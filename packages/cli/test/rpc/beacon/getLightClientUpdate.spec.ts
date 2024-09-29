@@ -4,9 +4,9 @@ import { ssz } from '@lodestar/types'
 import {
   BeaconLightClientNetworkContentType,
   computeLightClientKeyFromPeriod,
-  fromHexString,
+  hexToBytes,
   getBeaconContentKey,
-  toHexString,
+  bytesToHex,
 } from 'portalnetwork'
 import { assert, describe, it } from 'vitest'
 
@@ -18,13 +18,13 @@ describe(`${method} tests`, () => {
     const rangeJson = require('./range.json')[0]
     const rangeKey = getBeaconContentKey(
       BeaconLightClientNetworkContentType.LightClientUpdate,
-      fromHexString(
+      hexToBytes(
         computeLightClientKeyFromPeriod(
           computeSyncPeriodAtSlot(Number(rangeJson.data.attested_header.beacon.slot)),
         ),
       ),
     )
-    const rangeHex = toHexString(
+    const rangeHex = bytesToHex(
       ssz.capella.LightClientUpdate.serialize(
         ssz.capella.LightClientUpdate.fromJson(rangeJson.data),
       ),

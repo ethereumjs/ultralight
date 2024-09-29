@@ -1,8 +1,8 @@
 import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { BitArray, fromHexString, toHexString } from '@chainsafe/ssz'
-import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { BitArray} from '@chainsafe/ssz'
+import { bytesToInt, bytesToUnprefixedHex, concatBytes, hexToBytes, bytesToHex } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
 import {
@@ -143,7 +143,7 @@ export abstract class BaseNetwork extends EventEmitter {
         size = await this.db.size()
       }
       for (const [key, val] of toDelete) {
-        void this.gossipContent(fromHexString(key), fromHexString(val))
+        void this.gossipContent(hexToBytes(key), hexToBytes(val))
       }
     } catch (err: any) {
       this.logger(`Error pruning content: ${err.message}`)
@@ -506,7 +506,7 @@ export abstract class BaseNetwork extends EventEmitter {
             const d = distance(cid, this.enr.nodeId)
             if (d >= this.nodeRadius) {
               this.logger.extend('OFFER')(
-                `Content key: ${toHexString(msg.contentKeys[x])} is outside radius.\nd=${d}\nr=${this.nodeRadius}`,
+                `Content key: ${bytesToHex(msg.contentKeys[x])} is outside radius.\nd=${d}\nr=${this.nodeRadius}`,
               )
               continue
             }
@@ -524,7 +524,7 @@ export abstract class BaseNetwork extends EventEmitter {
           if (offerAccepted) {
             this.logger(`Accepting an OFFER`)
             const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
-            this.logger(toHexString(msg.contentKeys[0]))
+            this.logger(bytesToHex(msg.contentKeys[0]))
             for (const k of desiredKeys) {
               this.streamingKey(k)
             }
@@ -614,7 +614,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.portal.metrics?.contentMessagesSent.inc()
 
     this.logger(
-      `Received FindContent request for contentKey: ${toHexString(
+      `Received FindContent request for contentKey: ${bytesToHex(
         decodedContentMessage.contentKey,
       )}`,
     )
@@ -660,9 +660,9 @@ export abstract class BaseNetwork extends EventEmitter {
     } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
-          toHexString(decodedContentMessage.contentKey) +
+          bytesToHex(decodedContentMessage.contentKey) +
           ' ' +
-          toHexString(value.slice(0, 10)) +
+          bytesToHex(value.slice(0, 10)) +
           `...`,
       )
       const payload = ContentMessageType.serialize({
@@ -841,7 +841,7 @@ export abstract class BaseNetwork extends EventEmitter {
     const offered = await Promise.allSettled(
       peers.map(async (peer) => {
         this.logger.extend(`gossipContent`)(
-          `Offering ${toHexString(contentKey)} to ${shortId(peer.nodeId)}`,
+          `Offering ${bytesToHex(contentKey)} to ${shortId(peer.nodeId)}`,
         )
         const res = await this.sendMessage(peer, payload, this.networkId)
         return [peer, res]
@@ -858,7 +858,7 @@ export abstract class BaseNetwork extends EventEmitter {
               const msg = decoded.value as AcceptMessage
               if (msg.contentKeys.get(0) === true) {
                 this.logger.extend(`gossipContent`)(
-                  `${toHexString(contentKey)} accepted by ${shortId(peer.nodeId)}`,
+                  `${bytesToHex(contentKey)} accepted by ${shortId(peer.nodeId)}`,
                 )
                 accepted++
                 this.logger.extend(`gossipContent`)(`accepted: ${accepted}`)

@@ -1,5 +1,5 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { toHexString } from '@chainsafe/ssz'
+import { bytesToHex } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { hexToBytes } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
@@ -56,19 +56,19 @@ describe('Pre-Merge Header Record Proof tests', () => {
   it('Test Data is valid', () => {
     assert.equal(historicalEpochs.length, 1897, 'Accumulator contains 1897 historical epochs')
     assert.equal(
-      toHexString(EpochAccumulator.hashTreeRoot(epoch)),
-      toHexString(historicalEpochs[0]),
+      bytesToHex(EpochAccumulator.hashTreeRoot(epoch)),
+      bytesToHex(historicalEpochs[0]),
       'Header Accumulator contains hash tree root of stored Epoch Accumulator',
     )
     const hashes = [...epoch.values()].map((headerRecord) => {
-      return toHexString(headerRecord.blockHash)
+      return bytesToHex(headerRecord.blockHash)
     })
     assert.equal(
-      toHexString(header.hash()),
+      bytesToHex(header.hash()),
       block1000.hash,
       'Successfully created BlockHeader from stored bytes',
     )
-    assert.ok(hashes.includes(toHexString(header.hash())), 'Header is a part of EpochAccumulator')
+    assert.ok(hashes.includes(bytesToHex(header.hash())), 'Header is a part of EpochAccumulator')
   })
 
   it('Epoch Accumulator can create proof for header record.', () => {
@@ -89,15 +89,15 @@ describe('Pre-Merge Header Record Proof tests', () => {
     )
     assert.deepEqual(
       {
-        blockHash: toHexString(headerRecord.blockHash),
+        blockHash: bytesToHex(headerRecord.blockHash),
         totalDifficulty: headerRecord.totalDifficulty,
       },
       headerRecord1000,
       'HeaderRecord found located in Epoch Accumulator Tree by gIndex',
     )
     assert.equal(
-      toHexString(headerRecord.blockHash),
-      toHexString(header.hash()),
+      bytesToHex(headerRecord.blockHash),
+      bytesToHex(header.hash()),
       'HeadeRecord blockHash matches blockHeader',
     )
 
@@ -106,7 +106,7 @@ describe('Pre-Merge Header Record Proof tests', () => {
       gindex: gIndex,
     }) as SingleProof
     assert.equal(
-      toHexString(proof.leaf),
+      bytesToHex(proof.leaf),
       headerRecord1000.blockHash,
       'Successfully created a Proof for Header Record',
     )
@@ -133,8 +133,8 @@ describe('Pre-Merge Header Record Proof tests', () => {
         const leaf = reconstructedEpoch.get(1000)
         assert.ok(true, 'SSZ Tree has a leaf at the expected index')
         assert.equal(
-          toHexString(leaf.hashTreeRoot()),
-          toHexString(HeaderRecordType.hashTreeRoot(headerRecord)),
+          bytesToHex(leaf.hashTreeRoot()),
+          bytesToHex(HeaderRecordType.hashTreeRoot(headerRecord)),
           'Leaf contains correct Header Record',
         )
       } catch {

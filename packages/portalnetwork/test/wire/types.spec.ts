@@ -1,5 +1,5 @@
 import { ENR } from '@chainsafe/enr'
-import { BitArray, toHexString } from '@chainsafe/ssz'
+import { BitArray, bytesToHex } from '@chainsafe/ssz'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
@@ -26,7 +26,7 @@ describe('message encoding should match test vectors', () => {
     })
     testVector =
       '0x0001000000000000000c000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-    assert.equal(toHexString(payload), testVector, 'ping message encoded correctly')
+    assert.equal(bytesToHex(payload), testVector, 'ping message encoded correctly')
   })
 
   // Validate FINDNODES message encoding
@@ -38,7 +38,7 @@ describe('message encoding should match test vectors', () => {
       value: { distances },
     })
     testVector = '0x02040000000001ff00'
-    assert.equal(toHexString(payload), testVector, 'findNodes message encoded correctly')
+    assert.equal(bytesToHex(payload), testVector, 'findNodes message encoded correctly')
   })
 
   it('should encode PONG message correctly', () => {
@@ -50,7 +50,7 @@ describe('message encoding should match test vectors', () => {
       },
     })
     testVector = '0x030105000000'
-    assert.equal(toHexString(payload), testVector, 'nodes message with no ENRs encoded correctly')
+    assert.equal(bytesToHex(payload), testVector, 'nodes message with no ENRs encoded correctly')
   })
   // Validate NODES message encoding
   const enr1 =
@@ -70,7 +70,7 @@ describe('message encoding should match test vectors', () => {
     })
     testVector =
       '0x030105000000080000007f000000f875b8401ce2991c64993d7c84c29a00bdc871917551c7d330fca2dd0d69c706596dc655448f030b98a77d4001fd46ae0112ce26d613c5a6a02a81a6223cd0c4edaa53280182696482763489736563703235366b31a103ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138f875b840d7f1c39e376297f81d7297758c64cb37dcc5c3beea9f57f7ce9695d7d5a67553417d719539d6ae4b445946de4d99e680eb8063f29485b555d45b7df16a1850130182696482763489736563703235366b31a1030e2cb74241c0c4fc8e8166f1a79a05d5b0dd95813a74b094529f317d5c39d235'
-    assert.equal(toHexString(payload), testVector, 'nodes message with 2 ENRs encoded correctly')
+    assert.equal(bytesToHex(payload), testVector, 'nodes message with 2 ENRs encoded correctly')
   })
 
   // Validate FINDCONTENT message encoding
@@ -82,7 +82,7 @@ describe('message encoding should match test vectors', () => {
       value: { contentKey },
     })
     testVector = '0x0404000000706f7274616c'
-    assert.equal(toHexString(payload), testVector, 'find content message encoded correctly')
+    assert.equal(bytesToHex(payload), testVector, 'find content message encoded correctly')
 
     // Validate CONTENT message encoding
     // TODO: Update CONTENT encoding to use PortalMessageWireType.serialize
@@ -94,7 +94,7 @@ describe('message encoding should match test vectors', () => {
     const contentMessagePayload = ContentMessageType.serialize({ selector: 0, value: connectionId })
     payload = concatBytes(Uint8Array.from([MessageCodes.CONTENT]), contentMessagePayload)
     testVector = '0x05000102'
-    assert.equal(toHexString(payload), testVector, 'content message encodes correctly')
+    assert.equal(bytesToHex(payload), testVector, 'content message encodes correctly')
   })
 
   // Validate OFFER message encoding
@@ -105,7 +105,7 @@ describe('message encoding should match test vectors', () => {
       value: { contentKeys },
     })
     testVector = '0x060400000004000000010203'
-    assert.equal(toHexString(payload), testVector, 'offer message encodes correctly')
+    assert.equal(bytesToHex(payload), testVector, 'offer message encodes correctly')
   })
 
   // Validate ACCEPT message encoding
@@ -120,6 +120,6 @@ describe('message encoding should match test vectors', () => {
       },
     })
     testVector = '0x070102060000000101'
-    assert.equal(toHexString(payload), testVector, 'accept message encodes correctly')
+    assert.equal(bytesToHex(payload), testVector, 'accept message encodes correctly')
   })
 })

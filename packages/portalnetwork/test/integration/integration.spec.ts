@@ -17,7 +17,7 @@ import {
   addRLPSerializedBlock,
   generatePreMergeHeaderProof,
   getContentKey,
-  toHexString,
+  bytesToHex,
 } from '../../src/index.js'
 
 import type { HistoryNetwork } from '../../src/index.js'
@@ -44,7 +44,7 @@ const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
   return testBlock.hash()
 })
 const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
-  return toHexString(testHash)
+  return bytesToHex(testHash)
 })
 
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
@@ -96,7 +96,7 @@ describe('gossip test', async () => {
   for await (const [_idx, testBlock] of testBlocks.entries()) {
     const proof = await generatePreMergeHeaderProof(testBlock.header.number, hexToBytes(epoch25))
     it('generated proof', () => {
-      assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
+      assert.equal(proof.length, 15, 'proof generated for ' + bytesToHex(testBlock.hash()))
     })
     const headerWith = BlockHeaderWithProof.serialize({
       header: testBlock.header.serialize(),
@@ -196,7 +196,7 @@ describe('FindContent', async () => {
   await node2.stop()
   it('should find content', () => {
     assert.equal(
-      toHexString(header.hash()),
+      bytesToHex(header.hash()),
       testBlockData[29].blockHash,
       'retrieved expected header',
     )
@@ -257,7 +257,7 @@ describe('eth_getBlockByHash', async () => {
   await node2.stop()
   it('should find content', () => {
     assert.equal(
-      toHexString(retrieved!.hash()),
+      bytesToHex(retrieved!.hash()),
       testBlockData[29].blockHash,
       'retrieved expected header',
     )

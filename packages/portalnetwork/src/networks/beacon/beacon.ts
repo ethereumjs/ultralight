@@ -1,5 +1,4 @@
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { toHexString } from '@chainsafe/ssz'
 import {
   bytesToHex,
   bytesToInt,
@@ -194,7 +193,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             update.slice(4),
           ) as LightClientUpdate
           roots.push(
-            toHexString(ssz.phase0.BeaconBlockHeader.hashTreeRoot(decoded.finalizedHeader.beacon)),
+            bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(decoded.finalizedHeader.beacon)),
           )
         }
         this.bootstrapFinder.set(nodeId, roots)
@@ -557,7 +556,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     this.portal.metrics?.contentMessagesSent.inc()
 
     this.logger(
-      `Received FindContent request for contentKey: ${toHexString(
+      `Received FindContent request for contentKey: ${bytesToHex(
         decodedContentMessage.contentKey,
       )}`,
     )
@@ -568,9 +567,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     } else if (value !== undefined && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
-          toHexString(decodedContentMessage.contentKey) +
+          bytesToHex(decodedContentMessage.contentKey) +
           ' ' +
-          toHexString(value.slice(0, 10)) +
+          bytesToHex(value.slice(0, 10)) +
           `...`,
       )
       const payload = ContentMessageType.serialize({
@@ -628,7 +627,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         // optimistic update and this ensures we don't accidentally store multiple
         await this.put(
           hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
-          toHexString(value),
+          bytesToHex(value),
         )
         break
       case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
@@ -636,7 +635,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         // finality update and this ensures we don't accidentally store multiple
         await this.put(
           hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
-          toHexString(value),
+          bytesToHex(value),
         )
         break
       case BeaconLightClientNetworkContentType.HistoricalSummaries: {
@@ -677,7 +676,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
         await this.put(
           hexToBytes(intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries)),
-          toHexString(value),
+          bytesToHex(value),
         )
 
         // Store the Historical Summaries data in memory so can be accessed easily by the History Network
@@ -687,7 +686,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         break
       }
       default:
-        await this.put(contentKey, toHexString(value))
+        await this.put(contentKey, bytesToHex(value))
     }
 
     this.logger(
@@ -940,7 +939,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         if (offerAccepted) {
           this.logger.extend('OFFER')(`Accepting an OFFER`)
           const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
-          this.logger(toHexString(msg.contentKeys[0]))
+          this.logger(bytesToHex(msg.contentKeys[0]))
           await this.sendAccept(src, requestId, contentIds, desiredKeys)
         } else {
           this.logger.extend('OFFER')(`Declining an OFFER since no interesting content`)

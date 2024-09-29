@@ -1,6 +1,6 @@
 import { Block } from '@ethereumjs/block'
 import jayson from 'jayson/promise/index.js'
-import { toHexString } from 'portalnetwork'
+import { bytesToHex } from 'portalnetwork'
 
 // Bridge node script expects a url string corresponding to an execution node serving the Ethereum JSON-RPC API
 const main = async () => {
@@ -21,8 +21,8 @@ const main = async () => {
     )
     const block = Block.fromRPC(res.result, [], { setHardfork: true })
     const portRes = await portal.request('ultralight_addBlockToHistory', [
-      toHexString(block.hash()),
-      toHexString(block.serialize()),
+      bytesToHex(block.hash()),
+      bytesToHex(block.serialize()),
     ])
     console.log(portRes.result)
     await new Promise((resolve) => setTimeout(resolve, 12000))

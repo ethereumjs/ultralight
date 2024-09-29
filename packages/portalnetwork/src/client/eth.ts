@@ -1,6 +1,5 @@
-import { fromHexString } from '@chainsafe/ssz'
 import { EVM } from '@ethereumjs/evm'
-import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
+import { Address, TypeOutput, bytesToHex, toType, hexToBytes } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {
@@ -207,7 +206,7 @@ export class ETH {
     const usm = new UltralightStateManager(this.state!)
     //@ts-ignore there's something wrong with the state manager interface
     const evm = new EVM({ stateManager: usm })
-    await evm.stateManager.setStateRoot(fromHexString(stateRoot))
+    await evm.stateManager.setStateRoot(hexToBytes(stateRoot))
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx
 
     const runCallOpts = {
@@ -216,7 +215,7 @@ export class ETH {
       gasLimit: toType(gasLimit, TypeOutput.BigInt),
       gasPrice: toType(gasPrice, TypeOutput.BigInt),
       value: toType(value, TypeOutput.BigInt),
-      data: data !== undefined ? fromHexString(data) : undefined,
+      data: data !== undefined ? hexToBytes(data) : undefined,
     }
     const res = (await evm.runCall(runCallOpts)).execResult.returnValue
     return bytesToHex(res)
