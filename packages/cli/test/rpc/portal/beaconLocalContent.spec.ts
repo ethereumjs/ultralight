@@ -17,7 +17,7 @@ describe(`${method} tests`, () => {
         getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate, key),
       ),
     ])
-    assert.equal(res.result, '0x')
+    assert.equal(res.error.code, -32009)
     ultralight.kill(9)
   }, 10000)
 })

@@ -1,7 +1,7 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
-import { bytesToHex } from '@ethereumjs/util'
+import { bytesToHex, short } from '@ethereumjs/util'
 import {
   ContentLookup,
   ContentMessageType,
@@ -77,6 +77,7 @@ const methods = [
   'portal_historyLookupEnr',
   // beacon
   'portal_beaconSendFindContent',
+  'portal_beaconFindContent',
   'portal_beaconStore',
   'portal_beaconLocalContent',
   'portal_beaconAddEnr',
@@ -218,7 +219,10 @@ export class portal {
       [validators.dstId],
       [validators.hex],
     ])
-
+    this.beaconFindContent = middleware(this.beaconFindContent.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
     this.beaconStore = middleware(this.beaconStore.bind(this), 2, [
       [validators.hex],
       [validators.hex],
@@ -616,7 +620,10 @@ export class portal {
       `${res !== undefined ? toHexString(res) : 'content not found'}`,
     )
     if (res === undefined) {
-      throw new Error('No content found')
+      throw {
+        code: -32009,
+        message: 'no content found',
+      }
     }
     return toHexString(res)
   }
@@ -630,7 +637,10 @@ export class portal {
       `${res !== undefined ? toHexString(res) : 'content not found'}`,
     )
     if (res === undefined) {
-      throw new Error('No content found')
+      throw {
+        code: -32009,
+        message: 'no content found',
+      }
     }
     return toHexString(res)
   }
@@ -650,24 +660,19 @@ export class portal {
     if (!res) {
       return { enrs: [] }
     }
-    const content: Uint8Array | Uint8Array[] =
-      res.selector === FoundContent.ENRS
-        ? (res.value as Uint8Array[])
-        : res.selector === FoundContent.CONTENT
-          ? (res.value as Uint8Array)
-          : await new Promise((resolve) => {
-              const timeout = setTimeout(() => {
-                resolve(Uint8Array.from([]))
-              }, 10000)
-              this._history.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
-                if (bytesToHex(_contentKey) === contentKey) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              })
-            })
+    let content: Uint8Array | Uint8Array[] = []
+    switch (res.selector) {
+      case FoundContent.ENRS:
+        content = res.value as Uint8Array[]
+        break
+      case FoundContent.CONTENT:
+      case FoundContent.UTP:
+        content = res.value as Uint8Array
+        break
+    }
+
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+
     const returnVal =
       res.selector === FoundContent.ENRS
         ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
@@ -681,6 +686,7 @@ export class portal {
     })
     return returnVal
   }
+
   async stateFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
@@ -697,24 +703,19 @@ export class portal {
     if (!res) {
       return { enrs: [] }
     }
-    const content: Uint8Array | Uint8Array[] =
-      res.selector === FoundContent.ENRS
-        ? (res.value as Uint8Array[])
-        : res.selector === FoundContent.CONTENT
-          ? (res.value as Uint8Array)
-          : await new Promise((resolve) => {
-              const timeout = setTimeout(() => {
-                resolve(Uint8Array.from([]))
-              }, 2000)
-              this._state.on('ContentAdded', (_contentKey: Uint8Array, value: Uint8Array) => {
-                if (bytesToHex(_contentKey) === contentKey) {
-                  clearTimeout(timeout)
-                  resolve(value)
-                }
-              })
-            })
+    let content: Uint8Array | Uint8Array[] = []
+    switch (res.selector) {
+      case FoundContent.ENRS:
+        content = res.value as Uint8Array[]
+        break
+      case FoundContent.CONTENT:
+      case FoundContent.UTP:
+        content = res.value as Uint8Array
+        break
+    }
+
     this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-    res.selector === FoundContent.UTP && this.logger.extend('findContent')('utp')
+
     this.logger.extend('findContent')(content)
     return res.selector === FoundContent.ENRS
       ? { enrs: content }
@@ -920,6 +921,54 @@ export class portal {
     return '0x'
   }
 
+  async beaconFindContent(params: [string, string]) {
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    this.logger.extend('findContent')(
+      `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
+    )
+    if (!this._beacon.routingTable.getWithPending(nodeId)?.value) {
+      const pong = await this._beacon.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
+
+    const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
+    this.logger.extend('findContent')(
+      `request returned type: ${res ? FoundContent[res.selector] : res}`,
+    )
+
+    if (!res) {
+      return { enrs: [] }
+    }
+    let content: Uint8Array | Uint8Array[] = []
+    switch (res.selector) {
+      case FoundContent.ENRS:
+        content = res.value as Uint8Array[]
+        break
+      case FoundContent.CONTENT:
+      case FoundContent.UTP:
+        content = res.value as Uint8Array
+        break
+    }
+
+    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
+
+    const returnVal =
+      res.selector === FoundContent.ENRS
+        ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
+        : {
+            content: content.length > 0 ? toHexString(content as Uint8Array) : '0x',
+            utpTransfer: res.selector === FoundContent.UTP,
+          }
+    this.logger.extend('findContent')({
+      selector: FoundContent[res.selector],
+      value: returnVal,
+    })
+    return returnVal
+  }
+
   async beaconStore(params: [string, string]) {
     const [contentKey, content] = params.map((param) => fromHexString(param))
     try {
@@ -933,9 +982,20 @@ export class portal {
 
   async beaconLocalContent(params: [string]) {
     const [contentKey] = params
+    this.logger.extend(`beaconLocalContent`)(`Received request for ${contentKey}`)
+
     const content = await this._beacon.findContentLocally(fromHexString(contentKey))
+    this.logger.extend(`beaconLocalContent`)(
+      `request returned ${content !== undefined ? content.length : 'null'} bytes`,
+    )
+    this.logger.extend(`beaconLocalContent`)(
+      `retrieved content: ${content !== undefined ? short(toHexString(content)) : 'content not found'}`,
+    )
     if (content !== undefined) return toHexString(content)
-    else return '0x'
+    throw {
+      code: -32009,
+      message: 'no content found',
+    }
   }
 
   async beaconAddBootNode(params: [string]): Promise<boolean> {
