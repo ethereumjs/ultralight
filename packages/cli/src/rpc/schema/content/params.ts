@@ -145,4 +145,50 @@ export const content_params = {
       if (result !== undefined) return result
     }
   },
+  get ContentItem() {
+    return (params: any[], index: number) => {
+      if (!Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      if (params[index].length !== 2) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: array length is not 2`,
+        }
+      }
+      const [key, value] = params[index]
+      const keyResult = content_params.ContentKey([key], 0)
+      const valueResult = content_params.ContentValue([value], 1)
+      if (keyResult !== undefined && valueResult !== undefined) return [keyResult, valueResult]
+    }
+  },
+  get ContentItems() {
+    return (params: any[], index: number) => {
+      if (!Array.isArray(params[index])) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument is not an array`,
+        }
+      }
+      if (params[index].length < 1) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: array is empty`,
+        }
+      }
+      if (params[index].length > 64) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: array is too long`,
+        }
+      }
+      for (const value of params[index]) {
+        const result = content_params.ContentItem([value], 0)
+        if (result !== undefined) return result
+      }
+    }
+  },
 }
