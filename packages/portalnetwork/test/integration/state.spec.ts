@@ -12,7 +12,7 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
-  fromHexString,
+  hexToBytes,
 } from '../../src/index.js'
 import samples from '../networks/state/testdata/accountNodeSamples.json'
 
@@ -27,7 +27,7 @@ const privateKeys = [
 const sample = samples[0]
 const [key, value] = sample as [string, object]
 const content = Uint8Array.from(Object.values(value))
-const contentKey = fromHexString(key)
+const contentKey = hexToBytes(key)
 const decoded = AccountTrieNodeContentKey.decode(contentKey)
 const deserialized = AccountTrieNodeOffer.deserialize(content)
 const { path } = decoded

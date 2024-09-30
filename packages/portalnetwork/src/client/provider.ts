@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 
 import { addRLPSerializedBlock } from '../networks/index.js'
 import { NetworkId } from '../networks/types.js'
-import { toHexString } from '../util/discv5.js'
+import { bytesToHex } from '../util/discv5.js'
 import {
   blockFromRpc,
   ethJsBlockToEthersBlock,
@@ -92,7 +92,7 @@ export class UltralightProvider extends ethers.JsonRpcProvider {
 
     const ethJSBlock = blockFromRpc(block)
     await addRLPSerializedBlock(
-      toHexString(ethJSBlock.serialize()),
+      bytesToHex(ethJSBlock.serialize()),
       block.hash,
       this.historyNetwork,
       [], // I'm too lazy to fix this right now

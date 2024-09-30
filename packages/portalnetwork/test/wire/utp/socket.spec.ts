@@ -13,7 +13,7 @@ import {
   PortalNetworkUTP,
   UtpSocket,
   UtpSocketType,
-  toHexString,
+  bytesToHex,
 } from '../../../src/index.js'
 const sampleSize = 50000
 const content = randomBytes(sampleSize)
@@ -226,7 +226,7 @@ describe('createPacket()', async () => {
     assert.equal(write_data.header.seqNr, write.getSeqNr() - 1, 'Packet seqNr correctly set')
     assert.equal(write_data.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
     assert.equal(
-      toHexString(write_data.payload!),
+      bytesToHex(write_data.payload!),
       '0x1234',
       'DATA Packet payload correctly set to undefined',
     )

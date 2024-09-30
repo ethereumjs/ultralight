@@ -1,4 +1,5 @@
-import { BitVectorType, toHexString } from '@chainsafe/ssz'
+import { BitVectorType } from '@chainsafe/ssz'
+import { bytesToHex } from '@ethereumjs/util'
 
 import {
   Bytes32TimeStamp,
@@ -293,7 +294,7 @@ export class PortalNetworkUTP {
           const key = request.contentKeys.shift()!
           const value = request.socket.reader!.contents.shift()!
           this.logger(
-            `Storing: ${toHexString(key)}.  ${request.contentKeys.length} still streaming.`,
+            `Storing: ${bytesToHex(key)}.  ${request.contentKeys.length} still streaming.`,
           )
           await this.returnContent(request.networkId, [value], [key])
         }

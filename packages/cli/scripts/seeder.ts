@@ -3,7 +3,7 @@ import { hexToBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
 import jayson from 'jayson/promise/index.js'
 import { createRequire } from 'module'
-import { HistoryNetworkContentType, fromHexString, getContentKey, toHexString } from 'portalnetwork'
+import { HistoryNetworkContentType, hexToBytes, getContentKey, bytesToHex } from 'portalnetwork'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
@@ -88,7 +88,7 @@ const main = async () => {
   }
   const epochKey = getContentKey(
     HistoryNetworkContentType.EpochAccumulator,
-    fromHexString(epoch.hash),
+    hexToBytes(epoch.hash),
   )
   let res = await clientInfo.ultralight.client.request('ultralight_addContentToDB', [
     epochKey,
@@ -170,13 +170,13 @@ const main = async () => {
     await testRes([clients[0]], 'portal_historyOffer', [
       [
         clientInfo.peer1.enr,
-        getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(block[0])),
-        toHexString(
+        getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(block[0])),
+        bytesToHex(
           Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
             setHardfork: true,
           }).header.serialize(),
         ),
-        toHexString(
+        bytesToHex(
           Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
             setHardfork: true,
           }).header.serialize(),

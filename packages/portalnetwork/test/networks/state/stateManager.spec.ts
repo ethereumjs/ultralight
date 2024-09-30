@@ -1,5 +1,5 @@
 // import { SignableENR } from '@chainsafe/discv5/enr'
-// import { fromHexString, toHexString } from '@chainsafe/ssz'
+// import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 // import { EVM } from '@ethereumjs/evm'
 // import { Trie } from '@ethereumjs/trie'
 // import {
@@ -82,7 +82,7 @@ describe.skip('UltralightStateManager', () => {
   //   // }
   //   const greeterBytecode =
   //     '0x608060405234801561000f575f80fd5b5060043610610034575f3560e01c80638da5cb5b14610038578063cfae321714610056575b5f80fd5b610040610074565b60405161004d9190610118565b60405180910390f35b61005e61009c565b60405161006b91906101bb565b60405180910390f35b5f60015f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b60606040518060400160405280600581526020017f68656c6c6f000000000000000000000000000000000000000000000000000000815250905090565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f610102826100d9565b9050919050565b610112816100f8565b82525050565b5f60208201905061012b5f830184610109565b92915050565b5f81519050919050565b5f82825260208201905092915050565b5f5b8381101561016857808201518184015260208101905061014d565b5f8484015250505050565b5f601f19601f8301169050919050565b5f61018d82610131565b610197818561013b565b93506101a781856020860161014b565b6101b081610173565b840191505092915050565b5f6020820190508181035f8301526101d38184610183565b90509291505056fea2646970667358221220945519e237b301b5baf64c20c2a39b6a8b300541470b28b0e6cfbc1568dc6f3364736f6c63430008160033'
-  //   const byteCode = fromHexString(greeterBytecode)
+  //   const byteCode = hexToBytes(greeterBytecode)
   //   const node = await PortalNetwork.create({
   //     transport: TransportLayer.NODE,
   //     supportedNetworks: [NetworkId.StateNetwork],
@@ -124,7 +124,7 @@ describe.skip('UltralightStateManager', () => {
   //   assert.deepEqual(gotCode, byteCode, 'retrieved contract code from state network')
   //   const greeterInput = '0xcfae3217'
   //   const evm = new EVM({ stateManager: usm })
-  //   const res = (await evm.runCall({ data: fromHexString(greeterInput), to: address })).execResult
+  //   const res = (await evm.runCall({ data: hexToBytes(greeterInput), to: address })).execResult
   //     .returnValue
   //   // Decode offset in `returnValue` for start of Solidity return value
   //   const offset = bytesToInt(res.slice(0, 32))
@@ -157,7 +157,7 @@ describe.skip('UltralightStateManager', () => {
   //   const network = node.networks.get(NetworkId.StateNetwork) as StateNetwork
   //   const usm = new UltralightStateManager(network)
   //   const storageTrie = new Trie({ useKeyHashing: true })
-  //   await storageTrie.put(fromHexString(cstp.slot), fromHexString(cstp.value))
+  //   await storageTrie.put(hexToBytes(cstp.slot), hexToBytes(cstp.value))
   //   const pk = randomBytes(32)
   //   const address = Address.fromPrivateKey(pk)
   //   const account = Account.fromAccountData({
@@ -168,7 +168,7 @@ describe.skip('UltralightStateManager', () => {
   //   const trie = new Trie({ useKeyHashing: true })
   //   await trie.put(address.toBytes(), account.serialize())
   //   const proof = await trie.createProof(address.toBytes())
-  //   const storageProof = await storageTrie.createProof(fromHexString(cstp.slot))
+  //   const storageProof = await storageTrie.createProof(hexToBytes(cstp.slot))
   //   const content = AccountTrieProofType.serialize({
   //     witnesses: proof,
   //   })
@@ -183,9 +183,9 @@ describe.skip('UltralightStateManager', () => {
   //     storageContent,
   //   )
   //   await usm.setStateRoot(trie.root())
-  //   const res = await usm.getContractStorage(address, fromHexString(cstp.slot))
+  //   const res = await usm.getContractStorage(address, hexToBytes(cstp.slot))
   //   assert.equal(
-  //     toHexString(res),
+  //     bytesToHex(res),
   //     cstp.value,
   //     'successfully retrieved storage slot with state manager',
   //   )
@@ -245,7 +245,7 @@ describe.skip('UltralightStateManager', () => {
   //   assert.deepEqual({}, clearedStorage, 'storage cache should be empty after clear')
   //   await usm.putContractCode(vitalikDotEth, hexToBytes('0x6000'))
   //   assert.equal(
-  //     toHexString(await usm.getContractCode(vitalikDotEth)),
+  //     bytesToHex(await usm.getContractCode(vitalikDotEth)),
   //     '0x6000',
   //     'contract code was found in cache',
   //   )

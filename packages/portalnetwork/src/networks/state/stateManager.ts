@@ -103,7 +103,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
 
     // const account = await this.state.getAccount(address.toString(), this.stateRoot)
     // if (account !== undefined) {
-    //   code = await this.state.getBytecode(toHexString(account.codeHash), address.toString())
+    //   code = await this.state.getBytecode(bytesToHex(account.codeHash), address.toString())
     //   this._contractCache.set(address.toString(), code ?? new Uint8Array())
     // }
     return code ?? new Uint8Array()

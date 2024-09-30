@@ -1,7 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { toHexString } from '@chainsafe/ssz'
-import { equalsBytes, hexToBytes, short } from '@ethereumjs/util'
+import { equalsBytes, hexToBytes, short, bytesToHex } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
@@ -53,7 +52,7 @@ export class ContentLookup {
   public startLookup = async (): Promise<ContentLookupResponse> => {
     // Don't support content lookups for networks that don't implement it (i.e. Canonical Indices)
     if (!this.network.sendFindContent) return
-    this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
+    this.logger(`starting recursive content lookup for ${bytesToHex(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
       const res = await this.network.get(this.contentKey)
@@ -117,7 +116,7 @@ export class ContentLookup {
           let timeout: any = undefined
           const utpDecoder = (contentKey: Uint8Array, content: Uint8Array) => {
             if (equalsBytes(contentKey, this.contentKey)) {
-              this.logger(`Received content for this contentKey: ${toHexString(this.contentKey)}`)
+              this.logger(`Received content for this contentKey: ${bytesToHex(this.contentKey)}`)
               this.network.removeListener('ContentAdded', utpDecoder)
               clearTimeout(timeout)
               this.content = { content, utp: true }
@@ -139,7 +138,7 @@ export class ContentLookup {
       case 1: {
         this.finished = true
         // findContent returned data sought
-        this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
+        this.logger(`received content corresponding to ${shortId(bytesToHex(this.contentKey))}`)
         peer.hasContent = true
         this.network.portal.metrics?.successfulContentLookups.inc()
 

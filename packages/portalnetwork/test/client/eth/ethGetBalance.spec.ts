@@ -5,8 +5,8 @@ import { describe } from 'vitest'
 //   NetworkId,
 //   PortalNetwork,
 //   addRLPSerializedBlock,
-//   fromHexString,
-//   toHexString,
+//   hexToBytes,
+//   bytesToHex,
 // } from '../../../src/index.js'
 
 // import type { HistoryNetwork, StateNetwork } from '../../../src'
@@ -21,7 +21,7 @@ describe.skip('ethGetBalance using HistoryNetwork and StateNetwork', async () =>
   //   const block = Block.fromRPC(testBlockData[blockNumber], undefined, {
   //     setHardfork: true,
   //   })
-  //   await addRLPSerializedBlock(toHexString(block.serialize()), toHexString(block.hash()), history)
+  //   await addRLPSerializedBlock(bytesToHex(block.serialize()), bytesToHex(block.hash()), history)
   //   const stored = await ultralight.ETH.getBlockByNumber(BigInt(blockNumber), true)
   //   it(`should store block ${blockNumber}`, async () => {
   //     assert.isDefined(stored)
@@ -33,8 +33,8 @@ describe.skip('ethGetBalance using HistoryNetwork and StateNetwork', async () =>
   //   const contentKeys = Object.keys(block)
   //   it(`should store ${contentKeys.length} pieces of content by key (block: ${blocksMeta[idx].blockNumber})`, async () => {
   //     for await (const key of contentKeys) {
-  //       const keyBytes = fromHexString(key)
-  //       const storing = await state.stateDB.storeContent(keyBytes, fromHexString(block[key]))
+  //       const keyBytes = hexToBytes(key)
+  //       const storing = await state.stateDB.storeContent(keyBytes, hexToBytes(block[key]))
   //       assert.isTrue(storing)
   //     }
   //   })

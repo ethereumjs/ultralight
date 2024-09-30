@@ -5,8 +5,6 @@ import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 import { ethers } from 'ethers'
 
-import { toHexString } from './index.js'
-
 import type { Log, TxReceiptType } from '../networks/index.js'
 import type { BlockOptions, JsonRpcBlock, Block as ethJsBlock } from '@ethereumjs/block'
 import type {
@@ -42,13 +40,13 @@ export async function getBlockReceipts(
       return new ethers.Log(
         {
           blockNumber: Number(block.header.number),
-          blockHash: toHexString(block.header.hash()),
+          blockHash: bytesToHex(block.header.hash()),
           transactionIndex: idx,
           removed: false,
-          address: toHexString(log[0]),
-          data: toHexString(log[2]),
-          topics: log[1].map((l) => toHexString(l)),
-          transactionHash: toHexString(block.transactions[idx].hash()),
+          address: bytesToHex(log[0]),
+          data: bytesToHex(log[2]),
+          topics: log[1].map((l) => bytesToHex(l)),
+          transactionHash: bytesToHex(block.transactions[idx].hash()),
           index: i,
         },
         provider,
@@ -62,12 +60,12 @@ export async function getBlockReceipts(
         index: idx,
         root:
           (r as PreByzantiumTxReceipt).stateRoot !== undefined
-            ? toHexString((r as PreByzantiumTxReceipt).stateRoot)
+            ? bytesToHex((r as PreByzantiumTxReceipt).stateRoot)
             : null,
         gasUsed: block.header.gasUsed,
-        logsBloom: toHexString(block.header.logsBloom),
-        blockHash: toHexString(block.hash()),
-        hash: toHexString(block.transactions[idx].hash()),
+        logsBloom: bytesToHex(block.header.logsBloom),
+        blockHash: bytesToHex(block.hash()),
+        hash: bytesToHex(block.transactions[idx].hash()),
         cumulativeGasUsed: r.cumulativeBlockGasUsed,
         logs,
         blockNumber: Number(block.header.number),
@@ -108,16 +106,16 @@ export const ethJsBlockToEthersBlock = (
 
   return new ethers.Block(
     {
-      hash: toHexString(block.hash()),
-      parentHash: toHexString(block.header.parentHash),
+      hash: bytesToHex(block.hash()),
+      parentHash: bytesToHex(block.header.parentHash),
       number: Number(block.header.number),
       timestamp: Number(block.header.timestamp),
-      nonce: toHexString(block.header.nonce),
+      nonce: bytesToHex(block.header.nonce),
       difficulty: block.header.difficulty,
       gasLimit: block.header.gasLimit,
       miner: block.header.coinbase.toString(),
       gasUsed: block.header.gasUsed,
-      extraData: toHexString(block.header.extraData),
+      extraData: bytesToHex(block.header.extraData),
       transactions: block.transactions.map((tx) => bytesToHex(tx.hash())),
       baseFeePerGas: block.header.baseFeePerGas ?? null,
     },
@@ -143,7 +141,7 @@ export const ethJsBlockToEthersBlockWithTxs = async (
   for (const [_idx, tx] of Object.entries(block.transactions)) {
     const normedTx: ethers.TransactionResponse = new ethers.TransactionResponse(
       {
-        hash: toHexString(tx.hash()),
+        hash: bytesToHex(tx.hash()),
         signature: ethers.Signature.from({
           r: tx.r?.toString() ?? '',
           s: tx.s?.toString() ?? '',
@@ -154,7 +152,7 @@ export const ethJsBlockToEthersBlockWithTxs = async (
         nonce: Number(tx.nonce),
         chainId: 1n,
         gasLimit: tx.gasLimit,
-        data: toHexString(tx.data),
+        data: bytesToHex(tx.data),
         value: tx.value,
         gasPrice: tx.type === 0 ? (tx as LegacyTransaction).gasPrice : 0n,
         maxFeePerGas: tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxFeePerGas : null,
@@ -173,21 +171,21 @@ export const ethJsBlockToEthersBlockWithTxs = async (
     txns.push(normedTx)
   }
   return {
-    hash: toHexString(block.hash()),
+    hash: bytesToHex(block.hash()),
     transactions: txns,
-    parentHash: toHexString(block.header.parentHash),
+    parentHash: bytesToHex(block.header.parentHash),
     number: Number(block.header.number),
     timestamp: Number(block.header.timestamp),
-    nonce: toHexString(block.header.nonce),
+    nonce: bytesToHex(block.header.nonce),
     difficulty: block.header.difficulty,
     gasLimit: block.header.gasLimit,
     miner: block.header.coinbase.toString(),
     gasUsed: block.header.gasUsed,
-    extraData: toHexString(block.header.extraData),
+    extraData: bytesToHex(block.header.extraData),
     _difficulty: block.header.difficulty,
-    sha3Uncles: toHexString(block.header.uncleHash),
-    uncleHeaders: block.uncleHeaders.map((uncle) => toHexString(uncle.hash())),
-    stateRoot: toHexString(block.header.stateRoot),
+    sha3Uncles: bytesToHex(block.header.uncleHash),
+    uncleHeaders: block.uncleHeaders.map((uncle) => bytesToHex(uncle.hash())),
+    stateRoot: bytesToHex(block.header.stateRoot),
     transactionCount: txns.length,
   }
 }

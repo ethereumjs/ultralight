@@ -1,6 +1,5 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { LeafNode, Trie } from '@ethereumjs/trie'
-import { Account, equalsBytes, parseGethGenesisState } from '@ethereumjs/util'
+import { Account, equalsBytes, parseGethGenesisState, hexToBytes, bytesToHex } from '@ethereumjs/util'
 
 import genesis from './mainnet.json' assert { type: 'json' }
 
@@ -24,9 +23,9 @@ const genesisAccounts = () => {
 export const genesisStateTrie = async () => {
   const trie = new Trie({ useKeyHashing: true })
   for (const account of genesisAccounts()) {
-    await trie.put(fromHexString(account[0]), account[1])
+    await trie.put(hexToBytes(account[0]), account[1])
   }
-  if (!equalsBytes(trie.root(), fromHexString(genesis.genesisStateRoot))) {
+  if (!equalsBytes(trie.root(), hexToBytes(genesis.genesisStateRoot))) {
     throw new Error('Invalid genesis state root')
   }
   return trie
@@ -49,7 +48,7 @@ export const generateAccountTrieProofs = async (): Promise<{
         ...(await trie.findPath(nodeHash)).stack.map((node) => node.serialize()),
         node.serialize(),
       ]
-      return [toHexString(nodeHash), { path, proof }]
+      return [bytesToHex(nodeHash), { path, proof }]
     }),
   )
   const proofs = await Promise.all(
@@ -57,7 +56,7 @@ export const generateAccountTrieProofs = async (): Promise<{
       const nodeHash = trie['hash'](node.serialize())
       const nodePath = await trie.findPath(nodeHash)
       const proof = [...nodePath.stack.map((node) => node.serialize()), node.serialize()]
-      const content = [toHexString(nodeHash), { path, proof }]
+      const content = [bytesToHex(nodeHash), { path, proof }]
       return content
     }),
   )

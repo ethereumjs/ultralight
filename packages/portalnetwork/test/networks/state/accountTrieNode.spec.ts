@@ -10,9 +10,9 @@ import {
   PortalNetwork,
   StateNetworkContentId,
   distance,
-  fromHexString,
+  hexToBytes,
   nextOffer,
-  toHexString,
+  bytesToHex,
   unpackNibbles,
 } from '../../../src/index.js'
 
@@ -30,7 +30,7 @@ describe('samples', () => {
   const _samples = samples as [string, object][]
   for (const [key, value] of _samples) {
     const contentBytes = Uint8Array.from(Object.values(value))
-    const contentKeyBytes = fromHexString(key)
+    const contentKeyBytes = hexToBytes(key)
     const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
     it('should decode sample key', () => {
       expect(contentKey.path).toBeDefined()
@@ -68,7 +68,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const sample = samples.slice(-1)[0]
   const [key, value] = sample as [string, object]
   const contentBytes = Uint8Array.from(Object.values(value))
-  const contentKeyBytes = fromHexString(key)
+  const contentKeyBytes = hexToBytes(key)
   const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey
@@ -94,7 +94,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
     for (const { contentKey, dbContent } of interested) {
       const content = await state.stateDB.getContent(contentKey)
       expect(content).toBeDefined()
-      expect(content).toEqual(toHexString(dbContent))
+      expect(content).toEqual(bytesToHex(dbContent))
     }
   })
   it(`should create higher level offer`, async () => {
