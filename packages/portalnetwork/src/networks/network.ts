@@ -414,6 +414,9 @@ export abstract class BaseNetwork extends EventEmitter {
    * @param networkId network ID of subnetwork being used
    */
   public sendOffer = async (dstId: string, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
+    if (content && content.length !== contentKeys.length) {
+      throw new Error('Must provide all content or none')
+    }
     if (contentKeys.length > 0) {
       this.portal.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
