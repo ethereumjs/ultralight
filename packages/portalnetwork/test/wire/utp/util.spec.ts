@@ -1,4 +1,4 @@
-import { bytesToHex } from '@chainsafe/ssz'
+import { bytesToHex } from '@ethereumjs/util'
 import { randomBytes } from 'crypto'
 import { assert, describe, it } from 'vitest'
 

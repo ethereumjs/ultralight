@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { EventEmitter } from 'events'

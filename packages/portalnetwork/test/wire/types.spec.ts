@@ -1,6 +1,6 @@
 import { ENR } from '@chainsafe/enr'
-import { BitArray, bytesToHex } from '@chainsafe/ssz'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { BitArray } from '@chainsafe/ssz'
+import { concatBytes, hexToBytes, bytesToHex } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import {

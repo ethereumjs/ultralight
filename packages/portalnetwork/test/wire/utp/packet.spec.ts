@@ -1,5 +1,4 @@
-import { bytesToHex } from '@chainsafe/ssz'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, bytesToHex } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import { Packet, PacketType } from '../../../src/index.js'

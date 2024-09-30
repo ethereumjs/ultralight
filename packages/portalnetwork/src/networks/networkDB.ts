@@ -132,7 +132,7 @@ export class NetworkDB {
       let size = 0
       for await (const [key, value] of _db.iterator()) {
         size += hexToBytes('0x' + padToEven(key.slice(2))).length
-        size += hexToBytes(value).length
+        size += hexToBytes('0x' + value).length
       }
       return size
     }

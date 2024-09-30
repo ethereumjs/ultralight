@@ -933,7 +933,7 @@ export class portal {
       }
     }
 
-    const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
+    const res = await this._beacon.sendFindContent(nodeId, hexToBytes(contentKey))
     this.logger.extend('findContent')(
       `request returned type: ${res ? FoundContent[res.selector] : res}`,
     )
@@ -958,7 +958,7 @@ export class portal {
       res.selector === FoundContent.ENRS
         ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
         : {
-            content: content.length > 0 ? toHexString(content as Uint8Array) : '0x',
+            content: content.length > 0 ? bytesToHex(content as Uint8Array) : '0x',
             utpTransfer: res.selector === FoundContent.UTP,
           }
     this.logger.extend('findContent')({
@@ -983,14 +983,14 @@ export class portal {
     const [contentKey] = params
     this.logger.extend(`beaconLocalContent`)(`Received request for ${contentKey}`)
 
-    const content = await this._beacon.findContentLocally(fromHexString(contentKey))
+    const content = await this._beacon.findContentLocally(hexToBytes(contentKey))
     this.logger.extend(`beaconLocalContent`)(
       `request returned ${content !== undefined ? content.length : 'null'} bytes`,
     )
     this.logger.extend(`beaconLocalContent`)(
-      `retrieved content: ${content !== undefined ? short(toHexString(content)) : 'content not found'}`,
+      `retrieved content: ${content !== undefined ? short(bytesToHex(content)) : 'content not found'}`,
     )
-    if (content !== undefined) return toHexString(content)
+    if (content !== undefined) return bytesToHex(content)
     throw {
       code: -32009,
       message: 'no content found',

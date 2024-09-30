@@ -1,7 +1,6 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { bytesToHex } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, bytesToHex } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
 import { readFileSync } from 'fs'

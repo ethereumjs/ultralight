@@ -56,7 +56,7 @@ describe('StateDB components', async () => {
   })
   const rootHex = bytesToUnprefixedHex(trie.root())
   const tNode = await portalTrieDB.get(rootHex)
-  const node = decodeNode(hexToBytes(tNode!))
+  const node = decodeNode(hexToBytes('0x' + tNode!))
 
   it('should find trie node in db', () => {
     assert.deepEqual(node.value(), value, 'should find trie node in StateDB')
@@ -103,7 +103,7 @@ describe('database key / database contents', async () => {
   })
   const dbContent = getDatabaseContent(StateNetworkContentType.AccountTrieNode, contentNodeSample)
   it('should get dbContent from content', () => {
-    assert.deepEqual(hexToBytes(dbContent), nodeSample)
+    assert.deepEqual(hexToBytes('0x' + dbContent), nodeSample)
   })
   await stateDB.storeContent(hexToBytes(sampleKey), contentNodeSample)
   const retrieved = await stateDB.getContent(hexToBytes(sampleKey))
