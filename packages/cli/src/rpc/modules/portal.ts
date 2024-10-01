@@ -85,6 +85,7 @@ const methods = [
   'portal_beaconGetEnr',
   'portal_beaconDeleteEnr',
   'portal_beaconLookupEnr',
+  'portal_beaconOffer',
 
   // not included in portal-network-specs
   'portal_historyAddEnrs',
@@ -186,6 +187,10 @@ export class portal {
       [validators.contentKey],
     ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
+      [validators.enr],
+      [content_params.ContentItems],
+    ])
+    this.beaconOffer = middleware(this.beaconOffer.bind(this), 3, [
       [validators.enr],
       [content_params.ContentItems],
     ])
@@ -813,6 +818,20 @@ export class portal {
       }
     }
     const res = await this._history.sendOffer(enr.nodeId, contentKeys, contentValues)
+    return res
+  }
+  async beaconOffer(params: [string, [string, string][]]) {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1]))
+    const enr = ENR.decodeTxt(enrHex)
+    if (this._beacon.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+      const res = await this._beacon.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    const res = await this._beacon.sendOffer(enr.nodeId, contentKeys, contentValues)
     return res
   }
   async historySendOffer(params: [string, string[]]) {
