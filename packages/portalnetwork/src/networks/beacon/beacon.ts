@@ -768,7 +768,14 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param dstId node ID of a peer
    * @param contentKeys content keys being offered as specified by the subnetwork
    */
-  public override sendOffer = async (dstId: string, contentKeys: Uint8Array[]) => {
+  public override sendOffer = async (
+    dstId: string,
+    contentKeys: Uint8Array[],
+    contents?: Uint8Array[],
+  ) => {
+    if (contents && contents.length !== contentKeys.length) {
+      throw new Error('Provided Content and content key arrays must be the same length')
+    }
     if (contentKeys.length > 0) {
       this.portal.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
@@ -806,27 +813,35 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
-            for await (const key of requestedKeys) {
-              let value = Uint8Array.from([])
-              try {
-                // We use `findContentLocally` instead of `get` so the content keys for
-                // optimistic and finality updates are handled correctly
-                value = (await this.findContentLocally(key)) as Uint8Array
-                requestedData.push(value)
-              } catch (err: any) {
-                this.logger(`Error retrieving content -- ${err.toString()}`)
-                requestedData.push(value)
+            if (contents) {
+              for (const [idx, _] of requestedKeys.entries()) {
+                if (msg.contentKeys.get(idx) === true) {
+                  requestedData.push(contents[idx])
+                }
+              }
+            } else {
+              for await (const key of requestedKeys) {
+                let value = Uint8Array.from([])
+                try {
+                  // We use `findContentLocally` instead of `get` so the content keys for
+                  // optimistic and finality updates are handled correctly
+                  value = (await this.findContentLocally(key)) as Uint8Array
+                  requestedData.push(value)
+                } catch (err: any) {
+                  this.logger(`Error retrieving content -- ${err.toString()}`)
+                  requestedData.push(value)
+                }
               }
             }
 
-            const contents = encodeWithVariantPrefix(requestedData)
+            const encoded = encodeWithVariantPrefix(requestedData)
             await this.handleNewRequest({
               networkId: this.networkId,
               contentKeys: requestedKeys,
               peerId: dstId,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
-              contents: [contents],
+              contents: [encoded],
             })
 
             return msg.contentKeys
