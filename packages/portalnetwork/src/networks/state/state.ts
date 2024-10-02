@@ -4,7 +4,7 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { BranchNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToInt, bytesToUnprefixedHex } from '@ethereumjs/util'
+import { bytesToInt, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 
@@ -82,20 +82,29 @@ export class StateNetwork extends BaseNetwork {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
-        const decoded = ContentMessageType.deserialize(res.subarray(1))
+        let decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentType = key[0]
 
         switch (decoded.selector) {
           case FoundContent.UTP: {
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            await this.handleNewRequest({
-              networkId: this.networkId,
-              contentKeys: [key],
-              peerId: dstId,
-              connectionId: id,
-              requestCode: RequestCode.FINDCONTENT_READ,
-              contents: [],
+            decoded = await new Promise((resolve, _reject) => {
+              // TODO: Figure out how to clear this listener
+              this.on('ContentAdded', (contentKey: Uint8Array, value) => {
+                if (equalsBytes(contentKey, key)) {
+                  this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
+                  resolve({ selector: 0, value })
+                }
+              })
+              void this.handleNewRequest({
+                networkId: this.networkId,
+                contentKeys: [key],
+                peerId: dstId,
+                connectionId: id,
+                requestCode: RequestCode.FINDCONTENT_READ,
+                contents: [],
+              })
             })
             break
           }
