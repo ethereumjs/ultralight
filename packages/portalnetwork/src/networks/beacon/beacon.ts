@@ -460,7 +460,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                 peerId: dstId,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
-                contents: [],
               })
             })
             break
@@ -594,7 +593,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         peerId: src.nodeId,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: [value],
+        contents: value,
       })
 
       const id = new Uint8Array(2)
@@ -841,7 +840,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               peerId: dstId,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
-              contents: [encoded],
+              contents: encoded,
             })
 
             return msg.contentKeys

@@ -3,18 +3,20 @@ import { BitVectorType, toHexString } from '@chainsafe/ssz'
 import {
   Bytes32TimeStamp,
   ConnectionState,
-  ContentRequest,
   Packet,
   PacketType,
   RequestCode,
   UtpSocket,
   UtpSocketType,
   bitmap,
+  createContentRequest,
   createSocketKey,
   startingNrs,
 } from '../../../index.js'
 
 import type {
+  ContentRequest,
+  ContentRequestType,
   DataPacket,
   FinPacket,
   INewRequest,
@@ -29,7 +31,7 @@ import type { Debugger } from 'debug'
 
 export class PortalNetworkUTP {
   client: PortalNetwork
-  openContentRequest: Map<UtpSocketKey, ContentRequest>
+  openContentRequest: Map<UtpSocketKey, ContentRequestType>
   logger: Debugger
   working: boolean
 
@@ -99,22 +101,24 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequest> {
     const { contentKeys, peerId, connectionId, requestCode } = params
-    const content = params.contents ? params.contents[0] : undefined
+    const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const newRequest = new ContentRequest({
+    const socketKey = createSocketKey(peerId, connectionId)
+    const socket = this.createPortalNetworkUTPSocket(
+      params.networkId,
+      requestCode,
+      peerId,
+      sndId,
+      rcvId,
+      content,
+    )
+    const newRequest = createContentRequest({
       networkId: params.networkId,
       requestCode,
-      socket: this.createPortalNetworkUTPSocket(
-        params.networkId,
-        requestCode,
-        peerId,
-        sndId,
-        rcvId,
-        content,
-      ),
-      socketKey: createSocketKey(peerId, connectionId),
-      content: params.contents ? params.contents[0] : undefined,
+      socket,
+      socketKey,
+      content,
       contentKeys,
     })
     this.openContentRequest.set(newRequest.socketKey, newRequest)
@@ -260,7 +264,7 @@ export class PortalNetworkUTP {
         throw new Error('Why did I get a SELECTIVE ACK packet?')
     }
   }
-  async _handleDataPacket(request: ContentRequest, packet: DataPacket) {
+  async _handleDataPacket(request: ContentRequestType, packet: DataPacket) {
     switch (request.requestCode) {
       case RequestCode.FINDCONTENT_READ:
         await request.socket.handleDataPacket(packet)
@@ -280,7 +284,7 @@ export class PortalNetworkUTP {
           await this.returnContent(
             request.networkId,
             [Uint8Array.from(request.socket.reader!.bytes)],
-            request.contentKeys,
+            [request.contentKey],
           )
           request.socket.close()
           request.close()
@@ -305,7 +309,7 @@ export class PortalNetworkUTP {
   async _handleResetPacket(request: ContentRequest) {
     request.socket.close()
   }
-  async _handleFinPacket(request: ContentRequest, packet: FinPacket) {
+  async _handleFinPacket(request: ContentRequestType, packet: FinPacket) {
     if (request.socket.type === UtpSocketType.WRITE) {
       request.close()
       this.openContentRequest.delete(request.socketKey)
@@ -313,7 +317,7 @@ export class PortalNetworkUTP {
     if (request.requestCode === RequestCode.FINDCONTENT_READ) {
       const content = await request.socket.handleFinPacket(packet, true)
       if (!content) return
-      await this.returnContent(request.networkId, [content], request.contentKeys)
+      await this.returnContent(request.networkId, [content], [request.contentKey])
       request.socket.close()
       request.close()
       this.openContentRequest.delete(request.socketKey)
