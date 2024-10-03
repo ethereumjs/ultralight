@@ -96,6 +96,7 @@ export class ContentLookup {
     this.pending.add(peer.nodeId)
     if (this.finished) return
     this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
+    // TODO: Decide if we should have sendFindContent return the utp flag or not
     const res = await this.network.sendFindContent!(peer.nodeId, this.contentKey)
     if (this.finished) {
       this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
