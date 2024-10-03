@@ -112,6 +112,7 @@ describe('gossip test', async () => {
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
   network2.on('ContentAdded', async (key: Uint8Array, content: Uint8Array) => {
+    network2.logger.extend('ContentAdded')(`Added Content for ${bytesToHex(key)}`)
     const contentType = key[0]
     if (contentType === 0) {
       const headerWithProof = BlockHeaderWithProof.deserialize(content)
