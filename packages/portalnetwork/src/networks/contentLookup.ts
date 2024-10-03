@@ -56,6 +56,7 @@ export class ContentLookup {
     this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
+      // Try to find content locally first
       const res = await this.network.get(this.contentKey)
       return { content: hexToBytes(res), utp: false }
     } catch (err: any) {
@@ -93,8 +94,8 @@ export class ContentLookup {
     }
     this.contacted.push(peer.nodeId)
     this.pending.add(peer.nodeId)
-    this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
     if (this.finished) return
+    this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
     const res = await this.network.sendFindContent!(peer.nodeId, this.contentKey)
     if (this.finished) {
       this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
@@ -107,36 +108,6 @@ export class ContentLookup {
     }
     switch (res.selector) {
       case 0: {
-        this.finished = true
-        // findContent returned uTP connection ID
-        this.logger(
-          `received uTP connection ID from ${shortId(this.network.routingTable.getValue(peer.nodeId)!)}`,
-        )
-        peer.hasContent = true
-        return new Promise((resolve) => {
-          let timeout: any = undefined
-          const utpDecoder = (contentKey: Uint8Array, content: Uint8Array) => {
-            if (equalsBytes(contentKey, this.contentKey)) {
-              this.logger(`Received content for this contentKey: ${toHexString(this.contentKey)}`)
-              this.network.removeListener('ContentAdded', utpDecoder)
-              clearTimeout(timeout)
-              this.content = { content, utp: true }
-              this.finished = true
-              this.pending.delete(peer.nodeId)
-              resolve({ content, utp: true })
-            }
-          }
-          timeout = setTimeout(() => {
-            this.logger(`uTP stream timed out`)
-            this.network.removeListener('ContentAdded', utpDecoder)
-            this.pending.delete(peer.nodeId)
-            resolve(undefined)
-          }, this.timeout)
-          this.network.on('ContentAdded', utpDecoder)
-        })
-      }
-
-      case 1: {
         this.finished = true
         // findContent returned data sought
         this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
@@ -155,7 +126,7 @@ export class ContentLookup {
         return { content: res.value as Uint8Array, utp: false }
       }
 
-      case 2: {
+      case 1: {
         // findContent request returned ENRs of nodes closer to content
         this.logger(`received ${res.value.length} ENRs for closer nodes`)
         for (const enr of res.value) {
