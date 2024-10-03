@@ -1,5 +1,5 @@
 import { BitVectorType } from '@chainsafe/ssz'
-import { debug } from 'debug'
+import debug from 'debug'
 
 import {
   Bytes32TimeStamp,
