@@ -46,8 +46,7 @@ const main = async () => {
 
   const offer = await nodeA.request('portal_historyOffer', [
     nodeBEnr.result.enr,
-    blockBodyContent_key,
-    blockBodyContent_value,
+    [[blockBodyContent_key, blockBodyContent_value]],
   ])
 
   console.log(offer)

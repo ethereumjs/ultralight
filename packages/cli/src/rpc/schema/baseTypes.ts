@@ -126,13 +126,13 @@ export const baseTypes = {
     }
   },
   /**
-   * bytes2 validator to ensure has `0x` prefix and 66 bytes length
+   * hex string validator to ensure has `0x` prefix
    * @param params parameters of method
    * @param index index of parameter
    */
   get hexString() {
     return (params: any[], index: number) => {
-      return validateByteString(params[index], index, 66)
+      return validateByteString(params[index], index)
     }
   },
 }
