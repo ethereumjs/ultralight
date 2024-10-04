@@ -18,5 +18,5 @@ export interface INewRequest {
   peerId: string
   connectionId: number
   requestCode: RequestCode
-  contents?: Uint8Array[]
+  contents?: Uint8Array
 }
