@@ -15,6 +15,7 @@ const main = async () => {
     const ultralightENR = await ultralight.request('portal_historyNodeInfo', [])
     enrs.push(ultralightENR.result.enr)
     nodeIds.push(ultralightENR.result.nodeId)
+    console.log(`Node ID: ${ultralightENR.result.nodeId}`)
     const deleted = await ultralight.request('ultralight_flushEpochs', [])
     console.log(`Deleted ${deleted.length} epochs`)
     for (const [i, epoch] of deleted.entries()) {
