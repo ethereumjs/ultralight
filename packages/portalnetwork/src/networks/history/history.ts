@@ -28,7 +28,12 @@ import {
   SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
-import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
+import {
+  epochRootByIndex,
+  getContentKey,
+  verifyPreCapellaHeaderProof,
+  verifyPreMergeHeaderProof,
+} from './util.js'
 
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
@@ -45,6 +50,23 @@ export class HistoryNetwork extends BaseNetwork {
     this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
+  }
+
+  public async flushEpochs(): Promise<Uint8Array[]> {
+    const deletedEpochs: Uint8Array[] = []
+    for (let i = 0; i < 1897; i++) {
+      const epochHash = epochRootByIndex(i)
+      if (epochHash === undefined) {
+        return deletedEpochs
+      }
+      const epochKey = Uint8Array.from([0x03, ...epochHash])
+      const stored = await this.retrieve(epochKey)
+      if (stored !== undefined) {
+        await this.del(epochKey)
+        deletedEpochs.push(epochKey)
+      }
+    }
+    return deletedEpochs
   }
 
   public blockNumberToHash(blockNumber: bigint): Uint8Array | undefined {

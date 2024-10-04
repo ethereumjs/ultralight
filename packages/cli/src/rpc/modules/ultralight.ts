@@ -23,6 +23,7 @@ const methods = [
   'ultralight_getNetworkDBSize',
   'ultralight_pruneNetworkDB',
   'ultralight_setNetworkStorage',
+  'ultralight_flushEpochs',
 ]
 
 export class ultralight {
@@ -39,6 +40,7 @@ export class ultralight {
     this._beacon = this._client.network()[NetworkId.BeaconChainNetwork]
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
+    this.flushEpochs = middleware(this.flushEpochs.bind(this), 0, [])
     this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
       [validators.hex],
       [validators.hex],
@@ -72,6 +74,11 @@ export class ultralight {
   }
   async methods() {
     return methods
+  }
+  async flushEpochs() {
+    const deleted = await this._history!.flushEpochs()
+    this.logger(`Deleted ${deleted.length} epochs`)
+    return deleted
   }
   async addBlockToHistory(params: [string, string]) {
     this.logger(`ultralight_addBlockToHistory request received`)
