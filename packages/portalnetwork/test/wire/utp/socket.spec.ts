@@ -11,10 +11,14 @@ import {
   PacketType,
   PortalNetwork,
   PortalNetworkUTP,
-  UtpSocket,
   UtpSocketType,
   toHexString,
 } from '../../../src/index.js'
+import { createUtpSocket } from '../../../src/wire/utp/Socket/index.js'
+
+import type { ReadSocket } from '../../../src/wire/utp/Socket/ReadSocket.js'
+import type { WriteSocket } from '../../../src/wire/utp/Socket/WriteSocket.js'
+
 const sampleSize = 50000
 const content = randomBytes(sampleSize)
 const DEFAULT_RAND_SEQNR = 5555
@@ -22,9 +26,9 @@ const DEFAULT_RAND_ACKNR = 4444
 const readId = 1111
 const writeId = 2222
 
-const _read = async (networkId: NetworkId) => {
+const _read = async (networkId: NetworkId): Promise<ReadSocket> => {
   const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
-  return new UtpSocket({
+  return createUtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,
     ackNr: DEFAULT_RAND_ACKNR,
@@ -34,11 +38,11 @@ const _read = async (networkId: NetworkId) => {
     sndId: writeId,
     logger: debug('test'),
     type: UtpSocketType.READ,
-  })
+  }) as ReadSocket
 }
-const _write = async (networkId: NetworkId) => {
+const _write = async (networkId: NetworkId): Promise<WriteSocket> => {
   const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
-  return new UtpSocket({
+  return createUtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,
     ackNr: DEFAULT_RAND_ACKNR,
@@ -49,7 +53,7 @@ const _write = async (networkId: NetworkId) => {
     logger: debug('test'),
     type: UtpSocketType.WRITE,
     content,
-  })
+  }) as WriteSocket
 }
 describe('socket constructor', async () => {
   const read = await _read(NetworkId.HistoryNetwork)

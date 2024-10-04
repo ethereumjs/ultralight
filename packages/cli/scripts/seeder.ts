@@ -171,16 +171,20 @@ const main = async () => {
       [
         clientInfo.peer1.enr,
         getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(block[0])),
-        toHexString(
-          Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
-            setHardfork: true,
-          }).header.serialize(),
-        ),
-        toHexString(
-          Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
-            setHardfork: true,
-          }).header.serialize(),
-        ),
+        [
+          [
+            toHexString(
+              Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
+                setHardfork: true,
+              }).header.serialize(),
+            ),
+            toHexString(
+              Block.fromRLPSerializedBlock(hexToBytes((block[1] as any).rlp), {
+                setHardfork: true,
+              }).header.serialize(),
+            ),
+          ],
+        ],
       ],
     ])
   }

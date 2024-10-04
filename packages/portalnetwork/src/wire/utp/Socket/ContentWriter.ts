@@ -1,9 +1,9 @@
 import { BUFFER_SIZE } from '../Packets/PacketTyping.js'
 
-import type { UtpSocket } from './UtpSocket.js'
+import type { WriteSocket } from './WriteSocket.js'
 import type { Debugger } from 'debug'
 export class ContentWriter {
-  socket: UtpSocket
+  socket: WriteSocket
   logger: Debugger
   startingSeqNr: number
   seqNr: number
@@ -12,7 +12,7 @@ export class ContentWriter {
   sentChunks: number[]
   dataChunks: Record<number, Uint8Array>
   dataNrs: number[]
-  constructor(socket: UtpSocket, content: Uint8Array, startingSeqNr: number, logger: Debugger) {
+  constructor(socket: WriteSocket, content: Uint8Array, startingSeqNr: number, logger: Debugger) {
     this.socket = socket
     this.content = content
     this.startingSeqNr = startingSeqNr

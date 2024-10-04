@@ -414,6 +414,9 @@ export abstract class BaseNetwork extends EventEmitter {
    * @param networkId network ID of subnetwork being used
    */
   public sendOffer = async (dstId: string, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
+    if (content && content.length !== contentKeys.length) {
+      throw new Error('Must provide all content or none')
+    }
     if (contentKeys.length > 0) {
       this.portal.metrics?.offerMessagesSent.inc()
       const offerMsg: OfferMessage = {
@@ -477,7 +480,7 @@ export abstract class BaseNetwork extends EventEmitter {
               peerId: dstId,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
-              contents: [contents],
+              contents,
             })
 
             return msg.contentKeys
@@ -584,7 +587,6 @@ export abstract class BaseNetwork extends EventEmitter {
       peerId: src.nodeId,
       connectionId: id,
       requestCode: RequestCode.ACCEPT_READ,
-      contents: [],
     })
     const idBuffer = new Uint8Array(2)
     new DataView(idBuffer.buffer).setUint16(0, id, false)
@@ -686,7 +688,7 @@ export abstract class BaseNetwork extends EventEmitter {
         peerId: src.nodeId,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: [value],
+        contents: value,
       })
 
       const id = new Uint8Array(2)
@@ -869,7 +871,7 @@ export abstract class BaseNetwork extends EventEmitter {
                   peerId: peer.nodeId,
                   connectionId: id,
                   requestCode: RequestCode.OFFER_WRITE,
-                  contents: [encodeWithVariantPrefix([content])],
+                  contents: encodeWithVariantPrefix([content]),
                 })
               }
             }

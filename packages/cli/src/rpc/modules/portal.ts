@@ -1,7 +1,7 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
-import { bytesToHex, short } from '@ethereumjs/util'
+import { hexToBytes, short } from '@ethereumjs/util'
 import {
   ContentLookup,
   ContentMessageType,
@@ -17,6 +17,7 @@ import {
 } from 'portalnetwork'
 
 import { INVALID_PARAMS } from '../error-code.js'
+import { content_params } from '../schema/index.js'
 import { isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
@@ -84,6 +85,7 @@ const methods = [
   'portal_beaconGetEnr',
   'portal_beaconDeleteEnr',
   'portal_beaconLookupEnr',
+  'portal_beaconOffer',
 
   // not included in portal-network-specs
   'portal_historyAddEnrs',
@@ -186,8 +188,11 @@ export class portal {
     ])
     this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
       [validators.enr],
-      [validators.hex],
-      [validators.hex],
+      [content_params.ContentItems],
+    ])
+    this.beaconOffer = middleware(this.beaconOffer.bind(this), 3, [
+      [validators.enr],
+      [content_params.ContentItems],
     ])
     this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
       [validators.dstId],
@@ -195,8 +200,7 @@ export class portal {
     ])
     this.stateOffer = middleware(this.stateOffer.bind(this), 3, [
       [validators.enr],
-      [validators.hex],
-      [validators.hex],
+      [content_params.ContentItems],
     ])
     this.stateSendOffer = middleware(this.stateSendOffer.bind(this), 2, [
       [validators.dstId],
@@ -801,8 +805,10 @@ export class portal {
       }
     }
   }
-  async historyOffer(params: [string, string, string]) {
-    const [enrHex, contentKeyHex, contentValueHex] = params
+  async historyOffer(params: [string, [string, string][]]) {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1]))
     const enr = ENR.decodeTxt(enrHex)
     if (this._history.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
       const res = await this._history.sendPing(enr)
@@ -810,11 +816,21 @@ export class portal {
         return '0x'
       }
     }
-    const res = await this._history.sendOffer(
-      enr.nodeId,
-      [fromHexString(contentKeyHex)],
-      [fromHexString(contentValueHex)],
-    )
+    const res = await this._history.sendOffer(enr.nodeId, contentKeys, contentValues)
+    return res
+  }
+  async beaconOffer(params: [string, [string, string][]]) {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1]))
+    const enr = ENR.decodeTxt(enrHex)
+    if (this._beacon.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+      const res = await this._beacon.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    const res = await this._beacon.sendOffer(enr.nodeId, contentKeys, contentValues)
     return res
   }
   async historySendOffer(params: [string, string[]]) {
@@ -824,8 +840,10 @@ export class portal {
     const enr = this._history.routingTable.getWithPending(dstId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
-  async stateOffer(params: [string, string, string]) {
-    const [enrHex, contentKeyHex, contentValueHex] = params
+  async stateOffer(params: [string, [string, string][]]) {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => fromHexString(item[0]))
+    const contentValues = contentItems.map((item) => fromHexString(item[1]))
     const enr = ENR.decodeTxt(enrHex)
     if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
       const res = await this._state.sendPing(enr)
@@ -833,11 +851,7 @@ export class portal {
         return '0x'
       }
     }
-    const res = await this._state.sendOffer(
-      enr.nodeId,
-      [fromHexString(contentKeyHex)],
-      [fromHexString(contentValueHex)],
-    )
+    const res = await this._state.sendOffer(enr.nodeId, contentKeys, contentValues)
     return res
   }
   async stateSendOffer(params: [string, string[]]) {

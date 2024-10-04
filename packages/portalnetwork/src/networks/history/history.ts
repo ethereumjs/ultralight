@@ -242,7 +242,6 @@ export class HistoryNetwork extends BaseNetwork {
                 peerId: dstId,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
-                contents: [],
               })
             })
             break

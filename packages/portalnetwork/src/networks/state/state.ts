@@ -103,7 +103,6 @@ export class StateNetwork extends BaseNetwork {
                 peerId: dstId,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
-                contents: [],
               })
             })
             break
