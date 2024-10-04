@@ -338,31 +338,27 @@ export class HistoryNetwork extends BaseNetwork {
     return decodeReceipts(receipts)
   }
 
-  public async addBlockBody(value: Uint8Array, hashKey: Uint8Array, header?: Uint8Array) {
-    if (value.length === 0) {
+  public async addBlockBody(bodyBytes: Uint8Array, hashKey: Uint8Array, header?: Uint8Array) {
+    if (bodyBytes.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
     }
     let block: Block | undefined
     try {
-      if (header) {
-        block = reassembleBlock(header, value)
+      if (header === undefined) {
+        block = await this.portal.ETH.getBlockByHash(hashKey, false)
       } else {
-        const headerBytes = (await this.getBlockHeaderFromDB({
-          blockHash: hashKey,
-        })) as Uint8Array
         // Verify we can construct a valid block from the header and body provided
-        block = reassembleBlock(headerBytes!, value)
+        block = reassembleBlock(header, bodyBytes)
       }
     } catch (err: any) {
       this.logger(
-        `Block Header for ${shortId(bytesToHex(hashKey))} not found locally.  Querying network...`,
+        `Error: ${err?.message} while validating block body for ${shortId(bytesToHex(hashKey))}`,
       )
-      block = await this.portal.ETH.getBlockByHash(hashKey, false)
     }
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
-      await this.put(bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, toHexString(bodyBytes))
       // TODO: Decide when and if to build and store receipts.
       //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
       // if (block.transactions.length > 0) {
@@ -371,7 +367,7 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
-      await this.put(bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, toHexString(bodyBytes))
       // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
       // as it's against spec
       return

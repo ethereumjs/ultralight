@@ -65,23 +65,15 @@ export class ETH {
     let header: any
     let body: any
     let block
-    try {
-      this.networkCheck([NetworkId.HistoryNetwork])
-      this.history!.logger.extend('getBlockByHash')(`Looking for ${bytesToHex(blockHash)} locally`)
-      // Try to find block locally
-      const block = await this.history!.getBlockFromDB({ blockHash }, includeTransactions)
-      return block
-    } catch {
-      /** NOOP */
-    }
+    this.networkCheck([NetworkId.HistoryNetwork])
     const headerContentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
     const bodyContentKey = includeTransactions
       ? getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
       : undefined
     try {
       let lookup = new ContentLookup(this.history!, headerContentKey)
+      this.logger.extend('getBlockByHash')(`Looking for ${bytesToHex(blockHash)}`)
       lookupResponse = await lookup.startLookup()
-      this.logger.extend('getBlockByHash')(`Looking for ${bytesToHex(blockHash)} on the network`)
       this.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
         // Header not found by hash, try to find by number if known
