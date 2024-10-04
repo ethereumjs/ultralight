@@ -114,8 +114,8 @@ export class ContentLookup {
       // findContent returned data sought
       this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
       peer.hasContent = true
+      this.network.routingTable.contentKeyKnownToPeer(peer.nodeId, this.contentKey)
       this.network.portal.metrics?.successfulContentLookups.inc()
-
       // Offer content to neighbors who should have had content but don't if we receive content directly
       for (const contactedPeer of this.contacted) {
         if (!this.network.routingTable.contentKeyKnownToPeer(contactedPeer, this.contentKey)) {
@@ -123,6 +123,7 @@ export class ContentLookup {
           void this.network.sendOffer(contactedPeer, [this.contentKey])
         }
       }
+      this.content = res
       return res
     } else {
       // findContent request returned ENRs of nodes closer to content

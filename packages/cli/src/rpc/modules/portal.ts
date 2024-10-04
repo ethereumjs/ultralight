@@ -736,7 +736,7 @@ export class portal {
     this.logger.extend('historyRecursiveFindContent')(`request received for ${contentKey}`)
     const lookup = new ContentLookup(this._history, fromHexString(contentKey))
     const res = await lookup.startLookup()
-    if (!res) {
+    if (res === undefined) {
       this.logger.extend('historyRecursiveFindContent')(`request returned { enrs: [] }`)
       throw new Error('No content found')
     }

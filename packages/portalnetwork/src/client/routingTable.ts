@@ -38,10 +38,11 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   }
 
   /**
-   * Checks to see if a contentKey is known by a peer already
+   * Returns true if content has been OFFERed to a peer and updates the OFFERed list for
+   * that peer if not
    * @param nodeId `nodeId` of peer content was OFFERed to
    * @param contentKey hex prefixed string representation of content key
-   * @returns boolean indicating if node has already been OFFERed `contentKey` already
+   * @returns boolean indicating if node has previously been OFFERed `contentKey` already
    */
   public contentKeyKnownToPeer = (nodeId: NodeId, contentKey: Uint8Array) => {
     let gossipList = this.gossipMap.get(nodeId)
