@@ -186,11 +186,11 @@ export class portal {
     this.stateRecursiveFindContent = middleware(this.stateRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
-    this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
+    this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.enr],
       [content_params.ContentItems],
     ])
-    this.beaconOffer = middleware(this.beaconOffer.bind(this), 3, [
+    this.beaconOffer = middleware(this.beaconOffer.bind(this), 2, [
       [validators.enr],
       [content_params.ContentItems],
     ])
@@ -198,7 +198,7 @@ export class portal {
       [validators.dstId],
       [validators.array(validators.hex)],
     ])
-    this.stateOffer = middleware(this.stateOffer.bind(this), 3, [
+    this.stateOffer = middleware(this.stateOffer.bind(this), 2, [
       [validators.enr],
       [content_params.ContentItems],
     ])
