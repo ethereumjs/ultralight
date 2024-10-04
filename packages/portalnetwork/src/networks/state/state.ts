@@ -28,7 +28,7 @@ import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './u
 
 import type { TNibbles } from './types.js'
 import type { FindContentMessage } from '../../wire/types.js'
-import type { BaseNetworkConfig } from '../index.js'
+import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
 import type { Block } from '@ethereumjs/block'
 import type { RunBlockOpts } from '@ethereumjs/vm'
 import type { Debugger } from 'debug'
@@ -82,19 +82,19 @@ export class StateNetwork extends BaseNetwork {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
-        let decoded = ContentMessageType.deserialize(res.subarray(1))
+        const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentType = key[0]
-
+        let response: ContentLookupResponse
         switch (decoded.selector) {
           case FoundContent.UTP: {
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            decoded = await new Promise((resolve, _reject) => {
+            response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
                 if (equalsBytes(contentKey, key)) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
-                  resolve({ selector: 0, value })
+                  resolve({ content: value, utp: true })
                 }
               })
               void this.handleNewRequest({
@@ -116,13 +116,15 @@ export class StateNetwork extends BaseNetwork {
             } catch {
               this.logger('Error adding content to DB')
             }
+            response = { content: decoded.value as Uint8Array, utp: false }
             break
           case FoundContent.ENRS: {
             this.logger(`received ${decoded.value.length} ENRs`)
+            response = { enrs: decoded.value as Uint8Array[] }
             break
           }
         }
-        return decoded
+        return response
       }
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)

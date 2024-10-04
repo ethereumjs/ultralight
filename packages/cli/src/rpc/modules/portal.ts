@@ -658,37 +658,25 @@ export class portal {
       }
     }
     const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    this.logger.extend('findContent')(
-      `request returned type: ${res ? FoundContent[res.selector] : res}`,
-    )
-    if (!res) {
+    if (res === undefined) {
+      this.logger.extend('findContent')(`request returned type: ENRS`)
       return { enrs: [] }
     }
-    let content: Uint8Array | Uint8Array[] = []
-    switch (res.selector) {
-      case FoundContent.ENRS:
-        content = res.value as Uint8Array[]
-        break
-      case FoundContent.CONTENT:
-      case FoundContent.UTP:
-        content = res.value as Uint8Array
-        break
+    const resType =
+      'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
+    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
+
+    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
+    let returnValue
+    if ('enrs' in res) {
+      returnValue = { enrs: res.enrs.map((v: Uint8Array) => ENR.decode(v).encodeTxt()) }
+    } else {
+      returnValue = {
+        content: res.content.length > 0 ? toHexString(res.content) : '0x',
+        utpTransfer: res.utp,
+      }
     }
-
-    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-
-    const returnVal =
-      res.selector === FoundContent.ENRS
-        ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
-        : {
-            content: content.length > 0 ? toHexString(content as Uint8Array) : '0x',
-            utpTransfer: res.selector === FoundContent.UTP,
-          }
-    this.logger.extend('findContent')({
-      selector: FoundContent[res.selector],
-      value: returnVal,
-    })
-    return returnVal
+    return returnValue
   }
 
   async stateFindContent(params: [string, string]) {
@@ -701,32 +689,24 @@ export class portal {
       }
     }
     const res = await this._state.sendFindContent(nodeId, fromHexString(contentKey))
-    this.logger.extend('findContent')(
-      `request returned type: ${res ? FoundContent[res.selector] : res}`,
-    )
-    if (!res) {
+    if (res === undefined) {
+      this.logger.extend('findContent')(`request returned type: ENRS`)
       return { enrs: [] }
     }
-    let content: Uint8Array | Uint8Array[] = []
-    switch (res.selector) {
-      case FoundContent.ENRS:
-        content = res.value as Uint8Array[]
-        break
-      case FoundContent.CONTENT:
-      case FoundContent.UTP:
-        content = res.value as Uint8Array
-        break
+    const resType =
+      'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
+    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
+
+    let returnValue
+    if ('enrs' in res) {
+      returnValue = { enrs: res.enrs.map((v: Uint8Array) => ENR.decode(v).encodeTxt()) }
+    } else {
+      returnValue = {
+        content: res.content.length > 0 ? toHexString(res.content) : '0x',
+        utpTransfer: res.utp,
+      }
     }
-
-    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-
-    this.logger.extend('findContent')(content)
-    return res.selector === FoundContent.ENRS
-      ? { enrs: content }
-      : {
-          content: content.length > 0 ? toHexString(content as Uint8Array) : '',
-          utpTransfer: res.selector === FoundContent.UTP,
-        }
+    return returnValue
   }
 
   async historySendFindContent(params: [string, string]) {
@@ -735,6 +715,7 @@ export class portal {
     const enr = this._history.routingTable.getWithPending(nodeId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
+
   async historySendContent(params: [string, string]) {
     const [nodeId, content] = params
     const payload = ContentMessageType.serialize({
@@ -930,7 +911,7 @@ export class portal {
     const [nodeId, contentKey] = params
     console.log(nodeId)
     const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
-    if (res !== undefined && res.selector === 1) return toHexString(res.value as Uint8Array)
+    if (res !== undefined && 'content' in res) return toHexString(res.content as Uint8Array)
     return '0x'
   }
 
@@ -948,38 +929,25 @@ export class portal {
     }
 
     const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
-    this.logger.extend('findContent')(
-      `request returned type: ${res ? FoundContent[res.selector] : res}`,
-    )
 
-    if (!res) {
+    if (res === undefined) {
+      this.logger.extend('findContent')(`request returned type: ENRS`)
       return { enrs: [] }
     }
-    let content: Uint8Array | Uint8Array[] = []
-    switch (res.selector) {
-      case FoundContent.ENRS:
-        content = res.value as Uint8Array[]
-        break
-      case FoundContent.CONTENT:
-      case FoundContent.UTP:
-        content = res.value as Uint8Array
-        break
+    const resType =
+      'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
+    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
+
+    let returnValue
+    if ('enrs' in res) {
+      returnValue = { enrs: res.enrs.map((v: Uint8Array) => ENR.decode(v).encodeTxt()) }
+    } else {
+      returnValue = {
+        content: res.content.length > 0 ? toHexString(res.content) : '0x',
+        utpTransfer: res.utp,
+      }
     }
-
-    this.logger.extend('findContent')(`request returned ${content.length} bytes`)
-
-    const returnVal =
-      res.selector === FoundContent.ENRS
-        ? { enrs: (<Uint8Array[]>content).map((v) => ENR.decode(v).encodeTxt()) }
-        : {
-            content: content.length > 0 ? toHexString(content as Uint8Array) : '0x',
-            utpTransfer: res.selector === FoundContent.UTP,
-          }
-    this.logger.extend('findContent')({
-      selector: FoundContent[res.selector],
-      value: returnVal,
-    })
-    return returnVal
+    return returnValue
   }
 
   async beaconStore(params: [string, string]) {

@@ -30,7 +30,7 @@ import {
 } from './types.js'
 import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
-import type { BaseNetworkConfig, FindContentMessage } from '../../index.js'
+import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -204,7 +204,7 @@ export class HistoryNetwork extends BaseNetwork {
         : this.routingTable.getWithPending(dstId.slice(2))?.value
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
-      return
+      return undefined
     }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
@@ -219,21 +219,21 @@ export class HistoryNetwork extends BaseNetwork {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
-        let decoded = ContentMessageType.deserialize(res.subarray(1))
+        const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentKey = decodeHistoryNetworkContentKey(key)
         const contentType = contentKey.contentType
-
+        let response: ContentLookupResponse
         switch (decoded.selector) {
           case FoundContent.UTP: {
             this.streamingKey(key)
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            decoded = await new Promise((resolve, _reject) => {
+            response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
                 if (equalsBytes(contentKey, key)) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
-                  resolve({ selector: 0, value })
+                  resolve({ content: value, utp: true })
                 }
               })
               void this.handleNewRequest({
@@ -255,13 +255,15 @@ export class HistoryNetwork extends BaseNetwork {
             } catch {
               this.logger.extend('FOUNDCONTENT')('Error adding content to DB')
             }
+            response = { content: decoded.value as Uint8Array, utp: false }
             break
           case FoundContent.ENRS: {
             this.logger.extend('FOUNDCONTENT')(`received ${decoded.value.length} ENRs`)
+            response = { enrs: decoded.value as Uint8Array[] }
             break
           }
         }
-        return decoded
+        return response
       }
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)

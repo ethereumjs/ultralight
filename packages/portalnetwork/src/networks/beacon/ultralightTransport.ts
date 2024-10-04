@@ -51,11 +51,12 @@ export class UltralightTransport implements LightClientTransport {
       let decoded
       decoded = await this.network.findContentLocally(rangeKey)
       if (decoded === undefined || bytesToHex(decoded) === '0x') {
-        decoded = await this.network.sendFindContent(
+        const res = await this.network.sendFindContent(
           this.network.routingTable.random()!.nodeId,
           rangeKey,
         )
-        decoded = decoded !== undefined ? decoded.value : undefined
+        if (res !== undefined && 'content' in res)
+          decoded = decoded !== undefined ? res.content : undefined
       }
       if (decoded !== undefined) {
         const updateRange = LightClientUpdatesByRange.deserialize(decoded as Uint8Array)
@@ -115,11 +116,11 @@ export class UltralightTransport implements LightClientTransport {
         }),
       ),
     )
-    if (decoded !== undefined) {
-      const forkhash = decoded.value.slice(0, 4) as Uint8Array
+    if (decoded !== undefined && 'content' in decoded) {
+      const forkhash = decoded.content.slice(0, 4) as Uint8Array
       forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
       optimisticUpdate = ssz[forkname].LightClientOptimisticUpdate.deserialize(
-        (decoded.value as Uint8Array).slice(4),
+        (decoded.content as Uint8Array).slice(4),
       )
 
       return {
@@ -180,11 +181,11 @@ export class UltralightTransport implements LightClientTransport {
         LightClientFinalityUpdateKey.serialize({ finalitySlot: nextFinalitySlot }),
       ),
     )
-    if (decoded !== undefined) {
-      const forkhash = decoded.value.slice(0, 4) as Uint8Array
+    if (decoded !== undefined && 'content' in decoded) {
+      const forkhash = decoded.content.slice(0, 4) as Uint8Array
       forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
       finalityUpdate = ssz[forkname].LightClientFinalityUpdate.deserialize(
-        (decoded.value as Uint8Array).slice(4),
+        (decoded.content as Uint8Array).slice(4),
       )
 
       return {
@@ -231,11 +232,11 @@ export class UltralightTransport implements LightClientTransport {
             LightClientBootstrapKey.serialize({ blockHash: hexToBytes(blockRoot) }),
           ),
         )
-        if (decoded !== undefined) {
-          const forkhash = decoded.value.slice(0, 4) as Uint8Array
+        if (decoded !== undefined && 'content' in decoded) {
+          const forkhash = decoded.content.slice(0, 4) as Uint8Array
           forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
           bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
-            (decoded.value as Uint8Array).slice(4),
+            (decoded.content as Uint8Array).slice(4),
           )
           break
         }

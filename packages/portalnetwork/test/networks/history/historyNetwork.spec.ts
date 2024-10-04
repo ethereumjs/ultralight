@@ -59,8 +59,9 @@ describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () =
   ).thenResolve(findContentResponse)
   const res = await network.sendFindContent(decodedEnr.nodeId, key)
   it('should send a FINDCONTENT message', () => {
+    assert.exists(res!['content'])
     assert.deepEqual(
-      res?.value,
+      res!['content'],
       Uint8Array.from([97, 98, 99]),
       'got correct response for content abc',
     )

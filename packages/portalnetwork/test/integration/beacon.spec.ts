@@ -174,7 +174,7 @@ describe('Find Content tests', () => {
       ),
     )
     assert.equal(
-      toHexString(res!.value as Uint8Array),
+      toHexString(res!['content']),
       optimisticUpdate.content_value,
       'retrieved content for optimistic update from network',
     )
@@ -244,7 +244,7 @@ describe('Find Content tests', () => {
     )
 
     assert.equal(
-      toHexString(res!.value as Uint8Array),
+      toHexString(res!['content'] as Uint8Array),
       updatesByRange.content_value,
       'retrieved content for light client updates by range from network',
     )
