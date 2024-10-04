@@ -119,7 +119,7 @@ const main = async () => {
   await new Promise((resolve) =>
     setTimeout(() => {
       resolve(undefined)
-    }, 10000),
+    }, 5000),
   )
 
   if (args.promConfig !== undefined) {
@@ -137,18 +137,18 @@ const main = async () => {
   }
 
   // Connect nodes to other nodes in the network via `addBootNode`
-  if (args.connectNodes !== false) {
+  if (args.connectNodes === true) {
     console.log('connecting nodes')
     const ultralights: jayson.HttpClient[] = []
-    for (let x = 0; x < 10; x++) {
+    for (let x = 0; x < args.numNodes; x++) {
       ultralights.push(Client.http({ host: ip, port: 8545 + x }))
     }
-
+    const networks = args.networks.split(',')
     for (let x = 0; x < args.numNodes; x++) {
       const peerEnr = await ultralights[x].request('discv5_nodeInfo', [])
       for (let y = 0; y < args.numNodes; y++) {
         if (y === x) continue
-        for (const network of args.networks) {
+        for (const network of networks) {
           await ultralights[y].request(`portal_${network}AddBootNode`, [peerEnr.result.enr])
         }
       }

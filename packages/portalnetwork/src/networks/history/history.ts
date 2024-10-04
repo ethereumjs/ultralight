@@ -1,6 +1,6 @@
 import { ENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToHex, bytesToInt, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToInt, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import {
@@ -30,7 +30,7 @@ import {
 } from './types.js'
 import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
-import type { BaseNetworkConfig, FindContentMessage } from '../../index.js'
+import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -204,7 +204,7 @@ export class HistoryNetwork extends BaseNetwork {
         : this.routingTable.getWithPending(dstId.slice(2))?.value
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
-      return
+      return undefined
     }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
@@ -222,37 +222,48 @@ export class HistoryNetwork extends BaseNetwork {
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentKey = decodeHistoryNetworkContentKey(key)
         const contentType = contentKey.contentType
-
+        let response: ContentLookupResponse
         switch (decoded.selector) {
           case FoundContent.UTP: {
             this.streamingKey(key)
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            await this.handleNewRequest({
-              networkId: this.networkId,
-              contentKeys: [key],
-              peerId: dstId,
-              connectionId: id,
-              requestCode: RequestCode.FINDCONTENT_READ,
+            response = await new Promise((resolve, _reject) => {
+              // TODO: Figure out how to clear this listener
+              this.on('ContentAdded', (contentKey: Uint8Array, value) => {
+                if (equalsBytes(contentKey, key)) {
+                  this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
+                  resolve({ content: value, utp: true })
+                }
+              })
+              void this.handleNewRequest({
+                networkId: this.networkId,
+                contentKeys: [key],
+                peerId: dstId,
+                connectionId: id,
+                requestCode: RequestCode.FINDCONTENT_READ,
+              })
             })
             break
           }
           case FoundContent.CONTENT:
-            this.logger(
+            this.logger.extend('FOUNDCONTENT')(
               `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
             )
             try {
               await this.store(key, decoded.value as Uint8Array)
             } catch {
-              this.logger('Error adding content to DB')
+              this.logger.extend('FOUNDCONTENT')('Error adding content to DB')
             }
+            response = { content: decoded.value as Uint8Array, utp: false }
             break
           case FoundContent.ENRS: {
-            this.logger(`received ${decoded.value.length} ENRs`)
+            this.logger.extend('FOUNDCONTENT')(`received ${decoded.value.length} ENRs`)
+            response = { enrs: decoded.value as Uint8Array[] }
             break
           }
         }
-        return decoded
+        return response
       }
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)
@@ -329,31 +340,27 @@ export class HistoryNetwork extends BaseNetwork {
     return decodeReceipts(receipts)
   }
 
-  public async addBlockBody(value: Uint8Array, hashKey: Uint8Array, header?: Uint8Array) {
-    if (value.length === 0) {
+  public async addBlockBody(bodyBytes: Uint8Array, hashKey: Uint8Array, header?: Uint8Array) {
+    if (bodyBytes.length === 0) {
       // Occurs when `getBlockByHash` called `includeTransactions` === false
       return
     }
     let block: Block | undefined
     try {
-      if (header) {
-        block = reassembleBlock(header, value)
+      if (header === undefined) {
+        block = await this.portal.ETH.getBlockByHash(hashKey, false)
       } else {
-        const headerBytes = (await this.getBlockHeaderFromDB({
-          blockHash: hashKey,
-        })) as Uint8Array
         // Verify we can construct a valid block from the header and body provided
-        block = reassembleBlock(headerBytes!, value)
+        block = reassembleBlock(header, bodyBytes)
       }
     } catch (err: any) {
       this.logger(
-        `Block Header for ${shortId(bytesToHex(hashKey))} not found locally.  Querying network...`,
+        `Error: ${err?.message} while validating block body for ${shortId(bytesToHex(hashKey))}`,
       )
-      block = await this.portal.ETH.getBlockByHash(hashKey, false)
     }
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
-      await this.put(bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, toHexString(bodyBytes))
       // TODO: Decide when and if to build and store receipts.
       //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
       // if (block.transactions.length > 0) {
@@ -362,7 +369,7 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
-      await this.put(bodyContentKey, toHexString(value))
+      await this.put(bodyContentKey, toHexString(bodyBytes))
       // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
       // as it's against spec
       return

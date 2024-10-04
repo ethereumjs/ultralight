@@ -28,6 +28,7 @@ import { NetworkDB } from './networkDB.js'
 import type {
   AcceptMessage,
   BaseNetworkConfig,
+  ContentLookupResponse,
   ContentRequest,
   FindContentMessage,
   FindNodesMessage,
@@ -43,7 +44,6 @@ import type {
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
-import type { Union } from '@chainsafe/ssz/lib/interface.js'
 import type { Debugger } from 'debug'
 import type * as PromClient from 'prom-client'
 
@@ -745,7 +745,7 @@ export abstract class BaseNetwork extends EventEmitter {
   abstract sendFindContent?: (
     dstId: string,
     key: Uint8Array,
-  ) => Promise<Union<Uint8Array | Uint8Array[]> | undefined>
+  ) => Promise<ContentLookupResponse | undefined>
 
   /**
    * Pings each node in a 20% sample of the routing table.

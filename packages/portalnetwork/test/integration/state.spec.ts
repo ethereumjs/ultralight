@@ -91,14 +91,13 @@ describe('AccountTrieNode Gossip / Request', async () => {
     expect(result2.stored).toEqual(3)
   })
 
-  const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
-  const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
-  const requested = await network1.sendFindContent(node2.discv5.enr.nodeId, next.contentKey)
-  it('should request individual node from peer', () => {
+  it('should request individual node from peer', async () => {
+    const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
+    const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
+    const requested = await network1.sendFindContent(node2.discv5.enr.nodeId, next.contentKey)
     expect(requested).toBeDefined()
-    expect(requested?.selector).toEqual(1)
-    expect(requested?.value).instanceOf(Uint8Array)
-    assert.deepEqual(requested!.value, expected, 'retrieved value is correct')
+    expect(requested!['content']).instanceOf(Uint8Array)
+    assert.deepEqual(requested!['content'], expected, 'retrieved value is correct')
   })
 })
 

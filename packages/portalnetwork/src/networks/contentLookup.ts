@@ -1,7 +1,7 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
-import { equalsBytes, hexToBytes, short } from '@ethereumjs/util'
+import { hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
@@ -56,6 +56,7 @@ export class ContentLookup {
     this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
+      // Try to find content locally first
       const res = await this.network.get(this.contentKey)
       return { content: hexToBytes(res), utp: false }
     } catch (err: any) {
@@ -76,6 +77,9 @@ export class ContentLookup {
         this.logger(`Asking ${promises.length} nodes for content`)
         // Wait for first response
         await Promise.any(promises)
+        this.logger(
+          `Have ${this.lookupPeers.length} peers left to ask and ${this.pending.size} pending requests`,
+        )
       } else {
         this.logger(`Waiting on ${this.pending.size} content requests`)
         this.logger(this.pending)
@@ -93,100 +97,63 @@ export class ContentLookup {
     }
     this.contacted.push(peer.nodeId)
     this.pending.add(peer.nodeId)
-    this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
     if (this.finished) return
+    this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
     const res = await this.network.sendFindContent!(peer.nodeId, this.contentKey)
+    this.pending.delete(peer.nodeId)
     if (this.finished) {
       this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
       throw new Error('Lookup finished')
     }
-    if (!res) {
+    if (res === undefined) {
       this.logger(`No response to findContent from ${shortId(peer.nodeId)}`)
-      this.pending.delete(peer.nodeId)
       throw new Error('Continue')
     }
-    switch (res.selector) {
-      case 0: {
-        this.finished = true
-        // findContent returned uTP connection ID
-        this.logger(
-          `received uTP connection ID from ${shortId(this.network.routingTable.getValue(peer.nodeId)!)}`,
-        )
-        peer.hasContent = true
-        return new Promise((resolve) => {
-          let timeout: any = undefined
-          const utpDecoder = (contentKey: Uint8Array, content: Uint8Array) => {
-            if (equalsBytes(contentKey, this.contentKey)) {
-              this.logger(`Received content for this contentKey: ${toHexString(this.contentKey)}`)
-              this.network.removeListener('ContentAdded', utpDecoder)
-              clearTimeout(timeout)
-              this.content = { content, utp: true }
-              this.finished = true
-              this.pending.delete(peer.nodeId)
-              resolve({ content, utp: true })
-            }
-          }
-          timeout = setTimeout(() => {
-            this.logger(`uTP stream timed out`)
-            this.network.removeListener('ContentAdded', utpDecoder)
-            this.pending.delete(peer.nodeId)
-            resolve(undefined)
-          }, this.timeout)
-          this.network.on('ContentAdded', utpDecoder)
-        })
-      }
-
-      case 1: {
-        this.finished = true
-        // findContent returned data sought
-        this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
-        peer.hasContent = true
-        this.network.portal.metrics?.successfulContentLookups.inc()
-
-        // Offer content to neighbors who should have had content but don't if we receive content directly
-        for (const contactedPeer of this.contacted) {
-          if (!this.network.routingTable.contentKeyKnownToPeer(contactedPeer, this.contentKey)) {
-            // Only offer content if not already offered to this peer
-            void this.network.sendOffer(contactedPeer, [this.contentKey])
-          }
+    if ('content' in res) {
+      this.finished = true
+      // findContent returned data sought
+      this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
+      peer.hasContent = true
+      // Mark content offered to peer that sent it to us (so we don't try to offer it to them)
+      this.network.routingTable.contentKeyKnownToPeer(peer.nodeId, this.contentKey)
+      this.network.portal.metrics?.successfulContentLookups.inc()
+      // Offer content to neighbors who should have had content but don't if we receive content directly
+      for (const contactedPeer of this.contacted) {
+        if (!this.network.routingTable.contentKeyKnownToPeer(contactedPeer, this.contentKey)) {
+          // Only offer content if not already offered to this peer
+          void this.network.sendOffer(contactedPeer, [this.contentKey])
         }
-        this.content = { content: res.value as Uint8Array, utp: false }
-        this.pending.delete(peer.nodeId)
-        return { content: res.value as Uint8Array, utp: false }
       }
-
-      case 2: {
-        // findContent request returned ENRs of nodes closer to content
-        this.logger(`received ${res.value.length} ENRs for closer nodes`)
-        for (const enr of res.value) {
-          const decodedEnr = ENR.decode(enr as Uint8Array)
-          if (
-            this.contacted.includes(decodedEnr.nodeId) ||
-            this.network.routingTable.isIgnored(decodedEnr.nodeId)
-          ) {
+      this.content = res
+      return res
+    } else {
+      // findContent request returned ENRs of nodes closer to content
+      this.logger(`received ${res.enrs.length} ENRs for closer nodes`)
+      for (const enr of res.enrs) {
+        const decodedEnr = ENR.decode(enr as Uint8Array)
+        if (
+          this.contacted.includes(decodedEnr.nodeId) ||
+          this.network.routingTable.isIgnored(decodedEnr.nodeId)
+        ) {
+          continue
+        }
+        if (!this.network.routingTable.getWithPending(decodedEnr.nodeId)?.value) {
+          const ping = await this.network.sendPing(decodedEnr)
+          if (!ping) {
+            this.network.routingTable.evictNode(decodedEnr.nodeId)
             continue
           }
-          if (!this.network.routingTable.getWithPending(decodedEnr.nodeId)?.value) {
-            const ping = await this.network.sendPing(decodedEnr)
-            if (!ping) {
-              this.network.routingTable.evictNode(decodedEnr.nodeId)
-              continue
-            }
-          }
-          if (!this.network.routingTable.getWithPending(decodedEnr.nodeId)?.value) {
-            continue
-          }
-          const dist = distance(decodedEnr.nodeId, this.contentId)
-          if (!this.lookupPeers.map((peer) => peer.nodeId).includes(decodedEnr.nodeId)) {
-            this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
-          }
-          this.lookupPeers = this.lookupPeers.sort(
-            (a, b) => Number(a.distance) - Number(b.distance),
-          )
         }
-        this.pending.delete(peer.nodeId)
-        throw new Error('Continue')
+        if (!this.network.routingTable.getWithPending(decodedEnr.nodeId)?.value) {
+          continue
+        }
+        const dist = distance(decodedEnr.nodeId, this.contentId)
+        if (!this.lookupPeers.map((peer) => peer.nodeId).includes(decodedEnr.nodeId)) {
+          this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
+        }
+        this.lookupPeers = this.lookupPeers.sort((a, b) => Number(a.distance) - Number(b.distance))
       }
+      throw new Error('Continue')
     }
   }
 }

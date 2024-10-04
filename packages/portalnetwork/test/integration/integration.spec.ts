@@ -187,7 +187,7 @@ describe('FindContent', async () => {
     node1.discv5.enr.nodeId,
     getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, BigInt(testBlockData[29].number)),
   )
-  const headerWithProof = BlockHeaderWithProof.deserialize(res!.value as Uint8Array)
+  const headerWithProof = BlockHeaderWithProof.deserialize(res!['content'] as Uint8Array)
   const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
     setHardfork: true,
   })

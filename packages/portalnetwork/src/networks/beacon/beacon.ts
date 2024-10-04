@@ -46,9 +46,9 @@ import { getBeaconContentKey } from './util.js'
 
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
+import type { ContentLookupResponse } from '../contentLookup.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { NodeId } from '@chainsafe/enr'
-import type { Union } from '@chainsafe/ssz/lib/interface.js'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
@@ -132,11 +132,11 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot!) }),
       ),
     )
-    if (decoded !== undefined) {
-      const forkhash = decoded.value.slice(0, 4) as Uint8Array
+    if (decoded !== undefined && 'content' in decoded) {
+      const forkhash = decoded.content.slice(0, 4) as Uint8Array
       const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
       const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
-        (decoded.value as Uint8Array).slice(4),
+        (decoded.content as Uint8Array).slice(4),
       )
       const headerHash = bytesToHex(
         ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -181,9 +181,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           `Requesting recent LightClientUpdates from ${shortId(nodeId, this.routingTable)}`,
         )
         const range = await this.sendFindContent(nodeId, rangeKey)
-        if (range === undefined) return // If we don't get a range, exit early
+        if (range === undefined || 'enrs' in range) return // If we don't get a range, exit early
 
-        const updates = LightClientUpdatesByRange.deserialize(range.value as Uint8Array)
+        const updates = LightClientUpdatesByRange.deserialize(range.content as Uint8Array)
 
         const roots: string[] = []
         for (const update of updates) {
@@ -232,15 +232,15 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             )
             for (const vote of votes) {
               const res = await this.sendFindContent(vote[0], bootstrapKey)
-              if (res !== undefined) {
+              if (res !== undefined && 'content' in res) {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
-                    (res.value as Uint8Array).slice(0, 4),
+                    (res.content as Uint8Array).slice(0, 4),
                   ) as LightClientForkName
                   // Verify bootstrap is valid
-                  ssz[fork].LightClientBootstrap.deserialize((res.value as Uint8Array).slice(4))
+                  ssz[fork].LightClientBootstrap.deserialize((res.content as Uint8Array).slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
-                  await this.store(bootstrapKey, res.value as Uint8Array)
+                  await this.store(bootstrapKey, res.content as Uint8Array)
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
                   this.logger.extend('BOOTSTRAP')(`Terminating Light Client bootstrap process`)
                   await this.initializeLightClient(results[x][0])
@@ -420,7 +420,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   public sendFindContent = async (
     dstId: string,
     key: Uint8Array,
-  ): Promise<Union<Uint8Array | Uint8Array[]> | undefined> => {
+  ): Promise<ContentLookupResponse | undefined> => {
     const enr = this.routingTable.getValue(dstId)
     if (!enr) {
       this.logger.extend('FINDCONTENT')(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
@@ -438,20 +438,21 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     }
 
     try {
+      let response: ContentLookupResponse
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.portal.metrics?.contentMessagesReceived.inc()
         this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
-        let decoded = ContentMessageType.deserialize(res.subarray(1))
+        const decoded = ContentMessageType.deserialize(res.subarray(1))
         switch (decoded.selector) {
           case FoundContent.UTP: {
             const id = new DataView((decoded.value as Uint8Array).buffer).getUint16(0, false)
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
-            decoded = await new Promise((resolve, _reject) => {
+            response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
                 if (equalsBytes(contentKey, key)) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
-                  resolve({ selector: 0, value })
+                  resolve({ content: value, utp: true })
                 }
               })
               void this.handleNewRequest({
@@ -466,6 +467,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             {
+              response = { content: decoded.value as Uint8Array, utp: false }
               const forkhash = decoded.value.slice(0, 4) as Uint8Array
               const forkname = this.beaconConfig.forkDigest2ForkName(
                 forkhash,
@@ -537,9 +539,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           case FoundContent.ENRS:
             // We should never get ENRs for content on the Beacon Light Client Network since all nodes
             // are expected to maintain all of the data (basically just light client updates)
-            break
+            // TODO: Determine if this is actually true
+            return undefined
         }
-        return decoded
+        return response
       }
       // TODO Should we do anything other than ignore responses to FINDCONTENT messages that isn't a CONTENT response?
     } catch (err: any) {
