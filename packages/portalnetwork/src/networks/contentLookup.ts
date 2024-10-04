@@ -114,6 +114,7 @@ export class ContentLookup {
       // findContent returned data sought
       this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
       peer.hasContent = true
+      // Mark content offered to peer that sent it to us (so we don't try to offer it to them)
       this.network.routingTable.contentKeyKnownToPeer(peer.nodeId, this.contentKey)
       this.network.portal.metrics?.successfulContentLookups.inc()
       // Offer content to neighbors who should have had content but don't if we receive content directly
