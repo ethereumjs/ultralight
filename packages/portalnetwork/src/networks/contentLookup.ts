@@ -1,7 +1,7 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
-import { equalsBytes, hexToBytes, short } from '@ethereumjs/util'
+import { hexToBytes, short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
@@ -77,6 +77,9 @@ export class ContentLookup {
         this.logger(`Asking ${promises.length} nodes for content`)
         // Wait for first response
         await Promise.any(promises)
+        this.logger(
+          `Have ${this.lookupPeers.length} peers left to ask and ${this.pending.size} pending requests`,
+        )
       } else {
         this.logger(`Waiting on ${this.pending.size} content requests`)
         this.logger(this.pending)
@@ -98,13 +101,13 @@ export class ContentLookup {
     this.logger(`Requesting content from ${shortId(peer.nodeId)}`)
     // TODO: Decide if we should have sendFindContent return the utp flag or not
     const res = await this.network.sendFindContent!(peer.nodeId, this.contentKey)
+    this.pending.delete(peer.nodeId)
     if (this.finished) {
       this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
       throw new Error('Lookup finished')
     }
     if (!res) {
       this.logger(`No response to findContent from ${shortId(peer.nodeId)}`)
-      this.pending.delete(peer.nodeId)
       throw new Error('Continue')
     }
     switch (res.selector) {
@@ -123,7 +126,6 @@ export class ContentLookup {
           }
         }
         this.content = { content: res.value as Uint8Array, utp: false }
-        this.pending.delete(peer.nodeId)
         return { content: res.value as Uint8Array, utp: false }
       }
 
@@ -156,7 +158,6 @@ export class ContentLookup {
             (a, b) => Number(a.distance) - Number(b.distance),
           )
         }
-        this.pending.delete(peer.nodeId)
         throw new Error('Continue')
       }
     }

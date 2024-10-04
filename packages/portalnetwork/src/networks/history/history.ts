@@ -247,17 +247,17 @@ export class HistoryNetwork extends BaseNetwork {
             break
           }
           case FoundContent.CONTENT:
-            this.logger(
+            this.logger.extend('FOUNDCONTENT')(
               `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
             )
             try {
               await this.store(key, decoded.value as Uint8Array)
             } catch {
-              this.logger('Error adding content to DB')
+              this.logger.extend('FOUNDCONTENT')('Error adding content to DB')
             }
             break
           case FoundContent.ENRS: {
-            this.logger(`received ${decoded.value.length} ENRs`)
+            this.logger.extend('FOUNDCONTENT')(`received ${decoded.value.length} ENRs`)
             break
           }
         }

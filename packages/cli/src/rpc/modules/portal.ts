@@ -621,7 +621,7 @@ export class portal {
       `request returned ${res !== undefined ? res.length : 'null'} bytes`,
     )
     this.logger.extend(`historyLocalContent`)(
-      `${res !== undefined ? toHexString(res) : 'content not found'}`,
+      `${res !== undefined ? short(toHexString(res)) : 'content not found'}`,
     )
     if (res === undefined) {
       throw {
