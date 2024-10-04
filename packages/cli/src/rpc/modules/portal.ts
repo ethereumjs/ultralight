@@ -111,35 +111,65 @@ export class portal {
     this._state = this._client.networks.get(NetworkId.StateNetwork) as StateNetwork
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
+
+    // portal_*NodeInfo
     this.historyNodeInfo = middleware(this.historyNodeInfo.bind(this), 0, [])
+
+    // portal_*RoutingTableInfo
     this.stateRoutingTableInfo = middleware(this.stateRoutingTableInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
+
+    // portal_*LookupEnr
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.dstId]])
-    this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
+    this.stateLookupEnr = middleware(this.stateLookupEnr.bind(this), 1, [[validators.dstId]])
+    this.beaconLookupEnr = middleware(this.beaconLookupEnr.bind(this), 1, [[validators.dstId]])
+
+    // portal_*AddEnr
     this.historyAddEnr = middleware(this.historyAddEnr.bind(this), 1, [[validators.enr]])
+    this.stateAddEnr = middleware(this.stateAddEnr.bind(this), 1, [[validators.enr]])
+    this.beaconAddEnr = middleware(this.beaconAddEnr.bind(this), 1, [[validators.enr]])
+
+    // portal_*GetEnr
     this.historyGetEnr = middleware(this.historyGetEnr.bind(this), 1, [[validators.dstId]])
+    this.stateGetEnr = middleware(this.stateGetEnr.bind(this), 1, [[validators.dstId]])
+    this.beaconGetEnr = middleware(this.beaconGetEnr.bind(this), 1, [[validators.dstId]])
+
+    // portal_*DeleteEnr
     this.historyDeleteEnr = middleware(this.historyDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.stateDeleteEnr = middleware(this.stateDeleteEnr.bind(this), 1, [[validators.dstId]])
+    this.beaconDeleteEnr = middleware(this.beaconDeleteEnr.bind(this), 1, [[validators.dstId]])
+
+    // portal_*AddBootNode
+    this.historyAddBootNode = middleware(this.historyAddBootNode.bind(this), 1, [[validators.enr]])
+    this.beaconAddBootNode = middleware(this.beaconAddBootNode.bind(this), 1, [[validators.enr]])
+
+    // portal_*AddEnrs
     this.historyAddEnrs = middleware(this.historyAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
-    this.stateAddEnr = middleware(this.stateAddEnr.bind(this), 1, [[validators.enr]])
-    this.stateGetEnr = middleware(this.stateGetEnr.bind(this), 1, [[validators.dstId]])
-    this.stateLookupEnr = middleware(this.stateLookupEnr.bind(this), 1, [[validators.dstId]])
-    this.stateDeleteEnr = middleware(this.stateDeleteEnr.bind(this), 1, [[validators.dstId]])
     this.stateAddEnrs = middleware(this.stateAddEnrs.bind(this), 1, [
       [validators.array(validators.enr)],
     ])
+
+    // portal_*Ping
     this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
     this.statePing = middleware(this.statePing.bind(this), 1, [[validators.enr]])
+    this.beaconPing = middleware(this.beaconPing.bind(this), 1, [[validators.enr]])
+
+    // portal_*SendPing
     this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
       [validators.enr],
       [validators.hex],
     ])
+
+    // portal_*SendPong
     this.historySendPong = middleware(this.historySendPong.bind(this), 2, [
       [validators.enr],
       [validators.hex],
       [validators.hex],
     ])
+
+    // portal_*FindNodes
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.enr],
       [validators.array(validators.distance)],
@@ -148,22 +178,33 @@ export class portal {
       [validators.enr],
       [validators.array(validators.distance)],
     ])
+
+    // portal_*SendFindNodes
     this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.distance)],
     ])
+
+    // portal_*RecursiveFindNodes
     this.historyRecursiveFindNodes = middleware(this.historyRecursiveFindNodes.bind(this), 1, [
       [validators.dstId],
     ])
+
+    // portal_*SendNodes
     this.historySendNodes = middleware(this.historySendNodes.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.enr)],
       [validators.hex],
     ])
+
+    // portal_*LocalContent
     this.historyLocalContent = middleware(this.historyLocalContent.bind(this), 1, [
       [validators.hex],
     ])
+    this.beaconLocalContent = middleware(this.beaconLocalContent.bind(this), 1, [[validators.hex]])
     this.stateLocalContent = middleware(this.stateLocalContent.bind(this), 1, [[validators.hex]])
+
+    // portal_*Store
     this.historyStore = middleware(this.historyStore.bind(this), 2, [
       [validators.contentKey],
       [validators.hex],
@@ -172,45 +213,65 @@ export class portal {
       [validators.hex],
       [validators.hex],
     ])
+    this.beaconStore = middleware(this.beaconStore.bind(this), 2, [
+      [validators.hex],
+      [validators.hex],
+    ])
+
+    // portal_*FindContent
     this.historyFindContent = middleware(this.historyFindContent.bind(this), 2, [
       [validators.enr],
       [validators.hex],
-    ])
-    this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
-      [validators.contentKey],
     ])
     this.stateFindContent = middleware(this.stateFindContent.bind(this), 2, [
       [validators.enr],
       [validators.hex],
     ])
+    this.beaconFindContent = middleware(this.beaconFindContent.bind(this), 2, [
+      [validators.enr],
+      [validators.hex],
+    ])
+
+    // portal_*RecursiveFindContent
+    this.historyRecursiveFindContent = middleware(this.historyRecursiveFindContent.bind(this), 1, [
+      [validators.contentKey],
+    ])
     this.stateRecursiveFindContent = middleware(this.stateRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
-    this.historyOffer = middleware(this.historyOffer.bind(this), 3, [
+
+    // portal_*Offer
+    this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.enr],
       [content_params.ContentItems],
     ])
-    this.beaconOffer = middleware(this.beaconOffer.bind(this), 3, [
+    this.stateOffer = middleware(this.stateOffer.bind(this), 2, [
       [validators.enr],
       [content_params.ContentItems],
     ])
+    this.beaconOffer = middleware(this.beaconOffer.bind(this), 2, [
+      [validators.enr],
+      [content_params.ContentItems],
+    ])
+
+    // portal_*SendOffer
     this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.hex)],
-    ])
-    this.stateOffer = middleware(this.stateOffer.bind(this), 3, [
-      [validators.enr],
-      [content_params.ContentItems],
     ])
     this.stateSendOffer = middleware(this.stateSendOffer.bind(this), 2, [
       [validators.dstId],
       [validators.array(validators.hex)],
     ])
+
+    // portal_*SendAccept
     this.historySendAccept = middleware(this.historySendAccept.bind(this), 2, [
       [validators.enr],
       [validators.hex],
       [validators.array(validators.contentKey)],
     ])
+
+    // portal_*Gossip
     this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
       [validators.contentKey],
       [validators.hex],
@@ -219,33 +280,14 @@ export class portal {
       [validators.hex],
       [validators.hex],
     ])
-    this.beaconSendFindContent = middleware(this.beaconSendFindContent.bind(this), 2, [
-      [validators.dstId],
-      [validators.hex],
-    ])
-    this.beaconFindContent = middleware(this.beaconFindContent.bind(this), 2, [
-      [validators.enr],
-      [validators.hex],
-    ])
-    this.beaconStore = middleware(this.beaconStore.bind(this), 2, [
-      [validators.hex],
-      [validators.hex],
-    ])
-
-    this.beaconLocalContent = middleware(this.beaconLocalContent.bind(this), 1, [[validators.hex]])
-
-    this.beaconAddBootNode = middleware(this.beaconAddBootNode.bind(this), 1, [[validators.enr]])
 
     this.beaconStartLightClient = middleware(this.beaconStartLightClient.bind(this), 1, [
       [validators.hex],
     ])
-
-    this.beaconAddEnr = middleware(this.beaconAddEnr.bind(this), 1, [[validators.enr]])
-    this.beaconGetEnr = middleware(this.beaconGetEnr.bind(this), 1, [[validators.dstId]])
-    this.beaconDeleteEnr = middleware(this.beaconDeleteEnr.bind(this), 1, [[validators.dstId]])
-    this.beaconLookupEnr = middleware(this.beaconLookupEnr.bind(this), 1, [[validators.dstId]])
-
-    this.beaconPing = middleware(this.beaconPing.bind(this), 1, [[validators.enr]])
+    this.beaconSendFindContent = middleware(this.beaconSendFindContent.bind(this), 2, [
+      [validators.dstId],
+      [validators.hex],
+    ])
   }
 
   async sendPortalNetworkResponse(
@@ -267,6 +309,8 @@ export class portal {
   async methods() {
     return methods
   }
+
+  // portal_*NodeInfo
   async historyNodeInfo() {
     this.logger(`historyNodeInfo request received`)
     try {
@@ -277,6 +321,193 @@ export class portal {
       return 'Unable to generate ENR'
     }
   }
+
+  // portal_*RoutingTableInfo
+  async historyRoutingTableInfo(_params: []): Promise<any> {
+    this.logger(`portal_historyRoutingTableInfo request received.`)
+    let localNodeId = ''
+    let buckets: string[][] = []
+    const table = this._history.routingTable
+    try {
+      localNodeId = table.localId
+      buckets = table.buckets
+        .map((bucket) => bucket.values().map((value) => value.nodeId))
+        .reverse()
+    } catch (err) {
+      localNodeId = (err as any).message
+    }
+    return {
+      localNodeId,
+      buckets,
+    }
+  }
+  async stateRoutingTableInfo(_params: []): Promise<any> {
+    this.logger(`portal_stateRoutingTableInfo request received.`)
+    let localNodeId = ''
+    let buckets: string[][] = []
+    const table = this._state.routingTable
+    try {
+      localNodeId = table.localId
+      buckets = table.buckets
+        .map((bucket) => bucket.values().map((value) => value.nodeId))
+        .reverse()
+    } catch (err) {
+      localNodeId = (err as any).message
+    }
+    return {
+      localNodeId,
+      buckets,
+    }
+  }
+  // portal_*LookupEnr
+  async historyLookupEnr(params: [string]) {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    this.logger(`Found: ${enr}`)
+    return enr ?? ''
+  }
+  async stateLookupEnr(params: [string]) {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
+    const enr = this._state.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    this.logger(`Found: ${enr}`)
+    return enr ?? ''
+  }
+  async beaconLookupEnr(params: [string]) {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
+    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    this.logger(`Found: ${enr}`)
+    return enr ?? ''
+  }
+  // portal_*AddEnr
+  async historyAddEnr(params: [string]): Promise<boolean> {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
+    this.logger(`portal_historyAddEnr request received for ${shortEnr}`)
+    try {
+      if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+        return true
+      }
+      this._client.discv5.addEnr(enr)
+      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      return true
+    } catch {
+      return false
+    }
+  }
+  async stateAddEnr(params: [string]): Promise<boolean> {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
+    this.logger(`portal_stateAddEnr request received for ${shortEnr}`)
+    try {
+      if (this._state.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+        return true
+      }
+      this._client.discv5.addEnr(enr)
+      this._state.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      return true
+    } catch {
+      return false
+    }
+  }
+  async beaconAddEnr(params: [string]): Promise<boolean> {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
+    this.logger(`portal_beaconAddEnr request received for ${shortEnr}`)
+    try {
+      if (this._beacon.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+        return true
+      }
+      this._client.discv5.addEnr(enr)
+      this._beacon.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // portal_*GetEnr
+  async historyGetEnr(params: [string]): Promise<GetEnrResult> {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger.extend('portal_historyGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
+    if (enr) {
+      const enrTxt = enr.encodeTxt()
+      this.logger.extend('portal_historyGetEnr')(enrTxt)
+      return enrTxt
+    }
+    this.logger.extend('portal_historyGetEnr')('ENR not found')
+    return ''
+  }
+  async stateGetEnr(params: [string]): Promise<GetEnrResult> {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger.extend('portal_stateGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._state.routingTable.getWithPending(nodeId)?.value
+    if (enr) {
+      const enrTxt = enr.encodeTxt()
+      this.logger.extend('portal_stateGetEnr')(enrTxt)
+      return enrTxt
+    }
+    this.logger.extend('portal_stateGetEnr')('ENR not found')
+    return ''
+  }
+  async beaconGetEnr(params: [string]): Promise<GetEnrResult> {
+    const [nodeId] = params
+    if (nodeId === this._client.discv5.enr.nodeId) {
+      return this._client.discv5.enr.encodeTxt()
+    }
+    this.logger.extend('portal_beaconGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
+    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value
+    if (enr) {
+      const enrTxt = enr.encodeTxt()
+      this.logger.extend('portal_beaconGetEnr')(enrTxt)
+      return enrTxt
+    }
+    this.logger.extend('portal_beaconGetEnr')('ENR not found')
+    return ''
+  }
+
+  // portal_*DeleteEnr
+  async historyDeleteEnr(params: [string]): Promise<boolean> {
+    const [nodeId] = params
+    this.logger(`portal_historyDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
+    const remove = this._history.routingTable.removeById(nodeId)
+    return remove !== undefined
+  }
+  async stateDeleteEnr(params: [string]): Promise<boolean> {
+    const [nodeId] = params
+    this.logger(`portal_stateDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
+    const remove = this._state.routingTable.removeById(nodeId)
+    return remove !== undefined
+  }
+  async beaconDeleteEnr(params: [string]): Promise<boolean> {
+    const [nodeId] = params
+    this.logger(`portal_beaconDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
+    const remove = this._beacon.routingTable.removeById(nodeId)
+    return remove !== undefined
+  }
+
+  // portal_*AddBootNode
   async historyAddBootNode(params: [string]): Promise<boolean> {
     const [enr] = params
     this.logger(`portal_historyAddBootNode request received for ${enr.slice(0, 10)}...`)
@@ -288,6 +519,19 @@ export class portal {
     }
     return true
   }
+  async beaconAddBootNode(params: [string]): Promise<boolean> {
+    const [enr] = params
+    this.logger(`portal_beaconAddBootNode request received for ${enr.slice(0, 10)}...`)
+    try {
+      await this._beacon.addBootNode(enr)
+    } catch (err) {
+      this.logger(err)
+      return false
+    }
+    return true
+  }
+
+  // portal_*AddEnrs
   async historyAddEnrs(params: [string[]]): Promise<boolean> {
     const [enrs] = params
     const encodedENRs = enrs.map((enr) => ENR.decodeTxt(enr))
@@ -306,62 +550,6 @@ export class portal {
       return false
     }
     return true
-  }
-  async historyGetEnr(params: [string]): Promise<GetEnrResult> {
-    const [nodeId] = params
-    if (nodeId === this._client.discv5.enr.nodeId) {
-      return this._client.discv5.enr.encodeTxt()
-    }
-    this.logger.extend('portal_historyGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    if (enr) {
-      const enrTxt = enr.encodeTxt()
-      this.logger.extend('portal_historyGetEnr')(enrTxt)
-      return enrTxt
-    }
-    this.logger.extend('portal_historyGetEnr')('ENR not found')
-    return ''
-  }
-
-  async historyAddEnr(params: [string]): Promise<boolean> {
-    const [enr] = params
-    const encodedENR = ENR.decodeTxt(enr)
-    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
-    this.logger(`portal_historyAddEnr request received for ${shortEnr}`)
-    try {
-      if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
-        return true
-      }
-      this._client.discv5.addEnr(enr)
-      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
-      return true
-    } catch {
-      return false
-    }
-  }
-  async historyDeleteEnr(params: [string]): Promise<boolean> {
-    const [nodeId] = params
-    this.logger(`portal_historyDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
-    const remove = this._history.routingTable.removeById(nodeId)
-    return remove !== undefined
-  }
-  async historyRoutingTableInfo(_params: []): Promise<any> {
-    this.logger(`portal_historyRoutingTableInfo request received.`)
-    let localNodeId = ''
-    let buckets: string[][] = []
-    const table = this._history.routingTable
-    try {
-      localNodeId = table.localId
-      buckets = table.buckets
-        .map((bucket) => bucket.values().map((value) => value.nodeId))
-        .reverse()
-    } catch (err) {
-      localNodeId = (err as any).message
-    }
-    return {
-      localNodeId,
-      buckets,
-    }
   }
   async stateAddEnrs(params: [string[]]): Promise<boolean> {
     const [enrs] = params
@@ -382,82 +570,7 @@ export class portal {
     }
     return true
   }
-  async stateGetEnr(params: [string]): Promise<GetEnrResult> {
-    const [nodeId] = params
-    if (nodeId === this._client.discv5.enr.nodeId) {
-      return this._client.discv5.enr.encodeTxt()
-    }
-    this.logger.extend('portal_stateGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._state.routingTable.getWithPending(nodeId)?.value
-    if (enr) {
-      const enrTxt = enr.encodeTxt()
-      this.logger.extend('portal_stateGetEnr')(enrTxt)
-      return enrTxt
-    }
-    this.logger.extend('portal_stateGetEnr')('ENR not found')
-    return ''
-  }
-
-  async stateAddEnr(params: [string]): Promise<boolean> {
-    const [enr] = params
-    const encodedENR = ENR.decodeTxt(enr)
-    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
-    this.logger(`portal_stateAddEnr request received for ${shortEnr}`)
-    try {
-      if (this._state.routingTable.getWithPending(encodedENR.nodeId)?.value) {
-        return true
-      }
-      this._client.discv5.addEnr(enr)
-      this._state.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
-      return true
-    } catch {
-      return false
-    }
-  }
-  async stateDeleteEnr(params: [string]): Promise<boolean> {
-    const [nodeId] = params
-    this.logger(`portal_stateDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
-    const remove = this._state.routingTable.removeById(nodeId)
-    return remove !== undefined
-  }
-  async stateLookupEnr(params: [string]) {
-    const [nodeId] = params
-    if (nodeId === this._client.discv5.enr.nodeId) {
-      return this._client.discv5.enr.encodeTxt()
-    }
-    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._state.routingTable.getWithPending(nodeId)?.value.encodeTxt()
-    this.logger(`Found: ${enr}`)
-    return enr ?? ''
-  }
-  async stateRoutingTableInfo(_params: []): Promise<any> {
-    this.logger(`portal_stateRoutingTableInfo request received.`)
-    let localNodeId = ''
-    let buckets: string[][] = []
-    const table = this._state.routingTable
-    try {
-      localNodeId = table.localId
-      buckets = table.buckets
-        .map((bucket) => bucket.values().map((value) => value.nodeId))
-        .reverse()
-    } catch (err) {
-      localNodeId = (err as any).message
-    }
-    return {
-      localNodeId,
-      buckets,
-    }
-  }
-  async historyLookupEnr(params: [string]) {
-    const [nodeId] = params
-    if (nodeId === this._client.discv5.enr.nodeId) {
-      return this._client.discv5.enr.encodeTxt()
-    }
-    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value.encodeTxt()
-    this.logger(`Found: ${enr}`)
-    return enr ?? ''
-  }
+  // portal_*Ping
   async historyPing(params: [string]) {
     const [enr] = params
     const encodedENR = ENR.decodeTxt(enr)
@@ -492,11 +605,31 @@ export class portal {
       }
     )
   }
+  async beaconPing(params: [string]) {
+    const [enr] = params
+    const encodedENR = ENR.decodeTxt(enr)
+    this.logger(`PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)}`)
+    const pong = await this._beacon.sendPing(encodedENR)
+    if (pong) {
+      this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+    } else {
+      this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+    }
+    return (
+      pong && {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: toHexString(pong.customPayload),
+      }
+    )
+  }
+  // portal_*SendPing
   async historySendPing(params: [string, string]) {
     this.logger(`portal_historySendPing`)
     const pong = await this.historyPing([params[0]])
     return pong && pong.enrSeq
   }
+
+  // portal_*SendPong
   async historySendPong(params: [string, string, string]) {
     const [_enr, requestId, dataRadius] = params
     const enr = ENR.decodeTxt(_enr)
@@ -522,6 +655,8 @@ export class portal {
     }
     return true
   }
+
+  // portal_*FindNodes
   async historyFindNodes(params: [string, number[]]) {
     const [enr, distances] = params
     const dstId = ENR.decodeTxt(enr).nodeId
@@ -562,6 +697,8 @@ export class portal {
     this.logger(enrs)
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
+
+  // portal_*SendFindNodes
   async historySendFindNodes(params: [string, number[]]) {
     const [dstId, distances] = params
     this.logger(`portal_historySendFindNodes`)
@@ -576,6 +713,18 @@ export class portal {
       return
     }
   }
+
+  // portal_*RecursiveFindNodes
+  async historyRecursiveFindNodes(params: [string]) {
+    const [dstId] = params
+    this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
+    const lookup = new NodeLookup(this._history, dstId)
+    const res = await lookup.startLookup()
+    this.logger(`historyRecursiveFindNodes request returned ${res}`)
+    return res ?? ''
+  }
+
+  // portal_*SendNodes
   async historySendNodes(params: [string, string[], string]) {
     const [dstId, enrs, requestId] = params
     this.logger(`portal_historySendNodes`)
@@ -604,14 +753,8 @@ export class portal {
       return
     }
   }
-  async historyRecursiveFindNodes(params: [string]) {
-    const [dstId] = params
-    this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
-    const lookup = new NodeLookup(this._history, dstId)
-    const res = await lookup.startLookup()
-    this.logger(`historyRecursiveFindNodes request returned ${res}`)
-    return res ?? ''
-  }
+
+  // portal_*LocalContent
   async historyLocalContent(params: [string]): Promise<string | undefined> {
     const [contentKey] = params
     this.logger(`Received historyLocalContent request for ${contentKey}`)
@@ -648,6 +791,58 @@ export class portal {
     }
     return toHexString(res)
   }
+  async beaconLocalContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend(`beaconLocalContent`)(`Received request for ${contentKey}`)
+
+    const content = await this._beacon.findContentLocally(fromHexString(contentKey))
+    this.logger.extend(`beaconLocalContent`)(
+      `request returned ${content !== undefined ? content.length : 'null'} bytes`,
+    )
+    this.logger.extend(`beaconLocalContent`)(
+      `retrieved content: ${content !== undefined ? short(toHexString(content)) : 'content not found'}`,
+    )
+    if (content !== undefined) return toHexString(content)
+    throw {
+      code: -32009,
+      message: 'no content found',
+    }
+  }
+
+  // portal_*Store
+  async historyStore(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => fromHexString(param))
+    try {
+      await this._history.store(contentKey, content)
+      return true
+    } catch {
+      return false
+    }
+  }
+  async stateStore(params: [string, string]) {
+    const [contentKey, content] = params
+    try {
+      const contentKeyBytes = fromHexString(contentKey)
+      await this._state.store(contentKeyBytes, fromHexString(content))
+      this.logger(`stored ${contentKey} in state network db`)
+      return true
+    } catch {
+      this.logger(`stateStore failed for ${contentKey}`)
+      return false
+    }
+  }
+  async beaconStore(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => fromHexString(param))
+    try {
+      await this._beacon.store(contentKey, content)
+      return true
+    } catch (e) {
+      console.log(e)
+      return false
+    }
+  }
+
+  // portal_*FindContent
   async historyFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
@@ -678,7 +873,6 @@ export class portal {
     }
     return returnValue
   }
-
   async stateFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
@@ -708,29 +902,42 @@ export class portal {
     }
     return returnValue
   }
-
-  async historySendFindContent(params: [string, string]) {
-    const [nodeId, contentKey] = params
-    const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    return res && enr && '0x' + enr.seq.toString(16)
-  }
-
-  async historySendContent(params: [string, string]) {
-    const [nodeId, content] = params
-    const payload = ContentMessageType.serialize({
-      selector: 1,
-      value: fromHexString(content),
-    })
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    void this.sendPortalNetworkResponse(
-      nodeId,
-      enr?.getLocationMultiaddr('udp')!,
-      enr!.seq,
-      Uint8Array.from(Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])),
+  async beaconFindContent(params: [string, string]) {
+    const [enr, contentKey] = params
+    const nodeId = ENR.decodeTxt(enr).nodeId
+    this.logger.extend('findContent')(
+      `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    return '0x' + enr!.seq.toString(16)
+    if (!this._beacon.routingTable.getWithPending(nodeId)?.value) {
+      const pong = await this._beacon.sendPing(enr)
+      if (!pong) {
+        return ''
+      }
+    }
+
+    const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
+
+    if (res === undefined) {
+      this.logger.extend('findContent')(`request returned type: ENRS`)
+      return { enrs: [] }
+    }
+    const resType =
+      'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
+    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
+
+    let returnValue
+    if ('enrs' in res) {
+      returnValue = { enrs: res.enrs.map((v: Uint8Array) => ENR.decode(v).encodeTxt()) }
+    } else {
+      returnValue = {
+        content: res.content.length > 0 ? toHexString(res.content) : '0x',
+        utpTransfer: res.utp,
+      }
+    }
+    return returnValue
   }
+
+  // portal_*RecursiveFindContent
   async historyRecursiveFindContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('historyRecursiveFindContent')(`request received for ${contentKey}`)
@@ -786,6 +993,8 @@ export class portal {
       }
     }
   }
+
+  // portal_*Offer
   async historyOffer(params: [string, [string, string][]]) {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
@@ -798,6 +1007,20 @@ export class portal {
       }
     }
     const res = await this._history.sendOffer(enr.nodeId, contentKeys, contentValues)
+    return res
+  }
+  async stateOffer(params: [string, [string, string][]]) {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => fromHexString(item[0]))
+    const contentValues = contentItems.map((item) => fromHexString(item[1]))
+    const enr = ENR.decodeTxt(enrHex)
+    if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+      const res = await this._state.sendPing(enr)
+      if (res === undefined) {
+        return '0x'
+      }
+    }
+    const res = await this._state.sendOffer(enr.nodeId, contentKeys, contentValues)
     return res
   }
   async beaconOffer(params: [string, [string, string][]]) {
@@ -814,26 +1037,13 @@ export class portal {
     const res = await this._beacon.sendOffer(enr.nodeId, contentKeys, contentValues)
     return res
   }
+  // portal_*SendOffer
   async historySendOffer(params: [string, string[]]) {
     const [dstId, contentKeys] = params
     const keys = contentKeys.map((key) => fromHexString(key))
     const res = await this._history.sendOffer(dstId, keys)
     const enr = this._history.routingTable.getWithPending(dstId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
-  }
-  async stateOffer(params: [string, [string, string][]]) {
-    const [enrHex, contentItems] = params
-    const contentKeys = contentItems.map((item) => fromHexString(item[0]))
-    const contentValues = contentItems.map((item) => fromHexString(item[1]))
-    const enr = ENR.decodeTxt(enrHex)
-    if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
-      const res = await this._state.sendPing(enr)
-      if (res === undefined) {
-        return '0x'
-      }
-    }
-    const res = await this._state.sendOffer(enr.nodeId, contentKeys, contentValues)
-    return res
   }
   async stateSendOffer(params: [string, string[]]) {
     const [dstId, contentKeys] = params
@@ -842,6 +1052,8 @@ export class portal {
     const enr = this._state.routingTable.getWithPending(dstId)?.value
     return res && enr && '0x' + enr.seq.toString(16)
   }
+
+  // portal_*SendAccept
   async historySendAccept(params: [string, string, string[]]) {
     const [enr, connectionId, contentKeys] = params
     const myEnr = this._client.discv5.enr
@@ -873,6 +1085,8 @@ export class portal {
 
     return '0x' + myEnr.seq.toString(16)
   }
+
+  // portal_*Gossip
   async historyGossip(params: [string, string]) {
     const [contentKey, content] = params
     this.logger(`historyGossip request received for ${contentKey}`)
@@ -885,28 +1099,14 @@ export class portal {
     const res = await this._state.gossipContent(fromHexString(contentKey), fromHexString(content))
     return res
   }
-  async historyStore(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => fromHexString(param))
-    try {
-      await this._history.store(contentKey, content)
-      return true
-    } catch {
-      return false
-    }
-  }
-  async stateStore(params: [string, string]) {
-    const [contentKey, content] = params
-    try {
-      const contentKeyBytes = fromHexString(contentKey)
-      await this._state.store(contentKeyBytes, fromHexString(content))
-      this.logger(`stored ${contentKey} in state network db`)
-      return true
-    } catch {
-      this.logger(`stateStore failed for ${contentKey}`)
-      return false
-    }
-  }
 
+  // other
+  async historySendFindContent(params: [string, string]) {
+    const [nodeId, contentKey] = params
+    const res = await this._history.sendFindContent(nodeId, fromHexString(contentKey))
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
+    return res && enr && '0x' + enr.seq.toString(16)
+  }
   async beaconSendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     console.log(nodeId)
@@ -914,83 +1114,21 @@ export class portal {
     if (res !== undefined && 'content' in res) return toHexString(res.content as Uint8Array)
     return '0x'
   }
-
-  async beaconFindContent(params: [string, string]) {
-    const [enr, contentKey] = params
-    const nodeId = ENR.decodeTxt(enr).nodeId
-    this.logger.extend('findContent')(
-      `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
+  async historySendContent(params: [string, string]) {
+    const [nodeId, content] = params
+    const payload = ContentMessageType.serialize({
+      selector: 1,
+      value: fromHexString(content),
+    })
+    const enr = this._history.routingTable.getWithPending(nodeId)?.value
+    void this.sendPortalNetworkResponse(
+      nodeId,
+      enr?.getLocationMultiaddr('udp')!,
+      enr!.seq,
+      Uint8Array.from(Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])),
     )
-    if (!this._beacon.routingTable.getWithPending(nodeId)?.value) {
-      const pong = await this._beacon.sendPing(enr)
-      if (!pong) {
-        return ''
-      }
-    }
-
-    const res = await this._beacon.sendFindContent(nodeId, fromHexString(contentKey))
-
-    if (res === undefined) {
-      this.logger.extend('findContent')(`request returned type: ENRS`)
-      return { enrs: [] }
-    }
-    const resType =
-      'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
-    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
-
-    let returnValue
-    if ('enrs' in res) {
-      returnValue = { enrs: res.enrs.map((v: Uint8Array) => ENR.decode(v).encodeTxt()) }
-    } else {
-      returnValue = {
-        content: res.content.length > 0 ? toHexString(res.content) : '0x',
-        utpTransfer: res.utp,
-      }
-    }
-    return returnValue
+    return '0x' + enr!.seq.toString(16)
   }
-
-  async beaconStore(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => fromHexString(param))
-    try {
-      await this._beacon.store(contentKey, content)
-      return true
-    } catch (e) {
-      console.log(e)
-      return false
-    }
-  }
-
-  async beaconLocalContent(params: [string]) {
-    const [contentKey] = params
-    this.logger.extend(`beaconLocalContent`)(`Received request for ${contentKey}`)
-
-    const content = await this._beacon.findContentLocally(fromHexString(contentKey))
-    this.logger.extend(`beaconLocalContent`)(
-      `request returned ${content !== undefined ? content.length : 'null'} bytes`,
-    )
-    this.logger.extend(`beaconLocalContent`)(
-      `retrieved content: ${content !== undefined ? short(toHexString(content)) : 'content not found'}`,
-    )
-    if (content !== undefined) return toHexString(content)
-    throw {
-      code: -32009,
-      message: 'no content found',
-    }
-  }
-
-  async beaconAddBootNode(params: [string]): Promise<boolean> {
-    const [enr] = params
-    this.logger(`portal_beaconAddBootNode request received for ${enr.slice(0, 10)}...`)
-    try {
-      await this._beacon.addBootNode(enr)
-    } catch (err) {
-      this.logger(err)
-      return false
-    }
-    return true
-  }
-
   async beaconStartLightClient(params: [string]): Promise<boolean | string> {
     const [bootstrapHash] = params
     this.logger(`portal_beaconStartLightClient request received for ${bootstrapHash}`)
@@ -1000,73 +1138,5 @@ export class portal {
     } catch (err: any) {
       return err.message
     }
-  }
-
-  async beaconGetEnr(params: [string]): Promise<GetEnrResult> {
-    const [nodeId] = params
-    if (nodeId === this._client.discv5.enr.nodeId) {
-      return this._client.discv5.enr.encodeTxt()
-    }
-    this.logger.extend('portal_beaconGetEnr')(` request received for ${nodeId.slice(0, 10)}...`)
-    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value
-    if (enr) {
-      const enrTxt = enr.encodeTxt()
-      this.logger.extend('portal_beaconGetEnr')(enrTxt)
-      return enrTxt
-    }
-    this.logger.extend('portal_beaconGetEnr')('ENR not found')
-    return ''
-  }
-
-  async beaconAddEnr(params: [string]): Promise<boolean> {
-    const [enr] = params
-    const encodedENR = ENR.decodeTxt(enr)
-    const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
-    this.logger(`portal_beaconAddEnr request received for ${shortEnr}`)
-    try {
-      if (this._beacon.routingTable.getWithPending(encodedENR.nodeId)?.value) {
-        return true
-      }
-      this._client.discv5.addEnr(enr)
-      this._beacon.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
-      return true
-    } catch {
-      return false
-    }
-  }
-  async beaconDeleteEnr(params: [string]): Promise<boolean> {
-    const [nodeId] = params
-    this.logger(`portal_beaconDeleteEnr request received for ${nodeId.slice(0, 10)}...`)
-    const remove = this._beacon.routingTable.removeById(nodeId)
-    return remove !== undefined
-  }
-
-  async beaconLookupEnr(params: [string]) {
-    const [nodeId] = params
-    if (nodeId === this._client.discv5.enr.nodeId) {
-      return this._client.discv5.enr.encodeTxt()
-    }
-    this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value.encodeTxt()
-    this.logger(`Found: ${enr}`)
-    return enr ?? ''
-  }
-
-  async beaconPing(params: [string]) {
-    const [enr] = params
-    const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._beacon.sendPing(encodedENR)
-    if (pong) {
-      this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-    } else {
-      this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
-    }
-    return (
-      pong && {
-        enrSeq: Number(pong.enrSeq),
-        dataRadius: toHexString(pong.customPayload),
-      }
-    )
   }
 }
