@@ -178,6 +178,10 @@ export class portal {
       [validators.enr],
       [validators.array(validators.distance)],
     ])
+    this.beaconFindNodes = middleware(this.beaconFindNodes.bind(this), 2, [
+      [validators.enr],
+      [validators.array(validators.distance)],
+    ])
 
     // portal_*SendFindNodes
     this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
@@ -697,6 +701,26 @@ export class portal {
     this.logger(enrs)
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
+  async beaconFindNodes(params: [string, number[]]) {
+    const [enr, distances] = params
+    const dstId = ENR.decodeTxt(enr).nodeId
+    this.logger(`beaconFindNodes request received with these distances [${distances.toString()}]`)
+    this.logger(`sending beaconFindNodes request to ${shortId(dstId)}`)
+    if (!isValidId(dstId)) {
+      return {
+        code: INVALID_PARAMS,
+        message: 'invalid node id',
+      }
+    }
+    const res = await this._beacon.sendFindNodes(enr, distances)
+    if (!res) {
+      return []
+    }
+    const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
+    this.logger(`beaconFindNodes request returned ${res?.total} enrs:`)
+    this.logger(enrs)
+    return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
+  }
 
   // portal_*SendFindNodes
   async historySendFindNodes(params: [string, number[]]) {
@@ -846,6 +870,9 @@ export class portal {
   async historyFindContent(params: [string, string]) {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
+    this.logger.extend('findContent')(
+      `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
+    )
     if (!this._history.routingTable.getWithPending(nodeId)?.value) {
       const pong = await this._history.sendPing(enr)
       if (!pong) {
@@ -861,7 +888,6 @@ export class portal {
       'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
     this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
 
-    this.logger.extend('findContent')(`request returned type: ${FoundContent[resType]}`)
     let returnValue
     if ('enrs' in res) {
       returnValue = { enrs: res.enrs.map((v: Uint8Array) => ENR.decode(v).encodeTxt()) }
@@ -882,6 +908,9 @@ export class portal {
         return ''
       }
     }
+    this.logger.extend('findContent')(
+      `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
+    )
     const res = await this._state.sendFindContent(nodeId, fromHexString(contentKey))
     if (res === undefined) {
       this.logger.extend('findContent')(`request returned type: ENRS`)
