@@ -1,24 +1,15 @@
-import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes } from '@ethereumjs/util'
-import { keys } from '@libp2p/crypto'
-import { multiaddr } from '@multiformats/multiaddr'
 import { execSync } from 'child_process'
 import debug from 'debug'
-import * as fs from 'fs'
 import http from 'http'
 import jayson from 'jayson/promise/index.js'
-import { Level } from 'level'
-import { NetworkId, PortalNetwork } from 'portalnetwork'
+import { PortalNetwork, cliConfig } from 'portalnetwork'
 import * as PromClient from 'prom-client'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import { setupMetrics } from './metrics.js'
 import { RPCManager } from './rpc/rpc.js'
 
-import type { Enr } from './rpc/schema/types.js'
 import type { ClientOpts } from './types.js'
-import type { NetworkConfig } from 'portalnetwork'
 
 const args: ClientOpts = yargs(hideBin(process.argv))
   .parserConfiguration({
@@ -111,11 +102,6 @@ const reportMetrics = async (req: http.IncomingMessage, res: http.ServerResponse
   res.writeHead(200)
   res.end(await register.metrics())
 }
-type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
-  ...args: any
-) => Promise<infer R>
-  ? R
-  : any
 
 const main = async () => {
   const cmd = 'hostname -I'
@@ -123,148 +109,19 @@ const main = async () => {
     args.bindAddress !== undefined
       ? args.bindAddress.split(':')[0]
       : execSync(cmd).toString().split(' ')[0].trim()
-  const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   const log = debug('ultralight')
-  let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
   let web3: jayson.Client | undefined
-  try {
-    if (args.pk === undefined) {
-      privateKey = await keys.generateKeyPair('secp256k1')
-    } else {
-      privateKey = keys.privateKeyFromRaw(hexToBytes(args.pk).slice(-32))
-    }
-  } catch (err: any) {
-    throw new Error(`Error using pk: ${args.pk}\n${err.message}`)
-  }
-  const enr = SignableENR.createFromPrivateKey(privateKey)
-  const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
-  enr.setLocationMultiaddr(initMa)
 
-  const metrics = setupMetrics()
-  let db
-  if (args.dataDir !== undefined) {
-    db = new Level<string, string>(args.dataDir)
-  }
-  const config = {
-    enr,
-    privateKey,
-    config: {
-      enrUpdate: true,
-      addrVotesToUpdateEnr: 5,
-      allowUnverifiedSessions: true,
-      requestTimeout: 3000,
-    },
-    bindAddrs: {
-      ip4: initMa,
-    },
-    trustedBlockRoot: args.trustedBlockRoot,
-  } as any
-  let networks: NetworkConfig[] = []
-  if (args.networks !== undefined) {
-    const active = args.networks.split(',')
-    for (const network of active) {
-      let networkdb
-      if (args.dataDir !== undefined) {
-        networkdb = {
-          db: new Level<string, string>(args.dataDir + '/' + network, { createIfMissing: true }),
-          path: args.dataDir + '/' + network,
-        }
-      }
+  const portalConfig = await cliConfig(args)
 
-      switch (network) {
-        case 'history':
-          networks.push({
-            networkId: NetworkId.HistoryNetwork,
-            maxStorage: args.storageHistory,
-            //@ts-ignore Because level doesn't know how to get along with itself
-            db: networkdb,
-          })
-          break
-        case 'beacon':
-          networks.push({
-            networkId: NetworkId.BeaconChainNetwork,
-            maxStorage: args.storageBeacon,
-            //@ts-ignore Because level doesn't know how to get along with itself
-            db: networkdb,
-          })
-          break
-        case 'state':
-          networks.push({
-            networkId: NetworkId.StateNetwork,
-            maxStorage: args.storageState,
-            //@ts-ignore Because level doesn't know how to get along with itself
-            db: networkdb,
-          })
-          break
-      }
-    }
-  } else {
-    let networkdb
-    if (args.dataDir !== undefined) {
-      networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + 'history', { createIfMissing: true }),
-        path: args.dataDir + '/' + 'history',
-      }
-    }
-
-    networks = [
-      {
-        networkId: NetworkId.HistoryNetwork,
-        maxStorage: args.storageHistory,
-        //@ts-ignore Because level doesn't know how to get along with itself
-        db: networkdb,
-      },
-    ]
-  }
-
-  if (args.trustedBlockRoot !== undefined) {
-    let networkdb
-    if (args.dataDir !== undefined) {
-      networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + 'beacon', { createIfMissing: true }),
-        path: args.dataDir + '/' + 'beacon',
-      }
-    }
-    networks.push({
-      networkId: NetworkId.BeaconChainNetwork,
-      maxStorage: args.storageBeacon,
-      //@ts-ignore Because level doesn't know how to get along with itself
-      db: networkdb,
-    })
-  }
-
-  const bootnodes: Array<Enr> = []
-  if (args.bootnode !== undefined) {
-    bootnodes.push(args.bootnode)
-  }
-  if (args.bootnodeList !== undefined) {
-    const bootnodeData = fs.readFileSync(args.bootnodeList, 'utf-8')
-    const bootnodeList = bootnodeData.split('\n')
-    for (const bootnode of bootnodeList) {
-      bootnodes.push(bootnode)
-    }
-  }
-
-  const portal = await PortalNetwork.create({
-    config,
-    //@ts-ignore Because level doesn't know how to get along with itself
-    db,
-    metrics,
-    supportedNetworks: networks,
-    dataDir: args.dataDir,
-    trustedBlockRoot: args.trustedBlockRoot,
-    bootnodes,
-  })
-  // portal.discv5.enableLogs()
-
-  // portal.enableLog('*')
+  const portal = await PortalNetwork.create(portalConfig)
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
 
   if (args.metrics) {
     metricsServer = http.createServer(reportMetrics)
-    for (const entry of Object.entries(metrics)) {
+    for (const entry of Object.entries(portalConfig.metrics!)) {
       register.registerMetric(entry[1])
     }
     metricsServer?.listen(args.metricsPort, rpcAddr)
@@ -311,7 +168,7 @@ const main = async () => {
       },
     })
     server.http().listen(args.rpcPort, rpcAddr)
-    log(`Started Portal Client on Networks: ${networks.map((n) => n.networkId).join(', ')}`)
+    log(`Started Portal Client on Networks: ${args.networks}`)
     log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
   }
 
