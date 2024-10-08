@@ -33,12 +33,34 @@ jobs:
     
       - run: npm i -g @mapbox/node-pre-gyp
 
-      - run: npm i
+      - run: npm ci
         working-directory: ${{ github.workspace }}
 
       - run: npm run lint
       - run: npm run test
 
+  test-integration-portalnetwork:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+    
+      - run: npm i -g @mapbox/node-pre-gyp
+
+      - run: npm ci
+        working-directory: ${{ github.workspace }}
+
+      - run: npm run lint
       - run: npm run test:integration
 
 
