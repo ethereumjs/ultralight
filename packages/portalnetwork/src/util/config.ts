@@ -18,7 +18,7 @@ export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extend
   ? R
   : any
 
-export interface ClientOpts {
+export interface PortalClientOpts {
   pk?: string
   bootnode?: string
   bindAddress?: string
@@ -31,7 +31,7 @@ export interface ClientOpts {
   trustedBlockRoot?: string
 }
 
-export const cliConfig = async (args: ClientOpts) => {
+export const cliConfig = async (args: PortalClientOpts) => {
   const cmd = 'hostname -I'
   const ip =
     args.bindAddress !== undefined
