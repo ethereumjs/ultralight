@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'child_process'
+import { spawn } from 'child_process'
 import * as fs from 'fs'
 import jayson from 'jayson/promise/index.js'
 import { createRequire } from 'module'
@@ -53,9 +53,9 @@ const args: any = yargs(hideBin(process.argv))
   })
   .option('networks', {
     describe: 'supported subnetworks',
-    string: true,
-    default: 'history,beacon,state',
-    optional: true,
+    array: true,
+    type: 'string',
+    default: ['history', 'beacon', 'state'],
   })
   .option('connectNodes', {
     describe: 'connect all nodes on network start',
