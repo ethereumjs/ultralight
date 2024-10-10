@@ -24,8 +24,8 @@ export interface PortalClientOpts {
   bindAddress?: string
   bootnodeList?: string
   dataDir?: string
-  networks: string[]
-  storage: number[]
+  networks: string
+  storage: string
   trustedBlockRoot?: string
 }
 
@@ -77,8 +77,9 @@ export const cliConfig = async (args: PortalClientOpts) => {
     trustedBlockRoot: args.trustedBlockRoot,
   } as any
   const networks: NetworkConfig[] = []
-
-  for (const [i, network] of args.networks.entries()) {
+  const argsNetworks = args.networks.split(',')
+  const argsStorage = args.storage.split(',').map((x) => parseInt(x))
+  for (const [i, network] of argsNetworks.entries()) {
     let networkdb
     if (args.dataDir !== undefined) {
       networkdb = {
@@ -88,7 +89,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     }
     networks.push({
       networkId: NetworkStrings[network],
-      maxStorage: args.storage[i],
+      maxStorage: argsStorage[i],
       //@ts-ignore Because level doesn't know how to get along with itself
       db: networkdb,
     })

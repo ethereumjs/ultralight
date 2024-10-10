@@ -71,15 +71,13 @@ const args: ClientOpts = yargs(hideBin(process.argv))
   })
   .option('networks', {
     describe: 'subnetworks to enable',
-    array: true,
-    type: 'string',
-    default: ['history', 'beacon', 'state'],
+    string: true,
+    default: 'history,beacon,state',
   })
   .option('storage', {
     describe: 'Storage space allocated to DB in MB',
-    array: true,
-    type: 'number',
-    default: [1024, 1024, 1024],
+    string: true,
+    default: '1024, 1024, 1024',
   })
   .option('storageHistory', {
     describe: `Storage space allocated to HistoryNetwork DB in MB`,
