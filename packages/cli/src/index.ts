@@ -71,8 +71,15 @@ const args: ClientOpts = yargs(hideBin(process.argv))
   })
   .option('networks', {
     describe: 'subnetworks to enable',
-    string: true,
-    optional: true,
+    array: true,
+    type: 'string',
+    default: ['history', 'beacon', 'state'],
+  })
+  .option('storage', {
+    describe: 'Storage space allocated to DB in MB',
+    array: true,
+    type: 'number',
+    default: [1024, 1024, 1024],
   })
   .option('storageHistory', {
     describe: `Storage space allocated to HistoryNetwork DB in MB`,
@@ -168,7 +175,9 @@ const main = async () => {
       },
     })
     server.http().listen(args.rpcPort, rpcAddr)
-    log(`Started Portal Client on Networks: ${args.networks}`)
+    log(
+      `Started Portal Client on Networks: ${[...portal.networks.values()].map((n) => n.constructor.name)}`,
+    )
     log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
   }
 
