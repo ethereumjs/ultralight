@@ -24,11 +24,15 @@ export interface PortalClientOpts {
   bindAddress?: string
   bootnodeList?: string
   dataDir?: string
-  networks?: string
-  storageHistory: number
-  storageBeacon: number
-  storageState: number
+  networks: string[]
+  storage: number[]
   trustedBlockRoot?: string
+}
+
+export const NetworkStrings: Record<string, NetworkId> = {
+  history: NetworkId.HistoryNetwork,
+  beacon: NetworkId.BeaconChainNetwork,
+  state: NetworkId.StateNetwork,
 }
 
 export const cliConfig = async (args: PortalClientOpts) => {
@@ -72,75 +76,19 @@ export const cliConfig = async (args: PortalClientOpts) => {
     },
     trustedBlockRoot: args.trustedBlockRoot,
   } as any
-  let networks: NetworkConfig[] = []
-  if (args.networks !== undefined) {
-    const active = args.networks.split(',')
-    for (const network of active) {
-      let networkdb
-      if (args.dataDir !== undefined) {
-        networkdb = {
-          db: new Level<string, string>(args.dataDir + '/' + network, { createIfMissing: true }),
-          path: args.dataDir + '/' + network,
-        }
-      }
+  const networks: NetworkConfig[] = []
 
-      switch (network) {
-        case 'history':
-          networks.push({
-            networkId: NetworkId.HistoryNetwork,
-            maxStorage: args.storageHistory,
-            //@ts-ignore Because level doesn't know how to get along with itself
-            db: networkdb,
-          })
-          break
-        case 'beacon':
-          networks.push({
-            networkId: NetworkId.BeaconChainNetwork,
-            maxStorage: args.storageBeacon,
-            //@ts-ignore Because level doesn't know how to get along with itself
-            db: networkdb,
-          })
-          break
-        case 'state':
-          networks.push({
-            networkId: NetworkId.StateNetwork,
-            maxStorage: args.storageState,
-            //@ts-ignore Because level doesn't know how to get along with itself
-            db: networkdb,
-          })
-          break
-      }
-    }
-  } else {
+  for (const [i, network] of args.networks.entries()) {
     let networkdb
     if (args.dataDir !== undefined) {
       networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + 'history', { createIfMissing: true }),
-        path: args.dataDir + '/' + 'history',
-      }
-    }
-
-    networks = [
-      {
-        networkId: NetworkId.HistoryNetwork,
-        maxStorage: args.storageHistory,
-        //@ts-ignore Because level doesn't know how to get along with itself
-        db: networkdb,
-      },
-    ]
-  }
-
-  if (args.trustedBlockRoot !== undefined) {
-    let networkdb
-    if (args.dataDir !== undefined) {
-      networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + 'beacon', { createIfMissing: true }),
-        path: args.dataDir + '/' + 'beacon',
+        db: new Level<string, string>(args.dataDir + '/' + network, { createIfMissing: true }),
+        path: args.dataDir + '/' + network,
       }
     }
     networks.push({
-      networkId: NetworkId.BeaconChainNetwork,
-      maxStorage: args.storageBeacon,
+      networkId: NetworkStrings[network],
+      maxStorage: args.storage[i],
       //@ts-ignore Because level doesn't know how to get along with itself
       db: networkdb,
     })
