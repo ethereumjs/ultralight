@@ -6,7 +6,7 @@ import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
 import { Level } from 'level'
 
-import { NetworkId } from '../networks/index.js'
+import { NetworkId } from '../networks/types.js'
 
 import { setupMetrics } from './metrics.js'
 
