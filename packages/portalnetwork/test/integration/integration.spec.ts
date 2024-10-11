@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -15,7 +15,6 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
-  generatePreMergeHeaderProof,
   getContentKey,
   toHexString,
 } from '../../src/index.js'
@@ -29,23 +28,9 @@ const privateKeys = [
 ]
 
 const testBlockData = require('../testData/testBlocks.json')
-const epoch25 =
-  '0x' +
-  readFileSync(
-    './test/testData/0x03f216a28afb2212269b634b9b44ff327a4a79f261640ff967f7e3283e3a184c70.portalcontent',
-    { encoding: 'hex' },
-  )
-const testBlocks: Block[] = testBlockData.slice(0, 26).map((testBlock: any) => {
-  return Block.fromRLPSerializedBlock(hexToBytes(testBlock.rlp), {
-    setHardfork: true,
-  })
-})
-const testHashes: Uint8Array[] = testBlocks.map((testBlock: Block) => {
-  return testBlock.hash()
-})
-const testHashStrings: string[] = testHashes.map((testHash: Uint8Array) => {
-  return toHexString(testHash)
-})
+const witnesses: Uint8Array[] = JSON.parse(
+  readFileSync('./test/testData/witnesses.json', 'utf8'),
+).map(hexToBytes)
 
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
@@ -93,38 +78,24 @@ describe('gossip test', async () => {
       'node1 added node2 to routing table',
     )
   })
-  for await (const [_idx, testBlock] of testBlocks.entries()) {
-    const proof = await generatePreMergeHeaderProof(testBlock.header.number, hexToBytes(epoch25))
-    it('generated proof', () => {
-      assert.equal(proof.length, 15, 'proof generated for ' + toHexString(testBlock.hash()))
-    })
-    const headerWith = BlockHeaderWithProof.serialize({
-      header: testBlock.header.serialize(),
-      proof: {
-        selector: 1,
-        value: proof,
-      },
-    })
-    const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, testBlock.hash())
-    await network1.store(headerKey, headerWith)
+  const headersWithProofs: [string, string][] = JSON.parse(
+    readFileSync('./test/testData/headersWithProofs.json', 'utf8'),
+  )
+  for (const [headerKey, headerWithProof] of headersWithProofs) {
+    await network1.store(hexToBytes(headerKey), hexToBytes(headerWithProof))
   }
 
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
+  const addedHeaders: [string, string][] = []
   network2.on('ContentAdded', async (key: Uint8Array, content: Uint8Array) => {
     network2.logger.extend('ContentAdded')(`Added Content for ${bytesToHex(key)}`)
-    const contentType = key[0]
-    if (contentType === 0) {
-      const headerWithProof = BlockHeaderWithProof.deserialize(content)
-      const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
-        setHardfork: true,
-      })
-      if (bytesToHex(header.hash()) === testHashStrings[6]) {
-        node2.removeAllListeners()
-        await node1.stop()
-        await node2.stop()
-        end.emit('end()')
-      }
+    addedHeaders.push([bytesToHex(key), bytesToHex(content)])
+    if (addedHeaders.length === headersWithProofs.length) {
+      node2.removeAllListeners()
+      void node1.stop()
+      void node2.stop()
+      end.emit('end()')
     }
   })
   const ended = await new Promise((resolve) => {
@@ -134,6 +105,7 @@ describe('gossip test', async () => {
   })
   it('should find all headers', () => {
     assert.isTrue(ended)
+    assert.deepEqual(addedHeaders.sort(), headersWithProofs.sort(), 'added all headers')
   })
 }, 40000)
 
@@ -171,10 +143,9 @@ describe('FindContent', async () => {
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
-  const witnesses = await generatePreMergeHeaderProof(
-    BigInt(testBlockData[29].number),
-    hexToBytes(epoch25),
-  )
+  const witnesses: Uint8Array[] = JSON.parse(
+    readFileSync('./test/testData/witnesses.json', 'utf8'),
+  ).map(hexToBytes)
   await addRLPSerializedBlock(
     testBlockData[29].rlp,
     testBlockData[29].blockHash,
@@ -193,8 +164,8 @@ describe('FindContent', async () => {
   })
 
   node2.removeAllListeners()
-  await node1.stop()
-  await node2.stop()
+  void node1.stop()
+  void node2.stop()
   it('should find content', () => {
     assert.equal(
       toHexString(header.hash()),
@@ -237,10 +208,6 @@ describe('eth_getBlockByHash', async () => {
   await node2.start()
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  const witnesses = await generatePreMergeHeaderProof(
-    BigInt(testBlockData[29].number),
-    hexToBytes(epoch25),
-  )
   await addRLPSerializedBlock(
     testBlockData[29].rlp,
     testBlockData[29].blockHash,
@@ -254,8 +221,8 @@ describe('eth_getBlockByHash', async () => {
     false,
   )
 
-  await node1.stop()
-  await node2.stop()
+  void node1.stop()
+  void node2.stop()
   it('should find content', () => {
     assert.equal(
       toHexString(retrieved!.hash()),
