@@ -42,9 +42,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
       ? args.bindAddress.split(':')[0]
       : execSync(cmd).toString().split(' ')[0].trim()
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
-  //   const log = debug('ultralight')
   let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
-  //   let web3: jayson.Client | undefined
   try {
     if (args.pk === undefined) {
       privateKey = await keys.generateKeyPair('secp256k1')
