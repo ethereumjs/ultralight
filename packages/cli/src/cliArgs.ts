@@ -67,24 +67,9 @@ export const args: ClientOpts = yargs(hideBin(process.argv))
     default: 'history,beacon,state',
   })
   .option('storage', {
-    describe: 'Storage space allocated to DB in MB',
+    describe: 'Storage space allocated to each subnetwork DB in MB',
     string: true,
     default: '1024, 1024, 1024',
-  })
-  .option('storageHistory', {
-    describe: `Storage space allocated to HistoryNetwork DB in MB`,
-    number: true,
-    default: 1024,
-  })
-  .option('storageBeacon', {
-    describe: `Storage space allocated to BeaconChainNetwork DB in MB`,
-    number: true,
-    default: 1024,
-  })
-  .option('storageState', {
-    describe: `Storage space allocated to StateNetwork DB in MB`,
-    number: true,
-    default: 1024,
   })
   .option('trustedBlockRoot', {
     describe: 'a trusted blockroot to start light client syncing of the beacon chain',
