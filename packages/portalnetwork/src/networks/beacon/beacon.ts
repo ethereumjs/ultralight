@@ -654,7 +654,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         if (finalityUpdate === undefined) {
           this.logger(`Unable to find finality update in order to verify Historical Summaries`)
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
-          return
+          // return
         } else {
           // TODO: Make this future proof with forkConfig
           const reconstructedStateMerkleTree = ssz.capella.BeaconState.createFromProof({
