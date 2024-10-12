@@ -79,6 +79,7 @@ const methods = [
   // beacon
   'portal_beaconSendFindContent',
   'portal_beaconFindContent',
+  'portal_beaconRecursiveFindContent',
   'portal_beaconStore',
   'portal_beaconLocalContent',
   'portal_beaconAddEnr',
@@ -241,6 +242,9 @@ export class portal {
       [validators.contentKey],
     ])
     this.stateRecursiveFindContent = middleware(this.stateRecursiveFindContent.bind(this), 1, [
+      [validators.contentKey],
+    ])
+    this.beaconRecursiveFindContent = middleware(this.beaconRecursiveFindContent.bind(this), 1, [
       [validators.contentKey],
     ])
 
@@ -1014,6 +1018,34 @@ export class portal {
       return { enrs: res.enrs.map(toHexString) }
     } else {
       this.logger.extend('stateRecursiveFindContent')(
+        `request returned { content: ${toHexString(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      return {
+        content: toHexString(res.content),
+        utpTransfer: res.utp,
+      }
+    }
+  }
+  async beaconRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('beaconRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._beacon, fromHexString(contentKey))
+    const res = await lookup.startLookup()
+    this.logger.extend('beaconRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+    if (!res) {
+      this.logger.extend('beaconRecursiveFindContent')(`request returned { enrs: [] }`)
+      throw new Error('No content found')
+    }
+    if ('enrs' in res) {
+      this.logger.extend('beaconRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(toHexString) }}}] }`,
+      )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
+      return { enrs: res.enrs.map(toHexString) }
+    } else {
+      this.logger.extend('beaconRecursiveFindContent')(
         `request returned { content: ${toHexString(res.content)}, utpTransfer: ${res.utp} }`,
       )
       return {
