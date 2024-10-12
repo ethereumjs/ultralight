@@ -14,6 +14,7 @@ import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { Lightclient } from '@lodestar/light-client'
 import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
+import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import debug from 'debug'
 
@@ -383,11 +384,11 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           )
           if (value !== undefined) {
             const decoded = hexToBytes(value)
-            const forkhash = decoded.slice(0, 4) as Uint8Array
-            const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+            // const forkhash = decoded.slice(0, 4) as Uint8Array
+            // const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
             if (
-              ssz[forkname].LightClientFinalityUpdate.deserialize(decoded).finalizedHeader.beacon
-                .slot < Number(key.finalitySlot)
+              ssz[ForkName.capella].LightClientFinalityUpdate.deserialize(decoded.slice(4))
+                .finalizedHeader.beacon.slot < Number(key.finalitySlot)
             ) {
               // If what we have stored locally is older than the finality update requested, don't send it
               value = undefined
@@ -405,9 +406,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           value = Uint8Array.from([
             ...this.forkDigest,
             ...HistoricalSummariesWithProof.serialize({
-            epoch: this.historicalSummariesEpoch,
-            historicalSummaries: this.historicalSummaries,
-            proof: this.historicalSummariesProof,
+              epoch: this.historicalSummariesEpoch,
+              historicalSummaries: this.historicalSummaries,
+              proof: this.historicalSummariesProof,
             }),
           ])
         } else {
@@ -729,9 +730,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     if (typeof input === 'number') {
       period = input
     } else {
-      const forkhash = input.slice(0, 4) as Uint8Array
-      const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
+      // const forkhash = input.slice(0, 4) as Uint8Array
+      // const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      const deserializedUpdate = ssz[ForkName.capella].LightClientUpdate.deserialize(
         input.slice(4),
       ) as LightClientUpdate
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
