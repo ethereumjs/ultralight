@@ -276,10 +276,8 @@ export interface ClientOpts {
   metricsPort: number
   dataDir?: string
   web3?: string
-  networks?: string
-  storageHistory: number
-  storageBeacon: number
-  storageState: number
+  networks: string
+  storage: string
   trustedBlockRoot?: string
 }
 
@@ -289,6 +287,6 @@ export interface DevnetOpts {
   ip?: string
   promConfig?: boolean
   port: number
-  networks: string
+  networks: string[]
   connectNodes: boolean
 }
