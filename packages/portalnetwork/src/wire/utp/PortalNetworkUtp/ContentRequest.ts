@@ -1,4 +1,5 @@
 import { BitVectorType } from '@chainsafe/ssz'
+import { bytesToHex } from '@ethereumjs/util'
 import debug from 'debug'
 
 import {
@@ -120,7 +121,7 @@ export abstract class ContentRequest {
     for (const [idx, k] of keys.entries()) {
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
-        `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending content type: ${k[0]} to database`,
+        `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending content type: ${bytesToHex(k.slice(0, 1))} to database`,
       )
       await this.network.store(k, _content)
     }

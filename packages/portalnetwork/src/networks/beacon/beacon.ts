@@ -14,6 +14,7 @@ import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { Lightclient } from '@lodestar/light-client'
 import { computeSyncPeriodAtSlot, getCurrentSlot } from '@lodestar/light-client/utils'
+import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import debug from 'debug'
 
@@ -62,6 +63,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   bootstrapFinder: Map<NodeId, string[] | {}>
   syncStrategy: SyncStrategy = SyncStrategy.PollNetwork
   trustedBlockRoot: string | undefined
+  forkDigest: Uint8Array
   historicalSummaries: HistoricalSummaries = []
   historicalSummariesEpoch = 0n // The epoch that our local HistoricalSummaries is current to
   // TODO: Decide if we should store the proof for the Historical Summaries in memory or just in the DB
@@ -84,6 +86,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       .extend('Portal')
       .extend('BeaconLightClientNetwork')
     this.routingTable.setLogger(this.logger)
+    this.forkDigest = Uint8Array.from([0, 0, 0, 0])
     this.on('ContentAdded', async (contentKey: Uint8Array) => {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
@@ -381,11 +384,11 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           )
           if (value !== undefined) {
             const decoded = hexToBytes(value)
-            const forkhash = decoded.slice(0, 4) as Uint8Array
-            const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+            // const forkhash = decoded.slice(0, 4) as Uint8Array
+            // const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
             if (
-              ssz[forkname].LightClientFinalityUpdate.deserialize(decoded).finalizedHeader.beacon
-                .slot < Number(key.finalitySlot)
+              ssz[ForkName.capella].LightClientFinalityUpdate.deserialize(decoded.slice(4))
+                .finalizedHeader.beacon.slot < Number(key.finalitySlot)
             ) {
               // If what we have stored locally is older than the finality update requested, don't send it
               value = undefined
@@ -400,11 +403,14 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         )
         // We store the HistoricalSummaries in memory so it can be used by History Network to verify post-Capella proofs
         if (this.historicalSummaries.length > 0) {
-          value = HistoricalSummariesWithProof.serialize({
-            epoch: this.historicalSummariesEpoch,
-            historicalSummaries: this.historicalSummaries,
-            proof: this.historicalSummariesProof,
-          })
+          value = Uint8Array.from([
+            ...this.forkDigest,
+            ...HistoricalSummariesWithProof.serialize({
+              epoch: this.historicalSummariesEpoch,
+              historicalSummaries: this.historicalSummaries,
+              proof: this.historicalSummariesProof,
+            }),
+          ])
         } else {
           this.logger.extend('FINDLOCALLY')('Historical Summaries is not stored locally')
         }
@@ -642,14 +648,14 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         )
         break
       case BeaconLightClientNetworkContentType.HistoricalSummaries: {
-        const summaries = HistoricalSummariesWithProof.deserialize(value)
+        const summaries = HistoricalSummariesWithProof.deserialize(value.slice(4))
 
         // Retrieve Finality Update from lightclient to verify HistoricalSummaries proof is current
         const finalityUpdate = this.lightClient?.getFinalized()
         if (finalityUpdate === undefined) {
           this.logger(`Unable to find finality update in order to verify Historical Summaries`)
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
-          return
+          // return
         } else {
           // TODO: Make this future proof with forkConfig
           const reconstructedStateMerkleTree = ssz.capella.BeaconState.createFromProof({
@@ -683,6 +689,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         )
 
         // Store the Historical Summaries data in memory so can be accessed easily by the History Network
+        this.forkDigest = value.slice(0, 4)
         this.historicalSummaries = summaries.historicalSummaries
         this.historicalSummariesEpoch = summaries.epoch
         this.historicalSummariesProof = summaries.proof
@@ -723,9 +730,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     if (typeof input === 'number') {
       period = input
     } else {
-      const forkhash = input.slice(0, 4) as Uint8Array
-      const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      const deserializedUpdate = ssz[forkname].LightClientUpdate.deserialize(
+      // const forkhash = input.slice(0, 4) as Uint8Array
+      // const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      const deserializedUpdate = ssz[ForkName.capella].LightClientUpdate.deserialize(
         input.slice(4),
       ) as LightClientUpdate
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)

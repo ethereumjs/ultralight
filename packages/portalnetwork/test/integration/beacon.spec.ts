@@ -875,7 +875,7 @@ describe('historicalSummaries verification', () => {
         BeaconLightClientNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch }),
       ),
-      HistoricalSummariesWithProof.serialize(hsWProof),
+      concatBytes(network1.forkDigest, HistoricalSummariesWithProof.serialize(hsWProof)),
     )
     while (network2.historicalSummaries.length === 0) {
       await new Promise((r) => setTimeout(r, 1000))
