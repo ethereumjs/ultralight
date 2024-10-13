@@ -199,14 +199,17 @@ describe('API tests', async () => {
 
     await network.store(
       historicalSummariesKey,
-      HistoricalSummariesWithProof.serialize({
-        epoch,
-        historicalSummaries,
-        proof: summariesProofJson.map((el) => hexToBytes(el)),
-      }),
+      concatBytes(
+        network.forkDigest,
+        HistoricalSummariesWithProof.serialize({
+          epoch,
+          historicalSummaries,
+          proof: summariesProofJson.map((el) => hexToBytes(el)),
+        }),
+      ),
     )
     const res = HistoricalSummariesWithProof.deserialize(
-      (await network.findContentLocally(historicalSummariesKey)) as Uint8Array,
+      ((await network.findContentLocally(historicalSummariesKey)) as Uint8Array).slice(4),
     )
     assert.equal(res.epoch, 1169n)
   })
