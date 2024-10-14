@@ -34,7 +34,6 @@ import type { RunBlockOpts } from '@ethereumjs/vm'
 import type { Debugger } from 'debug'
 
 export class StateNetwork extends BaseNetwork {
-  stateDB: StateDB
   networkId: NetworkId.StateNetwork
   networkName = 'StateNetwork'
   logger: Debugger
@@ -42,7 +41,6 @@ export class StateNetwork extends BaseNetwork {
     super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
-    this.stateDB = new StateDB(this.db.db)
     this.routingTable.setLogger(this.logger)
   }
 
@@ -112,7 +110,7 @@ export class StateNetwork extends BaseNetwork {
               `received ${StateNetworkContentType[contentType]} content corresponding to ${toHexString(key)}`,
             )
             try {
-              await this.stateDB.storeContent(key, decoded.value as Uint8Array)
+              await this.store(key, decoded.value as Uint8Array)
             } catch {
               this.logger('Error adding content to DB')
             }
@@ -132,7 +130,7 @@ export class StateNetwork extends BaseNetwork {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
-    const value = await this.stateDB.getContent(contentKey)
+    const value = await this.db.get(contentKey)
     return value !== undefined ? fromHexString(value) : undefined
   }
 
@@ -142,7 +140,7 @@ export class StateNetwork extends BaseNetwork {
       if (contentType === StateNetworkContentType.AccountTrieNode) {
         await this.receiveAccountTrieNodeOffer(contentKey, content)
       } else {
-        await this.stateDB.storeContent(contentKey, content)
+        await this.db.put(contentKey, content)
       }
       this.logger(`content added for: ${contentKey}`)
       this.emit('ContentAdded', contentKey, content)
@@ -199,7 +197,7 @@ export class StateNetwork extends BaseNetwork {
       curRlp = nodes.pop()
     }
     for (const { contentKey, dbContent } of interested) {
-      await this.stateDB.storeContent(contentKey, dbContent)
+      await this.db.put(contentKey, dbContent)
     }
     return { interested, notInterested }
   }
