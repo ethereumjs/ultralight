@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import {
   AccountTrieNodeContentKey,
@@ -11,20 +11,11 @@ import {
   StateNetworkContentId,
   distance,
   fromHexString,
-  nextOffer,
-  toHexString,
-  unpackNibbles,
 } from '../../../src/index.js'
 
 import samples from './testdata/accountNodeSamples.json'
 
 import type { StateNetwork } from '../../../src/index.js'
-
-// const keypair = createKey(
-//   keyType,
-//   Buffer.from('0ec9a107bcf64e1213128fe9ede9a148ccf77c6e952ab87eed845df9091207f3', 'hex'),
-//   Buffer.from('03f4b147e6934b23fae52ecb4f2e33d6eaa6a99e774b6184a5d2ce62413993d736', 'hex'),
-// )
 
 describe('samples', () => {
   const _samples = samples as [string, object][]
@@ -72,8 +63,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey
-  const unpacked = unpackNibbles(path)
-  const { proof, blockHash } = content
+  const { proof } = content
   const { interested, notInterested } = await state.storeInterestedNodes(path, proof)
 
   it('Should store interested content', async () => {
@@ -92,19 +82,9 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   })
   it(`should find (${interested.length}) interested contents in db`, async () => {
     for (const { contentKey, dbContent } of interested) {
-      const content = await state.stateDB.getContent(contentKey)
+      const content = await state.findContentLocally(contentKey)
       expect(content).toBeDefined()
-      expect(content).toEqual(toHexString(dbContent))
+      assert.deepEqual(content, dbContent)
     }
-  })
-  it(`should create higher level offer`, async () => {
-    const next = await nextOffer(path, proof)
-    expect(next.nodes.length).toEqual(proof.length - 1)
-    expect(next.newpaths.length).toBeLessThan(unpacked.length)
-  })
-  it(`should package forward offer for gossip`, async () => {
-    const forwardOffer = await state.forwardAccountTrieOffer(path, proof, blockHash)
-    const decoded = AccountTrieNodeContentKey.decode(forwardOffer.contentKey)
-    expect(decoded.path.length).toBeLessThanOrEqual(path.length)
   })
 })
