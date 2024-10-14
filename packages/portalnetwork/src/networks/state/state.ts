@@ -1,11 +1,8 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Chain, Common, Hardfork } from '@ethereumjs/common'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { BranchNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { BranchNode, Trie, decodeNode } from '@ethereumjs/trie'
 import { bytesToInt, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
-import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -16,32 +13,31 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { ContentLookup } from '../contentLookup.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
-import { applyTransactions } from './applyTx.js'
-import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
-import { StateDB } from './statedb.js'
+import { StateManager } from './manager.js'
+import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
-import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './util.js'
+import { AccountTrieNodeContentKey, StateNetworkContentId } from './util.js'
 
 import type { TNibbles } from './types.js'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
-import type { Block } from '@ethereumjs/block'
-import type { RunBlockOpts } from '@ethereumjs/vm'
 import type { Debugger } from 'debug'
 
 export class StateNetwork extends BaseNetwork {
   networkId: NetworkId.StateNetwork
   networkName = 'StateNetwork'
   logger: Debugger
+  stateroots: Map<bigint, Uint8Array> = new Map()
+  manager: StateManager
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.routingTable.setLogger(this.logger)
+    this.manager = new StateManager(this)
   }
 
   public contentKeyToId = (contentKey: Uint8Array): string => {
@@ -153,16 +149,11 @@ export class StateNetwork extends BaseNetwork {
     content: Uint8Array,
   ): Promise<{
     stored: number
-    forwarded: {
-      contentKey: Uint8Array
-      content: Uint8Array
-    }
   }> {
     const { path } = AccountTrieNodeContentKey.decode(contentKey)
-    const { blockHash, proof } = AccountTrieNodeOffer.deserialize(content)
-    const forwardOffer = await this.forwardAccountTrieOffer(path, proof, blockHash)
+    const { proof } = AccountTrieNodeOffer.deserialize(content)
     const interested = await this.storeInterestedNodes(path, proof)
-    return { stored: interested.interested.length, forwarded: forwardOffer }
+    return { stored: interested.interested.length }
   }
 
   async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {
@@ -200,136 +191,5 @@ export class StateNetwork extends BaseNetwork {
       await this.db.put(contentKey, dbContent)
     }
     return { interested, notInterested }
-  }
-
-  async forwardAccountTrieOffer(
-    path: TNibbles,
-    proof: Uint8Array[],
-    blockHash: Uint8Array,
-  ): Promise<{
-    content: Uint8Array
-    contentKey: Uint8Array
-  }> {
-    const { nodes, newpaths } = await nextOffer(path, proof)
-    const content = AccountTrieNodeOffer.serialize({ blockHash, proof: [...nodes] })
-    const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
-    const contentKey = AccountTrieNodeContentKey.encode({
-      nodeHash,
-      path: packNibbles(newpaths),
-    })
-    return { content, contentKey }
-  }
-
-  async getAccount(
-    address: string,
-    stateroot: Uint8Array,
-    deleteAfter: boolean = true,
-  ): Promise<Uint8Array | undefined> {
-    const accountPath = await this.findPath(stateroot, address)
-    if (deleteAfter) {
-      this.stateDB.db.temp.clear()
-    }
-    return accountPath.node?.value() ?? undefined
-  }
-  async lookupTrieNode(key: Uint8Array) {
-    const lookup = new ContentLookup(this, key)
-    const request = await lookup.startLookup()
-    const keyobj = AccountTrieNodeContentKey.decode(key)
-    if (request === undefined || !('content' in request)) {
-      throw new Error(
-        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
-      )
-    }
-    const node = AccountTrieNodeRetrieval.deserialize(request.content).node
-    return { nodeHash: keyobj.nodeHash, node }
-  }
-  async findPath(stateroot: Uint8Array, address: string) {
-    const lookupTrie = new Trie({
-      useKeyHashing: true,
-      db: this.stateDB.db,
-    })
-    lookupTrie.root(stateroot)
-    const addressPath = addressToNibbles(fromHexString(address))
-    const hasRoot = this.stateDB.db._database.get(bytesToUnprefixedHex(stateroot))
-    if (hasRoot === undefined) {
-      const lookup = new ContentLookup(
-        this,
-        AccountTrieNodeContentKey.encode({
-          path: packNibbles([]),
-          nodeHash: stateroot,
-        }),
-      )
-      const request = await lookup.startLookup()
-      if (request === undefined || !('content' in request)) {
-        throw new Error(`network doesn't have root node ${toHexString(stateroot)}`)
-      }
-      const requestContent = request.content
-      const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
-      this.stateDB.db.temp.set(bytesToUnprefixedHex(stateroot), bytesToUnprefixedHex(node))
-    }
-    let accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
-    while (!accountPath.node) {
-      const consumedNibbles = accountPath.stack
-        .slice(1)
-        .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
-        .reduce((a, b) => a + b, 0)
-      const nodePath = addressPath.slice(0, consumedNibbles)
-      const current = accountPath.stack[accountPath.stack.length - 1]
-      if (current instanceof LeafNode) {
-        return { ...accountPath }
-      }
-      const nextNodeHash =
-        current instanceof BranchNode
-          ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
-          : current.value()
-
-      if (nextNodeHash === undefined || nextNodeHash === null) {
-        return { ...accountPath }
-      }
-      const nextContentKey = AccountTrieNodeContentKey.encode({
-        path: packNibbles(nodePath),
-        nodeHash: nextNodeHash as Uint8Array,
-      })
-      const found = await this.lookupTrieNode(nextContentKey)
-      if ((await this.stateDB.db.get(toHexString(found.nodeHash).slice(2))) === undefined) {
-        this.stateDB.db.temp.set(
-          bytesToUnprefixedHex(found.nodeHash),
-          bytesToUnprefixedHex(found.node),
-        )
-      }
-      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
-      if (nextPath.stack.length === accountPath.stack.length) {
-        return { ...nextPath }
-      }
-      accountPath = nextPath
-    }
-    return { ...accountPath }
-  }
-  async vm(stateroot: Uint8Array) {
-    const common = new Common({
-      chain: Chain.Mainnet,
-      hardfork: Hardfork.Chainstart,
-    })
-    const portalClientTrie = new Trie({
-      useKeyHashing: true,
-      db: this.stateDB.db,
-      root: stateroot,
-    })
-    const portalStateManager = new DefaultStateManager({
-      trie: portalClientTrie,
-      common,
-      accountCacheOpts: {
-        deactivate: true,
-      },
-    })
-    const portalVM = await VM.create({
-      common,
-      stateManager: portalStateManager,
-    })
-    return portalVM
-  }
-  runBlock = async (stateroot: Uint8Array, block: Block, opts: RunBlockOpts) => {
-    const vm = await this.vm(stateroot)
-    return applyTransactions.bind(vm)(block, opts)
   }
 }
