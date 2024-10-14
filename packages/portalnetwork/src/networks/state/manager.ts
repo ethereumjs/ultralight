@@ -3,7 +3,8 @@ import { Account } from '@ethereumjs/util'
 
 import { ContentLookup } from '../contentLookup.js'
 
-import { PortalTrieDB, StateNetworkContentKey } from './util.js'
+import { PortalTrieDB } from './portalTrie.js'
+import { StateNetworkContentKey } from './util.js'
 
 import type { StateNetwork } from './state.js'
 import type { Path } from '@ethereumjs/trie'
