@@ -162,6 +162,6 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this.stateRoot = bytesToHex(stateRoot)
   }
   hasStateRoot = async (root: Uint8Array): Promise<boolean> => {
-    return Object.values(this.state.stateDB.stateRoots).includes(bytesToHex(root))
+    return [...this.state.stateroots.values()].map(bytesToHex).includes(bytesToHex(root))
   }
 }
