@@ -39,7 +39,6 @@ import type {
   PingMessage,
   PongMessage,
   PortalNetwork,
-  StateNetworkRoutingTable,
 } from '../index.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
@@ -48,7 +47,7 @@ import type { Debugger } from 'debug'
 import type * as PromClient from 'prom-client'
 
 export abstract class BaseNetwork extends EventEmitter {
-  public routingTable: PortalNetworkRoutingTable | StateNetworkRoutingTable
+  public routingTable: PortalNetworkRoutingTable
   public nodeRadius: bigint
   public db: NetworkDB
   public maxStorage: number

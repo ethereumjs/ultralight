@@ -136,13 +136,6 @@ export class StateNetwork extends BaseNetwork {
     return value !== undefined ? fromHexString(value) : undefined
   }
 
-  public routingTableInfo = async () => {
-    return {
-      nodeId: this.enr.nodeId,
-      buckets: this.routingTable.buckets.map((bucket) => bucket.values().map((enr) => enr.nodeId)),
-    }
-  }
-
   public store = async (contentKey: Uint8Array, content: Uint8Array) => {
     const contentType = contentKey[0]
     try {
