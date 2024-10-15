@@ -1,4 +1,5 @@
 import { toHexString } from '@chainsafe/ssz'
+import { RLP } from '@ethereumjs/rlp'
 import { BranchNode, LeafNode, Trie } from '@ethereumjs/trie'
 import { Account, bytesToHex, bytesToUnprefixedHex } from '@ethereumjs/util'
 
@@ -6,7 +7,7 @@ import { ContentLookup } from '../contentLookup.js'
 
 import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import { PortalTrieDB } from './portalTrie.js'
-import { AccountTrieNodeRetrieval } from './types.js'
+import { AccountTrieNodeRetrieval, StorageTrieNodeRetrieval } from './types.js'
 import {
   AccountTrieNodeContentKey,
   StateNetworkContentKey,
@@ -22,7 +23,7 @@ export class StateManager {
     this.state = state
     this.db = new PortalTrieDB(state.db.db, this.state.logger)
   }
-  async lookupTrieNode(key: Uint8Array) {
+  async lookupAccountTrieNode(key: Uint8Array) {
     const lookup = new ContentLookup(this.state, key)
     const request = await lookup.startLookup()
     const keyobj = AccountTrieNodeContentKey.decode(key)
@@ -32,6 +33,18 @@ export class StateManager {
       )
     }
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
+    return { nodeHash: keyobj.nodeHash, node }
+  }
+  async lookupStorageTrieNode(key: Uint8Array) {
+    const lookup = new ContentLookup(this.state, key)
+    const request = await lookup.startLookup()
+    const keyobj = StorageTrieNodeContentKey.decode(key)
+    if (request === undefined || !('content' in request)) {
+      throw new Error(
+        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
+      )
+    }
+    const node = StorageTrieNodeRetrieval.deserialize(request.content).node
     return { nodeHash: keyobj.nodeHash, node }
   }
   async findAccountPath(stateroot: Uint8Array, address: Uint8Array) {
@@ -92,7 +105,7 @@ export class StateManager {
         path: packNibbles(nodePath),
         nodeHash: nextNodeHash as Uint8Array,
       })
-      const found = await this.lookupTrieNode(nextContentKey)
+      const found = await this.lookupAccountTrieNode(nextContentKey)
       this.state.logger.extend('findPath')(
         `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
       )
@@ -175,7 +188,7 @@ export class StateManager {
         nodeHash: nextNodeHash as Uint8Array,
         addressHash: new Trie({ useKeyHashing: true })['hash'](address),
       })
-      const found = await this.lookupTrieNode(nextContentKey)
+      const found = await this.lookupStorageTrieNode(nextContentKey)
       this.state.logger.extend('findPath')(
         `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
       )
@@ -267,6 +280,6 @@ export class StateManager {
     }
     const contractPath = await this.findContractPath(storageRoot, slot, address)
     const slotValue = contractPath.node?.value()
-    return slotValue
+    return slotValue instanceof Uint8Array ? (RLP.decode(slotValue) as Uint8Array) : slotValue
   }
 }
