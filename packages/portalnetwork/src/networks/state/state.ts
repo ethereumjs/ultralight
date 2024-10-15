@@ -18,8 +18,20 @@ import { NetworkId } from '../types.js'
 
 import { StateManager } from './manager.js'
 import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
-import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
-import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './util.js'
+import {
+  AccountTrieNodeOffer,
+  AccountTrieNodeRetrieval,
+  StateNetworkContentType,
+  StorageTrieNodeOffer,
+  StorageTrieNodeRetrieval,
+} from './types.js'
+import {
+  AccountTrieNodeContentKey,
+  StateNetworkContentId,
+  StorageTrieNodeContentKey,
+  accountProofFromStorageProof,
+  nextOffer,
+} from './util.js'
 
 import type { TNibbles } from './types.js'
 import type { FindContentMessage } from '../../wire/types.js'
@@ -220,6 +232,100 @@ export class StateNetwork extends BaseNetwork {
     const contentKey = AccountTrieNodeContentKey.encode({
       nodeHash,
       path: packNibbles(newpaths),
+    })
+    await this.gossipContent(contentKey, content)
+    return { content, contentKey }
+  }
+
+  async receiveStorageTrieNodeOffer(
+    contentKey: Uint8Array,
+    content: Uint8Array,
+  ): Promise<{
+    stored: number
+  }> {
+    const { addressHash, path } = StorageTrieNodeContentKey.decode(contentKey)
+    const { blockHash, accountProof, storageProof } = StorageTrieNodeOffer.deserialize(content)
+    const interested = await this.storeInterestedStorageTrieNodes(path, storageProof, addressHash)
+    const { accountTrieOfferKey, accountTrieNodeOffer } = accountProofFromStorageProof(
+      contentKey,
+      content,
+    )
+    await this.receiveAccountTrieNodeOffer(accountTrieOfferKey, accountTrieNodeOffer)
+    void this.forwardStorageTrieOffer(path, storageProof, accountProof, blockHash, addressHash)
+    return { stored: interested.interested.length }
+  }
+  async storeInterestedStorageTrieNodes(
+    path: TNibbles,
+    proof: Uint8Array[],
+    addressHash: Uint8Array,
+  ) {
+    const nodes = [...proof]
+    const nibbles = unpackNibbles(path)
+    this.logger.extend('storeInterestedStorageTrieNodes')(
+      `Nodes: ${proof.length}.  Path: [${nibbles}]`,
+    )
+    const newpaths = [...nibbles]
+    const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
+    const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
+    let curRlp = nodes.pop()
+    let i = 0
+    while (curRlp) {
+      const curNode = decodeNode(curRlp)
+      if (curNode instanceof BranchNode) {
+        newpaths.pop()
+      } else if (curNode instanceof ExtensionNode) {
+        const consumed = newpaths.splice(-curNode._nibbles.length)
+        this.logger.extend('storeInterestedStorageTrieNodes')(
+          `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
+        )
+      }
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+      this.logger.extend('storeInterestedStorageTrieNodes')(
+        `${i} Path: [${newpaths}] - ${curNode.constructor.name}: ${bytesToHex(nodeHash).slice(0, 8)}...`,
+      )
+      i++
+      const contentKey = StorageTrieNodeContentKey.encode({
+        nodeHash,
+        path: packNibbles(newpaths),
+        addressHash,
+      })
+      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const in_radius = distance(bytesToUnprefixedHex(contentId), this.enr.nodeId) < this.nodeRadius
+      if (in_radius) {
+        const dbContent = StorageTrieNodeRetrieval.serialize({
+          node: curRlp,
+        })
+        interested.push({ contentKey, dbContent })
+        this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+      } else {
+        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
+      }
+
+      curRlp = nodes.pop()
+    }
+    for (const { contentKey, dbContent } of interested) {
+      await this.db.put(contentKey, dbContent)
+    }
+    return { interested, notInterested }
+  }
+  async forwardStorageTrieOffer(
+    path: TNibbles,
+    storageProof: Uint8Array[],
+    accountProof: Uint8Array[],
+    blockHash: Uint8Array,
+    addressHash: Uint8Array,
+  ) {
+    const { nodes, newpaths } = nextOffer(path, storageProof)
+    const content = StorageTrieNodeOffer.serialize({
+      blockHash,
+      accountProof,
+      storageProof: [...nodes],
+    })
+    const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
+    const contentKey = StorageTrieNodeContentKey.encode({
+      nodeHash,
+      path: packNibbles(newpaths),
+      addressHash,
     })
     await this.gossipContent(contentKey, content)
     return { content, contentKey }
