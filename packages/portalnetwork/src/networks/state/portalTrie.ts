@@ -62,7 +62,6 @@ export class PortalTrie {
       nodeHash: stateroot,
     })
 
-    this.logger.extend('findPath')(`RootNode not found locally`)
     const lookup = new ContentLookup(this.state, rootNodeKey)
     const request = await lookup.startLookup()
     if (request === undefined || !('content' in request)) {
@@ -75,10 +74,6 @@ export class PortalTrie {
     // Find Account via trie walk
     let accountPath = await lookupTrie.findPath(lookupTrie['hash'](address))
 
-    this.logger.extend('findPath')(`AccoutPath stack status: ${accountPath.stack.length}`)
-    this.logger.extend('findPath')(
-      `AccoutPath node status: ${accountPath.node === null ? 'null' : 'found'}`,
-    )
     while (!accountPath.node) {
       const nextPath = await this._findNextAccountPath(
         accountPath,
@@ -87,17 +82,9 @@ export class PortalTrie {
         lookupTrie,
       )
       if (nextPath.stack.length === accountPath.stack.length) {
-        this.logger.extend('findPath')(
-          `nextPath node status: ${nextPath.node === null ? 'null' : 'found'}`,
-        )
-        this.logger.extend('findPath')(`nextPath stack status: ${nextPath.stack.length}`)
         return { ...nextPath }
       }
       accountPath = nextPath
-      this.logger.extend('findPath')(
-        `AccoutPath node status: ${accountPath.node === null ? 'null' : 'found'}`,
-      )
-      this.logger.extend('findPath')(`AccoutPath stack status: ${accountPath.stack.length}`)
     }
     return { ...accountPath }
   }
@@ -156,7 +143,6 @@ export class PortalTrie {
       addressHash: new Trie({ useKeyHashing: true })['hash'](address),
     })
 
-    this.logger.extend('findPath')(`RootNode not found locally`)
     const lookup = new ContentLookup(this.state, rootNodeKey)
     const request = await lookup.startLookup()
     if (request === undefined || !('content' in request)) {
@@ -169,10 +155,6 @@ export class PortalTrie {
     // Find Account via trie walk
     let contractPath = await lookupTrie.findPath(lookupTrie['hash'](slot))
 
-    this.logger.extend('findPath')(`ContractPath stack status: ${contractPath.stack.length}`)
-    this.logger.extend('findPath')(
-      `ContractPath node status: ${contractPath.node === null ? 'null' : 'found'}`,
-    )
     while (!contractPath.node) {
       const nextPath = await this._findNextContractPath(
         contractPath,
@@ -182,17 +164,9 @@ export class PortalTrie {
         lookupTrie,
       )
       if (nextPath.stack.length === contractPath.stack.length) {
-        this.logger.extend('findPath')(
-          `nextPath node status: ${nextPath.node === null ? 'null' : 'found'}`,
-        )
-        this.logger.extend('findPath')(`nextPath stack status: ${nextPath.stack.length}`)
         return { ...nextPath }
       }
       contractPath = nextPath
-      this.logger.extend('findPath')(
-        `ContractPath node status: ${contractPath.node === null ? 'null' : 'found'}`,
-      )
-      this.logger.extend('findPath')(`ContractPath stack status: ${contractPath.stack.length}`)
     }
     return { ...contractPath }
   }
