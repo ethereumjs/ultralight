@@ -6,11 +6,11 @@ import { bytesToHex } from 'ethereum-cryptography/utils'
 import { ContentLookup } from '../contentLookup.js'
 
 import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
+import { PortalTrieDB } from './portalTrieDB.js'
 import { AccountTrieNodeRetrieval, StorageTrieNodeRetrieval } from './types.js'
 import { AccountTrieNodeContentKey, StorageTrieNodeContentKey } from './util.js'
 
 import type { StateManager } from './manager.js'
-import type { PortalTrieDB } from './portalTrieDB.js'
 import type { StateNetwork } from './state.js'
 import type { Debugger } from 'debug'
 
@@ -20,8 +20,8 @@ export class PortalTrie {
   logger: Debugger
   constructor(stateManager: StateManager) {
     this.state = stateManager.state
-    this.db = stateManager.db
     this.logger = stateManager.state.logger.extend('PortalTrie')
+    this.db = new PortalTrieDB(this.state.db.db, this.logger)
   }
   async lookupAccountTrieNode(key: Uint8Array) {
     const lookup = new ContentLookup(this.state, key)

@@ -5,7 +5,6 @@ import { Account, bytesToHex } from '@ethereumjs/util'
 import { ContentLookup } from '../contentLookup.js'
 
 import { PortalTrie } from './portalTrie.js'
-import { PortalTrieDB } from './portalTrieDB.js'
 import { ContractRetrieval } from './types.js'
 import { ContractCodeContentKey } from './util.js'
 
@@ -13,11 +12,9 @@ import type { StateNetwork } from './state.js'
 
 export class StateManager {
   state: StateNetwork
-  db: PortalTrieDB
   trie: PortalTrie
   constructor(state: StateNetwork) {
     this.state = state
-    this.db = new PortalTrieDB(state.db.db, this.state.logger)
     this.trie = new PortalTrie(this)
   }
 

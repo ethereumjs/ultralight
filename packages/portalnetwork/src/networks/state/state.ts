@@ -161,10 +161,10 @@ export class StateNetwork extends BaseNetwork {
       } else {
         if (contentType === StateNetworkContentType.AccountTrieNode) {
           const { nodeHash } = AccountTrieNodeContentKey.decode(contentKey)
-          this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+          this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
         } else if (contentType === StateNetworkContentType.ContractTrieNode) {
           const { nodeHash } = StorageTrieNodeContentKey.decode(contentKey)
-          this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+          this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
         }
         await this.db.put(contentKey, content)
       }
@@ -222,7 +222,7 @@ export class StateNetwork extends BaseNetwork {
           node: curRlp,
         })
         interested.push({ contentKey, dbContent })
-        this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+        this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
       } else {
         notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
@@ -304,7 +304,7 @@ export class StateNetwork extends BaseNetwork {
           node: curRlp,
         })
         interested.push({ contentKey, dbContent })
-        this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+        this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
       } else {
         notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
@@ -342,7 +342,7 @@ export class StateNetwork extends BaseNetwork {
     const { addressHash, codeHash } = ContractCodeContentKey.decode(contentKey)
     const { accountProof, blockHash, code } = ContractCodeOffer.deserialize(content)
     const codeContent = ContractRetrieval.serialize({ code })
-    this.manager.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))
+    this.manager.trie.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))
     await this.db.put(contentKey, codeContent)
     await this.receiveAccountTrieNodeOffer(
       ...extractAccountProof(addressHash, accountProof, blockHash),
