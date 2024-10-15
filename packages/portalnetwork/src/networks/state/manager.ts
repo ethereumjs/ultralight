@@ -1,32 +1,121 @@
-import { Trie } from '@ethereumjs/trie'
-import { Account } from '@ethereumjs/util'
+import { toHexString } from '@chainsafe/ssz'
+import { BranchNode, LeafNode, Trie } from '@ethereumjs/trie'
+import { Account, bytesToHex, bytesToUnprefixedHex } from '@ethereumjs/util'
 
 import { ContentLookup } from '../contentLookup.js'
 
+import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import { PortalTrieDB } from './portalTrie.js'
-import { StateNetworkContentKey } from './util.js'
+import { AccountTrieNodeRetrieval } from './types.js'
+import { AccountTrieNodeContentKey, StateNetworkContentKey } from './util.js'
 
 import type { StateNetwork } from './state.js'
-import type { Path } from '@ethereumjs/trie'
 
 export class StateManager {
   state: StateNetwork
   db: PortalTrieDB
   constructor(state: StateNetwork) {
     this.state = state
-    this.db = new PortalTrieDB(state.db.db)
+    this.db = new PortalTrieDB(state.db.db, this.state.logger)
+  }
+  async lookupTrieNode(key: Uint8Array) {
+    const lookup = new ContentLookup(this.state, key)
+    const request = await lookup.startLookup()
+    const keyobj = AccountTrieNodeContentKey.decode(key)
+    if (request === undefined || !('content' in request)) {
+      throw new Error(
+        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
+      )
+    }
+    const node = AccountTrieNodeRetrieval.deserialize(request.content).node
+    return { nodeHash: keyobj.nodeHash, node }
+  }
+  async findPath(stateroot: Uint8Array, address: Uint8Array) {
+    const lookupTrie = new Trie({
+      useKeyHashing: true,
+      db: this.db,
+    })
+    lookupTrie.root(stateroot)
+    const addressPath = addressToNibbles(address)
+
+    // Find RootNode
+    const rootNodeKey = AccountTrieNodeContentKey.encode({
+      path: packNibbles([]),
+      nodeHash: stateroot,
+    })
+
+    this.state.logger.extend('findPath')(`RootNode not found locally`)
+    const lookup = new ContentLookup(this.state, rootNodeKey)
+    const request = await lookup.startLookup()
+    if (request === undefined || !('content' in request)) {
+      throw new Error(`network doesn't have root node ${toHexString(stateroot)}`)
+    }
+    const node = AccountTrieNodeRetrieval.deserialize(request.content).node
+    this.state.logger.extend('findPath')(`RootNode found: (${node.length} bytes)`)
+    this.db.temp.set(bytesToUnprefixedHex(stateroot), bytesToUnprefixedHex(node))
+
+    // Find Account via trie walk
+    let accountPath = await lookupTrie.findPath(lookupTrie['hash'](address))
+
+    this.state.logger.extend('findPath')(`AccoutPath stack status: ${accountPath.stack.length}`)
+    this.state.logger.extend('findPath')(
+      `AccoutPath node status: ${accountPath.node === null ? 'null' : 'found'}`,
+    )
+    while (!accountPath.node) {
+      const consumedNibbles = accountPath.stack
+        .slice(1)
+        .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
+        .reduce((a, b) => a + b, 0)
+      const nodePath = addressPath.slice(0, consumedNibbles + 1)
+      this.state.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
+      this.state.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
+      const current = accountPath.stack[accountPath.stack.length - 1]
+      if (current instanceof LeafNode) {
+        return { ...accountPath }
+      }
+      const nextNodeHash =
+        current instanceof BranchNode
+          ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
+          : current.value()
+
+      if (nextNodeHash === undefined || nextNodeHash === null) {
+        return { ...accountPath }
+      }
+      this.state.logger.extend('findPath')(
+        `Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`,
+      )
+      const nextContentKey = AccountTrieNodeContentKey.encode({
+        path: packNibbles(nodePath),
+        nodeHash: nextNodeHash as Uint8Array,
+      })
+      const found = await this.lookupTrieNode(nextContentKey)
+      this.state.logger.extend('findPath')(
+        `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
+      )
+      this.db.temp.set(bytesToUnprefixedHex(found.nodeHash), bytesToUnprefixedHex(found.node))
+      // if ((await this.state.get(nextContentKey)) === undefined) {
+      // }
+      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](address))
+      if (nextPath.stack.length === accountPath.stack.length) {
+        this.state.logger.extend('findPath')(
+          `nextPath node status: ${nextPath.node === null ? 'null' : 'found'}`,
+        )
+        this.state.logger.extend('findPath')(`nextPath stack status: ${nextPath.stack.length}`)
+        return { ...nextPath }
+      }
+      accountPath = nextPath
+      this.state.logger.extend('findPath')(
+        `AccoutPath node status: ${accountPath.node === null ? 'null' : 'found'}`,
+      )
+      this.state.logger.extend('findPath')(`AccoutPath stack status: ${accountPath.stack.length}`)
+    }
+    return { ...accountPath }
   }
 
-  async findPath(stateroot: Uint8Array, address: Uint8Array): Promise<Path | undefined> {
-    const lookupTrie = new Trie({ db: this.db, root: stateroot, useKeyHashing: true })
-    try {
-      const path = await lookupTrie.findPath(address)
-      return path
-    } catch {
-      return undefined
-    }
-  }
   async getAccount(address: Uint8Array, stateroot: Uint8Array): Promise<Uint8Array | undefined> {
+    this.state.logger.extend('getAccount')(
+      `Looking for Account ${bytesToHex(address)} at stateroot: ${bytesToHex(stateroot)}`,
+    )
     const accountPath = await this.findPath(stateroot, address)
     return accountPath?.node?.value() ?? undefined
   }
