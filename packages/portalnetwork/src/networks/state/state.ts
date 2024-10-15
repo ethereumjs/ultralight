@@ -160,12 +160,12 @@ export class StateNetwork extends BaseNetwork {
   }> {
     const { path } = AccountTrieNodeContentKey.decode(contentKey)
     const { proof, blockHash } = AccountTrieNodeOffer.deserialize(content)
-    const interested = await this.storeInterestedNodes(path, proof)
+    const interested = await this.storeInterestedAccountTrieNodes(path, proof)
     void this.forwardAccountTrieOffer(path, proof, blockHash)
     return { stored: interested.interested.length }
   }
 
-  async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {
+  async storeInterestedAccountTrieNodes(path: TNibbles, proof: Uint8Array[]) {
     const nodes = [...proof]
     const nibbles = unpackNibbles(path)
     this.logger.extend('storeInterestedNodes')(`Nodes: ${proof.length}.  Path: [${nibbles}]`)
