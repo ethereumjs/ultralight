@@ -64,7 +64,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey
   const { proof } = content
-  const { interested, notInterested } = await state.storeInterestedNodes(path, proof)
+  const { interested, notInterested } = await state.storeInterestedAccountTrieNodes(path, proof)
 
   it('Should store interested content', async () => {
     expect(interested.length).toBeGreaterThan(0)
