@@ -203,9 +203,8 @@ describe('getAccount via network', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
   })
 
-  const temp = [...testClient.manager.db.tempKeys()]
-  const perm: string[] = await testClient.manager.db.keys()
-  console.log({ temp, perm })
+  const temp = [...testClient.manager.trie.db.tempKeys()]
+  const perm: string[] = await testClient.manager.trie.db.keys()
   it(`should have all ${uniqueStored.length} nodes in temp or permanent db`, async () => {
     expect(temp.length + perm.length).toEqual(uniqueStored.length)
     for (const key of temp) {
