@@ -30,7 +30,7 @@ export class StateManager {
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
     return { nodeHash: keyobj.nodeHash, node }
   }
-  async findPath(stateroot: Uint8Array, address: Uint8Array) {
+  async findAccountPath(stateroot: Uint8Array, address: Uint8Array) {
     const lookupTrie = new Trie({
       useKeyHashing: true,
       db: this.db,
@@ -116,7 +116,7 @@ export class StateManager {
     this.state.logger.extend('getAccount')(
       `Looking for Account ${bytesToHex(address)} at stateroot: ${bytesToHex(stateroot)}`,
     )
-    const accountPath = await this.findPath(stateroot, address)
+    const accountPath = await this.findAccountPath(stateroot, address)
     return accountPath?.node?.value() ?? undefined
   }
   async getBalance(address: Uint8Array, stateroot: Uint8Array): Promise<bigint | undefined> {
