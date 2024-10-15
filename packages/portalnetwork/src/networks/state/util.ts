@@ -1,8 +1,10 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
 import { bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 
+import { unpackNibbles } from './nibbleEncoding.js'
 import {
   AccountTrieNodeKey,
   AccountTrieNodeRetrieval,
@@ -15,7 +17,12 @@ import {
   StorageTrieNodeRetrieval,
 } from './types.js'
 
-import type { TAccountTrieNodeKey, TContractCodeKey, TStorageTrieNodeKey } from './types.js'
+import type {
+  TAccountTrieNodeKey,
+  TContractCodeKey,
+  TNibbles,
+  TStorageTrieNodeKey,
+} from './types.js'
 
 /* ContentKeys */
 
@@ -178,4 +185,23 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
       break
   }
   return bytesToUnprefixedHex(dbContent)
+}
+
+export function nextOffer(path: TNibbles, proof: Uint8Array[]) {
+  if (proof.length === 1) {
+    return { curRlp: proof[0], nodes: proof, newpaths: [] }
+  }
+  const nibbles = unpackNibbles(path)
+  const nodes = [...proof]
+  const curRlp = nodes.pop()!
+  const curNode = decodeNode(curRlp)
+  const newpaths = nibbles.slice(
+    0,
+    curNode instanceof BranchNode ? 1 : curNode instanceof ExtensionNode ? curNode.key().length : 0,
+  )
+  return {
+    curRlp,
+    nodes,
+    newpaths,
+  }
 }
