@@ -6,7 +6,7 @@ import { Account, bytesToHex, bytesToUnprefixedHex } from '@ethereumjs/util'
 import { ContentLookup } from '../contentLookup.js'
 
 import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
-import { PortalTrieDB } from './portalTrie.js'
+import { PortalTrieDB } from './portalTrieDB.js'
 import { AccountTrieNodeRetrieval, ContractRetrieval, StorageTrieNodeRetrieval } from './types.js'
 import {
   AccountTrieNodeContentKey,
