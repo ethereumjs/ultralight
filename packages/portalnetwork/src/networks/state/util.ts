@@ -4,9 +4,10 @@ import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
 import { bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 
-import { unpackNibbles } from './nibbleEncoding.js'
+import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import {
   AccountTrieNodeKey,
+  AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
   ContractCodeKey,
   ContractCodeOffer,
@@ -23,6 +24,7 @@ import type {
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
+import type { LeafNode } from '@ethereumjs/trie'
 
 /* ContentKeys */
 
@@ -204,4 +206,27 @@ export function nextOffer(path: TNibbles, proof: Uint8Array[]) {
     nodes,
     newpaths,
   }
+}
+
+export function accountProofFromStorageProof(
+  storageOfferKey: Uint8Array,
+  storageOffer: Uint8Array,
+) {
+  const { accountProof, blockHash } = StorageTrieNodeOffer.deserialize(storageOffer)
+  const { addressHash } = StorageTrieNodeContentKey.decode(storageOfferKey)
+  const addressPath = bytesToUnprefixedHex(addressHash).split('')
+  const nodeRLP = accountProof.slice(-1)[0]
+  const nodeHash = sha256(nodeRLP)
+  const accountNode = decodeNode(nodeRLP) as LeafNode
+  const nodeNibbles = accountNode._nibbles.map((n) => n.toString(16))
+  const nodePath = addressPath.slice(0, addressPath.length - nodeNibbles.length)
+  const accountTrieNodeOffer = AccountTrieNodeOffer.serialize({
+    blockHash,
+    proof: accountProof,
+  })
+  const accountTrieOfferKey = AccountTrieNodeContentKey.encode({
+    nodeHash,
+    path: packNibbles(nodePath),
+  })
+  return { accountTrieOfferKey, accountTrieNodeOffer }
 }
