@@ -149,11 +149,18 @@ export class StateNetwork extends BaseNetwork {
   public store = async (contentKey: Uint8Array, content: Uint8Array, offer: boolean = true) => {
     const contentType = contentKey[0]
     try {
-      if (offer && contentType === StateNetworkContentType.AccountTrieNode) {
-        await this.receiveAccountTrieNodeOffer(contentKey, content)
+      if (offer) {
+        if (contentType === StateNetworkContentType.AccountTrieNode) {
+          await this.receiveAccountTrieNodeOffer(contentKey, content)
+        } else if (contentType === StateNetworkContentType.ContractTrieNode) {
+          await this.receiveStorageTrieNodeOffer(contentKey, content)
+        }
       } else {
         if (contentType === StateNetworkContentType.AccountTrieNode) {
           const { nodeHash } = AccountTrieNodeContentKey.decode(contentKey)
+          this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+        } else if (contentType === StateNetworkContentType.ContractTrieNode) {
+          const { nodeHash } = StorageTrieNodeContentKey.decode(contentKey)
           this.manager.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
         }
         await this.db.put(contentKey, content)
