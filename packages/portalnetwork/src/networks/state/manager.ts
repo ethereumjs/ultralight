@@ -7,10 +7,10 @@ import { ContentLookup } from '../contentLookup.js'
 
 import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import { PortalTrieDB } from './portalTrie.js'
-import { AccountTrieNodeRetrieval, StorageTrieNodeRetrieval } from './types.js'
+import { AccountTrieNodeRetrieval, ContractRetrieval, StorageTrieNodeRetrieval } from './types.js'
 import {
   AccountTrieNodeContentKey,
-  StateNetworkContentKey,
+  ContractCodeContentKey,
   StorageTrieNodeContentKey,
 } from './util.js'
 
@@ -251,11 +251,12 @@ export class StateManager {
       return undefined
     }
     const addressHash = new Trie({ useKeyHashing: true })['hash'](address)
-    const contentKey = StateNetworkContentKey.encode({ codeHash, addressHash })
+    const contentKey = ContractCodeContentKey.encode({ codeHash, addressHash })
     const codeLookup = new ContentLookup(this.state, contentKey)
     const response = await codeLookup.startLookup()
     if (response && 'content' in response) {
-      return response.content
+      const { code } = ContractRetrieval.deserialize(response.content)
+      return code
     }
   }
   async getStorageRoot(
