@@ -208,12 +208,11 @@ export function nextOffer(path: TNibbles, proof: Uint8Array[]) {
   }
 }
 
-export function accountProofFromStorageProof(
-  storageOfferKey: Uint8Array,
-  storageOffer: Uint8Array,
-) {
-  const { accountProof, blockHash } = StorageTrieNodeOffer.deserialize(storageOffer)
-  const { addressHash } = StorageTrieNodeContentKey.decode(storageOfferKey)
+export function extractAccountProof(
+  addressHash: Uint8Array,
+  accountProof: Uint8Array[],
+  blockHash: Uint8Array,
+): [Uint8Array, Uint8Array] {
   const addressPath = bytesToUnprefixedHex(addressHash).split('')
   const nodeRLP = accountProof.slice(-1)[0]
   const nodeHash = sha256(nodeRLP)
@@ -228,5 +227,5 @@ export function accountProofFromStorageProof(
     nodeHash,
     path: packNibbles(nodePath),
   })
-  return { accountTrieOfferKey, accountTrieNodeOffer }
+  return [accountTrieOfferKey, accountTrieNodeOffer]
 }

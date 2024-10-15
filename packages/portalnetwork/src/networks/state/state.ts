@@ -21,15 +21,18 @@ import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import {
   AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
+  ContractCodeOffer,
+  ContractRetrieval,
   StateNetworkContentType,
   StorageTrieNodeOffer,
   StorageTrieNodeRetrieval,
 } from './types.js'
 import {
   AccountTrieNodeContentKey,
+  ContractCodeContentKey,
   StateNetworkContentId,
   StorageTrieNodeContentKey,
-  accountProofFromStorageProof,
+  extractAccountProof,
   nextOffer,
 } from './util.js'
 
@@ -253,11 +256,9 @@ export class StateNetwork extends BaseNetwork {
     const { addressHash, path } = StorageTrieNodeContentKey.decode(contentKey)
     const { blockHash, accountProof, storageProof } = StorageTrieNodeOffer.deserialize(content)
     const interested = await this.storeInterestedStorageTrieNodes(path, storageProof, addressHash)
-    const { accountTrieOfferKey, accountTrieNodeOffer } = accountProofFromStorageProof(
-      contentKey,
-      content,
+    await this.receiveAccountTrieNodeOffer(
+      ...extractAccountProof(addressHash, accountProof, blockHash),
     )
-    await this.receiveAccountTrieNodeOffer(accountTrieOfferKey, accountTrieNodeOffer)
     void this.forwardStorageTrieOffer(path, storageProof, accountProof, blockHash, addressHash)
     return { stored: interested.interested.length }
   }
