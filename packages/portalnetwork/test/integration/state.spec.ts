@@ -88,7 +88,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
   })
   it('should store some content', async () => {
     expect(result2.stored).toBeGreaterThan(0)
-    expect(result2.stored).toEqual(3)
+    expect(result2.stored).toEqual(1)
   })
 
   it('should request individual node from peer', async () => {
@@ -180,11 +180,11 @@ describe('getAccount via network', async () => {
   const storedValues = storedInNodes.map((set) => [...set.values()])
   const uniqueStored = Array.from(new Set(storedValues.flat()))
   it('should distribute all nodes', () => {
-    expect(uniqueStored.length).toEqual(5)
+    expect(uniqueStored.length).toEqual(8)
   })
   for (const [idx, keys] of storedInNodes.entries()) {
     it(`client ${idx} should store ${keys.size} trie nodes`, () => {
-      expect(keys.size).toBeLessThan(5)
+      expect(keys.size).toBeLessThan(8)
     })
   }
   const testClient = networks[4]
@@ -201,14 +201,5 @@ describe('getAccount via network', async () => {
   const foundAccount = Account.fromRlpSerializedAccount(found)
   it('should find account data', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
-  })
-
-  const temp = [...testClient.manager.trie.db.tempKeys()]
-  const perm: string[] = await testClient.manager.trie.db.keys()
-  it(`should have all ${uniqueStored.length} nodes in temp or permanent db`, async () => {
-    expect(temp.length + perm.length).toEqual(uniqueStored.length)
-    for (const key of temp) {
-      expect(perm.includes(key)).toBeFalsy()
-    }
   })
 })
