@@ -12,6 +12,7 @@ import { AccountTrieNodeContentKey, StorageTrieNodeContentKey } from './util.js'
 
 import type { StateManager } from './manager.js'
 import type { StateNetwork } from './state.js'
+import type { Path } from '@ethereumjs/trie'
 import type { Debugger } from 'debug'
 
 export class PortalTrie {
@@ -79,40 +80,12 @@ export class PortalTrie {
       `AccoutPath node status: ${accountPath.node === null ? 'null' : 'found'}`,
     )
     while (!accountPath.node) {
-      const consumedNibbles = accountPath.stack
-        .slice(1)
-        .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
-        .reduce((a, b) => a + b, 0)
-      const nodePath = addressPath.slice(0, consumedNibbles + 1)
-      this.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
-      this.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
-      const current = accountPath.stack[accountPath.stack.length - 1]
-      if (current instanceof LeafNode) {
-        return { ...accountPath }
-      }
-      const nextNodeHash =
-        current instanceof BranchNode
-          ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
-          : current.value()
-
-      if (nextNodeHash === undefined || nextNodeHash === null) {
-        return { ...accountPath }
-      }
-      this.logger.extend('findPath')(
-        `Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`,
+      const nextPath = await this._findNextAccountPath(
+        accountPath,
+        addressPath,
+        address,
+        lookupTrie,
       )
-      const nextContentKey = AccountTrieNodeContentKey.encode({
-        path: packNibbles(nodePath),
-        nodeHash: nextNodeHash as Uint8Array,
-      })
-      const found = await this.lookupAccountTrieNode(nextContentKey)
-      this.logger.extend('findPath')(
-        `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
-      )
-      this.db.temp.set(bytesToUnprefixedHex(found.nodeHash), bytesToUnprefixedHex(found.node))
-      // if ((await this.state.get(nextContentKey)) === undefined) {
-      // }
-      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](address))
       if (nextPath.stack.length === accountPath.stack.length) {
         this.logger.extend('findPath')(
           `nextPath node status: ${nextPath.node === null ? 'null' : 'found'}`,
@@ -128,6 +101,46 @@ export class PortalTrie {
     }
     return { ...accountPath }
   }
+
+  async _findNextAccountPath(
+    accountPath: Path,
+    addressPath: string[],
+    address: Uint8Array,
+    lookupTrie: Trie,
+  ) {
+    const consumedNibbles = accountPath.stack
+      .slice(1)
+      .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
+      .reduce((a, b) => a + b, 0)
+    const nodePath = addressPath.slice(0, consumedNibbles + 1)
+    this.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
+    this.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
+    const current = accountPath.stack[accountPath.stack.length - 1]
+    if (current instanceof LeafNode) {
+      return { ...accountPath }
+    }
+    const nextNodeHash =
+      current instanceof BranchNode
+        ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
+        : current.value()
+
+    if (nextNodeHash === undefined || nextNodeHash === null) {
+      return { ...accountPath }
+    }
+    this.logger.extend('findPath')(`Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`)
+    const nextContentKey = AccountTrieNodeContentKey.encode({
+      path: packNibbles(nodePath),
+      nodeHash: nextNodeHash as Uint8Array,
+    })
+    const found = await this.lookupAccountTrieNode(nextContentKey)
+    this.logger.extend('findPath')(
+      `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
+    )
+    this.db.temp.set(bytesToUnprefixedHex(found.nodeHash), bytesToUnprefixedHex(found.node))
+    const nextPath = await lookupTrie.findPath(lookupTrie['hash'](address))
+    return nextPath
+  }
+
   async findContractPath(storageRoot: Uint8Array, slot: Uint8Array, address: Uint8Array) {
     const lookupTrie = new Trie({
       useKeyHashing: true,
@@ -161,41 +174,13 @@ export class PortalTrie {
       `ContractPath node status: ${contractPath.node === null ? 'null' : 'found'}`,
     )
     while (!contractPath.node) {
-      const consumedNibbles = contractPath.stack
-        .slice(1)
-        .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
-        .reduce((a, b) => a + b, 0)
-      const nodePath = addressPath.slice(0, consumedNibbles + 1)
-      this.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
-      this.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
-      const current = contractPath.stack[contractPath.stack.length - 1]
-      if (current instanceof LeafNode) {
-        return { ...contractPath }
-      }
-      const nextNodeHash =
-        current instanceof BranchNode
-          ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
-          : current.value()
-
-      if (nextNodeHash === undefined || nextNodeHash === null) {
-        return { ...contractPath }
-      }
-      this.logger.extend('findPath')(
-        `Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`,
+      const nextPath = await this._findNextContractPath(
+        contractPath,
+        addressPath,
+        address,
+        slot,
+        lookupTrie,
       )
-      const nextContentKey = StorageTrieNodeContentKey.encode({
-        path: packNibbles(nodePath),
-        nodeHash: nextNodeHash as Uint8Array,
-        addressHash: new Trie({ useKeyHashing: true })['hash'](address),
-      })
-      const found = await this.lookupStorageTrieNode(nextContentKey)
-      this.logger.extend('findPath')(
-        `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
-      )
-      this.db.temp.set(bytesToUnprefixedHex(found.nodeHash), bytesToUnprefixedHex(found.node))
-      // if ((await this.state.get(nextContentKey)) === undefined) {
-      // }
-      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](slot))
       if (nextPath.stack.length === contractPath.stack.length) {
         this.logger.extend('findPath')(
           `nextPath node status: ${nextPath.node === null ? 'null' : 'found'}`,
@@ -210,5 +195,46 @@ export class PortalTrie {
       this.logger.extend('findPath')(`ContractPath stack status: ${contractPath.stack.length}`)
     }
     return { ...contractPath }
+  }
+
+  async _findNextContractPath(
+    contractPath: Path,
+    addressPath: string[],
+    address: Uint8Array,
+    slot: Uint8Array,
+    lookupTrie: Trie,
+  ) {
+    const consumedNibbles = contractPath.stack
+      .slice(1)
+      .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
+      .reduce((a, b) => a + b, 0)
+    const nodePath = addressPath.slice(0, consumedNibbles + 1)
+    this.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
+    this.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
+    const current = contractPath.stack[contractPath.stack.length - 1]
+    if (current instanceof LeafNode) {
+      return { ...contractPath }
+    }
+    const nextNodeHash =
+      current instanceof BranchNode
+        ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
+        : current.value()
+
+    if (nextNodeHash === undefined || nextNodeHash === null) {
+      return { ...contractPath }
+    }
+    this.logger.extend('findPath')(`Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`)
+    const nextContentKey = StorageTrieNodeContentKey.encode({
+      path: packNibbles(nodePath),
+      nodeHash: nextNodeHash as Uint8Array,
+      addressHash: new Trie({ useKeyHashing: true })['hash'](address),
+    })
+    const found = await this.lookupStorageTrieNode(nextContentKey)
+    this.logger.extend('findPath')(
+      `Found node: [${bytesToHex(found.nodeHash)}] (${found.node.length} bytes)`,
+    )
+    this.db.temp.set(bytesToUnprefixedHex(found.nodeHash), bytesToUnprefixedHex(found.node))
+    const nextPath = await lookupTrie.findPath(lookupTrie['hash'](slot))
+    return nextPath
   }
 }
