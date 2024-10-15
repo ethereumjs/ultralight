@@ -338,4 +338,14 @@ export class StateNetwork extends BaseNetwork {
     await this.gossipContent(contentKey, content)
     return { content, contentKey }
   }
+  async receiveContractCodeOffer(contentKey: Uint8Array, content: Uint8Array) {
+    const { addressHash, codeHash } = ContractCodeContentKey.decode(contentKey)
+    const { accountProof, blockHash, code } = ContractCodeOffer.deserialize(content)
+    const codeContent = ContractRetrieval.serialize({ code })
+    this.manager.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))
+    await this.db.put(contentKey, codeContent)
+    await this.receiveAccountTrieNodeOffer(
+      ...extractAccountProof(addressHash, accountProof, blockHash),
+    )
+  }
 }
