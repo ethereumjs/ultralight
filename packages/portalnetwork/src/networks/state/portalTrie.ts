@@ -65,7 +65,8 @@ export class PortalTrie {
     const lookup = new ContentLookup(this.state, rootNodeKey)
     const request = await lookup.startLookup()
     if (request === undefined || !('content' in request)) {
-      throw new Error(`network doesn't have root node ${toHexString(stateroot)}`)
+      this.logger(`network doesn't have root node ${toHexString(stateroot)}`)
+      return undefined
     }
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
     this.logger.extend('findPath')(`RootNode found: (${node.length} bytes)`)
