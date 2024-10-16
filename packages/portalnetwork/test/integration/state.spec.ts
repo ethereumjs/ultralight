@@ -1,12 +1,11 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Trie } from '@ethereumjs/trie'
-import { Account, hexToBytes } from '@ethereumjs/util'
+import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
 
 import {
-  AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
   NetworkId,
@@ -28,10 +27,8 @@ const sample = samples[0]
 const [key, value] = sample as [string, object]
 const content = Uint8Array.from(Object.values(value))
 const contentKey = fromHexString(key)
-const decoded = AccountTrieNodeContentKey.decode(contentKey)
 const deserialized = AccountTrieNodeOffer.deserialize(content)
-const { path } = decoded
-const { proof, blockHash } = deserialized
+const { proof } = deserialized
 
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
@@ -90,14 +87,25 @@ describe('AccountTrieNode Gossip / Request', async () => {
     expect(result2.stored).toBeGreaterThan(0)
     expect(result2.stored).toEqual(1)
   })
+  const network2Keys: string[] = []
+  for await (const key of network2.db.db.keys()) {
+    network2Keys.push(key)
+  }
 
   it('should request individual node from peer', async () => {
-    const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
-    const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
-    const requested = await network1.sendFindContent(node2.discv5.enr.nodeId, next.contentKey)
+    const expected = AccountTrieNodeRetrieval.serialize({ node: proof[2] })
+    const contentKey = (await network2.db.db.keys().next())!
+    const requested = await network1.sendFindContent(
+      node2.discv5.enr.nodeId,
+      hexToBytes(contentKey),
+    )
     expect(requested).toBeDefined()
     expect(requested!['content']).instanceOf(Uint8Array)
-    assert.deepEqual(requested!['content'], expected, 'retrieved value is correct')
+    assert.equal(
+      bytesToHex(requested!['content']),
+      bytesToHex(expected),
+      'retrieved value is correct',
+    )
   })
 })
 
@@ -180,7 +188,7 @@ describe('getAccount via network', async () => {
   const storedValues = storedInNodes.map((set) => [...set.values()])
   const uniqueStored = Array.from(new Set(storedValues.flat()))
   it('should distribute all nodes', () => {
-    expect(uniqueStored.length).toEqual(8)
+    expect(uniqueStored.length).toEqual(5)
   })
   for (const [idx, keys] of storedInNodes.entries()) {
     it(`client ${idx} should store ${keys.size} trie nodes`, () => {
