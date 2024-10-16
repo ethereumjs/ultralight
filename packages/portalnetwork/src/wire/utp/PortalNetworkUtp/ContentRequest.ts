@@ -7,6 +7,7 @@ import {
   ConnectionState,
   Packet,
   PacketType,
+  StateNetwork,
   bitmap,
   toHexString,
 } from '../../../index.js'
@@ -123,7 +124,11 @@ export abstract class ContentRequest {
       this.logger.extend(`FINISHED`)(
         `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending content type: ${bytesToHex(k.slice(0, 1))} to database`,
       )
-      await this.network.store(k, _content)
+      if (this.network instanceof StateNetwork) {
+        await this.network.store(k, _content, this.requestCode === RequestCode.ACCEPT_READ)
+      } else {
+        await this.network.store(k, _content)
+      }
     }
     this.close()
   }
