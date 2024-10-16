@@ -200,13 +200,15 @@ export class StateNetwork extends BaseNetwork {
     let i = 0
     while (curRlp) {
       const curNode = decodeNode(curRlp)
-      if (curNode instanceof BranchNode) {
-        newpaths.pop()
-      } else if (curNode instanceof ExtensionNode) {
-        const consumed = newpaths.splice(-curNode._nibbles.length)
-        this.logger.extend('storeInterestedNodes')(
-          `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
-        )
+      if (i > 0) {
+        if (curNode instanceof BranchNode) {
+          newpaths.pop()
+        } else if (curNode instanceof ExtensionNode) {
+          const consumed = newpaths.splice(-curNode._nibbles.length)
+          this.logger.extend('storeInterestedNodes')(
+            `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
+          )
+        }
       }
       const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
       this.logger.extend('storeInterestedNodes')(
@@ -281,13 +283,15 @@ export class StateNetwork extends BaseNetwork {
     let i = 0
     while (curRlp) {
       const curNode = decodeNode(curRlp)
-      if (curNode instanceof BranchNode) {
-        newpaths.pop()
-      } else if (curNode instanceof ExtensionNode) {
-        const consumed = newpaths.splice(-curNode._nibbles.length)
-        this.logger.extend('storeInterestedStorageTrieNodes')(
-          `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
-        )
+      if (i > 0) {
+        if (curNode instanceof BranchNode) {
+          newpaths.pop()
+        } else if (curNode instanceof ExtensionNode) {
+          const consumed = newpaths.splice(-curNode._nibbles.length)
+          this.logger.extend('storeInterestedStorageTrieNodes')(
+            `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
+          )
+        }
       }
       const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
       this.logger.extend('storeInterestedStorageTrieNodes')(

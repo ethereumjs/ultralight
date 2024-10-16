@@ -195,14 +195,17 @@ export function nextOffer(path: TNibbles, proof: Uint8Array[]) {
   }
   const nibbles = unpackNibbles(path)
   const nodes = [...proof]
-  const curRlp = nodes.pop()!
-  const curNode = decodeNode(curRlp)
+  nodes.pop()
+  const nextNode = decodeNode(nodes[nodes.length - 1])
   const newpaths = nibbles.slice(
     0,
-    curNode instanceof BranchNode ? 1 : curNode instanceof ExtensionNode ? curNode.key().length : 0,
+    nextNode instanceof BranchNode
+      ? -1
+      : nextNode instanceof ExtensionNode
+        ? -nextNode.key().length
+        : 0,
   )
   return {
-    curRlp,
     nodes,
     newpaths,
   }
