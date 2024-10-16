@@ -57,8 +57,9 @@ export class ContentLookup {
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
       // Try to find content locally first
-      const res = await this.network.get(this.contentKey)
-      return { content: hexToBytes(res), utp: false }
+      const res = await this.network.findContentLocally(this.contentKey)
+      if (res === undefined) throw new Error('No content found')
+      return { content: res, utp: false }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
