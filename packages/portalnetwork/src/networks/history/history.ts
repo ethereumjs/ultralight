@@ -279,7 +279,7 @@ export class HistoryNetwork extends BaseNetwork {
    */
   public store = async (contentKey: Uint8Array, value: Uint8Array): Promise<void> => {
     const contentType = contentKey[0]
-    const keyOpt = contentKey.slice(1)
+    let keyOpt: Uint8Array | bigint = contentKey.slice(1)
     this.logger.extend('STORE')(`Storing ${bytesToHex(contentKey)} (${value.length} bytes)`)
     switch (contentType) {
       case HistoryNetworkContentType.BlockHeader: {
@@ -312,11 +312,8 @@ export class HistoryNetwork extends BaseNetwork {
           // Store block header using 0x00 key type
           const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
           await this.put(hashKey, toHexString(value))
-          this.emit('ContentAdded', hashKey, value)
-          if (this.routingTable.values().length > 0) {
-            // Gossip new content to network
-            this.gossipManager.add(hashKey, contentType)
-          }
+          // Switch keyOpt to blockNumber for gossip purposes
+          keyOpt = blockNumber
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
         }
@@ -329,7 +326,11 @@ export class HistoryNetwork extends BaseNetwork {
       // Gossip new content to network
       this.gossipManager.add(keyOpt, contentType)
     }
-    this.logger(`${HistoryNetworkContentType[contentType]} added for ${bytesToHex(keyOpt)}`)
+    this.logger(
+      `${HistoryNetworkContentType[contentType]} added for ${
+        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      }`,
+    )
   }
 
   public async saveReceipts(block: Block) {
@@ -376,11 +377,12 @@ export class HistoryNetwork extends BaseNetwork {
     }
   }
 
-  public async getStateRoot(blockNumber: bigint) {
+  public async getStateRoot(blockNumber: bigint): Promise<Uint8Array | undefined> {
     const block = await this.portal.ETH.getBlockByNumber(blockNumber, false)
     if (block === undefined) {
-      throw new Error('Block not found')
+      this.logger.extend('getStateRoot')('Block not found')
+      return undefined
     }
-    return toHexString(block.header.stateRoot)
+    return block.header.stateRoot
   }
 }

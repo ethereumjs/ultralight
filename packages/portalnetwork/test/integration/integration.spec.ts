@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { BlockHeader } from '@ethereumjs/block'
+import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -9,6 +9,7 @@ import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {
+  BlockHeaderByNumberKey,
   BlockHeaderWithProof,
   HistoryNetworkContentType,
   NetworkId,
@@ -152,6 +153,55 @@ describe('FindContent', async () => {
     network1,
     witnesses,
   )
+
+  it('should have indexed block', () => {
+    assert.isTrue(
+      [...network1.blockHashIndex.keys()].includes('0x' + testBlockData[29].number.toString(16)),
+      'block indexed',
+    )
+    assert.equal(
+      bytesToHex(network1.blockNumberToHash(BigInt(testBlockData[29].number))!),
+      testBlockData[29].blockHash,
+    )
+  })
+
+  const byNumberKey = BlockHeaderByNumberKey(BigInt(testBlockData[29].number))
+  const byHashKey = getContentKey(
+    HistoryNetworkContentType.BlockHeader,
+    hexToBytes(testBlockData[29].blockHash),
+  )
+
+  const byNumberLocal = await network1.findContentLocally(byNumberKey)
+
+  it('should find local byNumber', () => {
+    assert.isDefined(byNumberLocal, 'retrieved expected header')
+  })
+
+  const byHashLocal = await network1.findContentLocally(byHashKey)
+
+  it('should find local byHash', () => {
+    assert.isDefined(byHashLocal, 'retrieved expected header')
+  })
+
+  const byNumber = await node1.ETH.getBlockByNumber(BigInt(testBlockData[29].number), false)
+
+  it('should find local with getBlockByNumber', () => {
+    assert.equal(
+      toHexString(byNumber!.hash()),
+      testBlockData[29].blockHash,
+      'retrieved expected header',
+    )
+  })
+
+  const { stateRoot } = Block.fromRLPSerializedBlock(hexToBytes(testBlockData[29].rlp), {
+    setHardfork: true,
+  }).header
+  const findStateRoot = await network1.getStateRoot(BigInt(testBlockData[29].number))
+
+  it('should find state root by number', () => {
+    assert.equal(bytesToHex(findStateRoot!), bytesToHex(stateRoot), 'retrieved expected state root')
+  })
+
   await network1.sendPing(network2?.enr!.toENR())
 
   const res = await network2.sendFindContent(

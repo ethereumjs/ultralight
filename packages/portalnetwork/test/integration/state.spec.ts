@@ -1,12 +1,11 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Trie } from '@ethereumjs/trie'
-import { Account, hexToBytes } from '@ethereumjs/util'
+import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
 
 import {
-  AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
   NetworkId,
@@ -28,10 +27,8 @@ const sample = samples[0]
 const [key, value] = sample as [string, object]
 const content = Uint8Array.from(Object.values(value))
 const contentKey = fromHexString(key)
-const decoded = AccountTrieNodeContentKey.decode(contentKey)
 const deserialized = AccountTrieNodeOffer.deserialize(content)
-const { path } = decoded
-const { proof, blockHash } = deserialized
+const { proof } = deserialized
 
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
@@ -88,16 +85,27 @@ describe('AccountTrieNode Gossip / Request', async () => {
   })
   it('should store some content', async () => {
     expect(result2.stored).toBeGreaterThan(0)
-    expect(result2.stored).toEqual(3)
+    expect(result2.stored).toEqual(1)
   })
+  const network2Keys: string[] = []
+  for await (const key of network2.db.db.keys()) {
+    network2Keys.push(key)
+  }
 
   it('should request individual node from peer', async () => {
-    const next = await network1.forwardAccountTrieOffer(path, proof, blockHash)
-    const expected = AccountTrieNodeRetrieval.serialize({ node: proof[proof.length - 2] })
-    const requested = await network1.sendFindContent(node2.discv5.enr.nodeId, next.contentKey)
+    const expected = AccountTrieNodeRetrieval.serialize({ node: proof[2] })
+    const contentKey = (await network2.db.db.keys().next())!
+    const requested = await network1.sendFindContent(
+      node2.discv5.enr.nodeId,
+      hexToBytes(contentKey),
+    )
     expect(requested).toBeDefined()
     expect(requested!['content']).instanceOf(Uint8Array)
-    assert.deepEqual(requested!['content'], expected, 'retrieved value is correct')
+    assert.equal(
+      bytesToHex(requested!['content']),
+      bytesToHex(expected),
+      'retrieved value is correct',
+    )
   })
 })
 
@@ -184,14 +192,14 @@ describe('getAccount via network', async () => {
   })
   for (const [idx, keys] of storedInNodes.entries()) {
     it(`client ${idx} should store ${keys.size} trie nodes`, () => {
-      expect(keys.size).toBeLessThan(5)
+      expect(keys.size).toBeLessThan(8)
     })
   }
   const testClient = networks[4]
 
   const testAddress = '0x1a2694ec07cf5e4d68ba40f3e7a14c53f3038c6e'
   const stateRoot = trie['hash'](deserialized.proof[0])
-  const found = await testClient.getAccount(testAddress, stateRoot, true)
+  const found = await testClient.manager.getAccount(hexToBytes(testAddress), stateRoot)
   if (found === undefined) {
     it('failed', () => {
       assert.fail('failed to find account data')
@@ -201,15 +209,5 @@ describe('getAccount via network', async () => {
   const foundAccount = Account.fromRlpSerializedAccount(found)
   it('should find account data', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
-  })
-
-  const temp = [...testClient.stateDB.db.tempKeys()]
-  const perm: string[] = await testClient.stateDB.keys()
-  console.log({ temp, perm })
-  it(`should have all ${uniqueStored.length} nodes in temp or permanent db`, async () => {
-    expect(temp.length + perm.length).toEqual(uniqueStored.length)
-    for (const key of temp) {
-      expect(perm.includes(key)).toBeFalsy()
-    }
   })
 })

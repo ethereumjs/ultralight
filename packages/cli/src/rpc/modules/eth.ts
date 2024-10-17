@@ -90,7 +90,7 @@ export class eth {
   async getBalance(params: [string, string]) {
     const [address, blockTag] = params
     try {
-      const res = await this._client.ETH.ethGetBalance(address, BigInt(blockTag))
+      const res = await this._client.ETH.getBalance(hexToBytes(address), BigInt(blockTag))
       if (res === undefined) {
         return '0x0'
       }
@@ -107,7 +107,7 @@ export class eth {
   async call(params: [RpcTx, string]) {
     const [tx, blockTag] = params
     try {
-      const res = await this._client.ETH.ethCall(tx, BigInt(blockTag))
+      const res = await this._client.ETH.call(tx, BigInt(blockTag))
       return res
     } catch (err: any) {
       console.log(err)

@@ -2,11 +2,12 @@ import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
-import { MapDB, bytesToHex, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
+import { bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 
-import { unpackNibbles } from './nibbleEncoding.js'
+import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import {
   AccountTrieNodeKey,
+  AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
   ContractCodeKey,
   ContractCodeOffer,
@@ -23,8 +24,7 @@ import type {
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
-import type { DB, EncodingOpts } from '@ethereumjs/util'
-import type { AbstractLevel } from 'abstract-level'
+import type { LeafNode } from '@ethereumjs/trie'
 
 /* ContentKeys */
 
@@ -146,46 +146,6 @@ export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8A
   return distanceA < distanceB ? nodeA : nodeB
 }
 
-export class PortalTrieDB extends MapDB<string, string> implements DB<string, string> {
-  db: AbstractLevel<string, string, string>
-  temp: Map<string, string>
-  constructor(db: AbstractLevel<string, string, string>) {
-    super()
-    this.db = db
-    this.temp = new Map()
-  }
-  async put(key: string | Uint8Array, value: string) {
-    if (key instanceof Uint8Array) {
-      key = bytesToHex(key)
-    }
-    await this.db.put(key, value)
-  }
-  async get(key: string | Uint8Array, _opts?: EncodingOpts) {
-    if (key instanceof Uint8Array) {
-      key = bytesToHex(key)
-    }
-    try {
-      const value = await this.db.get(key)
-      return value
-    } catch (e) {
-      const found = this.temp.get(key)
-      return found
-    }
-  }
-  async del(key: string | Uint8Array) {
-    if (key instanceof Uint8Array) {
-      key = bytesToHex(key)
-    }
-    await this.db.del(key)
-  }
-  async keys() {
-    const keys = await this.db.keys().all()
-    return keys
-  }
-  tempKeys() {
-    return this.temp.keys()
-  }
-}
 export function getDatabaseKey(contentKey: Uint8Array) {
   const type = keyType(contentKey)
   let dbKey = contentKey
@@ -229,21 +189,46 @@ export function getDatabaseContent(type: StateNetworkContentType, content: Uint8
   return bytesToUnprefixedHex(dbContent)
 }
 
-export async function nextOffer(path: TNibbles, proof: Uint8Array[]) {
+export function nextOffer(path: TNibbles, proof: Uint8Array[]) {
   if (proof.length === 1) {
     return { curRlp: proof[0], nodes: proof, newpaths: [] }
   }
   const nibbles = unpackNibbles(path)
   const nodes = [...proof]
-  const curRlp = nodes.pop()!
-  const curNode = decodeNode(curRlp)
+  nodes.pop()
+  const nextNode = decodeNode(nodes[nodes.length - 1])
   const newpaths = nibbles.slice(
     0,
-    curNode instanceof BranchNode ? 1 : curNode instanceof ExtensionNode ? curNode.key().length : 0,
+    nextNode instanceof BranchNode
+      ? -1
+      : nextNode instanceof ExtensionNode
+        ? -nextNode.key().length
+        : 0,
   )
   return {
-    curRlp,
     nodes,
     newpaths,
   }
+}
+
+export function extractAccountProof(
+  addressHash: Uint8Array,
+  accountProof: Uint8Array[],
+  blockHash: Uint8Array,
+): [Uint8Array, Uint8Array] {
+  const addressPath = bytesToUnprefixedHex(addressHash).split('')
+  const nodeRLP = accountProof.slice(-1)[0]
+  const nodeHash = sha256(nodeRLP)
+  const accountNode = decodeNode(nodeRLP) as LeafNode
+  const nodeNibbles = accountNode._nibbles.map((n) => n.toString(16))
+  const nodePath = addressPath.slice(0, addressPath.length - nodeNibbles.length)
+  const accountTrieNodeOffer = AccountTrieNodeOffer.serialize({
+    blockHash,
+    proof: accountProof,
+  })
+  const accountTrieOfferKey = AccountTrieNodeContentKey.encode({
+    nodeHash,
+    path: packNibbles(nodePath),
+  })
+  return [accountTrieOfferKey, accountTrieNodeOffer]
 }

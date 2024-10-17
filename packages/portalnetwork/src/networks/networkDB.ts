@@ -90,7 +90,9 @@ export class NetworkDB {
     }
     // this.streaming is a Set of contentKeys currently streaming over uTP
     // the timeout is a safety measure to prevent the while loop from running indefinitely in case of a uTP stream failure
-    this.logger(`Content ${key}.  Streaming=${this.streaming.has(key)}`)
+    if (this.streaming.has(key)) {
+      this.logger(`Content ${key}.  currently streaming`)
+    }
     const timeout = setTimeout(() => {
       this.streaming.delete(<string>key)
     }, 1000)

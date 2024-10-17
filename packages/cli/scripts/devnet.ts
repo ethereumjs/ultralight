@@ -143,7 +143,8 @@ const main = async () => {
     for (let x = 0; x < args.numNodes; x++) {
       ultralights.push(Client.http({ host: ip, port: 8545 + x }))
     }
-    const networks = args.networks.split(',')
+
+    const networks = args.networks
     for (let x = 0; x < args.numNodes; x++) {
       const peerEnr = await ultralights[x].request('discv5_nodeInfo', [])
       for (let y = 0; y < args.numNodes; y++) {
