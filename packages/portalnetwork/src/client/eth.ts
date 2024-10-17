@@ -1,4 +1,5 @@
 import { fromHexString } from '@chainsafe/ssz'
+import { Common } from '@ethereumjs/common'
 import { EVM } from '@ethereumjs/evm'
 import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
@@ -192,12 +193,13 @@ export class ETH {
   call = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
     this.networkCheck([NetworkId.HistoryNetwork, NetworkId.StateNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
+    const common = new Common({ chain: 'mainnet' })
     if (!stateRoot) {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
     const usm = new UltralightStateManager(this.state!)
-    //@ts-ignore there's something wrong with the state manager interface
-    const evm = new EVM({ stateManager: usm })
+
+    const evm = new EVM({ stateManager: usm, common })
     await evm.stateManager.setStateRoot(stateRoot)
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx
 

@@ -77,7 +77,11 @@ export class ContentLookup {
 
         this.logger(`Asking ${promises.length} nodes for content`)
         // Wait for first response
-        await Promise.any(promises)
+        try {
+          await Promise.any(promises)
+        } catch (err) {
+          this.logger(`All requests errored`)
+        }
         this.logger(
           `Have ${this.lookupPeers.length} peers left to ask and ${this.pending.size} pending requests`,
         )
@@ -104,11 +108,11 @@ export class ContentLookup {
     this.pending.delete(peer.nodeId)
     if (this.finished) {
       this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
-      throw new Error('Lookup finished')
+      return
     }
     if (res === undefined) {
       this.logger(`No response to findContent from ${shortId(peer.nodeId)}`)
-      throw new Error('Continue')
+      return undefined
     }
     if ('content' in res) {
       this.finished = true
