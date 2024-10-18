@@ -199,7 +199,7 @@ export class ETH {
     }
     const usm = new UltralightStateManager(this.state!)
 
-    const evm = new EVM({ stateManager: usm, common })
+    const evm = await EVM.create({ stateManager: usm, common })
     await evm.stateManager.setStateRoot(stateRoot)
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx
 
