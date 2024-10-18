@@ -1,4 +1,5 @@
 import { fromHexString } from '@chainsafe/ssz'
+import { Common } from '@ethereumjs/common'
 import { EVM } from '@ethereumjs/evm'
 import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
@@ -46,15 +47,14 @@ export class ETH {
    * @param blockNumber block number from which balance should be returned
    * @returns returns the ETH balance of an address at the specified block number or undefined if not available
    */
-  ethGetBalance = async (address: string, blockNumber: bigint): Promise<bigint | undefined> => {
+  getBalance = async (address: Uint8Array, blockNumber: bigint): Promise<bigint | undefined> => {
     this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
     if (!stateRoot) {
-      throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
+      this.logger.extend('getBalance')(`Unable to find StateRoot for block ${blockNumber}`)
+      return undefined
     }
-    return undefined
-    // const res = await this.state!.getAccount(address, stateRoot)
-    // return res?.balance
+    return this.state!.manager.getBalance(address, stateRoot)
   }
 
   public getBlockByHash = async (
@@ -190,16 +190,17 @@ export class ETH {
    * @param blockNumber a block number as a `bigint`
    * @returns An execution result as defined by the `eth_call` spec
    */
-  ethCall = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
+  call = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
     this.networkCheck([NetworkId.HistoryNetwork, NetworkId.StateNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
+    const common = new Common({ chain: 'mainnet' })
     if (!stateRoot) {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
     const usm = new UltralightStateManager(this.state!)
-    //@ts-ignore there's something wrong with the state manager interface
-    const evm = new EVM({ stateManager: usm })
-    await evm.stateManager.setStateRoot(fromHexString(stateRoot))
+
+    const evm = await EVM.create({ stateManager: usm, common })
+    await evm.stateManager.setStateRoot(stateRoot)
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx
 
     const runCallOpts = {
@@ -225,4 +226,114 @@ export class ETH {
         )
     }
   }
+
+  /**
+   *
+   * @param this StateNetwork
+   * @param address address of the storage
+   * @param slot integer of the position in the storage
+   * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+   * @returns the value at this storage position
+   */
+  async getStorageAt(
+    address: Uint8Array,
+    slot: Uint8Array,
+    blockTag?: string,
+  ): Promise<string | undefined> {
+    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    if (
+      blockTag === undefined ||
+      blockTag === 'pending' ||
+      blockTag === 'earliest' ||
+      blockTag === 'latest'
+    ) {
+      throw new Error(`Unsupported blockTag ${blockTag}`)
+    }
+    const blockNumber = BigInt(blockTag)
+    const stateRoot = await this.history!.getStateRoot(blockNumber)
+    if (!stateRoot) {
+      this.logger.extend('getTransactionCount')(`Unable to find StateRoot for block ${blockNumber}`)
+      return undefined
+    }
+  }
+
+  /**
+   *
+   * @param this state network
+   * @param address address
+   * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+   * @returns
+   */
+  async getTransactionCount(address: Uint8Array, blockTag?: string): Promise<bigint | undefined> {
+    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    if (
+      blockTag === undefined ||
+      blockTag === 'pending' ||
+      blockTag === 'earliest' ||
+      blockTag === 'latest'
+    ) {
+      throw new Error(`Unsupported blockTag ${blockTag}`)
+    }
+    const blockNumber = BigInt(blockTag)
+    const stateRoot = await this.history!.getStateRoot(blockNumber)
+    if (!stateRoot) {
+      this.logger.extend('getTransactionCount')(`Unable to find StateRoot for block ${blockNumber}`)
+      return undefined
+    }
+    return this.state!.manager.getNonce(address, stateRoot)
+  }
+
+  /**
+   *
+   * @param this state network
+   * @param address address
+   * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+   * @returns code at a given address
+   */
+  async getCode(address: Uint8Array, blockTag?: string) {
+    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    if (
+      blockTag === undefined ||
+      blockTag === 'pending' ||
+      blockTag === 'earliest' ||
+      blockTag === 'latest'
+    ) {
+      throw new Error(`Unsupported blockTag ${blockTag}`)
+    }
+    const blockNumber = BigInt(blockTag)
+    const stateRoot = await this.history!.getStateRoot(blockNumber)
+    if (!stateRoot) {
+      this.logger.extend('getTransactionCount')(`Unable to find StateRoot for block ${blockNumber}`)
+      return undefined
+    }
+    return this.state!.manager.getCode(address, stateRoot)
+  }
+
+  /**
+   * Generates and returns an estimate of how much gas is necessary to allow the transaction to complete. The transaction will not be added to the blockchain.
+   * @param this state network
+   * @param txObject transaction object
+   * @param blockTag integer block number, or the string "latest", "earliest" or "pending"
+   * @returns
+   */
+  async estimateGas(_txObject: TxEstimateObject, _blockTag?: string): Promise<string | undefined> {
+    return undefined
+  }
+}
+
+export type TxCallObject = {
+  from?: string
+  to: string
+  gas?: string
+  gasPrice?: string
+  value?: string
+  data?: string
+}
+export type TxEstimateObject = {
+  from?: string
+  to?: string
+  gas?: string
+  gasPrice?: string
+  value?: string
+  data?: string
 }

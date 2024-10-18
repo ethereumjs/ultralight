@@ -1,5 +1,5 @@
 import type { PortalNetworkRoutingTable } from './routingTable.js'
-import type { NetworkId, StateNetworkRoutingTable } from '../index.js'
+import type { NetworkId } from '../index.js'
 import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { NodeId } from '@chainsafe/enr'
 import type { AbstractLevel } from 'abstract-level'
@@ -49,7 +49,7 @@ export interface PortalNetworkOpts {
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, PortalNetworkEvents>
 
-export type RoutingTable = PortalNetworkRoutingTable | StateNetworkRoutingTable
+export type RoutingTable = PortalNetworkRoutingTable
 interface Gauge {
   inc(value?: number): void
   set(value: number): void

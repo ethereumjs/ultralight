@@ -17,12 +17,8 @@ describe('StateNetwork', async () => {
     },
     supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
   })
-  const stateNetwork = ultralight.networks.get(NetworkId.StateNetwork)
+  const stateNetwork = ultralight.networks.get(NetworkId.StateNetwork) as StateNetwork
   it('should start with state network', () => {
     expect(stateNetwork).toBeDefined()
-  })
-  it('should instantiate StateDB', () => {
-    expect((stateNetwork as StateNetwork).stateDB).exist
-    expect((stateNetwork as StateNetwork).stateDB.db).exist
   })
 })

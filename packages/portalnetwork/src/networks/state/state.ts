@@ -1,11 +1,8 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { fromHexString, toHexString } from '@chainsafe/ssz'
-import { Chain, Common, Hardfork } from '@ethereumjs/common'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { BranchNode, LeafNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToInt, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
-import { VM } from '@ethereumjs/vm'
+import { BranchNode, ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { bytesToHex, bytesToInt, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -16,34 +13,46 @@ import {
   MessageCodes,
   PortalWireMessageType,
 } from '../../wire/types.js'
-import { ContentLookup } from '../contentLookup.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
-import { applyTransactions } from './applyTx.js'
-import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
-import { StateDB } from './statedb.js'
-import { AccountTrieNodeOffer, AccountTrieNodeRetrieval, StateNetworkContentType } from './types.js'
-import { AccountTrieNodeContentKey, StateNetworkContentId, nextOffer } from './util.js'
+import { StateManager } from './manager.js'
+import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
+import {
+  AccountTrieNodeOffer,
+  AccountTrieNodeRetrieval,
+  ContractCodeOffer,
+  ContractRetrieval,
+  StateNetworkContentType,
+  StorageTrieNodeOffer,
+  StorageTrieNodeRetrieval,
+} from './types.js'
+import {
+  AccountTrieNodeContentKey,
+  ContractCodeContentKey,
+  StateNetworkContentId,
+  StorageTrieNodeContentKey,
+  extractAccountProof,
+  nextOffer,
+} from './util.js'
 
 import type { TNibbles } from './types.js'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
-import type { Block } from '@ethereumjs/block'
-import type { RunBlockOpts } from '@ethereumjs/vm'
 import type { Debugger } from 'debug'
 
 export class StateNetwork extends BaseNetwork {
-  stateDB: StateDB
   networkId: NetworkId.StateNetwork
   networkName = 'StateNetwork'
   logger: Debugger
+  stateroots: Map<bigint, Uint8Array> = new Map()
+  manager: StateManager
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
     this.networkId = NetworkId.StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
-    this.stateDB = new StateDB(this.db.db)
     this.routingTable.setLogger(this.logger)
+    this.manager = new StateManager(this)
   }
 
   public contentKeyToId = (contentKey: Uint8Array): string => {
@@ -108,18 +117,18 @@ export class StateNetwork extends BaseNetwork {
             break
           }
           case FoundContent.CONTENT:
-            this.logger(
+            this.logger.extend(`FOUNDCONTENT`)(
               `received ${StateNetworkContentType[contentType]} content corresponding to ${toHexString(key)}`,
             )
             try {
-              await this.stateDB.storeContent(key, decoded.value as Uint8Array)
+              await this.store(key, decoded.value as Uint8Array, false)
             } catch {
               this.logger('Error adding content to DB')
             }
             response = { content: decoded.value as Uint8Array, utp: false }
             break
           case FoundContent.ENRS: {
-            this.logger(`received ${decoded.value.length} ENRs`)
+            this.logger.extend(`FOUNDCONTENT`)(`received ${decoded.value.length} ENRs`)
             response = { enrs: decoded.value as Uint8Array[] }
             break
           }
@@ -132,26 +141,36 @@ export class StateNetwork extends BaseNetwork {
   }
 
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
-    const value = await this.stateDB.getContent(contentKey)
-    return value !== undefined ? fromHexString(value) : undefined
-  }
-
-  public routingTableInfo = async () => {
-    return {
-      nodeId: this.enr.nodeId,
-      buckets: this.routingTable.buckets.map((bucket) => bucket.values().map((enr) => enr.nodeId)),
+    try {
+      const value = await this.db.get(contentKey)
+      return value !== undefined ? fromHexString(value) : undefined
+    } catch {
+      return undefined
     }
   }
 
-  public store = async (contentKey: Uint8Array, content: Uint8Array) => {
+  public store = async (contentKey: Uint8Array, content: Uint8Array, offer: boolean = true) => {
     const contentType = contentKey[0]
     try {
-      if (contentType === StateNetworkContentType.AccountTrieNode) {
-        await this.receiveAccountTrieNodeOffer(contentKey, content)
+      if (offer) {
+        if (contentType === StateNetworkContentType.AccountTrieNode) {
+          await this.receiveAccountTrieNodeOffer(contentKey, content)
+        } else if (contentType === StateNetworkContentType.ContractTrieNode) {
+          await this.receiveStorageTrieNodeOffer(contentKey, content)
+        } else {
+          await this.receiveContractCodeOffer(contentKey, content)
+        }
       } else {
-        await this.stateDB.storeContent(contentKey, content)
+        if (contentType === StateNetworkContentType.AccountTrieNode) {
+          const { nodeHash } = AccountTrieNodeContentKey.decode(contentKey)
+          this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+        } else if (contentType === StateNetworkContentType.ContractTrieNode) {
+          const { nodeHash } = StorageTrieNodeContentKey.decode(contentKey)
+          this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+        }
+        await this.db.put(contentKey, content)
       }
-      this.logger(`content added for: ${contentKey}`)
+      this.logger(`content added for: ${bytesToHex(contentKey)}`)
       this.emit('ContentAdded', contentKey, content)
     } catch (err: any) {
       this.logger(`Error storing content: ${err.message}`)
@@ -162,33 +181,40 @@ export class StateNetwork extends BaseNetwork {
     content: Uint8Array,
   ): Promise<{
     stored: number
-    forwarded: {
-      contentKey: Uint8Array
-      content: Uint8Array
-    }
   }> {
     const { path } = AccountTrieNodeContentKey.decode(contentKey)
-    const { blockHash, proof } = AccountTrieNodeOffer.deserialize(content)
-    const forwardOffer = await this.forwardAccountTrieOffer(path, proof, blockHash)
-    const interested = await this.storeInterestedNodes(path, proof)
-    return { stored: interested.interested.length, forwarded: forwardOffer }
+    const { proof, blockHash } = AccountTrieNodeOffer.deserialize(content)
+    const interested = await this.storeInterestedAccountTrieNodes(path, proof)
+    void this.forwardAccountTrieOffer(path, proof, blockHash)
+    return { stored: interested.interested.length }
   }
 
-  async storeInterestedNodes(path: TNibbles, proof: Uint8Array[]) {
+  async storeInterestedAccountTrieNodes(path: TNibbles, proof: Uint8Array[]) {
     const nodes = [...proof]
     const nibbles = unpackNibbles(path)
+    this.logger.extend('storeInterestedNodes')(`Nodes: ${proof.length}.  Path: [${nibbles}]`)
     const newpaths = [...nibbles]
     const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
     const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
     let curRlp = nodes.pop()
+    let i = 0
     while (curRlp) {
       const curNode = decodeNode(curRlp)
-      if (curNode instanceof BranchNode) {
-        newpaths.pop()
-      } else {
-        newpaths.splice(-curNode.key().length)
+      if (i > 0) {
+        if (curNode instanceof BranchNode) {
+          newpaths.pop()
+        } else if (curNode instanceof ExtensionNode) {
+          const consumed = newpaths.splice(-curNode._nibbles.length)
+          this.logger.extend('storeInterestedNodes')(
+            `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
+          )
+        }
       }
       const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+      this.logger.extend('storeInterestedNodes')(
+        `${i} Path: [${newpaths}] - ${curNode.constructor.name}: ${bytesToHex(nodeHash).slice(0, 8)}...`,
+      )
+      i++
       const contentKey = AccountTrieNodeContentKey.encode({
         nodeHash,
         path: packNibbles(newpaths),
@@ -200,145 +226,132 @@ export class StateNetwork extends BaseNetwork {
           node: curRlp,
         })
         interested.push({ contentKey, dbContent })
+        this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
       } else {
         notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
+
       curRlp = nodes.pop()
     }
     for (const { contentKey, dbContent } of interested) {
-      await this.stateDB.storeContent(contentKey, dbContent)
+      await this.db.put(contentKey, dbContent)
     }
     return { interested, notInterested }
   }
 
-  async forwardAccountTrieOffer(
-    path: TNibbles,
-    proof: Uint8Array[],
-    blockHash: Uint8Array,
-  ): Promise<{
-    content: Uint8Array
-    contentKey: Uint8Array
-  }> {
-    const { nodes, newpaths } = await nextOffer(path, proof)
+  async forwardAccountTrieOffer(path: TNibbles, proof: Uint8Array[], blockHash: Uint8Array) {
+    const { nodes, newpaths } = nextOffer(path, proof)
     const content = AccountTrieNodeOffer.serialize({ blockHash, proof: [...nodes] })
     const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
     const contentKey = AccountTrieNodeContentKey.encode({
       nodeHash,
       path: packNibbles(newpaths),
     })
+    await this.gossipContent(contentKey, content)
     return { content, contentKey }
   }
 
-  async getAccount(
-    address: string,
-    stateroot: Uint8Array,
-    deleteAfter: boolean = true,
-  ): Promise<Uint8Array | undefined> {
-    const accountPath = await this.findPath(stateroot, address)
-    if (deleteAfter) {
-      this.stateDB.db.temp.clear()
-    }
-    return accountPath.node?.value() ?? undefined
+  async receiveStorageTrieNodeOffer(
+    contentKey: Uint8Array,
+    content: Uint8Array,
+  ): Promise<{
+    stored: number
+  }> {
+    const { addressHash, path } = StorageTrieNodeContentKey.decode(contentKey)
+    const { blockHash, accountProof, storageProof } = StorageTrieNodeOffer.deserialize(content)
+    const interested = await this.storeInterestedStorageTrieNodes(path, storageProof, addressHash)
+    await this.receiveAccountTrieNodeOffer(
+      ...extractAccountProof(addressHash, accountProof, blockHash),
+    )
+    void this.forwardStorageTrieOffer(path, storageProof, accountProof, blockHash, addressHash)
+    return { stored: interested.interested.length }
   }
-  async lookupTrieNode(key: Uint8Array) {
-    const lookup = new ContentLookup(this, key)
-    const request = await lookup.startLookup()
-    const keyobj = AccountTrieNodeContentKey.decode(key)
-    if (request === undefined || !('content' in request)) {
-      throw new Error(
-        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
+  async storeInterestedStorageTrieNodes(
+    path: TNibbles,
+    proof: Uint8Array[],
+    addressHash: Uint8Array,
+  ) {
+    const nodes = [...proof]
+    const nibbles = unpackNibbles(path)
+    this.logger.extend('storeInterestedStorageTrieNodes')(
+      `Nodes: ${proof.length}.  Path: [${nibbles}]`,
+    )
+    const newpaths = [...nibbles]
+    const interested: { contentKey: Uint8Array; dbContent: Uint8Array }[] = []
+    const notInterested: { contentKey: Uint8Array; nodeHash: string }[] = []
+    let curRlp = nodes.pop()
+    let i = 0
+    while (curRlp) {
+      const curNode = decodeNode(curRlp)
+      if (i > 0) {
+        if (curNode instanceof BranchNode) {
+          newpaths.pop()
+        } else if (curNode instanceof ExtensionNode) {
+          const consumed = newpaths.splice(-curNode._nibbles.length)
+          this.logger.extend('storeInterestedStorageTrieNodes')(
+            `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
+          )
+        }
+      }
+      const nodeHash = new Trie({ useKeyHashing: true })['hash'](curRlp)
+      this.logger.extend('storeInterestedStorageTrieNodes')(
+        `${i} Path: [${newpaths}] - ${curNode.constructor.name}: ${bytesToHex(nodeHash).slice(0, 8)}...`,
       )
-    }
-    const node = AccountTrieNodeRetrieval.deserialize(request.content).node
-    return { nodeHash: keyobj.nodeHash, node }
-  }
-  async findPath(stateroot: Uint8Array, address: string) {
-    const lookupTrie = new Trie({
-      useKeyHashing: true,
-      db: this.stateDB.db,
-    })
-    lookupTrie.root(stateroot)
-    const addressPath = addressToNibbles(fromHexString(address))
-    const hasRoot = this.stateDB.db._database.get(bytesToUnprefixedHex(stateroot))
-    if (hasRoot === undefined) {
-      const lookup = new ContentLookup(
-        this,
-        AccountTrieNodeContentKey.encode({
-          path: packNibbles([]),
-          nodeHash: stateroot,
-        }),
-      )
-      const request = await lookup.startLookup()
-      if (request === undefined || !('content' in request)) {
-        throw new Error(`network doesn't have root node ${toHexString(stateroot)}`)
-      }
-      const requestContent = request.content
-      const node = AccountTrieNodeRetrieval.deserialize(requestContent).node
-      this.stateDB.db.temp.set(bytesToUnprefixedHex(stateroot), bytesToUnprefixedHex(node))
-    }
-    let accountPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
-    while (!accountPath.node) {
-      const consumedNibbles = accountPath.stack
-        .slice(1)
-        .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
-        .reduce((a, b) => a + b, 0)
-      const nodePath = addressPath.slice(0, consumedNibbles)
-      const current = accountPath.stack[accountPath.stack.length - 1]
-      if (current instanceof LeafNode) {
-        return { ...accountPath }
-      }
-      const nextNodeHash =
-        current instanceof BranchNode
-          ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
-          : current.value()
-
-      if (nextNodeHash === undefined || nextNodeHash === null) {
-        return { ...accountPath }
-      }
-      const nextContentKey = AccountTrieNodeContentKey.encode({
-        path: packNibbles(nodePath),
-        nodeHash: nextNodeHash as Uint8Array,
+      i++
+      const contentKey = StorageTrieNodeContentKey.encode({
+        nodeHash,
+        path: packNibbles(newpaths),
+        addressHash,
       })
-      const found = await this.lookupTrieNode(nextContentKey)
-      if ((await this.stateDB.db.get(toHexString(found.nodeHash).slice(2))) === undefined) {
-        this.stateDB.db.temp.set(
-          bytesToUnprefixedHex(found.nodeHash),
-          bytesToUnprefixedHex(found.node),
-        )
+      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const in_radius = distance(bytesToUnprefixedHex(contentId), this.enr.nodeId) < this.nodeRadius
+      if (in_radius) {
+        const dbContent = StorageTrieNodeRetrieval.serialize({
+          node: curRlp,
+        })
+        interested.push({ contentKey, dbContent })
+        this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
+      } else {
+        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
       }
-      const nextPath = await lookupTrie.findPath(lookupTrie['hash'](fromHexString(address)))
-      if (nextPath.stack.length === accountPath.stack.length) {
-        return { ...nextPath }
-      }
-      accountPath = nextPath
+
+      curRlp = nodes.pop()
     }
-    return { ...accountPath }
+    for (const { contentKey, dbContent } of interested) {
+      await this.db.put(contentKey, dbContent)
+    }
+    return { interested, notInterested }
   }
-  async vm(stateroot: Uint8Array) {
-    const common = new Common({
-      chain: Chain.Mainnet,
-      hardfork: Hardfork.Chainstart,
+  async forwardStorageTrieOffer(
+    path: TNibbles,
+    storageProof: Uint8Array[],
+    accountProof: Uint8Array[],
+    blockHash: Uint8Array,
+    addressHash: Uint8Array,
+  ) {
+    const { nodes, newpaths } = nextOffer(path, storageProof)
+    const content = StorageTrieNodeOffer.serialize({
+      blockHash,
+      accountProof,
+      storageProof: [...nodes],
     })
-    const portalClientTrie = new Trie({
-      useKeyHashing: true,
-      db: this.stateDB.db,
-      root: stateroot,
+    const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
+    const contentKey = StorageTrieNodeContentKey.encode({
+      nodeHash,
+      path: packNibbles(newpaths),
+      addressHash,
     })
-    const portalStateManager = new DefaultStateManager({
-      trie: portalClientTrie,
-      common,
-      accountCacheOpts: {
-        deactivate: true,
-      },
-    })
-    const portalVM = await VM.create({
-      common,
-      stateManager: portalStateManager,
-    })
-    return portalVM
+    await this.gossipContent(contentKey, content)
+    return { content, contentKey }
   }
-  runBlock = async (stateroot: Uint8Array, block: Block, opts: RunBlockOpts) => {
-    const vm = await this.vm(stateroot)
-    return applyTransactions.bind(vm)(block, opts)
+  async receiveContractCodeOffer(contentKey: Uint8Array, content: Uint8Array) {
+    const { addressHash, codeHash } = ContractCodeContentKey.decode(contentKey)
+    const { accountProof, blockHash, code } = ContractCodeOffer.deserialize(content)
+    const codeContent = ContractRetrieval.serialize({ code })
+    this.manager.trie.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))
+    await this.db.put(contentKey, codeContent)
+    await this.receiveAccountTrieNodeOffer(
+      ...extractAccountProof(addressHash, accountProof, blockHash),
+    )
   }
 }

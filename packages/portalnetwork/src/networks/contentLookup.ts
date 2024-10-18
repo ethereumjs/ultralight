@@ -1,7 +1,7 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
-import { hexToBytes, short } from '@ethereumjs/util'
+import { short } from '@ethereumjs/util'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
@@ -57,8 +57,9 @@ export class ContentLookup {
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
       // Try to find content locally first
-      const res = await this.network.get(this.contentKey)
-      return { content: hexToBytes(res), utp: false }
+      const res = await this.network.findContentLocally(this.contentKey)
+      if (res === undefined) throw new Error('No content found')
+      return { content: res, utp: false }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
@@ -76,7 +77,11 @@ export class ContentLookup {
 
         this.logger(`Asking ${promises.length} nodes for content`)
         // Wait for first response
-        await Promise.any(promises)
+        try {
+          await Promise.any(promises)
+        } catch (err) {
+          this.logger(`All requests errored`)
+        }
         this.logger(
           `Have ${this.lookupPeers.length} peers left to ask and ${this.pending.size} pending requests`,
         )
@@ -103,11 +108,11 @@ export class ContentLookup {
     this.pending.delete(peer.nodeId)
     if (this.finished) {
       this.logger(`Response from ${shortId(peer.nodeId)} arrived after lookup finished`)
-      throw new Error('Lookup finished')
+      return
     }
     if (res === undefined) {
       this.logger(`No response to findContent from ${shortId(peer.nodeId)}`)
-      throw new Error('Continue')
+      return undefined
     }
     if ('content' in res) {
       this.finished = true
