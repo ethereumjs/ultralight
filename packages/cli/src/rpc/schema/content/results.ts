@@ -110,7 +110,7 @@ export const results = {
       }
     }
   },
-  get RecursiveFindContentResult() {
+  get GetContentResult() {
     return (params: any[], index: number) => {
       const result = baseTypes.hexString([params[index]], 0)
       if (result) {
