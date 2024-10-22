@@ -10,34 +10,48 @@ The easiest way to get started with Ultralight is to use the `npm run dev` scrip
 
 ### CLI Parameters
 ```sh
-  --pk                base64 string encoded protobuf serialized private key  [string]
-  --bootnode          ENR of Bootnode                                        [string]
-  --bindAddress       initial IP address and UDP port to bind to             [string]
-  --bootnodeList      path to a file containing a list of bootnode ENRs      [string]
-  --rpc               Enable the JSON-RPC server with HTTP endpoint          [boolean] [default: true]
-  --rpcPort           HTTP-RPC server listening port                         [number] [default: 8545]
-  --rpcAddr           HTTP-RPC server listening interface address            [string]
-  --metrics           Turn on Prometheus metrics reporting                   [boolean] [default: false]
-  --metricsPort       Port exposed for metrics scraping                      [number] [default: 18545]
-  --dataDir           data directory where content is stored                 [string]
-  --web3              web3 JSON RPC HTTP endpoint for local Ethereum node    [string]
-  --networks          subnetworks to enable  (options are: `history`, `state`, `beacon`) [default: `history`]
-  --trustedBlockRoot  a trusted blockroot to start light client syncing of the beacon chain [string]
-  --storageHistory    Storage space allocated to HistoryNetwork DB in MB      [number] [default: 1024]
-  --storageBeacon     Storage space allocated to BeaconChainNetwork DB in MB  [number] [default: 1024]
-  --storageState      Storage space allocated to StateNetwork DB in MB        [number] [default: 1024]
+  --version           Show version number                              [boolean]
+  --pk                base64 string encoded protobuf serialized private key
+                                                                        [string]
+  --bootnode          ENR of Bootnode                                   [string]
+  --bindAddress       initial IP address and UDP port to bind to        [string]
+  --bootnodeList      path to a file containing a list of bootnode ENRs [string]
+  --rpc               Enable the JSON-RPC server with HTTP endpoint
+                                                       [boolean] [default: true]
+  --rpcPort           HTTP-RPC server listening port    [number] [default: 8545]
+  --rpcAddr           HTTP-RPC server listening interface address       [string]
+  --metrics           Turn on Prometheus metrics reporting
+                                                      [boolean] [default: false]
+  --metricsPort       Port exposed for metrics scraping[number] [default: 18545]
+  --dataDir           data directory where content is stored            [string]
+  --web3              web3 JSON RPC HTTP endpoint for local Ethereum node for
+                      sourcing chain data                               [string]
+  --networks          subnetworks to enable
+                                      [string] [default: "history,beacon,state"]
+  --storage           Storage space allocated to each subnetwork DB in MB
+                                          [string] [default: "1024, 1024, 1024"]
+  --trustedBlockRoot  a trusted blockroot to start light client syncing of the
+                      beacon chain                                      [string]
 ```
 ### Starting with the same Node ID 
 
-To start a node that has the same node ID each time, you can pass the `--pk` parameter at start-up with a base64 string encoded protobuf serialized private key.  So `tsx src/index.ts --pk=CAISINx/bjWlmCXTClX2JvDYehb8FSrE6l4MA9LGvP74XdfD` will always start the `cli` client with the node ID `2a9511ca767b7b56bb873234209557d07c5fe09382ed060b272c6a933c5658f5`.
+To start a node that has the same node ID each time, you can pass the `--pk` parameter at start-up with a hex encoded protobuf serialized private key.  So `tsx src/index.ts --pk=0x0a27002508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb634122508021221031947fd30ff7c87d8c7ff2c0ad1515624d247970f946efda872e884a432abb6341a2408021220456aad29a26c39bf438813d30bb3f0730b8b776ebc4cb0721a3d9a5b3955380e` will always start the `cli` client with the node ID `ddb83b6d279e6ab5c4d2079f6ee64b0c2c337ded9967c1226426674ef9cd4871`.
 
 ### Connecting to the public testnet
 
-The implementation teams run a few public bootnodes for interacting with other Portal Network nodes in the wild.  These nodes currently just support the History network but hopefully more capabilities are coming soon!
+The implementation teams run a few public bootnodes for interacting with other Portal Network nodes in the wild.  These nodes currently support the History, Beacon, and State subnetworks.
 
-There are two ways to specify bootnodes at start-up.  Either pass in a bootnode's base64 string encoded ENR in the `--bootnode` CLI parameter or else pass the `--bootnodeList` parameter with a path to a plaintext file containing a list of base64 string encoded ENRs, one ENR per line.  
+The easiest to connect is:
 
-The [`bootnodes.txt`](./bootnodes.txt) contains the ENRs for the public bootnodes designated and are intended to provide an initial connection point to the fleets of Portal Network nodes operated by implementation teams.  Use at your own risk!
+```ts
+DEBUG=*Portal* npm run dev-testnet
+```
+
+You should begin seeing logs as your local node starts to connect to the network.  
+
+Alternatively, you can specify bootnodes at start-up.  Either pass in a bootnode's base64 string encoded ENR in the `--bootnode` CLI parameter or else pass the `--bootnodeList` parameter with a path to a plaintext file containing a list of base64 string encoded ENRs, one ENR per line.  
+
+The [`bootnodes.txt`](./bootnodes.txt) contains the ENRs for the public bootnodes designated and are intended to provide an initial connection point to the fleets of Portal Network nodes operated by implementation teams.  
 
 ## Local Devnet
 Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a terminal, or run a test script from `packages/cli/scripts/` like `sampleTest.ts`
@@ -48,19 +62,24 @@ Run a local network of CLI Ultralight clients.  Test JSON-RPC calls in a termina
   - `npm run devnet -- --numNodes=5 --port=9009`
   - This will start 5 nodes with discv5 listener ports on `[9009, 9010, 9011, 9012, 9013]`
 - To specify which subnetworks to support, include one or more options with the `--networks` parameter as shown below
-  - `npm run devnet -- --numNodes=5 --networks=history beacon`
+  - `npm run devnet -- --numNodes=5 --networks=history,beacon`
 
 Note, all nodes are connected to each other as bootnodes for each network by default.  To turn off this behavior, pass `--connectNodes=false`.
-
+currently
 ### CLI Parameters
 ```sh
-  --pks           text file containing private keys for nodes in devnet  [string]
-  --numNodes      number of random nodes to start                        [number] (default: 1)
-  --ip            public ip address of the node                          [string]
-  --promConfig    create prometheus scrape_target file                   [boolean] (default: false)
-  --port          starting port number                                   [number] (default: 9000)
-  --networks      supported subnetworks                                  [array] (default: [`history`, `beacon`, `state`])
-  --connectNodes  connect all nodes on network start                     [boolean] (default: false)
+  --pks               text file containing private keys for nodes in devnet
+                                                                        [string]
+  --numNodes          number of random nodes to start      [number] [default: 1]
+  --ip                ip addr                                           [string]
+  --promConfig        create prometheus scrape_target file
+                                                      [boolean] [default: false]
+  --port              starting port number              [number] [default: 9000]
+  --networks          supported subnetworks
+                                 [array] [default: ["history","beacon","state"]]
+  --connectNodes      connect all nodes on network start
+                                                      [boolean] [default: false]
+  --connectBootNodes  connect to bootnodes on network start     [default: false]
 ```
 
 ### Using the Devnet
