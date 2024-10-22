@@ -71,7 +71,6 @@ These endpoints emulate a subset of the the [Ethereum JSON-RPC](https://ethereum
 - `eth_getBlockByHash` 
 - `eth_getBlockTransactionCountByHash`
 - `eth_getUncleCountByNumber`
-- `eth_getLogs`
 - `eth_getBalance`
 - `eth_call`
 
