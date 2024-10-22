@@ -45,7 +45,7 @@ export type OfferResult = number
 export type SendOfferResult = RequestId
 export type PingResult = PongMessage
 export type RecursiveFindNodeResult = Enr[]
-export type RecursiveFindContentResult = hexString
+export type GetContentResult = hexString
 export type RoutingTableInfoResult = {
   localNodeId: bytes32
   buckets: kBuckets

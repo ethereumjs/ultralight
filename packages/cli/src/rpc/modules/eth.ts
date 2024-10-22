@@ -92,7 +92,10 @@ export class eth {
     try {
       const res = await this._client.ETH.getBalance(hexToBytes(address), BigInt(blockTag))
       if (res === undefined) {
-        return '0x0'
+        throw {
+          code: INTERNAL_ERROR,
+          message: 'Balance could not be retrieved',
+        }
       }
       return bigIntToHex(res)
     } catch (err: any) {
