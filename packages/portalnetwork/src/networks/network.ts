@@ -55,10 +55,12 @@ export abstract class BaseNetwork extends EventEmitter {
   public networkId: NetworkId
   abstract networkName: string
   public enr: SignableENR
+  public bridge: boolean
 
   portal: PortalNetwork
-  constructor({ client, networkId, db, radius, maxStorage }: BaseNetworkConfig) {
+  constructor({ client, networkId, db, radius, maxStorage, bridge }: BaseNetworkConfig) {
     super()
+    this.bridge = bridge ?? false
     this.networkId = networkId
     this.logger = client.logger.extend(this.constructor.name)
     this.enr = client.discv5.enr
