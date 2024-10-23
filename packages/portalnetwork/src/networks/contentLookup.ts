@@ -2,18 +2,20 @@ import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { toHexString } from '@chainsafe/ssz'
 import { short } from '@ethereumjs/util'
+import { Heap } from 'heap-js'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
 import type { BaseNetwork } from './network.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
+import type { Comparator } from 'heap-js'
 
-type lookupPeer = {
+type LookupPeer = {
   nodeId: NodeId
-  distance: bigint
-  hasContent?: boolean
+  distance: number
 }
+const customPriorityComparator: Comparator<LookupPeer> = (a, b) => a.distance - b.distance
 
 export type ContentLookupResponse =
   | {
@@ -25,7 +27,7 @@ export type ContentLookupResponse =
 
 export class ContentLookup {
   private network: BaseNetwork
-  private lookupPeers: lookupPeer[]
+  private lookupPeers: Heap<LookupPeer>
   private contacted: NodeId[]
   private contentId: string
   private contentKey: Uint8Array
@@ -36,7 +38,7 @@ export class ContentLookup {
   private pending: Set<NodeId>
   constructor(network: BaseNetwork, contentKey: Uint8Array) {
     this.network = network
-    this.lookupPeers = []
+    this.lookupPeers = new Heap(customPriorityComparator)
     this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
@@ -66,13 +68,16 @@ export class ContentLookup {
     const nearest = this.network.routingTable.nearest(this.contentId, 5)
     for (const peer of nearest) {
       const dist = distance(peer.nodeId, this.contentId)
-      this.lookupPeers.push({ nodeId: peer.nodeId, distance: dist })
+      this.lookupPeers.push({ nodeId: peer.nodeId, distance: Number(dist) })
     }
 
     while (!this.finished && (this.lookupPeers.length > 0 || this.pending.size > 0)) {
       if (this.lookupPeers.length > 0) {
         // Ask more peers (up to 5) for content
-        const peerBatch = this.lookupPeers.splice(0, Math.max(1, 5 - this.pending.size))
+        const peerBatch: LookupPeer[] = []
+        while (this.lookupPeers.peek() && peerBatch.length < 5) {
+          peerBatch.push(this.lookupPeers.pop()!)
+        }
         const promises = peerBatch.map((peer) => this.processPeer(peer))
 
         this.logger(`Asking ${promises.length} nodes for content`)
@@ -96,8 +101,8 @@ export class ContentLookup {
     return this.content
   }
 
-  private processPeer = async (peer: lookupPeer): Promise<ContentLookupResponse | void> => {
-    if (this.network.routingTable.isIgnored(peer.nodeId) || this.contacted.includes(peer.nodeId)) {
+  private processPeer = async (peer: LookupPeer): Promise<ContentLookupResponse | void> => {
+    if (this.network.routingTable.isIgnored(peer.nodeId)) {
       return
     }
     this.contacted.push(peer.nodeId)
@@ -118,7 +123,6 @@ export class ContentLookup {
       this.finished = true
       // findContent returned data sought
       this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
-      peer.hasContent = true
       // Mark content offered to peer that sent it to us (so we don't try to offer it to them)
       this.network.routingTable.contentKeyKnownToPeer(peer.nodeId, this.contentKey)
       this.network.portal.metrics?.successfulContentLookups.inc()
@@ -153,10 +157,7 @@ export class ContentLookup {
           continue
         }
         const dist = distance(decodedEnr.nodeId, this.contentId)
-        if (!this.lookupPeers.map((peer) => peer.nodeId).includes(decodedEnr.nodeId)) {
-          this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: dist })
-        }
-        this.lookupPeers = this.lookupPeers.sort((a, b) => Number(a.distance) - Number(b.distance))
+        this.lookupPeers.push({ nodeId: decodedEnr.nodeId, distance: Number(dist) })
       }
       throw new Error('Continue')
     }
