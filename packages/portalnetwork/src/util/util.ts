@@ -1,7 +1,11 @@
 import { digest } from '@chainsafe/as-sha256'
-import { fromHex, toHex } from '@chainsafe/discv5'
-import { bytesToUnprefixedHex, bytesToUtf8 } from '@ethereumjs/util'
-import { toBigIntBE, toBufferBE } from 'bigint-buffer'
+import {
+  bigIntToBytes,
+  bytesToBigInt,
+  bytesToUnprefixedHex,
+  bytesToUtf8,
+  unprefixedHexToBytes,
+} from '@ethereumjs/util'
 import { promises as fs } from 'fs'
 import * as path from 'path'
 
@@ -43,7 +47,9 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
     binaryDistance.push(Math.random() >= 0.5 ? 1 : 0)
   }
   const xorNumericDistance = BigInt(parseInt(binaryDistance.join(''), 2))
-  return toHex(toBufferBE(toBigIntBE(fromHex(nodeId)) ^ xorNumericDistance, 32))
+  return bytesToUnprefixedHex(
+    bigIntToBytes(bytesToBigInt(unprefixedHexToBytes(nodeId), false) ^ xorNumericDistance),
+  ).padStart(64, '0')
 }
 
 /**
