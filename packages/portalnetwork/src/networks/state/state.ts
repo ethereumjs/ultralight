@@ -154,11 +154,17 @@ export class StateNetwork extends BaseNetwork {
     try {
       if (offer) {
         if (contentType === StateNetworkContentType.AccountTrieNode) {
-          await this.storeAccountTrieNode(contentKey, content)
-          // await this.receiveAccountTrieNodeOffer(contentKey, content)
+          if (this.bridge) {
+            await this.receiveAccountTrieNodeOffer(contentKey, content)
+          } else {
+            await this.storeAccountTrieNode(contentKey, content)
+          }
         } else if (contentType === StateNetworkContentType.ContractTrieNode) {
-          await this.storeStorageTrieNode(contentKey, content)
-          // await this.receiveStorageTrieNodeOffer(contentKey, content)
+          if (this.bridge) {
+            await this.receiveStorageTrieNodeOffer(contentKey, content)
+          } else {
+            await this.storeStorageTrieNode(contentKey, content)
+          }
         } else {
           await this.receiveContractCodeOffer(contentKey, content)
         }
