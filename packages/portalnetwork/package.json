@@ -46,7 +46,6 @@
     "@multiformats/multiaddr": "^12.1.10",
     "@thi.ng/leb128": "^2.1.11",
     "abstract-level": "^1.0.3",
-    "bigint-buffer": "^1.1.5",
     "debug": "^4.3.2",
     "ethereum-cryptography": "^3.0.0",
     "ethers": "^6.8.0",
