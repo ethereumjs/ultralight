@@ -154,12 +154,15 @@ export class StateNetwork extends BaseNetwork {
     try {
       if (offer) {
         if (contentType === StateNetworkContentType.AccountTrieNode) {
-          await this.receiveAccountTrieNodeOffer(contentKey, content)
+          await this.storeAccountTrieNode(contentKey, content)
+          // await this.receiveAccountTrieNodeOffer(contentKey, content)
         } else if (contentType === StateNetworkContentType.ContractTrieNode) {
-          await this.receiveStorageTrieNodeOffer(contentKey, content)
+          await this.storeStorageTrieNode(contentKey, content)
+          // await this.receiveStorageTrieNodeOffer(contentKey, content)
         } else {
           await this.receiveContractCodeOffer(contentKey, content)
         }
+        await this.gossipContent(contentKey, content)
       } else {
         if (contentType === StateNetworkContentType.AccountTrieNode) {
           const { nodeHash } = AccountTrieNodeContentKey.decode(contentKey)
@@ -249,6 +252,24 @@ export class StateNetwork extends BaseNetwork {
     })
     await this.gossipContent(contentKey, content)
     return { content, contentKey }
+  }
+
+  async storeAccountTrieNode(contentKey: Uint8Array, content: Uint8Array) {
+    const { proof } = AccountTrieNodeOffer.deserialize(content)
+    const curRlp = proof.pop()!
+    const dbContent = StorageTrieNodeRetrieval.serialize({
+      node: curRlp,
+    })
+    await this.db.put(contentKey, dbContent)
+  }
+
+  async storeStorageTrieNode(contentKey: Uint8Array, content: Uint8Array) {
+    const { storageProof } = StorageTrieNodeOffer.deserialize(content)
+    const curRlp = storageProof.pop()!
+    const dbContent = StorageTrieNodeRetrieval.serialize({
+      node: curRlp,
+    })
+    await this.db.put(contentKey, dbContent)
   }
 
   async receiveStorageTrieNodeOffer(
