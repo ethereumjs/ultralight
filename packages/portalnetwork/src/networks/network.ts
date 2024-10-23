@@ -18,7 +18,6 @@ import {
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
   randUint16,
-  serializedContentKeyToContentId,
   shortId,
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
@@ -627,44 +626,10 @@ export abstract class BaseNetwork extends EventEmitter {
       )}`,
     )
 
-    const lookupKey = serializedContentKeyToContentId(decodedContentMessage.contentKey)
     await new Promise((resolve) => setTimeout(resolve, 1000))
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value) {
-      // Discv5 calls for maximum of 16 nodes per NODES message
-      const ENRs = this.routingTable.nearest(lookupKey, 16)
-
-      const encodedEnrs = ENRs.filter((enr) => enr.nodeId !== src.nodeId).map((enr) => {
-        return enr.encode()
-      })
-      if (encodedEnrs.length > 0) {
-        this.logger(`Found ${encodedEnrs.length} closer to content than us`)
-        // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-        while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > MAX_PACKET_SIZE) {
-          // Remove ENRs until total ENRs less than 1200 bytes
-          encodedEnrs.pop()
-        }
-        const payload = ContentMessageType.serialize({
-          selector: FoundContent.ENRS,
-          value: encodedEnrs as Uint8Array[],
-        })
-        await this.sendResponse(
-          src,
-          requestId,
-          concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
-        )
-      } else {
-        const payload = ContentMessageType.serialize({
-          selector: FoundContent.ENRS,
-          value: [],
-        })
-        this.logger(`Found no ENRs closer to content than us`)
-        await this.sendResponse(
-          src,
-          requestId,
-          concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
-        )
-      }
+      await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
     } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
@@ -701,6 +666,44 @@ export abstract class BaseNetwork extends EventEmitter {
       new DataView(id.buffer).setUint16(0, _id, false)
       this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
       const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
+      await this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
+    }
+  }
+
+  protected enrResponse = async (contentKey: Uint8Array, src: INodeAddress, requestId: bigint) => {
+    const lookupKey = this.contentKeyToId(contentKey)
+    // Discv5 calls for maximum of 16 nodes per NODES message
+    const ENRs = this.routingTable.nearest(lookupKey, 16)
+
+    const encodedEnrs = ENRs.filter((enr) => enr.nodeId !== src.nodeId).map((enr) => {
+      return enr.encode()
+    })
+    if (encodedEnrs.length > 0) {
+      this.logger(`Found ${encodedEnrs.length} closer to content than us`)
+      // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
+      while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > MAX_PACKET_SIZE) {
+        // Remove ENRs until total ENRs less than 1200 bytes
+        encodedEnrs.pop()
+      }
+      const payload = ContentMessageType.serialize({
+        selector: FoundContent.ENRS,
+        value: encodedEnrs as Uint8Array[],
+      })
+      await this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
+    } else {
+      const payload = ContentMessageType.serialize({
+        selector: FoundContent.ENRS,
+        value: [],
+      })
+      this.logger(`Found no ENRs closer to content than us`)
       await this.sendResponse(
         src,
         requestId,
