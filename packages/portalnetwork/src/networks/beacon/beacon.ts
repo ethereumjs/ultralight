@@ -569,10 +569,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         decodedContentMessage.contentKey,
       )}`,
     )
-
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
-    if (!value || value.length === 0) {
-      await this.sendResponse(src, requestId, new Uint8Array())
+    if (!value) {
+      await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
     } else if (value !== undefined && value.length < MAX_PACKET_SIZE) {
       this.logger(
         'Found value for requested content ' +
