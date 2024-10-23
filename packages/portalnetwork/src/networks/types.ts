@@ -14,6 +14,7 @@ export interface BaseNetworkConfig {
   db?: { db: AbstractLevel<string, string>; path: string }
   radius?: bigint
   maxStorage?: number
+  bridge?: boolean
 }
 
 const BYTE_SIZE = 256
