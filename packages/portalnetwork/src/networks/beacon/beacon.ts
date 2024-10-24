@@ -88,6 +88,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     this.routingTable.setLogger(this.logger)
     this.forkDigest = Uint8Array.from([0, 0, 0, 0])
     this.on('ContentAdded', async (contentKey: Uint8Array) => {
+      if (contentKey[0] === BeaconLightClientNetworkContentType.LightClientUpdate) {
+        // don't gossip individual LightClientUpdates since they aren't officially supported
+        return
+      }
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
         const peer = this.routingTable.random()
