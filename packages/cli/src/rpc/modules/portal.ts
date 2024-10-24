@@ -3,6 +3,7 @@ import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import { hexToBytes, short } from '@ethereumjs/util'
 import {
+  BeaconLightClientNetworkContentType,
   ContentLookup,
   ContentMessageType,
   FoundContent,
@@ -12,6 +13,7 @@ import {
   PingPongCustomDataType,
   PortalWireMessageType,
   fromHexString,
+  getBeaconContentKey,
   shortId,
   toHexString,
 } from 'portalnetwork'
@@ -1192,8 +1194,19 @@ export class portal {
     const [bootstrapHash] = params
     this.logger(`portal_beaconStartLightClient request received for ${bootstrapHash}`)
     try {
-      await this._beacon.initializeLightClient(bootstrapHash)
-      return true
+      const lookup = new ContentLookup(
+        this._beacon,
+        getBeaconContentKey(
+          BeaconLightClientNetworkContentType.LightClientBootstrap,
+          fromHexString(bootstrapHash),
+        ),
+      )
+      const res = await lookup.startLookup()
+      if (res !== undefined && 'content' in res) {
+        await this._beacon.initializeLightClient(bootstrapHash)
+        return true
+      }
+      return false
     } catch (err: any) {
       return err.message
     }
