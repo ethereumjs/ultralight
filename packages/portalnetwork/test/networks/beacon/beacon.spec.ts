@@ -27,8 +27,11 @@ import type { BeaconLightClientNetwork } from '../../../src/networks/beacon/inde
 const require = createRequire(import.meta.url)
 
 const specTestVectors = require('./specTestVectors.json')
-const privateKeys = ['0x08021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd']
-const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]))
+const privateKeys = [
+  '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
+  '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
+]
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
 describe('API tests', async () => {
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
@@ -131,6 +134,26 @@ describe('API tests', async () => {
   })
 
   it('stores a LightClientUpdate locally', async () => {
+    const gossipSpy = vi.spyOn(network, 'sendOffer')
+    const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
+    const enr2 = SignableENR.createFromPrivateKey(pk2)
+    const initMa2 = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+    })
+    await node1.start()
+    await node2.start()
+    await network.addBootNode(enr2.encodeTxt())
+
     const updatesByRange = specTestVectors.updateByRange['6684738']
     await network.storeUpdateRange(hexToBytes(updatesByRange.content_value))
     const storedUpdate = await network.findContentLocally(hexToBytes('0x150330'))
@@ -150,6 +173,8 @@ describe('API tests', async () => {
       'put the correct update in the correct position in the range',
     )
     assert.equal(toHexString(range!), updatesByRange.content_value)
+    expect(gossipSpy).toHaveBeenCalledTimes(0) // verifies that we don't gossip individual LightClientUpdates
+    vi.clearAllMocks()
   })
 
   it('stores and retrieves a batch of LightClientUpdates', async () => {
