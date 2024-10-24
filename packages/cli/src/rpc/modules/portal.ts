@@ -1194,19 +1194,8 @@ export class portal {
     const [bootstrapHash] = params
     this.logger(`portal_beaconStartLightClient request received for ${bootstrapHash}`)
     try {
-      const lookup = new ContentLookup(
-        this._beacon,
-        getBeaconContentKey(
-          BeaconLightClientNetworkContentType.LightClientBootstrap,
-          fromHexString(bootstrapHash),
-        ),
-      )
-      const res = await lookup.startLookup()
-      if (res !== undefined && 'content' in res) {
-        await this._beacon.initializeLightClient(bootstrapHash)
-        return true
-      }
-      return false
+      await this._beacon.initializeLightClient(bootstrapHash)
+      return true
     } catch (err: any) {
       return err.message
     }

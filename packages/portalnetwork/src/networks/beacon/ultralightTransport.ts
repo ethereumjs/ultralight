@@ -3,9 +3,10 @@ import { genesisData } from '@lodestar/config/networks'
 import { getCurrentSlot } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
 
+import { ContentLookup } from '../contentLookup.js'
+
 import {
   BeaconLightClientNetworkContentType,
-  LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
@@ -200,47 +201,21 @@ export class UltralightTransport implements LightClientTransport {
     blockRoot: string,
   ): Promise<{ version: ForkName; data: LightClientBootstrap }> {
     let forkname, bootstrap
-    const localBootstrap = await this.network.findContentLocally(
+
+    this.logger(`requesting lightClientBootstrap for trusted block root ${blockRoot}`)
+    // Try to get bootstrap from Portal Network
+    const lookup = new ContentLookup(
+      this.network,
       getBeaconContentKey(
         BeaconLightClientNetworkContentType.LightClientBootstrap,
-        LightClientBootstrapKey.serialize({ blockHash: hexToBytes(blockRoot) }),
+        hexToBytes(blockRoot),
       ),
     )
-    if (localBootstrap !== undefined && localBootstrap.length !== 0) {
-      this.logger('Found LightClientBootstrap locally.  Initializing light client...')
-      try {
-        forkname = this.network.beaconConfig.forkDigest2ForkName(
-          localBootstrap.slice(0, 4),
-        ) as LightClientForkName
-        bootstrap = ssz[forkname].LightClientBootstrap.deserialize(localBootstrap.slice(4))
-      } catch (err) {
-        this.logger('Error loading local bootstrap error')
-        this.logger(err)
-      }
-    } else {
-      const peers = this.network.routingTable.nearest(this.network.enr.nodeId, 5)
-
-      let forkname
-
-      this.logger(`requesting lightClientBootstrap for trusted block root ${blockRoot}`)
-      // Try to get bootstrap from Portal Network
-      for (const peer of peers) {
-        const decoded = await this.network.sendFindContent(
-          peer.nodeId,
-          concatBytes(
-            new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
-            LightClientBootstrapKey.serialize({ blockHash: hexToBytes(blockRoot) }),
-          ),
-        )
-        if (decoded !== undefined && 'content' in decoded) {
-          const forkhash = decoded.content.slice(0, 4) as Uint8Array
-          forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-          bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
-            (decoded.content as Uint8Array).slice(4),
-          )
-          break
-        }
-      }
+    const res = await lookup.startLookup()
+    if (res !== undefined && 'content' in res) {
+      const forkhash = res.content.slice(0, 4) as Uint8Array
+      forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      bootstrap = ssz[forkname].LightClientBootstrap.deserialize(res.content.slice(4))
     }
 
     if (bootstrap === undefined) {
