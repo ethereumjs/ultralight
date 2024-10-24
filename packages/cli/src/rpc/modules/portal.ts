@@ -3,6 +3,7 @@ import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import { hexToBytes, short } from '@ethereumjs/util'
 import {
+  BeaconLightClientNetworkContentType,
   ContentLookup,
   ContentMessageType,
   FoundContent,
@@ -12,6 +13,7 @@ import {
   PingPongCustomDataType,
   PortalWireMessageType,
   fromHexString,
+  getBeaconContentKey,
   shortId,
   toHexString,
 } from 'portalnetwork'
