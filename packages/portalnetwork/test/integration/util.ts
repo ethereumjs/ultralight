@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { SignableENR } from '@chainsafe/enr'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
@@ -95,19 +95,19 @@ export const genesisContent = async (
     const nodeBytes = node.serialize()
     const node_hash = trie['hash'](nodeBytes)
     const nibbles = key.map((n) => n.toString(16)) as TNibble[]
-    nodePaths[toHexString(node_hash)] = { nodeBytes, nibbles }
+    nodePaths[bytesToHex(node_hash)] = { nodeBytes, nibbles }
   })
 
   const proofs = await Promise.all(
     Object.keys(mainnet.alloc).map(async (add) => {
       const address = '0x' + padToEven(add)
-      const leafproof = await trie.createProof(fromHexString(address))
+      const leafproof = await trie.createProof(hexToBytes(address))
       return { address, leafproof }
     }),
   )
   const leafProofs: [Uint8Array, { nibbles: string[]; proof: Uint8Array[] }][] = proofs.map(
     ({ address, leafproof }) => {
-      const addressPath = bytesToUnprefixedHex(trie['hash'](fromHexString(address))).split('')
+      const addressPath = bytesToUnprefixedHex(trie['hash'](hexToBytes(address))).split('')
       const nodePath: string[] = []
       for (const p of leafproof.slice(0, -1)) {
         const node = decodeNode(p)
@@ -128,7 +128,7 @@ export const genesisContent = async (
   const allProofs: Record<string, { nibbles: TNibble[]; proof: Uint8Array[] }> = {}
   for (const [_, { proof }] of leafProofs) {
     for (const [idx, n] of proof.slice(0, -1).entries()) {
-      const hash = toHexString(trie['hash'](n))
+      const hash = bytesToHex(trie['hash'](n))
       if (hash in allProofs) continue
       const nodeProof = proof.slice(0, idx + 1)
       const nodeNibbles: TNibble[] = nodePaths[hash].nibbles
@@ -142,9 +142,9 @@ export const genesisContent = async (
         nodeHash,
         path,
       }
-      const contentKey = toHexString(AccountTrieNodeContentKey.encode(key))
+      const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
       const content = AccountTrieNodeOffer.serialize({
-        blockHash: fromHexString(
+        blockHash: hexToBytes(
           '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3',
         ),
         proof,
@@ -156,12 +156,12 @@ export const genesisContent = async (
     ([nodeHash, { nibbles, proof }]) => {
       const path = packNibbles(nibbles as TNibble[])
       const key: TAccountTrieNodeKey = {
-        nodeHash: fromHexString(nodeHash),
+        nodeHash: hexToBytes(nodeHash),
         path,
       }
-      const contentKey = toHexString(AccountTrieNodeContentKey.encode(key))
+      const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
       const content = AccountTrieNodeOffer.serialize({
-        blockHash: fromHexString(
+        blockHash: hexToBytes(
           '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3',
         ),
         proof,
@@ -188,11 +188,11 @@ export const sortedById = (
   )
   const allContent = [...leafNodeContent, ...trieNodeContent]
   for (const [contentKey] of allContent) {
-    const contentId = new Trie({ useKeyHashing: true })['hash'](fromHexString(contentKey))
+    const contentId = new Trie({ useKeyHashing: true })['hash'](hexToBytes(contentKey))
     for (const { nodeId, radius } of clients) {
       const d = distance(nodeId, bytesToUnprefixedHex(contentId))
       if (d < radius) {
-        const { nodeHash } = AccountTrieNodeContentKey.decode(fromHexString(contentKey))
+        const { nodeHash } = AccountTrieNodeContentKey.decode(hexToBytes(contentKey))
         trieNodes[nodeId].push(nodeHash)
       }
     }
@@ -214,7 +214,7 @@ export const populateGenesisDB = async (trie: Trie, networks: StateNetwork[]) =>
     for (const nodeHash of nodeHashes) {
       await db.put(
         bytesToUnprefixedHex(nodeHash),
-        bytesToUnprefixedHex(nodePaths[toHexString(nodeHash)].nodeBytes),
+        bytesToUnprefixedHex(nodePaths[bytesToHex(nodeHash)].nodeBytes),
       )
     }
   }

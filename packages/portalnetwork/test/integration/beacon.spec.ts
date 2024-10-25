@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { bigIntToHex, concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { RunStatusCode } from '@lodestar/light-client'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
@@ -22,7 +22,6 @@ import {
   PortalNetwork,
   TransportLayer,
   getBeaconContentKey,
-  toHexString,
 } from '../../src/index.js'
 
 import type { BeaconLightClientNetwork } from '../../src/index.js'
@@ -91,7 +90,7 @@ describe('Find Content tests', () => {
     const content = await network2.findContentLocally(hexToBytes(bootstrap.content_key))
     assert.notOk(content === undefined, 'should retrieve content for bootstrap key')
     assert.equal(
-      toHexString(content!),
+      bytesToHex(content!),
       bootstrap.content_value,
       'retrieved correct content for bootstrap',
     )
@@ -174,7 +173,7 @@ describe('Find Content tests', () => {
       ),
     )
     assert.equal(
-      toHexString(res!['content']),
+      bytesToHex(res!['content']),
       optimisticUpdate.content_value,
       'retrieved content for optimistic update from network',
     )
@@ -187,7 +186,7 @@ describe('Find Content tests', () => {
 
     assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
     assert.equal(
-      toHexString(content!),
+      bytesToHex(content!),
       optimisticUpdate.content_value,
       'retrieved correct content for optimistic update from local storage',
     )
@@ -244,7 +243,7 @@ describe('Find Content tests', () => {
     )
 
     assert.equal(
-      toHexString(res!['content'] as Uint8Array),
+      bytesToHex(res!['content'] as Uint8Array),
       updatesByRange.content_value,
       'retrieved content for light client updates by range from network',
     )
@@ -254,7 +253,7 @@ describe('Find Content tests', () => {
       'should retrieve content for Light Client Update by Range key',
     )
     assert.equal(
-      toHexString(content!),
+      bytesToHex(content!),
       updatesByRange.content_value,
       'retrieved correct content for Light Client Update by Range from local storage',
     )
@@ -367,7 +366,7 @@ describe('OFFER/ACCEPT tests', () => {
 
     assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
     assert.equal(
-      toHexString(content!),
+      bytesToHex(content!),
       optimisticUpdate.content_value,
       'retrieved correct content for optimistic update from local storage',
     )

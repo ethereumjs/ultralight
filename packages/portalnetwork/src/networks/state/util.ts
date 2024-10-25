@@ -1,8 +1,7 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
-import { bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
 
 import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import {
@@ -104,7 +103,7 @@ export class StateNetworkContentId {
 
 export function wrapDBContent(contentKey: Uint8Array, dbContent: string) {
   const keytype = keyType(contentKey)
-  const dbBytes = fromHexString('0x' + dbContent)
+  const dbBytes = hexToBytes('0x' + dbContent)
   const wrapped =
     keytype === StateNetworkContentType.AccountTrieNode
       ? AccountTrieNodeRetrieval.serialize({
@@ -117,7 +116,7 @@ export function wrapDBContent(contentKey: Uint8Array, dbContent: string) {
         : ContractRetrieval.serialize({
             code: dbBytes,
           })
-  return toHexString(wrapped)
+  return bytesToHex(wrapped)
 }
 
 export function calculateAddressRange(

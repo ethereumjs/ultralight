@@ -1,5 +1,5 @@
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
+import { ContainerType, UintBigintType, hexToBytes, bytesToHex } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
@@ -30,9 +30,9 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     let encodedKey = ContentKeyType.serialize(
       concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockHeader]), hexToBytes(blockHash)),
     )
-    let contentId = getContentId(HistoryNetworkContentType.BlockHeader, fromHexString(blockHash))
+    let contentId = getContentId(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
     assert.equal(
-      toHexString(encodedKey),
+      bytesToHex(encodedKey),
       '0x00d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'blockheader content key equals expected output',
     )
@@ -45,9 +45,9 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     encodedKey = ContentKeyType.serialize(
       concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockBody]), hexToBytes(blockHash)),
     )
-    contentId = getContentId(HistoryNetworkContentType.BlockBody, fromHexString(blockHash))
+    contentId = getContentId(HistoryNetworkContentType.BlockBody, hexToBytes(blockHash))
     assert.equal(
-      toHexString(encodedKey),
+      bytesToHex(encodedKey),
       '0x01d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'blockbody content key equals expected output',
     )
@@ -60,9 +60,9 @@ describe('History Subnetwork contentKey serialization/deserialization', () => {
     encodedKey = ContentKeyType.serialize(
       concatBytes(Uint8Array.from([HistoryNetworkContentType.Receipt]), hexToBytes(blockHash)),
     )
-    contentId = getContentId(HistoryNetworkContentType.Receipt, fromHexString(blockHash))
+    contentId = getContentId(HistoryNetworkContentType.Receipt, hexToBytes(blockHash))
     assert.equal(
-      toHexString(encodedKey),
+      bytesToHex(encodedKey),
       '0x02d1c390624d3bd4e409a61a858e5dcc5517729a9170d014a6c96530d64dd8621d',
       'receipt content key equals expected output',
     )
@@ -275,11 +275,11 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     hexToBytes(epochHash),
   )
   it('should validate', async () => {
-    assert.ok(proof, `proof is valid: ${toHexString(proof.hashTreeRoot())}`)
+    assert.ok(proof, `proof is valid: ${bytesToHex(proof.hashTreeRoot())}`)
   })
   it('should match epoch hash', async () => {
     assert.equal(
-      toHexString(EpochAccumulator.hashTreeRoot(actual_Epoch)),
+      bytesToHex(EpochAccumulator.hashTreeRoot(actual_Epoch)),
       epochHash,
       'stored epoch hash matches valid epoch',
     )
@@ -310,7 +310,7 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     )
     assert.ok(
       history.validateHeader(serializedBlock1, {
-        blockHash: toHexString(deserializedHeader.hash()),
+        blockHash: bytesToHex(deserializedHeader.hash()),
       }),
     )
   })

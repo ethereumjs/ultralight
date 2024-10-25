@@ -1,4 +1,3 @@
-import { toHexString } from '@chainsafe/ssz'
 import { BranchNode, LeafNode, Trie } from '@ethereumjs/trie'
 import { bytesToUnprefixedHex } from '@ethereumjs/util'
 import { bytesToHex } from 'ethereum-cryptography/utils'
@@ -30,7 +29,7 @@ export class PortalTrie {
     const keyobj = AccountTrieNodeContentKey.decode(key)
     if (request === undefined || !('content' in request)) {
       throw new Error(
-        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
+        `network doesn't have node [${unpackNibbles(keyobj.path)}]${bytesToHex(keyobj.nodeHash)}`,
       )
     }
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
@@ -42,7 +41,7 @@ export class PortalTrie {
     const keyobj = StorageTrieNodeContentKey.decode(key)
     if (request === undefined || !('content' in request)) {
       throw new Error(
-        `network doesn't have node [${unpackNibbles(keyobj.path)}]${toHexString(keyobj.nodeHash)}`,
+        `network doesn't have node [${unpackNibbles(keyobj.path)}]${bytesToHex(keyobj.nodeHash)}`,
       )
     }
     const node = StorageTrieNodeRetrieval.deserialize(request.content).node
@@ -65,7 +64,7 @@ export class PortalTrie {
     const lookup = new ContentLookup(this.state, rootNodeKey)
     const request = await lookup.startLookup()
     if (request === undefined || !('content' in request)) {
-      this.logger(`network doesn't have root node ${toHexString(stateroot)}`)
+      this.logger(`network doesn't have root node ${bytesToHex(stateroot)}`)
       return undefined
     }
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
@@ -147,7 +146,7 @@ export class PortalTrie {
     const lookup = new ContentLookup(this.state, rootNodeKey)
     const request = await lookup.startLookup()
     if (request === undefined || !('content' in request)) {
-      throw new Error(`network doesn't have root node ${toHexString(storageRoot)}`)
+      throw new Error(`network doesn't have root node ${bytesToHex(storageRoot)}`)
     }
     const node = AccountTrieNodeRetrieval.deserialize(request.content).node
     this.logger.extend('findPath')(`RootNode found: (${node.length} bytes)`)

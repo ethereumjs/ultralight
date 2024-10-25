@@ -1,13 +1,13 @@
 import { BlockHeader } from '@ethereumjs/block'
 import { RLP } from '@ethereumjs/rlp'
 import { TransactionFactory } from '@ethereumjs/tx'
+import { bytesToHex } from '@ethereumjs/util'
 import {
   BlockBodyContentType,
   BlockHeaderWithProof,
   EpochAccumulator,
   sszReceiptType,
   sszUnclesType,
-  toHexString,
 } from 'portalnetwork'
 
 import type { Enr } from './rpc/schema/types.js'
@@ -76,7 +76,7 @@ export const toJSON = (contentKey: Uint8Array, res: Uint8Array) => {
       const proof =
         blockHeaderWithProof.proof.selector === 0
           ? []
-          : (blockHeaderWithProof.proof.value as Uint8Array[])?.map((p) => toHexString(p))
+          : (blockHeaderWithProof.proof.value as Uint8Array[])?.map((p) => bytesToHex(p))
       content = { header, proof }
       break
     }
@@ -85,7 +85,7 @@ export const toJSON = (contentKey: Uint8Array, res: Uint8Array) => {
       const transactions = blockBody.allTransactions.map((tx) =>
         TransactionFactory.fromSerializedData(tx).toJSON(),
       )
-      const unclesRlp = toHexString(sszUnclesType.deserialize(blockBody.sszUncles))
+      const unclesRlp = bytesToHex(sszUnclesType.deserialize(blockBody.sszUncles))
       content = {
         transactions,
         uncles: {

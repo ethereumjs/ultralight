@@ -10,7 +10,6 @@ import {
   PortalNetwork,
   StateNetworkContentId,
   distance,
-  fromHexString,
 } from '../../../src/index.js'
 
 import samples from './testdata/accountNodeSamples.json'
@@ -21,7 +20,7 @@ describe('samples', () => {
   const _samples = samples as [string, object][]
   for (const [key, value] of _samples) {
     const contentBytes = Uint8Array.from(Object.values(value))
-    const contentKeyBytes = fromHexString(key)
+    const contentKeyBytes = hexToBytes(key)
     const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
     it('should decode sample key', () => {
       expect(contentKey.path).toBeDefined()
@@ -59,7 +58,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const sample = samples.slice(-1)[0]
   const [key, value] = sample as [string, object]
   const contentBytes = Uint8Array.from(Object.values(value))
-  const contentKeyBytes = fromHexString(key)
+  const contentKeyBytes = hexToBytes(key)
   const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey

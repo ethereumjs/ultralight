@@ -1,7 +1,6 @@
-import { fromHexString } from '@chainsafe/ssz'
 import { Common } from '@ethereumjs/common'
 import { EVM } from '@ethereumjs/evm'
-import { Address, TypeOutput, bytesToHex, toType } from '@ethereumjs/util'
+import { Address, TypeOutput, bytesToHex, hexToBytes, toType } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {
@@ -209,7 +208,7 @@ export class ETH {
       gasLimit: toType(gasLimit, TypeOutput.BigInt),
       gasPrice: toType(gasPrice, TypeOutput.BigInt),
       value: toType(value, TypeOutput.BigInt),
-      data: data !== undefined ? fromHexString(data) : undefined,
+      data: data !== undefined ? hexToBytes(data) : undefined,
     }
     const res = (await evm.runCall(runCallOpts)).execResult.returnValue
     return bytesToHex(res)

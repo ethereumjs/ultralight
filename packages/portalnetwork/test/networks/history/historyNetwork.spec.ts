@@ -2,7 +2,7 @@ import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { Block, type BlockBytes, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
 import { createRequire } from 'module'
 import * as td from 'testdouble'
@@ -21,7 +21,6 @@ import {
   getContentKey,
   reassembleBlock,
   sszEncodeBlockBody,
-  toHexString,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -204,7 +203,7 @@ describe('Header Tests', async () => {
     })
     try {
       const res = network.validateHeader(serializedHeaderWithProof, {
-        blockHash: toHexString(header.hash()),
+        blockHash: bytesToHex(header.hash()),
       })
       assert.ok(res, 'validated post-merge proof')
     } catch (err: any) {

@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
-import { ContainerType, UintBigintType, fromHexString, toHexString } from '@chainsafe/ssz'
-import { padToEven } from '@ethereumjs/util'
+import { ContainerType, UintBigintType } from '@chainsafe/ssz'
+import { bytesToHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import debug from 'debug'
 import fs from 'fs'
 import { MemoryLevel } from 'memory-level'
@@ -38,7 +38,7 @@ export class NetworkDB {
     this.contentId =
       contentId ??
       function (contentKey: Uint8Array) {
-        return toHexString(contentKey)
+        return bytesToHex(contentKey)
       }
     this.maxStorage = maxStorage ?? 1024
   }
@@ -64,10 +64,10 @@ export class NetworkDB {
    */
   async put(key: string | Uint8Array, val: string | Uint8Array) {
     if (key instanceof Uint8Array) {
-      key = toHexString(key)
+      key = bytesToHex(key)
     }
     if (val instanceof Uint8Array) {
-      val = toHexString(val)
+      val = bytesToHex(val)
     }
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
     if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
@@ -77,7 +77,7 @@ export class NetworkDB {
       this.logger(`Error putting content in DB: ${err.toString()}`)
     }
     this.streaming.delete(key)
-    this.logger(`Put ${key} in DB.  Size=${fromHexString(padToEven(val)).length} bytes`)
+    this.logger(`Put ${key} in DB.  Size=${hexToBytes(padToEven(val)).length} bytes`)
   }
   /**
    * Get a value from the database by key.
@@ -86,7 +86,7 @@ export class NetworkDB {
    */
   async get(key: string | Uint8Array) {
     if (key instanceof Uint8Array) {
-      key = toHexString(key)
+      key = bytesToHex(key)
     }
     // this.streaming is a Set of contentKeys currently streaming over uTP
     // the timeout is a safety measure to prevent the while loop from running indefinitely in case of a uTP stream failure
@@ -102,7 +102,7 @@ export class NetworkDB {
     this.logger(`Getting ${key} from DB`)
     const val = await this.db.get(key)
     this.logger(
-      `Got ${key} from DB with key: ${key}.  Size=${fromHexString(padToEven(val)).length} bytes`,
+      `Got ${key} from DB with key: ${key}.  Size=${hexToBytes(padToEven(val)).length} bytes`,
     )
     clearTimeout(timeout)
     return val
@@ -113,7 +113,7 @@ export class NetworkDB {
    */
   async del(key: string | Uint8Array): Promise<void> {
     if (key instanceof Uint8Array) {
-      key = toHexString(key)
+      key = bytesToHex(key)
     }
     await this.db.del(key)
   }
@@ -133,8 +133,8 @@ export class NetworkDB {
       const _db = this.db as MemoryLevel<string, string>
       let size = 0
       for await (const [key, value] of _db.iterator()) {
-        size += fromHexString('0x' + padToEven(key.slice(2))).length
-        size += fromHexString(value).length
+        size += hexToBytes('0x' + padToEven(key.slice(2))).length
+        size += hexToBytes(value).length
       }
       return size
     }
@@ -157,7 +157,7 @@ export class NetworkDB {
    */
   addToStreaming(key: string | Uint8Array): void {
     if (key instanceof Uint8Array) {
-      key = toHexString(key)
+      key = bytesToHex(key)
     }
     this.logger(`Adding ${key} to streaming`)
     this.streaming.add(key)
@@ -173,7 +173,7 @@ export class NetworkDB {
     const toDelete: [string, string][] = []
     for await (const [key, value] of this.db.iterator()) {
       // Calculate distance between node and content
-      const d = distance(this.nodeId, this.contentId(fromHexString(key)))
+      const d = distance(this.nodeId, this.contentId(hexToBytes(key)))
       // If content is out of radius -- delete content
       if (d > radius) {
         // Before deleting BlockHeaderWithProof (0x00) -- Check if BlockHeaderByNumber contentKey is in radius
@@ -192,7 +192,7 @@ export class NetworkDB {
 
           // If BOTH content keys are out of radius -- delete BlockHeaderWithProof.  Add both keys to delete list (for gossip)
           if (numberDistance > radius) {
-            toDelete.push([toHexString(numberKey), value])
+            toDelete.push([bytesToHex(numberKey), value])
             toDelete.push([key, value])
             await this.db.del(key)
           }

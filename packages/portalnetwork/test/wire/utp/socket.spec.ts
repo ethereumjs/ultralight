@@ -1,4 +1,4 @@
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { randomBytes } from 'crypto'
 import debug from 'debug'
 import { assert, describe, it } from 'vitest'
@@ -12,7 +12,6 @@ import {
   PortalNetwork,
   PortalNetworkUTP,
   UtpSocketType,
-  toHexString,
 } from '../../../src/index.js'
 import { createUtpSocket } from '../../../src/wire/utp/Socket/index.js'
 
@@ -230,7 +229,7 @@ describe('createPacket()', async () => {
     assert.equal(write_data.header.seqNr, write.getSeqNr() - 1, 'Packet seqNr correctly set')
     assert.equal(write_data.header.ackNr, write.ackNr, 'Packet ackNr correctly set')
     assert.equal(
-      toHexString(write_data.payload!),
+      bytesToHex(write_data.payload!),
       '0x1234',
       'DATA Packet payload correctly set to undefined',
     )

@@ -1,7 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { toHexString } from '@chainsafe/ssz'
-import { short } from '@ethereumjs/util'
+import { bytesToHex, short } from '@ethereumjs/util'
 import { Heap } from 'heap-js'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
@@ -55,7 +54,7 @@ export class ContentLookup {
   public startLookup = async (): Promise<ContentLookupResponse> => {
     // Don't support content lookups for networks that don't implement it (i.e. Canonical Indices)
     if (!this.network.sendFindContent) return
-    this.logger(`starting recursive content lookup for ${toHexString(this.contentKey)}`)
+    this.logger(`starting recursive content lookup for ${bytesToHex(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
       // Try to find content locally first
@@ -122,7 +121,7 @@ export class ContentLookup {
     if ('content' in res) {
       this.finished = true
       // findContent returned data sought
-      this.logger(`received content corresponding to ${shortId(toHexString(this.contentKey))}`)
+      this.logger(`received content corresponding to ${shortId(bytesToHex(this.contentKey))}`)
       // Mark content offered to peer that sent it to us (so we don't try to offer it to them)
       this.network.routingTable.contentKeyKnownToPeer(peer.nodeId, this.contentKey)
       this.network.portal.metrics?.successfulContentLookups.inc()
