@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Block } from '@ethereumjs/block'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 import { RunStatusCode } from '@lodestar/light-client'
 import { ForkName } from '@lodestar/params'
@@ -17,10 +17,8 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
-  fromHexString,
   generatePreMergeHeaderProof,
   getBeaconContentKey,
-  toHexString,
 } from '../../../src/index.js'
 
 import type { BeaconLightClientNetwork, HistoryNetwork } from '../../../src/index.js'
@@ -79,7 +77,7 @@ describe(
 
     const blockRlp = block1000.raw
     const blockHash = block1000.hash
-    const proof = await generatePreMergeHeaderProof(1000n, fromHexString(epoch))
+    const proof = await generatePreMergeHeaderProof(1000n, hexToBytes(epoch))
     await addRLPSerializedBlock(blockRlp, blockHash, network1, proof)
     await network1.sendPing(network2?.enr!.toENR())
     const retrieved = await node2.ETH.getBlockByNumber(1000, false)
@@ -155,14 +153,14 @@ describe('should find a block using "latest" and "finalized"', async () => {
   const finalizedBlockjson = require('../testdata/finalizedBlock.json')
   const finalizedBlock = Block.fromRPC(finalizedBlockjson.result, [], { setHardfork: true })
   await addRLPSerializedBlock(
-    toHexString(headBlockblock.serialize()),
-    toHexString(headBlockblock.hash()),
+    bytesToHex(headBlockblock.serialize()),
+    bytesToHex(headBlockblock.hash()),
     history,
     [],
   )
   await addRLPSerializedBlock(
-    toHexString(finalizedBlock.serialize()),
-    toHexString(finalizedBlock.hash()),
+    bytesToHex(finalizedBlock.serialize()),
+    bytesToHex(finalizedBlock.hash()),
     history,
     [],
   )

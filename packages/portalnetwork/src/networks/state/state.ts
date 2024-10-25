@@ -1,8 +1,13 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { BranchNode, ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToHex, bytesToInt, bytesToUnprefixedHex, equalsBytes } from '@ethereumjs/util'
+import {
+  bytesToHex,
+  bytesToInt,
+  bytesToUnprefixedHex,
+  equalsBytes,
+  hexToBytes,
+} from '@ethereumjs/util'
 import debug from 'debug'
 
 import { shortId } from '../../util/util.js'
@@ -118,7 +123,7 @@ export class StateNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             this.logger.extend(`FOUNDCONTENT`)(
-              `received ${StateNetworkContentType[contentType]} content corresponding to ${toHexString(key)}`,
+              `received ${StateNetworkContentType[contentType]} content corresponding to ${bytesToHex(key)}`,
             )
             try {
               await this.store(key, decoded.value as Uint8Array, false)
@@ -143,7 +148,7 @@ export class StateNetwork extends BaseNetwork {
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     try {
       const value = await this.db.get(contentKey)
-      return value !== undefined ? fromHexString(value) : undefined
+      return value !== undefined ? hexToBytes(value) : undefined
     } catch {
       return undefined
     }
@@ -237,7 +242,7 @@ export class StateNetwork extends BaseNetwork {
         interested.push({ contentKey, dbContent })
         this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
       } else {
-        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
+        notInterested.push({ contentKey, nodeHash: bytesToHex(nodeHash) })
       }
 
       curRlp = nodes.pop()
@@ -339,7 +344,7 @@ export class StateNetwork extends BaseNetwork {
         interested.push({ contentKey, dbContent })
         this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
       } else {
-        notInterested.push({ contentKey, nodeHash: toHexString(nodeHash) })
+        notInterested.push({ contentKey, nodeHash: bytesToHex(nodeHash) })
       }
 
       curRlp = nodes.pop()

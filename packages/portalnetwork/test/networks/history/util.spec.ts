@@ -1,4 +1,3 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
 import { KECCAK256_RLP, bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
@@ -28,7 +27,7 @@ describe('utility functions', () => {
   )
   it('contentId functions', () => {
     assert.equal(
-      getContentId(HistoryNetworkContentType.BlockHeader, fromHexString(block1Hash)),
+      getContentId(HistoryNetworkContentType.BlockHeader, hexToBytes(block1Hash)),
       serializedContentKeyToContentId(block1headerContentKey),
       'produced same content id',
     )
@@ -51,24 +50,24 @@ describe('utility functions', () => {
   })
   it('epochRootByBlocknumber', () => {
     assert.equal(
-      toHexString(epochRootByBlocknumber(1000n)!),
+      bytesToHex(epochRootByBlocknumber(1000n)!),
       '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
       'epochRootByBlocknumber returned correct epoch root',
     )
     assert.equal(
-      toHexString(epochRootByIndex(0)!),
+      bytesToHex(epochRootByIndex(0)!),
       '0x5ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218',
       'epochRootByIndex returned correct epoch root',
     )
   })
   it('epochRootByIndex', () => {
     assert.equal(
-      toHexString(epochRootByBlocknumber(9192n)!),
+      bytesToHex(epochRootByBlocknumber(9192n)!),
       '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
       'epochRootByBlocknumber returned correct epoch root',
     )
     assert.equal(
-      toHexString(epochRootByIndex(1)!),
+      bytesToHex(epochRootByIndex(1)!),
       '0xa5364e9a9bc513c4601f0d62e6b46dbdedf3200bbfae54d6350f46f2c7a01938',
       'epochRootByIndex returned correct epoch root',
     )

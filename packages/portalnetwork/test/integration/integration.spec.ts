@@ -17,7 +17,6 @@ import {
   TransportLayer,
   addRLPSerializedBlock,
   getContentKey,
-  toHexString,
 } from '../../src/index.js'
 
 import type { HistoryNetwork } from '../../src/index.js'
@@ -187,7 +186,7 @@ describe('FindContent', async () => {
 
   it('should find local with getBlockByNumber', () => {
     assert.equal(
-      toHexString(byNumber!.hash()),
+      bytesToHex(byNumber!.hash()),
       testBlockData[29].blockHash,
       'retrieved expected header',
     )
@@ -218,7 +217,7 @@ describe('FindContent', async () => {
   void node2.stop()
   it('should find content', () => {
     assert.equal(
-      toHexString(header.hash()),
+      bytesToHex(header.hash()),
       testBlockData[29].blockHash,
       'retrieved expected header',
     )
@@ -275,7 +274,7 @@ describe('eth_getBlockByHash', async () => {
   void node2.stop()
   it('should find content', () => {
     assert.equal(
-      toHexString(retrieved!.hash()),
+      bytesToHex(retrieved!.hash()),
       testBlockData[29].blockHash,
       'retrieved expected header',
     )

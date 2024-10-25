@@ -1,4 +1,4 @@
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
@@ -14,7 +14,6 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
   getBeaconContentKey,
-  toHexString,
 } from 'portalnetwork'
 
 const { Client } = jayson
@@ -82,14 +81,14 @@ const main = async () => {
       BeaconLightClientNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
     ),
-    toHexString(
+    bytesToHex(
       concatBytes(capellaForkDigest, ssz.capella.LightClientBootstrap.serialize(bootstrap)),
     ),
   ])
   console.log('Pushed bootstrap into Portal Network', res)
   const res2 = await ultralight.request('portal_beaconStore', [
     rangeKey,
-    toHexString(serializedRange),
+    bytesToHex(serializedRange),
   ])
   console.log(
     `Pushed light client updates for range ${oldPeriod}-${currentPeriod} into Portal Network`,
@@ -97,7 +96,7 @@ const main = async () => {
   )
   const res3 = await ultralight.request('portal_beaconStore', [
     optimisticUpdateKey,
-    toHexString(
+    bytesToHex(
       concatBytes(
         capellaForkDigest,
         ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate),
@@ -130,7 +129,7 @@ const main = async () => {
     )
     let res = await ultralight.request('portal_beaconStore', [
       optimisticUpdateKey,
-      toHexString(
+      bytesToHex(
         concatBytes(
           capellaForkDigest,
           ssz.capella.LightClientOptimisticUpdate.serialize(optimisticUpdate),
@@ -152,7 +151,7 @@ const main = async () => {
     )
     res = await ultralight.request('portal_beaconStore', [
       finalityUpdateKey,
-      toHexString(
+      bytesToHex(
         concatBytes(
           capellaForkDigest,
           ssz.capella.LightClientFinalityUpdate.serialize(finalityUpdate),

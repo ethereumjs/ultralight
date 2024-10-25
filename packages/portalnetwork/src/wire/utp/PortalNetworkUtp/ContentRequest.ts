@@ -9,7 +9,6 @@ import {
   PacketType,
   StateNetwork,
   bitmap,
-  toHexString,
 } from '../../../index.js'
 
 import { RequestCode } from './types.js'
@@ -269,7 +268,7 @@ export class AcceptReadRequest extends ContentReadRequest {
     while (this.socket.reader!.contents.length > 0) {
       const key = this.contentKeys.shift()!
       const value = this.socket.reader!.contents.shift()!
-      this.logger(`Storing: ${toHexString(key)}.  ${this.contentKeys.length} still streaming.`)
+      this.logger(`Storing: ${bytesToHex(key)}.  ${this.contentKeys.length} still streaming.`)
       await this.returnContent([value], [key])
     }
   }

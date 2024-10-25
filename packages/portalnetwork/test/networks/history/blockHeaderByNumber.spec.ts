@@ -10,14 +10,13 @@ import {
   NetworkId,
   PortalNetwork,
   decodeHistoryNetworkContentKey,
-  fromHexString,
 } from '../../../src/index.js'
 
 import testdata from './testData/headerWithProof.json'
 
 describe('Retrieve Block Header By Number', async () => {
-  const HWP1000001 = fromHexString(testdata[1000001].content_value)
-  const HWP1000002 = fromHexString(testdata[1000002].content_value)
+  const HWP1000001 = hexToBytes(testdata[1000001].content_value)
+  const HWP1000002 = hexToBytes(testdata[1000002].content_value)
   const header100001 = BlockHeaderWithProof.deserialize(HWP1000001).header
   const header100002 = BlockHeaderWithProof.deserialize(HWP1000002).header
 
@@ -58,11 +57,11 @@ describe('Retrieve Block Header By Number', async () => {
   })
 
   it('Should retrieve block header by hash', async () => {
-    const header = await history.getBlockHeaderFromDB({ blockHash: fromHexString(hash100001) })
+    const header = await history.getBlockHeaderFromDB({ blockHash: hexToBytes(hash100001) })
     assert.deepEqual(header, header100001)
   })
   it('Should retrieve block header by hash', async () => {
-    const header = await history.getBlockHeaderFromDB({ blockHash: fromHexString(hash100002) })
+    const header = await history.getBlockHeaderFromDB({ blockHash: hexToBytes(hash100002) })
     assert.deepEqual(header, header100002)
   })
 

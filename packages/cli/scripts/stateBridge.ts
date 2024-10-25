@@ -1,4 +1,4 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
+import { bytesToHex, hexToBytes } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import { Address } from '@ethereumjs/util'
 import { Alchemy, Network } from 'alchemy-sdk'
@@ -27,7 +27,7 @@ const alchemy = new Alchemy({
 const db = new Map<string, Uint8Array>()
 
 const remember = async (contentKey: Uint8Array, content: Uint8Array) => {
-  db.set(toHexString(contentKey), content)
+  db.set(bytesToHex(contentKey), content)
 }
 
 const store = async (contentKey: Uint8Array, content: Uint8Array) => {
@@ -36,8 +36,8 @@ const store = async (contentKey: Uint8Array, content: Uint8Array) => {
     port: workerData.port,
   })
   const stored = await client.request('portal_stateStore', [
-    toHexString(contentKey),
-    toHexString(content),
+    bytesToHex(contentKey),
+    bytesToHex(content),
   ])
   parentPort?.postMessage(`stored: ${stored.result}`)
 }
@@ -48,13 +48,13 @@ const index = async (block: Block) => {
     port: workerData.port,
   })
   await client.request('ultralight_addBlockToHistory', [
-    toHexString(block.header.hash()),
-    toHexString(block.serialize()),
+    bytesToHex(block.header.hash()),
+    bytesToHex(block.serialize()),
   ])
 
   await client.request('ultralight_indexBlock', [
     '0x' + block.header.number.toString(16),
-    toHexString(block.header.hash()),
+    bytesToHex(block.header.hash()),
   ])
   parentPort?.postMessage(`indexed: ${block.header.number}`)
 }
@@ -64,8 +64,8 @@ const gossip = async (contentKey: Uint8Array, content: Uint8Array) => {
     port: workerData.port ?? 8545,
   })
   const stored = await client.request('portal_stateGossip', [
-    toHexString(contentKey),
-    toHexString(content),
+    bytesToHex(contentKey),
+    bytesToHex(content),
   ])
   parentPort?.postMessage(`gossiped to: ${stored.result} nodes`)
 }
@@ -114,11 +114,11 @@ const generateStateNetworkContent = async () => {
               : '0x0' + contract.address.slice(2),
           ),
           slot: BigInt(p.key),
-          stateRoot: fromHexString(stateroot),
+          stateRoot: hexToBytes(stateroot),
         })
         const data = {
           witnesses: p.proof.map((x: string) => {
-            return x.length % 2 === 0 ? fromHexString(x) : fromHexString('0x0' + x.slice(2))
+            return x.length % 2 === 0 ? hexToBytes(x) : hexToBytes('0x0' + x.slice(2))
           }),
         }
         const csp = ContractStorageTrieProofType.serialize(data)
@@ -139,12 +139,12 @@ const generateStateNetworkContent = async () => {
     for (const c of contracts) {
       const accountProof = await alchemy.core.send('eth_getProof', [c.contractAddress, [], number])
       const accountProofContent = AccountTrieProofType.serialize({
-        witnesses: accountProof.accountProof.map(fromHexString),
+        witnesses: accountProof.accountProof.map(hexToBytes),
       })
       const accountProofContentKey = getStateNetworkContentKey({
         contentType: StateNetworkContentType.AccountTrieProof,
         address: Address.fromString(c.contractAddress),
-        stateRoot: fromHexString(stateroot),
+        stateRoot: hexToBytes(stateroot),
       })
       void toStorage(accountProofContentKey, accountProofContent)
       const codeHash = accountProof.codeHash
@@ -152,9 +152,9 @@ const generateStateNetworkContent = async () => {
       const bytecodeContentkey = getStateNetworkContentKey({
         contentType: StateNetworkContentType.ContractByteCode,
         address: Address.fromString(c.contractAddress),
-        codeHash: fromHexString(codeHash),
+        codeHash: hexToBytes(codeHash),
       })
-      const contractBytecode = ContractByteCodeType.serialize(fromHexString(bytecode))
+      const contractBytecode = ContractByteCodeType.serialize(hexToBytes(bytecode))
       totalBytes_code += contractBytecode.length
       totalBytecode++
       void toStorage(bytecodeContentkey, contractBytecode)
@@ -177,7 +177,7 @@ const generateStateNetworkContent = async () => {
       return [
         x.address,
         {
-          witnesses: x.accountProof.map(fromHexString),
+          witnesses: x.accountProof.map(hexToBytes),
         },
       ]
     }),
@@ -191,7 +191,7 @@ const generateStateNetworkContent = async () => {
     totalATP++
     const contentKey = getStateNetworkContentKey({
       address: Address.fromString(add),
-      stateRoot: fromHexString(stateroot),
+      stateRoot: hexToBytes(stateroot),
       contentType: StateNetworkContentType.AccountTrieProof,
     })
     await toStorage(contentKey, content)

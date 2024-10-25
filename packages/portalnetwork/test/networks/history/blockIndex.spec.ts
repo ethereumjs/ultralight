@@ -1,4 +1,3 @@
-import { fromHexString } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
@@ -24,8 +23,8 @@ describe('BlockIndex', async () => {
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
   const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, fromHexString(hash))
-  await history.store(headerKey, fromHexString(headerWithProof))
+  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(hash))
+  await history.store(headerKey, hexToBytes(headerWithProof))
   const stored = await history.get(headerWithProofkey)
 
   it('should store block header', () => {

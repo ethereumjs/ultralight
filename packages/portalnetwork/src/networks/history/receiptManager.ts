@@ -1,8 +1,8 @@
-import { toHexString } from '@chainsafe/ssz'
 import * as RLP from '@ethereumjs/rlp'
 import {
   bigIntToBytes,
   bytesToBigInt,
+  bytesToHex,
   bytesToInt,
   equalsBytes,
   hexToBytes,
@@ -125,7 +125,7 @@ export async function getLogs(
   const returnedLogs: GetLogsReturn = []
   let returnedLogsSize = 0
   for (const block of blocks) {
-    const receipts = await getReceipts(toHexString(block!.hash()))
+    const receipts = await getReceipts(bytesToHex(block!.hash()))
     if (receipts.length === 0) continue
     let logs: GetLogsReturn = []
     let logIndex = 0

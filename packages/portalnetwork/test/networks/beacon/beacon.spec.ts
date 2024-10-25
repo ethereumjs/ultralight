@@ -1,5 +1,4 @@
 import { SignableENR } from '@chainsafe/enr'
-import { toHexString } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { ssz } from '@lodestar/types'
@@ -172,7 +171,7 @@ describe('API tests', async () => {
       6684738,
       'put the correct update in the correct position in the range',
     )
-    assert.equal(toHexString(range!), updatesByRange.content_value)
+    assert.equal(bytesToHex(range!), updatesByRange.content_value)
     expect(gossipSpy).toHaveBeenCalledTimes(0) // verifies that we don't gossip individual LightClientUpdates
     vi.clearAllMocks()
   })
@@ -185,7 +184,7 @@ describe('API tests', async () => {
       hexToBytes(updatesByRange.content_key).slice(1),
     )
     assert.equal(
-      toHexString(reconstructedRange).slice(0, 20),
+      bytesToHex(reconstructedRange).slice(0, 20),
       updatesByRange.content_value.slice(0, 20),
       'stored and reconstructed a LightClientUpdatesByRange object',
     )

@@ -1,4 +1,4 @@
-import { toHexString } from '@chainsafe/ssz'
+import { bytesToHex } from '@ethereumjs/util'
 import { randomBytes } from 'crypto'
 import { assert, describe, it } from 'vitest'
 
@@ -67,7 +67,7 @@ describe('uTP utils tests', () => {
     assert.deepEqual(
       contents[0],
       decoded[0],
-      `first item matches, "${toHexString(contents[0]).slice(0, 5)}..." === "${toHexString(
+      `first item matches, "${bytesToHex(contents[0]).slice(0, 5)}..." === "${bytesToHex(
         decoded[0],
       ).slice(0, 5)}..."`,
     )

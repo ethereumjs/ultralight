@@ -1,6 +1,6 @@
 import { BlockHeader } from '@ethereumjs/block'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import jayson from 'jayson/promise/index.js'
-import { fromHexString, toHexString } from 'portalnetwork'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
@@ -20,11 +20,11 @@ const main = async () => {
 
   for (let x = 1; x < args.blockHeight; x++) {
     const web3res = await web3.request('debug_getHeaderRlp', [x])
-    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(fromHexString(web3res.result)), {
+    const header = BlockHeader.fromRLPSerializedHeader(Buffer.from(hexToBytes(web3res.result)), {
       setHardfork: true,
     })
     const res2 = await ultralight.request('portal_addBlockHeaderToHistory', [
-      toHexString(header.hash()),
+      bytesToHex(header.hash()),
       web3res.result,
     ])
     console.log(x, res2)

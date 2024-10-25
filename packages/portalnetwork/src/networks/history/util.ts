@@ -1,9 +1,8 @@
 import { digest } from '@chainsafe/as-sha256'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
-import { bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
 
 import { historicalEpochs } from './data/epochHashes.js'
@@ -210,7 +209,7 @@ export const addRLPSerializedBlock = async (
   network: HistoryNetwork,
   witnesses: Witnesses,
 ) => {
-  const block = Block.fromRLPSerializedBlock(fromHexString(rlpHex), {
+  const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
@@ -232,7 +231,7 @@ export const addRLPSerializedBlock = async (
       header: header.serialize(),
       proof: { selector: 0, value: null },
     })
-    await network.indexBlockHash(header.number, toHexString(header.hash()))
+    await network.indexBlockHash(header.number, bytesToHex(header.hash()))
 
     await network.store(headerKey, headerProof)
   }

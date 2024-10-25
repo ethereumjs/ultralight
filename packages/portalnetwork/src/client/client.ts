@@ -1,7 +1,6 @@
 import { Discv5 } from '@chainsafe/discv5'
 import { SignableENR } from '@chainsafe/enr'
-import { toHexString } from '@chainsafe/ssz'
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
@@ -378,12 +377,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         {
           type: 'put',
           key: 'privateKey',
-          value: toHexString(this.discv5.enr.privateKey!),
+          value: bytesToHex(this.discv5.enr.privateKey!),
         },
         {
           type: 'put',
           key: 'publicKey',
-          value: toHexString(this.discv5.enr.publicKey!),
+          value: bytesToHex(this.discv5.enr.publicKey!),
         },
         {
           type: 'put',
@@ -398,15 +397,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
-    if (toHexString(message.protocol) === NetworkId.UTPNetwork) {
+    if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
       await this.handleUTP(src, src.nodeId, message, message.request)
       return
     }
-    const network = this.networks.get(toHexString(message.protocol) as NetworkId)
+    const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
     if (!network) {
-      this.logger(
-        `Received TALKREQ message on unsupported network ${toHexString(message.protocol)}`,
-      )
+      this.logger(`Received TALKREQ message on unsupported network ${bytesToHex(message.protocol)}`)
       await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
 
       return
@@ -480,7 +477,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         hexToBytes(messageNetwork),
       )
       this.eventLog &&
-        this.emit('SendTalkReq', nodeAddr.nodeId, toHexString(res), toHexString(payload))
+        this.emit('SendTalkReq', nodeAddr.nodeId, bytesToHex(res), bytesToHex(payload))
       return res
     } catch (err: any) {
       if (networkId === NetworkId.UTPNetwork) {
@@ -497,7 +494,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     payload: Uint8Array,
   ) => {
     this.eventLog &&
-      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), toHexString(payload))
+      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
     await this.discv5.sendTalkResp(src, requestId, payload)
   }
 }

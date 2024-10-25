@@ -1,6 +1,7 @@
 import { Block } from '@ethereumjs/block'
+import { bytesToHex } from '@ethereumjs/util'
 import jayson from 'jayson/promise/index.js'
-import { NetworkId, toHexString } from 'portalnetwork'
+import { NetworkId } from 'portalnetwork'
 
 // async function testnet(number: number): Promise<[HttpClient[], string[]]> {
 //   const bootnodes = []
@@ -37,13 +38,13 @@ const main = async () => {
     const block = await web3.request('debug_getBlockRlp', [i])
     const blockhash = Block.fromRLPSerializedBlock(block.result).hash()
     const res1 = await builder.request('portal_addBlockToHistory', [
-      toHexString(blockhash),
+      bytesToHex(blockhash),
       block.result,
     ])
     console.log(i + 1, res1)
     // const bn = Math.floor(Math.random() * bootnodes.length)
     // const res2 = await bootnodes[bn].request('portal_addBlockToHistory', [
-    //       toHexString(blockhash),
+    //       bytesToHex(blockhash),
     //       block.result,
     //     ])
     //     console.log((i + 1),bn,  res2)

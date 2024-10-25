@@ -1,8 +1,7 @@
-import { fromHexString, toHexString } from '@chainsafe/ssz'
 import { Blockchain } from '@ethereumjs/blockchain'
 import { Common } from '@ethereumjs/common'
 import { LeafNode, Trie } from '@ethereumjs/trie'
-import { Account, parseGethGenesisState } from '@ethereumjs/util'
+import { Account, bytesToHex, hexToBytes, parseGethGenesisState } from '@ethereumjs/util'
 import { readFileSync, writeFileSync } from 'fs'
 import { AccountTrieNodeContentKey, AccountTrieNodeOffer, tightlyPackNibbles } from 'portalnetwork'
 
@@ -29,9 +28,9 @@ const genesisAccounts = () => {
 export const genesisStateTrie = async () => {
   const trie = new Trie({ useKeyHashing: true })
   for (const account of genesisAccounts()) {
-    await trie.put(fromHexString(account[0]), account[1])
+    await trie.put(hexToBytes(account[0]), account[1])
   }
-  const root = toHexString(trie.root())
+  const root = bytesToHex(trie.root())
   if (root !== genesis.genesisStateRoot) {
     throw new Error('Invalid genesis state root')
   }
@@ -49,7 +48,7 @@ export const generateAccountTrieProofs = async (
   const leafNodes: [TrieNode, number[]][] = []
   await trie.walkAllNodes(async (node, key) => {
     node instanceof LeafNode ? leafNodes.push([node, key]) : nodes.push([node, key])
-    if (toHexString(trie['hash'](node.serialize())) === genesis.genesisStateRoot) {
+    if (bytesToHex(trie['hash'](node.serialize())) === genesis.genesisStateRoot) {
       console.log(`ROOT NODE WALKING`)
       console.log({ nodes, leafNodes })
     }
@@ -58,7 +57,7 @@ export const generateAccountTrieProofs = async (
     leafNodes.map(async ([node, path]) => {
       const nodeHash = trie['hash'](node.serialize())
       const proof = (await trie.findPath(nodeHash)).stack.map((node) => node.serialize())
-      return [toHexString(nodeHash), { path, proof }]
+      return [bytesToHex(nodeHash), { path, proof }]
     }),
   )
   const proofs = await Promise.all(
@@ -66,9 +65,9 @@ export const generateAccountTrieProofs = async (
       const nodeHash = trie['hash'](node.serialize())
       const nodePath = await trie.findPath(nodeHash)
       const proof = nodePath.stack.map((node) => node.serialize())
-      const content = [toHexString(nodeHash), { path, proof }]
+      const content = [bytesToHex(nodeHash), { path, proof }]
       // console.log(content)
-      if (toHexString(nodeHash) === genesis.genesisStateRoot) {
+      if (bytesToHex(nodeHash) === genesis.genesisStateRoot) {
         console.log('GENESIS PROOF:', content)
       }
       return content
@@ -95,10 +94,10 @@ const _index = async () => {
   const leafNodeContent: [string, Uint8Array][] = Object.keys(leafProofs).map((nodeHash) => {
     const path = tightlyPackNibbles(leafProofs[nodeHash].path as TNibble[])
     const key: TAccountTrieNodeKey = {
-      nodeHash: fromHexString(nodeHash),
+      nodeHash: hexToBytes(nodeHash),
       path,
     }
-    const contentKey = toHexString(AccountTrieNodeContentKey.encode(key))
+    const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
     const content = AccountTrieNodeOffer.serialize({
       blockHash: genesisBlock.hash(),
       proof: leafProofs[nodeHash].proof,
@@ -109,10 +108,10 @@ const _index = async () => {
     try {
       const path = tightlyPackNibbles(nonLeafProofs[nodeHash].path as TNibble[])
       const key: TAccountTrieNodeKey = {
-        nodeHash: fromHexString(nodeHash),
+        nodeHash: hexToBytes(nodeHash),
         path,
       }
-      const contentKey = toHexString(AccountTrieNodeContentKey.encode(key))
+      const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
       const content = AccountTrieNodeOffer.serialize({
         blockHash: genesisBlock.hash(),
         proof: nonLeafProofs[nodeHash].proof,

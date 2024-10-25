@@ -1,4 +1,5 @@
-import { HistoryNetworkContentType, NetworkId, toHexString } from 'portalnetwork'
+import { bytesToHex } from '@ethereumjs/util'
+import { HistoryNetworkContentType, NetworkId } from 'portalnetwork'
 
 import { isValidEnr } from '../util.js'
 
@@ -106,7 +107,7 @@ export const validators = {
   get dstId() {
     return (params: any[], index: number) => {
       if (params[index]['raw'] !== undefined) {
-        params[index] = toHexString(Uint8Array.from(params[index]['raw'])).slice(2)
+        params[index] = bytesToHex(Uint8Array.from(params[index]['raw'])).slice(2)
       }
       if (typeof params[index] !== 'string') {
         return {

@@ -1,5 +1,6 @@
+import { hexToBytes } from '@ethereumjs/util'
 import jayson from 'jayson/promise/index.js'
-import { BlockHeaderWithProof, fromHexString } from 'portalnetwork'
+import { BlockHeaderWithProof } from 'portalnetwork'
 
 import type { HttpClient } from 'jayson/promise/index.js'
 
@@ -14,9 +15,7 @@ const blockBodyContent_value = '0x0800000008000000c0'
 const { Client } = jayson
 
 const gossip = async () => {
-  const blockHeaderContent = BlockHeaderWithProof.deserialize(
-    fromHexString(blockHeaderContent_value),
-  )
+  const blockHeaderContent = BlockHeaderWithProof.deserialize(hexToBytes(blockHeaderContent_value))
   console.log(blockHeaderContent)
 
   const ultralights: HttpClient[] = []

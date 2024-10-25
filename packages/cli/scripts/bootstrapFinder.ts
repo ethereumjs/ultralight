@@ -1,4 +1,4 @@
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { getClient } from '@lodestar/api'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
@@ -12,7 +12,6 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
   getBeaconContentKey,
-  toHexString,
 } from 'portalnetwork'
 
 import type { ForkLightClient } from '@lodestar/params'
@@ -68,7 +67,7 @@ const main = async () => {
   for (let x = 0; x < 4; x++) {
     const bootstrapSlot = updatesByRange.response![x].data.finalizedHeader.beacon.slot
 
-    const bootstrapRoot = toHexString(
+    const bootstrapRoot = bytesToHex(
       (await api.beacon.getBlockRoot(bootstrapSlot)).response!.data.root,
     )
     const bootstrap = (await api.lightclient.getBootstrap(bootstrapRoot)).response!
@@ -77,7 +76,7 @@ const main = async () => {
         BeaconLightClientNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
       ),
-      toHexString(
+      bytesToHex(
         concatBytes(
           beaconConfig.forkName2ForkDigest(bootstrap.version),
           (
@@ -96,7 +95,7 @@ const main = async () => {
   }
 
   for (let x = 0; x < 10; x++) {
-    await ultralights[x].request('portal_beaconStore', [rangeKey, toHexString(serializedRange)])
+    await ultralights[x].request('portal_beaconStore', [rangeKey, bytesToHex(serializedRange)])
   }
   console.log(
     `Seeded light client updates for range ${oldPeriod}-${oldPeriod + 4} into Portal Network`,
@@ -115,7 +114,7 @@ const main = async () => {
   }
   const res3 = await ultralights[0].request('portal_beaconStore', [
     optimisticUpdateKey,
-    toHexString(
+    bytesToHex(
       concatBytes(
         beaconConfig.forkName2ForkDigest(optimisticUpdate.version),
         (
@@ -148,7 +147,7 @@ const main = async () => {
     )
     const res = await ultralights[0].request('portal_beaconStore', [
       optimisticUpdateKey,
-      toHexString(
+      bytesToHex(
         concatBytes(
           beaconConfig.forkName2ForkDigest(optimisticUpdate.version),
           (
