@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
 import { Block } from '@ethereumjs/block'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 import { RunStatusCode } from '@lodestar/light-client'
 import { ForkName } from '@lodestar/params'
