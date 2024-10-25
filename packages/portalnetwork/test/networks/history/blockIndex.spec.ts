@@ -1,4 +1,3 @@
-import { hexToBytes } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 

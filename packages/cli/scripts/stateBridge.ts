@@ -1,4 +1,4 @@
-import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
+import { bytesToHex, hexToBytes } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import { Address } from '@ethereumjs/util'
 import { Alchemy, Network } from 'alchemy-sdk'

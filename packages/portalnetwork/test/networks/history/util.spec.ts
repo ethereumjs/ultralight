@@ -1,4 +1,3 @@
-import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { Common, Hardfork } from '@ethereumjs/common'
 import { KECCAK256_RLP, bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'

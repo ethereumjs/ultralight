@@ -1,11 +1,10 @@
 import { distance } from '@chainsafe/discv5'
 import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
-import { bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
+import { bytesToHex, bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -144,9 +143,7 @@ export const genesisContent = async (
       }
       const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
       const content = AccountTrieNodeOffer.serialize({
-        blockHash: hexToBytes(
-          '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3',
-        ),
+        blockHash: hexToBytes('0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
         proof,
       })
       return [contentKey, content]
@@ -161,9 +158,7 @@ export const genesisContent = async (
       }
       const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
       const content = AccountTrieNodeOffer.serialize({
-        blockHash: hexToBytes(
-          '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3',
-        ),
+        blockHash: hexToBytes('0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
         proof,
       })
       return [contentKey, content]

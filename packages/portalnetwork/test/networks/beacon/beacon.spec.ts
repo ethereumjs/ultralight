@@ -1,5 +1,4 @@
 import { SignableENR } from '@chainsafe/enr'
-import { bytesToHex } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { ssz } from '@lodestar/types'

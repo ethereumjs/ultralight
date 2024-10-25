@@ -1,10 +1,6 @@
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { hexToBytes } from '@ethereumjs/util'
 import jayson from 'jayson/promise/index.js'
-import {
-  HistoryNetworkContentType,
-  decodeHistoryNetworkContentKey,
-  getContentKey,
-} from 'portalnetwork'
+import { decodeHistoryNetworkContentKey } from 'portalnetwork'
 
 import type { HttpClient } from 'jayson/promise/index.js'
 

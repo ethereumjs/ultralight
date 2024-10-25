@@ -17,10 +17,8 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
-  hexToBytes,
   generatePreMergeHeaderProof,
   getBeaconContentKey,
-  bytesToHex,
 } from '../../../src/index.js'
 
 import type { BeaconLightClientNetwork, HistoryNetwork } from '../../../src/index.js'

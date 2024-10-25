@@ -1,5 +1,5 @@
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { ContainerType, UintBigintType, hexToBytes, bytesToHex } from '@chainsafe/ssz'
+import { ContainerType, UintBigintType } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'

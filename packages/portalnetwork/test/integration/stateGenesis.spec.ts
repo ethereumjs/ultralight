@@ -1,4 +1,4 @@
-import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
+import { bytesToHex, hexToBytes } from '@chainsafe/ssz'
 import { Block } from '@ethereumjs/block'
 import { BranchNode, Trie } from '@ethereumjs/trie'
 import { Account, bytesToUnprefixedHex, padToEven } from '@ethereumjs/util'
