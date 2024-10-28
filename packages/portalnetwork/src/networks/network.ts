@@ -64,6 +64,10 @@ export abstract class BaseNetwork extends EventEmitter {
   public bridge: boolean
 
   portal: PortalNetwork
+  private lastRefreshTime: number = 0
+  private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
+  private refreshInterval: number = 30000 // Start with 30s
+
   constructor({ client, networkId, db, radius, maxStorage, bridge }: BaseNetworkConfig) {
     super()
     this.bridge = bridge ?? false
@@ -797,6 +801,11 @@ export abstract class BaseNetwork extends EventEmitter {
    * Do the random lookup on this node-id.
    */
   public bucketRefresh = async () => {
+    const now = Date.now()
+    if (now - this.lastRefreshTime < this.getRefreshInterval()) {
+      return
+    }
+    this.lastRefreshTime = now
     await this.livenessCheck()
     const notFullBuckets = this.routingTable.buckets
       .map((bucket, idx) => {
@@ -816,12 +825,20 @@ export abstract class BaseNetwork extends EventEmitter {
       bucketsToRefresh = notFullBuckets.filter((_, idx) => idx % 2 === 0)
       // Refresh all not full buckets if routing table contains less than 25 nodes in it
     } else bucketsToRefresh = notFullBuckets
+    this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} total peers`)
     for (const bucket of bucketsToRefresh) {
       const distance = bucket.distance
+      this.logger.extend('bucketRefresh')(
+        `Starting bucket ${distance} refresh with ${bucket.bucket.size()} peers`,
+      )
       const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.enr.nodeId, distance)
       const lookup = new NodeLookup(this, randomNodeAtDistance)
       await lookup.startLookup()
     }
+    const newSize = this.routingTable.size
+    this.logger.extend('bucketRefresh')(
+      `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
+    )
   }
 
   /**
@@ -909,5 +926,38 @@ export abstract class BaseNetwork extends EventEmitter {
     } catch (err: any) {
       this.logger(`Error retrieving content from DB -- ${err.message}`)
     }
+  }
+
+  private scheduleNextRefresh() {
+    if (this.nextRefreshTimeout !== null) {
+      clearTimeout(this.nextRefreshTimeout)
+    }
+
+    const interval = this.getRefreshInterval()
+    this.nextRefreshTimeout = setTimeout(async () => {
+      await this.bucketRefresh()
+      this.scheduleNextRefresh()
+    }, interval)
+  }
+
+  public startRefresh() {
+    this.scheduleNextRefresh()
+  }
+
+  public stopRefresh() {
+    if (this.nextRefreshTimeout !== null) {
+      clearTimeout(this.nextRefreshTimeout)
+      this.nextRefreshTimeout = null
+    }
+  }
+
+  private getRefreshInterval() {
+    const tableHealth = this.routingTable.size / 256 // Percentage of ideal size
+    if (tableHealth > 0.8) {
+      return 60000 // Healthy table = longer interval
+    } else if (tableHealth < 0.3) {
+      return 15000 // Unhealthy table = shorter interval
+    }
+    return 30000
   }
 }
