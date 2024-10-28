@@ -9,13 +9,15 @@ import type { Debugger } from 'debug'
 // This class implements a version of the the lookup algorithm defined in the Kademlia paper
 // https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf.
 
-const k = 16 // Kademlia constant for max nodes to be retrieved by `nodeLookup`
-const a = 3 // Concurrency parameter defined in Kademlia paper
-
 export class NodeLookup {
   private network: BaseNetwork
   private nodeSought: string
   private log: Debugger
+
+  // Configuration constants
+  private static readonly CONCURRENT_LOOKUPS = 3 // Alpha (a) parameter from Kademlia
+  private static readonly LOOKUP_TIMEOUT = 3000 // 3 seconds per peer
+  private static readonly MAX_PEERS = 16 // k parameter from Kademlia
 
   constructor(network: BaseNetwork, nodeId: string) {
     this.network = network
