@@ -22,42 +22,10 @@ export class NodeLookup {
   constructor(network: BaseNetwork, nodeId: string) {
     this.network = network
     this.nodeSought = nodeId
-    this.log = this.network.logger.extend('nodeLookup', ':')
+    this.log = this.network.logger
+      .extend('nodeLookup')
+      .extend(log2Distance(this.network.enr.nodeId, this.nodeSought).toString())
   }
-
-  /**
-   * Queries the `a` nearest nodes in a subnetwork's routing table for nodes in the kbucket and recursively
-   * requests peers closer to the `nodeSought` until either the node is found or there are no more peers to query
-   * @param nodeSought nodeId of node sought in lookup
-   * @param networkId `SubNetworkId` of the routing table to be queried
-   */
-  public startLookup = async (): Promise<undefined | string> => {
-    const closestPeers = this.network.routingTable.nearest(this.nodeSought, a)
-    const newPeers: ENR[] = []
-    const nodesAlreadyAsked = new Set()
-
-    let finished = false
-    while (!finished && newPeers.length <= k) {
-      if (closestPeers.length === 0) {
-        finished = true
-        continue
-      }
-      const nearestPeer = closestPeers.shift()
-      if (nodesAlreadyAsked.has(nearestPeer?.nodeId)) {
-        continue
-      } else {
-        nodesAlreadyAsked.add(nearestPeer?.nodeId)
-      }
-
-      // Calculates log2distance between queried peer and `nodeSought`
-      const distanceToSoughtPeer = log2Distance(nearestPeer!.nodeId, this.nodeSought)
-      // Request nodes in the given kbucket (i.e. log2distance) on the receiving peer's routing table for the `nodeSought`
-      const res = await this.network.sendFindNodes(nearestPeer!.nodeId, [distanceToSoughtPeer])
-
-      if (res?.enrs && res.enrs.length > 0) {
-        const distanceFromSoughtNodeToQueriedNode = distance(nearestPeer!.nodeId, this.nodeSought)
-        for await (const enr of res.enrs) {
-          if (!finished) {
             const decodedEnr = ENR.decode(enr)
             if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
               return
