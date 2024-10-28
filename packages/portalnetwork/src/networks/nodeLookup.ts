@@ -26,6 +26,30 @@ export class NodeLookup {
       .extend('nodeLookup')
       .extend(log2Distance(this.network.enr.nodeId, this.nodeSought).toString())
   }
+
+  private async addNewPeers(peers: ENR[]): Promise<void> {
+    const addPromises = peers.map(async (enr) => {
+      try {
+        const res = await this.network.sendPing(enr)
+        if (res) {
+          this.network.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+        }
+      } catch (error) {
+        this.log(`Error adding peer ${enr.nodeId}: ${error}`)
+      }
+    })
+
+    await Promise.allSettled(addPromises)
+  }
+
+  private selectClosestPending(pendingNodes: Map<string, ENR>, count: number): ENR[] {
+    return Array.from(pendingNodes.values())
+      .sort((a, b) =>
+        Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
+      )
+      .slice(0, count)
+  }
+
             const decodedEnr = ENR.decode(enr)
             if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
               return
