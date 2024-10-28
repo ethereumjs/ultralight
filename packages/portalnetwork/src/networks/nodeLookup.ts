@@ -1,8 +1,6 @@
 import { EntryStatus, distance, log2Distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 
-import { shortId } from '../index.js'
-
 import type { BaseNetwork } from './network.js'
 import type { Debugger } from 'debug'
 
@@ -105,15 +103,66 @@ export class NodeLookup {
     }
   }
 
-          this.nodeSought,
-          this.network.routingTable,
-        )} and found ${newPeers.length} new peers`,
-      )
-    for await (const enr of newPeers) {
-      // Add all newly found peers to the subnetwork routing table
-      const res = await this.network.sendPing(enr)
-      if (res) this.network.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
+  public async startLookup(): Promise<string | undefined> {
+    const queriedNodes = new Set<string>()
+    const pendingNodes = new Map<string, ENR>() // nodeId -> ENR
+
+    // Initialize with closest known peers
+    const initialPeers = this.network.routingTable.nearest(
+      this.nodeSought,
+      NodeLookup.CONCURRENT_LOOKUPS,
+    )
+    for (const peer of initialPeers) {
+      pendingNodes.set(peer.nodeId, peer)
     }
+
+    while (pendingNodes.size > 0) {
+      this.log(`Continuing lookup with ${pendingNodes.size} pending nodes`)
+
+      // Select closest α nodes we haven't queried yet
+      const currentBatch = this.selectClosestPending(pendingNodes, NodeLookup.CONCURRENT_LOOKUPS)
+      if (currentBatch.length === 0) break
+
+      // Query selected nodes in parallel with timeout
+      const lookupPromises = currentBatch.map((peer) =>
+        this.queryPeer(peer, queriedNodes, pendingNodes),
+      )
+
+      try {
+        await Promise.race([
+          Promise.all(lookupPromises),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Lookup round timeout')),
+              NodeLookup.LOOKUP_TIMEOUT * NodeLookup.CONCURRENT_LOOKUPS,
+            ),
+          ),
+        ])
+      } catch (error) {
+        this.log(`error: ${error}`)
+        // Continue with next round even if current round had errors
+      }
+
+      // Remove queried nodes from pending
+      for (const peer of currentBatch) {
+        pendingNodes.delete(peer.nodeId)
+      }
+    }
+
+    // Add discovered peers to routing table
+    const newPeers = Array.from(queriedNodes)
+      .map((nodeId) => {
+        try {
+          return this.network.routingTable.getWithPending(nodeId)?.value
+        } catch {
+          return undefined
+        }
+      })
+      .filter((enr): enr is ENR => enr !== undefined)
+
+    await this.addNewPeers(newPeers)
+
+    // Return target node's ENR if found
     return this.network.routingTable.getWithPending(this.nodeSought)?.value.encodeTxt()
   }
 }
