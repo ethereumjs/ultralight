@@ -807,34 +807,26 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     this.lastRefreshTime = now
     await this.livenessCheck()
-    const notFullBuckets = this.routingTable.buckets
+    const size = this.routingTable.size
+    this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} peers`)
+    const bucketsToRefresh = this.routingTable.buckets
       .map((bucket, idx) => {
         return { bucket, distance: idx }
       })
       .filter((pair) => pair.bucket.size() < 16)
       .reverse()
       .slice(0, 4)
-    const size = this.routingTable.size
-    let bucketsToRefresh
-    if (size > 48) {
-      // Only refresh one not full bucket if table contains equivalent of 3+ full buckets
-      const idx = Math.floor(Math.random() * notFullBuckets.length)
-      bucketsToRefresh = [notFullBuckets[idx]]
-    } else if (size > 24) {
-      // Refresh half of notFullBuckets if routing table contains equivalent of 1.5+ full buckets
-      bucketsToRefresh = notFullBuckets.filter((_, idx) => idx % 2 === 0)
-      // Refresh all not full buckets if routing table contains less than 25 nodes in it
-    } else bucketsToRefresh = notFullBuckets
-    this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} total peers`)
-    for (const bucket of bucketsToRefresh) {
-      const distance = bucket.distance
-      this.logger.extend('bucketRefresh')(
-        `Starting bucket ${distance} refresh with ${bucket.bucket.size()} peers`,
-      )
-      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.enr.nodeId, distance)
-      const lookup = new NodeLookup(this, randomNodeAtDistance)
-      await lookup.startLookup()
-    }
+    this.logger.extend('bucketRefresh')(
+      `Refreshing buckets: ${bucketsToRefresh.map((b) => b.distance).join(', ')}`,
+    )
+
+    await Promise.all(
+      bucketsToRefresh.map(async (bucket) => {
+        const randomNodeId = generateRandomNodeIdAtDistance(this.enr.nodeId, bucket.distance)
+        const lookup = new NodeLookup(this, randomNodeId)
+        return lookup.startLookup()
+      }),
+    )
     const newSize = this.routingTable.size
     this.logger.extend('bucketRefresh')(
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
