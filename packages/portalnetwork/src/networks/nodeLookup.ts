@@ -50,30 +50,61 @@ export class NodeLookup {
       .slice(0, count)
   }
 
+  private async queryPeer(
+    peer: ENR,
+    queriedNodes: Set<string>,
+    pendingNodes: Map<string, ENR>,
+  ): Promise<void> {
+    const distanceToTarget = log2Distance(peer.nodeId, this.nodeSought)
+
+    try {
+      // Set timeout for individual peer query
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Peer query timeout')), NodeLookup.LOOKUP_TIMEOUT)
+      })
+
+      const queryPromise = async () => {
+        const response = await this.network.sendFindNodes(peer.nodeId, [distanceToTarget])
+        if (!response?.enrs) return
+
+        for (const enr of response.enrs) {
+          try {
             const decodedEnr = ENR.decode(enr)
-            if (nodesAlreadyAsked.has(decodedEnr.nodeId)) {
-              return
-            }
-            if (decodedEnr.nodeId === this.nodeSought) {
-              // `nodeSought` was found -- add to table and terminate lookup
-              finished = true
+            const nodeId = decodedEnr.nodeId
+
+            // Skip if we've already queried this node
+            if (queriedNodes.has(nodeId)) continue
+
+            // If we found our target
+            if (nodeId === this.nodeSought) {
               this.network.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
               await this.network.sendPing(decodedEnr)
-            } else if (
-              distance(decodedEnr.nodeId, this.nodeSought) < distanceFromSoughtNodeToQueriedNode
-            ) {
-              // if peer received is closer than peer that sent ENR, add to front of `closestPeers` list
-              closestPeers.unshift(decodedEnr)
-              // Add newly found peers to list for storing in routing table
-              newPeers.push(decodedEnr)
+              return
             }
+
+            // Add to pending if closer than the peer that gave us this ENR
+            if (
+              pendingNodes.size < NodeLookup.MAX_PEERS &&
+              !this.network.routingTable.isIgnored(nodeId)
+            ) {
+              pendingNodes.set(nodeId, decodedEnr)
+            } else {
+              return
+            }
+          } catch (error) {
+            this.log(`Error processing ENR: ${error}`)
           }
         }
       }
+
+      await Promise.race([queryPromise(), timeoutPromise])
+    } catch (error) {
+      this.log(`Error querying peer ${peer.nodeId}: ${error}`)
+    } finally {
+      queriedNodes.add(peer.nodeId)
     }
-    newPeers.length > 0 &&
-      this.log(
-        `finished node lookup for ${shortId(
+  }
+
           this.nodeSought,
           this.network.routingTable,
         )} and found ${newPeers.length} new peers`,
