@@ -800,14 +800,15 @@ export abstract class BaseNetwork extends EventEmitter {
       .map((bucket, idx) => {
         return { bucket, distance: idx }
       })
-      .filter((pair) => pair.bucket.size() < 16)
       .reverse()
+      .slice(0, 16)
+      .filter((pair) => pair.bucket.size() < MAX_NODES_PER_BUCKET)
       .slice(0, 4)
     this.logger.extend('bucketRefresh')(
       `Refreshing buckets: ${bucketsToRefresh.map((b) => b.distance).join(', ')}`,
     )
 
-    await Promise.all(
+    await Promise.allSettled(
       bucketsToRefresh.map(async (bucket) => {
         const randomNodeId = generateRandomNodeIdAtDistance(this.enr.nodeId, bucket.distance)
         const lookup = new NodeLookup(this, randomNodeId)
