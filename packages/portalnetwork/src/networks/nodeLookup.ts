@@ -101,29 +101,30 @@ export class NodeLookup {
   }
 
   public async startLookup(): Promise<string | undefined> {
-    const queriedNodes = new Set<string>()
-    const pendingNodes = new Map<string, ENR>() // nodeId -> ENR
+    const bucket = log2Distance(this.network.enr.nodeId, this.nodeSought)
+    const startingSize = this.network.routingTable.buckets[bucket].size()
+    this.log(`Starting lookup in bucket ${bucket} (${startingSize}/${MAX_NODES_PER_BUCKET} peers)`)
 
-    // Initialize with closest known peers
-    const initialPeers = this.network.routingTable.nearest(
-      this.nodeSought,
-      NodeLookup.CONCURRENT_LOOKUPS,
-    )
-    for (const peer of initialPeers) {
-      pendingNodes.set(peer.nodeId, peer)
-    }
+    while (this.pendingNodes.size > 0) {
+      const full =
+        this.network.routingTable.buckets[
+          log2Distance(this.network.enr.nodeId, this.nodeSought)
+        ].size() >= MAX_NODES_PER_BUCKET
 
-    while (pendingNodes.size > 0) {
-      this.log(`Continuing lookup with ${pendingNodes.size} pending nodes`)
+      if (full) {
+        this.log(`Bucket is full, stopping lookup`)
+        this.log(
+          `Finished lookup in bucket ${bucket} (${MAX_NODES_PER_BUCKET}/${MAX_NODES_PER_BUCKET} peers) +${MAX_NODES_PER_BUCKET - startingSize}`,
+        )
+        return
+      }
 
       // Select closest α nodes we haven't queried yet
-      const currentBatch = this.selectClosestPending(pendingNodes, NodeLookup.CONCURRENT_LOOKUPS)
+      const currentBatch = this.selectClosestPending()
       if (currentBatch.length === 0) break
 
       // Query selected nodes in parallel with timeout
-      const lookupPromises = currentBatch.map((peer) =>
-        this.queryPeer(peer, queriedNodes, pendingNodes),
-      )
+      const lookupPromises = currentBatch.map((peer) => this.queryPeer(peer))
 
       try {
         await Promise.race([
@@ -137,29 +138,16 @@ export class NodeLookup {
         ])
       } catch (error) {
         this.log(`error: ${error}`)
-        // Continue with next round even if current round had errors
       }
 
       // Remove queried nodes from pending
       for (const peer of currentBatch) {
-        pendingNodes.delete(peer.nodeId)
+        this.pendingNodes.delete(peer.nodeId)
       }
     }
-
-    // Add discovered peers to routing table
-    const newPeers = Array.from(queriedNodes)
-      .map((nodeId) => {
-        try {
-          return this.network.routingTable.getWithPending(nodeId)?.value
-        } catch {
-          return undefined
-        }
-      })
-      .filter((enr): enr is ENR => enr !== undefined)
-
-    await this.addNewPeers(newPeers)
-
-    // Return target node's ENR if found
-    return this.network.routingTable.getWithPending(this.nodeSought)?.value.encodeTxt()
+    const finalSize = this.network.routingTable.buckets[bucket].size()
+    this.log(
+      `Finished lookup in bucket ${bucket} (${finalSize}/${MAX_NODES_PER_BUCKET} peers) +${finalSize - startingSize}`,
+    )
   }
 }
