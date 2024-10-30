@@ -11,7 +11,7 @@ import type { Debugger } from 'debug'
 import type { Comparator } from 'heap-js'
 
 type LookupPeer = {
-  nodeId: NodeId
+  enr: ENR
   distance: number
 }
 const customPriorityComparator: Comparator<LookupPeer> = (a, b) => a.distance - b.distance
