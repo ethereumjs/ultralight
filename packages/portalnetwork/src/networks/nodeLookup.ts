@@ -68,44 +68,35 @@ export class NodeLookup {
       })
 
       const queryPromise = async () => {
-        const response = await this.network.sendFindNodes(peer.nodeId, [distanceToTarget])
+        const response = await this.network.sendFindNodes(peer.encodeTxt(), [distanceToTarget])
         if (!response?.enrs) return
 
         for (const enr of response.enrs) {
+          const decodedEnr = ENR.decode(enr)
+          const nodeId = decodedEnr.nodeId
           try {
-            const decodedEnr = ENR.decode(enr)
-            const nodeId = decodedEnr.nodeId
-
             // Skip if we've already queried this node
-            if (queriedNodes.has(nodeId)) continue
+            if (this.queriedNodes.has(nodeId)) continue
 
-            // If we found our target
-            if (nodeId === this.nodeSought) {
-              this.network.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-              await this.network.sendPing(decodedEnr)
-              return
+            // Skip if the node is ignored
+            if (this.network.routingTable.isIgnored(nodeId)) {
+              continue
             }
 
-            // Add to pending if closer than the peer that gave us this ENR
-            if (
-              pendingNodes.size < NodeLookup.MAX_PEERS &&
-              !this.network.routingTable.isIgnored(nodeId)
-            ) {
-              pendingNodes.set(nodeId, decodedEnr)
-            } else {
-              return
-            }
+            // Add to pending
+            this.pendingNodes.set(nodeId, decodedEnr)
           } catch (error) {
-            this.log(`Error processing ENR: ${error}`)
+            continue
+            // this.log(`Error processing ENR: ${decodedEnr.encodeTxt()}`)
           }
         }
       }
 
       await Promise.race([queryPromise(), timeoutPromise])
     } catch (error) {
-      this.log(`Error querying peer ${peer.nodeId}: ${error}`)
+      // NOOP
     } finally {
-      queriedNodes.add(peer.nodeId)
+      this.queriedNodes.add(peer.nodeId)
     }
   }
 
