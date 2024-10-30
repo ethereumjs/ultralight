@@ -65,10 +65,13 @@ export class ContentLookup {
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
-    const nearest = this.network.routingTable.nearest(this.contentId, 5)
-    for (const peer of nearest) {
-      const dist = distance(peer.nodeId, this.contentId)
-      this.lookupPeers.push({ nodeId: peer.nodeId, distance: Number(dist) })
+
+    // Sort known peers by distance to the content
+    const nearest = this.network.routingTable.values()
+    for (const enr of nearest) {
+      const dist = distance(enr.nodeId, this.contentId)
+      this.lookupPeers.push({ enr, distance: Number(dist) })
+      this.addedToLookup.add(enr.encodeTxt())
     }
 
     while (!this.finished && (this.lookupPeers.length > 0 || this.pending.size > 0)) {
