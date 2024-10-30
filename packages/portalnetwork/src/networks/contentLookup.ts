@@ -42,7 +42,7 @@ export class ContentLookup {
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
     this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
-    this.timeout = network.portal.utpTimout
+    this.timeout = 3000 // 3 seconds
     this.finished = false
     this.pending = new Set()
   }
