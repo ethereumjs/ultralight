@@ -781,11 +781,11 @@ export abstract class BaseNetwork extends EventEmitter {
 
   /**
    * Follows below algorithm to refresh a bucket in the routing table
-   * 1: Look at your routing table and select all buckets at distance greater than 239 that are not full.
-   * 2: Select a number of buckets to refresh using this logic (48+ nodes known, refresh 1 bucket, 24+ nodes known,
-   * refresh half of not full buckets, <25 nodes known, refresh all not empty buckets
-   * 3: Randomly generate a NodeID that falls within each bucket to be refreshed.
-   * Do the random lookup on this node-id.
+   * 1. Select 4 closest non-full buckets to refresh
+   * 2. Select a random node at the distance of each bucket
+   * 3. Perform a NodeLookup for the random node
+   * 4. NodeLookup will recursively query peers for new nodes at the distance of the bucket
+   * 5. New nodes will be added to the routing table
    */
   public bucketRefresh = async () => {
     const now = Date.now()
