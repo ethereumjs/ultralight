@@ -96,7 +96,7 @@ export abstract class BaseNetwork extends EventEmitter {
   public routingTableInfo = async () => {
     return {
       nodeId: this.enr.nodeId,
-      buckets: this.routingTable.buckets.map((bucket) => bucket.values().map((enr) => enr.nodeId)),
+      buckets: this.routingTable.buckets,
     }
   }
 
