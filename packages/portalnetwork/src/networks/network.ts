@@ -936,7 +936,7 @@ export abstract class BaseNetwork extends EventEmitter {
     if (tableHealth > 0.8) {
       return 60000 // Healthy table = longer interval
     } else if (tableHealth < 0.3) {
-      return 15000 // Unhealthy table = shorter interval
+      return 10000 // Unhealthy table = shorter interval
     }
     return 30000
   }
