@@ -1,5 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
-import { EntryStatus, distance } from '@chainsafe/discv5'
+import { EntryStatus, MAX_NODES_PER_BUCKET, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import {
