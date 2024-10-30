@@ -87,7 +87,16 @@ export class ContentLookup {
             this.addedToLookup.add(next.enr.encodeTxt())
           }
         }
-        const promises = peerBatch.map((peer) => this.processPeer(peer))
+        const promises = peerBatch.map((peer) => {
+          return Promise.race([
+            this.processPeer(peer),
+            new Promise((resolve) =>
+              setTimeout(() => {
+                resolve(undefined)
+              }, this.timeout),
+            ),
+          ])
+        })
 
         this.logger(`Asking ${promises.length} nodes for content`)
         // Wait for first response
