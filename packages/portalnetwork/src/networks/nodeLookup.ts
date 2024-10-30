@@ -14,8 +14,10 @@ export class NodeLookup {
 
   // Configuration constants
   private static readonly CONCURRENT_LOOKUPS = 3 // Alpha (a) parameter from Kademlia
-  private static readonly LOOKUP_TIMEOUT = 3000 // 3 seconds per peer
-  private static readonly MAX_PEERS = 16 // k parameter from Kademlia
+  private static readonly LOOKUP_TIMEOUT = 5000 // 5 seconds per peer
+
+  private queriedNodes: Set<string>
+  private pendingNodes: Map<string, ENR> // nodeId -> ENR
 
   constructor(network: BaseNetwork, nodeId: string) {
     this.network = network
@@ -23,6 +25,14 @@ export class NodeLookup {
     this.log = this.network.logger
       .extend('nodeLookup')
       .extend(log2Distance(this.network.enr.nodeId, this.nodeSought).toString())
+    this.queriedNodes = new Set<string>()
+    this.pendingNodes = new Map<string, ENR>() // nodeId -> ENR
+
+    // Initialize with closest known peers
+    const initialPeers = this.network.routingTable.nearest(this.nodeSought, 16)
+    for (const peer of initialPeers) {
+      this.pendingNodes.set(peer.nodeId, peer)
+    }
   }
 
   private async addNewPeers(peers: ENR[]): Promise<void> {
