@@ -105,9 +105,11 @@ export class ContentLookup {
         } catch (err) {
           this.logger(`All requests errored`)
         }
-        this.logger(
-          `Have ${this.lookupPeers.length} peers left to ask and ${this.pending.size} pending requests`,
-        )
+        if (!this.finished) {
+          this.logger(
+            `Have ${this.lookupPeers.size()} peers left to ask and ${this.pending.size} pending requests`,
+          )
+        }
       } else {
         this.logger(`Waiting on ${this.pending.size} content requests`)
         this.logger(this.pending)
