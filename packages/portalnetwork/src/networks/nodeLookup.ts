@@ -50,12 +50,12 @@ export class NodeLookup {
     await Promise.allSettled(addPromises)
   }
 
-  private selectClosestPending(pendingNodes: Map<string, ENR>, count: number): ENR[] {
-    return Array.from(pendingNodes.values())
+  private selectClosestPending(): ENR[] {
+    return Array.from(this.pendingNodes.values())
       .sort((a, b) =>
         Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
       )
-      .slice(0, count)
+      .slice(0, NodeLookup.CONCURRENT_LOOKUPS)
   }
 
   private async queryPeer(
