@@ -27,7 +27,7 @@ export type ContentLookupResponse =
 export class ContentLookup {
   private network: BaseNetwork
   private lookupPeers: Heap<LookupPeer>
-  private contacted: NodeId[]
+  private addedToLookup: Set<NodeId>
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
@@ -38,12 +38,13 @@ export class ContentLookup {
   constructor(network: BaseNetwork, contentKey: Uint8Array) {
     this.network = network
     this.lookupPeers = new Heap(customPriorityComparator)
-    this.contacted = []
     this.contentKey = contentKey
     this.contentId = serializedContentKeyToContentId(contentKey)
     this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
     this.timeout = 3000 // 3 seconds
     this.finished = false
+    this.addedToLookup = new Set()
+
     this.pending = new Set()
   }
 
