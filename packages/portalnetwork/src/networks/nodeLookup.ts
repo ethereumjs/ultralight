@@ -58,11 +58,7 @@ export class NodeLookup {
       .slice(0, NodeLookup.CONCURRENT_LOOKUPS)
   }
 
-  private async queryPeer(
-    peer: ENR,
-    queriedNodes: Set<string>,
-    pendingNodes: Map<string, ENR>,
-  ): Promise<void> {
+  private async queryPeer(peer: ENR): Promise<void> {
     const distanceToTarget = log2Distance(peer.nodeId, this.nodeSought)
 
     try {
