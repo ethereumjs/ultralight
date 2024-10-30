@@ -873,16 +873,10 @@ export class portal {
     this.logger.extend('findContent')(
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    if (!this._history.routingTable.getWithPending(nodeId)?.value) {
-      const pong = await this._history.sendPing(enr)
-      if (!pong) {
-        return ''
-      }
-    }
-    const res = await this._history.sendFindContent(nodeId, hexToBytes(contentKey))
+    const res = await this._history.sendFindContent(enr, hexToBytes(contentKey))
     if (res === undefined) {
-      this.logger.extend('findContent')(`request returned type: ENRS`)
-      return { enrs: [] }
+      this.logger.extend('findContent')(`request returned undefined`)
+      return undefined
     }
     const resType =
       'enrs' in res ? FoundContent.ENRS : res.utp === true ? FoundContent.UTP : FoundContent.CONTENT
