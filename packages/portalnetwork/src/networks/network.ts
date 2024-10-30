@@ -343,7 +343,7 @@ export abstract class BaseNetwork extends EventEmitter {
           // Ping node if not currently ignored by subnetwork routing table
           await Promise.allSettled(
             notIgnored.map((e) => {
-            const decodedEnr = ENR.decode(e)
+              const decodedEnr = ENR.decode(e)
               return this.sendPing(decodedEnr)
             }),
           )
