@@ -340,28 +340,15 @@ export abstract class BaseNetwork extends EventEmitter {
       try {
         if (enrs.length > 0) {
           const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
-          const unknown =
-            this.routingTable !== undefined
-              ? notIgnored.filter(
-                  (e) => !this.routingTable.getWithPending(ENR.decode(e).nodeId)?.value,
-                )
-              : notIgnored
-          // Ping node if not currently in subnetwork routing table
-          for (const e of unknown) {
+          // Ping node if not currently ignored by subnetwork routing table
+          await Promise.allSettled(
+            notIgnored.map((e) => {
             const decodedEnr = ENR.decode(e)
-            const ping = await this.sendPing(decodedEnr)
-            if (ping === undefined) {
-              this.logger(`New connection failed with:  ${shortId(decodedEnr)}`)
-              this.routingTable.evictNode(decodedEnr.nodeId)
-            } else {
-              this.logger(`New connection with:  ${shortId(decodedEnr)}`)
-            }
-          }
-          this.logger.extend(`NODES`)(
-            `Received ${enrs.length} ENRs from ${shortId(enr)} with ${
-              enrs.length - notIgnored.length
-            } ignored PeerIds and ${unknown.length} unknown.`,
+              return this.sendPing(decodedEnr)
+            }),
           )
+
+          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr)}`)
         }
       } catch (err: any) {
         this.logger(`Error processing NODES message: ${err.toString()}`)
