@@ -1,4 +1,4 @@
-import { EntryStatus, distance, log2Distance } from '@chainsafe/discv5'
+import { EntryStatus, MAX_NODES_PER_BUCKET, distance, log2Distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 
 import type { BaseNetwork } from './network.js'
