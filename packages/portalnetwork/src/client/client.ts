@@ -288,12 +288,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (network instanceof HistoryNetwork) {
         network.blockHashIndex = storedIndex
       }
+      network.startRefresh()
       await network.prune()
-      // Start kbucket refresh on 30 second interval
-      this.refreshListeners.set(
-        network.networkId,
-        setInterval(() => network.bucketRefresh(), 30000),
-      )
     }
     void this.bootstrap()
   }
@@ -322,8 +318,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5.removeAllListeners()
     await this.removeAllListeners()
     await this.db.close()
-    for (const network of this.refreshListeners) {
-      clearInterval(network[1])
+    for (const network of this.networks.values()) {
+      network.stopRefresh()
     }
   }
 
