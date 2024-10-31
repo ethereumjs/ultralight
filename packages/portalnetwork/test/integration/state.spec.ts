@@ -3,7 +3,7 @@ import { Trie } from '@ethereumjs/trie'
 import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { afterAll, assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import {
   AccountTrieNodeOffer,
@@ -101,7 +101,6 @@ describe('AccountTrieNode Gossip / Request', async () => {
       node2.discv5.enr.nodeId,
       hexToBytes(contentKey),
     )
-    console.log(requested)
     expect(requested).toBeDefined()
     expect(requested!['content']).instanceOf(Uint8Array)
     assert.equal(
