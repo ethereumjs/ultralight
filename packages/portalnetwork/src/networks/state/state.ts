@@ -1,5 +1,4 @@
 import { distance } from '@chainsafe/discv5'
-import { ENR } from '@chainsafe/enr'
 import { BranchNode, ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
 import {
   bytesToHex,

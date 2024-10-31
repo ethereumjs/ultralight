@@ -1,4 +1,3 @@
-import { ENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, bytesToInt, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'

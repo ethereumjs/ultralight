@@ -1,4 +1,4 @@
-import { ENR, type NodeId } from '@chainsafe/enr'
+import { type NodeId } from '@chainsafe/enr'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import {
   bytesToHex,
