@@ -18,7 +18,7 @@ import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import debug from 'debug'
 
-import { shortId } from '../../util/util.js'
+import { getENR, shortId } from '../../util/util.js'
 import {
   FoundContent,
   MAX_PACKET_SIZE,
@@ -430,11 +430,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     dstId: string,
     key: Uint8Array,
   ): Promise<ContentLookupResponse | undefined> => {
-    const enr = dstId.startsWith('enr:')
-      ? ENR.decodeTxt(dstId)
-      : this.routingTable.getWithPending(dstId)?.value
-        ? this.routingTable.getWithPending(dstId)?.value
-        : this.routingTable.getWithPending(dstId.slice(2))?.value
+    const enr = getENR(this.routingTable, dstId)
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return undefined
