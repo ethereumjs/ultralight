@@ -1,3 +1,5 @@
+import { ENR } from '@chainsafe/enr'
+
 import type { NetworkId } from '../../../networks/types.js'
 
 export type UtpSocketKey = string
@@ -10,6 +12,8 @@ export enum RequestCode {
 }
 
 export function createSocketKey(remoteAddr: string, id: number) {
+  // If remoteAddr is ENR, decode to NodeId
+  if (remoteAddr.startsWith('enr:')) remoteAddr = ENR.decodeTxt(remoteAddr).nodeId
   return `${remoteAddr}-${id}`
 }
 export interface INewRequest {
