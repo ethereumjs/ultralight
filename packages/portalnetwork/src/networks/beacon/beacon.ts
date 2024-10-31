@@ -1,3 +1,4 @@
+import { type NodeId } from '@chainsafe/enr'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import {
   bytesToHex,
@@ -17,7 +18,7 @@ import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import debug from 'debug'
 
-import { shortId } from '../../util/util.js'
+import { getENR, shortId } from '../../util/util.js'
 import {
   FoundContent,
   MAX_PACKET_SIZE,
@@ -46,9 +47,8 @@ import { getBeaconContentKey } from './util.js'
 
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
-import type { ContentLookupResponse } from '../contentLookup.js'
+import type { ContentLookupResponse } from '../types.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import type { NodeId } from '@chainsafe/enr'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
@@ -430,10 +430,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     dstId: string,
     key: Uint8Array,
   ): Promise<ContentLookupResponse | undefined> => {
-    const enr = this.routingTable.getValue(dstId)
+    const enr = getENR(this.routingTable, dstId)
     if (!enr) {
-      this.logger.extend('FINDCONTENT')(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
-      return
+      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
+      return undefined
     }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }

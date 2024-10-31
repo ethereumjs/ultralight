@@ -1,4 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
+import { ENR } from '@chainsafe/enr'
 import {
   bigIntToBytes,
   bytesToBigInt,
@@ -9,8 +10,8 @@ import {
 import { promises as fs } from 'fs'
 import * as path from 'path'
 
-import type { PortalNetworkRoutingTable } from '../client'
-import type { ENR, NodeId } from '@chainsafe/enr'
+import type { PortalNetworkRoutingTable, RoutingTable } from '../client'
+import type { NodeId } from '@chainsafe/enr'
 
 export const MEGABYTE = 1048576
 
@@ -74,4 +75,19 @@ export const dirSize = async (directory: string) => {
 export function arrayByteLength(byteArray: any[]): number {
   const length = byteArray.reduce((prev, curr) => prev + curr.length, 0)
   return length
+}
+
+/**
+ * Utility method to get an ENR (either from text encoded ENR or from a routing table)
+ * @param routingTable the network routing table an ENR could be in
+ * @param enrOrId a base64 text encoded ENR (e.g. 'enr:...') or a NodeId (a 32 byte hex encoded string)
+ * @returns a {@link ENR} or `undefined` if not found
+ */
+export const getENR = (routingTable: RoutingTable, enrOrId: string) => {
+  const enr = enrOrId.startsWith('enr:')
+    ? ENR.decodeTxt(enrOrId)
+    : routingTable.getWithPending(enrOrId)?.value
+      ? routingTable.getWithPending(enrOrId)?.value
+      : routingTable.getWithPending(enrOrId.slice(2))?.value
+  return enr
 }

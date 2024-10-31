@@ -23,6 +23,7 @@ import {
   arrayByteLength,
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
+  getENR,
   randUint16,
   shortId,
 } from '../index.js'
@@ -321,11 +322,7 @@ export abstract class BaseNetwork extends EventEmitter {
     })
     let enr
     try {
-      enr = dstId.startsWith('enr')
-        ? ENR.decodeTxt(dstId)
-        : this.routingTable.getWithPending(dstId)
-          ? this.routingTable.getWithPending(dstId)!.value
-          : this.routingTable.getValue(dstId)
+      enr = getENR(this.routingTable, dstId)
     } catch (err: any) {
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
     }

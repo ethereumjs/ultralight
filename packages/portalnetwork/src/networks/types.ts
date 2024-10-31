@@ -6,6 +6,7 @@ import type { BeaconLightClientNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
 import type { PortalNetwork } from '../client'
+import type { ENR } from '@chainsafe/enr'
 import type { AbstractLevel } from 'abstract-level'
 
 export interface BaseNetworkConfig {
@@ -133,3 +134,17 @@ export class Bloom {
 
 /** Common SSZ Type Aliases */
 export const Bytes32Type = new ByteVectorType(32, { typeName: 'Bytes32' })
+
+/** Lookup types */
+export type LookupPeer = {
+  enr: ENR
+  distance: number
+}
+
+export type ContentLookupResponse =
+  | {
+      content: Uint8Array
+      utp: boolean
+    }
+  | { enrs: Uint8Array[] }
+  | undefined

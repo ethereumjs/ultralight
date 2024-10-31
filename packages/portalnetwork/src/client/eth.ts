@@ -163,6 +163,9 @@ export class ETH {
       // Header found by number.  Now get the body via hash
       header = BlockHeaderWithProof.deserialize(lookupResponse.content).header
       const hash = keccak256(header)
+      if (!includeTransactions) {
+        return reassembleBlock(header)
+      }
       const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hash)
       const bodyLookup = new ContentLookup(this.history!, bodyContentKey)
       const bodyLookupResponse = await bodyLookup.startLookup()

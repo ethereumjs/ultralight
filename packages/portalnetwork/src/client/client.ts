@@ -1,5 +1,5 @@
 import { Discv5 } from '@chainsafe/discv5'
-import { SignableENR } from '@chainsafe/enr'
+import { ENR, SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -27,7 +27,7 @@ import type { BaseNetwork } from '../networks/network.js'
 import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
-import type { ENR, NodeId } from '@chainsafe/enr'
+import type { NodeId } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 
@@ -450,13 +450,18 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       this.metrics?.totalBytesSent.inc(payload.length)
       let nodeAddr: ENR | undefined
       if (typeof enr === 'string') {
-        // If ENR is not provided, look up ENR in network routing table by nodeId
-        const network = this.networks.get(networkId)
-        if (network) {
-          nodeAddr = network.routingTable.getWithPending(enr)?.value
-          if (!nodeAddr) {
-            // Check in unverified sessions cache if no ENR found in routing table
-            // nodeAddr = this.unverifiedSessionCache.get(enr)
+        // Check to see if ENR is text encoded ENR or nodeID
+        if (enr.startsWith('enr:')) {
+          nodeAddr = ENR.decodeTxt(enr)
+        } else {
+          // If nodeId, look up ENR in network routing table by nodeId
+          const network = this.networks.get(networkId)
+          if (network) {
+            nodeAddr = network.routingTable.getWithPending(enr)?.value
+            if (!nodeAddr) {
+              // Check in unverified sessions cache if no ENR found in routing table
+              // nodeAddr = this.unverifiedSessionCache.get(enr)
+            }
           }
         }
       } else {

@@ -1,4 +1,3 @@
-import { ENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, bytesToInt, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
@@ -11,6 +10,7 @@ import {
   RequestCode,
   decodeHistoryNetworkContentKey,
   decodeReceipts,
+  getENR,
   reassembleBlock,
   saveReceipts,
   shortId,
@@ -196,11 +196,7 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = dstId.startsWith('enr:')
-      ? ENR.decodeTxt(dstId)
-      : this.routingTable.getWithPending(dstId)?.value
-        ? this.routingTable.getWithPending(dstId)?.value
-        : this.routingTable.getWithPending(dstId.slice(2))?.value
+    const enr = getENR(this.routingTable, dstId)
     if (!enr) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return undefined
