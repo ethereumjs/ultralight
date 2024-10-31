@@ -3,7 +3,7 @@ import { Trie } from '@ethereumjs/trie'
 import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { assert, describe, expect, it } from 'vitest'
+import { afterAll, assert, describe, expect, it } from 'vitest'
 
 import {
   AccountTrieNodeOffer,
@@ -60,10 +60,13 @@ describe('AccountTrieNode Gossip / Request', async () => {
       privateKey: pk2,
     },
   })
-  await node1.start()
-  await node2.start()
+
   const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
   const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
+  network1.startRefresh = () => {} // Disable for test since causes occasional timeouts
+  network2.startRefresh = () => {} // Disable for test since causes occasional timeouts
+  await node1.start()
+  await node2.start()
   network1.nodeRadius = 2n ** 254n - 1n
   network2.nodeRadius = 2n ** 254n - 1n
   await network1!.sendPing(network2?.enr!.toENR())
@@ -98,6 +101,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
       node2.discv5.enr.nodeId,
       hexToBytes(contentKey),
     )
+    console.log(requested)
     expect(requested).toBeDefined()
     expect(requested!['content']).instanceOf(Uint8Array)
     assert.equal(
