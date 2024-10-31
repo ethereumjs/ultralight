@@ -6,23 +6,12 @@ import { Heap } from 'heap-js'
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
 import type { BaseNetwork } from './network.js'
+import type { ContentLookupResponse, LookupPeer } from './types.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { Comparator } from 'heap-js'
 
-type LookupPeer = {
-  enr: ENR
-  distance: number
-}
 const customPriorityComparator: Comparator<LookupPeer> = (a, b) => a.distance - b.distance
-
-export type ContentLookupResponse =
-  | {
-      content: Uint8Array
-      utp: boolean
-    }
-  | { enrs: Uint8Array[] }
-  | undefined
 
 export class ContentLookup {
   private network: BaseNetwork

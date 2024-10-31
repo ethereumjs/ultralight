@@ -47,7 +47,7 @@ import { getBeaconContentKey } from './util.js'
 
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
-import type { ContentLookupResponse } from '../contentLookup.js'
+import type { ContentLookupResponse } from '../types.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
