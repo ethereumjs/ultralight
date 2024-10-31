@@ -156,8 +156,8 @@ export class ContentLookup {
         this.logger(`received ${res.enrs.length} ENRs for closer nodes`)
         for (const enr of res.enrs) {
           const decodedEnr = ENR.decode(enr as Uint8Array)
-          const dist = distance(decodedEnr.nodeId, this.contentId)
           if (!this.addedToLookup.has(decodedEnr.encodeTxt())) {
+            const dist = distance(decodedEnr.nodeId, this.contentId)
             this.lookupPeers.push({ enr: decodedEnr, distance: Number(dist) })
             this.addedToLookup.add(decodedEnr.encodeTxt())
             this.logger(
