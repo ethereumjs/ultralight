@@ -109,7 +109,7 @@ export class StateNetwork extends BaseNetwork {
               void this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [key],
-                peerId: dstId,
+                peerId: enr.nodeId,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
               })
