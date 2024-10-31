@@ -156,8 +156,6 @@ export class ContentLookup {
         // Mark content offered to peer that sent it to us (so we don't try to offer it to them)
         this.network.routingTable.contentKeyKnownToPeer(peer.enr.nodeId, this.contentKey)
         this.network.portal.metrics?.successfulContentLookups.inc()
-        void this.network.sendPing(peer.enr)
-
         return res
       } else {
         // findContent request returned ENRs of nodes closer to content
@@ -172,7 +170,6 @@ export class ContentLookup {
               `Adding ${shortId(decodedEnr.nodeId)} to lookup queue (${this.lookupPeers.size()})`,
             )
           }
-          void this.network.sendPing(peer.enr)
         }
         throw new Error('Continue')
       }
