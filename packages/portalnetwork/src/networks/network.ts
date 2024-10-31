@@ -1,5 +1,5 @@
 import { digest } from '@chainsafe/as-sha256'
-import { EntryStatus, distance } from '@chainsafe/discv5'
+import { EntryStatus, MAX_NODES_PER_BUCKET, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import {
@@ -64,6 +64,10 @@ export abstract class BaseNetwork extends EventEmitter {
   public bridge: boolean
 
   portal: PortalNetwork
+  private lastRefreshTime: number = 0
+  private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
+  private refreshInterval: number = 30000 // Start with 30s
+
   constructor({ client, networkId, db, radius, maxStorage, bridge }: BaseNetworkConfig) {
     super()
     this.bridge = bridge ?? false
@@ -92,7 +96,7 @@ export abstract class BaseNetwork extends EventEmitter {
   public routingTableInfo = async () => {
     return {
       nodeId: this.enr.nodeId,
-      buckets: this.routingTable.buckets.map((bucket) => bucket.values().map((enr) => enr.nodeId)),
+      buckets: this.routingTable.buckets,
     }
   }
 
@@ -336,28 +340,15 @@ export abstract class BaseNetwork extends EventEmitter {
       try {
         if (enrs.length > 0) {
           const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
-          const unknown =
-            this.routingTable !== undefined
-              ? notIgnored.filter(
-                  (e) => !this.routingTable.getWithPending(ENR.decode(e).nodeId)?.value,
-                )
-              : notIgnored
-          // Ping node if not currently in subnetwork routing table
-          for (const e of unknown) {
-            const decodedEnr = ENR.decode(e)
-            const ping = await this.sendPing(decodedEnr)
-            if (ping === undefined) {
-              this.logger(`New connection failed with:  ${shortId(decodedEnr)}`)
-              this.routingTable.evictNode(decodedEnr.nodeId)
-            } else {
-              this.logger(`New connection with:  ${shortId(decodedEnr)}`)
-            }
-          }
-          this.logger.extend(`NODES`)(
-            `Received ${enrs.length} ENRs from ${shortId(enr)} with ${
-              enrs.length - notIgnored.length
-            } ignored PeerIds and ${unknown.length} unknown.`,
+          // Ping node if not currently ignored by subnetwork routing table
+          await Promise.allSettled(
+            notIgnored.map((e) => {
+              const decodedEnr = ENR.decode(e)
+              return this.sendPing(decodedEnr)
+            }),
           )
+
+          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr)}`)
         }
       } catch (err: any) {
         this.logger(`Error processing NODES message: ${err.toString()}`)
@@ -790,38 +781,44 @@ export abstract class BaseNetwork extends EventEmitter {
 
   /**
    * Follows below algorithm to refresh a bucket in the routing table
-   * 1: Look at your routing table and select all buckets at distance greater than 239 that are not full.
-   * 2: Select a number of buckets to refresh using this logic (48+ nodes known, refresh 1 bucket, 24+ nodes known,
-   * refresh half of not full buckets, <25 nodes known, refresh all not empty buckets
-   * 3: Randomly generate a NodeID that falls within each bucket to be refreshed.
-   * Do the random lookup on this node-id.
+   * 1. Select 4 closest non-full buckets to refresh
+   * 2. Select a random node at the distance of each bucket
+   * 3. Perform a NodeLookup for the random node
+   * 4. NodeLookup will recursively query peers for new nodes at the distance of the bucket
+   * 5. New nodes will be added to the routing table
    */
   public bucketRefresh = async () => {
+    const now = Date.now()
+    if (now - this.lastRefreshTime < this.getRefreshInterval()) {
+      return
+    }
+    this.lastRefreshTime = now
     await this.livenessCheck()
-    const notFullBuckets = this.routingTable.buckets
+    const size = this.routingTable.size
+    this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} peers`)
+    const bucketsToRefresh = this.routingTable.buckets
       .map((bucket, idx) => {
         return { bucket, distance: idx }
       })
-      .filter((pair) => pair.bucket.size() < 16)
       .reverse()
+      .slice(0, 16)
+      .filter((pair) => pair.bucket.size() < MAX_NODES_PER_BUCKET)
       .slice(0, 4)
-    const size = this.routingTable.size
-    let bucketsToRefresh
-    if (size > 48) {
-      // Only refresh one not full bucket if table contains equivalent of 3+ full buckets
-      const idx = Math.floor(Math.random() * notFullBuckets.length)
-      bucketsToRefresh = [notFullBuckets[idx]]
-    } else if (size > 24) {
-      // Refresh half of notFullBuckets if routing table contains equivalent of 1.5+ full buckets
-      bucketsToRefresh = notFullBuckets.filter((_, idx) => idx % 2 === 0)
-      // Refresh all not full buckets if routing table contains less than 25 nodes in it
-    } else bucketsToRefresh = notFullBuckets
-    for (const bucket of bucketsToRefresh) {
-      const distance = bucket.distance
-      const randomNodeAtDistance = generateRandomNodeIdAtDistance(this.enr.nodeId, distance)
-      const lookup = new NodeLookup(this, randomNodeAtDistance)
-      await lookup.startLookup()
-    }
+    this.logger.extend('bucketRefresh')(
+      `Refreshing buckets: ${bucketsToRefresh.map((b) => b.distance).join(', ')}`,
+    )
+
+    await Promise.allSettled(
+      bucketsToRefresh.map(async (bucket) => {
+        const randomNodeId = generateRandomNodeIdAtDistance(this.enr.nodeId, bucket.distance)
+        const lookup = new NodeLookup(this, randomNodeId)
+        return lookup.startLookup()
+      }),
+    )
+    const newSize = this.routingTable.size
+    this.logger.extend('bucketRefresh')(
+      `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
+    )
   }
 
   /**
@@ -909,5 +906,38 @@ export abstract class BaseNetwork extends EventEmitter {
     } catch (err: any) {
       this.logger(`Error retrieving content from DB -- ${err.message}`)
     }
+  }
+
+  private scheduleNextRefresh() {
+    if (this.nextRefreshTimeout !== null) {
+      clearTimeout(this.nextRefreshTimeout)
+    }
+
+    const interval = this.getRefreshInterval()
+    this.nextRefreshTimeout = setTimeout(async () => {
+      await this.bucketRefresh()
+      this.scheduleNextRefresh()
+    }, interval)
+  }
+
+  public startRefresh() {
+    this.scheduleNextRefresh()
+  }
+
+  public stopRefresh() {
+    if (this.nextRefreshTimeout !== null) {
+      clearTimeout(this.nextRefreshTimeout)
+      this.nextRefreshTimeout = null
+    }
+  }
+
+  private getRefreshInterval() {
+    const tableHealth = this.routingTable.size / 256 // Percentage of ideal size
+    if (tableHealth > 0.8) {
+      return 60000 // Healthy table = longer interval
+    } else if (tableHealth < 0.3) {
+      return 10000 // Unhealthy table = shorter interval
+    }
+    return 30000
   }
 }
