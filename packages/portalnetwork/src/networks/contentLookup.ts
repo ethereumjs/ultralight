@@ -144,7 +144,6 @@ export class ContentLookup {
         return
       }
       if (res === undefined) {
-        // this.network.routingTable.ignoreNode(peer.enr.nodeId)
         this.logger(`No response to findContent from ${shortId(peer.enr.nodeId)}`)
         return undefined
       }
