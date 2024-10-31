@@ -80,12 +80,7 @@ export class ContentLookup {
         const peerBatch: LookupPeer[] = []
         while (this.lookupPeers.peek() && peerBatch.length < 5) {
           const next = this.lookupPeers.pop()!
-          if (this.addedToLookup.has(next.enr.encodeTxt())) {
-            continue
-          } else {
-            peerBatch.push(next)
-            this.addedToLookup.add(next.enr.encodeTxt())
-          }
+          peerBatch.push(next)
         }
         const promises = peerBatch.map((peer) => {
           return Promise.race([
