@@ -15,6 +15,7 @@ import {
   ContentMessageType,
   MAX_PACKET_SIZE,
   MessageCodes,
+  NetworkNames,
   NodeLookup,
   PingPongCustomDataType,
   PortalNetworkRoutingTable,
@@ -813,8 +814,12 @@ export abstract class BaseNetwork extends EventEmitter {
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
     if (this.portal.metrics !== undefined) {
-      const metric = (this.networkName + '_peers') as keyof PortalNetworkMetrics
-      ;(<PromClient.Gauge>this.portal.metrics[metric]).set(this.routingTable.size)
+      const metric = (NetworkNames[this.networkId] + '_peers') as keyof PortalNetworkMetrics
+      try {
+        ;(<PromClient.Gauge>this.portal.metrics[metric]).set(this.routingTable.size)
+      } catch (err) {
+        this.logger.extend('bucketRefresh')(`Error updating ${metric}:  ${(err as any).message}`)
+      }
     }
   }
 
