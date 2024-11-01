@@ -106,7 +106,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
       bootnodes.push(bootnode)
     }
   }
-  const metrics = setupMetrics()
+  const metrics = setupMetrics(networks.map((x) => x.networkId))
 
   const clientConfig: Partial<PortalNetworkOpts> = {
     config,
