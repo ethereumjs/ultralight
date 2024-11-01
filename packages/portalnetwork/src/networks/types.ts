@@ -38,6 +38,10 @@ export enum NetworkId {
   Rendezvous = '0x72656e',
 }
 
+export const NetworkNames = Object.fromEntries(Object.entries(NetworkId).map(([n, i]) => [i, n]))
+
+export type NetworkName = keyof typeof NetworkNames
+
 export type SubNetwork<T extends NetworkId> = T extends '0x500a'
   ? HistoryNetwork
   : T extends '0x504a'

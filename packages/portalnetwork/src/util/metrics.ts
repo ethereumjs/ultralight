@@ -1,17 +1,26 @@
 import * as PromClient from 'prom-client'
 
-export const setupMetrics = () => {
+import { NetworkId, NetworkNames } from '../networks/types.js'
+
+import type { PortalNetworkMetrics } from '../client/types.js'
+
+const peers = (networks: NetworkId[]) => {
+  const metrics: Record<string, PromClient.Gauge> = {}
+  for (const network of networks) {
+    const name = NetworkNames[network]
+    metrics[name + '_peers'] = new PromClient.Gauge({
+      name: 'ultralight_' + name + '_peers',
+      help: 'how many peers are in the ' + name + 'routing table',
+    })
+  }
+  return metrics
+}
+
+export const setupMetrics = (
+  networks: NetworkId[] = [NetworkId.HistoryNetwork],
+): PortalNetworkMetrics => {
   return {
-    knownDiscv5Nodes: new PromClient.Gauge({
-      name: 'ultralight_known_discv5_peers',
-      help: 'how many peers are in discv5 routing table',
-      async collect() {},
-    }),
-    knownHistoryNodes: new PromClient.Gauge({
-      name: 'ultralight_known_history_peers',
-      help: 'how many peers are in discv5 routing table',
-      async collect() {},
-    }),
+    ...peers(networks),
     totalContentLookups: new PromClient.Gauge<string>({
       name: 'ultralight_total_content_lookups',
       help: 'total number of content lookups initiated',
@@ -84,5 +93,5 @@ export const setupMetrics = () => {
       name: 'ultralight_db_size',
       help: 'how many MBs are currently stored in the db',
     }),
-  }
+  } as unknown as PortalNetworkMetrics
 }
