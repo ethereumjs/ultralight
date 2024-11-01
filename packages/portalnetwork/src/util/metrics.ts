@@ -5,7 +5,7 @@ import { NetworkId, NetworkNames } from '../networks/types.js'
 import type { PortalNetworkMetrics } from '../client/types.js'
 
 const peers = (networks: NetworkId[]) => {
-  const metrics: Record<string, PromClient.Gauge> = {}
+  const metrics: Record<string, PromClient.Gauge<NetworkId>> = {}
   for (const network of networks) {
     const name = NetworkNames[network]
     metrics[name + '_peers'] = new PromClient.Gauge({
@@ -19,8 +19,12 @@ const peers = (networks: NetworkId[]) => {
 export const setupMetrics = (
   networks: NetworkId[] = [NetworkId.HistoryNetwork],
 ): PortalNetworkMetrics => {
+  const peerMetrics = peers(networks) as Record<
+    keyof PortalNetworkMetrics,
+    PromClient.Gauge<NetworkId>
+  >
   return {
-    ...peers(networks),
+    ...peerMetrics,
     totalContentLookups: new PromClient.Gauge<string>({
       name: 'ultralight_total_content_lookups',
       help: 'total number of content lookups initiated',
@@ -93,5 +97,5 @@ export const setupMetrics = (
       name: 'ultralight_db_size',
       help: 'how many MBs are currently stored in the db',
     }),
-  } as unknown as PortalNetworkMetrics
+  }
 }
