@@ -942,7 +942,7 @@ export abstract class BaseNetwork extends EventEmitter {
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
     if (this.portal.metrics !== undefined) {
-      const metric = (this.networkName + 'Peers') as keyof PortalNetworkMetrics
+      const metric = ('peers_' + this.networkName) as keyof PortalNetworkMetrics
       ;(<PromClient.Gauge>this.portal.metrics[metric]).set(this.routingTable.size)
     }
   }
