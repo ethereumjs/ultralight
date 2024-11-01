@@ -273,8 +273,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     })
     if (opts.metrics) {
       this.metrics = opts.metrics
-      this.metrics.knownDiscv5Nodes.collect = () =>
-        this.metrics?.knownDiscv5Nodes.set(this.discv5.kadValues().length)
       this.metrics.currentDBSize.collect = async () => {
         this.metrics?.currentDBSize.set(await this.db.currentSize())
       }

@@ -26,8 +26,9 @@ import type {
   OfferMessage,
   PingMessage,
   PongMessage,
+
   PortalNetwork,
-} from '../index.js'
+  PortalNetworkMetrics} from '../index.js'
 import {
   BasicRadius,
   ClientInfoAndCapabilities,
@@ -36,6 +37,7 @@ import {
   HistoryRadius,
   MAX_PACKET_SIZE,
   MessageCodes,
+  NetworkId,
   NetworkId,
   NodeLookup,
   PingPongErrorCodes,
@@ -49,12 +51,13 @@ import {
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
   randUint16,
-  shortId,
-} from '../index.js'
+
+  shortId} from '../index.js'
 import { FoundContent } from '../wire/types.js'
 
 import { NetworkDB } from './networkDB.js'
 
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
@@ -938,6 +941,10 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('bucketRefresh')(
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
+    if (this.portal.metrics !== undefined) {
+      const metric = (this.networkName + 'Peers') as keyof PortalNetworkMetrics
+      ;(<PromClient.Gauge>this.portal.metrics[metric]).set(this.routingTable.size)
+    }
   }
 
   /**
