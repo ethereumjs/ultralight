@@ -71,8 +71,9 @@ interface Counter {
 }
 export interface PortalNetworkMetrics {
   totalContentLookups: Counter
-  knownHistoryNodes: Gauge
-  knownDiscv5Nodes: Gauge
+  HistoryNetwork_peers: Gauge
+  BeaconLightClientNetwork_peers: Gauge
+  StateNetwork_peers: Gauge
   successfulContentLookups: Counter
   failedContentLookups: Counter
   offerMessagesSent: Counter
