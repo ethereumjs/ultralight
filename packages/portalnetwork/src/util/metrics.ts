@@ -79,12 +79,27 @@ const ultralightMetrics = [
     metric: MetricType.Counter,
     help: 'how many UTP packets have been received',
   },
+  {
+    name: 'utpStreamsTotal',
+    metric: MetricType.Gauge,
+    help: 'how many total UTP streams were opened',
+  },
+  {
+    name: 'utpWriteStreams',
+    metric: MetricType.Gauge,
+    help: 'how many UTP write streams were opened',
+  },
+  {
+    name: 'utpReadStreams',
+    metric: MetricType.Gauge,
+    help: 'how many UTP read streams were opened',
+  },
 ]
 
 export const setupMetrics = (
   networks: NetworkId[] = [NetworkId.HistoryNetwork],
 ): PortalNetworkMetrics => {
-  const metrics = createMetrics(ultralightMetrics, [...networks, NetworkId.UTPNetwork])
+  const metrics = createMetrics(ultralightMetrics, [...networks])
   return {
     ...metrics,
     totalContentLookups: new Gauge<string>({

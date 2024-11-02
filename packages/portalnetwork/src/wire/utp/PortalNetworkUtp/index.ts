@@ -90,6 +90,23 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode } = params
+    if (this.client.metrics) {
+      const utpMetric = (NetworkNames[params.networkId] +
+        '_utpStreamsTotal') as keyof PortalNetworkMetrics
+      this.client.metrics[utpMetric].inc()
+      if (
+        requestCode === RequestCode.FOUNDCONTENT_WRITE ||
+        requestCode === RequestCode.OFFER_WRITE
+      ) {
+        const utpWriteMetric = (NetworkNames[params.networkId] +
+          '_utpWriteStreams') as keyof PortalNetworkMetrics
+        this.client.metrics[utpWriteMetric].inc()
+      } else {
+        const utpReadMetric = (NetworkNames[params.networkId] +
+          '_utpReadStreams') as keyof PortalNetworkMetrics
+        this.client.metrics[utpReadMetric].inc()
+      }
+    }
     if (this.requestManagers[enr.nodeId] === undefined) {
       this.requestManagers[enr.nodeId] = new RequestManager(enr.nodeId, this.logger)
     }
