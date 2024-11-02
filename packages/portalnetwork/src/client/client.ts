@@ -400,23 +400,30 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
+    const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
+
     if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
       await this.handleUTP(src, src.nodeId, message, message.request)
       return
     }
-    const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
     if (!network) {
       this.logger(`Received TALKREQ message on unsupported network ${bytesToHex(message.protocol)}`)
       await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
-
       return
     }
 
+    if (this.metrics) {
+      const metric = (NetworkNames[bytesToHex(message.protocol) as NetworkId] +
+        '_talkReqReceived') as keyof PortalNetworkMetrics
+      this.metrics[metric].inc()
+    }
     await network.handle(message, src)
   }
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
-    this.metrics?.totalBytesReceived.inc(message.response.length)
+    if (this.metrics) {
+      this.metrics?.totalBytesReceived.inc(message.response.length)
+    }
   }
 
   /**
