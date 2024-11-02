@@ -74,6 +74,7 @@ const methods = [
   'portal_historyGetEnr',
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
+  'portal_historyTraceRecursiveFindContent',
   // beacon
   'portal_beaconSendFindContent',
   'portal_beaconFindContent',
@@ -1036,6 +1037,38 @@ export class portal {
       return { enrs: res.enrs.map(bytesToHex) }
     } else {
       this.logger.extend('beaconGetContent')(
+        `request returned { content: ${bytesToHex(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      return {
+        content: bytesToHex(res.content),
+        utpTransfer: res.utp,
+      }
+    }
+  }
+
+  // portal_*TraceRecursiveFindContent
+  async historyTraceRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('historyTraceRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const res = await lookup.startLookup()
+    this.logger.extend('historyTraceRecursiveFindContent')(
+      `request returned ${JSON.stringify(res)}`,
+    )
+    if (!res) {
+      this.logger.extend('historyTraceRecursiveFindContent')(`request returned { enrs: [] }`)
+      throw new Error('No content found')
+    }
+    if ('enrs' in res) {
+      this.logger.extend('historyTraceRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(bytesToHex) }}}] }`,
+      )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
+      return { enrs: res.enrs.map(bytesToHex) }
+    } else {
+      this.logger.extend('historyTraceRecursiveFindContent')(
         `request returned { content: ${bytesToHex(res.content)}, utpTransfer: ${res.utp} }`,
       )
       return {
