@@ -48,13 +48,23 @@ const createMetrics = (metrics: MetricParams[], networks: NetworkId[]) => {
   return m as Record<keyof PortalNetworkMetrics, Metric<NetworkId>>
 }
 
+const ultralightMetrics = [
+  {
+    metric: MetricType.Gauge,
+    name: 'peers',
+    help: 'how many peers are in the routing table',
+  },
+  {
+    metric: MetricType.Gauge,
+    name: 'dbSize',
+    help: 'how many MBs are currently stored in the db',
+  },
+]
+
 export const setupMetrics = (
   networks: NetworkId[] = [NetworkId.HistoryNetwork],
 ): PortalNetworkMetrics => {
-  const peerMetrics = peers(networks) as Record<
-    keyof PortalNetworkMetrics,
-    PromClient.Gauge<NetworkId>
-  >
+  const metrics = createMetrics(ultralightMetrics, networks)
   return {
     ...peerMetrics,
     totalContentLookups: new PromClient.Gauge<string>({
