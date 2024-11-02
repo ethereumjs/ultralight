@@ -50,14 +50,24 @@ const createMetrics = (metrics: MetricParams[], networks: NetworkId[]) => {
 
 const ultralightMetrics = [
   {
-    metric: MetricType.Gauge,
     name: 'peers',
+    metric: MetricType.Gauge,
     help: 'how many peers are in the routing table',
   },
   {
-    metric: MetricType.Gauge,
     name: 'dbSize',
+    metric: MetricType.Gauge,
     help: 'how many MBs are currently stored in the db',
+  },
+  {
+    name: 'talkRequestsSent',
+    metric: MetricType.Counter,
+    help: 'how many talk requests have been sent',
+  },
+  {
+    name: 'talkResponsesReceived',
+    metric: MetricType.Counter,
+    help: 'how many talk responses have been sent',
   },
 ]
 
