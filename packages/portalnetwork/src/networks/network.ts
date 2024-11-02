@@ -115,10 +115,18 @@ export abstract class BaseNetwork extends EventEmitter {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> {
+    if (this.portal.metrics) {
+      const metric = (this.networkName + '_talkRequestsSent') as keyof PortalNetworkMetrics
+      this.portal.metrics[metric].inc()
+    }
     return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
   }
 
   sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
+    if (this.portal.metrics) {
+      const metric = (this.networkName + '_talkResponsesSent') as keyof PortalNetworkMetrics
+      this.portal.metrics[metric].inc()
+    }
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
