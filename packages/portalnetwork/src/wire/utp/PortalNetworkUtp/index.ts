@@ -5,6 +5,7 @@ import type {
   PortalNetwork,
 } from '../../../index.js'
 import {
+  NetworkNames,
   NetworkId,
   Packet,
   PacketType,

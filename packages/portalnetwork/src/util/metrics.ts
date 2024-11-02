@@ -60,21 +60,26 @@ const ultralightMetrics = [
     help: 'how many MBs are currently stored in the db',
   },
   {
-    name: 'talkRequestsSent',
+    name: 'talkReqSent',
     metric: MetricType.Counter,
     help: 'how many talk requests have been sent',
   },
   {
-    name: 'talkResponsesReceived',
+    name: 'talkReqReceived',
     metric: MetricType.Counter,
-    help: 'how many talk responses have been sent',
+    help: 'how many talk requests have been received',
+  },
+  {
+    name: 'utpPacketsReceived',
+    metric: MetricType.Counter,
+    help: 'how many UTP packets have been received',
   },
 ]
 
 export const setupMetrics = (
   networks: NetworkId[] = [NetworkId.HistoryNetwork],
 ): PortalNetworkMetrics => {
-  const metrics = createMetrics(ultralightMetrics, networks)
+  const metrics = createMetrics(ultralightMetrics, [...networks, NetworkId.UTPNetwork])
   return {
     ...metrics,
     totalContentLookups: new Gauge<string>({

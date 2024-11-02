@@ -146,7 +146,7 @@ export abstract class BaseNetwork extends EventEmitter {
     utpMessage?: boolean,
   ): Promise<Uint8Array> {
     if (this.portal.metrics) {
-      const metric = (this.networkName + '_talkRequestsSent') as keyof PortalNetworkMetrics
+      const metric = (this.networkName + '_talkReqSent') as keyof PortalNetworkMetrics
       this.portal.metrics[metric].inc()
     }
     try {
@@ -159,10 +159,6 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
-    if (this.portal.metrics) {
-      const metric = (this.networkName + '_talkResponsesSent') as keyof PortalNetworkMetrics
-      this.portal.metrics[metric].inc()
-    }
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
