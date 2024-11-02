@@ -1,19 +1,51 @@
-import * as PromClient from 'prom-client'
+import { Counter, Gauge, Histogram, Summary } from 'prom-client'
 
 import { NetworkId, NetworkNames } from '../networks/types.js'
 
 import type { PortalNetworkMetrics } from '../client/types.js'
+import type { Metric } from 'prom-client'
 
-const peers = (networks: NetworkId[]) => {
-  const metrics: Record<string, PromClient.Gauge<NetworkId>> = {}
-  for (const network of networks) {
-    const name = NetworkNames[network]
-    metrics[name + '_peers'] = new PromClient.Gauge({
-      name: 'ultralight_' + name + '_peers',
-      help: 'how many peers are in the ' + name + 'routing table',
-    })
+export enum MetricType {
+  Counter,
+  Gauge,
+  Histogram,
+  Summary,
+}
+
+const metricTypes = {
+  [MetricType.Gauge]: Gauge,
+  [MetricType.Counter]: Counter,
+  [MetricType.Histogram]: Histogram,
+  [MetricType.Summary]: Summary,
+}
+
+interface MetricParams {
+  metric: MetricType
+  name: string
+  help: string
+}
+
+const createMetric = ({ metric, name, help }: MetricParams) => {
+  return (networks: NetworkId[]) => {
+    const metrics: Record<string, Metric<NetworkId>> = {}
+    for (const network of networks) {
+      const metricName = NetworkNames[network] + '_' + name
+      metrics[metricName] = new metricTypes[metric]({
+        name: 'ultralight_' + metricName,
+        help,
+      })
+    }
+    return metrics
   }
-  return metrics
+}
+
+const createMetrics = (metrics: MetricParams[], networks: NetworkId[]) => {
+  let m: Record<string, Metric<NetworkId>> = {}
+  const metricsFunctions = metrics.map(createMetric)
+  for (const metricFunction of metricsFunctions) {
+    m = { ...m, ...metricFunction(networks) }
+  }
+  return m as Record<keyof PortalNetworkMetrics, Metric<NetworkId>>
 }
 
 export const setupMetrics = (
