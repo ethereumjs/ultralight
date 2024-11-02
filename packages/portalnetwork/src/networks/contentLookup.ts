@@ -42,6 +42,7 @@ export class ContentLookup {
       ? {
           origin: this.network.portal.discv5.enr.nodeId as PrefixedHexString,
           targetId: bytesToHex(this.contentKey),
+          metadata: {},
         }
       : undefined
   }
