@@ -163,6 +163,11 @@ export class PortalNetworkUTP {
   async send(enr: ENR | INodeAddress, msg: Uint8Array, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
+      if (this.client.metrics) {
+        const utpMetric = (NetworkNames[networkId] +
+          '_utpPacketsSent') as keyof PortalNetworkMetrics
+        this.client.metrics[utpMetric].inc()
+      }
     } catch (err) {
       this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
       this.closeAllPeerRequests(enr.nodeId)

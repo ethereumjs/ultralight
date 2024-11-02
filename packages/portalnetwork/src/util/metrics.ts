@@ -70,6 +70,11 @@ const ultralightMetrics = [
     help: 'how many talk requests have been received',
   },
   {
+    name: 'utpPacketsSent',
+    metric: MetricType.Counter,
+    help: 'how many UTP packets have been sent',
+  },
+  {
     name: 'utpPacketsReceived',
     metric: MetricType.Counter,
     help: 'how many UTP packets have been received',
