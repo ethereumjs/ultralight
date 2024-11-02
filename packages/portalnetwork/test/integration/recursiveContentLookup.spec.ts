@@ -5,14 +5,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { readFileSync } from 'fs'
 import { assert, describe, it } from 'vitest'
 
-import {
-  ContentLookup,
-  HistoryNetworkContentType,
-  NetworkId,
-  PortalNetwork,
-  TransportLayer,
-  getContentKey,
-} from '../../src/index.js'
+import { ContentLookup, NetworkId, PortalNetwork, TransportLayer } from '../../src/index.js'
 
 import type { ContentTrace, HistoryNetwork } from '../../src/index.js'
 
