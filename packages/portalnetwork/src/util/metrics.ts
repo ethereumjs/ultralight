@@ -85,14 +85,24 @@ const ultralightMetrics = [
     help: 'how many total UTP streams were opened',
   },
   {
-    name: 'utpWriteStreams',
+    name: 'utpWriteStreamsOpened',
     metric: MetricType.Gauge,
     help: 'how many UTP write streams were opened',
   },
   {
-    name: 'utpReadStreams',
+    name: 'utpWriteStreamsCompleted',
+    metric: MetricType.Gauge,
+    help: 'how many UTP write streams were completed',
+  },
+  {
+    name: 'utpReadStreamsOpened',
     metric: MetricType.Gauge,
     help: 'how many UTP read streams were opened',
+  },
+  {
+    name: 'utpReadStreamsCompleted',
+    metric: MetricType.Gauge,
+    help: 'how many UTP read streams were completed',
   },
 ]
 

@@ -99,11 +99,11 @@ export class PortalNetworkUTP {
         requestCode === RequestCode.OFFER_WRITE
       ) {
         const utpWriteMetric = (NetworkNames[params.networkId] +
-          '_utpWriteStreams') as keyof PortalNetworkMetrics
+          '_utpWriteStreamsOpened') as keyof PortalNetworkMetrics
         this.client.metrics[utpWriteMetric].inc()
       } else {
         const utpReadMetric = (NetworkNames[params.networkId] +
-          '_utpReadStreams') as keyof PortalNetworkMetrics
+          '_utpReadStreamsOpened') as keyof PortalNetworkMetrics
         this.client.metrics[utpReadMetric].inc()
       }
     }
