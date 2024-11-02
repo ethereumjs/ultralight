@@ -16,7 +16,7 @@ import {
 
 import { INVALID_PARAMS } from '../error-code.js'
 import { content_params } from '../schema/index.js'
-import { isValidId } from '../util.js'
+import { callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 import type { GetEnrResult } from '../schema/types.js'
@@ -245,6 +245,12 @@ export class portal {
       [validators.contentKey],
     ])
 
+    // portal_*TraceRecursiveFindContent
+    this.historyTraceRecursiveFindContent = middleware(
+      callWithStackTrace(this.historyTraceRecursiveFindContent.bind(this), true),
+      1,
+      [[validators.hex]],
+    )
     // portal_*Offer
     this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
       [validators.enr],
@@ -1071,9 +1077,11 @@ export class portal {
       this.logger.extend('historyTraceRecursiveFindContent')(
         `request returned { content: ${bytesToHex(res.content)}, utpTransfer: ${res.utp} }`,
       )
+      this.logger.extend('historyTraceRecursiveFindContent')(res.trace)
       return {
         content: bytesToHex(res.content),
         utpTransfer: res.utp,
+        trace: res.trace,
       }
     }
   }

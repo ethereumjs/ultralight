@@ -118,7 +118,9 @@ export class ContentLookup {
         void this.network.sendOffer(enr.nodeId, [this.contentKey])
       }
       if (this.contentTrace !== undefined) {
-        this.contentTrace.cancelled = Array.from(this.pending.values())
+        this.contentTrace.cancelled = Array.from(this.pending.values()).map(
+          (enr) => ENR.decodeTxt(enr).nodeId,
+        )
         this.contentTrace.responses = Object.fromEntries(
           this.completedRequests!.entries(),
         ) as Record<NodeId, NodeId[]>
