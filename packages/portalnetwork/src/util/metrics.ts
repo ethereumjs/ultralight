@@ -66,76 +66,76 @@ export const setupMetrics = (
 ): PortalNetworkMetrics => {
   const metrics = createMetrics(ultralightMetrics, networks)
   return {
-    ...peerMetrics,
-    totalContentLookups: new PromClient.Gauge<string>({
+    ...metrics,
+    totalContentLookups: new Gauge<string>({
       name: 'ultralight_total_content_lookups',
       help: 'total number of content lookups initiated',
     }),
-    successfulContentLookups: new PromClient.Counter({
+    successfulContentLookups: new Counter({
       name: 'ultralight_successful_content_lookups',
       help: 'how many content lookups successfully returned content',
     }),
-    failedContentLookups: new PromClient.Counter({
+    failedContentLookups: new Counter({
       name: 'ultralight_failed_content_lookups',
       help: 'how many content lookups failed to return content',
     }),
-    offerMessagesSent: new PromClient.Counter({
+    offerMessagesSent: new Counter({
       name: 'ultralight_offer_messages_sent',
       help: 'how many offer messages have been sent',
     }),
-    offerMessagesReceived: new PromClient.Counter({
+    offerMessagesReceived: new Counter({
       name: 'ultralight_offer_messages_received',
       help: 'how many offer messages have been received',
     }),
-    acceptMessagesSent: new PromClient.Counter({
+    acceptMessagesSent: new Counter({
       name: 'ultralight_accept_messages_sent',
       help: 'how many accept messages have been sent',
     }),
-    acceptMessagesReceived: new PromClient.Counter({
+    acceptMessagesReceived: new Counter({
       name: 'ultralight_accept_messages_received',
       help: 'how many accept messages have been received',
     }),
-    findContentMessagesSent: new PromClient.Counter({
+    findContentMessagesSent: new Counter({
       name: 'ultralight_findContent_messages_sent',
       help: 'how many findContent messages have been sent',
     }),
-    findContentMessagesReceived: new PromClient.Counter({
+    findContentMessagesReceived: new Counter({
       name: 'ultralight_findContent_messages_received',
       help: 'how many findContent messages have been received',
     }),
-    contentMessagesSent: new PromClient.Counter({
+    contentMessagesSent: new Counter({
       name: 'ultralight_content_messages_sent',
       help: 'how many content messages have been sent',
     }),
-    contentMessagesReceived: new PromClient.Counter({
+    contentMessagesReceived: new Counter({
       name: 'ultralight_content_messages_received',
       help: 'how many content messages have been received',
     }),
-    findNodesMessagesSent: new PromClient.Counter({
+    findNodesMessagesSent: new Counter({
       name: 'ultralight_findNodes_messages_sent',
       help: 'how many findNodes messages have been sent',
     }),
-    findNodesMessagesReceived: new PromClient.Counter({
+    findNodesMessagesReceived: new Counter({
       name: 'ultralight_findNodes_messages_received',
       help: 'how many findNodes messages have been received',
     }),
-    nodesMessagesSent: new PromClient.Counter({
+    nodesMessagesSent: new Counter({
       name: 'ultralight_nodes_messages_sent',
       help: 'how many nodes messages have been sent',
     }),
-    nodesMessagesReceived: new PromClient.Counter({
+    nodesMessagesReceived: new Counter({
       name: 'ultralight_nodes_messages_received',
       help: 'how many nodes messages have been received',
     }),
-    totalBytesReceived: new PromClient.Counter({
+    totalBytesReceived: new Counter({
       name: 'ultralight_total_bytes_received',
       help: 'how many bytes have been received in Portal Network message payloads',
     }),
-    totalBytesSent: new PromClient.Counter({
+    totalBytesSent: new Counter({
       name: 'ultralight_total_bytes_sent',
       help: 'how many bytes have been sent in Portal Network message payloads',
     }),
-    currentDBSize: new PromClient.Gauge({
+    currentDBSize: new Gauge({
       name: 'ultralight_db_size',
       help: 'how many MBs are currently stored in the db',
     }),
