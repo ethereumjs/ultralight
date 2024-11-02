@@ -160,7 +160,10 @@ export interface TraceObject {
     [nodeId: NodeId]: NodeId[]
   }
   metadata: {
-    [nodeId: NodeId]: any
+    [nodeId: NodeId]: {
+      enr: `enr:${string}`
+      distance: PrefixedHexString
+    }
   }
   startedAtMs: number
   cancelled?: NodeId[]
