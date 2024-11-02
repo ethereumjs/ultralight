@@ -12,6 +12,7 @@ import { HistoryNetwork } from '../networks/history/history.js'
 import {
   BeaconLightClientNetwork,
   NetworkId,
+  NetworkNames,
   StateNetwork,
   SyncStrategy,
 } from '../networks/index.js'
@@ -26,6 +27,7 @@ import { TransportLayer } from './types.js'
 import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
+import type * as PromClient from 'prom-client'
 import type { BaseNetwork } from '../networks/network.js'
 import type {
   INodeAddress,
@@ -301,6 +303,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       }
       this.shouldRefresh && network.startRefresh()
       await network.prune()
+      if (this.metrics) {
+        network.on('ContentAdded', async () => {
+          const metric = (NetworkNames[network.networkId] + '_dbSize') as keyof PortalNetworkMetrics
+          ;(<PromClient.Gauge>this.metrics![metric]).set(await network.db.size())
+        })
+      }
     }
     void this.bootstrap()
   }
@@ -327,6 +335,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await this.db.close()
     for (const network of this.networks.values()) {
       network.stopRefresh()
+      network.removeAllListeners()
     }
   }
 
