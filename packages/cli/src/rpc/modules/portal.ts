@@ -16,7 +16,7 @@ import {
 
 import { INVALID_PARAMS } from '../error-code.js'
 import { content_params } from '../schema/index.js'
-import { isValidId } from '../util.js'
+import { callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 import type { GetEnrResult } from '../schema/types.js'
@@ -74,6 +74,7 @@ const methods = [
   'portal_historyGetEnr',
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
+  'portal_historyTraceRecursiveFindContent',
   // beacon
   'portal_beaconSendFindContent',
   'portal_beaconFindContent',
@@ -243,6 +244,23 @@ export class portal {
     this.beaconGetContent = middleware(this.beaconGetContent.bind(this), 1, [
       [validators.contentKey],
     ])
+
+    // portal_*TraceRecursiveFindContent
+    this.historyTraceRecursiveFindContent = middleware(
+      callWithStackTrace(this.historyTraceRecursiveFindContent.bind(this), true),
+      1,
+      [[validators.hex]],
+    )
+    this.beaconTraceRecursiveFindContent = middleware(
+      callWithStackTrace(this.beaconTraceRecursiveFindContent.bind(this), true),
+      1,
+      [[validators.hex]],
+    )
+    this.stateTraceRecursiveFindContent = middleware(
+      callWithStackTrace(this.stateTraceRecursiveFindContent.bind(this), true),
+      1,
+      [[validators.hex]],
+    )
 
     // portal_*Offer
     this.historyOffer = middleware(this.historyOffer.bind(this), 2, [
@@ -1041,6 +1059,100 @@ export class portal {
       return {
         content: bytesToHex(res.content),
         utpTransfer: res.utp,
+      }
+    }
+  }
+
+  // portal_*TraceRecursiveFindContent
+  async historyTraceRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('historyTraceRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const res = await lookup.startLookup()
+    this.logger.extend('historyTraceRecursiveFindContent')(
+      `request returned ${JSON.stringify(res)}`,
+    )
+    if (!res) {
+      this.logger.extend('historyTraceRecursiveFindContent')(`request returned { enrs: [] }`)
+      throw new Error('No content found')
+    }
+    if ('enrs' in res) {
+      this.logger.extend('historyTraceRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(bytesToHex) }}}] }`,
+      )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
+      return { enrs: res.enrs.map(bytesToHex) }
+    } else {
+      this.logger.extend('historyTraceRecursiveFindContent')(
+        `request returned { content: ${bytesToHex(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      this.logger.extend('historyTraceRecursiveFindContent')(res.trace)
+      return {
+        content: bytesToHex(res.content),
+        utpTransfer: res.utp,
+        trace: res.trace,
+      }
+    }
+  }
+  async beaconTraceRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('beaconTraceRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const res = await lookup.startLookup()
+    this.logger.extend('beaconTraceRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+    if (!res) {
+      this.logger.extend('beaconTraceRecursiveFindContent')(`request returned { enrs: [] }`)
+      throw new Error('No content found')
+    }
+    if ('enrs' in res) {
+      this.logger.extend('beaconTraceRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(bytesToHex) }}}] }`,
+      )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
+      return { enrs: res.enrs.map(bytesToHex) }
+    } else {
+      this.logger.extend('beaconTraceRecursiveFindContent')(
+        `request returned { content: ${bytesToHex(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      this.logger.extend('beaconTraceRecursiveFindContent')(res.trace)
+      return {
+        content: bytesToHex(res.content),
+        utpTransfer: res.utp,
+        trace: res.trace,
+      }
+    }
+  }
+  async stateTraceRecursiveFindContent(params: [string]) {
+    const [contentKey] = params
+    this.logger.extend('stateTraceRecursiveFindContent')(`request received for ${contentKey}`)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const res = await lookup.startLookup()
+    this.logger.extend('stateTraceRecursiveFindContent')(`request returned ${JSON.stringify(res)}`)
+    if (!res) {
+      this.logger.extend('stateTraceRecursiveFindContent')(`request returned { enrs: [] }`)
+      throw new Error('No content found')
+    }
+    if ('enrs' in res) {
+      this.logger.extend('stateTraceRecursiveFindContent')(
+        `request returned { enrs: [{${{ enrs: res.enrs.map(bytesToHex) }}}] }`,
+      )
+      if (res.enrs.length === 0) {
+        throw new Error('No content found')
+      }
+      return { enrs: res.enrs.map(bytesToHex) }
+    } else {
+      this.logger.extend('stateTraceRecursiveFindContent')(
+        `request returned { content: ${bytesToHex(res.content)}, utpTransfer: ${res.utp} }`,
+      )
+      this.logger.extend('stateTraceRecursiveFindContent')(res.trace)
+      return {
+        content: bytesToHex(res.content),
+        utpTransfer: res.utp,
+        trace: res.trace,
       }
     }
   }

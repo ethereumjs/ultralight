@@ -1,13 +1,14 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { bytesToHex, short } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, short } from '@ethereumjs/util'
 import { Heap } from 'heap-js'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
 import type { BaseNetwork } from './network.js'
-import type { ContentLookupResponse, LookupPeer } from './types.js'
+import type { ContentLookupResponse, ContentTrace, LookupPeer } from './types.js'
 import type { NodeId } from '@chainsafe/enr'
+import type { PrefixedHexString } from '@ethereumjs/util'
 import type { Debugger } from 'debug'
 import type { Comparator } from 'heap-js'
 
@@ -16,7 +17,7 @@ const customPriorityComparator: Comparator<LookupPeer> = (a, b) => a.distance - 
 export class ContentLookup {
   private network: BaseNetwork
   private lookupPeers: Heap<LookupPeer>
-  private addedToLookup: Set<NodeId>
+  private meta: Map<NodeId, { enr: string; distance: string }>
   private contentId: string
   private contentKey: Uint8Array
   private logger: Debugger
@@ -24,7 +25,9 @@ export class ContentLookup {
   private finished: boolean
   private content: ContentLookupResponse
   private pending: Set<NodeId>
-  constructor(network: BaseNetwork, contentKey: Uint8Array) {
+  private completedRequests?: Map<NodeId, NodeId[]>
+  private contentTrace?: ContentTrace
+  constructor(network: BaseNetwork, contentKey: Uint8Array, trace = false) {
     this.network = network
     this.lookupPeers = new Heap(customPriorityComparator)
     this.contentKey = contentKey
@@ -32,9 +35,16 @@ export class ContentLookup {
     this.logger = this.network.logger.extend('LOOKUP').extend(short(contentKey, 6))
     this.timeout = 3000 // 3 seconds
     this.finished = false
-    this.addedToLookup = new Set()
-
+    this.meta = new Map()
     this.pending = new Set()
+    this.completedRequests = trace ? new Map() : undefined
+    this.contentTrace = trace
+      ? {
+          origin: this.network.portal.discv5.enr.nodeId as PrefixedHexString,
+          targetId: bytesToHex(this.contentKey),
+          metadata: {},
+        }
+      : undefined
   }
 
   /**
@@ -44,6 +54,7 @@ export class ContentLookup {
   public startLookup = async (): Promise<ContentLookupResponse> => {
     // Don't support content lookups for networks that don't implement it (i.e. Canonical Indices)
     if (!this.network.sendFindContent) return
+    this.contentTrace && (this.contentTrace.startedAtMs = Date.now())
     this.logger(`starting recursive content lookup for ${bytesToHex(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
@@ -60,7 +71,7 @@ export class ContentLookup {
     for (const enr of nearest) {
       const dist = distance(enr.nodeId, this.contentId)
       this.lookupPeers.push({ enr, distance: Number(dist) })
-      this.addedToLookup.add(enr.encodeTxt())
+      this.meta.set(enr.nodeId, { enr: enr.encodeTxt(), distance: bigIntToHex(dist) })
     }
 
     while (!this.finished && (this.lookupPeers.length > 0 || this.pending.size > 0)) {
@@ -107,6 +118,28 @@ export class ContentLookup {
       for (const enr of closest) {
         void this.network.sendOffer(enr.nodeId, [this.contentKey])
       }
+      if (this.contentTrace !== undefined) {
+        this.contentTrace.cancelled = Array.from(this.pending.values()).map(
+          (enr) => ENR.decodeTxt(enr).nodeId,
+        )
+        this.contentTrace.responses = Object.fromEntries(
+          this.completedRequests!.entries(),
+        ) as Record<NodeId, NodeId[]>
+        for (const nodeId of Object.keys(this.contentTrace.responses!)) {
+          this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
+            enr: `enr:${string}`
+            distance: `0x${string}`
+          }
+        }
+        for (const nodeId of this.contentTrace.cancelled!) {
+          this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
+            enr: `enr:${string}`
+            distance: `0x${string}`
+          }
+        }
+        ;(this.content as { utp: boolean; trace: ContentTrace; content: Uint8Array }).trace =
+          this.contentTrace
+      }
     }
     return this.content
   }
@@ -139,21 +172,33 @@ export class ContentLookup {
         // Mark content offered to peer that sent it to us (so we don't try to offer it to them)
         this.network.routingTable.contentKeyKnownToPeer(peer.enr.nodeId, this.contentKey)
         this.network.portal.metrics?.successfulContentLookups.inc()
+        if (this.contentTrace !== undefined) {
+          this.completedRequests!.set(peer.enr.nodeId, [])
+          this.contentTrace.receivedFrom = peer.enr.nodeId
+        }
         return res
       } else {
         // findContent request returned ENRs of nodes closer to content
         this.logger(`received ${res.enrs.length} ENRs for closer nodes`)
         for (const enr of res.enrs) {
           const decodedEnr = ENR.decode(enr as Uint8Array)
-          if (!this.addedToLookup.has(decodedEnr.encodeTxt())) {
+          if (!this.meta.has(decodedEnr.nodeId)) {
             const dist = distance(decodedEnr.nodeId, this.contentId)
             this.lookupPeers.push({ enr: decodedEnr, distance: Number(dist) })
-            this.addedToLookup.add(decodedEnr.encodeTxt())
+            this.meta.set(decodedEnr.nodeId, {
+              enr: decodedEnr.encodeTxt(),
+              distance: bigIntToHex(dist),
+            })
             this.logger(
               `Adding ${shortId(decodedEnr.nodeId)} to lookup queue (${this.lookupPeers.size()})`,
             )
           }
         }
+        this.completedRequests &&
+          this.completedRequests.set(
+            peer.enr.nodeId,
+            res.enrs.map((enr) => ENR.decode(enr).nodeId),
+          )
         throw new Error('Continue')
       }
     } catch (err) {

@@ -6,7 +6,8 @@ import type { BeaconLightClientNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
 import type { PortalNetwork } from '../client'
-import type { ENR } from '@chainsafe/enr'
+import type { ENR, NodeId } from '@chainsafe/enr'
+import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
 
 export interface BaseNetworkConfig {
@@ -145,6 +146,25 @@ export type ContentLookupResponse =
   | {
       content: Uint8Array
       utp: boolean
+      trace?: ContentTrace
     }
   | { enrs: Uint8Array[] }
   | undefined
+
+export interface ContentTrace extends Partial<TraceObject> {}
+export interface TraceObject {
+  origin: NodeId
+  targetId: PrefixedHexString
+  receivedFrom: NodeId
+  responses: {
+    [nodeId: NodeId]: NodeId[]
+  }
+  metadata: {
+    [nodeId: NodeId]: {
+      enr: `enr:${string}`
+      distance: PrefixedHexString
+    }
+  }
+  startedAtMs: number
+  cancelled?: NodeId[]
+}
