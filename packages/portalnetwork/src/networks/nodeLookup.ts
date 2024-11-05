@@ -106,10 +106,7 @@ export class NodeLookup {
     this.log(`Starting lookup in bucket ${bucket} (${startingSize}/${MAX_NODES_PER_BUCKET} peers)`)
 
     while (this.pendingNodes.size > 0) {
-      const full =
-        this.network.routingTable.buckets[
-          log2Distance(this.network.enr.nodeId, this.nodeSought)
-        ].size() >= MAX_NODES_PER_BUCKET
+      const full = this.network.routingTable.buckets[bucket].size() >= MAX_NODES_PER_BUCKET
 
       if (full) {
         this.log(`Bucket is full, stopping lookup`)
