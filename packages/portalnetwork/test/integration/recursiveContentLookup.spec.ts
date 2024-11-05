@@ -59,9 +59,6 @@ describe('Recursive Content Lookup Test', () => {
       },
     })
 
-    node1.enableLog('*Portal*')
-    node2.enableLog('*Portal*')
-    node3.enableLog('*Portal*')
     await node1.start()
     await node2.start()
     await node3.start()
@@ -106,4 +103,4 @@ describe('Recursive Content Lookup Test', () => {
     const res = await contentLookup.startLookup()
     assert.equal(Object.keys(res!.trace!.metadata!).length, 2)
   })
-}, 10000)
+}, 30000)

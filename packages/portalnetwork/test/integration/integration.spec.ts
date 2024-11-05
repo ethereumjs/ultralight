@@ -37,9 +37,9 @@ const enr1 = SignableENR.createFromPrivateKey(pk1)
 const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('gossip test', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5000`)
+  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5034`)
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5001`)
+  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5035`)
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await PortalNetwork.create({
     transport: TransportLayer.NODE,
