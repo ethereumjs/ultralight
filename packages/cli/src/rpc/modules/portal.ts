@@ -195,6 +195,12 @@ export class portal {
     this.historyRecursiveFindNodes = middleware(this.historyRecursiveFindNodes.bind(this), 1, [
       [validators.dstId],
     ])
+    this.stateRecursiveFindNodes = middleware(this.stateRecursiveFindNodes.bind(this), 1, [
+      [validators.dstId],
+    ])
+    this.beaconRecursiveFindNodes = middleware(this.beaconRecursiveFindNodes.bind(this), 1, [
+      [validators.dstId],
+    ])
 
     // portal_*SendNodes
     this.historySendNodes = middleware(this.historySendNodes.bind(this), 2, [
@@ -766,6 +772,24 @@ export class portal {
     const lookup = new NodeLookup(this._history, target)
     const res = await lookup.startLookup()
     this.logger(`historyRecursiveFindNodes request returned ${res}`)
+    return res ?? ''
+  }
+  async stateRecursiveFindNodes(params: [string]) {
+    const [dstId] = params
+    this.logger(`stateRecursiveFindNodes request received for ${dstId}`)
+    const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
+    const lookup = new NodeLookup(this._state, target)
+    const res = await lookup.startLookup()
+    this.logger(`stateRecursiveFindNodes request returned ${res}`)
+    return res ?? ''
+  }
+  async beaconRecursiveFindNodes(params: [string]) {
+    const [dstId] = params
+    this.logger(`beaconRecursiveFindNodes request received for ${dstId}`)
+    const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
+    const lookup = new NodeLookup(this._beacon, target)
+    const res = await lookup.startLookup()
+    this.logger(`beaconRecursiveFindNodes request returned ${res}`)
     return res ?? ''
   }
 
