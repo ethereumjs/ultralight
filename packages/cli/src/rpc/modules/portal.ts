@@ -1,7 +1,7 @@
-import { EntryStatus } from '@chainsafe/discv5'
+import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
-import { bytesToHex, hexToBytes, short } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import {
   ContentLookup,
   ContentMessageType,
@@ -120,6 +120,7 @@ export class portal {
     // portal_*RoutingTableInfo
     this.stateRoutingTableInfo = middleware(this.stateRoutingTableInfo.bind(this), 0, [])
     this.historyRoutingTableInfo = middleware(this.historyRoutingTableInfo.bind(this), 0, [])
+    this.historyRoutingTableENRs = middleware(this.historyRoutingTableENRs.bind(this), 0, [])
 
     // portal_*LookupEnr
     this.historyLookupEnr = middleware(this.historyLookupEnr.bind(this), 1, [[validators.dstId]])
@@ -352,6 +353,20 @@ export class portal {
     }
   }
 
+  async historyRoutingTableENRs(_params: []): Promise<any> {
+    this.logger(`portal_historyRoutingTableENRS request received.`)
+    const { buckets } = await this._history.routingTableInfo()
+    return {
+      buckets: buckets.map((bucket) =>
+        bucket.values().map((enr: ENR) => {
+          return {
+            enr: enr.encodeTxt(),
+            radius: bigIntToHex(this._history.routingTable.getRadius(enr.nodeId) ?? 0n),
+          }
+        }),
+      ),
+    }
+  }
   // portal_*RoutingTableInfo
   async historyRoutingTableInfo(_params: []): Promise<any> {
     this.logger(`portal_historyRoutingTableInfo request received.`)
@@ -765,32 +780,44 @@ export class portal {
   }
 
   // portal_*RecursiveFindNodes
-  async historyRecursiveFindNodes(params: [string]) {
+  async historyRecursiveFindNodes(params: [string]): Promise<string[]> {
     const [dstId] = params
     this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
     const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
     const lookup = new NodeLookup(this._history, target)
-    const res = await lookup.startLookup()
-    this.logger(`historyRecursiveFindNodes request returned ${res}`)
-    return res ?? ''
+    await lookup.startLookup()
+    const enrs = this._history.routingTable
+      .nearest(target, 16)
+      .sort((a, b) => Number(distance(target, a.nodeId) - distance(target, b.nodeId)))
+      .map((v) => v.encodeTxt())
+    this.logger(`historyRecursiveFindNodes request returned ${enrs}`)
+    return enrs
   }
   async stateRecursiveFindNodes(params: [string]) {
     const [dstId] = params
     this.logger(`stateRecursiveFindNodes request received for ${dstId}`)
     const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
     const lookup = new NodeLookup(this._state, target)
-    const res = await lookup.startLookup()
-    this.logger(`stateRecursiveFindNodes request returned ${res}`)
-    return res ?? ''
+    await lookup.startLookup()
+    const enrs = this._state.routingTable
+      .nearest(target, 16)
+      .sort((a, b) => Number(distance(target, a.nodeId) - distance(target, b.nodeId)))
+      .map((v) => v.encodeTxt())
+    this.logger(`stateRecursiveFindNodes request returned ${enrs}`)
+    return enrs
   }
   async beaconRecursiveFindNodes(params: [string]) {
     const [dstId] = params
     this.logger(`beaconRecursiveFindNodes request received for ${dstId}`)
     const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
     const lookup = new NodeLookup(this._beacon, target)
-    const res = await lookup.startLookup()
-    this.logger(`beaconRecursiveFindNodes request returned ${res}`)
-    return res ?? ''
+    await lookup.startLookup()
+    const enrs = this._beacon.routingTable
+      .nearest(target, 16)
+      .sort((a, b) => Number(distance(target, a.nodeId) - distance(target, b.nodeId)))
+      .map((v) => v.encodeTxt())
+    this.logger(`beaconRecursiveFindNodes request returned ${enrs}`)
+    return enrs
   }
 
   // portal_*SendNodes
