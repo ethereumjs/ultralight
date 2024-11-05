@@ -762,7 +762,8 @@ export class portal {
   async historyRecursiveFindNodes(params: [string]) {
     const [dstId] = params
     this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
-    const lookup = new NodeLookup(this._history, dstId)
+    const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
+    const lookup = new NodeLookup(this._history, target)
     const res = await lookup.startLookup()
     this.logger(`historyRecursiveFindNodes request returned ${res}`)
     return res ?? ''
