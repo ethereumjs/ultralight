@@ -61,7 +61,7 @@ export class ContentLookup {
       // Try to find content locally first
       const res = await this.network.findContentLocally(this.contentKey)
       if (res === undefined) throw new Error('No content found')
-      return { content: res, utp: false }
+      return { content: res, utp: false, trace: this.contentTrace }
     } catch (err: any) {
       this.logger(`content key not in db ${err.message}`)
     }
@@ -118,27 +118,33 @@ export class ContentLookup {
       for (const enr of closest) {
         void this.network.sendOffer(enr.nodeId, [this.contentKey])
       }
-      if (this.contentTrace !== undefined) {
-        this.contentTrace.cancelled = Array.from(this.pending.values()).map(
-          (enr) => ENR.decodeTxt(enr).nodeId,
-        )
-        this.contentTrace.responses = Object.fromEntries(
-          this.completedRequests!.entries(),
-        ) as Record<NodeId, NodeId[]>
-        for (const nodeId of Object.keys(this.contentTrace.responses!)) {
-          this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
-            enr: `enr:${string}`
-            distance: `0x${string}`
-          }
+    }
+
+    // Add cancelled/metadata elements to trace
+    if (this.contentTrace !== undefined) {
+      this.contentTrace.cancelled = Array.from(this.pending.values()).map(
+        (enr) => ENR.decodeTxt(enr).nodeId,
+      )
+      this.contentTrace.responses = Object.fromEntries(this.completedRequests!.entries()) as Record<
+        NodeId,
+        NodeId[]
+      >
+      for (const nodeId of Object.keys(this.contentTrace.responses!)) {
+        this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
+          enr: `enr:${string}`
+          distance: `0x${string}`
         }
-        for (const nodeId of this.contentTrace.cancelled!) {
-          this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
-            enr: `enr:${string}`
-            distance: `0x${string}`
-          }
+      }
+      for (const nodeId of this.contentTrace.cancelled!) {
+        this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
+          enr: `enr:${string}`
+          distance: `0x${string}`
         }
-        ;(this.content as { utp: boolean; trace: ContentTrace; content: Uint8Array }).trace =
-          this.contentTrace
+      }
+      if (this.content !== undefined) {
+        this.content.trace = this.contentTrace
+      } else {
+        this.content = { enrs: [], trace: this.contentTrace }
       }
     }
     return this.content

@@ -148,7 +148,7 @@ export type ContentLookupResponse =
       utp: boolean
       trace?: ContentTrace
     }
-  | { enrs: Uint8Array[] }
+  | { enrs: Uint8Array[]; trace?: ContentTrace }
   | undefined
 
 export interface ContentTrace extends Partial<TraceObject> {}
