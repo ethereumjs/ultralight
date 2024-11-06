@@ -16,6 +16,7 @@ import {
   PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
+  generateRandomNodeIdAtDistance,
   getContentKey,
 } from '../../src/index.js'
 
@@ -278,5 +279,49 @@ describe('eth_getBlockByHash', async () => {
       testBlockData[29].blockHash,
       'retrieved expected header',
     )
+  })
+})
+
+describe('Offer/Accept', () => {
+  it('should send offer and get no accepts', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+    })
+
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    await network2.setRadius(1n)
+    await network1.sendPing(network2?.enr!.toENR())
+    const veryFarFakeContentKey = hexToBytes(
+      '0x00' + generateRandomNodeIdAtDistance(node2.discv5.enr.nodeId, 256),
+    )
+    const res = await network1.sendOffer(node2.discv5.enr.nodeId, [veryFarFakeContentKey])
+    assert.deepEqual(res, [], 'no accepts should be received')
   })
 })

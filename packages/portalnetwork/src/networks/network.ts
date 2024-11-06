@@ -8,6 +8,7 @@ import {
   bytesToUnprefixedHex,
   concatBytes,
   hexToBytes,
+  randomBytes,
 } from '@ethereumjs/util'
 import { EventEmitter } from 'events'
 
@@ -500,56 +501,44 @@ export abstract class BaseNetwork extends EventEmitter {
       } pieces of content.`,
     )
     try {
-      if (msg.contentKeys.length > 0) {
-        let offerAccepted = false
-        try {
-          const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
-
-          for (let x = 0; x < msg.contentKeys.length; x++) {
-            const cid = this.contentKeyToId(msg.contentKeys[x])
-            const d = distance(cid, this.enr.nodeId)
-            if (d >= this.nodeRadius) {
-              this.logger.extend('OFFER')(
-                `Content key: ${bytesToHex(msg.contentKeys[x])} is outside radius.\nd=${d}\nr=${this.nodeRadius}`,
-              )
-              continue
-            }
-            try {
-              await this.get(msg.contentKeys[x])
-              this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
-            } catch (err) {
-              offerAccepted = true
-              contentIds[x] = true
-              this.logger.extend('OFFER')(
-                `Found some interesting content from ${shortId(src.nodeId, this.routingTable)}`,
-              )
-            }
+      const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
+      let offerAccepted = false
+      try {
+        for (let x = 0; x < msg.contentKeys.length; x++) {
+          const cid = this.contentKeyToId(msg.contentKeys[x])
+          const d = distance(cid, this.enr.nodeId)
+          if (d >= this.nodeRadius) {
+            this.logger.extend('OFFER')(
+              `Content key: ${bytesToHex(msg.contentKeys[x])} is outside radius.\ndistance=${d}\nradius=${this.nodeRadius}`,
+            )
+            continue
           }
-          if (offerAccepted) {
-            this.logger(`Accepting an OFFER`)
-            const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
-            this.logger(bytesToHex(msg.contentKeys[0]))
-            for (const k of desiredKeys) {
-              this.streamingKey(k)
-            }
-            await this.sendAccept(src, requestId, contentIds, desiredKeys)
-          } else {
-            this.logger(`Declining an OFFER since no interesting content`)
-            await this.sendResponse(src, requestId, new Uint8Array())
+          try {
+            await this.get(msg.contentKeys[x])
+            this.logger.extend('OFFER')(`Already have this content ${msg.contentKeys[x]}`)
+          } catch (err) {
+            offerAccepted = true
+            contentIds[x] = true
+            this.logger.extend('OFFER')(
+              `Found some interesting content ${shortId(bytesToHex(msg.contentKeys[x]))} from ${shortId(src.nodeId, this.routingTable)}`,
+            )
           }
-        } catch {
-          this.logger(`Something went wrong handling offer message`)
-          // Send empty response if something goes wrong parsing content keys
-          await this.sendResponse(src, requestId, new Uint8Array())
         }
-        if (!offerAccepted) {
-          this.logger('We already have all this content')
-          await this.sendResponse(src, requestId, new Uint8Array())
+        if (offerAccepted) {
+          this.logger(`Accepting an OFFER`)
+          const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
+          this.logger(bytesToHex(msg.contentKeys[0]))
+          for (const k of desiredKeys) {
+            this.streamingKey(k)
+          }
+          await this.sendAccept(src, requestId, contentIds, desiredKeys)
+        } else {
+          await this.sendAccept(src, requestId, contentIds, [])
         }
-      } else {
-        this.logger(`Offer Message Has No Content`)
+      } catch (err: any) {
+        this.logger(`Something went wrong handling offer message: ${err.toString()}`)
         // Send empty response if something goes wrong parsing content keys
-        await this.sendResponse(src, requestId, new Uint8Array())
+        await this.sendAccept(src, requestId, contentIds, [])
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
@@ -576,6 +565,19 @@ export abstract class BaseNetwork extends EventEmitter {
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[],
   ) => {
+    if (desiredContentKeys.length === 0) {
+      // Send ACCEPT message with only 0s if no interesting content found
+      const payload: AcceptMessage = {
+        connectionId: randomBytes(2),
+        contentKeys: BitArray.fromBoolArray(desiredContentAccepts),
+      }
+      const encodedPayload = PortalWireMessageType.serialize({
+        selector: MessageCodes.ACCEPT,
+        value: payload,
+      })
+      await this.sendResponse(src, requestId, encodedPayload)
+      return
+    }
     const id = randUint16()
     this.logger.extend('ACCEPT')(
       `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,

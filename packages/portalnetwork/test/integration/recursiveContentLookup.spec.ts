@@ -93,7 +93,7 @@ describe('Recursive Content Lookup Test', () => {
 
     assert.exists(res?.trace)
     assert.equal(bytesToHex(res?.content), headersWithProofs[0][1])
-    assert.equal(res?.trace.receivedFrom, node1.discv5.enr.nodeId)
+    assert.equal(res?.trace.receivedFrom, '0x' + node1.discv5.enr.nodeId)
   })
   it('should get no content and 2 nodes with trace info', async () => {
     const contentKey = hexToBytes(
