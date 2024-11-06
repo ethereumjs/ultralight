@@ -165,6 +165,10 @@ export interface TraceObject {
       distance: PrefixedHexString
     }
   }
-  startedAtMs: number
+  startedAtMs: {
+    secs_since_epoch: number
+    nanos_since_epoch: number
+  }
+
   cancelled?: NodeId[]
 }
