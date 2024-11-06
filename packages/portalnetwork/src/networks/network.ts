@@ -811,7 +811,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await Promise.allSettled(
       bucketsToRefresh.map(async (bucket) => {
         const randomNodeId = generateRandomNodeIdAtDistance(this.enr.nodeId, bucket.distance)
-        const lookup = new NodeLookup(this, randomNodeId)
+        const lookup = new NodeLookup(this, randomNodeId, true)
         return lookup.startLookup()
       }),
     )
