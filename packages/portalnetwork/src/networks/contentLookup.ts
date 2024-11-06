@@ -41,7 +41,7 @@ export class ContentLookup {
     this.contentTrace = trace
       ? {
           origin: this.network.portal.discv5.enr.nodeId as PrefixedHexString,
-          targetId: bytesToHex(this.contentKey),
+          targetId: this.contentId,
           metadata: {},
         }
       : undefined
