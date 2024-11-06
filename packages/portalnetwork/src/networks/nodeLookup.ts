@@ -1,5 +1,6 @@
 import { EntryStatus, MAX_NODES_PER_BUCKET, distance, log2Distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
+import { Heap } from 'heap-js'
 
 import type { BaseNetwork } from './network.js'
 import type { Debugger } from 'debug'
@@ -16,22 +17,28 @@ export class NodeLookup {
   private static readonly CONCURRENT_LOOKUPS = 3 // Alpha (a) parameter from Kademlia
   private static readonly LOOKUP_TIMEOUT = 5000 // 5 seconds per peer
 
+  private foundNodes: Heap<ENR> // Heap of ENRs sorted by distance to target
   private queriedNodes: Set<string>
   private pendingNodes: Map<string, ENR> // nodeId -> ENR
+  private refresh: boolean
 
-  constructor(network: BaseNetwork, nodeId: string) {
+  constructor(network: BaseNetwork, nodeId: string, refresh: boolean = false) {
     this.network = network
     this.nodeSought = nodeId
+    this.refresh = refresh
     this.log = this.network.logger
       .extend('nodeLookup')
       .extend(log2Distance(this.network.enr.nodeId, this.nodeSought).toString())
     this.queriedNodes = new Set<string>()
     this.pendingNodes = new Map<string, ENR>() // nodeId -> ENR
-
+    this.foundNodes = new Heap<ENR>((a, b) =>
+      Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
+    )
     // Initialize with closest known peers
     const initialPeers = this.network.routingTable.nearest(this.nodeSought, 16)
     for (const peer of initialPeers) {
       this.pendingNodes.set(peer.nodeId, peer)
+      this.foundNodes.push(peer)
     }
   }
 
@@ -73,6 +80,7 @@ export class NodeLookup {
 
         for (const enr of response.enrs) {
           const decodedEnr = ENR.decode(enr)
+          this.foundNodes.push(decodedEnr)
           const nodeId = decodedEnr.nodeId
           try {
             // Skip if we've already queried this node
@@ -100,23 +108,15 @@ export class NodeLookup {
     }
   }
 
-  public async startLookup(): Promise<string | undefined> {
+  public async startLookup(): Promise<string[]> {
     const bucket = log2Distance(this.network.enr.nodeId, this.nodeSought)
     const startingSize = this.network.routingTable.buckets[bucket].size()
     this.log(`Starting lookup in bucket ${bucket} (${startingSize}/${MAX_NODES_PER_BUCKET} peers)`)
 
     while (this.pendingNodes.size > 0) {
-      const full =
-        this.network.routingTable.buckets[
-          log2Distance(this.network.enr.nodeId, this.nodeSought)
-        ].size() >= MAX_NODES_PER_BUCKET
-
-      if (full) {
+      if (this.refresh === true && startingSize >= MAX_NODES_PER_BUCKET) {
         this.log(`Bucket is full, stopping lookup`)
-        this.log(
-          `Finished lookup in bucket ${bucket} (${MAX_NODES_PER_BUCKET}/${MAX_NODES_PER_BUCKET} peers) +${MAX_NODES_PER_BUCKET - startingSize}`,
-        )
-        return
+        break
       }
 
       // Select closest α nodes we haven't queried yet
@@ -149,5 +149,10 @@ export class NodeLookup {
     this.log(
       `Finished lookup in bucket ${bucket} (${finalSize}/${MAX_NODES_PER_BUCKET} peers) +${finalSize - startingSize}`,
     )
+    const foundPeers: Set<string> = new Set()
+    while (this.foundNodes.peek() && foundPeers.size < 16) {
+      foundPeers.add(this.foundNodes.pop()!.encodeTxt())
+    }
+    return Array.from(foundPeers)
   }
 }

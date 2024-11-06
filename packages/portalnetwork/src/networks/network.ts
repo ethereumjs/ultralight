@@ -792,6 +792,9 @@ export abstract class BaseNetwork extends EventEmitter {
     this.lastRefreshTime = now
     await this.livenessCheck()
     const size = this.routingTable.size
+    if (size === 0) {
+      return
+    }
     this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} peers`)
     const bucketsToRefresh = this.routingTable.buckets
       .map((bucket, idx) => {
@@ -808,7 +811,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await Promise.allSettled(
       bucketsToRefresh.map(async (bucket) => {
         const randomNodeId = generateRandomNodeIdAtDistance(this.enr.nodeId, bucket.distance)
-        const lookup = new NodeLookup(this, randomNodeId)
+        const lookup = new NodeLookup(this, randomNodeId, true)
         return lookup.startLookup()
       }),
     )

@@ -154,7 +154,7 @@ export type ContentLookupResponse =
 export interface ContentTrace extends Partial<TraceObject> {}
 export interface TraceObject {
   origin: NodeId
-  targetId: PrefixedHexString
+  targetId: string
   receivedFrom: NodeId
   responses: {
     [nodeId: NodeId]: NodeId[]
@@ -165,6 +165,10 @@ export interface TraceObject {
       distance: PrefixedHexString
     }
   }
-  startedAtMs: number
+  startedAtMs: {
+    secs_since_epoch: number
+    nanos_since_epoch: number
+  }
+
   cancelled?: NodeId[]
 }

@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { bigIntToHex, bytesToHex, short } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import { Heap } from 'heap-js'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
@@ -40,8 +40,8 @@ export class ContentLookup {
     this.completedRequests = trace ? new Map() : undefined
     this.contentTrace = trace
       ? {
-          origin: this.network.portal.discv5.enr.nodeId as PrefixedHexString,
-          targetId: bytesToHex(this.contentKey),
+          origin: ('0x' + this.network.portal.discv5.enr.nodeId) as PrefixedHexString,
+          targetId: Array.from(hexToBytes('0x' + this.contentId)) as any,
           metadata: {},
         }
       : undefined
@@ -54,7 +54,11 @@ export class ContentLookup {
   public startLookup = async (): Promise<ContentLookupResponse> => {
     // Don't support content lookups for networks that don't implement it (i.e. Canonical Indices)
     if (!this.network.sendFindContent) return
-    this.contentTrace && (this.contentTrace.startedAtMs = Date.now())
+    this.contentTrace &&
+      (this.contentTrace.startedAtMs = {
+        secs_since_epoch: Math.floor(Date.now() / 1000),
+        nanos_since_epoch: 0, // TODO: figure out what this is
+      })
     this.logger(`starting recursive content lookup for ${bytesToHex(this.contentKey)}`)
     this.network.portal.metrics?.totalContentLookups.inc()
     try {
@@ -123,20 +127,20 @@ export class ContentLookup {
     // Add cancelled/metadata elements to trace
     if (this.contentTrace !== undefined) {
       this.contentTrace.cancelled = Array.from(this.pending.values()).map(
-        (enr) => ENR.decodeTxt(enr).nodeId,
+        (enr) => '0x' + ENR.decodeTxt(enr).nodeId,
       )
       this.contentTrace.responses = Object.fromEntries(this.completedRequests!.entries()) as Record<
         NodeId,
         NodeId[]
       >
       for (const nodeId of Object.keys(this.contentTrace.responses!)) {
-        this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
+        this.contentTrace.metadata!['0x' + nodeId] = this.meta.get('0x' + nodeId)! as {
           enr: `enr:${string}`
           distance: `0x${string}`
         }
       }
       for (const nodeId of this.contentTrace.cancelled!) {
-        this.contentTrace.metadata![nodeId] = this.meta.get(nodeId)! as {
+        this.contentTrace.metadata!['0x' + nodeId] = this.meta.get('0x' + nodeId)! as {
           enr: `enr:${string}`
           distance: `0x${string}`
         }
@@ -179,8 +183,8 @@ export class ContentLookup {
         this.network.routingTable.contentKeyKnownToPeer(peer.enr.nodeId, this.contentKey)
         this.network.portal.metrics?.successfulContentLookups.inc()
         if (this.contentTrace !== undefined) {
-          this.completedRequests!.set(peer.enr.nodeId, [])
-          this.contentTrace.receivedFrom = peer.enr.nodeId
+          this.completedRequests!.set('0x' + peer.enr.nodeId, [])
+          this.contentTrace.receivedFrom = '0x' + peer.enr.nodeId
         }
         return res
       } else {
@@ -191,7 +195,7 @@ export class ContentLookup {
           if (!this.meta.has(decodedEnr.nodeId)) {
             const dist = distance(decodedEnr.nodeId, this.contentId)
             this.lookupPeers.push({ enr: decodedEnr, distance: Number(dist) })
-            this.meta.set(decodedEnr.nodeId, {
+            this.meta.set('0x' + decodedEnr.nodeId, {
               enr: decodedEnr.encodeTxt(),
               distance: bigIntToHex(dist),
             })
@@ -202,8 +206,8 @@ export class ContentLookup {
         }
         this.completedRequests &&
           this.completedRequests.set(
-            peer.enr.nodeId,
-            res.enrs.map((enr) => ENR.decode(enr).nodeId),
+            '0x' + peer.enr.nodeId,
+            res.enrs.map((enr) => '0x' + ENR.decode(enr).nodeId),
           )
         throw new Error('Continue')
       }
