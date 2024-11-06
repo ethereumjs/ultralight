@@ -1,4 +1,4 @@
-import { EntryStatus, distance } from '@chainsafe/discv5'
+import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
@@ -718,8 +718,7 @@ export class portal {
       return []
     }
     const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
-    this.logger(`findNodes request returned ${res?.total} enrs:`)
-    this.logger(enrs)
+    this.logger(`findNodes request returned ${enrs.length} enrs:`)
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
   async stateFindNodes(params: [string, number[]]) {
@@ -738,8 +737,7 @@ export class portal {
       return []
     }
     const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
-    this.logger(`stateFindNodes request returned ${res?.total} enrs:`)
-    this.logger(enrs)
+    this.logger(`stateFindNodes request returned ${enrs.length} enrs:`)
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
   async beaconFindNodes(params: [string, number[]]) {
@@ -758,8 +756,7 @@ export class portal {
       return []
     }
     const enrs = res?.enrs.map((v) => ENR.decode(v).encodeTxt())
-    this.logger(`beaconFindNodes request returned ${res?.total} enrs:`)
-    this.logger(enrs)
+    this.logger(`beaconFindNodes request returned ${enrs.length} enrs:`)
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
 
@@ -785,12 +782,8 @@ export class portal {
     this.logger(`historyRecursiveFindNodes request received for ${dstId}`)
     const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
     const lookup = new NodeLookup(this._history, target)
-    await lookup.startLookup()
-    const enrs = this._history.routingTable
-      .nearest(target, 16)
-      .sort((a, b) => Number(distance(target, a.nodeId) - distance(target, b.nodeId)))
-      .map((v) => v.encodeTxt())
-    this.logger(`historyRecursiveFindNodes request returned ${enrs}`)
+    const enrs = await lookup.startLookup()
+    this.logger(`historyRecursiveFindNodes request returned ${enrs.length} enrs`)
     return enrs
   }
   async stateRecursiveFindNodes(params: [string]) {
@@ -798,12 +791,8 @@ export class portal {
     this.logger(`stateRecursiveFindNodes request received for ${dstId}`)
     const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
     const lookup = new NodeLookup(this._state, target)
-    await lookup.startLookup()
-    const enrs = this._state.routingTable
-      .nearest(target, 16)
-      .sort((a, b) => Number(distance(target, a.nodeId) - distance(target, b.nodeId)))
-      .map((v) => v.encodeTxt())
-    this.logger(`stateRecursiveFindNodes request returned ${enrs}`)
+    const enrs = await lookup.startLookup()
+    this.logger(`stateRecursiveFindNodes request returned ${enrs.length} enrs`)
     return enrs
   }
   async beaconRecursiveFindNodes(params: [string]) {
@@ -811,12 +800,8 @@ export class portal {
     this.logger(`beaconRecursiveFindNodes request received for ${dstId}`)
     const target = dstId.startsWith('0x') ? dstId.slice(2) : dstId
     const lookup = new NodeLookup(this._beacon, target)
-    await lookup.startLookup()
-    const enrs = this._beacon.routingTable
-      .nearest(target, 16)
-      .sort((a, b) => Number(distance(target, a.nodeId) - distance(target, b.nodeId)))
-      .map((v) => v.encodeTxt())
-    this.logger(`beaconRecursiveFindNodes request returned ${enrs}`)
+    const enrs = await lookup.startLookup()
+    this.logger(`beaconRecursiveFindNodes request returned ${enrs.length} enrs`)
     return enrs
   }
 
