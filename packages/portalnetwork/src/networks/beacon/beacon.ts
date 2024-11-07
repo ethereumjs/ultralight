@@ -970,7 +970,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           await this.sendAccept(src, requestId, contentIds, desiredKeys)
         } else {
           this.logger.extend('OFFER')(`Declining an OFFER since no interesting content`)
-          await this.sendResponse(src, requestId, new Uint8Array())
+          await this.sendAccept(src, requestId, contentIds, [])
         }
       } else {
         this.logger(`Offer Message Has No Content`)
