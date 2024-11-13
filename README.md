@@ -19,11 +19,10 @@ This will start a single instance of the Ultralight client running locally.
 
 ### Error related to `node-gyp` or `bcrypto.node`
 
-For Mac and Windows users, you need to add `npm i -g @mapbox/node-pre-gyp` for the package to work, as our main dependencies rely on `bcrypto`.
+If you encounter errors related to `bcrypto.node` or `node-gyp` when running `npm i`, you need to add `npm i -g @mapbox/node-pre-gyp` prior to running building Ultralight.
 
 For Mac users, you may need to run `sudo xcodebuild -license` and accept it, as `node-gyp` relies on Xcode commands.
 
-Clone and install from scratch `ultralight` after that.
 
 ## Connecting to the devnet (developer testnet)
 
