@@ -17,6 +17,14 @@ de2f8:ultralight Started JSON RPC Server address=http://localhost:8545
 
 This will start a single instance of the Ultralight client running locally.  
 
+### Error related to `node-gyp` or `bcrypto.node`
+
+For Mac and Windows users, you need to add `npm i -g @mapbox/node-pre-gyp` for the package to work, as our main dependencies rely on `bcrypto`.
+
+For Mac users, you may need to run `sudo xcodebuild -license` and accept it, as `node-gyp` relies on Xcode commands.
+
+Clone and install from scratch `ultralight` after that.
+
 ## Connecting to the devnet (developer testnet)
 
 1. Change active folder: `cd packages/cli`
