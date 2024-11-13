@@ -451,7 +451,7 @@ describe('OFFER/ACCEPT tests', () => {
     const acceptedOffers = await network1.sendOffer(network2.enr.nodeId, [
       staleOptimisticUpdateContentKey,
     ])
-    assert.equal(acceptedOffers, undefined, 'no content was accepted by node 2')
+    assert.deepEqual(acceptedOffers, [], 'no content was accepted by node 2')
     const content = await network2.retrieve(
       hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
     )
