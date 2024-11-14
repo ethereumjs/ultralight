@@ -87,15 +87,18 @@ const main = async () => {
   }
 
   process.on('uncaughtException', (err) => {
+    // discv5 is occasionally throwing an uncaught exception when handling
+    // incoming messages related to the handshake process.  These can safely be
+    // ignored
     console.error('Uncaught Exception:', err)
-    process.on('SIGINT', async () => {
-      console.log('Caught close signal, shutting down...')
-      await portal.stop()
-      if (metricsServer?.listening === true) {
-        metricsServer.close()
-      }
-      process.exit()
-    })
+  })
+  process.on('SIGINT', async () => {
+    console.log('Caught close signal, shutting down...')
+    await portal.stop()
+    if (metricsServer?.listening === true) {
+      metricsServer.close()
+    }
+    process.exit()
   })
 }
 
