@@ -86,13 +86,16 @@ const main = async () => {
     log(`Started JSON RPC Server address=http://${rpcAddr}:${args.rpcPort}`)
   }
 
-  process.on('SIGINT', async () => {
-    console.log('Caught close signal, shutting down...')
-    await portal.stop()
-    if (metricsServer?.listening === true) {
-      metricsServer.close()
-    }
-    process.exit()
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err)
+    process.on('SIGINT', async () => {
+      console.log('Caught close signal, shutting down...')
+      await portal.stop()
+      if (metricsServer?.listening === true) {
+        metricsServer.close()
+      }
+      process.exit()
+    })
   })
 }
 
