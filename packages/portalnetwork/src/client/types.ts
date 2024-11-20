@@ -45,6 +45,7 @@ export interface PortalNetworkOpts {
   trustedBlockRoot?: string
   eventLog?: boolean
   utpTimeout?: number
+  shouldRefresh?: boolean
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, PortalNetworkEvents>

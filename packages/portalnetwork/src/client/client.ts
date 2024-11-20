@@ -45,6 +45,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   private refreshListeners: Map<NetworkId, ReturnType<typeof setInterval>>
   private supportsRendezvous: boolean
   private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
+  shouldRefresh: boolean = true
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -268,6 +269,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         this.metrics?.currentDBSize.set(await this.db.currentSize())
       }
     }
+    // Should refresh by default but can be disabled (e.g. in tests)
+    opts.shouldRefresh === false && (this.shouldRefresh = false)
   }
 
   /**
@@ -288,7 +291,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       if (network instanceof HistoryNetwork) {
         network.blockHashIndex = storedIndex
       }
-      network.startRefresh()
+      this.shouldRefresh && network.startRefresh()
       await network.prune()
     }
     void this.bootstrap()
