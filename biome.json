@@ -16,7 +16,8 @@
       "**/archived-browser-client",
       "**/browser-client",
       "tsconfig.*.json",
-      "**/portalnetwork/test/testData"
+      "**/testData",
+      "**/scripts/**/*.json"
     ]
   },
   "formatter": {

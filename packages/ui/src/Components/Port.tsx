@@ -1,7 +1,16 @@
 import * as React from 'react'
 import Button from '@mui/material/Button'
 import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
-import { Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemText, Popover, TextField } from '@mui/material'
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItemText,
+  Popover,
+  TextField,
+} from '@mui/material'
 import { ClientContext } from '../Contexts/ClientContext'
 import { trpc } from '../utils/trpc'
 import { set, z } from 'zod'
@@ -23,7 +32,6 @@ export default function PortMenu() {
   const handleClose = () => {
     setAnchorEl(null)
   }
-  
 
   function handleIpInput(e: React.ChangeEvent<HTMLInputElement>) {
     try {
@@ -53,7 +61,12 @@ export default function PortMenu() {
   const id = open ? 'simple-popover' : undefined
   return (
     <div>
-      <Button aria-describedby={id} variant="contained" onClick={handleClick} endIcon={<DropDown />}>
+      <Button
+        aria-describedby={id}
+        variant="contained"
+        onClick={handleClick}
+        endIcon={<DropDown />}
+      >
         {address.data}:{rpc.PORT}
       </Button>
       <Dialog id={id} open={open} onClose={handleClose}>

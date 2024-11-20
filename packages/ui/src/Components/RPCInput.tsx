@@ -31,7 +31,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyFindNodes': {
       return (
-        <Stack width={'100%'}  direction={'column'}>
+        <Stack width={'100%'} direction={'column'}>
           <InputNodeId />
           <InputDistances />
         </Stack>
@@ -39,7 +39,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyFindContent': {
       return (
-        <Stack width={'100%'}  direction={'column'}>
+        <Stack width={'100%'} direction={'column'}>
           <InputNodeId />
           <InputContentKey />
         </Stack>
@@ -47,14 +47,14 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyRecursiveFindContent': {
       return (
-        <Stack width={'100%'}  direction={'column'}>
+        <Stack width={'100%'} direction={'column'}>
           <InputContentKey />
         </Stack>
       )
     }
     case 'portal_historyOffer': {
       return (
-        <Stack width={'100%'}  direction={'column'}>
+        <Stack width={'100%'} direction={'column'}>
           <InputNodeId />
           <InputContentKey />
           <InputContent />
@@ -71,7 +71,7 @@ export default function RPCInput(props: { method: RPCMethod }) {
     }
     case 'portal_historyGossip': {
       return (
-        <Stack width={'100%'}  direction={'column'}>
+        <Stack width={'100%'} direction={'column'}>
           <InputNodeId />
           <InputContentKey />
           <InputContent />
@@ -210,9 +210,7 @@ export function SelectContentKeyArray() {
 
 export function InputContentKey() {
   const dispatch = React.useContext(RPCDispatchContext)
-  const [cur, setCur] = React.useState(
-    '',
-  )
+  const [cur, setCur] = React.useState('')
   const [valid, setValid] = React.useState<boolean | undefined>(undefined)
   const [keyErr, setKeyErr] = React.useState<string | undefined>(undefined)
   const setContentKey = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -252,7 +250,7 @@ export function InputContent() {
   const [cur, setCur] = React.useState('')
   const { CONTENT } = React.useContext(RPCContext)
   const dispatch = React.useContext(RPCDispatchContext)
-  
+
   function setContent() {
     dispatch({
       type: 'CONTENT',
@@ -266,18 +264,16 @@ export function InputContent() {
     }
     setContent()
   }, [cur])
-  
+
   return (
     <FormControl fullWidth>
       <FormHelperText>Content</FormHelperText>
       <TextField
-      maxRows={10}
+        maxRows={10}
         multiline
         placeholder="content"
         value={cur}
-        onChange={(e) =>
-          setCur(e.target.value)
-        }
+        onChange={(e) => setCur(e.target.value)}
       />
     </FormControl>
   )
@@ -318,7 +314,7 @@ export function InputEnr() {
   }
 
   return (
-    <Stack width={'100%'}  direction={'column'}>
+    <Stack width={'100%'} direction={'column'}>
       <FormControl fullWidth>
         <Autocomplete
           onInputChange={(_, newInputValue) => {
@@ -384,29 +380,29 @@ export function InputNodeId() {
   }, [cur])
 
   return (
-      <Autocomplete
-        fullWidth
-        freeSolo
-        selectOnFocus
-        clearOnBlur
-        handleHomeEndKeys
-        id="select-nodeId"
-        options={Object.values(ROUTING_TABLE).map(([, , nodeId]) => nodeId)}
-        getOptionLabel={(option) => option}
-        placeholder={'Node ID'}
-        onChange={(_, newValue) => {
-          if (!newValue) return
-          onChangeInput(newValue)
-          // setNodeId(newValue)
-        }}
-        onInputChange={(_, newInputValue) => {
-          onChangeInput(newInputValue)
-        }}
-        filterSelectedOptions
-        renderInput={(params) => (
-          <TextField error={valid === false} onError={() => {}} {...params} label="NodeId" />
-        )}
-      />
+    <Autocomplete
+      fullWidth
+      freeSolo
+      selectOnFocus
+      clearOnBlur
+      handleHomeEndKeys
+      id="select-nodeId"
+      options={Object.values(ROUTING_TABLE).map(([, , nodeId]) => nodeId)}
+      getOptionLabel={(option) => option}
+      placeholder={'Node ID'}
+      onChange={(_, newValue) => {
+        if (!newValue) return
+        onChangeInput(newValue)
+        // setNodeId(newValue)
+      }}
+      onInputChange={(_, newInputValue) => {
+        onChangeInput(newInputValue)
+      }}
+      filterSelectedOptions
+      renderInput={(params) => (
+        <TextField error={valid === false} onError={() => {}} {...params} label="NodeId" />
+      )}
+    />
   )
 }
 
@@ -421,7 +417,7 @@ export function InputDistances() {
   }
 
   return (
-    <Stack width={'100%'}  direction={'column'}>
+    <Stack width={'100%'} direction={'column'}>
       <FormControl fullWidth>
         <Autocomplete
           multiple

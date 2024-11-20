@@ -30,18 +30,14 @@ const main = async () => {
     bootNodes.push({ node: boot, enr: bootEnr })
   }
 
+  const testBlocks: [string, any][] = Object.entries(blocks).slice(0, 16)
+  testBlocks.forEach(async (block, idx) => {
+    const node = bootNodes[idx % 8].node
+    const add: string = await node.request('portal_addBlockToHistory', [block[0], block[1].rlp])
+    console.log(add)
+  })
 
-
-    const testBlocks: [string, any][] = Object.entries(blocks).slice(0, 16)
-    testBlocks.forEach(async (block, idx) => {
-      const node = bootNodes[idx % 8].node
-      const add: string = await node.request('portal_addBlockToHistory', [block[0], block[1].rlp])
-      console.log(add)
-    })
-
-
-
- console.log('Done')
+  console.log('Done')
 }
 
 main()

@@ -138,7 +138,7 @@ export default function Ping() {
             </Fade>
           )}
         </Box>
-        <Button variant='outlined' onClick={handleClickQuery} sx={{ m: 2 }}>
+        <Button variant="outlined" onClick={handleClickQuery} sx={{ m: 2 }}>
           {query !== 'idle' ? 'Reset' : 'Send Ping'}
         </Button>
       </Box>

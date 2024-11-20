@@ -26,8 +26,6 @@ export function WSSClient() {
 
   const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
 
-
-
   const getLocalRoutingTable = async () => {
     const _peers = await localRoutingTable.mutateAsync()
     dispatch({

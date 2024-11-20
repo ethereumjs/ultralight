@@ -55,7 +55,7 @@ export class DBManager {
   }
 
   batch(ops: AbstractBatchOperation<string, string, string>[], sublevel?: NetworkId) {
-    const db = sublevel ? this.sublevels.get(sublevel) ?? this.db : this.db
+    const db = sublevel ? (this.sublevels.get(sublevel) ?? this.db) : this.db
     return (db as any).batch(ops)
   }
 

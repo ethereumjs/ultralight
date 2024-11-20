@@ -64,9 +64,9 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       if (portal.discv5.isStarted()) return 'Already started'
       try {
         await portal.start()
-        portal.discv5.isStarted() 
-        ? console.log('Discv5 started')
-        : console.log('Discv5 not started')
+        portal.discv5.isStarted()
+          ? console.log('Discv5 started')
+          : console.log('Discv5 not started')
         return portal.discv5.enr.encodeTxt()
       } catch (err: any) {
         console.log('PORTAL_START_ERROR', err.message)
@@ -237,8 +237,8 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       return !res
         ? undefined
         : 'content' in res
-        ? { content: toJSON(contentKey, res.content), utpTransfer: res.utp }
-        : { enrs: res.enrs.map(toHexString) }
+          ? { content: toJSON(contentKey, res.content), utpTransfer: res.utp }
+          : { enrs: res.enrs.map(toHexString) }
     })
 
   const browser_historyOffer = publicProcedure

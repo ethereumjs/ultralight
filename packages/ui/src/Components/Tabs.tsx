@@ -50,14 +50,11 @@ export default function ClientTabs() {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
-  
+
   return (
     <AllClientsContext.Provider value={clients}>
       <AllClientsDispatchContext.Provider value={dispatch}>
-        <Box
-          id="App Tab Box"
-          sx={{ bgcolor: 'background.paper', width: '100%' }}
-        >
+        <Box id="App Tab Box" sx={{ bgcolor: 'background.paper', width: '100%' }}>
           <Tabs
             variant="fullWidth"
             value={value}

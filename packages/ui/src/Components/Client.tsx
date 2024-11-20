@@ -90,12 +90,12 @@ export default function Client(props: { name: string }) {
           data.contentType === 0
             ? 'BlockHeader'
             : data.contentType === 1
-            ? 'BlockBody'
-            : data.contentType === 2
-            ? 'BlockReceipts'
-            : data.contentType === 3
-            ? 'EpochAccumulator'
-            : 'unknown'
+              ? 'BlockBody'
+              : data.contentType === 2
+                ? 'BlockReceipts'
+                : data.contentType === 3
+                  ? 'EpochAccumulator'
+                  : 'unknown'
         dispatch({
           type: 'CONTENT_STORE',
           contentKey: '0x0' + data.contentType + data.key.slice(2),

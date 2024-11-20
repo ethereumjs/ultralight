@@ -1,11 +1,4 @@
-import {
-  Box,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  List,
-} from '@mui/material'
+import { Box, ListItem, ListItemButton, ListItemIcon, ListItemText, List } from '@mui/material'
 import Refresh from '@mui/icons-material/Refresh'
 import React, { useEffect } from 'react'
 
@@ -27,17 +20,17 @@ export default function GetBeacon() {
 
   return (
     <Box>
-        <List>
-          <ListItem>
-            <ListItemButton onClick={handleRefresh}>
-              <ListItemIcon>
-                <Refresh />
-              </ListItemIcon>
+      <List>
+        <ListItem>
+          <ListItemButton onClick={handleRefresh}>
+            <ListItemIcon>
+              <Refresh />
+            </ListItemIcon>
             <ListItemText>StateRoot:</ListItemText>
-            </ListItemButton>
-            <ListItemText>{root}</ListItemText>
-          </ListItem>
-        </List>
+          </ListItemButton>
+          <ListItemText>{root}</ListItemText>
+        </ListItem>
+      </List>
     </Box>
   )
 }

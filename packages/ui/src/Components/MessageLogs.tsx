@@ -213,7 +213,7 @@ export default function MessageLogs() {
               {Object.entries(state.RECEIVED_LOGS).map(([peer, logs]: any) => {
                 const sentLogs = (state.SENT_LOGS as any)[peer] ?? {}
                 return (
-                  <Fragment  key={peer}>
+                  <Fragment key={peer}>
                     <TableRow>
                       <TableCell
                         onMouseEnter={() => setHover(peer)}

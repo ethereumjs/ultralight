@@ -245,9 +245,9 @@ export default function RPC() {
   }
 
   return (
-    <Container >
-      <Stack width='100%' direction="row" spacing={2}>
-        <Box width='50%'>
+    <Container>
+      <Stack width="100%" direction="row" spacing={2}>
+        <Box width="50%">
           <Paper sx={{ border: 'solid black 2px' }}>
             <List>
               <ListItem>
@@ -301,7 +301,7 @@ export default function RPC() {
             </List>
           </Paper>
         </Box>
-        <Box width='50%'>
+        <Box width="50%">
           <Paper sx={{ border: 'solid black 2px' }}>
             <ListSubheader>Request:</ListSubheader>
             {rpcState.CURRENT_LOG.request}

@@ -20,10 +20,10 @@ import type { Multiaddr } from '@multiformats/multiaddr'
  */
 export class CapacitorUDPTransportService
   //eslint-disable-next-line prettier/prettier
-  extends (EventEmitter as { new(): TransportEventEmitter })
+  extends (EventEmitter as { new (): TransportEventEmitter })
   //eslint-disable-next-line prettier/prettier
-  implements ITransportService {
-
+  implements ITransportService
+{
   private socket!: {
     socketId: number
     ipv4: string

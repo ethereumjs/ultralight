@@ -85,7 +85,7 @@ export class Bloom {
       const first2bytes = new DataView(e.buffer).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
-      const bitLoc = 1 << loc % 8
+      const bitLoc = 1 << (loc % 8)
       this.bitvector[BYTE_SIZE - byteLoc - 1] |= bitLoc
     }
   }
@@ -106,7 +106,7 @@ export class Bloom {
       const first2bytes = new DataView(e.buffer).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
-      const bitLoc = 1 << loc % 8
+      const bitLoc = 1 << (loc % 8)
       match = (this.bitvector[BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0
     }
 

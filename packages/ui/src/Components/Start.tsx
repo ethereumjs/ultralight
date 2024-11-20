@@ -5,7 +5,7 @@ import { RPCDispatchContext } from '../Contexts/RPCContext'
 import { ClientDispatchContext } from '../Contexts/ClientContext'
 
 export default function Start() {
-    const dispatch = React.useContext(ClientDispatchContext)
+  const dispatch = React.useContext(ClientDispatchContext)
   const [started, setStarted] = React.useState(false)
   const [nodeId, setNodeId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)

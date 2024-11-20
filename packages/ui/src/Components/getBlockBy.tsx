@@ -1,12 +1,4 @@
-import {
-  Box,
-  Input,
-  Stack,
-  Tabs,
-  Tab,
-  Typography,
-  Button,
-} from '@mui/material'
+import { Box, Input, Stack, Tabs, Tab, Typography, Button } from '@mui/material'
 import Search from '@mui/icons-material/Search'
 import React from 'react'
 
@@ -91,7 +83,7 @@ function GetBlockPanel(props: { type: string; setSearchValue: any }) {
 }
 
 export default function GetBlockBy(props: {}) {
-    const [searchVal, setSearchVal] = React.useState('')
+  const [searchVal, setSearchVal] = React.useState('')
   const [method, setMethod] = React.useState(0)
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setMethod(newValue)
