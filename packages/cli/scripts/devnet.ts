@@ -1,12 +1,12 @@
 import { spawn } from 'child_process'
 import * as fs from 'fs'
-import jayson from 'jayson/promise/index.js'
 import { createRequire } from 'module'
+import jayson from 'jayson/promise/index.js'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import type { DevnetOpts } from '../src/types.js'
 import type { ChildProcessByStdio } from 'child_process'
+import type { DevnetOpts } from '../src/types.js'
 
 const bootnodes = [
   'enr:-Jy4QIs2pCyiKna9YWnAF0zgf7bT0GzlAGoF8MEKFJOExmtofBIqzm71zDvmzRiiLkxaEJcs_Amr7XIhLI74k1rtlXICY5Z0IDAuMS4xLWFscGhhLjEtMTEwZjUwgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQLSC_nhF1iRwsCw0n3J4jRjqoaRxtKgsEe5a-Dz7y0JloN1ZHCCIyg',

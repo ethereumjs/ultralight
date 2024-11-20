@@ -1,8 +1,8 @@
+import { readFileSync } from 'fs'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import { ContainerType, UintBigintType } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { readFileSync } from 'fs'
 import { assert, describe, it } from 'vitest'
 
 import { NetworkId, PortalNetwork } from '../../../src/index.js'

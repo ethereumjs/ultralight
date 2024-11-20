@@ -1,11 +1,11 @@
+import { EventEmitter } from 'events'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import { SignableENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { EventEmitter } from 'events'
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {

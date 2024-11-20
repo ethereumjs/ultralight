@@ -8,10 +8,10 @@ import debug from 'debug'
 import {
   HistoryNetwork,
   MessageCodes,
+  NetworkId,
   PortalNetwork,
   PortalNetworkEventEmitter,
   PortalWireMessageType,
-  NetworkId,
   fromHexString,
   toHexString,
 } from 'portalnetwork'

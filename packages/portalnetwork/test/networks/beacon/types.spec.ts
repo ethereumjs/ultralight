@@ -1,10 +1,10 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { ssz } from '@lodestar/types'
-import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
-import { resolve } from 'path'
 import { assert, describe, it } from 'vitest'
 
 import {

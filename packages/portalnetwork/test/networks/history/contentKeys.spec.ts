@@ -1,5 +1,5 @@
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createRequire } from 'module'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import {

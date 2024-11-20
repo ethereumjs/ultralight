@@ -14,8 +14,6 @@ import {
 } from './types.js'
 import { getBeaconContentKey } from './util.js'
 
-import type { BeaconLightClientNetwork } from './beacon.js'
-import type { LightClientForkName } from './types.js'
 import type { LightClientTransport } from '@lodestar/light-client/transport'
 import type { ForkName } from '@lodestar/params'
 import type {
@@ -25,6 +23,8 @@ import type {
   LightClientUpdate,
 } from '@lodestar/types'
 import type { Debugger } from 'debug'
+import type { BeaconLightClientNetwork } from './beacon.js'
+import type { LightClientForkName } from './types.js'
 
 export class UltralightTransport implements LightClientTransport {
   network: BeaconLightClientNetwork

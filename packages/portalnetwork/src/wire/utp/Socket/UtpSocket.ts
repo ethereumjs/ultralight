@@ -4,6 +4,7 @@ import { bitmap } from '../../../index.js'
 import { PacketManager } from '../Packets/PacketManager.js'
 import { ConnectionState, PacketType } from '../index.js'
 
+import type { Debugger } from 'debug'
 import type { NetworkId } from '../../../index.js'
 import type {
   ICreatePacketOpts,
@@ -12,7 +13,6 @@ import type {
   UtpSocketOptions,
   UtpSocketType,
 } from '../index.js'
-import type { Debugger } from 'debug'
 
 export abstract class UtpSocket {
   utp: PortalNetworkUTP

@@ -1,7 +1,7 @@
 import { BUFFER_SIZE } from '../Packets/PacketTyping.js'
 
-import type { WriteSocket } from './WriteSocket.js'
 import type { Debugger } from 'debug'
+import type { WriteSocket } from './WriteSocket.js'
 export class ContentWriter {
   socket: WriteSocket
   logger: Debugger

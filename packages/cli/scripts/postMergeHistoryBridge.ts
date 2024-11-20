@@ -1,7 +1,7 @@
+import { readFileSync } from 'fs'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex, equalsBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
-import { readFileSync } from 'fs'
 import jayson from 'jayson/promise/index.js'
 import { HistoricalRootsBlockProof } from 'portalnetwork'
 import { cwd } from 'process'

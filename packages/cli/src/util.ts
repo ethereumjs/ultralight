@@ -10,8 +10,8 @@ import {
   sszUnclesType,
 } from 'portalnetwork'
 
-import type { Enr } from './rpc/schema/types.js'
 import type { BaseNetwork, NetworkId } from 'portalnetwork'
+import type { Enr } from './rpc/schema/types.js'
 
 export const hasValidEnrPrefix = (enr: Enr) => {
   return enr.startsWith('enr:')

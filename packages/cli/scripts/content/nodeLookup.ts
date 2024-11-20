@@ -23,7 +23,7 @@ const args: any = yargs(hideBin(process.argv))
   })
 
 const main = async () => {
-  let bootEnrs: string[] = []
+  const bootEnrs: string[] = []
   for (let i = 0; i < 8; i++) {
     const boot = Client.http({ port: 8546 + i })
     const bootEnr = (await boot.request('portal_nodeEnr', [])).result

@@ -11,8 +11,8 @@ import {
 
 import { PortalNetwork } from './client.js'
 
-import type { PortalNetworkOpts } from './types.js'
 import type { HistoryNetwork } from '../networks/index.js'
+import type { PortalNetworkOpts } from './types.js'
 
 export class UltralightProvider extends ethers.JsonRpcProvider {
   private fallbackProvider: ethers.JsonRpcProvider

@@ -1,8 +1,8 @@
+import { EventEmitter } from 'events'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 import debug from 'debug'
-import { EventEmitter } from 'events'
 import WebSocket from 'isomorphic-ws'
 import WebSocketAsPromised from 'websocket-as-promised'
 

@@ -1,10 +1,10 @@
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { Block, type BlockBytes, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
 import * as td from 'testdouble'
 import { assert, describe, it } from 'vitest'
 

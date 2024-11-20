@@ -1,8 +1,8 @@
+import { createRequire } from 'module'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { ssz } from '@lodestar/types'
-import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {

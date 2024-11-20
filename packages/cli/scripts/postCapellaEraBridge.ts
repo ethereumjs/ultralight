@@ -1,9 +1,9 @@
+import { readFileSync } from 'fs'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex } from '@ethereumjs/util'
 import { getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
 import { ssz, sszTypesFor } from '@lodestar/types'
 import { decompressBeaconState, getEraIndexes, readEntry } from 'e2store'
-import { readFileSync } from 'fs'
 import { HistoricalSummariesBlockProof } from 'portalnetwork'
 
 import type { SingleProof } from '@chainsafe/persistent-merkle-tree'

@@ -1,10 +1,10 @@
 import { MemoryLevel } from 'memory-level'
 
-import type { NetworkId } from '../index.js'
-import type { NetworkDB } from '../networks/networkDB.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
+import type { NetworkId } from '../index.js'
+import type { NetworkDB } from '../networks/networkDB.js'
 
 export class DBManager {
   nodeId: string

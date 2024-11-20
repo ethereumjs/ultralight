@@ -2,8 +2,8 @@ import { EntryStatus, MAX_NODES_PER_BUCKET, distance, log2Distance } from '@chai
 import { ENR } from '@chainsafe/enr'
 import { Heap } from 'heap-js'
 
-import type { BaseNetwork } from './network.js'
 import type { Debugger } from 'debug'
+import type { BaseNetwork } from './network.js'
 
 // This class implements a version of the the lookup algorithm defined in the Kademlia paper
 // https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf.

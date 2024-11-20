@@ -1,8 +1,8 @@
+import { readFileSync } from 'fs'
 import { SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { readFileSync } from 'fs'
 import { assert, beforeAll, describe, it } from 'vitest'
 
 import { ContentLookup, NetworkId, PortalNetwork, TransportLayer } from '../../src/index.js'

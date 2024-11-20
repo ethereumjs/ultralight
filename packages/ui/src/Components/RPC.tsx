@@ -1,3 +1,5 @@
+import ExpandLess from '@mui/icons-material/ExpandLess'
+import ExpandMore from '@mui/icons-material/ExpandMore'
 import {
   Box,
   Button,
@@ -18,13 +20,11 @@ import {
   Stack,
 } from '@mui/material'
 import React from 'react'
+import { ClientContext } from '../Contexts/ClientContext'
+import { RPCContext, RPCDispatchContext, TMethods, WSMethods } from '../Contexts/RPCContext'
+import { trpc } from '../utils/trpc'
 import RPCInput from './RPCInput'
 import RPCParams from './RPCParams'
-import { RPCContext, RPCDispatchContext, TMethods, WSMethods } from '../Contexts/RPCContext'
-import { ClientContext } from '../Contexts/ClientContext'
-import { trpc } from '../utils/trpc'
-import ExpandLess from '@mui/icons-material/ExpandLess'
-import ExpandMore from '@mui/icons-material/ExpandMore'
 
 export const methodNames = [
   'discv5_nodeInfo',

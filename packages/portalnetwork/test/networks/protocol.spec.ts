@@ -18,9 +18,9 @@ import {
   generateRandomNodeIdAtDistance,
 } from '../../src/index.js'
 
-import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
 import type { BitArray } from '@chainsafe/ssz'
 import type { AbstractLevel } from 'abstract-level'
+import type { BaseNetwork, HistoryNetwork, NodesMessage } from '../../src/index.js'
 
 describe('network wire message tests', async () => {
   const node = await PortalNetwork.create({

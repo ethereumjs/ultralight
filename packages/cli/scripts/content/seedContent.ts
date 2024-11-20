@@ -1,4 +1,5 @@
-import { Client, HttpClient } from 'jayson/promise'
+import type { HttpClient } from 'jayson/promise';
+import { Client } from 'jayson/promise'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import blocks from '../blocks200000-210000.json'
@@ -22,7 +23,7 @@ const args: any = yargs(hideBin(process.argv))
   })
 
 const main = async () => {
-  let bootNodes: { node: HttpClient; enr: string }[] = []
+  const bootNodes: { node: HttpClient; enr: string }[] = []
 
   for (let i = 0; i < 8; i++) {
     const boot = Client.http({ port: 8546 + i })

@@ -45,13 +45,13 @@ import {
 import { UltralightTransport } from './ultralightTransport.js'
 import { getBeaconContentKey } from './util.js'
 
-import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
-import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
-import type { ContentLookupResponse } from '../types.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
+import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
+import type { ContentLookupResponse } from '../types.js'
+import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 
 export class BeaconLightClientNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
@@ -431,7 +431,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     key: Uint8Array,
   ): Promise<ContentLookupResponse | undefined> => {
     const enr = getENR(this.routingTable, dstId)
-    if (!enr) {
+    if (enr === undefined) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return undefined
     }

@@ -1,18 +1,18 @@
 import {
+  Alert,
+  Autocomplete,
   FormControl,
   FormHelperText,
-  Alert,
-  Snackbar,
-  TextField,
-  Autocomplete,
-  Stack,
   ListItemText,
+  Snackbar,
+  Stack,
+  TextField,
 } from '@mui/material'
 import React, { ChangeEvent, useEffect } from 'react'
 import z from 'zod'
+import { ClientContext } from '../Contexts/ClientContext'
 import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
 import { decodeTxt } from '../utils/enr'
-import { ClientContext } from '../Contexts/ClientContext'
 import { RPCMethod } from './RPC'
 
 const nodeIdParser = z

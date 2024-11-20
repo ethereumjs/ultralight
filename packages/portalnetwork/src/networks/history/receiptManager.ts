@@ -13,11 +13,11 @@ import { VM } from '@ethereumjs/vm'
 
 import { Bloom, reassembleBlock } from '../index.js'
 
-import type { Log, TxReceiptType, TxReceiptWithType } from '../index.js'
 import type { Block } from '@ethereumjs/block'
 import type { TypedTransaction } from '@ethereumjs/tx'
 import type { NestedUint8Array } from '@ethereumjs/util'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
+import type { Log, TxReceiptType, TxReceiptWithType } from '../index.js'
 
 type rlpReceipt = [postStateOrStatus: Uint8Array, cumulativeGasUsed: Uint8Array, logs: Log[]]
 

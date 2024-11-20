@@ -13,6 +13,7 @@ import {
 
 import { RequestCode } from './types.js'
 
+import type { Debugger } from 'debug'
 import type {
   BaseNetwork,
   DataPacket,
@@ -23,7 +24,6 @@ import type {
 } from '../../../index.js'
 import type { ReadSocket } from '../Socket/ReadSocket.js'
 import type { WriteSocket } from '../Socket/WriteSocket.js'
-import type { Debugger } from 'debug'
 
 export function bitmaskToAckNrs(bitmask: Uint8Array, ackNr: number): number[] {
   const bitArray = new BitVectorType(32).deserialize(bitmask)

@@ -5,12 +5,12 @@ import { Heap } from 'heap-js'
 
 import { serializedContentKeyToContentId, shortId } from '../util/index.js'
 
-import type { BaseNetwork } from './network.js'
-import type { ContentLookupResponse, ContentTrace, LookupPeer } from './types.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { Debugger } from 'debug'
 import type { Comparator } from 'heap-js'
+import type { BaseNetwork } from './network.js'
+import type { ContentLookupResponse, ContentTrace, LookupPeer } from './types.js'
 
 const customPriorityComparator: Comparator<LookupPeer> = (a, b) => a.distance - b.distance
 

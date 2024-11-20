@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, MAX_NODES_PER_BUCKET, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
@@ -10,7 +11,6 @@ import {
   hexToBytes,
   randomBytes,
 } from '@ethereumjs/util'
-import { EventEmitter } from 'events'
 
 import {
   ContentMessageType,
@@ -32,6 +32,11 @@ import { FoundContent } from '../wire/types.js'
 
 import { NetworkDB } from './networkDB.js'
 
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import type { ITalkReqMessage } from '@chainsafe/discv5/message'
+import type { SignableENR } from '@chainsafe/enr'
+import type { Debugger } from 'debug'
+import type * as PromClient from 'prom-client'
 import type {
   AcceptMessage,
   BaseNetworkConfig,
@@ -47,11 +52,6 @@ import type {
   PongMessage,
   PortalNetwork,
 } from '../index.js'
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
-import type { ITalkReqMessage } from '@chainsafe/discv5/message'
-import type { SignableENR } from '@chainsafe/enr'
-import type { Debugger } from 'debug'
-import type * as PromClient from 'prom-client'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable
@@ -327,7 +327,7 @@ export abstract class BaseNetwork extends EventEmitter {
     } catch (err: any) {
       // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
     }
-    if (!enr) {
+    if (enr === undefined) {
       return
     }
     const res = await this.sendMessage(enr, payload, this.networkId)

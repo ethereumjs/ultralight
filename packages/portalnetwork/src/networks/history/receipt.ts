@@ -8,6 +8,7 @@ import {
   intToBytes,
 } from '@ethereumjs/util'
 
+import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 import type {
   IReceiptOpts,
   Log,
@@ -16,7 +17,6 @@ import type {
   TxReceiptType,
   rlpReceipt,
 } from './types.js'
-import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 
 export class Receipt {
   cumulativeBlockGasUsed: bigint

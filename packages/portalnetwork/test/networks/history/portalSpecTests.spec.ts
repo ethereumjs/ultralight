@@ -1,9 +1,9 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import { BlockHeader } from '@ethereumjs/block'
 import { TransactionFactory } from '@ethereumjs/tx'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
-import { resolve } from 'path'
 import { assert, describe, it } from 'vitest'
 
 import {

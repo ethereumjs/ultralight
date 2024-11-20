@@ -1,5 +1,5 @@
-import debug from 'debug'
 import * as dgram from 'dgram'
+import debug from 'debug'
 import http = require('http')
 import https = require('https')
 import * as PromClient from 'prom-client'

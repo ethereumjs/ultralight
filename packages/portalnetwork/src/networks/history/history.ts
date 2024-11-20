@@ -29,8 +29,8 @@ import {
 } from './types.js'
 import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
-import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import type { Debugger } from 'debug'
+import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
@@ -197,7 +197,7 @@ export class HistoryNetwork extends BaseNetwork {
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
     const enr = getENR(this.routingTable, dstId)
-    if (!enr) {
+    if (enr === undefined) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return undefined
     }

@@ -1,8 +1,8 @@
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
-import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
-import { resolve } from 'path'
 import { assert, describe, it } from 'vitest'
 
 import {

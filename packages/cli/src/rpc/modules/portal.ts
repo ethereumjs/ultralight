@@ -19,7 +19,6 @@ import { content_params } from '../schema/index.js'
 import { callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
-import type { GetEnrResult } from '../schema/types.js'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type {
@@ -30,6 +29,7 @@ import type {
   PortalNetwork,
   StateNetwork,
 } from 'portalnetwork'
+import type { GetEnrResult } from '../schema/types.js'
 
 const methods = [
   // state

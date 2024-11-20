@@ -1,7 +1,12 @@
 {
   "name": "ultralight",
   "private": true,
-  "workspaces": ["./", "./packages/portalnetwork", "./packages/cli", "./packages/era"],
+  "workspaces": [
+    "./",
+    "./packages/portalnetwork",
+    "./packages/cli",
+    "./packages/era"
+  ],
   "engines": {
     "npm": "^10",
     "node": "^20"
@@ -12,8 +17,8 @@
     "start-proxy": "npm run start -w=proxy -- --nat=localhost",
     "start-browser-client": "npm run start-testnet -w=browser-client",
     "start-cli": "npm run dev -w=cli",
-    "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
-    "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
+    "lint": "eslint --format codeframe --config ./config/eslint.cjs . --ext .js,.ts",
+    "lint:fix": "eslint --fix --config ./config/eslint.cjs . --ext .js,.ts",
     "clean": "bash ./scripts/clean-root.sh"
   },
   "devDependencies": {
@@ -27,7 +32,6 @@
     "eslint-plugin-implicit-dependencies": "^1.1.1",
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-simple-import-sort": "^10.0.0",
     "node-gyp": "^10.1.0",
     "tsx": "^4.6.2"
   }

@@ -1,5 +1,5 @@
-import { Box, ListItem, ListItemButton, ListItemIcon, ListItemText, List } from '@mui/material'
 import Refresh from '@mui/icons-material/Refresh'
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
 import React, { useEffect } from 'react'
 
 export default function GetBeacon() {

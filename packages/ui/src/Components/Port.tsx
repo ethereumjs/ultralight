@@ -1,6 +1,4 @@
-import * as React from 'react'
-import Button from '@mui/material/Button'
-import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
+import DropDown from '@mui/icons-material/ArrowDropDown'
 import {
   Dialog,
   DialogActions,
@@ -11,10 +9,12 @@ import {
   Popover,
   TextField,
 } from '@mui/material'
-import { ClientContext } from '../Contexts/ClientContext'
-import { trpc } from '../utils/trpc'
+import Button from '@mui/material/Button'
+import * as React from 'react'
 import { set, z } from 'zod'
-import DropDown from '@mui/icons-material/ArrowDropDown'
+import { ClientContext } from '../Contexts/ClientContext'
+import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
+import { trpc } from '../utils/trpc'
 
 export default function PortMenu() {
   const rpc = React.useContext(RPCContext)

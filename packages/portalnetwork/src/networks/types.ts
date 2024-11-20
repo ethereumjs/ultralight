@@ -2,13 +2,13 @@ import { ByteVectorType } from '@chainsafe/ssz'
 import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
-import type { BeaconLightClientNetwork } from './beacon'
-import type { HistoryNetwork } from './history'
-import type { StateNetwork } from './state'
-import type { PortalNetwork } from '../client'
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
+import type { PortalNetwork } from '../client'
+import type { BeaconLightClientNetwork } from './beacon'
+import type { HistoryNetwork } from './history'
+import type { StateNetwork } from './state'
 
 export interface BaseNetworkConfig {
   client: PortalNetwork

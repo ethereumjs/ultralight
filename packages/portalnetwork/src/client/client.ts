@@ -1,10 +1,10 @@
+import { EventEmitter } from 'events'
 import { Discv5 } from '@chainsafe/discv5'
 import { ENR, SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
-import { EventEmitter } from 'events'
 import { LRUCache } from 'lru-cache'
 
 import { HistoryNetwork } from '../networks/history/history.js'
@@ -22,14 +22,14 @@ import { DBManager } from './dbManager.js'
 import { ETH } from './eth.js'
 import { TransportLayer } from './types.js'
 
-import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
-import type { BaseNetwork } from '../networks/network.js'
 import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { NodeId } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
+import type { BaseNetwork } from '../networks/network.js'
+import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
@@ -247,7 +247,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
       this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
 
-      if (!verified || !enr.getLocationMultiaddr('udp')) {
+      if (verified === false || enr.getLocationMultiaddr('udp') === undefined) {
         // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
         // corresponding to the node's observed IP/Port so that we can send outbound messages to
         // those nodes later on if needed.  This is currently used by uTP when responding to

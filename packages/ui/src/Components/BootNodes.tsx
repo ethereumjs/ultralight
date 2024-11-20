@@ -9,9 +9,9 @@ import {
   TableRow,
   Tooltip,
 } from '@mui/material'
+import React from 'react'
 import { CheckmarkIcon, ErrorIcon } from 'react-hot-toast'
 import { ClientContext } from '../Contexts/ClientContext'
-import React from 'react'
 
 function createRow(idx: number, client: string, enr: string, nodeId: string, connected: boolean) {
   return { idx, client, enr, nodeId, connected }

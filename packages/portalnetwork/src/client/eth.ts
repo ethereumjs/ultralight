@@ -14,17 +14,17 @@ import {
   reassembleBlock,
 } from '../networks/index.js'
 
-import type { PortalNetwork } from './client.js'
-import type { RpcTx } from './types.js'
+import type { Block } from '@ethereumjs/block'
+import type { capella } from '@lodestar/types'
+import type { Debugger } from 'debug'
 import type {
   BeaconLightClientNetwork,
   ContentLookupResponse,
   HistoryNetwork,
   StateNetwork,
 } from '../networks/index.js'
-import type { Block } from '@ethereumjs/block'
-import type { capella } from '@lodestar/types'
-import type { Debugger } from 'debug'
+import type { PortalNetwork } from './client.js'
+import type { RpcTx } from './types.js'
 
 export class ETH {
   history?: HistoryNetwork

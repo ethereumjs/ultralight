@@ -1,3 +1,4 @@
+import { createRequire } from 'module'
 import { SignableENR } from '@chainsafe/enr'
 import { bigIntToHex, bytesToHex, concatBytes, hexToBytes, intToHex } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
@@ -6,7 +7,6 @@ import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
-import { createRequire } from 'module'
 import { assert, describe, it, vi } from 'vitest'
 
 import {
