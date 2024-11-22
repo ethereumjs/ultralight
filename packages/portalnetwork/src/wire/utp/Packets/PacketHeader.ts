@@ -2,7 +2,7 @@ import { VERSION } from '../Utils/constants.js'
 
 import { SelectiveAckHeaderExtension } from './Extensions.js'
 
-import type { Uint16, Uint32, Uint8 } from '../index.js'
+import type { Uint8, Uint16, Uint32 } from '../index.js'
 import type {
   HeaderInput,
   ISelectiveAckHeaderInput,
