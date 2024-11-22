@@ -2,7 +2,6 @@ module.exports = {
 	parser: '@typescript-eslint/parser',
 	plugins: [
 		'@typescript-eslint',
-		'github',
 		'implicit-dependencies',
 		'import',
 	],
@@ -54,7 +53,6 @@ module.exports = {
 		'@typescript-eslint/return-await': 'error',
 		'@typescript-eslint/strict-boolean-expressions': ['error'],
 		eqeqeq: 'error',
-		'github/array-foreach': 'error',
 		'implicit-dependencies/no-implicit': ['error', { peer: true, dev: true, optional: true }],
 		'import/default': 'error',
 		'import/export': 'error',
@@ -82,7 +80,6 @@ module.exports = {
 		'no-console': 'warn',
 		'no-debugger': 'error',
 		'no-dupe-class-members': 'off',
-		'no-extra-semi': 'off',
 		'no-redeclare': 'off',
 		'no-unused-vars': 'off',
 		'no-var': 'error',
