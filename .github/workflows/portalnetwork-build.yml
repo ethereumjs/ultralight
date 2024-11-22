@@ -36,7 +36,7 @@ jobs:
       - run: npm ci
         working-directory: ${{ github.workspace }}
 
-      - run: npm run lint
+      - run: npm run biome
         working-directory: ${{ github.workspace }}
       - run: npm run test
 
@@ -62,8 +62,6 @@ jobs:
       - run: npm ci
         working-directory: ${{ github.workspace }}
 
-      - run: npm run lint
-        working-directory: ${{ github.workspace }}
       - run: npm run test:integration
 
 
