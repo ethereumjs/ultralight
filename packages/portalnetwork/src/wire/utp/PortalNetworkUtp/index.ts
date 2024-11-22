@@ -1,4 +1,5 @@
 import {
+  NetworkNames,
   RequestCode,
   UtpSocketType,
   createContentRequest,
@@ -12,6 +13,7 @@ import type {
   INewRequest,
   NetworkId,
   PortalNetwork,
+  PortalNetworkMetrics,
   UtpSocketKey,
 } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
@@ -130,6 +132,15 @@ export class PortalNetworkUTP {
     if (!request) {
       this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
       return
+    }
+    if (this.client.metrics) {
+      const metric = (NetworkNames[request.network.networkId] +
+        '_talkReqReceived') as keyof PortalNetworkMetrics
+      this.client.metrics[metric].inc()
+
+      const utpMetric = (NetworkNames[request.network.networkId] +
+        '_utpPacketsReceived') as keyof PortalNetworkMetrics
+      this.client.metrics[utpMetric].inc()
     }
     await request.handleUtpPacket(packetBuffer)
   }

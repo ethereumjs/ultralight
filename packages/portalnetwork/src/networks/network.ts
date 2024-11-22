@@ -16,6 +16,7 @@ import {
   ContentMessageType,
   MAX_PACKET_SIZE,
   MessageCodes,
+  NetworkNames,
   NodeLookup,
   PingPongCustomDataType,
   PortalNetworkRoutingTable,
@@ -46,6 +47,7 @@ import type {
   PingMessage,
   PongMessage,
   PortalNetwork,
+  PortalNetworkMetrics,
 } from '../index.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
@@ -88,11 +90,6 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    if (this.portal.metrics) {
-      this.portal.metrics.knownHistoryNodes.collect = () => {
-        this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
-      }
-    }
   }
 
   public routingTableInfo = async () => {
@@ -119,6 +116,10 @@ export abstract class BaseNetwork extends EventEmitter {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> {
+    if (this.portal.metrics) {
+      const metric = (this.networkName + '_talkReqSent') as keyof PortalNetworkMetrics
+      this.portal.metrics[metric].inc()
+    }
     return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
   }
 
@@ -821,6 +822,14 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('bucketRefresh')(
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
+    if (this.portal.metrics !== undefined) {
+      const metric = (NetworkNames[this.networkId] + '_peers') as keyof PortalNetworkMetrics
+      try {
+        ;(<PromClient.Gauge>this.portal.metrics[metric]).set(this.routingTable.size)
+      } catch (err) {
+        this.logger.extend('bucketRefresh')(`Error updating ${metric}:  ${(err as any).message}`)
+      }
+    }
   }
 
   /**

@@ -11,6 +11,7 @@ import { HistoryNetwork } from '../networks/history/history.js'
 import {
   BeaconLightClientNetwork,
   NetworkId,
+  NetworkNames,
   StateNetwork,
   SyncStrategy,
 } from '../networks/index.js'
@@ -30,6 +31,7 @@ import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/messag
 import type { NodeId } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
+import type * as PromClient from 'prom-client'
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
@@ -262,8 +264,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     })
     if (opts.metrics) {
       this.metrics = opts.metrics
-      this.metrics.knownDiscv5Nodes.collect = () =>
-        this.metrics?.knownDiscv5Nodes.set(this.discv5.kadValues().length)
       this.metrics.currentDBSize.collect = async () => {
         this.metrics?.currentDBSize.set(await this.db.currentSize())
       }
@@ -290,6 +290,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       }
       network.startRefresh()
       await network.prune()
+      if (this.metrics) {
+        network.on('ContentAdded', async () => {
+          const metric = (NetworkNames[network.networkId] + '_dbSize') as keyof PortalNetworkMetrics
+          ;(<PromClient.Gauge>this.metrics![metric]).set(await network.db.size())
+        })
+      }
     }
     void this.bootstrap()
   }
@@ -320,6 +326,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await this.db.close()
     for (const network of this.networks.values()) {
       network.stopRefresh()
+      network.removeAllListeners()
     }
   }
 
@@ -393,23 +400,30 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
   private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
+    const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
+
     if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
       await this.handleUTP(src, src.nodeId, message, message.request)
       return
     }
-    const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
     if (!network) {
       this.logger(`Received TALKREQ message on unsupported network ${bytesToHex(message.protocol)}`)
       await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
-
       return
     }
 
+    if (this.metrics) {
+      const metric = (NetworkNames[bytesToHex(message.protocol) as NetworkId] +
+        '_talkReqReceived') as keyof PortalNetworkMetrics
+      this.metrics[metric].inc()
+    }
     await network.handle(message, src)
   }
 
   private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
-    this.metrics?.totalBytesReceived.inc(message.response.length)
+    if (this.metrics) {
+      this.metrics?.totalBytesReceived.inc(message.response.length)
+    }
   }
 
   /**
