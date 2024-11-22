@@ -1,10 +1,10 @@
 import { MemoryLevel } from 'memory-level'
 
-import type { NetworkId } from '../index.js'
-import type { NetworkDB } from '../networks/networkDB.js'
 import type { NodeId } from '@chainsafe/enr'
 import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
+import type { NetworkId } from '../index.js'
+import type { NetworkDB } from '../networks/networkDB.js'
 
 export class DBManager {
   nodeId: string
@@ -55,7 +55,7 @@ export class DBManager {
   }
 
   batch(ops: AbstractBatchOperation<string, string, string>[], sublevel?: NetworkId) {
-    const db = sublevel ? this.sublevels.get(sublevel) ?? this.db : this.db
+    const db = sublevel ? (this.sublevels.get(sublevel) ?? this.db) : this.db
     return (db as any).batch(ops)
   }
 

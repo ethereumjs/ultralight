@@ -9,10 +9,10 @@ import { PortalTrieDB } from './portalTrieDB.js'
 import { AccountTrieNodeRetrieval, StorageTrieNodeRetrieval } from './types.js'
 import { AccountTrieNodeContentKey, StorageTrieNodeContentKey } from './util.js'
 
-import type { StateManager } from './manager.js'
-import type { StateNetwork } from './state.js'
 import type { Path } from '@ethereumjs/trie'
 import type { Debugger } from 'debug'
+import type { StateManager } from './manager.js'
+import type { StateNetwork } from './state.js'
 
 export class PortalTrie {
   state: StateNetwork

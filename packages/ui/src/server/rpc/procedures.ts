@@ -1,7 +1,9 @@
-import { ENR, fromHexString, toHexString } from 'portalnetwork'
-import { PublicProcudure } from '../subscriptions.js'
-import { z } from 'zod'
 import jayson from 'jayson/promise/index.js'
+import { ENR, fromHexString, toHexString } from 'portalnetwork'
+import { z } from 'zod'
+import { toJSON } from '../../util.js'
+import { bootnodes } from '../procedures.js'
+import { PublicProcudure } from '../subscriptions.js'
 import {
   z_RoutingTableInfoResult,
   z_historyFindContentParams,
@@ -25,8 +27,6 @@ import {
   z_nodeId,
   z_ui,
 } from './trpcTypes.js'
-import { bootnodes } from '../procedures.js'
-import { toJSON } from '../../util.js'
 
 export const httpProcedures = (publicProcedure: PublicProcudure, ipAddr: string) => {
   const httpClient = (port: number = 8545, ip: string = ipAddr) => {

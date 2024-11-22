@@ -1,9 +1,9 @@
+import { createRequire } from 'module'
 import { SignableENR } from '@chainsafe/enr'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
-import { createRequire } from 'module'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import {

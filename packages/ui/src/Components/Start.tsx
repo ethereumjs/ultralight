@@ -1,11 +1,11 @@
-import React from 'react'
-import { trpc } from '../utils/trpc'
 import { Button, Container, ListItemText } from '@mui/material'
-import { RPCDispatchContext } from '../Contexts/RPCContext'
+import React from 'react'
 import { ClientDispatchContext } from '../Contexts/ClientContext'
+import { RPCDispatchContext } from '../Contexts/RPCContext'
+import { trpc } from '../utils/trpc'
 
 export default function Start() {
-    const dispatch = React.useContext(ClientDispatchContext)
+  const dispatch = React.useContext(ClientDispatchContext)
   const [started, setStarted] = React.useState(false)
   const [nodeId, setNodeId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)

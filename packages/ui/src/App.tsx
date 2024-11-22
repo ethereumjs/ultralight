@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWSClient, wsLink } from '@trpc/client'
 import { useState } from 'react'
-import { trpc } from './utils/trpc'
 import ClientTabs from './Components/Tabs'
 import { AppRouter } from './utils/router'
+import { trpc } from './utils/trpc'
 
 export function App() {
   const [wsClient] = useState(

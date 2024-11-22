@@ -1,7 +1,7 @@
+import { readFileSync, writeFileSync } from 'fs'
 import { Tree } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
-import { readFileSync, writeFileSync } from 'fs'
 const data = readFileSync('./scripts/beaconHead.ssz')
 let headState = ssz.deneb.BeaconState.deserialize(data)
 const json = ssz.deneb.BeaconState.fields.historicalSummaries.toJson(headState.historicalSummaries)

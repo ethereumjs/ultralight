@@ -36,8 +36,10 @@ jobs:
       - run: npm ci
         working-directory: ${{ github.workspace }}
 
-      - run: npm run lint
+      - run: npm run biome
+        working-directory: ${{ github.workspace }}
       - run: npm run test
+
 
   test-integration-portalnetwork:
     runs-on: ubuntu-latest
@@ -60,8 +62,8 @@ jobs:
       - run: npm ci
         working-directory: ${{ github.workspace }}
 
-      - run: npm run lint
       - run: npm run test:integration
+
 
 
   

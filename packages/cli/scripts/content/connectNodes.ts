@@ -1,16 +1,16 @@
-import { Client, HttpClient } from 'jayson/promise'
+import type { HttpClient } from 'jayson/promise'
+import { Client } from 'jayson/promise'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-const args: any = yargs(hideBin(process.argv))
-  .option('bootnodes', {
-    describe: 'how man bootnodes',
-    number: true,
-    default: 8,
-  }).argv
+const args: any = yargs(hideBin(process.argv)).option('bootnodes', {
+  describe: 'how man bootnodes',
+  number: true,
+  default: 8,
+}).argv
 
 const main = async () => {
-  let bootNodes: { node: HttpClient; enr: string }[] = []
+  const bootNodes: { node: HttpClient; enr: string }[] = []
 
   console.log(args.bootnodes)
   for (let i = 0; i < args.bootnodes; i++) {

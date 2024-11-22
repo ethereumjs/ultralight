@@ -5,7 +5,6 @@ import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 import { ethers } from 'ethers'
 
-import type { Log, TxReceiptType } from '../networks/index.js'
 import type { BlockOptions, JsonRpcBlock, Block as ethJsBlock } from '@ethereumjs/block'
 import type {
   AccessListEIP2930Transaction,
@@ -15,6 +14,7 @@ import type {
   TypedTxData,
 } from '@ethereumjs/tx'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt } from '@ethereumjs/vm'
+import type { Log, TxReceiptType } from '../networks/index.js'
 
 export async function getBlockReceipts(
   block: Block,

@@ -1,14 +1,15 @@
+import { BitArray } from '@chainsafe/ssz'
 import {
-  ENR,
   ContentLookup,
+  ENR,
   HistoryNetwork,
-  PortalNetwork,
   NetworkId,
+  PortalNetwork,
   fromHexString,
   toHexString,
 } from 'portalnetwork'
-import { PublicProcudure } from './subscriptions.js'
 import { z } from 'zod'
+import { toJSON } from '../util.js'
 import {
   z_historyFindContentParams,
   z_historyFindContentResult,
@@ -27,8 +28,7 @@ import {
   z_historyStoreParams,
   z_historyStoreResult,
 } from './rpc/trpcTypes.js'
-import { toJSON } from '../util.js'
-import { BitArray } from '@chainsafe/ssz'
+import { PublicProcudure } from './subscriptions.js'
 const bootnodeENRs = [
   'enr:-I24QDy_atpK3KlPjl6X5yIrK7FosdHI1cW0I0MeiaIVuYg3AEEH9tRSTyFb2k6lpUiFsqxt8uTW3jVMUzoSlQf5OXYBY4d0IDAuMS4wgmlkgnY0gmlwhKEjVaWJc2VjcDI1NmsxoQOSGugH1jSdiE_fRK1FIBe9oLxaWH8D_7xXSnaOVBe-SYN1ZHCCIyg',
   'enr:-I24QIdQtNSyUNcoyR4R7pWLfGj0YuX550Qld0HuInYo_b7JE9CIzmi2TF9hPg-OFL3kebYgLjnPkRu17niXB6xKQugBY4d0IDAuMS4wgmlkgnY0gmlwhJO2oc6Jc2VjcDI1NmsxoQJal-rNlNBoOMikJ7PcGk1h6Mlt_XtTWihHwOKmFVE-GoN1ZHCCIyg',
@@ -64,9 +64,9 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       if (portal.discv5.isStarted()) return 'Already started'
       try {
         await portal.start()
-        portal.discv5.isStarted() 
-        ? console.log('Discv5 started')
-        : console.log('Discv5 not started')
+        portal.discv5.isStarted()
+          ? console.log('Discv5 started')
+          : console.log('Discv5 not started')
         return portal.discv5.enr.encodeTxt()
       } catch (err: any) {
         console.log('PORTAL_START_ERROR', err.message)
@@ -237,8 +237,8 @@ export const websocketProcedures = (portal: PortalNetwork, publicProcedure: Publ
       return !res
         ? undefined
         : 'content' in res
-        ? { content: toJSON(contentKey, res.content), utpTransfer: res.utp }
-        : { enrs: res.enrs.map(toHexString) }
+          ? { content: toJSON(contentKey, res.content), utpTransfer: res.utp }
+          : { enrs: res.enrs.map(toHexString) }
     })
 
   const browser_historyOffer = publicProcedure

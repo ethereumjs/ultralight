@@ -1,18 +1,18 @@
-import * as React from 'react'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
-import Typography from '@mui/material/Typography'
+import { Container } from '@mui/material'
 import Box from '@mui/material/Box'
-import { WSSClient } from '../Clients/WSSClient'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
+import Typography from '@mui/material/Typography'
+import * as React from 'react'
 import HTTPClient from '../Clients/HTTPClient'
-import { trpc } from '../utils/trpc'
+import { WSSClient } from '../Clients/WSSClient'
 import {
   AllClientsContext,
   AllClientsDispatchContext,
   AllClientsInitialState,
   AllClientsReducer,
 } from '../Contexts/AllClientsContext'
-import { Container } from '@mui/material'
+import { trpc } from '../utils/trpc'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -50,14 +50,11 @@ export default function ClientTabs() {
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue)
   }
-  
+
   return (
     <AllClientsContext.Provider value={clients}>
       <AllClientsDispatchContext.Provider value={dispatch}>
-        <Box
-          id="App Tab Box"
-          sx={{ bgcolor: 'background.paper', width: '100%' }}
-        >
+        <Box id="App Tab Box" sx={{ bgcolor: 'background.paper', width: '100%' }}>
           <Tabs
             variant="fullWidth"
             value={value}

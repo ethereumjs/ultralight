@@ -1,5 +1,5 @@
-import { ethers } from 'ethers'
 import { createRequire } from 'module'
+import { ethers } from 'ethers'
 
 const require = createRequire(import.meta.url)
 

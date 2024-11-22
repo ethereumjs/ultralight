@@ -1,5 +1,4 @@
 import { Box } from '@mui/material'
-import { trpc } from '../utils/trpc'
 import { useEffect, useReducer, useState } from 'react'
 import Client from '../Components/Client'
 import {
@@ -15,6 +14,7 @@ import {
   RPCReducer,
   wsMethods,
 } from '../Contexts/RPCContext'
+import { trpc } from '../utils/trpc'
 
 export function WSSClient() {
   const [state, dispatch] = useReducer(ClientReducer, ClientInitialState)
@@ -25,8 +25,6 @@ export function WSSClient() {
   }, [])
 
   const localRoutingTable = ClientInitialState.RPC.ws.portal_historyRoutingTableInfo.useMutation()
-
-
 
   const getLocalRoutingTable = async () => {
     const _peers = await localRoutingTable.mutateAsync()

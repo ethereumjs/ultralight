@@ -1,3 +1,5 @@
+import { promises as fs } from 'fs'
+import * as path from 'path'
 import { digest } from '@chainsafe/as-sha256'
 import { ENR } from '@chainsafe/enr'
 import {
@@ -7,11 +9,9 @@ import {
   bytesToUtf8,
   unprefixedHexToBytes,
 } from '@ethereumjs/util'
-import { promises as fs } from 'fs'
-import * as path from 'path'
 
-import type { PortalNetworkRoutingTable, RoutingTable } from '../client'
 import type { NodeId } from '@chainsafe/enr'
+import type { PortalNetworkRoutingTable, RoutingTable } from '../client'
 
 export const MEGABYTE = 1048576
 
@@ -86,7 +86,7 @@ export function arrayByteLength(byteArray: any[]): number {
 export const getENR = (routingTable: RoutingTable, enrOrId: string) => {
   const enr = enrOrId.startsWith('enr:')
     ? ENR.decodeTxt(enrOrId)
-    : routingTable.getWithPending(enrOrId)?.value
+    : routingTable.getWithPending(enrOrId)?.value !== undefined
       ? routingTable.getWithPending(enrOrId)?.value
       : routingTable.getWithPending(enrOrId.slice(2))?.value
   return enr

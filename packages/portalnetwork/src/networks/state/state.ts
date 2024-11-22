@@ -40,10 +40,10 @@ import {
   nextOffer,
 } from './util.js'
 
-import type { TNibbles } from './types.js'
+import type { Debugger } from 'debug'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
-import type { Debugger } from 'debug'
+import type { TNibbles } from './types.js'
 
 export class StateNetwork extends BaseNetwork {
   networkId: NetworkId.StateNetwork
@@ -71,7 +71,7 @@ export class StateNetwork extends BaseNetwork {
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
     const enr = getENR(this.routingTable, dstId)
-    if (!enr) {
+    if (enr === undefined) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return
     }

@@ -10,8 +10,8 @@ import { genesisStateTrie, mainnet } from '../../src/networks/state/genesis.js'
 import rawBlocks from './testdata/rawBlocks.json'
 import { connectNetwork, genesisContent, getClients, getVM, populateGenesisDB } from './util.js'
 
-import type { TNibble } from '../../src/index.js'
 import type { LeafNode } from '@ethereumjs/trie'
+import type { TNibble } from '../../src/index.js'
 
 describe('genesisContent', async () => {
   const trie = await genesisStateTrie()

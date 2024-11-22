@@ -1,26 +1,26 @@
+import SendIcon from '@mui/icons-material/Send'
 import {
-  List,
-  ListItem,
-  ListItemText,
-  ListItemButton,
-  ListItemIcon,
-  TextField,
-  Select,
-  FormControl,
-  InputLabel,
-  SelectChangeEvent,
-  MenuItem,
   Alert,
   AlertTitle,
   Box,
   Button,
   CircularProgress,
   Fade,
+  FormControl,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  TextField,
   Typography,
 } from '@mui/material'
-import SendIcon from '@mui/icons-material/Send'
-import { CheckmarkIcon } from 'react-hot-toast'
 import React, { useEffect } from 'react'
+import { CheckmarkIcon } from 'react-hot-toast'
 import { ClientContext } from '../Contexts/ClientContext'
 import { RPCContext } from '../Contexts/RPCContext'
 
@@ -138,7 +138,7 @@ export default function Ping() {
             </Fade>
           )}
         </Box>
-        <Button variant='outlined' onClick={handleClickQuery} sx={{ m: 2 }}>
+        <Button variant="outlined" onClick={handleClickQuery} sx={{ m: 2 }}>
           {query !== 'idle' ? 'Reset' : 'Send Ping'}
         </Button>
       </Box>

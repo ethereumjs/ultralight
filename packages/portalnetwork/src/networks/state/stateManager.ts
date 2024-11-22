@@ -3,9 +3,9 @@ import { Account, KECCAK256_NULL, KECCAK256_NULL_S, bytesToHex, hexToBytes } fro
 
 import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
-import type { StateNetwork } from './state.js'
 import type { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
 import type { Address } from '@ethereumjs/util'
+import type { StateNetwork } from './state.js'
 
 export class UltralightStateManager implements EVMStateManagerInterface {
   protected _contractCache: Map<string, Uint8Array>

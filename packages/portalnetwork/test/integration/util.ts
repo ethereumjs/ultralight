@@ -20,9 +20,9 @@ import {
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
 
+import type { LeafNode } from '@ethereumjs/trie'
 import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src'
 import type { StateDB } from '../../src/networks/state/statedb'
-import type { LeafNode } from '@ethereumjs/trie'
 
 export const protoBufs = [
   '0x0a27002508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b82122508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b821a240802122091b5cbbc2bf054f913c3a344bf8ce6d19373142854eabeeffb5a3f159c44e610',

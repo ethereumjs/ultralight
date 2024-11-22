@@ -17,13 +17,13 @@ import {
   StorageTrieNodeRetrieval,
 } from './types.js'
 
+import type { LeafNode } from '@ethereumjs/trie'
 import type {
   TAccountTrieNodeKey,
   TContractCodeKey,
   TNibbles,
   TStorageTrieNodeKey,
 } from './types.js'
-import type { LeafNode } from '@ethereumjs/trie'
 
 /* ContentKeys */
 

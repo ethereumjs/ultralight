@@ -1,4 +1,5 @@
-import { Client, HttpClient } from 'jayson/promise'
+import type { HttpClient } from 'jayson/promise'
+import { Client } from 'jayson/promise'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import blocks from '../blocks200000-210000.json'
@@ -27,12 +28,12 @@ const args: any = yargs(hideBin(process.argv))
   })
 
 const main = async () => {
-  let bootNodes: Node[] = []
+  const bootNodes: Node[] = []
 
   for (let i = 0; i < 8; i++) {
     const boot = Client.http({ port: 8546 + i })
     const bootEnr = (await boot.request('portal_nodeEnr', [])).result
-    const bootNode: Node = {node: boot, enr: bootEnr}
+    const bootNode: Node = { node: boot, enr: bootEnr }
     bootNodes.push(bootNode)
   }
   const testBlocks: [string, any][] = Object.entries(blocks).slice(0, args.blocks)
@@ -40,7 +41,7 @@ const main = async () => {
   const idx = Math.floor(Math.random() * 8)
   const randomNode: Node = bootNodes[idx]
   const requestor: HttpClient = randomNode.node
-  const b = idx + 1 % 8
+  const b = idx + (1 % 8)
   const search = await requestor.request('eth_getBlockByHash', [testBlocks[b][0], true])
   console.log(search)
 

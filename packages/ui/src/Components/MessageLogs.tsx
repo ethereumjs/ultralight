@@ -1,18 +1,18 @@
 import {
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableCell,
-  TableBody,
-  TableRow,
-  Tooltip,
-  ListItemText,
   Button,
-  Tabs,
-  Tab,
-  Stack,
   Container,
+  ListItemText,
+  Paper,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  Tooltip,
 } from '@mui/material'
 import React, { Fragment } from 'react'
 import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
@@ -213,7 +213,7 @@ export default function MessageLogs() {
               {Object.entries(state.RECEIVED_LOGS).map(([peer, logs]: any) => {
                 const sentLogs = (state.SENT_LOGS as any)[peer] ?? {}
                 return (
-                  <Fragment  key={peer}>
+                  <Fragment key={peer}>
                     <TableRow>
                       <TableCell
                         onMouseEnter={() => setHover(peer)}

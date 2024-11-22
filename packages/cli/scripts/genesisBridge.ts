@@ -1,8 +1,8 @@
+import { readFileSync, writeFileSync } from 'fs'
 import { Blockchain } from '@ethereumjs/blockchain'
 import { Common } from '@ethereumjs/common'
 import { LeafNode, Trie } from '@ethereumjs/trie'
 import { Account, bytesToHex, hexToBytes, parseGethGenesisState } from '@ethereumjs/util'
-import { readFileSync, writeFileSync } from 'fs'
 import { AccountTrieNodeContentKey, AccountTrieNodeOffer, tightlyPackNibbles } from 'portalnetwork'
 
 import genesis from '../data/mainnet.json' assert { type: 'json' }

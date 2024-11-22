@@ -22,8 +22,6 @@ import {
   sszUnclesType,
 } from './types.js'
 
-import type { HistoryNetwork } from './history.js'
-import type { BlockBodyContent, Witnesses } from './types.js'
 import type { Proof, SingleProof, SingleProofInput } from '@chainsafe/persistent-merkle-tree'
 import type {
   ByteVectorType,
@@ -40,6 +38,8 @@ import type {
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
+import type { HistoryNetwork } from './history.js'
+import type { BlockBodyContent, Witnesses } from './types.js'
 
 export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
   return Uint8Array.from([

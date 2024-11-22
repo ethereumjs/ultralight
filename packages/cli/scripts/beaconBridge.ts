@@ -1,10 +1,10 @@
+import { writeFileSync } from 'fs'
 import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
 import { genesisData } from '@lodestar/config/networks'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
-import { writeFileSync } from 'fs'
 import jayson from 'jayson/promise/index.js'
 import {
   BeaconLightClientNetworkContentType,

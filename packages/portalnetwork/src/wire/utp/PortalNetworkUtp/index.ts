@@ -7,6 +7,7 @@ import {
 } from '../../../index.js'
 import { createUtpSocket } from '../Socket/index.js'
 
+import type { Debugger } from 'debug'
 import type {
   ContentRequestType,
   INewRequest,
@@ -15,7 +16,6 @@ import type {
   UtpSocketKey,
 } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
-import type { Debugger } from 'debug'
 
 export class PortalNetworkUTP {
   client: PortalNetwork

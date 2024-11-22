@@ -1,25 +1,25 @@
-import { createContext, useContext, useReducer } from 'react'
-import { TMutations } from './ClientContext'
-import { trpc } from '../utils/trpc'
 import { BuildProcedure } from '@trpc/server'
+import { createContext, useContext, useReducer } from 'react'
+import { trpc } from '../utils/trpc'
+import { TMutations } from './ClientContext'
 
 export const RPCDispatchContext = createContext<any>(null)
 
 interface IMethods {
-pingBootNodes: typeof trpc.pingBootNodes
-discv5_nodeInfo: typeof trpc.browser_nodeInfo
-portal_historyPing: typeof trpc.ping
-portal_historyRoutingTableInfo: typeof trpc.browser_localRoutingTable
-portal_historyFindNodes:  typeof trpc.browser_historyFindNodes
-portal_historyFindContent: typeof trpc.browser_historyFindContent
-portal_historyLocalContent: typeof trpc.browser_historyLocalContent
-portal_historyRecursiveFindContent: typeof trpc.browser_historyRecursiveFindContent
-portal_historyOffer: typeof trpc.browser_historyOffer
-portal_historySendOffer: typeof trpc.browser_historySendOffer
-portal_historyStore: typeof trpc.browser_historyStore
-portal_historyGossip: typeof trpc.browser_historyGossip
-eth_getBlockByHash: typeof trpc.browser_ethGetBlockByHash
-eth_getBlockByNumber: typeof trpc.browser_ethGetBlockByNumber
+  pingBootNodes: typeof trpc.pingBootNodes
+  discv5_nodeInfo: typeof trpc.browser_nodeInfo
+  portal_historyPing: typeof trpc.ping
+  portal_historyRoutingTableInfo: typeof trpc.browser_localRoutingTable
+  portal_historyFindNodes: typeof trpc.browser_historyFindNodes
+  portal_historyFindContent: typeof trpc.browser_historyFindContent
+  portal_historyLocalContent: typeof trpc.browser_historyLocalContent
+  portal_historyRecursiveFindContent: typeof trpc.browser_historyRecursiveFindContent
+  portal_historyOffer: typeof trpc.browser_historyOffer
+  portal_historySendOffer: typeof trpc.browser_historySendOffer
+  portal_historyStore: typeof trpc.browser_historyStore
+  portal_historyGossip: typeof trpc.browser_historyGossip
+  eth_getBlockByHash: typeof trpc.browser_ethGetBlockByHash
+  eth_getBlockByNumber: typeof trpc.browser_ethGetBlockByNumber
 }
 
 export const wsMethods = {
@@ -55,7 +55,6 @@ export const httpMethods = {
   portal_historyStore: trpc.portal_historyStore,
   eth_getBlockByHash: trpc.eth_getBlockByHash,
   eth_getBlockByNumber: trpc.eth_getBlockByNumber,
-
 }
 export type WSMethods = typeof wsMethods
 export type HttpMethods = typeof httpMethods
@@ -83,7 +82,7 @@ export const RPCInitialState: IRPCInitialState = {
   PORT: 8545,
   CONTENT_KEY: '',
   CONTENT: '',
-  CONTENT_KEY_ARRAY: [""],
+  CONTENT_KEY_ARRAY: [''],
   ENR: '',
   NODEID: '',
   DISTANCES: [],

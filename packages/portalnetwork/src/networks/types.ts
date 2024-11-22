@@ -2,13 +2,13 @@ import { ByteVectorType } from '@chainsafe/ssz'
 import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
-import type { BeaconLightClientNetwork } from './beacon'
-import type { HistoryNetwork } from './history'
-import type { StateNetwork } from './state'
-import type { PortalNetwork } from '../client'
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
+import type { PortalNetwork } from '../client'
+import type { BeaconLightClientNetwork } from './beacon'
+import type { HistoryNetwork } from './history'
+import type { StateNetwork } from './state'
 
 export interface BaseNetworkConfig {
   client: PortalNetwork
@@ -85,7 +85,7 @@ export class Bloom {
       const first2bytes = new DataView(e.buffer).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
-      const bitLoc = 1 << loc % 8
+      const bitLoc = 1 << (loc % 8)
       this.bitvector[BYTE_SIZE - byteLoc - 1] |= bitLoc
     }
   }
@@ -106,7 +106,7 @@ export class Bloom {
       const first2bytes = new DataView(e.buffer).getUint16(i * 2, false)
       const loc = mask & first2bytes
       const byteLoc = loc >> 3
-      const bitLoc = 1 << loc % 8
+      const bitLoc = 1 << (loc % 8)
       match = (this.bitvector[BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0
     }
 

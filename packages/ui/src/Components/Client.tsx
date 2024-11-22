@@ -1,11 +1,11 @@
 import { Container, ListItemText, Stack } from '@mui/material'
-import { SelfNodeInfo } from './NodeInfo'
-import FunctionTabs from './FunctionTabs'
-import PortMenu from './Port'
-import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
 import React from 'react'
-import { trpc } from '../utils/trpc'
+import { ClientContext, ClientDispatchContext } from '../Contexts/ClientContext'
 import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
+import { trpc } from '../utils/trpc'
+import FunctionTabs from './FunctionTabs'
+import { SelfNodeInfo } from './NodeInfo'
+import PortMenu from './Port'
 import Start from './Start'
 
 export default function Client(props: { name: string }) {
@@ -90,12 +90,12 @@ export default function Client(props: { name: string }) {
           data.contentType === 0
             ? 'BlockHeader'
             : data.contentType === 1
-            ? 'BlockBody'
-            : data.contentType === 2
-            ? 'BlockReceipts'
-            : data.contentType === 3
-            ? 'EpochAccumulator'
-            : 'unknown'
+              ? 'BlockBody'
+              : data.contentType === 2
+                ? 'BlockReceipts'
+                : data.contentType === 3
+                  ? 'EpochAccumulator'
+                  : 'unknown'
         dispatch({
           type: 'CONTENT_STORE',
           contentKey: '0x0' + data.contentType + data.key.slice(2),

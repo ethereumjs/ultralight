@@ -1,11 +1,20 @@
-import * as React from 'react'
-import Button from '@mui/material/Button'
-import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
-import { Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemText, Popover, TextField } from '@mui/material'
-import { ClientContext } from '../Contexts/ClientContext'
-import { trpc } from '../utils/trpc'
-import { set, z } from 'zod'
 import DropDown from '@mui/icons-material/ArrowDropDown'
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItemText,
+  Popover,
+  TextField,
+} from '@mui/material'
+import Button from '@mui/material/Button'
+import * as React from 'react'
+import { set, z } from 'zod'
+import { ClientContext } from '../Contexts/ClientContext'
+import { RPCContext, RPCDispatchContext } from '../Contexts/RPCContext'
+import { trpc } from '../utils/trpc'
 
 export default function PortMenu() {
   const rpc = React.useContext(RPCContext)
@@ -23,7 +32,6 @@ export default function PortMenu() {
   const handleClose = () => {
     setAnchorEl(null)
   }
-  
 
   function handleIpInput(e: React.ChangeEvent<HTMLInputElement>) {
     try {
@@ -53,7 +61,12 @@ export default function PortMenu() {
   const id = open ? 'simple-popover' : undefined
   return (
     <div>
-      <Button aria-describedby={id} variant="contained" onClick={handleClick} endIcon={<DropDown />}>
+      <Button
+        aria-describedby={id}
+        variant="contained"
+        onClick={handleClick}
+        endIcon={<DropDown />}
+      >
         {address.data}:{rpc.PORT}
       </Button>
       <Dialog id={id} open={open} onClose={handleClose}>

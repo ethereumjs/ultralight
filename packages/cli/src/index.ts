@@ -1,6 +1,6 @@
 import { execSync } from 'child_process'
-import debug from 'debug'
 import http from 'http'
+import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
 import { PortalNetwork, cliConfig } from 'portalnetwork'
 import * as PromClient from 'prom-client'

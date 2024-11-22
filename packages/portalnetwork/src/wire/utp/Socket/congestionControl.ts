@@ -1,5 +1,5 @@
-import debug from 'debug'
 import { EventEmitter } from 'events'
+import debug from 'debug'
 
 import { DEFAULT_PACKET_SIZE, MAX_CWND_INCREASE_PACKETS_PER_RTT } from '../index.js'
 

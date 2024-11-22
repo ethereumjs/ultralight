@@ -6,10 +6,10 @@ import { jsonRpcLog } from '../types.js'
 import { callWithStackTrace } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
-import type { GetLogsParams } from '../types.js'
 import type { Block } from '@ethereumjs/block'
 import type { Debugger } from 'debug'
 import type { HistoryNetwork, PortalNetwork, RpcTx } from 'portalnetwork'
+import type { GetLogsParams } from '../types.js'
 
 /**
  * eth_* RPC module

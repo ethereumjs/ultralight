@@ -12,27 +12,26 @@
     "node": "^20"
   },
   "scripts": {
+    "biome": "npx @biomejs/biome check --write",
     "postinstall": "npm run build --workspaces --if-present",
     "start-proxy": "npm run start -w=proxy -- --nat=localhost",
     "start-browser-client": "npm run start-testnet -w=browser-client",
     "start-cli": "npm run dev -w=cli",
-    "lint": "npm run lint -w=cli -w=portalnetwork -w=proxy",
-    "lint:fix": "npm run lint:fix -w=cli -w=portalnetwork -w=proxy",
+    "lint": "eslint --format codeframe --config ./config/eslint.cjs . --ext .js,.ts",
+    "lint:fix": "eslint --fix --config ./config/eslint.cjs . --ext .js,.ts",
     "clean": "bash ./scripts/clean-root.sh"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@typescript-eslint/eslint-plugin": "^5.51.0",
     "@typescript-eslint/parser": "^5.51.0",
     "eslint": "^8.33.0",
-    "node-gyp": "^10.1.0",
     "eslint-config-typestrict": "^1.0.5",
     "eslint-formatter-codeframe": "^7.32.1",
-    "eslint-plugin-github": "^4.10.1",
     "eslint-plugin-implicit-dependencies": "^1.1.1",
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "node-gyp": "^10.1.0",
     "tsx": "^4.6.2"
   }
 }

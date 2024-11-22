@@ -9,9 +9,9 @@ import {
   TableRow,
   Tooltip,
 } from '@mui/material'
-import { RPCMethod } from './RPC'
 import React from 'react'
 import { RPCContext } from '../Contexts/RPCContext'
+import { RPCMethod } from './RPC'
 
 export default function RPCParams(props: { method: RPCMethod }) {
   const state = React.useContext(RPCContext)

@@ -1,13 +1,13 @@
+import { Duplex } from 'stream'
 import { concatBytes, equalsBytes } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
 import { UnsnappyStream } from 'snappystream'
-import { Duplex } from 'stream'
 
 import { EraTypes } from './types.js'
 
-import type { SlotIndex, e2StoreEntry } from './types.js'
 import type { BeaconState } from '@lodestar/types'
+import type { SlotIndex, e2StoreEntry } from './types.js'
 
 /**
  * Reads the first e2Store formatted entry from a string of bytes

@@ -1,5 +1,5 @@
-import { bytesToHex } from '@ethereumjs/util'
 import { randomBytes } from 'crypto'
+import { bytesToHex } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import {

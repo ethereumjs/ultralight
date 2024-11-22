@@ -12,8 +12,8 @@ import {
 
 import { historicalEpochs } from './data/epochHashes.js'
 
-import type { HeaderProofInterface, HeaderRecord, HistoryNetwork } from '../index.js'
 import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
+import type { HeaderProofInterface, HeaderRecord, HistoryNetwork } from '../index.js'
 
 const mainnetHistoricalEpochs: Uint8Array[] = historicalEpochs.map((hash: string) => {
   return hexToBytes(hash)

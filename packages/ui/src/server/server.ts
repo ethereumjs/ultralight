@@ -1,23 +1,23 @@
+import { execSync } from 'child_process'
+import { ENR, SignableENR } from '@chainsafe/discv5'
+import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
+import { multiaddr } from '@multiformats/multiaddr'
 import { initTRPC } from '@trpc/server'
 // eslint-disable-next-line node/file-extension-in-import
 import { createHTTPServer } from '@trpc/server/adapters/standalone'
 import cors from 'cors'
-import { ENR, SignableENR } from '@chainsafe/discv5'
-import { createSecp256k1PeerId } from '@libp2p/peer-id-factory'
-import { multiaddr } from '@multiformats/multiaddr'
-import { execSync } from 'child_process'
-import { HistoryNetwork, PortalNetwork, NetworkId } from 'portalnetwork'
+import { HistoryNetwork, NetworkId, PortalNetwork } from 'portalnetwork'
 
 import ws from 'ws'
 
 // eslint-disable-next-line node/file-extension-in-import
 import { applyWSSHandler } from '@trpc/server/adapters/ws'
-import { subscriptions } from './subscriptions.js'
+import debug from 'debug'
+import { z } from 'zod'
 import { websocketProcedures } from './procedures.js'
 import { httpProcedures } from './rpc/procedures.js'
 import { z_Enr } from './rpc/trpcTypes.js'
-import { z } from 'zod'
-import debug from 'debug'
+import { subscriptions } from './subscriptions.js'
 
 const main = async () => {
   const t = initTRPC

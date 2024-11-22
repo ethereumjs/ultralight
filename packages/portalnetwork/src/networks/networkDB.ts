@@ -1,8 +1,8 @@
+import fs from 'fs'
 import { distance } from '@chainsafe/discv5'
 import { ContainerType, UintBigintType } from '@chainsafe/ssz'
 import { bytesToHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import debug from 'debug'
-import fs from 'fs'
 import { MemoryLevel } from 'memory-level'
 
 import { type NetworkId } from './index.js'

@@ -23,19 +23,19 @@ const args: any = yargs(hideBin(process.argv))
   })
 
 const main = async () => {
-  let bootEnrs: string[] = []
+  const bootEnrs: string[] = []
   for (let i = 0; i < 8; i++) {
     const boot = Client.http({ port: 8546 + i })
     const bootEnr = (await boot.request('portal_nodeEnr', [])).result
     bootEnrs.push(bootEnr)
-}
+  }
 
   const newPeer = Client.http({ port: 8546 + 9 })
   const add = await newPeer.request('portal_addBootNode', [bootEnrs[0], NetworkId.HistoryNetwork])
   console.log(add)
-  bootEnrs.forEach( (boot) => {
-      newPeer.request('portal_nodeLookup', [NetworkId.HistoryNetwork, boot])
-    })
+  bootEnrs.forEach((boot) => {
+    newPeer.request('portal_nodeLookup', [NetworkId.HistoryNetwork, boot])
+  })
 
   console.log('Done')
 }
