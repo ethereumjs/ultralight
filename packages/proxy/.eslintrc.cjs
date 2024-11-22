@@ -6,4 +6,9 @@ module.exports = {
     'node/no-unsupported-features/es-syntax': 'off',
     'no-process-exit': 'off',
   },
+  parserOptions: {
+    extraFileExtensions: ['.json'],
+    sourceType: 'module',
+    project: 'tsconfig.lint.json',
+  },
 }
