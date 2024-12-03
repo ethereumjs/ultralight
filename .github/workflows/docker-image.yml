@@ -40,18 +40,7 @@ jobs:
         working-directory: ${{ github.workspace }}
 
       -
-        name: Build 
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          load: true
-          tags: ghcr.io/${{ github.repository_owner }}/ultralight:latest
-          provenance: false
-      
-      -
-        run: docker run --rm ghcr.io/${{ github.repository_owner }}/ultralight:latest --version
-      -
-        name: Push
+        name: Build & Push
         uses: docker/build-push-action@v5
         with:
           context: .
