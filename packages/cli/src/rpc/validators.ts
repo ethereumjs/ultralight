@@ -117,7 +117,7 @@ export const validators = {
           ]}`,
         }
       }
-      if (<string>params[index].startsWith('0x')) {
+      if ((<string>params[index]).startsWith('0x')) {
         params[index] = params[index].slice(2)
       }
     }

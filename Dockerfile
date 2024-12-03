@@ -1,4 +1,4 @@
-FROM node:20-alpine as BUILD_IMAGE
+FROM node:20-alpine
 
 RUN apk update && apk add --no-cache bash g++ make git python3 && rm -rf /var/cache/apk/*
 RUN apk add --virtual .build-deps alpine-sdk jq
@@ -7,16 +7,15 @@ RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 WORKDIR /ultralight
 
-RUN jq -r '.workspaces |= .[0:2]' package.json > package.json
-COPY package*.json ./
-COPY . .
-RUN npm i --omit-dev
+COPY node_modules node_modules
+COPY packages/portalnetwork/dist packages/portalnetwork/dist
+COPY packages/cli/dist packages/cli/dist
+COPY packages/cli/package.json packages/cli
+COPY packages/portalnetwork/package.json packages/portalnetwork
 
-LABEL org.opencontainers.image.source=https://github.com/acolytec3/ultralight
+# Sanity check
+RUN node /ultralight/packages/cli/dist/index.js --help
 
-FROM ubuntu:23.04
-RUN apt update && apt-get install nodejs musl-dev -y && ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
-COPY --from=BUILD_IMAGE ./ultralight ./ultralight
 ENV BINDADDRESS=
 ENV RPCPORT=
 ENV PK=
