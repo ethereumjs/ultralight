@@ -63,8 +63,6 @@ describe('AccountTrieNode Gossip / Request', async () => {
 
   const network1 = node1.networks.get(NetworkId.StateNetwork) as StateNetwork
   const network2 = node2.networks.get(NetworkId.StateNetwork) as StateNetwork
-  network1.startRefresh = () => {} // Disable for test since causes occasional timeouts
-  network2.startRefresh = () => {} // Disable for test since causes occasional timeouts
   await node1.start()
   await node2.start()
   network1.nodeRadius = 2n ** 254n - 1n
