@@ -13,6 +13,7 @@ COPY packages/cli/dist packages/cli/dist
 COPY packages/cli/package.json packages/cli
 COPY packages/portalnetwork/package.json packages/portalnetwork
 
+# Sanity check
 RUN node /ultralight/packages/cli/dist/index.js --help
 
 ENV BINDADDRESS=
