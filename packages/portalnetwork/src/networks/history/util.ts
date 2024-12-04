@@ -239,18 +239,9 @@ export const addRLPSerializedBlock = async (
   await network.addBlockBody(sszBlock, header.hash(), header.serialize())
 }
 
-// Each EpochAccumulator is a merkle tree with 16384 leaves, and 16383 parent nodes.
-// gIndex refers to index within the tree starting at the root
-// So the gIndices of the leaf nodes start at 16384
-
 export const blockNumberToGindex = (blockNumber: bigint): bigint => {
-  const randArray = new Array(8192).fill({
-    blockHash: hexToBytes('0xa66afd523336ddf6e71567e366c7ef98aa529644915c30a3802eac73c2c2f3a6'),
-    totalDifficulty: 1n,
-  })
-  const epochAcc = EpochAccumulator.value_toTree(randArray)
-  const listIndex = (Number(blockNumber) % 8192) * 2
-  const gIndex = EpochAccumulator.tree_getLeafGindices(1n, epochAcc)[listIndex]
+  const j = blockNumber % 8192n
+  const gIndex = 2n * j + 32768n
   return gIndex
 }
 
