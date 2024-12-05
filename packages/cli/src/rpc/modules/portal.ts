@@ -444,7 +444,7 @@ export class portal {
       if (this._client.enrCache.get(encodedENR.nodeId) !== undefined) {
         return true
       }
-      this._client.discv5.addEnr(enr)
+      // this._client.discv5.addEnr(enr)
       this._client.enrCache.set(encodedENR.nodeId, encodedENR)
       return true
     } catch {
@@ -476,7 +476,7 @@ export class portal {
       if (this._client.enrCache.get(encodedENR.nodeId) !== undefined) {
         return true
       }
-      this._client.discv5.addEnr(enr)
+      // this._client.discv5.addEnr(enr)
       this._client.enrCache.set(encodedENR.nodeId, encodedENR)
       return true
     } catch {
@@ -929,7 +929,7 @@ export class portal {
     this.logger.extend('findContent')(
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    const res = await this._history.sendFindContent(enr, hexToBytes(contentKey))
+    const res = await this._history.sendFindContent(nodeId, hexToBytes(contentKey))
     if (res === undefined) {
       this.logger.extend('findContent')(`request returned undefined`)
       return undefined
