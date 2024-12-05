@@ -13,13 +13,14 @@ import type {
   UtpSocketOptions,
   UtpSocketType,
 } from '../index.js'
+import type { ENR } from '@chainsafe/enr'
 
 export abstract class UtpSocket {
   utp: PortalNetworkUTP
   networkId: NetworkId
   type: UtpSocketType
   content: Uint8Array
-  remoteAddress: string
+  enr: ENR
   protected seqNr: number
   ackNr: number
   finNr: number | undefined
@@ -36,7 +37,7 @@ export abstract class UtpSocket {
     this.utp = options.utp
     this.networkId = options.networkId
     this.content = options.content ?? Uint8Array.from([])
-    this.remoteAddress = options.remoteAddress
+    this.enr = options.enr
     this.rcvConnectionId = options.rcvId
     this.sndConnectionId = options.sndId
     this.seqNr = options.seqNr
@@ -89,7 +90,7 @@ export abstract class UtpSocket {
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
       `|| ackNr: ${packet.header.ackNr}`,
     )
-    await this.utp.send(this.remoteAddress, msg, this.networkId)
+    await this.utp.send(this.enr, msg, this.networkId)
     return msg
   }
 

@@ -9,7 +9,7 @@ import {
 } from '@ethereumjs/util'
 import debug from 'debug'
 
-import { getENR, shortId } from '../../util/util.js'
+import { shortId } from '../../util/util.js'
 import { RequestCode } from '../../wire/index.js'
 import {
   ContentMessageType,
@@ -70,7 +70,7 @@ export class StateNetwork extends BaseNetwork {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = getENR(this.routingTable, dstId)
+    const enr = this.portal.enrCache.get(dstId)
     if (enr === undefined) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return
@@ -109,7 +109,7 @@ export class StateNetwork extends BaseNetwork {
               void this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [key],
-                peerId: enr.nodeId,
+                enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
               })

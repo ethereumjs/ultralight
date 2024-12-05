@@ -18,7 +18,7 @@ import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import debug from 'debug'
 
-import { getENR, shortId } from '../../util/util.js'
+import { shortId } from '../../util/util.js'
 import {
   FoundContent,
   MAX_PACKET_SIZE,
@@ -430,7 +430,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     dstId: string,
     key: Uint8Array,
   ): Promise<ContentLookupResponse | undefined> => {
-    const enr = getENR(this.routingTable, dstId)
+    const enr = this.portal.enrCache.get(dstId)
     if (enr === undefined) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return undefined
@@ -467,7 +467,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               void this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [key],
-                peerId: enr.nodeId,
+                enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
               })
@@ -601,7 +601,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        peerId: src.nodeId,
+        enr: this.portal.enrCache.get(src.nodeId)!,  // TODO: Decide if we should set a guard here to check for ENRs and throw if not (we should always have one)
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -796,7 +796,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      const enr = this.routingTable.getWithPending(dstId)?.value
+      const enr = this.portal.enrCache.get(dstId)
       if (!enr) {
         this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
         return
@@ -849,7 +849,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             await this.handleNewRequest({
               networkId: this.networkId,
               contentKeys: requestedKeys,
-              peerId: dstId,
+              enr,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
               contents: encoded,

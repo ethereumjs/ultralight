@@ -428,7 +428,7 @@ export abstract class BaseNetwork extends EventEmitter {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      const enr = this.routingTable.getWithPending(dstId)?.value
+      const enr = this.portal.enrCache.get(dstId)
       if (!enr) {
         this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
         return
@@ -479,7 +479,7 @@ export abstract class BaseNetwork extends EventEmitter {
             await this.handleNewRequest({
               networkId: this.networkId,
               contentKeys: requestedKeys,
-              peerId: dstId,
+              enr,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
               contents,
@@ -587,7 +587,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
-      peerId: src.nodeId,
+      enr: this.portal.enrCache.get(src.nodeId)!,
       connectionId: id,
       requestCode: RequestCode.ACCEPT_READ,
     })
@@ -654,7 +654,7 @@ export abstract class BaseNetwork extends EventEmitter {
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        peerId: src.nodeId,
+        enr: this.portal.enrCache.get(src.nodeId)!,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -884,7 +884,7 @@ export abstract class BaseNetwork extends EventEmitter {
                 void this.handleNewRequest({
                   networkId: this.networkId,
                   contentKeys: [contentKey],
-                  peerId: peer.nodeId,
+                  enr: peer,
                   connectionId: id,
                   requestCode: RequestCode.OFFER_WRITE,
                   contents: encodeWithVariantPrefix([content]),

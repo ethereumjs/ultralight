@@ -1,10 +1,10 @@
-import { EventEmitter } from 'events'
 import { Discv5 } from '@chainsafe/discv5'
 import { ENR, SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
+import { EventEmitter } from 'events'
 import { LRUCache } from 'lru-cache'
 
 import { HistoryNetwork } from '../networks/history/history.js'
@@ -26,7 +26,6 @@ import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { NodeId } from '@chainsafe/enr'
-import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
 import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
@@ -44,8 +43,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ETH: ETH
   private refreshListeners: Map<NetworkId, ReturnType<typeof setInterval>>
   private supportsRendezvous: boolean
-  private unverifiedSessionCache: LRUCache<NodeId, Multiaddr>
-  shouldRefresh: boolean = true
+  public enrCache: LRUCache<NodeId, ENR>
+  shouldRefresh: boolean = false
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -176,7 +175,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
     this.supportsRendezvous = false
-    this.unverifiedSessionCache = new LRUCache({ max: 2500 })
+    this.enrCache = new LRUCache({ max: 2500 })
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
     this.refreshListeners = new Map()
@@ -242,24 +241,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
-    // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
-    //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
-    // }
-    this.discv5.sessionService.on('established', async (nodeAddr, enr, _, verified) => {
-      this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
 
-      if (verified === false || enr.getLocationMultiaddr('udp') === undefined) {
-        // If a node provides an invalid ENR during the discv5 handshake, we cache the multiaddr
-        // corresponding to the node's observed IP/Port so that we can send outbound messages to
-        // those nodes later on if needed.  This is currently used by uTP when responding to
-        // FINDCONTENT requests from nodes with invalid ENRs.
-        const peerId = enr.peerId
-        this.unverifiedSessionCache.set(
-          enr.nodeId,
-          multiaddr(nodeAddr.socketAddr.toString() + '/p2p/' + peerId.toString()),
-        )
-        this.logger(this.unverifiedSessionCache.get(enr.nodeId))
-      }
+    this.discv5.sessionService.on('established', async (_, enr) => {
+      this.enrCache.set(enr.nodeId, enr)
     })
     if (opts.metrics) {
       this.metrics = opts.metrics

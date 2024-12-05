@@ -19,7 +19,7 @@ export function createSocketKey(remoteAddr: string, id: number) {
 export interface INewRequest {
   networkId: NetworkId
   contentKeys: Uint8Array[]
-  peerId: string
+  enr: ENR
   connectionId: number
   requestCode: RequestCode
   contents?: Uint8Array
