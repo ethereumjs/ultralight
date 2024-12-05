@@ -1,4 +1,3 @@
-import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
@@ -411,9 +410,9 @@ export class portal {
       return this._client.discv5.enr.encodeTxt()
     }
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    const enr = this._client.enrCache.get(nodeId)?.encodeTxt()
     this.logger(`Found: ${enr}`)
-    return enr ?? ''
+    return enr
   }
   async stateLookupEnr(params: [string]) {
     const [nodeId] = params
@@ -421,9 +420,9 @@ export class portal {
       return this._client.discv5.enr.encodeTxt()
     }
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._state.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    const enr = this._client.enrCache.get(nodeId)?.encodeTxt()
     this.logger(`Found: ${enr}`)
-    return enr ?? ''
+    return enr
   }
   async beaconLookupEnr(params: [string]) {
     const [nodeId] = params
@@ -431,9 +430,9 @@ export class portal {
       return this._client.discv5.enr.encodeTxt()
     }
     this.logger(`Looking up ENR for NodeId: ${shortId(nodeId)}`)
-    const enr = this._beacon.routingTable.getWithPending(nodeId)?.value.encodeTxt()
+    const enr = this._client.enrCache.get(nodeId)?.encodeTxt()
     this.logger(`Found: ${enr}`)
-    return enr ?? ''
+    return enr
   }
   // portal_*AddEnr
   async historyAddEnr(params: [string]): Promise<boolean> {
@@ -442,11 +441,11 @@ export class portal {
     const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
     this.logger(`portal_historyAddEnr request received for ${shortEnr}`)
     try {
-      if (this._history.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+      if (this._client.enrCache.get(encodedENR.nodeId) !== undefined) {
         return true
       }
       this._client.discv5.addEnr(enr)
-      this._history.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      this._client.enrCache.set(encodedENR.nodeId, encodedENR)
       return true
     } catch {
       return false
@@ -458,11 +457,11 @@ export class portal {
     const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
     this.logger(`portal_stateAddEnr request received for ${shortEnr}`)
     try {
-      if (this._state.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+      if (this._client.enrCache.get(encodedENR.nodeId) !== undefined) {
         return true
       }
       this._client.discv5.addEnr(enr)
-      this._state.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      this._client.enrCache.set(encodedENR.nodeId, encodedENR)
       return true
     } catch {
       return false
@@ -474,11 +473,11 @@ export class portal {
     const shortEnr = encodedENR.nodeId.slice(0, 15) + '...'
     this.logger(`portal_beaconAddEnr request received for ${shortEnr}`)
     try {
-      if (this._beacon.routingTable.getWithPending(encodedENR.nodeId)?.value) {
+      if (this._client.enrCache.get(encodedENR.nodeId) !== undefined) {
         return true
       }
       this._client.discv5.addEnr(enr)
-      this._beacon.routingTable.insertOrUpdate(encodedENR, EntryStatus.Connected)
+      this._client.enrCache.set(encodedENR.nodeId, encodedENR)
       return true
     } catch {
       return false
@@ -1301,12 +1300,11 @@ export class portal {
   async historySendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
     const res = await this._history.sendFindContent(nodeId, hexToBytes(contentKey))
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
+    const enr = this._client.enrCache.get(nodeId)
     return res && enr && '0x' + enr.seq.toString(16)
   }
   async beaconSendFindContent(params: [string, string]) {
     const [nodeId, contentKey] = params
-    console.log(nodeId)
     const res = await this._beacon.sendFindContent(nodeId, hexToBytes(contentKey))
     if (res !== undefined && 'content' in res) return bytesToHex(res.content as Uint8Array)
     return '0x'
@@ -1317,7 +1315,7 @@ export class portal {
       selector: 1,
       value: hexToBytes(content),
     })
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
+    const enr = this._client.enrCache.get(nodeId)!
     void this.sendPortalNetworkResponse(
       nodeId,
       enr?.getLocationMultiaddr('udp')!,
