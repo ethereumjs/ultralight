@@ -162,9 +162,10 @@ export class ContentLookup {
     }
 
     this.pending.add(peer.enr.encodeTxt())
+    this.network.portal.enrCache.set(peer.enr.nodeId, peer.enr)
     this.logger(`Requesting content from ${shortId(peer.enr.nodeId)}`)
     try {
-      const res = await this.network.sendFindContent!(peer.enr.encodeTxt(), this.contentKey)
+      const res = await this.network.sendFindContent!(peer.enr.nodeId, this.contentKey)
       this.pending.delete(peer.enr.encodeTxt())
       if (this.finished) {
         this.logger(`Response from ${shortId(peer.enr.nodeId)} arrived after lookup finished`)

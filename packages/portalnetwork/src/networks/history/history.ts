@@ -10,10 +10,9 @@ import {
   RequestCode,
   decodeHistoryNetworkContentKey,
   decodeReceipts,
-  getENR,
   reassembleBlock,
   saveReceipts,
-  shortId,
+  shortId
 } from '../../index.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
@@ -196,7 +195,7 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = getENR(this.routingTable, dstId)
+    const enr = this.portal.enrCache.get(dstId)
     if (enr === undefined) {
       this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
       return undefined
