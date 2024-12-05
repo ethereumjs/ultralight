@@ -133,8 +133,12 @@ export class NetworkDB {
       const _db = this.db as MemoryLevel<string, string>
       let size = 0
       for await (const [key, value] of _db.iterator()) {
-        size += hexToBytes('0x' + padToEven(key.slice(2))).length
-        size += hexToBytes(value).length
+        try {
+          size += hexToBytes('0x' + padToEven(key.slice(2))).length
+          size += hexToBytes(value).length
+        } catch {
+          // ignore
+        }
       }
       return size
     }
