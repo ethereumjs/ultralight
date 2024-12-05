@@ -113,7 +113,7 @@ export class ReadSocket extends UtpSocket {
     return Uint8Array.from(_content)
   }
   close(compile: boolean = false): Uint8Array | undefined {
-    this.logger.extend('CLOSE')(`Closing connection to ${this.remoteAddress}`)
+    this.logger.extend('CLOSE')(`Closing connection to ${this.enr.nodeId}`)
     this.logger.extend('CLOSE')(`compile=${compile}`)
     clearInterval(this.packetManager.congestionControl.timeoutCounter)
     this.packetManager.congestionControl.removeAllListeners()

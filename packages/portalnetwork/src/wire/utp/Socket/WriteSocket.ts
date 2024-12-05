@@ -98,7 +98,7 @@ export class WriteSocket extends UtpSocket {
     try {
       await this.packetManager.congestionControl.canSend()
     } catch (e) {
-      this.logger(`DATA packet not acked.  Closing connection to ${this.remoteAddress}`)
+      this.logger(`DATA packet not acked.  Closing connection to ${this.enr.nodeId}`)
       await this.sendResetPacket()
       this.close()
     }
