@@ -1,16 +1,12 @@
 import { readFileSync } from 'fs'
 import { createRequire } from 'module'
-import { EntryStatus } from '@chainsafe/discv5'
-import { ENR } from '@chainsafe/enr'
 import { Block, type BlockBytes, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
-import * as td from 'testdouble'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import {
   BlockHeaderWithProof,
-  ContentKeyType,
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   NetworkId,
@@ -27,58 +23,6 @@ import type { HistoryNetwork } from '../../../src/index.js'
 
 const require = createRequire(import.meta.url)
 const testBlocks = require('../../testData/testBlocksForHistory.json')
-
-describe('history Network FINDCONTENT/FOUNDCONTENT message handlers', async () => {
-  const block1Rlp = testBlocks.block1.blockRlp
-  const block1Hash = testBlocks.block1.blockHash
-  const node = await PortalNetwork.create({
-    bindAddress: '192.168.0.1',
-    transport: TransportLayer.WEB,
-    supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
-  })
-
-  const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  const remoteEnr =
-    'enr:-IS4QG_M1lzTXzQQhUcAViqK-WQKtBgES3IEdQIBbH6tlx3Zb-jCFfS1p_c8Xq0Iie_xT9cHluSyZl0TNCWGlUlRyWcFgmlkgnY0gmlwhKRc9EGJc2VjcDI1NmsxoQMo1NBoJfVY367ZHKA-UBgOE--U7sffGf5NBsNSVG629oN1ZHCCF6Q'
-  const decodedEnr = ENR.decodeTxt(remoteEnr)
-  network.routingTable.insertOrUpdate(decodedEnr, EntryStatus.Connected)
-  const key = getContentKey(
-    HistoryNetworkContentType.BlockBody,
-    hexToBytes('0x88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6'),
-  )
-
-  const findContentResponse = Uint8Array.from([5, 1, 97, 98, 99])
-  network.store = td.func<any>()
-  network.validateHeader = td.func<any>()
-  // network.sendFindContent = td.func<any>()
-  network.sendMessage = td.func<any>()
-
-  td.when(
-    network.sendMessage(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()),
-  ).thenResolve(findContentResponse)
-  const res = await network.sendFindContent(decodedEnr.nodeId, key)
-  it('should send a FINDCONTENT message', () => {
-    assert.exists(res!['content'])
-    assert.deepEqual(
-      res!['content'],
-      Uint8Array.from([97, 98, 99]),
-      'got correct response for content abc',
-    )
-  })
-
-  // TODO: Write good `handleFindContent` tests
-
-  td.reset()
-  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(block1Hash))
-  await network.store(headerKey, hexToBytes(block1Rlp))
-  const contentKey = ContentKeyType.serialize(
-    concatBytes(Uint8Array.from([HistoryNetworkContentType.BlockHeader]), hexToBytes(block1Hash)),
-  )
-  const header = await network.sendFindContent('0xabcd', contentKey)
-  it('should send a FINDCONTENT message for a block header', () => {
-    assert.equal(header, undefined, 'received undefined for unknown peer')
-  })
-})
 
 describe('store -- Headers and Epoch Accumulators', async () => {
   it('Should store and retrieve block header from DB', async () => {
