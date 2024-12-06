@@ -277,17 +277,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * Tries to connect to any pre-configured bootnodes
    */
   public bootstrap = async () => {
+    const boostrapRequests = []
     for (const network of this.networks) {
       for (const enr of this.bootnodes) {
-        try {
-          await network[1].addBootNode(enr)
-          network[1].logger(`Added bootnode ${enr} to ${network[1].networkId}`)
-        } catch (error: any) {
-          throw new Error(`Error adding bootnode ${enr} to network \
-          ${network[1].networkId}: ${error.message ?? error}`)
-        }
+        boostrapRequests.push(network[1].addBootNode(enr))
       }
     }
+    void Promise.all(boostrapRequests)
   }
   /**
    * Stops the portal network client and cleans up listeners
