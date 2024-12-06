@@ -87,22 +87,15 @@ describe('AccountTrieNode Gossip / Request', async () => {
     expect(result2.stored).toBeGreaterThan(0)
     expect(result2.stored).toEqual(1)
   })
-  const network2Keys: string[] = []
-  for await (const key of network2.db.db.keys()) {
-    network2Keys.push(key)
-  }
 
   it('should request individual node from peer', async () => {
     const expected = AccountTrieNodeRetrieval.serialize({ node: proof[2] })
-    const contentKey = (await network2.db.db.keys().next())!
-    const requested = await network1.sendFindContent(
-      node2.discv5.enr.nodeId,
-      hexToBytes(contentKey),
-    )
-    expect(requested).toBeDefined()
-    expect(requested!['content']).instanceOf(Uint8Array)
+    const contentKey = '0x2024000000a33d103a92ff6f95c081309f83f474a009048614d5d40e14067dbae0cf9ed0840053'
+    const requested = await network2.findContentLocally(hexToBytes(contentKey))
+    expect(requested, `Expected content for ${contentKey}`).toBeDefined()
+    expect(requested).instanceOf(Uint8Array)
     assert.equal(
-      bytesToHex(requested!['content']),
+      bytesToHex(requested!),
       bytesToHex(expected),
       'retrieved value is correct',
     )
