@@ -32,7 +32,6 @@ import { FoundContent } from '../wire/types.js'
 
 import { NetworkDB } from './networkDB.js'
 
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
@@ -114,7 +113,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * @returns response from `dstId` as `Buffer` or null `Buffer`
    */
   async sendMessage(
-    enr: ENR | string,
+    enr: ENR,
     payload: Uint8Array,
     networkId: NetworkId,
     utpMessage?: boolean,
@@ -122,7 +121,7 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
   }
 
-  sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
+  sendResponse(src: ENR, requestId: bigint, payload: Uint8Array): Promise<void> {
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
@@ -181,22 +180,16 @@ export abstract class BaseNetwork extends EventEmitter {
 
   abstract store(contentKey: Uint8Array, value: Uint8Array): Promise<void>
 
-  public async handle(message: ITalkReqMessage, src: INodeAddress) {
+  public async handle(message: ITalkReqMessage, src: ENR) {
     const id = message.id
     const network = message.protocol
     const request = message.request
     const deserialized = PortalWireMessageType.deserialize(request)
     const decoded = deserialized.value
     const messageType = deserialized.selector
-    const srcEnr = this.routingTable.getWithPending(src.nodeId)
-    if (srcEnr === undefined) {
-      this.logger(`Received TALKREQ from node not known to support ${this.networkName}`)
-      const enr = this.findEnr(src.nodeId)
-      enr !== undefined && this.updateRoutingTable(enr)
-    }
     this.logger.extend(MessageCodes[messageType])(
       `Received from ${shortId(
-        srcEnr !== undefined ? srcEnr.value : src.nodeId,
+        src.nodeId,
         this.routingTable,
       )}`,
     )
@@ -233,10 +226,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * @param networkId subnetwork ID
    * @returns the PING payload specified by the subnetwork or undefined
    */
-  public sendPing = async (enr: ENR | string) => {
-    if (!(enr instanceof ENR)) {
-      enr = ENR.decodeTxt(enr)
-    }
+  public sendPing = async (enr: ENR) => {
     if (enr.nodeId === this.portal.discv5.enr.nodeId) {
       // Don't ping ourselves
       return undefined
@@ -279,7 +269,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
+  handlePing = async (src: ENR, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
@@ -293,7 +283,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.sendPong(src, id)
   }
 
-  sendPong = async (src: INodeAddress, requestId: bigint) => {
+  sendPong = async (src: ENR, requestId: bigint) => {
     const payload = {
       enrSeq: this.enr.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: this.nodeRadius }),
@@ -357,7 +347,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   private handleFindNodes = async (
-    src: INodeAddress,
+    src: ENR,
     requestId: bigint,
     payload: FindNodesMessage,
   ) => {
@@ -415,7 +405,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * @param contentKeys content keys being offered as specified by the subnetwork
    * @param networkId network ID of subnetwork being used
    */
-  public sendOffer = async (dstId: string, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
+  public sendOffer = async (enr: ENR, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
     if (content && content.length !== contentKeys.length) {
       throw new Error('Must provide all content or none')
     }
@@ -428,11 +418,6 @@ export abstract class BaseNetwork extends EventEmitter {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      const enr = this.routingTable.getWithPending(dstId)?.value
-      if (!enr) {
-        this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
-        return
-      }
       this.logger.extend(`OFFER`)(
         `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
       )
@@ -479,7 +464,7 @@ export abstract class BaseNetwork extends EventEmitter {
             await this.handleNewRequest({
               networkId: this.networkId,
               contentKeys: requestedKeys,
-              peerId: dstId,
+              enr,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
               contents,
@@ -494,7 +479,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  protected handleOffer = async (src: ENR, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${
         msg.contentKeys.length
@@ -560,7 +545,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   protected sendAccept = async (
-    src: INodeAddress,
+    src: ENR,
     requestId: bigint,
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[],
@@ -587,7 +572,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
-      peerId: src.nodeId,
+      enr: src,
       connectionId: id,
       requestCode: RequestCode.ACCEPT_READ,
     })
@@ -611,7 +596,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   protected handleFindContent = async (
-    src: INodeAddress,
+    src: ENR,
     requestId: bigint,
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
@@ -654,7 +639,7 @@ export abstract class BaseNetwork extends EventEmitter {
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        peerId: src.nodeId,
+        enr: src,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -672,7 +657,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected enrResponse = async (contentKey: Uint8Array, src: INodeAddress, requestId: bigint) => {
+  protected enrResponse = async (contentKey: Uint8Array, src: ENR, requestId: bigint) => {
     const lookupKey = this.contentKeyToId(contentKey)
     // Discv5 calls for maximum of 16 nodes per NODES message
     const ENRs = this.routingTable.nearest(lookupKey, 16)
@@ -868,7 +853,7 @@ export abstract class BaseNetwork extends EventEmitter {
     let accepted = 0
     for (const offer of offered) {
       if (offer.status === 'fulfilled') {
-        const [peer, res] = offer.value as [ENR, Uint8Array]
+        const [enr, res] = offer.value as [ENR, Uint8Array]
         if (res.length > 0) {
           try {
             const decoded = PortalWireMessageType.deserialize(res)
@@ -876,7 +861,7 @@ export abstract class BaseNetwork extends EventEmitter {
               const msg = decoded.value as AcceptMessage
               if (msg.contentKeys.get(0) === true) {
                 this.logger.extend(`gossipContent`)(
-                  `${bytesToHex(contentKey)} accepted by ${shortId(peer.nodeId)}`,
+                  `${bytesToHex(contentKey)} accepted by ${shortId(enr.nodeId)}`,
                 )
                 accepted++
                 this.logger.extend(`gossipContent`)(`accepted: ${accepted}`)
@@ -884,7 +869,7 @@ export abstract class BaseNetwork extends EventEmitter {
                 void this.handleNewRequest({
                   networkId: this.networkId,
                   contentKeys: [contentKey],
-                  peerId: peer.nodeId,
+                  enr,
                   connectionId: id,
                   requestCode: RequestCode.OFFER_WRITE,
                   contents: encodeWithVariantPrefix([content]),
