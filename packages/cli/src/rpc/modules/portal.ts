@@ -14,7 +14,6 @@ import { content_params } from '../schema/index.js'
 import { callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
-import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type {
   BeaconLightClientNetwork,
@@ -258,16 +257,12 @@ export class portal {
   }
 
   async sendPortalNetworkResponse(
-    nodeId: string,
-    socketAddr: Multiaddr,
+enr: ENR,
     requestId: bigint,
     payload: Uint8Array,
   ) {
     void this._client.sendPortalNetworkResponse(
-      {
-        nodeId,
-        socketAddr,
-      },
+      enr,
       BigInt(requestId),
       payload,
     )
@@ -811,7 +806,7 @@ export class portal {
     const [enr, contentKey] = params
     const nodeId = ENR.decodeTxt(enr).nodeId
     if (!this._state.routingTable.getWithPending(nodeId)?.value) {
-      const pong = await this._state.sendPing(enr)
+      const pong = await this._state.sendPing(ENR.decodeTxt(enr))
       if (!pong) {
         return ''
       }
@@ -846,7 +841,7 @@ export class portal {
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
     if (!this._beacon.routingTable.getWithPending(nodeId)?.value) {
-      const pong = await this._beacon.sendPing(enr)
+      const pong = await this._beacon.sendPing(ENR.decodeTxt(enr))
       if (!pong) {
         return ''
       }
@@ -1049,7 +1044,7 @@ export class portal {
   }
 
   // portal_*Offer
-  async historyOffer(params: [string, [string, string][]]) {
+  async historyOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._history.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1060,10 +1055,10 @@ export class portal {
         return '0x'
       }
     }
-    const res = await this._history.sendOffer(enr.nodeId, contentKeys, contentValues)
+    const res = await this._history.sendOffer(enr, contentKeys, contentValues)
     return res
   }
-  async stateOffer(params: [string, [string, string][]]) {
+  async stateOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._state.sendOffer>>  {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1074,10 +1069,10 @@ export class portal {
         return '0x'
       }
     }
-    const res = await this._state.sendOffer(enr.nodeId, contentKeys, contentValues)
+    const res = await this._state.sendOffer(enr, contentKeys, contentValues)
     return res
   }
-  async beaconOffer(params: [string, [string, string][]]) {
+  async beaconOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._beacon.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1088,7 +1083,7 @@ export class portal {
         return '0x'
       }
     }
-    const res = await this._beacon.sendOffer(enr.nodeId, contentKeys, contentValues)
+    const res = await this._beacon.sendOffer(enr, contentKeys, contentValues)
     return res
   }
 
