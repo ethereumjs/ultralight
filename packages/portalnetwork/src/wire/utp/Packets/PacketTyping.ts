@@ -3,6 +3,7 @@ import type { NetworkId } from '../../../networks/types.js'
 import type { PortalNetworkUTP } from '../index.js'
 import type { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import type { Packet } from './index.js'
+import type { ENR } from '@chainsafe/enr'
 
 export const BUFFER_SIZE = 512
 export enum PacketType {
@@ -101,7 +102,7 @@ export type ICreate<T extends PacketType> = IBasic<T> | ISelectiveAck | IData
 export interface UtpSocketOptions {
   utp: PortalNetworkUTP
   networkId: NetworkId
-  remoteAddress: string
+  enr: ENR
   sndId: number
   rcvId: number
   seqNr: number
