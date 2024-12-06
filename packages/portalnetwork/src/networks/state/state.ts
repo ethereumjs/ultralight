@@ -9,7 +9,7 @@ import {
 } from '@ethereumjs/util'
 import debug from 'debug'
 
-import { getENR, shortId } from '../../util/util.js'
+import {  shortId } from '../../util/util.js'
 import { RequestCode } from '../../wire/index.js'
 import {
   ContentMessageType,
@@ -44,6 +44,7 @@ import type { Debugger } from 'debug'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
 import type { TNibbles } from './types.js'
+import type { ENR } from '@chainsafe/enr'
 
 export class StateNetwork extends BaseNetwork {
   networkId: NetworkId.StateNetwork
@@ -69,12 +70,7 @@ export class StateNetwork extends BaseNetwork {
    * @param key content key defined by the subnetwork spec
    * @returns the value of the FOUNDCONTENT response or undefined
    */
-  public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = getENR(this.routingTable, dstId)
-    if (enr === undefined) {
-      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
-      return
-    }
+  public sendFindContent = async (enr: ENR, key: Uint8Array) => {
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({

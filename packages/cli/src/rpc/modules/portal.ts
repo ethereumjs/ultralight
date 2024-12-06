@@ -611,7 +611,7 @@ enr: ENR,
         message: 'invalid node id',
       }
     }
-    const res = await this._history.sendFindNodes(enr, distances)
+    const res = await this._history.sendFindNodes(ENR.decodeTxt(enr), distances)
     if (!res) {
       return []
     }
@@ -630,7 +630,7 @@ enr: ENR,
         message: 'invalid node id',
       }
     }
-    const res = await this._state.sendFindNodes(enr, distances)
+    const res = await this._state.sendFindNodes(ENR.decodeTxt(enr), distances)
     if (!res) {
       return []
     }
@@ -649,7 +649,7 @@ enr: ENR,
         message: 'invalid node id',
       }
     }
-    const res = await this._beacon.sendFindNodes(enr, distances)
+    const res = await this._beacon.sendFindNodes(ENR.decodeTxt(enr), distances)
     if (!res) {
       return []
     }
@@ -782,7 +782,7 @@ enr: ENR,
     this.logger.extend('findContent')(
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    const res = await this._history.sendFindContent(enr, hexToBytes(contentKey))
+    const res = await this._history.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey))
     if (res === undefined) {
       this.logger.extend('findContent')(`request returned undefined`)
       return undefined
@@ -814,7 +814,7 @@ enr: ENR,
     this.logger.extend('findContent')(
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    const res = await this._state.sendFindContent(nodeId, hexToBytes(contentKey))
+    const res = await this._state.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey))
     if (res === undefined) {
       this.logger.extend('findContent')(`request returned type: ENRS`)
       return { enrs: [] }
@@ -847,7 +847,7 @@ enr: ENR,
       }
     }
 
-    const res = await this._beacon.sendFindContent(nodeId, hexToBytes(contentKey))
+    const res = await this._beacon.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey))
 
     if (res === undefined) {
       this.logger.extend('findContent')(`request returned type: ENRS`)

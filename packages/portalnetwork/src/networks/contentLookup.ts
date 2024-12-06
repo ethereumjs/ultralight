@@ -164,7 +164,7 @@ export class ContentLookup {
     this.pending.add(peer.enr.encodeTxt())
     this.logger(`Requesting content from ${shortId(peer.enr.nodeId)}`)
     try {
-      const res = await this.network.sendFindContent!(peer.enr.encodeTxt(), this.contentKey)
+      const res = await this.network.sendFindContent!(peer.enr, this.contentKey)
       this.pending.delete(peer.enr.encodeTxt())
       if (this.finished) {
         this.logger(`Response from ${shortId(peer.enr.nodeId)} arrived after lookup finished`)
