@@ -53,7 +53,7 @@ export class UltralightTransport implements LightClientTransport {
       decoded = await this.network.findContentLocally(rangeKey)
       if (decoded === undefined || bytesToHex(decoded) === '0x') {
         const res = await this.network.sendFindContent(
-          this.network.routingTable.random()!.nodeId,
+          this.network.routingTable.random()!,
           rangeKey,
         )
         if (res !== undefined && 'content' in res)
@@ -109,7 +109,7 @@ export class UltralightTransport implements LightClientTransport {
 
     // Try to get optimistic update from Portal Network
     const decoded = await this.network.sendFindContent(
-      this.network.routingTable.random()!.nodeId,
+      this.network.routingTable.random()!,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({
@@ -176,7 +176,7 @@ export class UltralightTransport implements LightClientTransport {
     }
     // Try to get finality update from Portal Network
     const decoded = await this.network.sendFindContent(
-      this.network.routingTable.random()!.nodeId,
+      this.network.routingTable.random()!,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
         LightClientFinalityUpdateKey.serialize({ finalitySlot: nextFinalitySlot }),

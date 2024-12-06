@@ -75,7 +75,7 @@ export class NodeLookup {
       })
 
       const queryPromise = async () => {
-        const response = await this.network.sendFindNodes(peer.encodeTxt(), [distanceToTarget])
+        const response = await this.network.sendFindNodes(peer, [distanceToTarget])
         if (!response?.enrs) return
 
         for (const enr of response.enrs) {

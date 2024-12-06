@@ -10,7 +10,6 @@ import {
   RequestCode,
   decodeHistoryNetworkContentKey,
   decodeReceipts,
-  getENR,
   reassembleBlock,
   saveReceipts,
   shortId,
@@ -31,6 +30,7 @@ import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof }
 
 import type { Debugger } from 'debug'
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
+import type { ENR } from '@chainsafe/enr'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
@@ -195,12 +195,7 @@ export class HistoryNetwork extends BaseNetwork {
    * @param networkId subnetwork ID on which content is being sought
    * @returns the value of the FOUNDCONTENT response or undefined
    */
-  public sendFindContent = async (dstId: string, key: Uint8Array) => {
-    const enr = getENR(this.routingTable, dstId)
-    if (enr === undefined) {
-      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
-      return undefined
-    }
+  public sendFindContent = async (enr: ENR, key: Uint8Array) => {
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({

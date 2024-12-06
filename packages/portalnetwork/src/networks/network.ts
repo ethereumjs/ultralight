@@ -24,7 +24,6 @@ import {
   arrayByteLength,
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
-  getENR,
   randUint16,
   shortId,
 } from '../index.js'
@@ -304,22 +303,13 @@ export abstract class BaseNetwork extends EventEmitter {
    * @param networkId subnetwork id for message being
    * @returns a {@link `NodesMessage`} or undefined
    */
-  public sendFindNodes = async (dstId: string, distances: number[]) => {
+  public sendFindNodes = async (enr: ENR, distances: number[]) => {
     this.portal.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances }
     const payload = PortalWireMessageType.serialize({
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
     })
-    let enr
-    try {
-      enr = getENR(this.routingTable, dstId)
-    } catch (err: any) {
-      // TODO: Find source of "cannot read properties of undefined (reading 'getWithPending')" error
-    }
-    if (enr === undefined) {
-      return
-    }
     const res = await this.sendMessage(enr, payload, this.networkId)
     if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
       this.portal.metrics?.nodesMessagesReceived.inc()
@@ -735,7 +725,7 @@ export abstract class BaseNetwork extends EventEmitter {
   abstract findContentLocally: (contentKey: Uint8Array) => Promise<Uint8Array | undefined>
 
   abstract sendFindContent?: (
-    dstId: string,
+    enr: ENR,
     key: Uint8Array,
   ) => Promise<ContentLookupResponse | undefined>
 
@@ -823,7 +813,7 @@ export abstract class BaseNetwork extends EventEmitter {
     for (let x = 239; x < 256; x++) {
       // Ask for nodes in all log2distances 239 - 256
       if (this.routingTable.valuesOfDistance(x).length === 0) {
-        await this.sendFindNodes(enr.nodeId, [x])
+        await this.sendFindNodes(enr, [x])
       }
     }
   }

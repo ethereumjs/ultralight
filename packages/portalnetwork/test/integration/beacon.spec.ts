@@ -166,7 +166,7 @@ describe('Find Content tests', () => {
       hexToBytes(optimisticUpdate.content_value),
     )
     const res = await network2.sendFindContent(
-      node1.discv5.enr.nodeId,
+      node1.discv5.enr.toENR(),
       concatBytes(
         new Uint8Array([0x13]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
@@ -238,7 +238,7 @@ describe('Find Content tests', () => {
     await network1.storeUpdateRange(hexToBytes(updatesByRange.content_value))
 
     const res = await network2.sendFindContent(
-      node1.discv5.enr.nodeId,
+      node1.discv5.enr.toENR(),
       hexToBytes(updatesByRange.content_key),
     )
 

@@ -130,8 +130,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   private getBootstrap = async (nodeId: string, network: NetworkId) => {
     // We check the network ID because NodeAdded is emitted regardless of network
     if (network !== NetworkId.BeaconChainNetwork) return
+    const enr = getENR(this.routingTable, nodeId)
+    if (enr === undefined) return
     const decoded = await this.sendFindContent(
-      nodeId,
+      enr,
       concatBytes(
         new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot!) }),
@@ -185,7 +187,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         this.logger.extend('BOOTSTRAP')(
           `Requesting recent LightClientUpdates from ${shortId(nodeId, this.routingTable)}`,
         )
-        const range = await this.sendFindContent(nodeId, rangeKey)
+        const enr = getENR(this.routingTable, nodeId)
+        if (enr === undefined) return
+        const range = await this.sendFindContent(enr, rangeKey)
         if (range === undefined || 'enrs' in range) return // If we don't get a range, exit early
 
         const updates = LightClientUpdatesByRange.deserialize(range.content as Uint8Array)
@@ -236,7 +240,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               `found a consensus bootstrap candidate ${results[x][0]}`,
             )
             for (const vote of votes) {
-              const res = await this.sendFindContent(vote[0], bootstrapKey)
+              const enr = getENR(this.routingTable, vote[0])
+              if (enr === undefined) continue
+              const res = await this.sendFindContent(enr, bootstrapKey)
               if (res !== undefined && 'content' in res) {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
@@ -426,14 +432,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   }
 
   public sendFindContent = async (
-    dstId: string,
+    enr: ENR,
     key: Uint8Array,
   ): Promise<ContentLookupResponse | undefined> => {
-    const enr = getENR(this.routingTable, dstId)
-    if (enr === undefined) {
-      this.logger(`No ENR found for ${shortId(dstId)}.  FINDCONTENT aborted.`)
-      return undefined
-    }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({

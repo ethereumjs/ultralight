@@ -205,7 +205,7 @@ describe('FindContent', async () => {
   await network1.sendPing(network2?.enr!.toENR())
 
   const res = await network2.sendFindContent(
-    node1.discv5.enr.nodeId,
+    node1.discv5.enr.toENR(),
     getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, BigInt(testBlockData[29].number)),
   )
   const headerWithProof = BlockHeaderWithProof.deserialize(res!['content'] as Uint8Array)
