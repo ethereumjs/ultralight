@@ -120,7 +120,7 @@ export class ContentLookup {
     if (this.content !== undefined) {
       const closest = this.network.routingTable.nearest(this.contentId, 5)
       for (const enr of closest) {
-        void this.network.sendOffer(enr.nodeId, [this.contentKey])
+        void this.network.sendOffer(enr, [this.contentKey])
       }
     }
 
