@@ -36,7 +36,6 @@ export enum NetworkId {
   Angelfood_VerkleStateNetwork = '0x504e',
   Angelfood_TransactionGossipNetwork = '0x504f',
   UTPNetwork = '0x757470',
-  Rendezvous = '0x72656e',
 }
 
 export type SubNetwork<T extends NetworkId> = T extends '0x500a'

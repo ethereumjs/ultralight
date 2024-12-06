@@ -39,8 +39,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
   ETH: ETH
-  private refreshListeners: Map<NetworkId, ReturnType<typeof setInterval>>
-  private supportsRendezvous: boolean
+
   shouldRefresh: boolean = true
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
@@ -171,10 +170,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
-    this.supportsRendezvous = false
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
-    this.refreshListeners = new Map()
     this.db = new DBManager(this.discv5.enr.nodeId, this.logger, opts.dbSize, opts.db) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
@@ -219,9 +216,6 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               }),
             )
           }
-          break
-        case NetworkId.Rendezvous:
-          this.supportsRendezvous = true
           break
       }
     }

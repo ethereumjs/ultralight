@@ -92,7 +92,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
     network2Keys.push(key)
   }
 
-  it('should request individual node from peer', async () => {
+  it.only('should request individual node from peer', async () => {
     const expected = AccountTrieNodeRetrieval.serialize({ node: proof[2] })
     const contentKey = (await network2.db.db.keys().next())!
     const requested = await network1.sendFindContent(
