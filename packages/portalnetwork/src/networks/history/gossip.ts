@@ -2,6 +2,7 @@ import { getContentId, getContentKey } from './util.js'
 
 import type { HistoryNetwork } from './history.js'
 import type { HistoryNetworkContentType } from './types.js'
+import type { ENR } from '@chainsafe/enr'
 
 type Peer = string
 
@@ -47,9 +48,9 @@ export class GossipManager {
    * Offers content from a peer's queue to that peer and clears the queue
    * @param peer nodeId of peer being offered content
    */
-  private gossip(peer: Peer) {
-    const queue = this.gossipQueues[peer]
-    this.gossipQueues[peer] = []
+  private gossip(peer: ENR) {
+    const queue = this.gossipQueues[peer.nodeId]
+    this.gossipQueues[peer.nodeId] = []
     void this.history.sendOffer(peer, queue)
   }
 
@@ -65,7 +66,7 @@ export class GossipManager {
     for (const peer of peers) {
       const size = this.enqueue(peer.nodeId, key)
       if (size >= this.pulse) {
-        this.gossip(peer.nodeId)
+        this.gossip(peer)
       }
     }
   }

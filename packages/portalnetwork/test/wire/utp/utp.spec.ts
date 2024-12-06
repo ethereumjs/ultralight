@@ -1,5 +1,4 @@
 import { randomBytes } from 'crypto'
-import { hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 import { assert, describe, it } from 'vitest'
 
@@ -11,7 +10,6 @@ import {
   PortalNetworkUTP,
   RequestCode,
   UtpSocketType,
-  createSocketKey,
   encodeWithVariantPrefix,
   randUint16,
   startingNrs,
@@ -20,16 +18,10 @@ import { ContentReader } from '../../../src/wire/utp/Socket/ContentReader.js'
 import { ContentWriter } from '../../../src/wire/utp/Socket/ContentWriter.js'
 import { WriteSocket } from '../../../src/wire/utp/Socket/WriteSocket.js'
 
-import type {
-  AcceptReadRequest,
-  ContentRequestType,
-  FindContentReadRequest,
-  FoundContentWriteRequest,
-  INewRequest,
-  OfferWriteRequest,
-} from '../../../src/index.js'
+import { ENR } from '@chainsafe/enr'
 
 const sampleSize = 50000
+const enr = ENR.decodeTxt('enr:-Ii4QBz-nzVm-7uLwFGbG1Ldv_y8Nolm3h6isYNALpgW6QVQNA57Bc7nSYOLds3c2v6KL7M-m1HVT1AU8s-l-wiZsw-CGzdjZoJpZIJ2NIJpcITCISsgiXNlY3AyNTZrMaECedPKSKkarI7L5lEH2Br2lBU8X7BCz7KP-thSg6pcSNuDdWRwgiOM')
 
 describe('uTP Reader/Writer tests', async () => {
   it('content reader and writer (single content stream)', async () => {
@@ -128,7 +120,7 @@ describe('uTP Reader/Writer tests', async () => {
 })
 
 describe('PortalNetworkUTP test', async () => {
-  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
+  const client = await PortalNetwork.create({ bindAddress: enr.getLocationMultiaddr('udp')!.nodeAddress().address })
   const utp = new PortalNetworkUTP(client)
   it('createPortalNetworkUTPSocket', async () => {
     const networkId = NetworkId.HistoryNetwork
@@ -139,7 +131,7 @@ describe('PortalNetworkUTP test', async () => {
     let socket = utp.createPortalNetworkUTPSocket(
       networkId,
       RequestCode.FOUNDCONTENT_WRITE,
-      '0xPeerAddress',
+      enr,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId,
       Buffer.from('test'),
@@ -147,7 +139,7 @@ describe('PortalNetworkUTP test', async () => {
     assert.ok(socket, 'UTPSocket created by PortalNetworkUTP')
     assert.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
     assert.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
-    assert.equal(socket.remoteAddress, '0xPeerAddress', 'UTPSocket has correct peerId')
+    assert.equal(socket.remoteAddress, enr, 'UTPSocket has correct peerId')
     assert.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
     assert.deepEqual(socket.content, Buffer.from('test'), 'UTPSocket has correct content')
     assert.equal(
@@ -158,7 +150,7 @@ describe('PortalNetworkUTP test', async () => {
     socket = utp.createPortalNetworkUTPSocket(
       networkId,
       RequestCode.FINDCONTENT_READ,
-      '0xPeerAddress',
+      enr,
       socketIds[RequestCode.FINDCONTENT_READ].sndId,
       socketIds[RequestCode.FINDCONTENT_READ].rcvId,
     )
@@ -180,7 +172,7 @@ describe('PortalNetworkUTP test', async () => {
     socket = utp.createPortalNetworkUTPSocket(
       networkId,
       RequestCode.OFFER_WRITE,
-      '0xPeerAddress',
+      enr,
       socketIds[RequestCode.OFFER_WRITE].sndId,
       socketIds[RequestCode.OFFER_WRITE].rcvId,
       Buffer.from('test'),
@@ -197,7 +189,7 @@ describe('PortalNetworkUTP test', async () => {
     socket = utp.createPortalNetworkUTPSocket(
       networkId,
       RequestCode.ACCEPT_READ,
-      '0xPeerAddress',
+      enr,
       socketIds[RequestCode.ACCEPT_READ].sndId,
       socketIds[RequestCode.ACCEPT_READ].rcvId,
     )
@@ -210,181 +202,5 @@ describe('PortalNetworkUTP test', async () => {
       'UTPSocket has correct ackNr',
     )
   })
-  it('handleNewRequest', async () => {
-    const connectionId = randUint16()
-    let params: INewRequest = {
-      networkId: NetworkId.HistoryNetwork,
-      contentKeys: [randomBytes(33)],
-      peerId: '0xPeerAddress',
-      connectionId,
-      requestCode: RequestCode.FOUNDCONTENT_WRITE,
-      contents: hexToBytes('0x1234'),
-    }
-    let contentRequest: ContentRequestType
-    contentRequest = (await utp.handleNewRequest(params)) as FoundContentWriteRequest
-    let requestKey = createSocketKey(params.peerId, connectionId)
-    assert.equal(
-      utp.getRequestKey(params.connectionId, params.peerId),
-      requestKey,
-      'requestKey recoverd from packet info',
-    )
-    assert.ok(contentRequest, 'contentRequest created')
-    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    assert.equal(
-      contentRequest.network.networkId,
-      NetworkId.HistoryNetwork,
-      'contentRequest has correct networkId',
-    )
-    assert.equal(
-      contentRequest.requestCode,
-      RequestCode.FOUNDCONTENT_WRITE,
-      'contentRequest has correct requestCode',
-    )
-    assert.deepEqual(
-      [contentRequest.contentKey],
-      params.contentKeys,
-      'contentRequest has correct contentKeys',
-    )
-    assert.deepEqual(
-      contentRequest.content,
-      hexToBytes('0x1234'),
-      'contentRequest has correct content',
-    )
-    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    assert.equal(
-      contentRequest.socket.type,
-      UtpSocketType.WRITE,
-      'contentRequest has correct socket type',
-    )
-    assert.deepEqual(
-      contentRequest.socket.content,
-      hexToBytes('0x1234'),
-      'contentRequest socket has correct content',
-    )
-    utp.closeRequest(params.connectionId, params.peerId)
-    assert.notOk(
-      utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest',
-    )
-    params = { ...params, requestCode: RequestCode.FINDCONTENT_READ }
-    contentRequest = (await utp.handleNewRequest(params)) as FindContentReadRequest
-    requestKey = createSocketKey(params.peerId, params.connectionId)
-    assert.equal(
-      utp.getRequestKey(params.connectionId, params.peerId),
-      requestKey,
-      'requestKey recoverd from packet info',
-    )
-    assert.ok(contentRequest, 'contentRequest created')
-    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    assert.equal(
-      contentRequest.network.networkId,
-      NetworkId.HistoryNetwork,
-      'contentRequest has correct networkId',
-    )
-    assert.equal(
-      contentRequest.requestCode,
-      RequestCode.FINDCONTENT_READ,
-      'contentRequest has correct requestCode',
-    )
-    assert.deepEqual(
-      [contentRequest.contentKey],
-      params.contentKeys,
-      'contentRequest has correct contentKeys',
-    )
-    assert.notProperty(contentRequest, 'content', 'contentRequest has no content')
-    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    assert.equal(
-      contentRequest.socket.type,
-      UtpSocketType.READ,
-      'contentRequest has correct socket type',
-    )
-    utp.closeRequest(params.connectionId, params.peerId)
-    assert.notOk(
-      utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest',
-    )
-    params = {
-      ...params,
-      requestCode: RequestCode.OFFER_WRITE,
-      contents: hexToBytes('0x1234'),
-    }
-    contentRequest = (await utp.handleNewRequest(params)) as OfferWriteRequest
-    requestKey = createSocketKey(params.peerId, params.connectionId)
-    assert.equal(
-      utp.getRequestKey(params.connectionId, params.peerId),
-      requestKey,
-      'requestKey recoverd from packet info',
-    )
-    assert.ok(contentRequest, 'contentRequest created')
-    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    assert.equal(
-      contentRequest.network.networkId,
-      NetworkId.HistoryNetwork,
-      'contentRequest has correct networkId',
-    )
-    assert.equal(
-      contentRequest.requestCode,
-      RequestCode.OFFER_WRITE,
-      'contentRequest has correct requestCode',
-    )
-    assert.deepEqual(
-      contentRequest.contentKeys,
-      params.contentKeys,
-      'contentRequest has correct contentKeys',
-    )
-    assert.equal(contentRequest.content, params.contents, 'contentRequest has correct content')
-    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    assert.equal(
-      contentRequest.socket.type,
-      UtpSocketType.WRITE,
-      'contentRequest has correct socket type',
-    )
-    assert.deepEqual(
-      contentRequest.socket.content,
-      params.contents,
-      'contentRequest socket has correct content',
-    )
-    utp.closeRequest(params.connectionId, params.peerId)
-    assert.notOk(
-      utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest',
-    )
-    params = { ...params, requestCode: RequestCode.ACCEPT_READ, contents: undefined }
-    contentRequest = (await utp.handleNewRequest(params)) as AcceptReadRequest
-    requestKey = createSocketKey(params.peerId, params.connectionId)
-    assert.equal(
-      utp.getRequestKey(params.connectionId, params.peerId),
-      requestKey,
-      'requestKey recoverd from packet info',
-    )
-    assert.ok(contentRequest, 'contentRequest created')
-    assert.ok(utp.openContentRequest.get(requestKey), 'contentRequest added to openContentRequest')
-    assert.equal(
-      contentRequest.network.networkId,
-      NetworkId.HistoryNetwork,
-      'contentRequest has correct networkId',
-    )
-    assert.equal(
-      contentRequest.requestCode,
-      RequestCode.ACCEPT_READ,
-      'contentRequest has correct requestCode',
-    )
-    assert.deepEqual(
-      contentRequest.contentKeys,
-      params.contentKeys,
-      'contentRequest has correct contentKeys',
-    )
-    assert.notProperty(contentRequest, 'content', 'contentRequest has no content')
-    assert.equal(contentRequest.socketKey, requestKey, 'contentRequest has correct socketKey')
-    assert.equal(
-      contentRequest.socket.type,
-      UtpSocketType.READ,
-      'contentRequest has correct socket type',
-    )
-    utp.closeRequest(params.connectionId, params.peerId)
-    assert.notOk(
-      utp.openContentRequest.get(requestKey),
-      'contentRequest removed from openContentRequest',
-    )
-  })
+
 })

@@ -1,4 +1,4 @@
-import { type NodeId } from '@chainsafe/enr'
+import type { ENR, NodeId } from '@chainsafe/enr';
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import {
   bytesToHex,
@@ -45,7 +45,6 @@ import {
 import { UltralightTransport } from './ultralightTransport.js'
 import { getBeaconContentKey } from './util.js'
 
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
@@ -98,7 +97,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           peer !== undefined &&
           !this.routingTable.contentKeyKnownToPeer(peer.nodeId, contentKey)
         ) {
-          await this.sendOffer(peer.nodeId, [contentKey])
+          await this.sendOffer(peer, [contentKey])
         }
       }
     })
@@ -467,7 +466,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               void this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [key],
-                peerId: enr.nodeId,
+                enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
               })
@@ -560,7 +559,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   }
 
   protected override handleFindContent = async (
-    src: INodeAddress,
+    src: ENR,
     requestId: bigint,
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
@@ -601,7 +600,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        peerId: src.nodeId,
+        enr: src,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -780,7 +779,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param contentKeys content keys being offered as specified by the subnetwork
    */
   public override sendOffer = async (
-    dstId: string,
+    enr: ENR,
     contentKeys: Uint8Array[],
     contents?: Uint8Array[],
   ) => {
@@ -796,11 +795,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      const enr = this.routingTable.getWithPending(dstId)?.value
-      if (!enr) {
-        this.logger(`No ENR found for ${shortId(dstId)}. OFFER aborted.`)
-        return
-      }
       this.logger.extend(`OFFER`)(
         `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
       )
@@ -849,7 +843,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             await this.handleNewRequest({
               networkId: this.networkId,
               contentKeys: requestedKeys,
-              peerId: dstId,
+              enr,
               connectionId: id,
               requestCode: RequestCode.OFFER_WRITE,
               contents: encoded,
@@ -871,7 +865,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param requestId request ID passed in OFFER message
    * @param msg OFFER message containing a list of offered content keys
    */
-  override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  override handleOffer = async (src: ENR, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${
         msg.contentKeys.length

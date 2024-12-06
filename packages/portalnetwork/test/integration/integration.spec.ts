@@ -321,7 +321,7 @@ describe('Offer/Accept', () => {
     const veryFarFakeContentKey = hexToBytes(
       '0x00' + generateRandomNodeIdAtDistance(node2.discv5.enr.nodeId, 256),
     )
-    const res = await network1.sendOffer(node2.discv5.enr.nodeId, [veryFarFakeContentKey])
+    const res = await network1.sendOffer(node2.discv5.enr.toENR(), [veryFarFakeContentKey])
     assert.deepEqual(res, [], 'no accepts should be received')
   })
 })

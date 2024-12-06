@@ -16,6 +16,7 @@ import type {
   UtpSocketKey,
 } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
+import type { ENR } from '@chainsafe/enr'
 
 export class PortalNetworkUTP {
   client: PortalNetwork
@@ -30,23 +31,23 @@ export class PortalNetworkUTP {
     this.working = false
   }
 
-  closeRequest(connectionId: number, peerId: string) {
-    const requestKey = this.getRequestKey(connectionId, peerId)
+  closeRequest(connectionId: number, enr: ENR) {
+    const requestKey = this.getRequestKey(connectionId, enr.nodeId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       void request.socket.sendResetPacket()
-      this.logger.extend('CLOSING')(`Closing uTP request with ${peerId}`)
+      this.logger.extend('CLOSING')(`Closing uTP request with ${enr.peerId}`)
       request.close()
       this.openContentRequest.delete(requestKey)
     }
   }
 
-  getRequestKey(connId: number, peerId: string): string {
+  getRequestKey(connId: number, nodeId: string): string {
     const idA = connId + 1
     const idB = connId - 1
-    const keyA = createSocketKey(peerId, connId)
-    const keyB = createSocketKey(peerId, idA)
-    const keyC = createSocketKey(peerId, idB)
+    const keyA = createSocketKey(nodeId, connId)
+    const keyB = createSocketKey(nodeId, idA)
+    const keyC = createSocketKey(nodeId, idB)
     for (const key of [keyA, keyB, keyC]) {
       if (this.openContentRequest.get(key) !== undefined) {
         return key
@@ -58,7 +59,7 @@ export class PortalNetworkUTP {
   createPortalNetworkUTPSocket(
     networkId: NetworkId,
     requestCode: RequestCode,
-    remoteAddress: string,
+    enr: ENR,
     sndId: number,
     rcvId: number,
     content?: Uint8Array,
@@ -72,7 +73,7 @@ export class PortalNetworkUTP {
     const socket: SocketType = createUtpSocket({
       utp: this,
       networkId,
-      remoteAddress,
+      enr,
       sndId,
       rcvId,
       seqNr: startingNrs[requestCode].seqNr,
@@ -95,15 +96,15 @@ export class PortalNetworkUTP {
   }
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
-    const { contentKeys, peerId, connectionId, requestCode } = params
+    const { contentKeys, enr, connectionId, requestCode } = params
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const socketKey = createSocketKey(peerId, connectionId)
+    const socketKey = createSocketKey(enr.nodeId, connectionId)
     const socket = this.createPortalNetworkUTPSocket(
       params.networkId,
       requestCode,
-      peerId,
+      enr,
       sndId,
       rcvId,
       content,
@@ -134,12 +135,11 @@ export class PortalNetworkUTP {
     await request.handleUtpPacket(packetBuffer)
   }
 
-  async send(peerId: string, msg: Buffer, networkId: NetworkId) {
-    const enr = this.client.networks.get(networkId)?.routingTable.getWithPending(peerId)?.value
+  async send(enr: ENR, msg: Buffer, networkId: NetworkId) {
     try {
-      await this.client.sendPortalNetworkMessage(enr ?? peerId, msg, networkId, true)
+      await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
     } catch {
-      this.closeRequest(msg.readUInt16BE(2), peerId)
+      this.closeRequest(msg.readUInt16BE(2), enr)
     }
   }
 }

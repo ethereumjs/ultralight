@@ -1,4 +1,4 @@
-import { ENR } from '@chainsafe/enr'
+import type { ENR } from '@chainsafe/enr'
 
 import type { NetworkId } from '../../../networks/types.js'
 
@@ -11,15 +11,13 @@ export enum RequestCode {
   ACCEPT_READ = 3,
 }
 
-export function createSocketKey(remoteAddr: string, id: number) {
-  // If remoteAddr is ENR, decode to NodeId
-  if (remoteAddr.startsWith('enr:')) remoteAddr = ENR.decodeTxt(remoteAddr).nodeId
-  return `${remoteAddr}-${id}`
+export function createSocketKey(nodeId: string, id: number) {
+  return `${nodeId}-${id}`
 }
 export interface INewRequest {
   networkId: NetworkId
   contentKeys: Uint8Array[]
-  peerId: string
+  enr: ENR
   connectionId: number
   requestCode: RequestCode
   contents?: Uint8Array

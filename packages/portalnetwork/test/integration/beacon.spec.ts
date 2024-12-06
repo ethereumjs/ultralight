@@ -448,7 +448,7 @@ describe('OFFER/ACCEPT tests', () => {
       hexToBytes(optimisticUpdate.content_value),
     )
 
-    const acceptedOffers = await network1.sendOffer(network2.enr.nodeId, [
+    const acceptedOffers = await network1.sendOffer(network2.enr.toENR(), [
       staleOptimisticUpdateContentKey,
     ])
     assert.deepEqual(acceptedOffers, [], 'no content was accepted by node 2')
@@ -512,7 +512,7 @@ describe('OFFER/ACCEPT tests', () => {
       ),
     )
 
-    await network1.sendOffer(network2.enr.nodeId, [bootstrapKey])
+    await network1.sendOffer(network2.enr.toENR(), [bootstrapKey])
 
     await new Promise((resolve) => {
       network2.on('ContentAdded', (key: Uint8Array) => {

@@ -234,7 +234,7 @@ export class HistoryNetwork extends BaseNetwork {
               void this.handleNewRequest({
                 networkId: this.networkId,
                 contentKeys: [key],
-                peerId: enr.nodeId,
+                enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
               })
