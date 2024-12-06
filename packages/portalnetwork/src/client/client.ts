@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { Discv5 } from '@chainsafe/discv5'
-import { ENR, SignableENR } from '@chainsafe/enr'
+import { SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -23,9 +23,8 @@ import { ETH } from './eth.js'
 import { TransportLayer } from './types.js'
 
 import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
-import type { NodeId } from '@chainsafe/enr'
+import type { ENR , NodeId} from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
@@ -394,10 +393,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private onTalkReq = async (src: INodeAddress, sourceId: ENR | null, message: ITalkReqMessage) => {
+  private onTalkReq = async (_: any, src: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
-    if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
-      await this.handleUTP(src, src.nodeId, message, message.request)
+    this.logger.extend('onTalkReq')('Received TALKREQ message with null sourceId')
+    if (src === null) {
+      this.logger('Received TALKREQ message with null sourceId')
+      return
+    }
+    if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {  
+      await this.handleUTP(src, message, message.request)
       return
     }
     const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
@@ -411,7 +415,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     await network.handle(message, src)
   }
 
-  private onTalkResp = (src: INodeAddress, sourceId: ENR | null, message: ITalkRespMessage) => {
+  private onTalkResp = (_: any, __: any, message: ITalkRespMessage) => {
     this.metrics?.totalBytesReceived.inc(message.response.length)
   }
 
@@ -422,14 +426,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param packetBuffer uTP packet encoded to Buffer
    */
   private handleUTP = async (
-    src: INodeAddress,
-    srcId: NodeId,
+    src: ENR,
     msg: ITalkReqMessage,
     packetBuffer: Buffer,
   ) => {
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     try {
-      await this.uTP.handleUtpPacket(packetBuffer, srcId)
+      await this.uTP.handleUtpPacket(packetBuffer, src)
     } catch (err: any) {
       this.logger(err.message)
     }
@@ -443,7 +446,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @returns response from `dstId` as `Uint8Array` or empty array
    */
   public sendPortalNetworkMessage = async (
-    enr: ENR | string,
+    enr: ENR,
     payload: Uint8Array,
     networkId: NetworkId,
     utpMessage?: boolean,
@@ -451,37 +454,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      let nodeAddr: ENR | undefined
-      if (typeof enr === 'string') {
-        // Check to see if ENR is text encoded ENR or nodeID
-        if (enr.startsWith('enr:')) {
-          nodeAddr = ENR.decodeTxt(enr)
-        } else {
-          // If nodeId, look up ENR in network routing table by nodeId
-          const network = this.networks.get(networkId)
-          if (network) {
-            nodeAddr = network.routingTable.getWithPending(enr)?.value
-            if (!nodeAddr) {
-              // Check in unverified sessions cache if no ENR found in routing table
-              // nodeAddr = this.unverifiedSessionCache.get(enr)
-            }
-          }
-        }
-      } else {
-        // Assume enr is of type ENR and send request as is
-        nodeAddr = enr
-      }
-      if (!nodeAddr) {
-        this.logger(`${enr} has no reachable address.  Aborting request`)
-        return new Uint8Array()
-      }
       const res = await this.discv5.sendTalkReq(
-        nodeAddr,
+        enr,
         Buffer.from(payload),
         hexToBytes(messageNetwork),
       )
       this.eventLog &&
-        this.emit('SendTalkReq', nodeAddr.nodeId, bytesToHex(res), bytesToHex(payload))
+        this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
       return res
     } catch (err: any) {
       if (networkId === NetworkId.UTPNetwork) {
@@ -493,12 +472,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   public sendPortalNetworkResponse = async (
-    src: INodeAddress,
+    src: ENR,
     requestId: bigint,
     payload: Uint8Array,
   ) => {
     this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    await this.discv5.sendTalkResp(src, requestId, payload)
+    await this.discv5.sendTalkResp({
+      nodeId: src.nodeId,
+      socketAddr: src.getLocationMultiaddr('udp')!,
+    }, requestId, payload)
   }
 }
