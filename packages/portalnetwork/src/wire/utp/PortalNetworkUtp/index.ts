@@ -32,7 +32,7 @@ export class PortalNetworkUTP {
   }
 
   closeRequest(connectionId: number, enr: ENR) {
-    const requestKey = this.getRequestKey(connectionId, enr)
+    const requestKey = this.getRequestKey(connectionId, enr.nodeId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       void request.socket.sendResetPacket()
@@ -42,12 +42,12 @@ export class PortalNetworkUTP {
     }
   }
 
-  getRequestKey(connId: number, enr: ENR): string {
+  getRequestKey(connId: number, nodeId: string): string {
     const idA = connId + 1
     const idB = connId - 1
-    const keyA = createSocketKey(enr, connId)
-    const keyB = createSocketKey(enr, idA)
-    const keyC = createSocketKey(enr, idB)
+    const keyA = createSocketKey(nodeId, connId)
+    const keyB = createSocketKey(nodeId, idA)
+    const keyC = createSocketKey(nodeId, idB)
     for (const key of [keyA, keyB, keyC]) {
       if (this.openContentRequest.get(key) !== undefined) {
         return key
@@ -100,7 +100,7 @@ export class PortalNetworkUTP {
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const socketKey = createSocketKey(enr, connectionId)
+    const socketKey = createSocketKey(enr.nodeId, connectionId)
     const socket = this.createPortalNetworkUTPSocket(
       params.networkId,
       requestCode,
@@ -125,11 +125,11 @@ export class PortalNetworkUTP {
     return newRequest
   }
 
-  async handleUtpPacket(packetBuffer: Buffer, enr: ENR): Promise<void> {
-    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), enr)
+  async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
+    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), srcId)
     const request = this.openContentRequest.get(requestKey)
     if (!request) {
-      this.logger(`No open request for ${enr.nodeId} with connectionId ${packetBuffer.readUint16BE(2)}`)
+      this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
       return
     }
     await request.handleUtpPacket(packetBuffer)

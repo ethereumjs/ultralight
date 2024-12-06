@@ -11,8 +11,8 @@ export enum RequestCode {
   ACCEPT_READ = 3,
 }
 
-export function createSocketKey(enr: ENR, id: number) {
-  return `${enr.nodeId}-${id}`
+export function createSocketKey(nodeId: string, id: number) {
+  return `${nodeId}-${id}`
 }
 export interface INewRequest {
   networkId: NetworkId
