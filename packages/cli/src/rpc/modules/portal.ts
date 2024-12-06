@@ -1,16 +1,11 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { BitArray } from '@chainsafe/ssz'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import {
   ContentLookup,
-  ContentMessageType,
   FoundContent,
-  MessageCodes,
   NetworkId,
   NodeLookup,
-  PingPongCustomDataType,
-  PortalWireMessageType,
   shortId,
 } from 'portalnetwork'
 
@@ -22,10 +17,8 @@ import { middleware, validators } from '../validators.js'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type {
-  AcceptMessage,
   BeaconLightClientNetwork,
   HistoryNetwork,
-  NodesMessage,
   PortalNetwork,
   StateNetwork,
 } from 'portalnetwork'
@@ -47,21 +40,12 @@ const methods = [
   'portal_stateGetContent',
   'portal_stateTraceGetContent',
   'portal_stateOffer',
-  'portal_stateSendOffer',
   // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
   'portal_historyGetEnr',
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
-  'portal_historySendPing',
-  'portal_historySendPong',
-  'portal_historySendFindNodes',
-  'portal_historySendNodes',
-  'portal_historySendFindContent',
-  'portal_historySendContent',
-  'portal_historySendOffer',
-  'portal_historySendAccept',
   'portal_historyPing',
   'portal_historyFindNodes',
   'portal_historyFindContent',
@@ -77,7 +61,6 @@ const methods = [
   'portal_historyDeleteEnr',
   'portal_historyLookupEnr',
   // beacon
-  'portal_beaconSendFindContent',
   'portal_beaconFindContent',
   'portal_beaconGetContent',
   'portal_beaconTraceGetContent',
@@ -159,19 +142,6 @@ export class portal {
     this.statePing = middleware(this.statePing.bind(this), 1, [[validators.enr]])
     this.beaconPing = middleware(this.beaconPing.bind(this), 1, [[validators.enr]])
 
-    // portal_*SendPing
-    this.historySendPing = middleware(this.historySendPing.bind(this), 2, [
-      [validators.enr],
-      [validators.hex],
-    ])
-
-    // portal_*SendPong
-    this.historySendPong = middleware(this.historySendPong.bind(this), 2, [
-      [validators.enr],
-      [validators.hex],
-      [validators.hex],
-    ])
-
     // portal_*FindNodes
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
       [validators.enr],
@@ -186,12 +156,6 @@ export class portal {
       [validators.array(validators.distance)],
     ])
 
-    // portal_*SendFindNodes
-    this.historySendFindNodes = middleware(this.historySendFindNodes.bind(this), 2, [
-      [validators.dstId],
-      [validators.array(validators.distance)],
-    ])
-
     // portal_*RecursiveFindNodes
     this.historyRecursiveFindNodes = middleware(this.historyRecursiveFindNodes.bind(this), 1, [
       [validators.dstId],
@@ -201,13 +165,6 @@ export class portal {
     ])
     this.beaconRecursiveFindNodes = middleware(this.beaconRecursiveFindNodes.bind(this), 1, [
       [validators.dstId],
-    ])
-
-    // portal_*SendNodes
-    this.historySendNodes = middleware(this.historySendNodes.bind(this), 2, [
-      [validators.dstId],
-      [validators.array(validators.enr)],
-      [validators.hex],
     ])
 
     // portal_*LocalContent
@@ -285,23 +242,6 @@ export class portal {
       [content_params.ContentItems],
     ])
 
-    // portal_*SendOffer
-    this.historySendOffer = middleware(this.historySendOffer.bind(this), 2, [
-      [validators.dstId],
-      [validators.array(validators.hex)],
-    ])
-    this.stateSendOffer = middleware(this.stateSendOffer.bind(this), 2, [
-      [validators.dstId],
-      [validators.array(validators.hex)],
-    ])
-
-    // portal_*SendAccept
-    this.historySendAccept = middleware(this.historySendAccept.bind(this), 2, [
-      [validators.enr],
-      [validators.hex],
-      [validators.array(validators.contentKey)],
-    ])
-
     // portal_*Gossip
     this.historyGossip = middleware(this.historyGossip.bind(this), 2, [
       [validators.contentKey],
@@ -313,10 +253,6 @@ export class portal {
     ])
 
     this.beaconStartLightClient = middleware(this.beaconStartLightClient.bind(this), 1, [
-      [validators.hex],
-    ])
-    this.beaconSendFindContent = middleware(this.beaconSendFindContent.bind(this), 2, [
-      [validators.dstId],
       [validators.hex],
     ])
   }
@@ -667,39 +603,6 @@ export class portal {
       }
     )
   }
-  // portal_*SendPing
-  async historySendPing(params: [string, string]) {
-    this.logger(`portal_historySendPing`)
-    const pong = await this.historyPing([params[0]])
-    return pong && pong.enrSeq
-  }
-
-  // portal_*SendPong
-  async historySendPong(params: [string, string, string]) {
-    const [_enr, requestId, dataRadius] = params
-    const enr = ENR.decodeTxt(_enr)
-    this.logger(`PONG request received on HistoryNetwork for ${shortId(enr.nodeId)}`)
-    const payload = {
-      enrSeq: this._client.discv5.enr.seq,
-      customPayload: PingPongCustomDataType.serialize({ radius: BigInt(dataRadius) }),
-    }
-    const pongMsg = PortalWireMessageType.serialize({
-      selector: MessageCodes.PONG,
-      value: payload,
-    })
-    this.logger.extend('PONG')(`Sent to ${shortId(enr.nodeId)}`)
-    try {
-      await this.sendPortalNetworkResponse(
-        enr.nodeId,
-        enr.getLocationMultiaddr('udp')!,
-        BigInt(requestId),
-        pongMsg,
-      )
-    } catch {
-      return false
-    }
-    return true
-  }
 
   // portal_*FindNodes
   async historyFindNodes(params: [string, number[]]) {
@@ -760,22 +663,6 @@ export class portal {
     return res?.enrs.map((v) => ENR.decode(v).encodeTxt())
   }
 
-  // portal_*SendFindNodes
-  async historySendFindNodes(params: [string, number[]]) {
-    const [dstId, distances] = params
-    this.logger(`portal_historySendFindNodes`)
-    try {
-      const enr = this._history.routingTable.getWithPending(dstId)?.value
-      if (!enr) {
-        return
-      }
-      const res = await this._history.sendFindNodes(dstId, distances)
-      return res ? '0x' + enr.seq.toString(16) : res
-    } catch {
-      return
-    }
-  }
-
   // portal_*RecursiveFindNodes
   async historyRecursiveFindNodes(params: [string]): Promise<string[]> {
     const [dstId] = params
@@ -803,36 +690,6 @@ export class portal {
     const enrs = await lookup.startLookup()
     this.logger(`beaconRecursiveFindNodes request returned ${enrs.length} enrs`)
     return enrs
-  }
-
-  // portal_*SendNodes
-  async historySendNodes(params: [string, string[], string]) {
-    const [dstId, enrs, requestId] = params
-    this.logger(`portal_historySendNodes`)
-    try {
-      const enr = this._history.routingTable.getWithPending(dstId)?.value
-      if (!enr) {
-        return
-      }
-      const nodesPayload: NodesMessage = {
-        total: enrs.length,
-        enrs: enrs.map((v) => ENR.decodeTxt(v).encode()),
-      }
-      const encodedPayload = PortalWireMessageType.serialize({
-        selector: MessageCodes.NODES,
-        value: nodesPayload,
-      })
-      void this.sendPortalNetworkResponse(
-        dstId,
-        enr.getLocationMultiaddr('udp')!,
-        BigInt(requestId),
-        encodedPayload,
-      )
-
-      return enrs.length > 0 ? 1 : 0
-    } catch {
-      return
-    }
   }
 
   // portal_*LocalContent
@@ -1234,54 +1091,6 @@ export class portal {
     const res = await this._beacon.sendOffer(enr.nodeId, contentKeys, contentValues)
     return res
   }
-  // portal_*SendOffer
-  async historySendOffer(params: [string, string[]]) {
-    const [dstId, contentKeys] = params
-    const keys = contentKeys.map((key) => hexToBytes(key))
-    const res = await this._history.sendOffer(dstId, keys)
-    const enr = this._history.routingTable.getWithPending(dstId)?.value
-    return res && enr && '0x' + enr.seq.toString(16)
-  }
-  async stateSendOffer(params: [string, string[]]) {
-    const [dstId, contentKeys] = params
-    const keys = contentKeys.map((key) => hexToBytes(key))
-    const res = await this._state.sendOffer(dstId, keys)
-    const enr = this._state.routingTable.getWithPending(dstId)?.value
-    return res && enr && '0x' + enr.seq.toString(16)
-  }
-
-  // portal_*SendAccept
-  async historySendAccept(params: [string, string, string[]]) {
-    const [enr, connectionId, contentKeys] = params
-    const myEnr = this._client.discv5.enr
-    const _enr = ENR.decodeTxt(enr)
-    const accepted: boolean[] = Array(contentKeys.length).fill(false)
-    for (let x = 0; x < contentKeys.length; x++) {
-      try {
-        await this._history.db.get(contentKeys[x])
-      } catch (err) {
-        accepted[x] = true
-      }
-    }
-    const idBuffer = Buffer.alloc(2)
-    idBuffer.writeUInt16BE(Number(BigInt(connectionId)), 0)
-    const payload: AcceptMessage = {
-      connectionId: idBuffer,
-      contentKeys: BitArray.fromBoolArray(accepted),
-    }
-    const encodedPayload = PortalWireMessageType.serialize({
-      selector: MessageCodes.ACCEPT,
-      value: payload,
-    })
-    void this.sendPortalNetworkResponse(
-      _enr.nodeId,
-      _enr.getLocationMultiaddr('udp')!,
-      myEnr.seq,
-      encodedPayload,
-    )
-
-    return '0x' + myEnr.seq.toString(16)
-  }
 
   // portal_*Gossip
   async historyGossip(params: [string, string]) {
@@ -1298,34 +1107,7 @@ export class portal {
   }
 
   // other
-  async historySendFindContent(params: [string, string]) {
-    const [nodeId, contentKey] = params
-    const res = await this._history.sendFindContent(nodeId, hexToBytes(contentKey))
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    return res && enr && '0x' + enr.seq.toString(16)
-  }
-  async beaconSendFindContent(params: [string, string]) {
-    const [nodeId, contentKey] = params
-    console.log(nodeId)
-    const res = await this._beacon.sendFindContent(nodeId, hexToBytes(contentKey))
-    if (res !== undefined && 'content' in res) return bytesToHex(res.content as Uint8Array)
-    return '0x'
-  }
-  async historySendContent(params: [string, string]) {
-    const [nodeId, content] = params
-    const payload = ContentMessageType.serialize({
-      selector: 1,
-      value: hexToBytes(content),
-    })
-    const enr = this._history.routingTable.getWithPending(nodeId)?.value
-    void this.sendPortalNetworkResponse(
-      nodeId,
-      enr?.getLocationMultiaddr('udp')!,
-      enr!.seq,
-      Uint8Array.from(Buffer.concat([Buffer.from([MessageCodes.CONTENT]), Buffer.from(payload)])),
-    )
-    return '0x' + enr!.seq.toString(16)
-  }
+
   async beaconStartLightClient(params: [string]): Promise<boolean | string> {
     const [bootstrapHash] = params
     this.logger(`portal_beaconStartLightClient request received for ${bootstrapHash}`)
