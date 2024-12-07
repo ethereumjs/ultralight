@@ -79,7 +79,7 @@ export interface IReceiptOpts {
    */
   stateRoot?: Uint8Array
   /**
-   * Status of transaction, `1` if successful, `0` if an exception occured
+   * Status of transaction, `1` if successful, `0` if an exception occurred
    */
   status?: 0 | 1
   /* EIP-2718 Typed Transaction Envelope type */
