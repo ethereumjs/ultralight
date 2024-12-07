@@ -90,7 +90,7 @@ sequenceDiagram
     b-->>wb: PONG
     wb->>wa: waku.LightPush(encoded_PONG)
     wa-->>a: decoded_PONG
-    Note over a,b: WebRTC hanshake using WAKU
+    Note over a,b: WebRTC handshake using WAKU
     wa->>wb: OFFER
     wb->>wa: ANSWER
     wa->wb: ICE
