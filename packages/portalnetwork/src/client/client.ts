@@ -373,12 +373,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       await this.handleUTP(nodeAddress, message, message.request)
       return
     }
-    if (src === null) {
-      if (src === null) {
-        this.logger('Received TALKREQ message with null sourceId')
-        return
-      }
-    }
+
     const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
     if (!network) {
       this.logger(`Received TALKREQ message on unsupported network ${bytesToHex(message.protocol)}`)
