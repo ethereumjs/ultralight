@@ -446,15 +446,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   public sendPortalNetworkResponse = async (
-    src: ENR | INodeAddress,
+    src: INodeAddress,
     requestId: bigint,
     payload: Uint8Array,
   ) => {
     this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    await this.discv5.sendTalkResp( src instanceof ENR ? {
-      nodeId: src.nodeId,
-      socketAddr: src.getLocationMultiaddr('udp')!,
-    } : src, requestId, payload)
+    await this.discv5.sendTalkResp(src, requestId, payload)
   }
 }
