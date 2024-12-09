@@ -50,6 +50,7 @@ import type {
   PongMessage,
   PortalNetwork,
 } from '../index.js'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable
@@ -120,11 +121,11 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
   }
 
-  sendResponse(src: ENR, requestId: bigint, payload: Uint8Array): Promise<void> {
+  sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
-    return this.portal.discv5.findEnr(nodeId)
+    return this.portal.discv5.findEnr(nodeId) ?? this.routingTable.getWithPending(nodeId)?.value
   }
 
   public async put(contentKey: Uint8Array, content: string) {
@@ -179,7 +180,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   abstract store(contentKey: Uint8Array, value: Uint8Array): Promise<void>
 
-  public async handle(message: ITalkReqMessage, src: ENR) {
+  public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
     const network = message.protocol
     const request = message.request
@@ -268,7 +269,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  handlePing = async (src: ENR, id: bigint, pingMessage: PingMessage) => {
+  handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
@@ -282,7 +283,7 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.sendPong(src, id)
   }
 
-  sendPong = async (src: ENR, requestId: bigint) => {
+  sendPong = async (src: INodeAddress, requestId: bigint) => {
     const payload = {
       enrSeq: this.enr.seq,
       customPayload: PingPongCustomDataType.serialize({ radius: this.nodeRadius }),
@@ -326,7 +327,7 @@ export abstract class BaseNetwork extends EventEmitter {
             }),
           )
 
-          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr)}`)
+          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr.nodeId)}`)
         }
       } catch (err: any) {
         this.logger(`Error processing NODES message: ${err.toString()}`)
@@ -337,7 +338,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   private handleFindNodes = async (
-    src: ENR,
+    src: INodeAddress,
     requestId: bigint,
     payload: FindNodesMessage,
   ) => {
@@ -409,10 +410,10 @@ export abstract class BaseNetwork extends EventEmitter {
         value: offerMsg,
       })
       this.logger.extend(`OFFER`)(
-        `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
+        `Sent to ${shortId(enr.nodeId)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.networkId)
-      this.logger.extend(`OFFER`)(`Response from ${shortId(enr)}`)
+      this.logger.extend(`OFFER`)(`Response from ${shortId(enr.nodeId)}`)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -426,7 +427,7 @@ export abstract class BaseNetwork extends EventEmitter {
             )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
-              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr)}`)
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
               return []
             }
             this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
@@ -463,13 +464,13 @@ export abstract class BaseNetwork extends EventEmitter {
             return msg.contentKeys
           }
         } catch (err: any) {
-          this.logger(`Error sending to ${shortId(enr)} - ${err.message}`)
+          this.logger(`Error sending to ${shortId(enr.nodeId)} - ${err.message}`)
         }
       }
     }
   }
 
-  protected handleOffer = async (src: ENR, requestId: bigint, msg: OfferMessage) => {
+  protected handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${
         msg.contentKeys.length
@@ -535,7 +536,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   protected sendAccept = async (
-    src: ENR,
+    src: INodeAddress,
     requestId: bigint,
     desiredContentAccepts: boolean[],
     desiredContentKeys: Uint8Array[],
@@ -557,12 +558,15 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('ACCEPT')(
       `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
     )
-
+    const enr = this.findEnr(src.nodeId)
+    if (!enr) {
+      throw new Error('ENR not found')
+    }
     this.portal.metrics?.acceptMessagesSent.inc()
     await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
-      enr: src,
+      enr,
       connectionId: id,
       requestCode: RequestCode.ACCEPT_READ,
     })
@@ -586,7 +590,7 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   protected handleFindContent = async (
-    src: ENR,
+    src: INodeAddress,
     requestId: bigint,
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
@@ -626,10 +630,15 @@ export abstract class BaseNetwork extends EventEmitter {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
+      const enr = this.findEnr(src.nodeId)
+      if (!enr) {
+        throw new Error('ENR not found')
+      }
+
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        enr: src,
+        enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -647,7 +656,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected enrResponse = async (contentKey: Uint8Array, src: ENR, requestId: bigint) => {
+  protected enrResponse = async (contentKey: Uint8Array, src: INodeAddress, requestId: bigint) => {
     const lookupKey = this.contentKeyToId(contentKey)
     // Discv5 calls for maximum of 16 nodes per NODES message
     const ENRs = this.routingTable.nearest(lookupKey, 16)

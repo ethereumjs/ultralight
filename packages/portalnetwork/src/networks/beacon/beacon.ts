@@ -1,4 +1,4 @@
-import type { ENR, NodeId } from '@chainsafe/enr';
+import type {  ENR, NodeId } from '@chainsafe/enr';
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import {
   bytesToHex,
@@ -51,6 +51,7 @@ import type { Debugger } from 'debug'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js';
 
 export class BeaconLightClientNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
@@ -450,7 +451,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       let response: ContentLookupResponse
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.CONTENT) {
         this.portal.metrics?.contentMessagesReceived.inc()
-        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
+        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr.nodeId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         switch (decoded.selector) {
           case FoundContent.UTP: {
@@ -488,7 +489,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(enr)}`)
+                    this.logger(`received invalid content from ${shortId(enr.nodeId)}`)
                     break
                   }
                   this.logger(
@@ -502,7 +503,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(enr)}`)
+                    this.logger(`received invalid content from ${shortId(enr.nodeId)}`)
                     break
                   }
                   this.logger(
@@ -516,7 +517,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                       (decoded.value as Uint8Array).slice(4),
                     )
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(enr)}`)
+                    this.logger(`received invalid content from ${shortId(enr.nodeId)}`)
                     break
                   }
                   this.logger(
@@ -528,7 +529,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   try {
                     LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
                   } catch (err) {
-                    this.logger(`received invalid content from ${shortId(enr)}`)
+                    this.logger(`received invalid content from ${shortId(enr.nodeId)}`)
                     break
                   }
                   this.logger(
@@ -555,12 +556,12 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       }
       // TODO Should we do anything other than ignore responses to FINDCONTENT messages that isn't a CONTENT response?
     } catch (err: any) {
-      this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)
+      this.logger(`Error sending FINDCONTENT to ${shortId(enr.nodeId)} - ${err.message}`)
     }
   }
 
   protected override handleFindContent = async (
-    src: ENR,
+    src: INodeAddress,
     requestId: bigint,
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
@@ -598,10 +599,14 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
+      const enr = this.findEnr(src.nodeId)
+      if (!enr) {
+        throw new Error('ENR not found')
+      }
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        enr: src,
+        enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -797,7 +802,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         value: offerMsg,
       })
       this.logger.extend(`OFFER`)(
-        `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
+        `Sent to ${shortId(enr.nodeId)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.networkId)
       if (res.length > 0) {
@@ -813,7 +818,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
-              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr)}`)
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
               return []
             }
             this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
@@ -853,7 +858,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             return msg.contentKeys
           }
         } catch (err: any) {
-          this.logger(`Error sending to ${shortId(enr)} - ${err.message}`)
+            this.logger(`Error sending to ${shortId(enr.nodeId)} - ${err.message}`)
         }
       }
     }
@@ -866,7 +871,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param requestId request ID passed in OFFER message
    * @param msg OFFER message containing a list of offered content keys
    */
-  override handleOffer = async (src: ENR, requestId: bigint, msg: OfferMessage) => {
+  override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${
         msg.contentKeys.length
