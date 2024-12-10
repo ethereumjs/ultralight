@@ -1,9 +1,8 @@
 import { Discv5 } from '@chainsafe/discv5'
-import type { ENR} from '@chainsafe/enr';
-import { SignableENR } from '@chainsafe/enr';
+import { ENR, SignableENR } from '@chainsafe/enr';
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
-import { multiaddr } from '@multiformats/multiaddr'
+import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
 import { EventEmitter } from 'events'
 
@@ -15,7 +14,7 @@ import {
   SyncStrategy,
 } from '../networks/index.js'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
-import { MEGABYTE, dirSize } from '../util/index.js'
+import { MEGABYTE, dirSize, shortId } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
@@ -23,11 +22,12 @@ import { ETH } from './eth.js'
 import { TransportLayer } from './types.js'
 
 import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
 import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
+import { MessageCodes, PortalWireMessageType } from '../wire/types.js';
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js';
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
@@ -51,14 +51,12 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         ip4: multiaddr(),
       },
       config: {
-        addrVotesToUpdateEnr: 5,
+        addrVotesToUpdateEnr: 0,
         enrUpdate: true,
         allowUnverifiedSessions: true,
-        requestTimeout: 3000,
-        sessionEstablishTimeout: 3000,
-        lookupTimeout: 3000,
-        sessionTimeout: 3000,
-        requestRetries: 2,
+        requestRetries: 0,
+        requestTimeout: 15 * 1000,
+
       },
     }
     const config = { ...defaultConfig, ...opts.config }
@@ -363,12 +361,20 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         },
       ])
     } catch (err: any) {
-      this.logger.log('error: ', err.message)
+      this.logger.extend('error')(err.message)
     }
   }
 
   private onTalkReq = async (nodeAddress: INodeAddress, src: ENR | null, message: ITalkReqMessage) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
+    let messageType: string | number = 65
+    try {
+      messageType = PortalWireMessageType.deserialize(message.request).selector
+    } catch {
+      //
+    }
+    messageType = MessageCodes[messageType] ?? 'uTP'
+    this.logger.extend('TalkReq')(`Received TALKREQ ${messageType} message on ${bytesToHex(message.protocol)} network from ${shortId(nodeAddress.nodeId)}.  MultiAddr: ${nodeAddress.socketAddr.toString()} ENR=${src === null ? 'null' : `${src.kvs.get('c')?.toString().split(/[ :,]/)[0]}`}`)
     if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {  
       await this.handleUTP(nodeAddress, message, message.request)
       return
@@ -376,9 +382,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
 
     const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
     if (!network) {
-      this.logger(`Received TALKREQ message on unsupported network ${bytesToHex(message.protocol)}`)
+      this.logger.extend('TalkReq').extend('error')(`${bytesToHex(message.protocol)} network not supported`)
       await this.sendPortalNetworkResponse(nodeAddress, message.id, new Uint8Array())
-
       return
     }
 
@@ -404,7 +409,8 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     try {
       await this.uTP.handleUtpPacket(packetBuffer, src.nodeId)
     } catch (err: any) {
-      this.logger(err.message)
+      const enr = this.discv5.findEnr(src.nodeId)
+      this.logger.extend('error')(`handleUTP error: ${err.message}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()} ENR: ${enr ? enr.kvs.get('c')?.toString() : 'not found'}`)
     }
   }
 
@@ -451,6 +457,10 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) => {
     this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    await this.discv5.sendTalkResp(src, requestId, payload)
+    try {
+      await this.discv5.sendTalkResp(src, requestId, payload)
+    } catch (err: any) {
+      this.logger.extend('error')(`Error sending TALKRESP message: ${err}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
+    }
   }
 }
