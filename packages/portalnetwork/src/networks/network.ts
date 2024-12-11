@@ -784,7 +784,6 @@ export abstract class BaseNetwork extends EventEmitter {
       return
     }
     this.lastRefreshTime = now
-    await this.livenessCheck()
     const size = this.routingTable.size
     if (size === 0) {
       return
