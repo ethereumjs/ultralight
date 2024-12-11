@@ -27,6 +27,7 @@ export interface PortalClientOpts {
   networks: string
   storage: string
   trustedBlockRoot?: string
+  gossipCount?: number
 }
 
 export const NetworkStrings: Record<string, NetworkId> = {
@@ -115,6 +116,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     dataDir: args.dataDir,
     trustedBlockRoot: args.trustedBlockRoot,
     bootnodes,
+    gossipCount: args.gossipCount,
   }
   return clientConfig
 }

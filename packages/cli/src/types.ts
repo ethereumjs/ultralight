@@ -279,6 +279,7 @@ export interface ClientOpts {
   networks: string
   storage: string
   trustedBlockRoot?: string
+  gossipCount?: number
 }
 
 export interface DevnetOpts {
