@@ -1,19 +1,19 @@
-import { getContentId, getContentKey } from './util.js'
+import type { BaseNetwork } from './network.js'
 
-import type { HistoryNetwork } from './history.js'
-import type { HistoryNetworkContentType } from './types.js'
 import type { ENR } from '@chainsafe/enr'
+
+import { serializedContentKeyToContentId } from '../util/util.js'
 
 type Peer = string
 
 export class GossipManager {
   pulse: number
-  history: HistoryNetwork
+  network: BaseNetwork
   gossipQueues: Record<Peer, Uint8Array[]>
 
-  constructor(history: HistoryNetwork) {
-    this.pulse = 26
-    this.history = history
+  constructor(network: BaseNetwork, pulse = 26) {
+    this.pulse = pulse
+    this.network = network
     this.gossipQueues = {}
   }
 
@@ -34,11 +34,11 @@ export class GossipManager {
    * @param key content key to be OFFERed
    * @returns the current number of items in a peer's gossip queue
    */
-  private enqueue(peer: Peer, key: Uint8Array): number {
+  public enqueue(peer: Peer, key: Uint8Array): number {
     if (this.gossipQueues[peer] === undefined) {
       this.gossipQueues[peer] = []
     }
-    if (!this.history.routingTable.contentKeyKnownToPeer(peer, key)) {
+    if (this.network.routingTable.contentKeyKnownToPeer(peer, key) === false) {
       this.gossipQueues[peer].push(key)
     }
     return this.gossipQueues[peer].length
@@ -51,20 +51,18 @@ export class GossipManager {
   private gossip(peer: ENR) {
     const queue = this.gossipQueues[peer.nodeId]
     this.gossipQueues[peer.nodeId] = []
-    void this.history.sendOffer(peer, queue)
+    void this.network.sendOffer(peer, queue)
   }
 
   /**
    * Adds new content to the gossip queue of the 5 nearest peers
-   * @param keyOpt blockHash or blockNumber
-   * @param contentType HistoryNetworkContentType
+   * @param serializedKey the Network serialized content key
    */
-  public add(keyOpt: Uint8Array | bigint, contentType: HistoryNetworkContentType): void {
-    const id = getContentId(contentType, keyOpt)
-    const key = getContentKey(contentType, keyOpt)
-    const peers = this.history.routingTable.nearest(id, 5)
+  public add(serializedKey: Uint8Array): void {
+    const id = serializedContentKeyToContentId(serializedKey)
+    const peers = this.network.routingTable.nearest(id, 5)
     for (const peer of peers) {
-      const size = this.enqueue(peer.nodeId, key)
+      const size = this.enqueue(peer.nodeId, serializedKey)
       if (size >= this.pulse) {
         this.gossip(peer)
       }

@@ -1,4 +1,3 @@
-export * from './gossip.js'
 export * from './history.js'
 export * from './receipt.js'
 export * from './receiptManager.js'

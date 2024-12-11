@@ -1,4 +1,4 @@
-import type { ENR, NodeId } from '@chainsafe/enr';
+import type { ENR, NodeId } from '@chainsafe/enr'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import {
   bytesToHex,
@@ -97,7 +97,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           peer !== undefined &&
           !this.routingTable.contentKeyKnownToPeer(peer.nodeId, contentKey)
         ) {
-          await this.sendOffer(peer, [contentKey])
+          this.gossipManager.enqueue(peer.nodeId, contentKey)
         }
       }
     })
@@ -705,6 +705,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${bytesToHex(contentKey)}`,
     )
     this.emit('ContentAdded', contentKey, value)
+    this.gossipManager.add(contentKey)
   }
 
   /**
