@@ -1,10 +1,10 @@
+import { EventEmitter } from 'events'
 import { Discv5 } from '@chainsafe/discv5'
 import { ENR, SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
-import { EventEmitter } from 'events'
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import {

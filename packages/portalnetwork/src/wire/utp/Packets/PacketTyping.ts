@@ -1,9 +1,9 @@
+import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { NetworkId } from '../../../networks/types.js'
 import type { PortalNetworkUTP } from '../index.js'
 import type { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import type { Packet } from './index.js'
-import type { ENR } from '@chainsafe/enr'
 
 export const BUFFER_SIZE = 512
 export enum PacketType {

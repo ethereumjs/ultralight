@@ -1,13 +1,7 @@
 import { EntryStatus } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
-import {
-  ContentLookup,
-  FoundContent,
-  NetworkId,
-  NodeLookup,
-  shortId,
-} from 'portalnetwork'
+import { ContentLookup, FoundContent, NetworkId, NodeLookup, shortId } from 'portalnetwork'
 
 import { CONTENT_NOT_FOUND, INVALID_PARAMS } from '../error-code.js'
 import { content_params } from '../schema/index.js'
@@ -256,16 +250,8 @@ export class portal {
     ])
   }
 
-  async sendPortalNetworkResponse(
-enr: ENR,
-    requestId: bigint,
-    payload: Uint8Array,
-  ) {
-    void this._client.sendPortalNetworkResponse(
-      enr,
-      BigInt(requestId),
-      payload,
-    )
+  async sendPortalNetworkResponse(enr: ENR, requestId: bigint, payload: Uint8Array) {
+    void this._client.sendPortalNetworkResponse(enr, BigInt(requestId), payload)
   }
 
   async methods() {
@@ -1044,7 +1030,9 @@ enr: ENR,
   }
 
   // portal_*Offer
-  async historyOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._history.sendOffer>> {
+  async historyOffer(
+    params: [string, [string, string][]],
+  ): Promise<string | ReturnType<typeof this._history.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1058,7 +1046,9 @@ enr: ENR,
     const res = await this._history.sendOffer(enr, contentKeys, contentValues)
     return res
   }
-  async stateOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._state.sendOffer>>  {
+  async stateOffer(
+    params: [string, [string, string][]],
+  ): Promise<string | ReturnType<typeof this._state.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1072,7 +1062,9 @@ enr: ENR,
     const res = await this._state.sendOffer(enr, contentKeys, contentValues)
     return res
   }
-  async beaconOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._beacon.sendOffer>> {
+  async beaconOffer(
+    params: [string, [string, string][]],
+  ): Promise<string | ReturnType<typeof this._beacon.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))

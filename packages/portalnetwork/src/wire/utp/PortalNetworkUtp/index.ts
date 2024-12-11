@@ -7,6 +7,7 @@ import {
 } from '../../../index.js'
 import { createUtpSocket } from '../Socket/index.js'
 
+import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type {
   ContentRequestType,
@@ -16,7 +17,6 @@ import type {
   UtpSocketKey,
 } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
-import type { ENR } from '@chainsafe/enr'
 
 export class PortalNetworkUTP {
   client: PortalNetwork

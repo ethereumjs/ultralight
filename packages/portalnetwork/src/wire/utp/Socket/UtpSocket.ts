@@ -4,6 +4,7 @@ import { bitmap } from '../../../index.js'
 import { PacketManager } from '../Packets/PacketManager.js'
 import { ConnectionState, PacketType } from '../index.js'
 
+import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { NetworkId } from '../../../index.js'
 import type {
@@ -13,7 +14,6 @@ import type {
   UtpSocketOptions,
   UtpSocketType,
 } from '../index.js'
-import type { ENR } from '@chainsafe/enr'
 
 export abstract class UtpSocket {
   utp: PortalNetworkUTP
