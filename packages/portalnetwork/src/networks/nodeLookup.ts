@@ -58,7 +58,7 @@ export class NodeLookup {
   }
 
   private selectClosestPending(): ENR[] {
-    return Array.from(this.pendingNodes.values())
+    return Array.from(this.pendingNodes.values()).filter((enr) => this.network.portal.uTP.openContentRequest.get(enr.nodeId) === undefined)
       .sort((a, b) =>
         Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
       )
@@ -80,6 +80,9 @@ export class NodeLookup {
 
         for (const enr of response.enrs) {
           const decodedEnr = ENR.decode(enr)
+          if (this.network.portal.uTP.openContentRequest.get(decodedEnr.nodeId) !== undefined) {
+            continue
+          }
           this.foundNodes.push(decodedEnr)
           const nodeId = decodedEnr.nodeId
           try {

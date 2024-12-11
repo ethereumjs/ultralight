@@ -14,13 +14,14 @@ import type {
   UtpSocketType,
 } from '../index.js'
 import type { ENR } from '@chainsafe/enr'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export abstract class UtpSocket {
   utp: PortalNetworkUTP
   networkId: NetworkId
   type: UtpSocketType
   content: Uint8Array
-  remoteAddress: ENR
+  remoteAddress: ENR | INodeAddress
   protected seqNr: number
   ackNr: number
   finNr: number | undefined
@@ -90,7 +91,11 @@ export abstract class UtpSocket {
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
       `|| ackNr: ${packet.header.ackNr}`,
     )
-    await this.utp.send(this.remoteAddress, msg, this.networkId)
+    try {
+      await this.utp.send(this.remoteAddress, msg, this.networkId)
+    } catch (err) {
+      this.logger.extend('error')(`Error sending packet: ${err}.`)
+    }
     return msg
   }
 

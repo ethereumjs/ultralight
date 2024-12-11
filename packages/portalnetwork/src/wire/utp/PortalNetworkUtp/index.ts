@@ -16,7 +16,8 @@ import type {
   UtpSocketKey,
 } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
-import type { ENR } from '@chainsafe/enr'
+import { ENR } from '@chainsafe/enr'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export class PortalNetworkUTP {
   client: PortalNetwork
@@ -31,15 +32,15 @@ export class PortalNetworkUTP {
     this.working = false
   }
 
-  closeRequest(connectionId: number, enr: ENR) {
-    const requestKey = this.getRequestKey(connectionId, enr.nodeId)
-    const request = this.openContentRequest.get(requestKey)
-    if (request) {
-      void request.socket.sendResetPacket()
-      this.logger.extend('CLOSING')(`Closing uTP request with ${enr.peerId}`)
-      request.close()
-      this.openContentRequest.delete(requestKey)
-    }
+  closeRequest(enr: ENR | INodeAddress) {
+      const requestKey = enr.nodeId
+      const request = this.openContentRequest.get(requestKey)
+      if (request) {
+        void request.socket.sendResetPacket()
+        this.logger.extend('CLOSING')(`Closing uTP request with ${enr.nodeId}`)
+        request.close()
+        this.openContentRequest.delete(requestKey)
+      }
   }
 
   getRequestKey(connId: number, nodeId: string): string {
@@ -59,7 +60,7 @@ export class PortalNetworkUTP {
   createPortalNetworkUTPSocket(
     networkId: NetworkId,
     requestCode: RequestCode,
-    enr: ENR,
+    enr: ENR | INodeAddress,
     sndId: number,
     rcvId: number,
     content?: Uint8Array,
@@ -97,10 +98,13 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode } = params
+    if (this.openContentRequest.get(enr.nodeId) !== undefined) {
+      throw new Error(`Already have an open request with ${enr.nodeId}.  Rejecting OFFER`)
+    }
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const socketKey = createSocketKey(enr.nodeId, connectionId)
+    const socketKey = enr.nodeId
     const socket = this.createPortalNetworkUTPSocket(
       params.networkId,
       requestCode,
@@ -119,27 +123,38 @@ export class PortalNetworkUTP {
       contentKeys,
     })
     this.openContentRequest.set(newRequest.socketKey, newRequest)
-    this.logger(`Opening ${RequestCode[requestCode]} request with key: ${newRequest.socketKey}`)
-    this.logger(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
+    this.logger.extend('utpRequest')(`New Request with ${enr.nodeId} -- Opened with ${enr instanceof ENR ? 'ENR' : 'NodeAddress'}`)
+    this.logger.extend('utpRequest')(`Opening ${RequestCode[requestCode]} request with key: ${newRequest.socketKey}`)
+    this.logger.extend('utpRequest')(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
     await newRequest.init()
     return newRequest
   }
 
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
-    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), srcId)
+    const requestKey = srcId
     const request = this.openContentRequest.get(requestKey)
     if (!request) {
       this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
       return
     }
+    if (!(request.socket.remoteAddress instanceof ENR)) {
+      this.logger.extend('error')(`No ENR known for ${request.socket.remoteAddress.nodeId}`)
+      const enr = this.client.discv5.findEnr(request.socket.remoteAddress.nodeId)
+      if (enr) {
+        this.logger.extend('error')(`Found ENR for ${request.socket.remoteAddress.nodeId}`)
+        request.socket.remoteAddress = enr
+      }
+    }
     await request.handleUtpPacket(packetBuffer)
   }
 
-  async send(enr: ENR, msg: Buffer, networkId: NetworkId) {
+  async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
-    } catch {
-      this.closeRequest(msg.readUInt16BE(2), enr)
+    } catch (err) {
+      this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
+      this.closeRequest(enr)
+      throw err
     }
   }
 }

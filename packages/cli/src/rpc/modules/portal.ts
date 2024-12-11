@@ -6,6 +6,7 @@ import {
   FoundContent,
   NetworkId,
   NodeLookup,
+  PingPongCustomDataType,
   shortId,
 } from 'portalnetwork'
 
@@ -254,18 +255,6 @@ export class portal {
     this.beaconStartLightClient = middleware(this.beaconStartLightClient.bind(this), 1, [
       [validators.hex],
     ])
-  }
-
-  async sendPortalNetworkResponse(
-enr: ENR,
-    requestId: bigint,
-    payload: Uint8Array,
-  ) {
-    void this._client.sendPortalNetworkResponse(
-      enr,
-      BigInt(requestId),
-      payload,
-    )
   }
 
   async methods() {
@@ -554,15 +543,17 @@ enr: ENR,
     const pong = await this._history.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+      const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      return (
+         {
+          enrSeq: Number(pong.enrSeq),
+          dataRadius: bigIntToHex(decoded.radius),
+        }
+      )
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+      return false
     }
-    return (
-      pong && {
-        enrSeq: Number(pong.enrSeq),
-        dataRadius: bytesToHex(pong.customPayload),
-      }
-    )
   }
   async statePing(params: [string]) {
     const [enr] = params
@@ -571,15 +562,17 @@ enr: ENR,
     const pong = await this._state.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+      const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      return (
+        {
+          enrSeq: Number(pong.enrSeq),
+          dataRadius: bigIntToHex(decoded.radius),
+        }
+      ) 
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+      return false
     }
-    return (
-      pong && {
-        enrSeq: Number(pong.enrSeq),
-        dataRadius: bytesToHex(pong.customPayload),
-      }
-    )
   }
   async beaconPing(params: [string]) {
     const [enr] = params
@@ -588,16 +581,19 @@ enr: ENR,
     const pong = await this._beacon.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
+     const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      return (
+        {
+          enrSeq: Number(pong.enrSeq),
+          dataRadius: bigIntToHex(decoded.radius),
+        }
+      )
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
+      return false
     }
-    return (
-      pong && {
-        enrSeq: Number(pong.enrSeq),
-        dataRadius: bytesToHex(pong.customPayload),
-      }
-    )
   }
+
 
   // portal_*FindNodes
   async historyFindNodes(params: [string, number[]]) {

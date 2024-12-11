@@ -4,6 +4,7 @@ import type { PortalNetworkUTP } from '../index.js'
 import type { BasicPacketHeader, SelectiveAckHeader } from './PacketHeader.js'
 import type { Packet } from './index.js'
 import type { ENR } from '@chainsafe/enr'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export const BUFFER_SIZE = 512
 export enum PacketType {
@@ -102,7 +103,7 @@ export type ICreate<T extends PacketType> = IBasic<T> | ISelectiveAck | IData
 export interface UtpSocketOptions {
   utp: PortalNetworkUTP
   networkId: NetworkId
-  enr: ENR
+  enr: ENR | INodeAddress 
   sndId: number
   rcvId: number
   seqNr: number
