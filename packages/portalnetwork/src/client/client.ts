@@ -141,6 +141,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       trustedBlockRoot: opts.trustedBlockRoot,
       eventLog: opts.eventLog,
       utpTimeout: opts.utpTimeout,
+      gossipCount: opts.gossipCount,
     })
     for (const network of portal.networks.values()) {
       try {
@@ -184,6 +185,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               networkId: NetworkId.HistoryNetwork,
               maxStorage: network.maxStorage,
               db: network.db,
+              gossipCount: opts.gossipCount,
             }),
           )
           break
@@ -195,6 +197,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
               networkId: NetworkId.StateNetwork,
               maxStorage: network.maxStorage,
               db: network.db,
+              gossipCount: opts.gossipCount,
             }),
           )
           break
@@ -213,6 +216,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
                 trustedBlockRoot: opts.trustedBlockRoot,
                 sync: syncStrategy,
                 db: network.db,
+                gossipCount: opts.gossipCount,
               }),
             )
           }
@@ -370,9 +374,13 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     }
   }
 
-  private onTalkReq = async (nodeAddress: INodeAddress, src: ENR | null, message: ITalkReqMessage) => {
+  private onTalkReq = async (
+    nodeAddress: INodeAddress,
+    src: ENR | null,
+    message: ITalkReqMessage,
+  ) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
-    if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {  
+    if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
       await this.handleUTP(nodeAddress, message, message.request)
       return
     }
@@ -403,11 +411,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @param msgId uTP message ID
    * @param packetBuffer uTP packet encoded to Buffer
    */
-  private handleUTP = async (
-    src: INodeAddress,
-    msg: ITalkReqMessage,
-    packetBuffer: Buffer,
-  ) => {
+  private handleUTP = async (src: INodeAddress, msg: ITalkReqMessage, packetBuffer: Buffer) => {
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     try {
       await this.uTP.handleUtpPacket(packetBuffer, src.nodeId)
@@ -437,8 +441,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         Buffer.from(payload),
         hexToBytes(messageNetwork),
       )
-      this.eventLog &&
-        this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
+      this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
       return res
     } catch (err: any) {
       if (networkId === NetworkId.UTPNetwork) {
@@ -456,9 +459,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   ) => {
     this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    await this.discv5.sendTalkResp( src instanceof ENR ? {
-      nodeId: src.nodeId,
-      socketAddr: src.getLocationMultiaddr('udp')!,
-    } : src, requestId, payload)
+    await this.discv5.sendTalkResp(
+      src instanceof ENR
+        ? {
+            nodeId: src.nodeId,
+            socketAddr: src.getLocationMultiaddr('udp')!,
+          }
+        : src,
+      requestId,
+      payload,
+    )
   }
 }

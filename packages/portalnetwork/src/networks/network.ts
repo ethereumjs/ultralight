@@ -69,7 +69,15 @@ export abstract class BaseNetwork extends EventEmitter {
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
 
-  constructor({ client, networkId, db, radius, maxStorage, bridge }: BaseNetworkConfig) {
+  constructor({
+    client,
+    networkId,
+    db,
+    radius,
+    maxStorage,
+    bridge,
+    gossipCount,
+  }: BaseNetworkConfig) {
     super()
     this.bridge = bridge ?? false
     this.networkId = networkId
@@ -92,7 +100,7 @@ export abstract class BaseNetwork extends EventEmitter {
         this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
-    this.gossipManager = new GossipManager(this)
+    this.gossipManager = new GossipManager(this, gossipCount)
   }
 
   public routingTableInfo = async () => {

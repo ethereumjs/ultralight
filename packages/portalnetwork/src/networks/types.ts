@@ -17,6 +17,7 @@ export interface BaseNetworkConfig {
   radius?: bigint
   maxStorage?: number
   bridge?: boolean
+  gossipCount?: number
 }
 
 const BYTE_SIZE = 256
