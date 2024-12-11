@@ -67,6 +67,8 @@ describe('gossip tests', () => {
     )
     await network1.store(contentKey100001, HWP1000001)
     await network1.store(contentKey100002, HWP1000002)
+
+    assert.equal(network1.gossipManager.pulse, 26)
     network1.gossipManager.setPulse(2)
     await node1.network()['0x500b']?.sendPing(node2.discv5.enr.toENR())
     network1.gossipManager.add(contentKey100001)
