@@ -599,10 +599,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
-      const enr = this.findEnr(src.nodeId)
-      if (!enr) {
-        throw new Error('ENR not found')
-      }
+      const enr = this.findEnr(src.nodeId) ?? src
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],

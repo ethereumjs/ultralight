@@ -558,10 +558,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('ACCEPT')(
       `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
     )
-    const enr = this.findEnr(src.nodeId)
-    if (!enr) {
-      throw new Error('ENR not found')
-    }
+    const enr = this.findEnr(src.nodeId) ?? src
     this.portal.metrics?.acceptMessagesSent.inc()
     await this.handleNewRequest({
       networkId: this.networkId,
@@ -630,19 +627,7 @@ export abstract class BaseNetwork extends EventEmitter {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
-      const enr = this.findEnr(src.nodeId)
-      if (!enr) {
-        throw new Error('ENR not found')
-      }
-
-      await this.handleNewRequest({
-        networkId: this.networkId,
-        contentKeys: [decodedContentMessage.contentKey],
-        enr,
-        connectionId: _id,
-        requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: value,
-      })
+      const enr = this.findEnr(src.nodeId) ?? src
 
       const id = new Uint8Array(2)
       new DataView(id.buffer).setUint16(0, _id, false)
