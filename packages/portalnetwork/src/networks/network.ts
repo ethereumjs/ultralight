@@ -476,6 +476,11 @@ export abstract class BaseNetwork extends EventEmitter {
         msg.contentKeys.length
       } pieces of content.`,
     )
+    if (this.portal.uTP.openContentRequest.get(src.nodeId) !== undefined) {
+      this.logger.extend('OFFER').extend('error')(`Already have an open request with ${src.nodeId}.  Rejecting OFFER`)
+      await this.sendAccept(src, requestId, [], [])
+      return
+    }
     try {
       const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
       let offerAccepted = false
@@ -560,13 +565,18 @@ export abstract class BaseNetwork extends EventEmitter {
     )
     const enr = this.findEnr(src.nodeId) ?? src
     this.portal.metrics?.acceptMessagesSent.inc()
-    await this.handleNewRequest({
+    try {
+      await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
       enr,
       connectionId: id,
       requestCode: RequestCode.ACCEPT_READ,
     })
+    } catch (err: any) {
+      this.logger.extend('ACCEPT').extend('error')(`Error handling new request: ${err.message}.  Rejecting OFFER`)
+      await this.sendAccept(src, requestId, [], [])
+    }
     const idBuffer = new Uint8Array(2)
     new DataView(idBuffer.buffer).setUint16(0, id, false)
 
@@ -628,6 +638,19 @@ export abstract class BaseNetwork extends EventEmitter {
       )
       const _id = randUint16()
       const enr = this.findEnr(src.nodeId) ?? src
+      try {
+        await this.handleNewRequest({
+          networkId: this.networkId,
+          contentKeys: [decodedContentMessage.contentKey],
+          enr,
+          connectionId: _id,
+          requestCode: RequestCode.FOUNDCONTENT_WRITE,
+          contents: value,
+        })
+      } catch (err: any) {
+        this.logger.extend('FOUNDCONTENT').extend('error')(`Error handling new request: ${err.message}.  Canceling uTP transfer`)
+        await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+      }
 
       const id = new Uint8Array(2)
       new DataView(id.buffer).setUint16(0, _id, false)
