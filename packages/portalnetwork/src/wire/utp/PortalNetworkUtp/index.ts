@@ -16,7 +16,8 @@ import type {
   UtpSocketKey,
 } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
-import type { ENR } from '@chainsafe/enr'
+import { ENR } from '@chainsafe/enr'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export class PortalNetworkUTP {
   client: PortalNetwork
@@ -59,7 +60,7 @@ export class PortalNetworkUTP {
   createPortalNetworkUTPSocket(
     networkId: NetworkId,
     requestCode: RequestCode,
-    enr: ENR,
+    enr: ENR | INodeAddress,
     sndId: number,
     rcvId: number,
     content?: Uint8Array,
@@ -132,14 +133,24 @@ export class PortalNetworkUTP {
       this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
       return
     }
+    if (!(request.socket.remoteAddress instanceof ENR)) {
+      this.logger.extend('error')(`No ENR known for ${request.socket.remoteAddress.nodeId}`)
+      const enr = this.client.discv5.findEnr(request.socket.remoteAddress.nodeId)
+      if (enr) {
+        this.logger.extend('error')(`Found ENR for ${request.socket.remoteAddress.nodeId}`)
+        request.socket.remoteAddress = enr
+      }
+    }
     await request.handleUtpPacket(packetBuffer)
   }
 
-  async send(enr: ENR, msg: Buffer, networkId: NetworkId) {
+  async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
-    } catch {
-      this.closeRequest(msg.readUInt16BE(2), enr)
+    } catch (err) {
+      this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
+      this.closeRequest(enr)
+      throw err
     }
   }
 }

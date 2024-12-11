@@ -14,13 +14,14 @@ import type {
   UtpSocketType,
 } from '../index.js'
 import type { ENR } from '@chainsafe/enr'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export abstract class UtpSocket {
   utp: PortalNetworkUTP
   networkId: NetworkId
   type: UtpSocketType
   content: Uint8Array
-  remoteAddress: ENR
+  remoteAddress: ENR | INodeAddress
   protected seqNr: number
   ackNr: number
   finNr: number | undefined
