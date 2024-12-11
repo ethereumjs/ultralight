@@ -118,7 +118,17 @@ export abstract class BaseNetwork extends EventEmitter {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> {
-    return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
+    if (this.routingTable.isIgnored(enr.nodeId)) {
+      return new Uint8Array()
+    }
+    try {
+      const res = await this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
+      return res
+    } catch (err: any) {
+      this.logger.extend('error')(`${err.message}`)
+      this.routingTable['ignoreNode'](enr.nodeId)
+      return new Uint8Array()
+    }
   }
 
   sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
@@ -312,6 +322,10 @@ export abstract class BaseNetwork extends EventEmitter {
       value: findNodesMsg,
     })
     const res = await this.sendMessage(enr, payload, this.networkId)
+    if (res.length === 0) {
+      this.routingTable['ignoreNode'](enr.nodeId)
+      return
+    }
     if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
       this.portal.metrics?.nodesMessagesReceived.inc()
       const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
