@@ -32,15 +32,15 @@ export class PortalNetworkUTP {
     this.working = false
   }
 
-  closeRequest(connectionId: number, enr: ENR) {
-    const requestKey = this.getRequestKey(connectionId, enr.nodeId)
-    const request = this.openContentRequest.get(requestKey)
-    if (request) {
-      void request.socket.sendResetPacket()
-      this.logger.extend('CLOSING')(`Closing uTP request with ${enr.peerId}`)
-      request.close()
-      this.openContentRequest.delete(requestKey)
-    }
+  closeRequest(enr: ENR | INodeAddress) {
+      const requestKey = enr.nodeId
+      const request = this.openContentRequest.get(requestKey)
+      if (request) {
+        void request.socket.sendResetPacket()
+        this.logger.extend('CLOSING')(`Closing uTP request with ${enr.nodeId}`)
+        request.close()
+        this.openContentRequest.delete(requestKey)
+      }
   }
 
   getRequestKey(connId: number, nodeId: string): string {
@@ -98,10 +98,13 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode } = params
+    if (this.openContentRequest.get(enr.nodeId) !== undefined) {
+      throw new Error(`Already have an open request with ${enr.nodeId}.  Rejecting OFFER`)
+    }
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const socketKey = createSocketKey(enr.nodeId, connectionId)
+    const socketKey = enr.nodeId
     const socket = this.createPortalNetworkUTPSocket(
       params.networkId,
       requestCode,
@@ -120,14 +123,15 @@ export class PortalNetworkUTP {
       contentKeys,
     })
     this.openContentRequest.set(newRequest.socketKey, newRequest)
-    this.logger(`Opening ${RequestCode[requestCode]} request with key: ${newRequest.socketKey}`)
-    this.logger(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
+    this.logger.extend('utpRequest')(`New Request with ${enr.nodeId} -- Opened with ${enr instanceof ENR ? 'ENR' : 'NodeAddress'}`)
+    this.logger.extend('utpRequest')(`Opening ${RequestCode[requestCode]} request with key: ${newRequest.socketKey}`)
+    this.logger.extend('utpRequest')(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
     await newRequest.init()
     return newRequest
   }
 
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
-    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), srcId)
+    const requestKey = srcId
     const request = this.openContentRequest.get(requestKey)
     if (!request) {
       this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
