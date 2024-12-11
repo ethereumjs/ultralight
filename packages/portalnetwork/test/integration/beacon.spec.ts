@@ -55,6 +55,7 @@ describe('Find Content tests', () => {
         },
         privateKey: pk1,
       },
+      gossipCount: 1,
     })
     const node2 = await PortalNetwork.create({
       transport: TransportLayer.NODE,
@@ -84,6 +85,7 @@ describe('Find Content tests', () => {
     const bootstrap = specTestVectors.bootstrap['6718368']
 
     await network1.store(hexToBytes(bootstrap.content_key), hexToBytes(bootstrap.content_value))
+
     await new Promise((resolve) => {
       setTimeout(resolve, 5000)
     })

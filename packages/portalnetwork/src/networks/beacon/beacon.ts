@@ -93,11 +93,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       // Gossip new content to 5 random nodes in routing table
       for (let x = 0; x < 5; x++) {
         const peer = this.routingTable.random()
-        if (
-          peer !== undefined &&
-          !this.routingTable.contentKeyKnownToPeer(peer.nodeId, contentKey)
-        ) {
+        if (peer !== undefined) {
           this.gossipManager.enqueue(peer.nodeId, contentKey)
+          this.gossipManager['gossip'](peer)
         }
       }
     })
@@ -705,7 +703,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
       `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${bytesToHex(contentKey)}`,
     )
     this.emit('ContentAdded', contentKey, value)
-    this.gossipManager.add(contentKey)
   }
 
   /**
