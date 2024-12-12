@@ -256,18 +256,6 @@ export class portal {
     ])
   }
 
-  async sendPortalNetworkResponse(
-enr: ENR,
-    requestId: bigint,
-    payload: Uint8Array,
-  ) {
-    void this._client.sendPortalNetworkResponse(
-      enr,
-      BigInt(requestId),
-      payload,
-    )
-  }
-
   async methods() {
     return methods
   }
