@@ -76,4 +76,9 @@ export const args: ClientOpts = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
+  .option('gossipCount', {
+    describe: 'number of nodes to gossip to',
+    number: true,
+    optional: true,
+  })
   .strict().argv as ClientOpts

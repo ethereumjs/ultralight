@@ -1,12 +1,7 @@
 {
   "name": "ultralight",
   "private": true,
-  "workspaces": [
-    "./",
-    "./packages/portalnetwork",
-    "./packages/cli",
-    "./packages/era"
-  ],
+  "workspaces": ["./", "./packages/portalnetwork", "./packages/cli", "./packages/era"],
   "engines": {
     "npm": "^10",
     "node": "^20"

@@ -1,9 +1,9 @@
+import { execSync } from 'child_process'
+import { readFileSync } from 'fs'
 import { SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { execSync } from 'child_process'
-import { readFileSync } from 'fs'
 import { Level } from 'level'
 
 import { NetworkId } from '../networks/types.js'
@@ -27,6 +27,7 @@ export interface PortalClientOpts {
   networks: string
   storage: string
   trustedBlockRoot?: string
+  gossipCount?: number
 }
 
 export const NetworkStrings: Record<string, NetworkId> = {
@@ -115,6 +116,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     dataDir: args.dataDir,
     trustedBlockRoot: args.trustedBlockRoot,
     bootnodes,
+    gossipCount: args.gossipCount,
   }
   return clientConfig
 }

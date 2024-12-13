@@ -544,12 +544,10 @@ export class portal {
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
-      return (
-         {
-          enrSeq: Number(pong.enrSeq),
-          dataRadius: bigIntToHex(decoded.radius),
-        }
-      )
+      return {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: bigIntToHex(decoded.radius),
+      }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
       return false
@@ -563,12 +561,10 @@ export class portal {
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
-      return (
-        {
-          enrSeq: Number(pong.enrSeq),
-          dataRadius: bigIntToHex(decoded.radius),
-        }
-      ) 
+      return {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: bigIntToHex(decoded.radius),
+      }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
       return false
@@ -581,19 +577,16 @@ export class portal {
     const pong = await this._beacon.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-     const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
-      return (
-        {
-          enrSeq: Number(pong.enrSeq),
-          dataRadius: bigIntToHex(decoded.radius),
-        }
-      )
+      const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      return {
+        enrSeq: Number(pong.enrSeq),
+        dataRadius: bigIntToHex(decoded.radius),
+      }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
       return false
     }
   }
-
 
   // portal_*FindNodes
   async historyFindNodes(params: [string, number[]]) {
@@ -1040,7 +1033,9 @@ export class portal {
   }
 
   // portal_*Offer
-  async historyOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._history.sendOffer>> {
+  async historyOffer(
+    params: [string, [string, string][]],
+  ): Promise<string | ReturnType<typeof this._history.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1054,7 +1049,9 @@ export class portal {
     const res = await this._history.sendOffer(enr, contentKeys, contentValues)
     return res
   }
-  async stateOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._state.sendOffer>>  {
+  async stateOffer(
+    params: [string, [string, string][]],
+  ): Promise<string | ReturnType<typeof this._state.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
@@ -1068,7 +1065,9 @@ export class portal {
     const res = await this._state.sendOffer(enr, contentKeys, contentValues)
     return res
   }
-  async beaconOffer(params: [string, [string, string][]]):Promise<string | ReturnType<typeof this._beacon.sendOffer>> {
+  async beaconOffer(
+    params: [string, [string, string][]],
+  ): Promise<string | ReturnType<typeof this._beacon.sendOffer>> {
     const [enrHex, contentItems] = params
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))

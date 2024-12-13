@@ -50,6 +50,7 @@ import type {
   PongMessage,
   PortalNetwork,
 } from '../index.js'
+import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
   public routingTable: PortalNetworkRoutingTable
@@ -62,13 +63,21 @@ export abstract class BaseNetwork extends EventEmitter {
   abstract networkName: string
   public enr: SignableENR
   public bridge: boolean
-
+  public gossipManager: GossipManager
   portal: PortalNetwork
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
 
-  constructor({ client, networkId, db, radius, maxStorage, bridge }: BaseNetworkConfig) {
+  constructor({
+    client,
+    networkId,
+    db,
+    radius,
+    maxStorage,
+    bridge,
+    gossipCount,
+  }: BaseNetworkConfig) {
     super()
     this.bridge = bridge ?? false
     this.networkId = networkId
@@ -91,6 +100,7 @@ export abstract class BaseNetwork extends EventEmitter {
         this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
       }
     }
+    this.gossipManager = new GossipManager(this, gossipCount)
   }
 
   public routingTableInfo = async () => {
@@ -187,10 +197,7 @@ export abstract class BaseNetwork extends EventEmitter {
     const decoded = deserialized.value
     const messageType = deserialized.selector
     this.logger.extend(MessageCodes[messageType])(
-      `Received from ${shortId(
-        src.nodeId,
-        this.routingTable,
-      )}`,
+      `Received from ${shortId(src.nodeId, this.routingTable)}`,
     )
     switch (messageType) {
       case MessageCodes.PING:
@@ -336,11 +343,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  private handleFindNodes = async (
-    src: ENR,
-    requestId: bigint,
-    payload: FindNodesMessage,
-  ) => {
+  private handleFindNodes = async (src: ENR, requestId: bigint, payload: FindNodesMessage) => {
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
         total: 0,

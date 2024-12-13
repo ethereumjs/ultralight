@@ -21,7 +21,9 @@ import { WriteSocket } from '../../../src/wire/utp/Socket/WriteSocket.js'
 import { ENR } from '@chainsafe/enr'
 
 const sampleSize = 50000
-const enr = ENR.decodeTxt('enr:-Ii4QBz-nzVm-7uLwFGbG1Ldv_y8Nolm3h6isYNALpgW6QVQNA57Bc7nSYOLds3c2v6KL7M-m1HVT1AU8s-l-wiZsw-CGzdjZoJpZIJ2NIJpcITCISsgiXNlY3AyNTZrMaECedPKSKkarI7L5lEH2Br2lBU8X7BCz7KP-thSg6pcSNuDdWRwgiOM')
+const enr = ENR.decodeTxt(
+  'enr:-Ii4QBz-nzVm-7uLwFGbG1Ldv_y8Nolm3h6isYNALpgW6QVQNA57Bc7nSYOLds3c2v6KL7M-m1HVT1AU8s-l-wiZsw-CGzdjZoJpZIJ2NIJpcITCISsgiXNlY3AyNTZrMaECedPKSKkarI7L5lEH2Br2lBU8X7BCz7KP-thSg6pcSNuDdWRwgiOM',
+)
 
 describe('uTP Reader/Writer tests', async () => {
   it('content reader and writer (single content stream)', async () => {
@@ -120,7 +122,9 @@ describe('uTP Reader/Writer tests', async () => {
 })
 
 describe('PortalNetworkUTP test', async () => {
-  const client = await PortalNetwork.create({ bindAddress: enr.getLocationMultiaddr('udp')!.nodeAddress().address })
+  const client = await PortalNetwork.create({
+    bindAddress: enr.getLocationMultiaddr('udp')!.nodeAddress().address,
+  })
   const utp = new PortalNetworkUTP(client)
   it('createPortalNetworkUTPSocket', async () => {
     const networkId = NetworkId.HistoryNetwork
@@ -202,5 +206,4 @@ describe('PortalNetworkUTP test', async () => {
       'UTPSocket has correct ackNr',
     )
   })
-
 })

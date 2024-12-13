@@ -9,7 +9,7 @@ import {
 } from '@ethereumjs/util'
 import debug from 'debug'
 
-import {  shortId } from '../../util/util.js'
+import { shortId } from '../../util/util.js'
 import { RequestCode } from '../../wire/index.js'
 import {
   ContentMessageType,
@@ -40,11 +40,11 @@ import {
   nextOffer,
 } from './util.js'
 
+import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { FindContentMessage } from '../../wire/types.js'
 import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
 import type { TNibbles } from './types.js'
-import type { ENR } from '@chainsafe/enr'
 
 export class StateNetwork extends BaseNetwork {
   networkId: NetworkId.StateNetwork
@@ -52,6 +52,7 @@ export class StateNetwork extends BaseNetwork {
   logger: Debugger
   stateroots: Map<bigint, Uint8Array> = new Map()
   manager: StateManager
+
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
     this.networkId = NetworkId.StateNetwork
@@ -177,6 +178,7 @@ export class StateNetwork extends BaseNetwork {
       }
       this.logger(`content added for: ${bytesToHex(contentKey)}`)
       this.emit('ContentAdded', contentKey, content)
+      this.gossipManager.add(contentKey)
     } catch (err: any) {
       this.logger(`Error storing content: ${err.message}`)
     }

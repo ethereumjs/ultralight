@@ -46,6 +46,7 @@ export interface PortalNetworkOpts {
   eventLog?: boolean
   utpTimeout?: number
   shouldRefresh?: boolean
+  gossipCount?: number
 }
 
 export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, PortalNetworkEvents>

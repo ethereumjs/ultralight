@@ -17,7 +17,6 @@ import {
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
-import { GossipManager } from './gossip.js'
 import {
   BlockHeaderWithProof,
   BlockNumberKey,
@@ -28,20 +27,19 @@ import {
 } from './types.js'
 import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
+import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
-import type { ENR } from '@chainsafe/enr'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
   logger: Debugger
-  gossipManager: GossipManager
+
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
     this.networkId = NetworkId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
-    this.gossipManager = new GossipManager(this)
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
   }
@@ -314,7 +312,7 @@ export class HistoryNetwork extends BaseNetwork {
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
       // Gossip new content to network
-      this.gossipManager.add(keyOpt, contentType)
+      this.gossipManager.add(contentKey)
     }
     this.logger(
       `${HistoryNetworkContentType[contentType]} added for ${
