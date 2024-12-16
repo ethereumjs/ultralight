@@ -325,7 +325,7 @@ describe('uTP Socket Tests', async () => {
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
   s.setWriter(s.getSeqNr())
-  it.only('socket.compare()', () => {
+  it('socket.compare()', () => {
     s.ackNrs = [0, 1, 2, 3, 4, 5]
     s.writer!.dataChunks = [
       [0, Uint8Array.from([111])],
