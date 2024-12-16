@@ -342,7 +342,8 @@ describe('uTP Socket Tests', async () => {
       [2, Uint8Array.from([333])],
       [3, Uint8Array.from([444])],
       [4, Uint8Array.from([555])],
-      [6, Uint8Array.from([666])],
+      [5, Uint8Array.from([666])],
+      [6, Uint8Array.from([777])],
     ]
     assert.notOk(s.compare(), 'socket.compare() returns false for mismatched ackNrs and dataNrs')
     s.ackNrs = [0, 1, 2, 3, 4, 6, 5]
