@@ -10,8 +10,8 @@ export class ContentWriter {
   content: Uint8Array
   writing: boolean
   sentChunks: number[]
-  dataChunks: Record<number, Uint8Array>
-  dataNrs: number[]
+  dataChunks: Array<[number, Uint8Array]>
+
   constructor(socket: WriteSocket, content: Uint8Array, startingSeqNr: number, logger: Debugger) {
     this.socket = socket
     this.content = content
@@ -19,22 +19,25 @@ export class ContentWriter {
     this.seqNr = startingSeqNr
     this.writing = false
     this.sentChunks = []
-    this.dataNrs = []
     this.logger = logger.extend('WRITING')
-    this.dataChunks = {}
+    this.dataChunks = []
   }
 
   async write(): Promise<void> {
     if (!this.writing) return
-    const chunks = Object.keys(this.dataChunks).length
+    const totalChunks = this.dataChunks.length
     let bytes: Uint8Array
-    if (this.sentChunks.length < chunks) {
-      bytes = this.dataChunks[this.seqNr] ?? []
-      !this.sentChunks.includes(this.seqNr) && this.sentChunks.push(this.seqNr)
+    if (this.sentChunks.length < totalChunks) {
+      bytes = this.dataChunks[this.sentChunks.length][1] ?? []
+      this.sentChunks.push(this.seqNr)
       this.logger(
-        `Sending ST-DATA ${this.seqNr - this.startingSeqNr + 1}/${chunks} -- SeqNr: ${this.seqNr}`,
+        `Sending ST-DATA ${this.sentChunks.length}/${totalChunks} -- SeqNr: ${this.seqNr}`,
       )
       this.seqNr = this.sentChunks.slice(-1)[0] + 1
+      // Reset to 0 since ackNr and seqNr are 16 bit unsigned integers
+      if (this.seqNr > 65535) {
+        this.seqNr = 0
+      }
       await this.socket.sendDataPacket(bytes)
       return
     }
@@ -48,17 +51,21 @@ export class ContentWriter {
     await this.write()
   }
 
-  chunk(): Record<number, Uint8Array> {
+  chunk(): [number, Uint8Array][] {
     let arrayMod = this.content
     const total = Math.ceil(this.content.length / BUFFER_SIZE)
     this.logger(`Preparing content for transfer as ${total} ${BUFFER_SIZE} byte chunks.`)
-    const dataChunks: Record<number, Uint8Array> = {}
+    const dataChunks = new Array<[number, Uint8Array]>(total)
+    let seqNr = this.startingSeqNr
     for (let i = 0; i < total; i++) {
       const start = 0
       const end = arrayMod.length > 512 ? 512 : undefined
-      dataChunks[i + this.startingSeqNr] = arrayMod.subarray(start, end)
+      dataChunks[i] = [seqNr, arrayMod.subarray(start, end)]
       arrayMod = arrayMod.subarray(end)
-      this.dataNrs.push(i + this.startingSeqNr)
+      seqNr++
+      if (seqNr > 65535) {
+        seqNr = 0
+      } // Reset to 0 if next sequence number > 65535
     }
     this.logger(`Ready to send ${total} Packets starting at SeqNr: ${this.startingSeqNr}`)
     return dataChunks

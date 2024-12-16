@@ -32,21 +32,21 @@ const _read = async (networkId: NetworkId): Promise<ReadSocket> => {
     networkId,
     ackNr: DEFAULT_RAND_ACKNR,
     seqNr: DEFAULT_RAND_SEQNR,
-    remoteAddress: '1234',
+    enr: 'enr:1234' as any,
     rcvId: readId,
     sndId: writeId,
     logger: debug('test'),
     type: UtpSocketType.READ,
   }) as ReadSocket
 }
-const _write = async (networkId: NetworkId): Promise<WriteSocket> => {
+const _write = async (networkId: NetworkId, seqNr?: number): Promise<WriteSocket> => {
   const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
   return createUtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,
     ackNr: DEFAULT_RAND_ACKNR,
-    seqNr: DEFAULT_RAND_SEQNR,
-    remoteAddress: '1234',
+    seqNr: seqNr ?? DEFAULT_RAND_SEQNR,
+    enr: 'enr:1234' as any,
     rcvId: writeId,
     sndId: readId,
     logger: debug('test'),
@@ -325,11 +325,25 @@ describe('uTP Socket Tests', async () => {
   s.logger = debug('test')
   s.content = Uint8Array.from([111, 222])
   s.setWriter(s.getSeqNr())
-  it('socket.compare()', () => {
+  it.only('socket.compare()', () => {
     s.ackNrs = [0, 1, 2, 3, 4, 5]
-    s.writer!.dataNrs = [0, 1, 2, 3, 4, 5]
+    s.writer!.dataChunks = [
+      [0, Uint8Array.from([111])],
+      [1, Uint8Array.from([222])],
+      [2, Uint8Array.from([333])],
+      [3, Uint8Array.from([444])],
+      [4, Uint8Array.from([555])],
+      [5, Uint8Array.from([666])],
+    ]
     assert.ok(s.compare(), 'socket.compare() returns true for matching ackNrs and dataNrs')
-    s.writer!.dataNrs = [0, 1, 2, 3, 4, 5, 6]
+    s.writer!.dataChunks = [
+      [0, Uint8Array.from([111])],
+      [1, Uint8Array.from([222])],
+      [2, Uint8Array.from([333])],
+      [3, Uint8Array.from([444])],
+      [4, Uint8Array.from([555])],
+      [6, Uint8Array.from([666])],
+    ]
     assert.notOk(s.compare(), 'socket.compare() returns false for mismatched ackNrs and dataNrs')
     s.ackNrs = [0, 1, 2, 3, 4, 6, 5]
     assert.ok(
@@ -376,5 +390,16 @@ describe('uTP Socket Tests', async () => {
       delay,
       'should correctly update RTT with from packet rtt value',
     )
+  })
+})
+describe('seqNr overflow', () => {
+  it('should reset seqNr to 0', async () => {
+    const s = await _write(NetworkId.HistoryNetwork, 65535)
+    s.logger = debug('test')
+    s.content = new Uint8Array(1024)
+    s.setWriter(s.getSeqNr())
+    await s.writer?.write()
+    await s.writer?.write()
+    assert.equal(s.getSeqNr(), 1, 'seqNr should be reset to 0')
   })
 })

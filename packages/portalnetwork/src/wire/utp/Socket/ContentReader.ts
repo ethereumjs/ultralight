@@ -65,6 +65,8 @@ export class ContentReader {
 
   readPacket(payload: Uint8Array) {
     this.nextDataNr!++
+    // Reset to 0 since ackNr and seqNr are 16 bit unsigned integers
+    if (this.nextDataNr! > 65535) this.nextDataNr! = 0
     this.bytes.push(...payload)
     this.logger.extend('BYTES')(
       `Current stream: ${this.bytes.length} / ${this.bytesExpected} bytes. ${this.bytesExpected - this.bytes.length} bytes till end of content.`,

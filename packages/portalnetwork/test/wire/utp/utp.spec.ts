@@ -44,9 +44,9 @@ describe('uTP Reader/Writer tests', async () => {
       Math.ceil(sampleSize / 512),
       'ContentWriter chunked',
     )
-    const totalLength = Object.values(contentChunks).reduce((acc, chunk) => acc + chunk.length, 0)
+    const totalLength = contentChunks.reduce((acc, chunk) => acc + chunk[1].length, 0)
     assert.equal(totalLength, sampleSize, 'ContentWriter chunked all bytes')
-    const packets = Object.values(contentChunks).map((chunk, i) => {
+    const packets = contentChunks.map((chunk, i) => {
       return Packet.fromOpts({
         header: {
           seqNr: i,
@@ -59,10 +59,10 @@ describe('uTP Reader/Writer tests', async () => {
           timestampMicroseconds: 0,
           wndSize: 0,
         },
-        payload: chunk,
+        payload: chunk[1],
       })
     })
-    assert.equal(packets.length, Object.values(contentChunks).length, 'Packets created')
+    assert.equal(packets.length, contentChunks.length, 'Packets created')
     let sent = 0
     for (const [i, packet] of packets.entries()) {
       reader.addPacket(packet)
@@ -87,9 +87,9 @@ describe('uTP Reader/Writer tests', async () => {
       Math.ceil(content.length / 512),
       'ContentWriter chunked',
     )
-    const totalLength = Object.values(contentChunks).reduce((acc, chunk) => acc + chunk.length, 0)
+    const totalLength = contentChunks.reduce((acc, chunk) => acc + chunk[1].length, 0)
     assert.equal(totalLength, content.length, 'ContentWriter chunked all bytes')
-    const packets = Object.values(contentChunks).map((chunk, i) => {
+    const packets = contentChunks.map((chunk, i) => {
       return Packet.fromOpts({
         header: {
           seqNr: i,
@@ -102,10 +102,10 @@ describe('uTP Reader/Writer tests', async () => {
           timestampMicroseconds: 0,
           wndSize: 0,
         },
-        payload: chunk,
+        payload: chunk[1],
       })
     })
-    assert.equal(packets.length, Object.values(contentChunks).length, 'Packets created')
+    assert.equal(packets.length, contentChunks.length, 'Packets created')
     let sent = 0
     for (const [i, packet] of packets.entries()) {
       reader.addPacket(packet)
