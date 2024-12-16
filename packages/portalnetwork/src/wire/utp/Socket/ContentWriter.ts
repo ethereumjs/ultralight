@@ -33,11 +33,8 @@ export class ContentWriter {
       this.logger(
         `Sending ST-DATA ${this.sentChunks.length}/${totalChunks} -- SeqNr: ${this.seqNr}`,
       )
-      this.seqNr = this.sentChunks.slice(-1)[0] + 1
-      // Reset to 0 since ackNr and seqNr are 16 bit unsigned integers
-      if (this.seqNr > 65535) {
-        this.seqNr = 0
-      }
+      // Wrap seqNr back to 0 when it exceeds 16-bit max integer
+      this.seqNr = (this.sentChunks[this.sentChunks.length - 1] + 1) % 65536
       await this.socket.sendDataPacket(bytes)
       return
     }
@@ -62,10 +59,7 @@ export class ContentWriter {
       const end = arrayMod.length > 512 ? 512 : undefined
       dataChunks[i] = [seqNr, arrayMod.subarray(start, end)]
       arrayMod = arrayMod.subarray(end)
-      seqNr++
-      if (seqNr > 65535) {
-        seqNr = 0
-      } // Reset to 0 if next sequence number > 65535
+      seqNr = (seqNr + 1) % 65536 // Wrap seqNr back to 0 when it exceeds 16-bit max integer
     }
     this.logger(`Ready to send ${total} Packets starting at SeqNr: ${this.startingSeqNr}`)
     return dataChunks
