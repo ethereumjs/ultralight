@@ -51,6 +51,7 @@ import type { Debugger } from 'debug'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
+import type { INodeAddress } from '../../index.js';
 
 export class BeaconLightClientNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
@@ -558,7 +559,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   }
 
   protected override handleFindContent = async (
-    src: ENR,
+    src: INodeAddress,
     requestId: bigint,
     network: Uint8Array,
     decodedContentMessage: FindContentMessage,
@@ -596,10 +597,11 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
+      const enr = this.findEnr(src.nodeId) ?? src
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
-        enr: src,
+        enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents: value,
@@ -864,7 +866,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
    * @param requestId request ID passed in OFFER message
    * @param msg OFFER message containing a list of offered content keys
    */
-  override handleOffer = async (src: ENR, requestId: bigint, msg: OfferMessage) => {
+  override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${
         msg.contentKeys.length

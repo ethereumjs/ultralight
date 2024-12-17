@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
 import { Discv5 } from '@chainsafe/discv5'
-import { ENR, SignableENR } from '@chainsafe/enr'
+import { ENR, SignableENR } from '@chainsafe/enr';
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
-import { multiaddr } from '@multiformats/multiaddr'
+import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
 
 import { HistoryNetwork } from '../networks/history/history.js'
@@ -22,11 +22,11 @@ import { ETH } from './eth.js'
 import { TransportLayer } from './types.js'
 
 import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
-import type { PortalNetworkEventEmitter, PortalNetworkMetrics, PortalNetworkOpts } from './types.js'
+import type { INodeAddress, PortalNetworkEventEmitter, PortalNetworkMetrics , PortalNetworkOpts } from './types.js'
+import { MessageCodes, PortalWireMessageType } from '../wire/types.js';
 
 export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
   eventLog: boolean
@@ -366,7 +366,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
         },
       ])
     } catch (err: any) {
-      this.logger.log('error: ', err.message)
+      this.logger.extend('error')(err.message)
     }
   }
 
@@ -380,21 +380,15 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       await this.handleUTP(nodeAddress, message, message.request)
       return
     }
-    if (src === null) {
-      if (src === null) {
-        this.logger('Received TALKREQ message with null sourceId')
-        return
-      }
-    }
     const network = this.networks.get(bytesToHex(message.protocol) as NetworkId)
     if (!network) {
       this.logger(`Received TALKREQ message on unsupported network ${bytesToHex(message.protocol)}`)
-      await this.sendPortalNetworkResponse(src, message.id, new Uint8Array())
+      await this.sendPortalNetworkResponse(nodeAddress, message.id, new Uint8Array())
 
       return
     }
 
-    await network.handle(message, src)
+    await network.handle(message, nodeAddress)
   }
 
   private onTalkResp = (_: any, __: any, message: ITalkRespMessage) => {
@@ -449,21 +443,16 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   }
 
   public sendPortalNetworkResponse = async (
-    src: ENR | INodeAddress,
+    src: INodeAddress,
     requestId: bigint,
     payload: Uint8Array,
   ) => {
     this.eventLog &&
       this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    await this.discv5.sendTalkResp(
-      src instanceof ENR
-        ? {
-            nodeId: src.nodeId,
-            socketAddr: src.getLocationMultiaddr('udp')!,
-          }
-        : src,
-      requestId,
-      payload,
-    )
+    try {
+      await this.discv5.sendTalkResp(src, requestId, payload)
+    } catch (err: any) {
+      this.logger.extend('error')(`Error sending TALKRESP message: ${err}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
+    }
   }
 }
