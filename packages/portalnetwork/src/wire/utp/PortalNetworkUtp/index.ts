@@ -12,10 +12,10 @@ import type { Debugger } from 'debug'
 import type {
   ContentRequestType,
   INewRequest,
+  INodeAddress,
   NetworkId,
   PortalNetwork,
-  UtpSocketKey,
-} from '../../../index.js'
+ UtpSocketKey } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
 
 export class PortalNetworkUTP {
@@ -31,12 +31,12 @@ export class PortalNetworkUTP {
     this.working = false
   }
 
-  closeRequest(connectionId: number, enr: ENR) {
-    const requestKey = this.getRequestKey(connectionId, enr.nodeId)
+  closeRequest(connectionId: number, nodeId: string) {
+    const requestKey = this.getRequestKey(connectionId, nodeId)
     const request = this.openContentRequest.get(requestKey)
     if (request) {
       void request.socket.sendResetPacket()
-      this.logger.extend('CLOSING')(`Closing uTP request with ${enr.peerId}`)
+      this.logger.extend('CLOSING')(`Closing uTP request with ${nodeId}`)
       request.close()
       this.openContentRequest.delete(requestKey)
     }
@@ -59,7 +59,7 @@ export class PortalNetworkUTP {
   createPortalNetworkUTPSocket(
     networkId: NetworkId,
     requestCode: RequestCode,
-    enr: ENR,
+    enr: ENR | INodeAddress,
     sndId: number,
     rcvId: number,
     content?: Uint8Array,
@@ -135,11 +135,11 @@ export class PortalNetworkUTP {
     await request.handleUtpPacket(packetBuffer)
   }
 
-  async send(enr: ENR, msg: Buffer, networkId: NetworkId) {
+  async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
     } catch {
-      this.closeRequest(msg.readUInt16BE(2), enr)
+      this.closeRequest(msg.readUInt16BE(2), enr.nodeId)
     }
   }
 }
