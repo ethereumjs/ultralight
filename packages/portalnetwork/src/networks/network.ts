@@ -127,14 +127,20 @@ export abstract class BaseNetwork extends EventEmitter {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> {
-    return this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
+    try {
+      const res = await this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
+      return res
+    } catch (err: any) {
+      this.logger.extend('error')(`${err.message}`)
+      return new Uint8Array()
+    }
   }
 
   sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
-    return this.portal.discv5.findEnr(nodeId)
+    return this.portal.discv5.findEnr(nodeId) ?? this.routingTable.getWithPending(nodeId)?.value
   }
 
   public async put(contentKey: Uint8Array, content: string) {

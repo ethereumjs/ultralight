@@ -418,26 +418,28 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
    * @returns response from `dstId` as `Uint8Array` or empty array
    */
   public sendPortalNetworkMessage = async (
-    enr: ENR,
+    enr: ENR | INodeAddress,
     payload: Uint8Array,
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
+    const remote = enr instanceof ENR ? enr : this.discv5.findEnr(enr.nodeId) ?? fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp')
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
       const res = await this.discv5.sendTalkReq(
-        enr,
+        remote,
         Buffer.from(payload),
         hexToBytes(messageNetwork),
       )
       this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
       return res
     } catch (err: any) {
-      if (networkId === NetworkId.UTPNetwork) {
-        throw new Error(`Error sending TALKREQ message: ${err}`)
+      if (networkId === NetworkId.UTPNetwork || utpMessage === true) {
+        throw new Error(`Error sending uTP TALKREQ message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err.message}`)
       } else {
-        return new Uint8Array()
+        const messageType = PortalWireMessageType.deserialize(payload).selector
+        throw new Error(`Error sending TALKREQ ${MessageCodes[messageType]} message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${enr instanceof ENR ? enr.getLocationMultiaddr('udp')?.toString() : enr.socketAddr.toString()}`)
       }
     }
   }
