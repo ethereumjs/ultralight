@@ -106,6 +106,9 @@ export abstract class UtpSocket {
       extension,
     }
     opts.pType === PacketType.ST_DATA && this.seqNr++
+    if (this.seqNr > 65535) {
+      this.seqNr = 0
+    }
     return this.packetManager.createPacket<T>(params)
   }
 

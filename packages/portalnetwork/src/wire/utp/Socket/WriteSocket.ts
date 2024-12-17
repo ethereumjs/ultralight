@@ -60,7 +60,7 @@ export class WriteSocket extends UtpSocket {
     this.close()
   }
   compare(): boolean {
-    if (!this.ackNrs.includes(undefined) && this.ackNrs.length === this.writer!.dataNrs.length) {
+    if (!this.ackNrs.includes(undefined) && this.ackNrs.length === this.writer!.dataChunks.length) {
       return true
     }
     return false
@@ -71,7 +71,7 @@ export class WriteSocket extends UtpSocket {
     this._clearTimeout()
   }
   logProgress() {
-    const needed = this.writer!.dataNrs.filter((n) => !this.ackNrs.includes(n))
+    const needed = this.writer!.dataChunks.filter((n) => !this.ackNrs.includes(n[0]))
     this.logger(
       `AckNr's received (${this.ackNrs.length}/${
         this.writer!.sentChunks.length
@@ -89,9 +89,7 @@ export class WriteSocket extends UtpSocket {
         `)
   }
   updateAckNrs(ackNr: number) {
-    this.ackNrs = Object.keys(this.writer!.dataChunks)
-      .filter((n) => parseInt(n) <= ackNr)
-      .map((n) => parseInt(n))
+    this.ackNrs = this.writer!.dataChunks.filter((n) => n[0] <= ackNr).map((n) => n[0])
   }
   async sendDataPacket(bytes: Uint8Array): Promise<void> {
     this.state = ConnectionState.Connected
