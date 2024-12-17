@@ -28,6 +28,8 @@ const main = async () => {
 
   const portal = await PortalNetwork.create(portalConfig)
 
+  log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
+
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
 
