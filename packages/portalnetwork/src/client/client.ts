@@ -61,6 +61,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       },
     }
     const config = { ...defaultConfig, ...opts.config }
+    config.config = { ...defaultConfig.config, ...opts.config?.config }
     let bootnodes = opts.bootnodes
     if (opts.rebuildFromMemory === true && opts.db) {
       const prevEnrString = await opts.db.get('enr')
