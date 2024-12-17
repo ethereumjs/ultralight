@@ -333,7 +333,7 @@ export abstract class BaseNetwork extends EventEmitter {
             }),
           )
 
-          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr)}`)
+          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr.nodeId)}`)
         }
       } catch (err: any) {
         this.logger(`Error processing NODES message: ${err.toString()}`)
@@ -416,10 +416,10 @@ export abstract class BaseNetwork extends EventEmitter {
         value: offerMsg,
       })
       this.logger.extend(`OFFER`)(
-        `Sent to ${shortId(enr)} with ${contentKeys.length} pieces of content`,
+        `Sent to ${shortId(enr.nodeId)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.networkId)
-      this.logger.extend(`OFFER`)(`Response from ${shortId(enr)}`)
+      this.logger.extend(`OFFER`)(`Response from ${shortId(enr.nodeId)}`)
       if (res.length > 0) {
         try {
           const decoded = PortalWireMessageType.deserialize(res)
@@ -433,7 +433,7 @@ export abstract class BaseNetwork extends EventEmitter {
             )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
-              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr)}`)
+              this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
               return []
             }
             this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
@@ -470,7 +470,7 @@ export abstract class BaseNetwork extends EventEmitter {
             return msg.contentKeys
           }
         } catch (err: any) {
-          this.logger(`Error sending to ${shortId(enr)} - ${err.message}`)
+          this.logger(`Error sending to ${shortId(enr.nodeId)} - ${err.message}`)
         }
       }
     }

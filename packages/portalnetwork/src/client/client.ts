@@ -406,7 +406,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     try {
       await this.uTP.handleUtpPacket(packetBuffer, src.nodeId)
     } catch (err: any) {
-      this.logger(err.message)
+      this.logger.extend('error')(`handleUTP error: ${err.message}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
     }
   }
 

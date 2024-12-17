@@ -200,13 +200,13 @@ export class HistoryNetwork extends BaseNetwork {
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
-    this.logger.extend('FINDCONTENT')(`Sending to ${shortId(enr)}`)
+    this.logger.extend('FINDCONTENT')(`Sending to ${shortId(enr.nodeId)}`)
     const res = await this.sendMessage(enr, payload, this.networkId)
 
     try {
       if (bytesToInt(res.slice(0, 1)) === MessageCodes.CONTENT) {
         this.portal.metrics?.contentMessagesReceived.inc()
-        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr)}`)
+        this.logger.extend('FOUNDCONTENT')(`Received from ${shortId(enr.nodeId)}`)
         const decoded = ContentMessageType.deserialize(res.subarray(1))
         const contentKey = decodeHistoryNetworkContentKey(key)
         const contentType = contentKey.contentType
@@ -254,7 +254,7 @@ export class HistoryNetwork extends BaseNetwork {
         return response
       }
     } catch (err: any) {
-      this.logger(`Error sending FINDCONTENT to ${shortId(enr)} - ${err.message}`)
+      this.logger(`Error sending FINDCONTENT to ${shortId(enr.nodeId)} - ${err.message}`)
     }
   }
 
