@@ -139,7 +139,11 @@ export class PortalNetworkUTP {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
     } catch {
-      this.closeRequest(msg.readUInt16BE(2), enr.nodeId)
+      try {
+        this.closeRequest(msg.readUInt16BE(2), enr.nodeId)
+      } catch {
+        //
+      }
     }
   }
 }
