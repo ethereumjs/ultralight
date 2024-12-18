@@ -143,6 +143,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
       eventLog: opts.eventLog,
       utpTimeout: opts.utpTimeout,
       gossipCount: opts.gossipCount,
+      shouldRefresh: opts.shouldRefresh,
     })
     for (const network of portal.networks.values()) {
       try {
