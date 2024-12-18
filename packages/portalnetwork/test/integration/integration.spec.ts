@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { createRequire } from 'module'
 import { SignableENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, it } from 'vitest'
@@ -18,9 +18,13 @@ import {
   addRLPSerializedBlock,
   generateRandomNodeIdAtDistance,
   getContentKey,
+  log2Distance,
+  log2Distance,
+  serializedContentKeyToContentId,
 } from '../../src/index.js'
 
 import type { HistoryNetwork } from '../../src/index.js'
+import { BitArray } from '@chainsafe/ssz'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -323,5 +327,67 @@ describe('Offer/Accept', () => {
     )
     const res = await network1.sendOffer(node2.discv5.enr.toENR(), [veryFarFakeContentKey])
     assert.deepEqual(res, [], 'no accepts should be received')
+  })
+  it('should send offer and get correct number of accepted content keys', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3092`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3093`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+    })
+
+    const node2 = await PortalNetwork.create({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    await network1.sendPing(network2?.enr!.toENR())
+    const contentKeys: Uint8Array[] = []
+
+    // Generate 2 content keys that are at log2 distance 253 and 254
+    for (let i = 253; i < 255; i++) {
+      let distance = 256
+      let key
+      while (distance !== i) {
+        key = getContentKey(0, randomBytes(32))
+        const contentId = serializedContentKeyToContentId(key)
+        distance = log2Distance(contentId, node2.discv5.enr.nodeId)
+      }
+      contentKeys.push(key)
+    }
+
+    // Set node radius to 253
+    await network2.setRadius(2n ** 253n - 1n)
+    const res = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
+    assert.ok(res instanceof BitArray, 'should get a bitarray')
+    assert.equal((res as BitArray).bitLen, 2, 'should get matching length accepts')
+    assert.equal((res as BitArray).getTrueBitIndexes().length, 1, 'should only accept one content key')
+
+    // Set node radius to 254
+    await network2.setRadius(2n ** 254n - 1n)
+    const res2 = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
+    assert.ok(res2 instanceof BitArray, 'should get a bitarray')
+    assert.equal((res2 as BitArray).bitLen, 2, 'should get matching length accepts')
+    assert.equal((res2 as BitArray).getTrueBitIndexes().length, 2, 'should accept two content keys')
   })
 })
