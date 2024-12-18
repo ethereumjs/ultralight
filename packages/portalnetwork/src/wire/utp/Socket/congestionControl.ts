@@ -47,7 +47,7 @@ export class CongestionControl extends EventEmitter {
       this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
       return new Promise((resolve, reject) => {
         // Abort canSend promise if DATA packets not acked in a timely manner
-        const abort = setTimeout(() => reject(false), 3000)
+        const abort = setTimeout(() => reject(false), 10000)
         this.once('canSend', () => {
           clearTimeout(abort)
           resolve(true)
