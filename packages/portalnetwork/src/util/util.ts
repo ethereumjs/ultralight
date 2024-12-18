@@ -6,7 +6,6 @@ import {
   bigIntToBytes,
   bytesToBigInt,
   bytesToUnprefixedHex,
-  bytesToUtf8,
   unprefixedHexToBytes,
 } from '@ethereumjs/util'
 
@@ -30,7 +29,7 @@ export const shortId = (nodeId: string | ENR, routingTable?: PortalNetworkRoutin
 
   const nodeType = enr.kvs.get('c')
   const nodeTypeString =
-    nodeType !== undefined && nodeType.length > 0 ? `${bytesToUtf8(nodeType)}:` : ''
+    nodeType !== undefined && nodeType.length > 0 ? `${nodeType.toString().split(/[ :,]/)[0]}:` : ''
   return nodeTypeString + enr.nodeId.slice(0, 5) + '...' + enr.nodeId.slice(enr.nodeId.length - 5)
 }
 

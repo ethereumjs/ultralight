@@ -5,6 +5,15 @@ import type { AbstractLevel } from 'abstract-level'
 import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
 import type { NetworkId } from '../index.js'
 import type { PortalNetworkRoutingTable } from './routingTable.js'
+import type { Multiaddr } from '@multiformats/multiaddr'
+
+/** A representation of an unsigned contactable node. */
+export interface INodeAddress {
+  /** The destination socket address. */
+  socketAddr: Multiaddr;
+  /** The destination Node Id. */
+  nodeId: NodeId;
+}
 
 export interface PortalNetworkEvents {
   NodeAdded: (nodeId: NodeId, networkId: NetworkId) => void

@@ -6,7 +6,7 @@ import { ConnectionState, PacketType } from '../index.js'
 
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type { NetworkId } from '../../../index.js'
+import type { INodeAddress , NetworkId } from '../../../index.js'
 import type {
   ICreatePacketOpts,
   Packet,
@@ -20,7 +20,7 @@ export abstract class UtpSocket {
   networkId: NetworkId
   type: UtpSocketType
   content: Uint8Array
-  remoteAddress: ENR
+  remoteAddress: ENR | INodeAddress
   protected seqNr: number
   ackNr: number
   finNr: number | undefined

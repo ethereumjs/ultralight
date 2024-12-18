@@ -1,6 +1,7 @@
 import type { ENR } from '@chainsafe/enr'
 
 import type { NetworkId } from '../../../networks/types.js'
+import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 
 export type UtpSocketKey = string
 
@@ -17,7 +18,7 @@ export function createSocketKey(nodeId: string, id: number) {
 export interface INewRequest {
   networkId: NetworkId
   contentKeys: Uint8Array[]
-  enr: ENR
+  enr: ENR | INodeAddress
   connectionId: number
   requestCode: RequestCode
   contents?: Uint8Array
