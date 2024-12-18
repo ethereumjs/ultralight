@@ -68,7 +68,7 @@ export class ContentReader {
     this.nextDataNr! = (this.nextDataNr! + 1) % 65536
     this.bytes.push(...payload)
     this.logger.extend('BYTES')(
-      `Current stream: ${this.bytes.length} / ${this.bytesExpected} bytes. ${this.bytesExpected - this.bytes.length} bytes till end of content.`,
+      `Current stream: ${this.bytes.length}${this.bytesExpected === Infinity ? '' : `/ ${this.bytesExpected}`} bytes. ${this.bytesExpected === Infinity ? 'Unknown' : this.bytesExpected - this.bytes.length} bytes till end of content.`,
     )
   }
 
