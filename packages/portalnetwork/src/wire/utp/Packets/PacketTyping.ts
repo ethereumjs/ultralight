@@ -104,6 +104,7 @@ export interface UtpSocketOptions {
   utp: PortalNetworkUTP
   networkId: NetworkId
   enr: ENR | INodeAddress
+  connectionId: number
   sndId: number
   rcvId: number
   seqNr: number

@@ -2,7 +2,6 @@ import {
   RequestCode,
   UtpSocketType,
   createContentRequest,
-  createSocketKey,
   startingNrs,
 } from '../../../index.js'
 import { createUtpSocket } from '../Socket/index.js'
@@ -15,51 +14,36 @@ import type {
   INodeAddress,
   NetworkId,
   PortalNetwork,
- UtpSocketKey } from '../../../index.js'
+  } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
+import { RequestManager } from './requestManager.js'
 
 export class PortalNetworkUTP {
   client: PortalNetwork
-  openContentRequest: Map<UtpSocketKey, ContentRequestType>
   logger: Debugger
   working: boolean
+  requestManagers: Record<string, RequestManager>
 
   constructor(client: PortalNetwork) {
     this.client = client
     this.logger = client.logger.extend(`uTP`)
-    this.openContentRequest = new Map()
     this.working = false
+    this.requestManagers = {}
   }
 
-  closeRequest(connectionId: number, nodeId: string) {
-    const requestKey = this.getRequestKey(connectionId, nodeId)
-    const request = this.openContentRequest.get(requestKey)
-    if (request) {
-      void request.socket.sendResetPacket()
-      this.logger.extend('CLOSING')(`Closing uTP request with ${nodeId}`)
-      request.close()
-      this.openContentRequest.delete(requestKey)
-    }
+   closeAllPeerRequests(nodeId: string) {
+     this.requestManagers[nodeId].closeAllRequests()
   }
 
-  getRequestKey(connId: number, nodeId: string): string {
-    const idA = connId + 1
-    const idB = connId - 1
-    const keyA = createSocketKey(nodeId, connId)
-    const keyB = createSocketKey(nodeId, idA)
-    const keyC = createSocketKey(nodeId, idB)
-    for (const key of [keyA, keyB, keyC]) {
-      if (this.openContentRequest.get(key) !== undefined) {
-        return key
-      }
-    }
-    throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
+  hasRequests(nodeId: string): boolean {
+    return this.requestManagers[nodeId] !== undefined && Object.keys(this.requestManagers[nodeId].requestMap).length > 0
   }
 
   createPortalNetworkUTPSocket(
     networkId: NetworkId,
     requestCode: RequestCode,
     enr: ENR | INodeAddress,
+    connectionId: number,
     sndId: number,
     rcvId: number,
     content?: Uint8Array,
@@ -78,7 +62,7 @@ export class PortalNetworkUTP {
       rcvId,
       seqNr: startingNrs[requestCode].seqNr,
       ackNr: startingNrs[requestCode].ackNr,
-
+      connectionId,
       type,
       logger: this.logger,
       content,
@@ -97,53 +81,51 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode } = params
+    if (this.requestManagers[enr.nodeId] === undefined) {
+      this.requestManagers[enr.nodeId] = new RequestManager(enr.nodeId, this.logger)
+    }
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const socketKey = createSocketKey(enr.nodeId, connectionId)
     const socket = this.createPortalNetworkUTPSocket(
       params.networkId,
       requestCode,
       enr,
+      connectionId,
       sndId,
       rcvId,
       content,
     )
     const network = this.client.networks.get(params.networkId)!
     const newRequest = createContentRequest({
+      requestManager: this.requestManagers[enr.nodeId],
       network,
       requestCode,
       socket,
-      socketKey,
+      connectionId,
       content,
       contentKeys,
     })
-    this.openContentRequest.set(newRequest.socketKey, newRequest)
-    this.logger(`Opening ${RequestCode[requestCode]} request with key: ${newRequest.socketKey}`)
-    this.logger(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
-    await newRequest.init()
+    this.logger.extend('utpRequest')(`New ${RequestCode[requestCode]} Request with ${enr.nodeId} -- ConnectionId: ${connectionId}`)
+    this.logger.extend('utpRequest')(`ConnectionId: ${connectionId} -- { socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
+    await this.requestManagers[enr.nodeId].handleNewRequest(connectionId, newRequest)
     return newRequest
   }
 
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
-    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), srcId)
-    const request = this.openContentRequest.get(requestKey)
-    if (!request) {
-      this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
-      return
+    if (this.requestManagers[srcId] === undefined) {
+      throw new Error(`No request manager for ${srcId}`)
     }
-    await request.handleUtpPacket(packetBuffer)
+    await this.requestManagers[srcId].handlePacket(packetBuffer)
   }
 
   async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
-    } catch {
-      try {
-        this.closeRequest(msg.readUInt16BE(2), enr.nodeId)
-      } catch {
-        //
-      }
+    } catch (err) {
+      this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
+      this.closeAllPeerRequests(enr.nodeId)
+      throw err
     }
   }
 }

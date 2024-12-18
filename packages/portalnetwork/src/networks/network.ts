@@ -570,15 +570,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('ACCEPT')(
       `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
     )
-    const enr = this.findEnr(src.nodeId) ?? src
     this.portal.metrics?.acceptMessagesSent.inc()
-      await this.handleNewRequest({
-      networkId: this.networkId,
-      contentKeys: desiredContentKeys,
-      enr,
-      connectionId: id,
-      requestCode: RequestCode.ACCEPT_READ,
-    })
     const idBuffer = new Uint8Array(2)
     new DataView(idBuffer.buffer).setUint16(0, id, false)
 
@@ -596,6 +588,14 @@ export abstract class BaseNetwork extends EventEmitter {
         desiredContentKeys.length
       } pieces of content.  connectionId: ${id}`,
     )
+    const enr = this.findEnr(src.nodeId) ?? src
+    await this.handleNewRequest({
+      networkId: this.networkId,
+      contentKeys: desiredContentKeys,
+      enr,
+      connectionId: id,
+      requestCode: RequestCode.ACCEPT_READ,
+    })
   }
 
   protected handleFindContent = async (

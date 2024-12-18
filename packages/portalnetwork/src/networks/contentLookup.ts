@@ -73,6 +73,10 @@ export class ContentLookup {
     // Sort known peers by distance to the content
     const nearest = this.network.routingTable.values()
     for (const enr of nearest) {
+      // // Skip if the node has an active uTP request
+      if (this.network.portal.uTP.hasRequests(enr.nodeId) === true) {
+        continue
+      }
       const dist = distance(enr.nodeId, this.contentId)
       this.lookupPeers.push({ enr, distance: Number(dist) })
       this.meta.set(enr.nodeId, { enr: enr.encodeTxt(), distance: bigIntToHex(dist) })
@@ -189,6 +193,10 @@ export class ContentLookup {
         this.logger(`received ${res.enrs.length} ENRs for closer nodes`)
         for (const enr of res.enrs) {
           const decodedEnr = ENR.decode(enr as Uint8Array)
+          // // Skip if the node has an active uTP request
+          if (this.network.portal.uTP.hasRequests(decodedEnr.nodeId) === true) {
+            continue
+          }
           if (!this.meta.has(decodedEnr.nodeId)) {
             const dist = distance(decodedEnr.nodeId, this.contentId)
             this.lookupPeers.push({ enr: decodedEnr, distance: Number(dist) })
