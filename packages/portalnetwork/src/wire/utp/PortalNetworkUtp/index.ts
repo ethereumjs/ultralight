@@ -113,24 +113,19 @@ export class PortalNetworkUTP {
   }
 
   async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
-    const requestKey = this.getRequestKey(packetBuffer.readUint16BE(2), srcId)
-    const request = this.openContentRequest.get(requestKey)
-    if (!request) {
-      this.logger(`No open request for ${srcId} with connectionId ${packetBuffer.readUint16BE(2)}`)
-      return
+    if (this.requestManagers[srcId] === undefined) {
+      throw new Error(`No request manager for ${srcId}`)
     }
-    await request.handleUtpPacket(packetBuffer)
+    await this.requestManagers[srcId].handlePacket(packetBuffer)
   }
 
   async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
-    } catch {
-      try {
-        this.closeRequest(msg.readUInt16BE(2), enr.nodeId)
-      } catch {
-        //
-      }
+    } catch (err) {
+      this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
+      this.closeAllPeerRequests(enr.nodeId)
+      throw err
     }
   }
 }
