@@ -49,11 +49,11 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
 }
 
 /**
- * Generates the Content ID used to calculate the distance between a node ID and the content Key
+ * Generates the serialized contentKey for a given History Network content type and key (i.e. block hash or block number)
  * @param contentKey an object containing the and `blockHash` used to generate the content Key
  * @param contentType a number identifying the type of content (block header, block body, receipt, header_by_number)
  * @param key the hash of the content represented (i.e. block hash for header, body, or receipt, or block number for header_by_number)
- * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
+ * @returns the serialized contentKey
  */
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
@@ -80,6 +80,13 @@ export const getContentKey = (
   }
   return encodedKey
 }
+
+/**
+ * Generates the contentId from a serialized History Network Content Key used to calculate the distance between a node ID and the content key
+ * @param contentType the type of content (block header, block body, receipt, header_by_number)
+ * @param key the hash of the content represented (i.e. block hash for header, body, or receipt, or block number for header_by_number)
+ * @returns the hex encoded string representation of the SHA256 hash of the serialized contentKey
+ */
 export const getContentId = (contentType: HistoryNetworkContentType, key: Uint8Array | bigint) => {
   const encodedKey = getContentKey(contentType, key)
   return bytesToUnprefixedHex(digest(encodedKey))
