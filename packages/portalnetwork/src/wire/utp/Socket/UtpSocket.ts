@@ -92,7 +92,11 @@ export abstract class UtpSocket {
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
       `|| ackNr: ${packet.header.ackNr}`,
     )
-    await this.utp.send(this.remoteAddress, msg, this.networkId)
+    try {
+      await this.utp.send(this.remoteAddress, msg, this.networkId)
+    } catch (err) {
+      this.logger.extend('error')(`Error sending packet: ${err}.`)
+    }
     return msg
   }
 
