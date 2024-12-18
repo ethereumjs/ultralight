@@ -2,7 +2,6 @@ import {
   RequestCode,
   UtpSocketType,
   createContentRequest,
-  createSocketKey,
   startingNrs,
 } from '../../../index.js'
 import { createUtpSocket } from '../Socket/index.js'
@@ -15,45 +14,29 @@ import type {
   INodeAddress,
   NetworkId,
   PortalNetwork,
- UtpSocketKey } from '../../../index.js'
+  } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
+import { RequestManager } from './requestManager.js'
 
 export class PortalNetworkUTP {
   client: PortalNetwork
-  openContentRequest: Map<UtpSocketKey, ContentRequestType>
   logger: Debugger
   working: boolean
+  requestManagers: Record<string, RequestManager>
 
   constructor(client: PortalNetwork) {
     this.client = client
     this.logger = client.logger.extend(`uTP`)
-    this.openContentRequest = new Map()
     this.working = false
+    this.requestManagers = {}
   }
 
-  closeRequest(connectionId: number, nodeId: string) {
-    const requestKey = this.getRequestKey(connectionId, nodeId)
-    const request = this.openContentRequest.get(requestKey)
-    if (request) {
-      void request.socket.sendResetPacket()
-      this.logger.extend('CLOSING')(`Closing uTP request with ${nodeId}`)
-      request.close()
-      this.openContentRequest.delete(requestKey)
-    }
+   closeAllPeerRequests(nodeId: string) {
+     this.requestManagers[nodeId].closeAllRequests()
   }
 
-  getRequestKey(connId: number, nodeId: string): string {
-    const idA = connId + 1
-    const idB = connId - 1
-    const keyA = createSocketKey(nodeId, connId)
-    const keyB = createSocketKey(nodeId, idA)
-    const keyC = createSocketKey(nodeId, idB)
-    for (const key of [keyA, keyB, keyC]) {
-      if (this.openContentRequest.get(key) !== undefined) {
-        return key
-      }
-    }
-    throw new Error(`Cannot Find Open Request for socketKey ${keyA} or ${keyB} or ${keyC}`)
+  hasRequests(nodeId: string): boolean {
+    return this.requestManagers[nodeId] !== undefined && Object.keys(this.requestManagers[nodeId].requestMap).length > 0
   }
 
   createPortalNetworkUTPSocket(
