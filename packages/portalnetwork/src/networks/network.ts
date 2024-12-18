@@ -827,7 +827,7 @@ export abstract class BaseNetwork extends EventEmitter {
     if (pong !== undefined) {
       for (let x = 239; x < 256; x++) {
         // Ask for nodes in all log2distances 239 - 256
-        if (this.routingTable.valuesOfDistance(x).length === 0) {
+        if (this.routingTable.valuesOfDistance(x).length < 16 ) {
           await this.sendFindNodes(enr, [x])
         }
       }
