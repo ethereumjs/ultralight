@@ -3,11 +3,13 @@ import debug from 'debug'
 import { assert, describe, it } from 'vitest'
 
 import {
+  FindContentReadRequest,
   NetworkId,
   Packet,
   PacketType,
   PortalNetwork,
   PortalNetworkUTP,
+  ReadSocket,
   RequestCode,
   UtpSocketType,
   encodeWithVariantPrefix,
@@ -19,6 +21,7 @@ import { ContentWriter } from '../../../src/wire/utp/Socket/ContentWriter.js'
 import { WriteSocket } from '../../../src/wire/utp/Socket/WriteSocket.js'
 
 import { ENR } from '@chainsafe/enr'
+import { RequestManager } from '../../../src/wire/utp/PortalNetworkUtp/requestManager.js'
 
 const sampleSize = 50000
 const enr = ENR.decodeTxt(
@@ -136,6 +139,7 @@ describe('PortalNetworkUTP test', async () => {
       networkId,
       RequestCode.FOUNDCONTENT_WRITE,
       enr,
+      connectionId,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId,
       Buffer.from('test'),
@@ -155,6 +159,7 @@ describe('PortalNetworkUTP test', async () => {
       networkId,
       RequestCode.FINDCONTENT_READ,
       enr,
+      connectionId,
       socketIds[RequestCode.FINDCONTENT_READ].sndId,
       socketIds[RequestCode.FINDCONTENT_READ].rcvId,
     )
@@ -177,6 +182,7 @@ describe('PortalNetworkUTP test', async () => {
       networkId,
       RequestCode.OFFER_WRITE,
       enr,
+      connectionId,
       socketIds[RequestCode.OFFER_WRITE].sndId,
       socketIds[RequestCode.OFFER_WRITE].rcvId,
       Buffer.from('test'),
@@ -194,6 +200,7 @@ describe('PortalNetworkUTP test', async () => {
       networkId,
       RequestCode.ACCEPT_READ,
       enr,
+      connectionId,
       socketIds[RequestCode.ACCEPT_READ].sndId,
       socketIds[RequestCode.ACCEPT_READ].rcvId,
     )
@@ -205,5 +212,78 @@ describe('PortalNetworkUTP test', async () => {
       startingNrs[RequestCode.ACCEPT_READ].ackNr,
       'UTPSocket has correct ackNr',
     )
+  })
+})
+describe('RequestManager', () => {
+  it('should order packets correctly', async () => {
+    const client = await PortalNetwork.create({
+      bindAddress: enr.getLocationMultiaddr('udp')!.nodeAddress().address,
+    })
+    const mgr = new RequestManager(enr.nodeId, debug('test'))
+    const req1 = new FindContentReadRequest({
+      network: client.network()['0x500b']!,
+      socket: new ReadSocket({
+        utp: client.uTP,
+        networkId: NetworkId.HistoryNetwork,
+        enr,
+        connectionId: 0,
+        sndId: 0,
+        rcvId: 0,
+        seqNr: 0,
+        ackNr: 0,
+        type: UtpSocketType.READ,
+        logger: debug('test'),
+      }),
+      connectionId: 0,
+      requestManager: mgr,
+      requestCode: RequestCode.FINDCONTENT_READ,
+      contentKeys: [],
+      content: Buffer.from('test'),
+    })
+    const packet1 = Packet.fromOpts({
+      header: {
+        seqNr: 0,
+        pType: PacketType.ST_DATA,
+        version: 1,
+        connectionId: 0,
+        extension: 0,
+        timestampMicroseconds: 0,
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 0,
+        ackNr: 123,
+      },
+    })
+    const packet2 = Packet.fromOpts({
+      header: {
+        seqNr: 0,
+        pType: PacketType.ST_SYN,
+        version: 1,
+        connectionId: 0,
+        extension: 0,
+        timestampMicroseconds: 0,
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 0,
+        ackNr: 121,
+      },
+    })
+    const packet3 = Packet.fromOpts({
+      header: {
+        seqNr: 0,
+        pType: PacketType.ST_DATA,
+        version: 1,
+        connectionId: 0,
+        extension: 0,
+        timestampMicroseconds: 0,
+        timestampDifferenceMicroseconds: 0,
+        wndSize: 0,
+        ackNr: 125,
+      },
+    })
+    void mgr.handleNewRequest(req1.connectionId, req1)
+    mgr.masterPacketQueue.push(packet2)
+    mgr.currentPacket = packet3
+    void mgr.handlePacket(packet1.encode())
+    assert.equal(mgr.masterPacketQueue.length, 2)
+    assert.deepEqual(mgr.masterPacketQueue[0], packet2)
   })
 })
