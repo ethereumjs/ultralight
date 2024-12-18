@@ -21,6 +21,7 @@ export abstract class UtpSocket {
   type: UtpSocketType
   content: Uint8Array
   remoteAddress: ENR | INodeAddress
+  connectionId: number
   protected seqNr: number
   ackNr: number
   finNr: number | undefined
@@ -38,6 +39,7 @@ export abstract class UtpSocket {
     this.networkId = options.networkId
     this.content = options.content ?? Uint8Array.from([])
     this.remoteAddress = options.enr
+    this.connectionId = options.connectionId
     this.rcvConnectionId = options.rcvId
     this.sndConnectionId = options.sndId
     this.seqNr = options.seqNr

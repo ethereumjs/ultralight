@@ -5,7 +5,6 @@ import debug from 'debug'
 import {
   Bytes32TimeStamp,
   ConnectionState,
-  Packet,
   PacketType,
   StateNetwork,
   bitmap,
@@ -17,13 +16,15 @@ import type { Debugger } from 'debug'
 import type {
   BaseNetwork,
   DataPacket,
+  Packet,
   SelectiveAckHeader,
   SocketType,
   StatePacket,
-  SynPacket,
-} from '../../../index.js'
+
+  SynPacket} from '../../../index.js'
 import type { ReadSocket } from '../Socket/ReadSocket.js'
 import type { WriteSocket } from '../Socket/WriteSocket.js'
+import type { RequestManager } from './requestManager.js'
 
 export function bitmaskToAckNrs(bitmask: Uint8Array, ackNr: number): number[] {
   const bitArray = new BitVectorType(32).deserialize(bitmask)
@@ -34,25 +35,28 @@ export function bitmaskToAckNrs(bitmask: Uint8Array, ackNr: number): number[] {
 }
 
 export interface ContentRequestOptions {
+  requestManager: RequestManager
   network: BaseNetwork
   requestCode: RequestCode
   socket: SocketType
-  socketKey: string
+  connectionId: number
   contentKeys: Uint8Array[]
   content: Uint8Array
   logger?: Debugger
 }
 
 export abstract class ContentRequest {
+  requestManager: RequestManager
   network: BaseNetwork
   requestCode: RequestCode
   socket: SocketType
-  socketKey: string
+  connectionId: number
   logger: Debugger
   constructor(options: ContentRequestOptions) {
+    this.requestManager = options.requestManager
     this.network = options.network
     this.requestCode = options.requestCode
-    this.socketKey = options.socketKey
+    this.connectionId = options.connectionId
     this.socket = options.socket
     this.logger = options.logger ? options.logger.extend('ContentRequest') : debug('ContentRequest')
   }
@@ -76,13 +80,12 @@ export abstract class ContentRequest {
   }
 
   async _handleResetPacket() {
-    this.socket.close()
+    this.close()
   }
 
-  async handleUtpPacket(packetBuffer: Buffer): Promise<void> {
+  async handleUtpPacket(packet: Packet<PacketType>): Promise<void> {
     const timeReceived = Bytes32TimeStamp()
     this.socket._clearTimeout()
-    const packet = Packet.fromBuffer(packetBuffer)
     this.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
     this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
       `|| pktId: ${packet.header.connectionId}     ||`,
@@ -108,6 +111,7 @@ export abstract class ContentRequest {
         }
         break
       case PacketType.ST_RESET:
+        await this._handleResetPacket()
         break
       case PacketType.ST_FIN:
         await this._handleFinPacket(packet)
@@ -117,7 +121,7 @@ export abstract class ContentRequest {
     }
   }
   async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
-    this.logger(`Decompressing stream into ${keys.length} pieces of content`)
+    this.logger.extend('returnContent')(`Decompressing stream into ${keys.length} pieces of content`)
     for (const [idx, k] of keys.entries()) {
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
@@ -243,6 +247,9 @@ export class FoundContentWriteRequest extends ContentWriteRequest {
   }
   async _handleStatePacket(packet: StatePacket): Promise<void> {
     await this.socket.handleStatePacket(packet.header.ackNr, packet.header.timestampMicroseconds)
+    if (this.socket.state === ConnectionState.Closed) {
+      await this.requestManager.closeRequest(packet.header.connectionId)
+    }
   }
 }
 
@@ -303,6 +310,9 @@ export class OfferWriteRequest extends ContentWriteRequest {
       this.socket.setWriter(this.socket.getSeqNr())
     }
     await this.socket.handleStatePacket(packet.header.ackNr, packet.header.timestampMicroseconds)
+    if (this.socket.state === ConnectionState.Closed) {
+      await this.requestManager.closeRequest(packet.header.connectionId)
+    }
   }
 }
 

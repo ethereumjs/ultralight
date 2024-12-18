@@ -43,6 +43,7 @@ export class PortalNetworkUTP {
     networkId: NetworkId,
     requestCode: RequestCode,
     enr: ENR | INodeAddress,
+    connectionId: number,
     sndId: number,
     rcvId: number,
     content?: Uint8Array,
@@ -61,7 +62,7 @@ export class PortalNetworkUTP {
       rcvId,
       seqNr: startingNrs[requestCode].seqNr,
       ackNr: startingNrs[requestCode].ackNr,
-
+      connectionId,
       type,
       logger: this.logger,
       content,
@@ -80,31 +81,34 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode } = params
+    if (this.requestManagers[enr.nodeId] === undefined) {
+      this.requestManagers[enr.nodeId] = new RequestManager(enr.nodeId, this.logger)
+    }
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId
-    const socketKey = createSocketKey(enr.nodeId, connectionId)
     const socket = this.createPortalNetworkUTPSocket(
       params.networkId,
       requestCode,
       enr,
+      connectionId,
       sndId,
       rcvId,
       content,
     )
     const network = this.client.networks.get(params.networkId)!
     const newRequest = createContentRequest({
+      requestManager: this.requestManagers[enr.nodeId],
       network,
       requestCode,
       socket,
-      socketKey,
+      connectionId,
       content,
       contentKeys,
     })
-    this.openContentRequest.set(newRequest.socketKey, newRequest)
-    this.logger(`Opening ${RequestCode[requestCode]} request with key: ${newRequest.socketKey}`)
-    this.logger(`{ socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
-    await newRequest.init()
+    this.logger.extend('utpRequest')(`New ${RequestCode[requestCode]} Request with ${enr.nodeId} -- ConnectionId: ${connectionId}`)
+    this.logger.extend('utpRequest')(`ConnectionId: ${connectionId} -- { socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
+    await this.requestManagers[enr.nodeId].handleNewRequest(connectionId, newRequest)
     return newRequest
   }
 
