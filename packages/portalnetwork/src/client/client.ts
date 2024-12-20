@@ -5,6 +5,7 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
+import PQueue from 'p-queue'
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import {
@@ -46,6 +47,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   ETH: ETH
 
   shouldRefresh: boolean = true
+  private messageQueue: PQueue
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -258,6 +260,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     }
     // Should refresh by default but can be disabled (e.g. in tests)
     opts.shouldRefresh === false && (this.shouldRefresh = false)
+
+    this.messageQueue = new PQueue({ concurrency: 10 })
   }
 
   /**
