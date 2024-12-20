@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'eventemitter3'
 import { digest } from '@chainsafe/as-sha256'
 import { EntryStatus, MAX_NODES_PER_BUCKET, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
@@ -49,7 +49,8 @@ import type {
   OfferMessage,
   PingMessage,
   PongMessage,
- PortalNetwork } from '../index.js'
+  PortalNetwork,
+} from '../index.js'
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
@@ -640,14 +641,14 @@ export abstract class BaseNetwork extends EventEmitter {
       )
       const _id = randUint16()
       const enr = this.findEnr(src.nodeId) ?? src
-        await this.handleNewRequest({
-          networkId: this.networkId,
-          contentKeys: [decodedContentMessage.contentKey],
-          enr,
-          connectionId: _id,
-          requestCode: RequestCode.FOUNDCONTENT_WRITE,
-          contents: value,
-        })
+      await this.handleNewRequest({
+        networkId: this.networkId,
+        contentKeys: [decodedContentMessage.contentKey],
+        enr,
+        connectionId: _id,
+        requestCode: RequestCode.FOUNDCONTENT_WRITE,
+        contents: value,
+      })
 
       const id = new Uint8Array(2)
       new DataView(id.buffer).setUint16(0, _id, false)
@@ -827,7 +828,7 @@ export abstract class BaseNetwork extends EventEmitter {
     if (pong !== undefined) {
       for (let x = 239; x < 256; x++) {
         // Ask for nodes in all log2distances 239 - 256
-        if (this.routingTable.valuesOfDistance(x).length < 16 ) {
+        if (this.routingTable.valuesOfDistance(x).length < 16) {
           await this.sendFindNodes(enr, [x])
         }
       }

@@ -1,8 +1,7 @@
-import type EventEmitter from 'events'
 import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { NodeId } from '@chainsafe/enr'
 import type { AbstractLevel } from 'abstract-level'
-import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
+
 import type { NetworkId } from '../index.js'
 import type { PortalNetworkRoutingTable } from './routingTable.js'
 import type { Multiaddr } from '@multiformats/multiaddr'
@@ -10,9 +9,9 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 /** A representation of an unsigned contactable node. */
 export interface INodeAddress {
   /** The destination socket address. */
-  socketAddr: Multiaddr;
+  socketAddr: Multiaddr
   /** The destination Node Id. */
-  nodeId: NodeId;
+  nodeId: NodeId
 }
 
 export interface PortalNetworkEvents {
@@ -57,8 +56,6 @@ export interface PortalNetworkOpts {
   shouldRefresh?: boolean
   gossipCount?: number
 }
-
-export type PortalNetworkEventEmitter = StrictEventEmitter<EventEmitter, PortalNetworkEvents>
 
 export type RoutingTable = PortalNetworkRoutingTable
 interface Gauge {
