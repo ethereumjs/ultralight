@@ -436,25 +436,44 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
-    const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
-    const remote = enr instanceof ENR ? enr : this.discv5.findEnr(enr.nodeId) ?? fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp')
-    try {
-      this.metrics?.totalBytesSent.inc(payload.length)
-      const res = await this.discv5.sendTalkReq(
-        remote,
-        Buffer.from(payload),
-        hexToBytes(messageNetwork),
-      )
-      this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
-      return res
-    } catch (err: any) {
-      if (networkId === NetworkId.UTPNetwork || utpMessage === true) {
-        throw new Error(`Error sending uTP TALKREQ message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err.message}`)
-      } else {
-        const messageType = PortalWireMessageType.deserialize(payload).selector
-        throw new Error(`Error sending TALKREQ ${MessageCodes[messageType]} message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${enr instanceof ENR ? enr.getLocationMultiaddr('udp')?.toString() : enr.socketAddr.toString()}`)
+    // Queue requests with normal priority (0 is default)
+    return this.messageQueue.add(async () => {
+      const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
+      const remote =
+        enr instanceof ENR
+          ? enr
+          : (this.discv5.findEnr(enr.nodeId) ??
+            fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp'))
+      try {
+        this.metrics?.totalBytesSent.inc(payload.length)
+        const res = await this.discv5.sendTalkReq(
+          remote,
+          Buffer.from(payload),
+          hexToBytes(messageNetwork),
+        )
+        this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
+        return res
+      } catch (err: any) {
+        if (networkId === NetworkId.UTPNetwork || utpMessage === true) {
+          throw new Error(
+            `Error sending uTP TALKREQ message using ${
+              enr instanceof ENR ? 'ENR' : 'MultiAddr'
+            }: ${err.message}`,
+          )
+        } else {
+          const messageType = PortalWireMessageType.deserialize(payload).selector
+          throw new Error(
+            `Error sending TALKREQ ${MessageCodes[messageType]} message using ${
+              enr instanceof ENR ? 'ENR' : 'MultiAddr'
+            }: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${
+              enr instanceof ENR
+                ? enr.getLocationMultiaddr('udp')?.toString()
+                : enr.socketAddr.toString()
+            }`,
+          )
+        }
       }
-    }
+    }) as Promise<Uint8Array>
   }
 
   public sendPortalNetworkResponse = async (
@@ -462,12 +481,22 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     requestId: bigint,
     payload: Uint8Array,
   ) => {
-    this.eventLog &&
-      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    try {
-      await this.discv5.sendTalkResp(src, requestId, payload)
-    } catch (err: any) {
-      this.logger.extend('error')(`Error sending TALKRESP message: ${err}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
-    }
+    // Queue responses with higher priority (1)
+    return this.messageQueue.add(
+      async () => {
+        this.eventLog &&
+          this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
+        try {
+          await this.discv5.sendTalkResp(src, requestId, payload)
+        } catch (err: any) {
+          this.logger.extend('error')(
+            `Error sending TALKRESP message: ${err}.  SrcId: ${
+              src.nodeId
+            } MultiAddr: ${src.socketAddr.toString()}`,
+          )
+        }
+      },
+      { priority: 1 },
+    )
   }
 }
