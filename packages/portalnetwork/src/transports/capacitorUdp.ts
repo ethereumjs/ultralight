@@ -1,4 +1,4 @@
-import { EventEmitter } from 'eventemitter3'
+import { EventEmitter } from 'events'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { UDP } from '@frontall/capacitor-udp'
@@ -9,8 +9,8 @@ import type { IPacket } from '@chainsafe/discv5/packet'
 import type {
   IPMode,
   IRemoteInfo,
-  ITransportEvents,
   ITransportService,
+  TransportEventEmitter,
 } from '@chainsafe/discv5/transport'
 import type { ENR } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
@@ -19,7 +19,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
  */
 export class CapacitorUDPTransportService
-  extends EventEmitter<ITransportEvents>
+  extends (EventEmitter as { new (): TransportEventEmitter })
   implements ITransportService
 {
   private socket!: {
