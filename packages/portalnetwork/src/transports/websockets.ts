@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'eventemitter3'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { multiaddr as ma } from '@multiformats/multiaddr'
@@ -17,7 +17,6 @@ import type { IPacket } from '@chainsafe/discv5/packet'
 import type { ENR } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
-import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
 
 const log = debug('discv5:transport')
 
@@ -25,15 +24,11 @@ interface WebSocketTransportEvents extends ITransportEvents {
   multiAddr: (src: Multiaddr) => void
 }
 
-export declare type WSTransportEventEmitter = StrictEventEmitter<
-  EventEmitter,
-  WebSocketTransportEvents
->
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over Websockets
  */
 export class WebSocketTransportService
-  extends (EventEmitter as { new (): WSTransportEventEmitter })
+  extends EventEmitter<WebSocketTransportEvents>
   implements ITransportService
 {
   public multiaddr: Multiaddr

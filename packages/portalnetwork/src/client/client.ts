@@ -1,6 +1,6 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'eventemitter3'
 import { Discv5 } from '@chainsafe/discv5'
-import { ENR, SignableENR } from '@chainsafe/enr';
+import { ENR, SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
@@ -25,10 +25,15 @@ import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
-import type { INodeAddress, PortalNetworkEventEmitter, PortalNetworkMetrics , PortalNetworkOpts } from './types.js'
-import { MessageCodes, PortalWireMessageType } from '../wire/types.js';
+import type {
+  INodeAddress,
+  PortalNetworkEvents,
+  PortalNetworkMetrics,
+  PortalNetworkOpts,
+} from './types.js'
+import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 
-export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEventEmitter }) {
+export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   eventLog: boolean
   discv5: Discv5
   networks: Map<NetworkId, BaseNetwork>
@@ -297,7 +302,7 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
   public stop = async () => {
     await this.discv5.stop()
     this.discv5.removeAllListeners()
-    await this.removeAllListeners()
+    this.removeAllListeners()
     await this.db.close()
     for (const network of this.networks.values()) {
       network.stopRefresh()
@@ -408,7 +413,9 @@ export class PortalNetwork extends (EventEmitter as { new (): PortalNetworkEvent
     try {
       await this.uTP.handleUtpPacket(packetBuffer, src.nodeId)
     } catch (err: any) {
-      this.logger.extend('error')(`handleUTP error: ${err.message}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
+      this.logger.extend('error')(
+        `handleUTP error: ${err.message}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`,
+      )
     }
   }
 
