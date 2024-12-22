@@ -1,102 +1,152 @@
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { ethers } from 'ethers'
-
-import { addRLPSerializedBlock } from '../networks/index.js'
-import { NetworkId } from '../networks/types.js'
-import {
-  blockFromRpc,
-  ethJsBlockToEthersBlock,
-  ethJsBlockToEthersBlockWithTxs,
-} from '../util/helpers.js'
-
-import { PortalNetwork } from './client.js'
+import { PortalNetwork } from './client'
 
 import type { HistoryNetwork } from '../networks/index.js'
-import type { PortalNetworkOpts } from './types.js'
+import { NetworkId } from '../networks/types.js'
+import { PortalNetworkOpts } from './types'
+import { hexToBytes } from '@ethereumjs/util'
 
-export class UltralightProvider extends ethers.JsonRpcProvider {
-  private fallbackProvider: ethers.JsonRpcProvider
+
+const ERROR_CODES = {
+  UNSUPPORTED_METHOD: 4200,
+  INVALID_PARAMS: -32602,
+  INTERNAL_ERROR: -32603
+}
+
+
+const SUPPORTED_METHODS = new Set([
+  'eth_getBlockByHash',
+  'eth_getBlockByNumber',
+  'eth_getTransactionCount',
+  'eth_getCode',
+  'eth_getBalance',
+  'eth_getStorageAt',
+  'eth_call'
+])
+
+interface RequestArguments {
+  method: string
+  params?: unknown[]
+}
+
+export class UltralightProvider {
+
   public portal: PortalNetwork
   public historyNetwork: HistoryNetwork
-  public static create = async (
-    fallbackProviderUrl: string | ethers.JsonRpcProvider,
-    opts: Partial<PortalNetworkOpts>,
-  ) => {
-    const portal = await PortalNetwork.create(opts)
-    return new UltralightProvider(fallbackProviderUrl, portal)
-  }
-  constructor(fallbackProvider: string | ethers.JsonRpcProvider, portal: PortalNetwork) {
-    const staticNetwork = ethers.Network.from('mainnet')
-    super(
-      typeof fallbackProvider === 'string' ? fallbackProvider : fallbackProvider._getConnection(),
-      staticNetwork,
-      { staticNetwork },
-    )
-    this.fallbackProvider =
-      typeof fallbackProvider === 'string'
-        ? new ethers.JsonRpcProvider(fallbackProvider, staticNetwork, { staticNetwork })
-        : fallbackProvider
+
+  constructor(portal: PortalNetwork) {
+  
     this.portal = portal
     this.historyNetwork = portal.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   }
 
-  getBlock = async (blockTag: ethers.BlockTag): Promise<ethers.Block | null> => {
-    let block
-    if (typeof blockTag === 'string' && blockTag.length === 66) {
-      const blockHash = hexToBytes(blockTag)
-      block = await this.portal.ETH.getBlockByHash(blockHash, false)
-      if (block !== undefined) {
-        return ethJsBlockToEthersBlock(block, this.provider)
-      }
-    } else if (blockTag !== 'latest') {
-      const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
-      block = await this.portal.ETH.getBlockByNumber(blockNum, false)
-      if (block !== undefined) {
-        return ethJsBlockToEthersBlock(block, this.provider)
-      }
-    }
-    // TODO: Add block to history network if retrieved from provider
-    return this.fallbackProvider.getBlock(blockTag)
+  static async create(opts: Partial<PortalNetworkOpts>): Promise<UltralightProvider> {
+    const portal = await PortalNetwork.create(opts)
+    return new UltralightProvider(portal)
   }
 
-  getBlockWithTransactions = async (blockTag: ethers.BlockTag) => {
-    let block
-    const isBlockHash =
-      ethers.isHexString(blockTag) && typeof blockTag === 'string' && blockTag.length === 66
-    if (isBlockHash) {
-      const blockHash = hexToBytes(blockTag)
-      block = await this.portal.ETH.getBlockByHash(blockHash, true)
-      if (block !== undefined) {
-        return ethJsBlockToEthersBlockWithTxs(block, this.provider)
-      }
-    } else if (blockTag !== 'latest') {
-      const blockNum = typeof blockTag === 'number' ? blockTag : Number(BigInt(blockTag))
-      block = await this.portal.ETH.getBlockByNumber(blockNum, true)
-      if (block !== undefined) {
-        return ethJsBlockToEthersBlockWithTxs(block, this.provider)
-      }
+  async request({ method, params = [] }: RequestArguments): Promise<unknown> {
+
+    if (!SUPPORTED_METHODS.has(method)) {
+      throw this.createError(ERROR_CODES.UNSUPPORTED_METHOD, `The Provider does not support the requested method`)
     }
 
-    if (isBlockHash) {
-      block = await this.fallbackProvider.send('eth_getBlockByHash', [blockTag, true])
-    } else {
-      const blockNum =
-        typeof blockTag === 'number'
-          ? blockTag
-          : blockTag !== 'latest'
-            ? Number(BigInt(blockTag))
-            : blockTag
-      block = await this.fallbackProvider.send('eth_getBlockByNumber', [blockNum, true])
+    try {
+      switch (method) {
+        case 'eth_getBlockByHash':
+          if (params.length !== 2) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getBlockByHash')
+          const [blockHash, fullTx] = params
+          return await this.getBlockByHash(hexToBytes(blockHash as string), fullTx as boolean)
+
+        case 'eth_getBlockByNumber':
+          if (params.length !== 2) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getBlockByNumber')
+          const [blockNumber, includeTx] = params
+          if (typeof blockNumber !== 'number' && typeof blockNumber !== 'bigint' && blockNumber !== 'latest' && blockNumber !== 'finalized') {
+            throw this.createError(ERROR_CODES.INVALID_PARAMS, `Invalid block number: ${blockNumber}`)
+          }
+          return await this.getBlockByNumber(blockNumber, includeTx as boolean)
+
+        case 'eth_getTransactionCount':
+          if (params.length !== 2) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getTransactionCount')
+          const [address, block] = params
+          return await this.getTransactionCount(address as Uint8Array, block as string)
+
+        case 'eth_getCode':
+          if (params.length !== 2) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getCode')
+          const [codeAddress, codeBlock] = params
+          return await this.getCode(codeAddress as Uint8Array, codeBlock as string)
+
+        case 'eth_getBalance':
+          if (params.length !== 2) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getBalance')
+          const [balanceAddress, balanceBlock] = params
+          return await this.getBalance(balanceAddress as Uint8Array, balanceBlock as bigint)
+
+        case 'eth_getStorageAt':
+          if (params.length !== 3) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getStorageAt')
+          const [storageAddress, position, storageBlock] = params
+          return await this.getStorageAt(storageAddress as Uint8Array, position as Uint8Array, storageBlock as string)
+
+        case 'eth_call':
+          if (params.length !== 2) throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_call')
+          const [callObject, callBlock] = params
+          return await this.call(callObject as any, callBlock as bigint)
+
+        default:
+          throw this.createError(ERROR_CODES.UNSUPPORTED_METHOD, `The Provider does not support the requested method`)
+      }
+    } catch (error: any) {
+      return {
+        jsonrpc: '2.0',
+        id: null,
+        error: {
+          code: error.code || -32603,
+          message: error.message || 'Internal error',
+        }
+      }
+    }
+  }
+
+  private async getBlockByHash(blockHash: Uint8Array, fullTx: boolean) {
+  
+  const response = await this.portal.ETH.getBlockByHash(blockHash, fullTx)
+  return response
+}
+
+  private async getBlockByNumber(blockNumber: string | number | bigint, includeTx: boolean) {
+   
+    if (typeof blockNumber === 'string') {
+      if (blockNumber === 'latest' || blockNumber === 'finalized') {
+        return await this.portal.ETH.getBlockByNumber(blockNumber, includeTx)
+      }   
+      return await this.portal.ETH.getBlockByNumber(BigInt(blockNumber), includeTx)
     }
 
-    const ethJSBlock = blockFromRpc(block)
-    await addRLPSerializedBlock(
-      bytesToHex(ethJSBlock.serialize()),
-      block.hash,
-      this.historyNetwork,
-      [], // I'm too lazy to fix this right now
-    )
-    const ethersBlock = await ethJsBlockToEthersBlockWithTxs(ethJSBlock, this.provider)
-    return ethersBlock
+    return await this.portal.ETH.getBlockByNumber(blockNumber, includeTx)
+  }
+
+
+  private async getTransactionCount(address: Uint8Array, block: string) {
+    return await this.portal.ETH.getTransactionCount(address, block)
+  }
+
+  private async getCode(codeAddress: Uint8Array, codeBlock: string) {
+    return await this.portal.ETH.getCode(codeAddress, codeBlock)
+  }
+
+  private async getBalance(balanceAddress: Uint8Array, balanceBlock: bigint) {
+    return await this.portal.ETH.getBalance(balanceAddress, balanceBlock)
+  }
+
+  private async getStorageAt(storageAddress: Uint8Array, position: Uint8Array, storageBlock: string) {
+    return await this.portal.ETH.getStorageAt(storageAddress, position, storageBlock)
+  }
+
+  private async call(callObject: any, callBlock: bigint) {
+    return await this.portal.ETH.call(callObject, callBlock)
+  }
+
+  private createError(code: number, message: string) {
+    const error = new Error(message)
+    ;(error as any).code = code
+    return error
   }
 }
