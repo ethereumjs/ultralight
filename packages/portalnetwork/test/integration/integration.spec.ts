@@ -19,7 +19,6 @@ import {
   generateRandomNodeIdAtDistance,
   getContentKey,
   log2Distance,
-  log2Distance,
   serializedContentKeyToContentId,
 } from '../../src/index.js'
 
