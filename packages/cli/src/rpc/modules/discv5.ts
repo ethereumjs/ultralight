@@ -127,7 +127,7 @@ export class discv5 {
     const [nodeId] = params
     const buckets = (this._client.discv5 as any).kbuckets.buckets
     for (let i = 255; i > -1; i--) {
-      (buckets[i] as any).removeById(nodeId)
+      ;(buckets[i] as any).removeById(nodeId)
     }
     const removed = this._client.discv5.findEnr(nodeId)
     return removed === undefined ? true : false
