@@ -1,19 +1,27 @@
 import { UltralightProvider } from '../../portalnetwork/src/client/provider'
+import { NetworkId } from '../../portalnetwork/src/networks/types'
 
 const testBlockHash = '0x95b0950557cbc3e6647766adb719f80f7c7d192f4429b6026cdbd2cbe6a64294'
 const testContract = '0x6b175474e89094c44da98b954eedeac495271d0f'
 const testStorage = '0x0000000000000000000000000000000000000000000000000000000000000000'
-const historicalBlock = 31591
+const historicalBlock = 1048576
 
-async function findHistoricalAccount(provider: UltralightProvider, blockNumber: number): Promise<string | null> {
+async function findHistoricalAccount(
+  provider: UltralightProvider,
+  blockNumber: number,
+): Promise<string | null> {
   try {
     const block: any = await provider.request({
       method: 'eth_getBlockByNumber',
-      params: [blockNumber, true]
+      params: [blockNumber, true],
     })
 
-    if (block && block.result && block.result.transactions && block.result.transactions.length > 0) {
-
+    if (
+      block &&
+      block.result &&
+      block.result.transactions &&
+      block.result.transactions.length > 0
+    ) {
       const contractCreation = block.result.transactions.find((tx: any) => !tx.to)
       if (contractCreation) {
         console.log('Found contract creation transaction')
@@ -46,6 +54,10 @@ async function main() {
       'enr:-IS4QA5hpJikeDFf1DD1_Le6_ylgrLGpdwn3SRaneGu9hY2HUI7peHep0f28UUMzbC0PvlWjN8zSfnqMG07WVcCyBhADgmlkgnY0gmlwhKRc9-KJc2VjcDI1NmsxoQJMpHmGj1xSP1O-Mffk_jYIHVcg6tY5_CjmWVg1gJEsPIN1ZHCCE4o',
     ],
     bindAddress: '0.0.0.0',
+    supportedNetworks: [
+      { networkId: NetworkId.HistoryNetwork, maxStorage: 1024 },
+      { networkId: NetworkId.StateNetwork, maxStorage: 1024 },
+    ],
   })
   console.log('Provider created:', provider.portal.discv5.enr.nodeId)
   await provider.portal.start()
@@ -67,7 +79,7 @@ async function main() {
   console.log('Testing eth_getBlockByNumber...')
   const blockByNumber = await provider.request({
     method: 'eth_getBlockByNumber',
-    params: [100, false]
+    params: [historicalBlock, false],
   })
 
   console.log('Block by number retrieved:', blockByNumber)
@@ -78,41 +90,37 @@ async function main() {
   if (!testAddress) {
     console.error('Could not find a historical account to test with')
   }
-  
+
   console.log(`Found historical address: ${testAddress}`)
 
   console.log('Testing eth_getTransactionCount...')
   const transactionCount = await provider.request({
     method: 'eth_getTransactionCount',
-    params: [testAddress, '31591'],
+    params: [testAddress, historicalBlock],
   })
 
   console.log('Transaction count:', transactionCount)
 
-
   console.log('Testing eth_getCode...')
   const code = await provider.request({
     method: 'eth_getCode',
-    params: [testContract, '100']
+    params: [testContract, '100'],
   })
   console.log('Contract code retrieved:', code)
 
- 
   console.log('Testing eth_getBalance...')
   const balance = await provider.request({
     method: 'eth_getBalance',
-    params: [testAddress, '31591']
+    params: [testAddress, historicalBlock],
   })
   console.log('Account balance:', balance)
-
 
   console.log('Testing eth_getStorageAt...')
   const storage = await provider.request({
     method: 'eth_getStorageAt',
-    params: [testContract, testStorage, '31591']
+    params: [testContract, testStorage, historicalBlock],
   })
   console.log('Storage value:', storage)
-
 
   console.log('Testing eth_call...')
   const callData = {
@@ -122,15 +130,14 @@ async function main() {
   }
   const callResult = await provider.request({
     method: 'eth_call',
-    params: [callData, 31591]
+    params: [callData, historicalBlock],
   })
   console.log('Contract call result:', callResult)
-
 
   try {
     await provider.request({
       method: 'eth_unsupportedMethod',
-      params: []
+      params: [],
     })
   } catch (error) {
     console.log('Expected error for unsupported method:', error.message)
@@ -139,5 +146,4 @@ async function main() {
   process.exit(0)
 }
 
-main()
-  .catch((err) => console.error(err))
+main().catch((err) => console.error(err))

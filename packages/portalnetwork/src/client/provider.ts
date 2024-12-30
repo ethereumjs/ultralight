@@ -3,7 +3,7 @@ import { PortalNetwork } from './client.js'
 import type { PortalNetworkOpts } from './types'
 import { hexToBytes } from '@ethereumjs/util'
 
-import { formatBlockResponse } from '../util/helpers'
+import { formatBlockResponse } from '../util/helpers.js'
 
 const ERROR_CODES = {
   UNSUPPORTED_METHOD: 4200,
@@ -59,7 +59,6 @@ export class UltralightProvider {
         }
 
         case 'eth_getBlockByNumber': {
-          console.log('inside eth_getBlockByNumber')
           if (params.length !== 2)
             throw this.createError(
               ERROR_CODES.INVALID_PARAMS,
@@ -88,21 +87,21 @@ export class UltralightProvider {
               'Invalid params for eth_getTransactionCount',
             )
           const [address, block] = params
-          return await this.getTransactionCount(address as Uint8Array, block as string)
+          return await this.getTransactionCount(address as string, block as string)
         }
 
         case 'eth_getCode': {
           if (params.length !== 2)
             throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getCode')
           const [codeAddress, codeBlock] = params
-          return await this.getCode(codeAddress as Uint8Array, codeBlock as string)
+          return await this.getCode(codeAddress as string, codeBlock as string)
         }
 
         case 'eth_getBalance': {
           if (params.length !== 2)
             throw this.createError(ERROR_CODES.INVALID_PARAMS, 'Invalid params for eth_getBalance')
           const [balanceAddress, balanceBlock] = params
-          return await this.getBalance(balanceAddress as Uint8Array, balanceBlock as bigint)
+          return await this.getBalance(balanceAddress as string, balanceBlock as bigint)
         }
 
         case 'eth_getStorageAt': {
@@ -113,8 +112,8 @@ export class UltralightProvider {
             )
           const [storageAddress, position, storageBlock] = params
           return await this.getStorageAt(
-            storageAddress as Uint8Array,
-            position as Uint8Array,
+            storageAddress as string,
+            position as string,
             storageBlock as string,
           )
         }
@@ -154,7 +153,6 @@ export class UltralightProvider {
   }
 
   private async getBlockByNumber(blockNumber: string | number | bigint, includeTx: boolean) {
-
     let block
 
     if (typeof blockNumber === 'string') {
@@ -174,24 +172,24 @@ export class UltralightProvider {
     return formatBlockResponse(block, includeTx)
   }
 
-  private async getTransactionCount(address: Uint8Array, block: string) {
-    return this.portal.ETH.getTransactionCount(address, block)
+  private async getTransactionCount(address: string, block: string) {
+    return this.portal.ETH.getTransactionCount(hexToBytes(address), block)
   }
 
-  private async getCode(codeAddress: Uint8Array, codeBlock: string) {
-    return this.portal.ETH.getCode(codeAddress, codeBlock)
+  private async getCode(codeAddress: string, codeBlock: string) {
+    return this.portal.ETH.getCode(hexToBytes(codeAddress), codeBlock)
   }
 
-  private async getBalance(balanceAddress: Uint8Array, balanceBlock: bigint) {
-    return this.portal.ETH.getBalance(balanceAddress, balanceBlock)
+  private async getBalance(balanceAddress: string, balanceBlock: bigint) {
+    return this.portal.ETH.getBalance(hexToBytes(balanceAddress), balanceBlock)
   }
 
-  private async getStorageAt(
-    storageAddress: Uint8Array,
-    position: Uint8Array,
-    storageBlock: string,
-  ) {
-    return this.portal.ETH.getStorageAt(storageAddress, position, storageBlock)
+  private async getStorageAt(storageAddress: string, position: string, storageBlock: string) {
+    return this.portal.ETH.getStorageAt(
+      hexToBytes(storageAddress),
+      hexToBytes(position),
+      storageBlock,
+    )
   }
 
   private async call(callObject: any, callBlock: bigint) {
