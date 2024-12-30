@@ -1,6 +1,6 @@
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { TransactionFactory } from '@ethereumjs/tx'
-import { TypeOutput, bytesToHex, setLengthLeft, toBytes, toType } from '@ethereumjs/util'
+import { TypeOutput, bigIntToHex, bytesToHex, intToHex, setLengthLeft, toBytes, toType } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 import { ethers } from 'ethers'
@@ -290,4 +290,82 @@ export function blockFromRpc(
     { header, transactions, uncleHeaders },
     { ...options, setHardfork: true },
   )
+}
+
+export function formatBlockResponse(block: Block, includeTransactions: boolean) {
+  const json = JSON.stringify(block, null, 2)
+  const parsedBlock = JSON.parse(json)
+  const header = parsedBlock.header
+
+  const withdrawalsAttr =
+  header.withdrawalsRoot !== undefined
+    ? {
+        withdrawalsRoot: header.withdrawalsRoot!,
+        withdrawals: parsedBlock.withdrawals,
+      }
+    : {}
+
+  const transactions = block.transactions.map((tx, txIndex) =>
+  includeTransactions ? toJSONRPCTx(tx, block, txIndex) : bytesToHex(tx.hash()),
+  )
+
+  return {
+    jsonrpc: '2.0',
+    id: 1,
+    result: {
+      number: header.number,
+      hash: bytesToHex(block.hash()),
+      parentHash: header.parentHash,
+      mixHash: header.mixHash,
+      nonce: header.nonce!,
+      sha3Uncles: header.uncleHash!,
+      logsBloom: header.logsBloom!,
+      transactionsRoot: header.transactionsTrie!,
+      stateRoot: header.stateRoot!,
+      receiptsRoot: header.receiptTrie!,
+      miner: header.coinbase!,
+      difficulty: header.difficulty!,
+      extraData: header.extraData!,
+      size: intToHex(block.serialize().length),
+      gasLimit: header.gasLimit!,
+      gasUsed: header.gasUsed!,
+      timestamp: header.timestamp!,
+      transactions,
+      uncles: block.uncleHeaders.map((uh) => bytesToHex(uh.hash())),
+      baseFeePerGas: header.baseFeePerGas,
+      ...withdrawalsAttr,
+      blobGasUsed: header.blobGasUsed,
+      excessBlobGas: header.excessBlobGas,
+      parentBeaconBlockRoot: header.parentBeaconBlockRoot,
+      requestsRoot: header.requestsRoot,
+      requests: block.requests?.map((req) => bytesToHex(req.serialize())),
+    },
+  }
+}
+
+export function toJSONRPCTx (tx: TypedTransaction, block?: Block, txIndex?: number) {
+  const txJSON = tx.toJSON()
+  return {
+    blockHash: block ? bytesToHex(block.hash()) : null,
+    blockNumber: block ? bigIntToHex(block.header.number) : null,
+    from: tx.getSenderAddress().toString(),
+    gas: txJSON.gasLimit!,
+    gasPrice: txJSON.gasPrice ?? txJSON.maxFeePerGas!,
+    maxFeePerGas: txJSON.maxFeePerGas,
+    maxPriorityFeePerGas: txJSON.maxPriorityFeePerGas,
+    type: intToHex(tx.type),
+    accessList: txJSON.accessList,
+    chainId: txJSON.chainId,
+    hash: bytesToHex(tx.hash()),
+    input: txJSON.data!,
+    nonce: txJSON.nonce!,
+    to: tx.to?.toString() ?? null,
+    transactionIndex: txIndex !== undefined ? intToHex(txIndex) : null,
+    value: txJSON.value!,
+    v: txJSON.v!,
+    r: txJSON.r!,
+    s: txJSON.s!,
+    maxFeePerBlobGas: txJSON.maxFeePerBlobGas,
+    blobVersionedHashes: txJSON.blobVersionedHashes
+  }
 }

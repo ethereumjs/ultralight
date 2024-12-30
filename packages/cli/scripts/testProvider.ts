@@ -1,6 +1,34 @@
-import { UltralightProvider } from 'portalnetwork'
+import { UltralightProvider } from '../../portalnetwork/src/client/provider'
 
 const testBlockHash = '0x95b0950557cbc3e6647766adb719f80f7c7d192f4429b6026cdbd2cbe6a64294'
+const testContract = '0x6b175474e89094c44da98b954eedeac495271d0f'
+const testStorage = '0x0000000000000000000000000000000000000000000000000000000000000000'
+const historicalBlock = 31591
+
+async function findHistoricalAccount(provider: UltralightProvider, blockNumber: number): Promise<string | null> {
+  try {
+    const block: any = await provider.request({
+      method: 'eth_getBlockByNumber',
+      params: [blockNumber, true]
+    })
+
+    if (block && block.result && block.result.transactions && block.result.transactions.length > 0) {
+
+      const contractCreation = block.result.transactions.find((tx: any) => !tx.to)
+      if (contractCreation) {
+        console.log('Found contract creation transaction')
+        return contractCreation.from
+      }
+
+      console.log('Using first transaction sender')
+      return block.result.transactions[0].from
+    }
+    return null
+  } catch (error) {
+    console.error('Error finding historical account:', error)
+    return null
+  }
+}
 
 async function main() {
   const provider = await UltralightProvider.create({
@@ -27,12 +55,87 @@ async function main() {
     console.log('Waiting for network to start...')
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
-  const block = await provider.request({
+
+  console.log('Testing eth_getBlockByHash...')
+  const block: any = await provider.request({
     method: 'eth_getBlockByHash',
     params: [testBlockHash, false],
   })
 
-  console.log('Block retrieved:', block)
+  console.log('Block by hash retrieved:', block)
+
+  console.log('Testing eth_getBlockByNumber...')
+  const blockByNumber = await provider.request({
+    method: 'eth_getBlockByNumber',
+    params: [100, false]
+  })
+
+  console.log('Block by number retrieved:', blockByNumber)
+
+  console.log(`Looking for accounts in block ${historicalBlock}...`)
+
+  const testAddress = await findHistoricalAccount(provider, historicalBlock)
+  if (!testAddress) {
+    console.error('Could not find a historical account to test with')
+  }
+  
+  console.log(`Found historical address: ${testAddress}`)
+
+  console.log('Testing eth_getTransactionCount...')
+  const transactionCount = await provider.request({
+    method: 'eth_getTransactionCount',
+    params: [testAddress, '31591'],
+  })
+
+  console.log('Transaction count:', transactionCount)
+
+
+  console.log('Testing eth_getCode...')
+  const code = await provider.request({
+    method: 'eth_getCode',
+    params: [testContract, '100']
+  })
+  console.log('Contract code retrieved:', code)
+
+ 
+  console.log('Testing eth_getBalance...')
+  const balance = await provider.request({
+    method: 'eth_getBalance',
+    params: [testAddress, '31591']
+  })
+  console.log('Account balance:', balance)
+
+
+  console.log('Testing eth_getStorageAt...')
+  const storage = await provider.request({
+    method: 'eth_getStorageAt',
+    params: [testContract, testStorage, '31591']
+  })
+  console.log('Storage value:', storage)
+
+
+  console.log('Testing eth_call...')
+  const callData = {
+    to: testAddress,
+    data: '0x06fdde03',
+    from: testContract,
+  }
+  const callResult = await provider.request({
+    method: 'eth_call',
+    params: [callData, 31591]
+  })
+  console.log('Contract call result:', callResult)
+
+
+  try {
+    await provider.request({
+      method: 'eth_unsupportedMethod',
+      params: []
+    })
+  } catch (error) {
+    console.log('Expected error for unsupported method:', error.message)
+  }
+
   process.exit(0)
 }
 

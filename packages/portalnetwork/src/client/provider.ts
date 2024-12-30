@@ -3,6 +3,8 @@ import { PortalNetwork } from './client.js'
 import type { PortalNetworkOpts } from './types'
 import { hexToBytes } from '@ethereumjs/util'
 
+import { formatBlockResponse } from '../util/helpers'
+
 const ERROR_CODES = {
   UNSUPPORTED_METHOD: 4200,
   INVALID_PARAMS: -32602,
@@ -57,6 +59,7 @@ export class UltralightProvider {
         }
 
         case 'eth_getBlockByNumber': {
+          console.log('inside eth_getBlockByNumber')
           if (params.length !== 2)
             throw this.createError(
               ERROR_CODES.INVALID_PARAMS,
@@ -143,18 +146,32 @@ export class UltralightProvider {
 
   private async getBlockByHash(blockHash: Uint8Array, fullTx: boolean) {
     const response = await this.portal.ETH.getBlockByHash(blockHash, fullTx)
-    return response
+    if (!response) {
+      throw this.createError(ERROR_CODES.INTERNAL_ERROR, 'Block not found')
+    }
+
+    return formatBlockResponse(response, fullTx)
   }
 
   private async getBlockByNumber(blockNumber: string | number | bigint, includeTx: boolean) {
+
+    let block
+
     if (typeof blockNumber === 'string') {
       if (blockNumber === 'latest' || blockNumber === 'finalized') {
-        return this.portal.ETH.getBlockByNumber(blockNumber, includeTx)
+        block = await this.portal.ETH.getBlockByNumber(blockNumber, includeTx)
+      } else {
+        block = await this.portal.ETH.getBlockByNumber(BigInt(blockNumber), includeTx)
       }
-      return this.portal.ETH.getBlockByNumber(BigInt(blockNumber), includeTx)
+    } else {
+      block = await this.portal.ETH.getBlockByNumber(blockNumber, includeTx)
     }
 
-    return this.portal.ETH.getBlockByNumber(blockNumber, includeTx)
+    if (!block) {
+      throw this.createError(ERROR_CODES.INTERNAL_ERROR, 'Block not found')
+    }
+
+    return formatBlockResponse(block, includeTx)
   }
 
   private async getTransactionCount(address: Uint8Array, block: string) {

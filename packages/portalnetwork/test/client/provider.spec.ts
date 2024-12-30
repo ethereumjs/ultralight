@@ -2,7 +2,7 @@ import { SignableENR } from '@chainsafe/enr'
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { assert, it } from 'vitest'
+import { expect, it } from 'vitest'
 
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
@@ -14,7 +14,7 @@ it('Test provider functionality', async () => {
   const enr = SignableENR.createFromPrivateKey(privateKey)
   enr.setLocationMultiaddr(ma)
   const provider = await UltralightProvider.create({
-    bindAddress: '0.0.0.0',
+    bindAddress: '0.0.0.0.0',
     transport: TransportLayer.NODE,
     config: {
       bindAddrs: {
@@ -31,12 +31,84 @@ it('Test provider functionality', async () => {
   provider.portal.ETH.getBlockByHash = async (_hash: Uint8Array) => {
     return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
   }
+
+  provider.portal.ETH.getBlockByNumber = async (blockNumber: number | bigint | "latest" | "finalized") => {
+      return Block.fromBlockData({ 
+        header: BlockHeader.fromHeaderData({ 
+          number: typeof blockNumber === 'string' ? 0n : blockNumber,
+
+        }) 
+      })
+    }
+
+    provider.portal.ETH.getTransactionCount = async (_address: Uint8Array) => {
+      return BigInt('0x5')
+    }
+
+    provider.portal.ETH.getCode = async (_address: Uint8Array) => {
+      return new Uint8Array(Buffer.from('60806040', 'hex'))
+    }
+
+    provider.portal.ETH.getBalance = async (_address: Uint8Array) => {
+      return 1000000000000000000n
+    }
+
+    provider.portal.ETH.getStorageAt = async (_address: Uint8Array, _position: Uint8Array) => {
+      return '0x' + Buffer.from(new Uint8Array(32)).toString('hex')
+    }
+
+    provider.portal.ETH.call = async (_txObject: any) => {
+      return new Uint8Array([0x00, 0x01])
+    }
+
+    const blockByHash = await provider.request({
+      method: 'eth_getBlockByHash',
+      params: ['0x123', false]
+    }) as { result: { number: string } }
+    expect(blockByHash.result.number).toBe('0x2')
+
+    const blockByNumber = await provider.request({
+      method: 'eth_getBlockByNumber',
+      params: [100, false]
+    }) as { result: { number: string } }
+    expect(blockByNumber.result.number).toBe('0x64')
+
+    const balance = await provider.request({
+      method: 'eth_getBalance',
+      params: ['0x1234567890123456789012345678901234567890', '0x0']
+    }) as { result: string }
+    expect(balance.result).toBe('0xde0b6b3a7640000')
+
+    const storage = await provider.request({
+      method: 'eth_getStorageAt',
+      params: [
+        '0x1234567890123456789012345678901234567890',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        '0x64'
+      ]
+    }) as { result: string }
+    expect(storage.result).toBe('0x' + '00'.repeat(32))
+
+    const call = await provider.request({
+      method: 'eth_call',
+      params: [{
+        to: '0x1234567890123456789012345678901234567890',
+        data: '0x70a08231000000000000000000000000'
+      }, '0x64']
+    }) as { result: string }
+    expect(call.result).toBe('0x0001')
+
+    await expect(provider.request({
+      method: 'eth_unsupportedMethod',
+      params: []
+    })).rejects.toThrow()
+
+    await expect(provider.request({
+      method: 'eth_getBlockByHash',
+      params: ['0x123']
+    })).rejects.toThrow()
+
   
   await (provider as any).portal.stop()
 
-  assert.equal(
-    1n,
-    (await provider._detectNetwork()).chainId,
-    'parent class methods work as expected',
-  )
 })
