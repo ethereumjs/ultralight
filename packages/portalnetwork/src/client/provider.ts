@@ -3,7 +3,7 @@ import { PortalNetwork } from './client.js'
 import type { PortalNetworkOpts } from './types'
 import { hexToBytes } from '@ethereumjs/util'
 
-import { formatBlockResponse } from '../util/helpers.js'
+import { formatBlockResponse, formatResponse } from '../util/helpers.js'
 
 const ERROR_CODES = {
   UNSUPPORTED_METHOD: 4200,
@@ -181,19 +181,22 @@ export class UltralightProvider {
   }
 
   private async getBalance(balanceAddress: string, balanceBlock: bigint) {
-    return this.portal.ETH.getBalance(hexToBytes(balanceAddress), balanceBlock)
+    const balance = await this.portal.ETH.getBalance(hexToBytes(balanceAddress), balanceBlock)
+    return formatResponse('0x' + (balance ? balance.toString(16) : '0'))
   }
 
   private async getStorageAt(storageAddress: string, position: string, storageBlock: string) {
-    return this.portal.ETH.getStorageAt(
+    const storage = await this.portal.ETH.getStorageAt(
       hexToBytes(storageAddress),
       hexToBytes(position),
       storageBlock,
     )
+    return formatResponse('0x' + (storage ? storage.toString() : '0'))
   }
 
   private async call(callObject: any, callBlock: bigint) {
-    return this.portal.ETH.call(callObject, callBlock)
+    const result = await this.portal.ETH.call(callObject, callBlock)
+    return formatResponse('0x' + result.toString())
   }
 
   private createError(code: number, message: string) {

@@ -86,7 +86,9 @@ async function main() {
 
   console.log(`Looking for accounts in block ${historicalBlock}...`)
 
-  const testAddress = await findHistoricalAccount(provider, historicalBlock)
+  // const testAddress = await findHistoricalAccount(provider, historicalBlock)
+  const testAddress = '0x3DC00AaD844393c110b61aED5849b7c82104e748'
+  console.log('test address ', testAddress)
   if (!testAddress) {
     console.error('Could not find a historical account to test with')
   }

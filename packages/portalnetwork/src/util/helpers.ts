@@ -343,7 +343,7 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
   }
 }
 
-export function toJSONRPCTx (tx: TypedTransaction, block?: Block, txIndex?: number) {
+export function toJSONRPCTx(tx: TypedTransaction, block?: Block, txIndex?: number) {
   const txJSON = tx.toJSON()
   return {
     blockHash: block ? bytesToHex(block.hash()) : null,
@@ -367,5 +367,13 @@ export function toJSONRPCTx (tx: TypedTransaction, block?: Block, txIndex?: numb
     s: txJSON.s!,
     maxFeePerBlobGas: txJSON.maxFeePerBlobGas,
     blobVersionedHashes: txJSON.blobVersionedHashes
+  }
+}
+
+export function formatResponse(result: string) {
+  return {
+    id: 1,
+    jsonrpc: '2.0',
+    result,
   }
 }

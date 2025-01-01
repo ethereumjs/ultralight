@@ -54,11 +54,14 @@ it('Test provider functionality', async () => {
     }
 
     provider.portal.ETH.getStorageAt = async (_address: Uint8Array, _position: Uint8Array) => {
-      return '0x' + Buffer.from(new Uint8Array(32)).toString('hex')
+      const result = new Uint8Array(32)
+      result[30] = 0x00
+      result[31] = 0x01
+      return Buffer.from(result).toString('hex')
     }
 
     provider.portal.ETH.call = async (_txObject: any) => {
-      return new Uint8Array([0x00, 0x01])
+      return Buffer.from([0x00, 0x01]).toString('hex')
     }
 
     const blockByHash = await provider.request({
@@ -75,7 +78,7 @@ it('Test provider functionality', async () => {
 
     const balance = await provider.request({
       method: 'eth_getBalance',
-      params: ['0x1234567890123456789012345678901234567890', '0x0']
+      params: ['0x3DC00AaD844393c110b61aED5849b7c82104e748', '0x0']
     }) as { result: string }
     expect(balance.result).toBe('0xde0b6b3a7640000')
 
@@ -87,7 +90,7 @@ it('Test provider functionality', async () => {
         '0x64'
       ]
     }) as { result: string }
-    expect(storage.result).toBe('0x' + '00'.repeat(32))
+    expect(storage.result).toBe('0x' + '00'.repeat(30) + '0001')
 
     const call = await provider.request({
       method: 'eth_call',
@@ -106,9 +109,15 @@ it('Test provider functionality', async () => {
     await expect(provider.request({
       method: 'eth_getBlockByHash',
       params: ['0x123']
-    })).rejects.toThrow()
+    })).resolves.toEqual({
+      error: {
+        code: -32602,
+        message: 'Invalid params for eth_getBlockByHash'
+      },
+      id: null,
+      jsonrpc: '2.0',
+    })
 
-  
   await (provider as any).portal.stop()
 
 })
