@@ -14,7 +14,7 @@ import {
   SyncStrategy,
 } from '../networks/index.js'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
-import { MEGABYTE, dirSize } from '../util/index.js'
+import { MEGABYTE, dirSize, shortId } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
@@ -414,7 +414,10 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       await this.uTP.handleUtpPacket(packetBuffer, src.nodeId)
     } catch (err: any) {
       this.logger.extend('error')(
-        `handleUTP error: ${err.message}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`,
+        
+        `handleUTP error: ${err.message}.  SrcId: ${
+          src.nodeId
+        } MultiAddr: ${src.socketAddr.toString()}`,
       )
     }
   }

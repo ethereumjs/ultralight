@@ -88,13 +88,7 @@ export abstract class ContentRequest {
     this.socket._clearTimeout()
     this.socket.updateDelay(timeReceived, packet.header.timestampMicroseconds)
     this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
-      `|| pktId: ${packet.header.connectionId}     ||`,
-    )
-    this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
-      `|| seqNr: ${packet.header.seqNr}     ||`,
-    )
-    this.logger.extend('RECEIVED').extend(PacketType[packet.header.pType])(
-      `|| ackNr: ${packet.header.ackNr}     ||`,
+      `|| pid: ${packet.header.connectionId} sNr: ${packet.header.seqNr} aNr: ${packet.header.ackNr} t: ${packet.header.timestampMicroseconds}`,
     )
     switch (packet.header.pType) {
       case PacketType.ST_SYN:
