@@ -33,7 +33,7 @@ export class ETH {
   activeNetworks: NetworkId[]
   logger: Debugger
   constructor(portal: PortalNetwork) {
-    this.activeNetworks = Object.keys(portal.network()) as NetworkId[]
+    this.activeNetworks = Array.from(portal.networks.keys()) as NetworkId[]
     this.history = portal.network()['0x500b']
     this.state = portal.network()['0x500a']
     this.beacon = portal.network()['0x500c']
@@ -221,9 +221,8 @@ export class ETH {
     for (const network of networks) {
       if (this.activeNetworks.findIndex((el) => el === network) === -1)
         throw new Error(
-          `${
-            Object.entries(NetworkId).find((el) => el[1] === network)?.[0] ??
-            'Unsupported network ' + network
+          `${Object.entries(NetworkId).find((el) => el[1] === network)?.[0] ??
+          'Unsupported network ' + network
           } required for this call`,
         )
     }
