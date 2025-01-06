@@ -42,7 +42,7 @@ export class UltralightProvider {
     if (!SUPPORTED_METHODS.has(method)) {
       throw this.createError(
         ERROR_CODES.UNSUPPORTED_METHOD,
-        `The Provider does not support the requested method`,
+        `The provider does not support the requested method`,
       )
     }
 
@@ -173,16 +173,19 @@ export class UltralightProvider {
   }
 
   private async getTransactionCount(address: string, block: string) {
-    return this.portal.ETH.getTransactionCount(hexToBytes(address), block)
+    const txCount = await this.portal.ETH.getTransactionCount(hexToBytes(address), block)
+    return formatResponse('0x' + (txCount !== undefined ? txCount.toString(16) : ''))
   }
 
   private async getCode(codeAddress: string, codeBlock: string) {
-    return this.portal.ETH.getCode(hexToBytes(codeAddress), codeBlock)
+    const code = await this.portal.ETH.getCode(hexToBytes(codeAddress), codeBlock)
+    return formatResponse('0x' + (code !== undefined ? code.toString() : ''))
   }
 
   private async getBalance(balanceAddress: string, balanceBlock: bigint) {
+
     const balance = await this.portal.ETH.getBalance(hexToBytes(balanceAddress), balanceBlock)
-    return formatResponse('0x' + (balance ? balance.toString(16) : '0'))
+    return formatResponse('0x' + (balance !== undefined ? balance.toString(16) : ''))
   }
 
   private async getStorageAt(storageAddress: string, position: string, storageBlock: string) {
@@ -191,17 +194,17 @@ export class UltralightProvider {
       hexToBytes(position),
       storageBlock,
     )
-    return formatResponse('0x' + (storage ? storage.toString() : '0'))
+    return formatResponse('0x' + (storage !== undefined ? storage.toString() : ''))
   }
 
   private async call(callObject: any, callBlock: bigint) {
     const result = await this.portal.ETH.call(callObject, callBlock)
-    return formatResponse('0x' + result.toString())
+    return formatResponse('0x' + (result !== undefined ? result.toString() : ''))
   }
 
   private createError(code: number, message: string) {
     const error = new Error(message)
-    ;(error as any).code = code
+      ; (error as any).code = code
     return error
   }
 }
