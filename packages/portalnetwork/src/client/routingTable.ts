@@ -53,6 +53,15 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
     return false
   }
 
+  public markContentKeyAsKnownToPeer = (nodeId: NodeId, contentKey: Uint8Array) => {
+    let gossipList = this.gossipMap.get(nodeId)
+    if (!gossipList) {
+      gossipList = new Set<Uint8Array>()
+      this.gossipMap.set(nodeId, gossipList)
+    }
+    gossipList.add(contentKey)
+  }
+
   /**
    * Evict a node from the routing table and ignore
    * @param nodeId nodeId of peer to be evicted

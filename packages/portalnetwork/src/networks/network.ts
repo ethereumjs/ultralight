@@ -854,6 +854,7 @@ export abstract class BaseNetwork extends EventEmitter {
           `Offering ${bytesToHex(contentKey)} to ${shortId(peer.nodeId)}`,
         )
         const res = await this.sendMessage(peer, payload, this.networkId)
+        this.routingTable.markContentKeyAsKnownToPeer(peer.nodeId, contentKey)
         return [peer, res]
       }),
     )
