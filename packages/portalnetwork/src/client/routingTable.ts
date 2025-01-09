@@ -45,22 +45,21 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
    * @returns boolean indicating if node has previously been OFFERed `contentKey` already
    */
   public contentKeyKnownToPeer = (nodeId: NodeId, contentKey: Uint8Array) => {
+    const gossipList = this.gossipMap.get(nodeId)
+    if (gossipList !== undefined) {
+      const alreadyKnownToPeer = gossipList.has(contentKey)
+      if (alreadyKnownToPeer) return true
+    }
+    return false
+  }
+
+  public markContentKeyAsKnownToPeer = (nodeId: NodeId, contentKey: Uint8Array) => {
     let gossipList = this.gossipMap.get(nodeId)
     if (!gossipList) {
-      // If no gossipList exists, create new one for `nodeId` and add contentKey to it
       gossipList = new Set<Uint8Array>()
-      gossipList.add(contentKey)
       this.gossipMap.set(nodeId, gossipList)
-      return false
     }
-    const alreadyKnownToPeer = gossipList.has(contentKey)
-    if (alreadyKnownToPeer) return true
-    else {
-      // If contentKey has not been shared with peer, add contentKey to gossipList
-      gossipList.add(contentKey)
-      this.gossipMap.set(nodeId, gossipList)
-      return false
-    }
+    gossipList.add(contentKey)
   }
 
   /**
