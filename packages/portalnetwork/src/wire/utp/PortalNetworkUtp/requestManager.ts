@@ -50,6 +50,22 @@ export class RequestManager {
     }
 
     /**
+     * Removes all packets from the packet heap for a given request
+     * @param connectionId connectionId of the request to remove packets for
+     */
+    removeRequestPackets(connectionId: number) {
+        const comparator = (packet: Packet<PacketType>) => packet.header.connectionId === connectionId
+        const packet = new Packet({
+            header: {
+              connectionId,
+            } as any,
+          })
+        while (this.packetHeap.remove(packet, comparator)) {
+          continue
+        }
+    }
+
+    /**
      * Adds a new uTP request to the peer's request manager.
      * @param connectionId connectionId from uTP initialization 
      * @param request new ContentRequest
@@ -127,19 +143,20 @@ export class RequestManager {
      * Closes a uTP request and processes the next request in the queue.
      * @param connectionId connectionId of the request to close
      */
-    async closeRequest(connectionId: number) {
+    closeRequest(connectionId: number) {
         const request = this.lookupRequest(connectionId)
         if (request === undefined) {
             return
         }
         this.logger.extend('CLOSE_REQUEST')(`Closing request ${connectionId}`)
+        this.removeRequestPackets(connectionId)
         delete this.requestMap[connectionId]
     }
     
     closeAllRequests() {
         this.logger.extend('CLOSE_REQUEST')(`Closing all requests for peer ${this.peerId}`)
         for (const id of Object.keys(this.requestMap)) {
-            delete this.requestMap[Number(id)]
+            this.closeRequest(Number(id))
         }
         this.packetHeap = new Heap(packetComparator)
     }

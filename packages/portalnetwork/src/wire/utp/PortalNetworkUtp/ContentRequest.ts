@@ -242,7 +242,7 @@ export class FoundContentWriteRequest extends ContentWriteRequest {
   async _handleStatePacket(packet: StatePacket): Promise<void> {
     await this.socket.handleStatePacket(packet.header.ackNr, packet.header.timestampMicroseconds)
     if (this.socket.state === ConnectionState.Closed) {
-      await this.requestManager.closeRequest(packet.header.connectionId)
+      this.requestManager.closeRequest(packet.header.connectionId)
     }
   }
 }
@@ -305,7 +305,7 @@ export class OfferWriteRequest extends ContentWriteRequest {
     }
     await this.socket.handleStatePacket(packet.header.ackNr, packet.header.timestampMicroseconds)
     if (this.socket.state === ConnectionState.Closed) {
-      await this.requestManager.closeRequest(packet.header.connectionId)
+       this.requestManager.closeRequest(packet.header.connectionId)
     }
   }
 }
