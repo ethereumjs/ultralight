@@ -93,6 +93,18 @@ export class RequestManager {
             await this.processCurrentPacket()
             return
         }
+        if (request.socket.type === UtpSocketType.READ && request.socket.reader !== undefined) {
+            if (this.currentPacket.header.seqNr < request.socket.reader!.nextDataNr) {
+                this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet ${this.currentPacket.header.seqNr} already processed.`)
+                this.currentPacket = this.packetHeap.pop()
+                return this.processCurrentPacket()            
+            } else if (this.currentPacket.header.seqNr > request.socket.reader!.nextDataNr) {
+                this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet is ahead of current reader position - seqNr: ${this.currentPacket.header.seqNr} > ${request.socket.reader?.nextDataNr}`)
+                this.packetHeap.push(this.currentPacket)
+                this.currentPacket = undefined
+                return
+            }
+        }
         await request.handleUtpPacket(this.currentPacket)
         this.currentPacket = this.packetHeap.pop()
         await this.processCurrentPacket()
