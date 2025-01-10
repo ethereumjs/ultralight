@@ -11,6 +11,7 @@ import { NetworkId } from '../networks/types.js'
 import { setupMetrics } from './metrics.js'
 
 import type { NetworkConfig, PortalNetworkOpts } from '../client'
+import { DEFAULT_BOOTNODES } from './bootnodes.js'
 
 export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
   ...args: any
@@ -119,4 +120,9 @@ export const cliConfig = async (args: PortalClientOpts) => {
     gossipCount: args.gossipCount,
   }
   return clientConfig
+}
+
+export const DEFAULT_OPTS = {
+  bindAddress: '0.0.0.0',
+  bootnodes: DEFAULT_BOOTNODES.mainnet,
 }
