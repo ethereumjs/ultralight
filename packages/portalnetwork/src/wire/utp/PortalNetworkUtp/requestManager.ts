@@ -1,22 +1,33 @@
 import type { ContentRequest } from "./ContentRequest.js";
-import { Packet , PacketType } from "../Packets/index.js";
+import { Packet , PacketType, UtpSocketType } from "../Packets/index.js";
 import type { Debugger } from "debug";
+import type {Comparator} from "heap-js";
+import { Heap} from "heap-js";
 
 type RequestId = number
+
+const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>, b: Packet<PacketType>) => {
+    // If packets belong to the same connection, sort by sequence number
+    if (a.header.connectionId === b.header.connectionId) {
+        return a.header.seqNr - b.header.seqNr;
+    }
+    // Otherwise, sort by timestamp
+    return a.header.timestampMicroseconds - b.header.timestampMicroseconds;
+}
 
 export class RequestManager {
     peerId: string
     requestMap: Record<RequestId, ContentRequest>
     logger: Debugger
-    masterPacketQueue: Array<Packet<PacketType>>
+    packetHeap: Heap<Packet<PacketType>>
     currentPacket: Packet<PacketType> | undefined
 
     constructor(peerId: string, logger: Debugger) {
         this.peerId = peerId
         this.requestMap = {}
         this.logger = logger.extend(`RequestManager`).extend(peerId.slice(0, 4))
-        this.masterPacketQueue = []
         this.currentPacket = undefined
+        this.packetHeap = new Heap(packetComparator)
     }
 
     /**
@@ -50,43 +61,40 @@ export class RequestManager {
             this.logger.extend('HANDLE_PACKET')(`Request not found for packet - connectionId: ${packet.header.connectionId}`)
             return
         }
-        if (this.masterPacketQueue.length === 0) {
-            this.currentPacket = packet
-            return this.processCurrentPacket()
-        }
         if (packet.header.pType === PacketType.ST_SYN || packet.header.pType === PacketType.ST_RESET) {
-            this.masterPacketQueue.unshift(packet)
+            await request.handleUtpPacket(packet)
+            return
         } else {
-            this.masterPacketQueue.push(packet)
+            this.packetHeap.push(packet)
         }
-        this.logger.extend('HANDLE_PACKET')(`Adding ${PacketType[packet.header.pType]} packet for request ${packet.header.connectionId} to packet queue (size: ${this.masterPacketQueue.length} packets)`)
+        this.logger.extend('HANDLE_PACKET')(`Adding ${PacketType[packet.header.pType]} [${packet.header.seqNr}] for Req:${packet.header.connectionId} to queue (size: ${this.packetHeap.size()} packets)`)
         if (this.currentPacket === undefined) {
-            this.currentPacket = this.masterPacketQueue.shift()
+            this.currentPacket = this.packetHeap.pop()
             await this.processCurrentPacket()
         }
     }
 
-    async processCurrentPacket() {
-        this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet Queue Size: ${this.masterPacketQueue.length}`)
+    async processCurrentPacket(): Promise<void> {
+        this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet Queue Size: ${this.packetHeap.size()}`)
         if (this.currentPacket === undefined) {
-            if (this.masterPacketQueue.length === 0) {
+            if (this.packetHeap.size() === 0) {
                 this.logger.extend('PROCESS_CURRENT_PACKET')(`No packets to process`)
                 return
             }
-            this.currentPacket = this.masterPacketQueue.shift()
+            this.currentPacket = this.packetHeap.pop()
             await this.processCurrentPacket()
             return
         }
-        this.logger.extend('PROCESS_CURRENT_PACKET')(`Processing ${PacketType[this.currentPacket.header.pType]} packet for request ${this.currentPacket.header.connectionId}`)
+        this.logger.extend('PROCESS_CURRENT_PACKET')(`Processing ${PacketType[this.currentPacket.header.pType]} [${this.currentPacket.header.seqNr}] for Req:${this.currentPacket.header.connectionId}`)
         const request = this.lookupRequest(this.currentPacket.header.connectionId)
         if (request === undefined) {
             this.logger.extend('PROCESS_CURRENT_PACKET')(`Request not found for current packet - connectionId: ${this.currentPacket.header.connectionId}`)
-            this.currentPacket = this.masterPacketQueue.shift()
+            this.currentPacket = this.packetHeap.pop()
             await this.processCurrentPacket()
             return
         }
         await request.handleUtpPacket(this.currentPacket)
-        this.currentPacket = this.masterPacketQueue.shift()
+        this.currentPacket = this.packetHeap.pop()
         await this.processCurrentPacket()
     }
 
@@ -108,7 +116,7 @@ export class RequestManager {
         for (const id of Object.keys(this.requestMap)) {
             delete this.requestMap[Number(id)]
         }
-        this.masterPacketQueue = []
+        this.packetHeap = new Heap(packetComparator)
     }
 
 
