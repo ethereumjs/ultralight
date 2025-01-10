@@ -280,10 +280,10 @@ describe('RequestManager', () => {
       },
     })
     void mgr.handleNewRequest(req1.connectionId, req1)
-    mgr.masterPacketQueue.push(packet2)
+    mgr.packetHeap.push(packet2)
     mgr.currentPacket = packet3
     void mgr.handlePacket(packet1.encode())
-    assert.equal(mgr.masterPacketQueue.length, 2)
-    assert.deepEqual(mgr.masterPacketQueue[0], packet2)
+    assert.equal(mgr.packetHeap.size(), 2)
+    assert.deepEqual(mgr.packetHeap.peek(), packet2)
   })
 })
