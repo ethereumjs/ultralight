@@ -41,6 +41,15 @@ export class RequestManager {
     }
 
     /**
+     * Finds the number of packets in the packet heap for a given request
+     * @param connectionId connectionId of the request to get the packet count for
+     * @returns the number of packets in the packet heap for a given request
+     */
+    getPacketCount(connectionId: number): number {
+        return this.packetHeap.heapArray.filter((packet) => packet.header.connectionId === connectionId).length
+    }
+
+    /**
      * Adds a new uTP request to the peer's request manager.
      * @param connectionId connectionId from uTP initialization 
      * @param request new ContentRequest
@@ -99,10 +108,14 @@ export class RequestManager {
                 this.currentPacket = this.packetHeap.pop()
                 return this.processCurrentPacket()            
             } else if (this.currentPacket.header.seqNr > request.socket.reader!.nextDataNr) {
-                this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet is ahead of current reader position - seqNr: ${this.currentPacket.header.seqNr} > ${request.socket.reader?.nextDataNr}`)
-                this.packetHeap.push(this.currentPacket)
-                this.currentPacket = undefined
-                return
+                if (this.getPacketCount(this.currentPacket.header.connectionId) < 3) {
+                    this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet is ahead of current reader position - seqNr: ${this.currentPacket.header.seqNr} > ${request.socket.reader?.nextDataNr}.  Pushing packet back to heap.`)
+                    this.packetHeap.push(this.currentPacket)
+                    this.currentPacket = undefined
+                    return
+                } else {
+                    this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet is ahead of current reader position - seqNr: ${this.currentPacket.header.seqNr} > ${request.socket.reader?.nextDataNr}.  Treating expected packet as lost.`)
+                }
             }
         }
         await request.handleUtpPacket(this.currentPacket)
