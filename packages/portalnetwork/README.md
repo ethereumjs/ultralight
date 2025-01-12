@@ -2,7 +2,7 @@
 
 A Typescript library for interacting with the Portal Network
 
-See [API](./docs/modules.md) for more details
+See [API](./docs/modules.html) for more details
 
 See [Architecture](./diagrams/ARCHITECTURE.md) for architectural concepts
 
