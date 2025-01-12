@@ -48,13 +48,3 @@ npx tsx scripts/portalClient.ts --method portal_historyStore --params '["hello w
 ```bash
 npx tsx scripts/portalClient.ts --method portal_statePing --params '["enr:-..."]' --port 9091
 ```
-
-
-  | Option | Description | Default | Type |
-|--------|-------------|---------|------|
-| `--numNodes` | Number of nodes to start | 2 | number |
-| `--startPort` | Starting port number | 9090 | number |
-| `--ip` | IP address to bind to | 127.0.0.1 | string |
-| `--networks` | Networks to support | ['history', 'state'] | array |
-| `--operation` | Operation to perform | 'discover' | string |
-| `--contentFile` | File to store as content | - | string |
