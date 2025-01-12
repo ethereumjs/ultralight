@@ -4,6 +4,7 @@ import type { PortalNetworkOpts } from './types'
 import { hexToBytes } from '@ethereumjs/util'
 
 import { formatBlockResponse, formatResponse } from '../util/helpers.js'
+import { DEFAULT_OPTS } from '../util/config.js'
 
 const ERROR_CODES = {
   UNSUPPORTED_METHOD: 4200,
@@ -34,7 +35,19 @@ export class UltralightProvider {
   }
 
   static async create(opts: Partial<PortalNetworkOpts>): Promise<UltralightProvider> {
-    const portal = await PortalNetwork.create(opts)
+    const finalOpts = {
+      ...DEFAULT_OPTS,
+      ...opts,
+    }
+    
+    if (!finalOpts.bindAddress) {
+      throw this.prototype.createError(
+        ERROR_CODES.INVALID_PARAMS,
+        'bindAddress is required for portal network initialization'
+      )
+    }
+
+    const portal = await PortalNetwork.create(finalOpts)
     return new UltralightProvider(portal)
   }
 
