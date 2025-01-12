@@ -10,17 +10,17 @@ const args = await yargs(hideBin(process.argv))
   .option('method', {
     describe: 'Portal Network method to call',
     type: 'string',
-    required: true
+    required: true,
   })
   .option('params', {
     describe: 'Parameters for the method (JSON string)',
     type: 'string',
-    default: '[]'
+    default: '[]',
   })
   .option('port', {
     describe: 'Port number for the node',
     type: 'number',
-    default: 9090
+    default: 9090,
   })
   .example('$0 --method portal_statePing --params "[\\"enr:-...\\"]"', 'Ping a state network node')
   .strict()
@@ -30,7 +30,7 @@ const args = await yargs(hideBin(process.argv))
 const NETWORK_IDS = {
   STATE: '0x500a',
   HISTORY: '0x500b',
-  BEACON: '0x500c'
+  BEACON: '0x500c',
 }
 
 const MESSAGE_TYPES = {
@@ -39,7 +39,7 @@ const MESSAGE_TYPES = {
   FINDNODES: 2,
   NODES: 3,
   TALKREQ: 4,
-  TALKRESP: 5
+  TALKRESP: 5,
 }
 
 async function createNode(port: number): Promise<UltralightProvider> {
@@ -66,8 +66,7 @@ async function createNode(port: number): Promise<UltralightProvider> {
 }
 
 async function sendNetworkMessage(node: UltralightProvider, networkId: NetworkId, messageType: number, payload: any = {}): Promise<any> {
-  console.log(`Sending message type ${messageType} to network ${networkId}:`, payload)
-  
+  console.log(`Sending message type ${messageType} to network ${networkId}:`, payload) 
 
   await new Promise(resolve => setTimeout(resolve, 5000))
 
@@ -94,18 +93,35 @@ async function executeMethod(node: UltralightProvider, method: string, params: a
     const [prefix, methodName] = method.split('_')
     
     if (prefix === 'portal') {
-     
+
       if (methodName === 'statePing') {
         return await sendNetworkMessage(node, NETWORK_IDS.STATE as NetworkId, MESSAGE_TYPES.PING)
       } else if (methodName === 'historyPing') {
         return await sendNetworkMessage(node, NETWORK_IDS.HISTORY as NetworkId, MESSAGE_TYPES.PING)
       }
- 
+
+      const historyNetwork = node.portal.network()[NetworkId.HistoryNetwork]
+      const stateNetwork = node.portal.network()[NetworkId.StateNetwork]
+      
+      if (historyNetwork && methodName.startsWith('history')) {
+        const networkMethod = methodName.replace('history', '').toLowerCase()
+        if (typeof historyNetwork[networkMethod] === 'function') {
+          return await historyNetwork[networkMethod](...params)
+        }
+      }
+
+      if (stateNetwork && methodName.startsWith('state')) {
+        const networkMethod = methodName.replace('state', '').toLowerCase()
+        if (typeof stateNetwork[networkMethod] === 'function') {
+          return await stateNetwork[networkMethod](...params)
+        }
+      }
+
       if (typeof node.portal[methodName] === 'function') {
         return await node.portal[methodName](...params)
       }
       
-      throw new Error(`Unknown portal method: ${methodName}`)
+      throw new Error(`Unknown method: ${methodName}`)
     }
 
     throw new Error(`Invalid method prefix: ${prefix}. Must be 'portal'`)
@@ -137,8 +153,7 @@ async function main() {
       console.log('Received talk response:', { nodeId, requestId, payload }))
 
     const params = JSON.parse(args.params)
-    const result = await executeMethod(node, args.method, params)
-    console.log('Result:', result)
+    await executeMethod(node, args.method, params)
 
     process.on('SIGINT', async () => {
       console.log('Shutting down node...')

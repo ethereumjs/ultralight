@@ -1,10 +1,53 @@
 # Starting a Portal Network Client
 
-Standalone implementation of starting a Portal Network using UltralightProvider
+This describes the usage and functionality of the Portal Network client script, which enables interaction with Portal Network nodes.
 
 ## Usage
 
-Start nodes with default settings (2 nodes starting from port 9090). `npx tsx scripts/startPortalNetwork.ts` along with any of the below parameters.  Pass `--help` as a CLI parameter for a complete list of available options.
+The script is invoked using the following format:
+
+```bash
+npx tsx scripts/portalClient.ts --method <method_name> --params <json_params> [--port <port_number>]
+```
+
+### Options
+
+| Option     | Description                              | Type    | Default   |
+|------------|------------------------------------------|---------|-----------|
+| `--method` | Portal Network method to call            | String  | Required  |
+| `--params` | Parameters for the method (as JSON)      | String  | `[]`      |
+| `--port`   | Port number for the node                 | Number  | `9090`    |
+
+---
+
+
+### Supported Networks
+
+The client supports two Portal Network types:
+- State Network (0x500a)
+- History Network (0x500b)
+
+### Message Types
+
+The following message types are supported:
+- PING
+- PONG
+- FINDNODES
+- NODES
+- TALKREQ
+- TALKRESP
+
+## Examples
+
+1. Store data in history network:
+```bash
+npx tsx scripts/portalClient.ts --method portal_historyStore --params '["hello world"]'
+```
+
+2. Custom port configuration:
+```bash
+npx tsx scripts/portalClient.ts --method portal_statePing --params '["enr:-..."]' --port 9091
+```
 
 
   | Option | Description | Default | Type |
@@ -15,11 +58,3 @@ Start nodes with default settings (2 nodes starting from port 9090). `npx tsx sc
 | `--networks` | Networks to support | ['history', 'state'] | array |
 | `--operation` | Operation to perform | 'discover' | string |
 | `--contentFile` | File to store as content | - | string |
-
-
-nodes to demontrate how one nodes communicate to one another, manages content storage and retrieval, and look into peer discovery
-
-```typescript
-
-
-```
