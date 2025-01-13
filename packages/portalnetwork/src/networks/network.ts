@@ -490,13 +490,13 @@ export abstract class BaseNetwork extends EventEmitter {
         msg.contentKeys.length
       } pieces of content.`,
     )
+    const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
     if (this.portal.uTP.openRequests() > BaseNetwork.MAX_CONCURRENT_UTP_STREAMS) {
       this.logger.extend('OFFER')(`Too many open UTP streams - rejecting offer`)
-      return this.sendAccept(src, requestId, [], [])
+      return this.sendAccept(src, requestId, contentIds, [])
 
     }
     try {
-      const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
       let offerAccepted = false
       try {
         for (let x = 0; x < msg.contentKeys.length; x++) {
