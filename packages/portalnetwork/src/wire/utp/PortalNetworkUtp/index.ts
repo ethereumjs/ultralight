@@ -39,6 +39,12 @@ export class PortalNetworkUTP {
     return this.requestManagers[nodeId] !== undefined && Object.keys(this.requestManagers[nodeId].requestMap).length > 0
   }
 
+  openRequests(): number {
+    return Object.keys(this.requestManagers).reduce((acc, nodeId) => {
+      return acc + Object.keys(this.requestManagers[nodeId].requestMap).length
+    }, 0)
+  }
+
   createPortalNetworkUTPSocket(
     networkId: NetworkId,
     requestCode: RequestCode,
@@ -106,9 +112,9 @@ export class PortalNetworkUTP {
       content,
       contentKeys,
     })
-    this.logger.extend('utpRequest')(`New ${RequestCode[requestCode]} Request with ${enr.nodeId} -- ConnectionId: ${connectionId}`)
-    this.logger.extend('utpRequest')(`ConnectionId: ${connectionId} -- { socket.sndId: ${sndId}, socket.rcvId: ${rcvId} }`)
     await this.requestManagers[enr.nodeId].handleNewRequest(connectionId, newRequest)
+    this.logger.extend('utpRequest')(`New ${RequestCode[requestCode]} Request with ${enr.nodeId} -- ConnectionId: ${connectionId}`)
+    this.logger.extend('utpRequest')(`Open Requests: ${this.openRequests()}`)
     return newRequest
   }
 
@@ -125,6 +131,7 @@ export class PortalNetworkUTP {
     } catch (err) {
       this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
       this.closeAllPeerRequests(enr.nodeId)
+      this.logger.extend('utpRequest')(`Open Requests: ${this.openRequests()}`)
       throw err
     }
   }
