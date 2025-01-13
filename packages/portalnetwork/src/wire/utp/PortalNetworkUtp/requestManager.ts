@@ -15,6 +15,8 @@ const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>,
     return a.header.timestampMicroseconds - b.header.timestampMicroseconds;
 }
 
+const MAX_IN_FLIGHT_PACKETS = 3
+
 export class RequestManager {
     peerId: string
     requestMap: Record<RequestId, ContentRequest>
@@ -124,12 +126,14 @@ export class RequestManager {
                 this.currentPacket = this.packetHeap.pop()
                 return this.processCurrentPacket()            
             } else if (this.currentPacket.header.seqNr > request.socket.reader!.nextDataNr) {
-                if (this.getPacketCount(this.currentPacket.header.connectionId) < 3) {
+                if (this.getPacketCount(this.currentPacket.header.connectionId) < MAX_IN_FLIGHT_PACKETS) {
+                    // Requeue packet.  Optimistically assume expected packet has arrived out of order.
                     this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet is ahead of current reader position - seqNr: ${this.currentPacket.header.seqNr} > ${request.socket.reader?.nextDataNr}.  Pushing packet back to heap.`)
                     this.packetHeap.push(this.currentPacket)
                     this.currentPacket = undefined
                     return
                 } else {
+                    // Treat expected packet as lost.  Process next packet (should trigger SELECTIVE_ACK)
                     this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet is ahead of current reader position - seqNr: ${this.currentPacket.header.seqNr} > ${request.socket.reader?.nextDataNr}.  Treating expected packet as lost.`)
                 }
             }
