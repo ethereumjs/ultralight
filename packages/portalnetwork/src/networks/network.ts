@@ -54,6 +54,7 @@ import type {
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
+  static MAX_CONCURRENT_UTP_STREAMS = 50
   public routingTable: PortalNetworkRoutingTable
   public nodeRadius: bigint
   public db: NetworkDB
@@ -489,8 +490,13 @@ export abstract class BaseNetwork extends EventEmitter {
         msg.contentKeys.length
       } pieces of content.`,
     )
+    const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
+    if (this.portal.uTP.openRequests() > BaseNetwork.MAX_CONCURRENT_UTP_STREAMS) {
+      this.logger.extend('OFFER')(`Too many open UTP streams - rejecting offer`)
+      return this.sendAccept(src, requestId, contentIds, [])
+
+    }
     try {
-      const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
       let offerAccepted = false
       try {
         for (let x = 0; x < msg.contentKeys.length; x++) {
