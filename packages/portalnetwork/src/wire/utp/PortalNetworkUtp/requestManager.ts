@@ -1,10 +1,9 @@
 import type { ContentRequest } from "./ContentRequest.js";
-import { Packet , PacketType, UtpSocketType } from "../Packets/index.js";
+import { Packet, PacketType, UtpSocketType } from "../Packets/index.js";
 import type { Debugger } from "debug";
-import type {Comparator} from "heap-js";
-import { Heap} from "heap-js";
-
-type RequestId = number
+import type { Comparator } from "heap-js";
+import { Heap } from "heap-js";
+import { MAX_IN_FLIGHT_PACKETS, type RequestId } from "./types.js";
 
 const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>, b: Packet<PacketType>) => {
     // If packets belong to the same connection, sort by sequence number
@@ -14,9 +13,6 @@ const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>,
     // Otherwise, sort by timestamp
     return a.header.timestampMicroseconds - b.header.timestampMicroseconds;
 }
-
-const MAX_IN_FLIGHT_PACKETS = 3
-
 export class RequestManager {
     peerId: string
     requestMap: Record<RequestId, ContentRequest>
@@ -59,11 +55,11 @@ export class RequestManager {
         const comparator = (packet: Packet<PacketType>) => packet.header.connectionId === connectionId
         const packet = new Packet({
             header: {
-              connectionId,
+                connectionId,
             } as any,
-          })
+        })
         while (this.packetHeap.remove(packet, comparator)) {
-          continue
+            continue
         }
     }
 
@@ -72,7 +68,7 @@ export class RequestManager {
      * @param connectionId connectionId from uTP initialization 
      * @param request new ContentRequest
      */
-    async handleNewRequest(connectionId: number,request: ContentRequest) {
+    async handleNewRequest(connectionId: number, request: ContentRequest) {
         this.requestMap[connectionId] = request
         await request.init()
     }
@@ -124,7 +120,7 @@ export class RequestManager {
             if (this.currentPacket.header.seqNr < request.socket.reader!.nextDataNr) {
                 this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet ${this.currentPacket.header.seqNr} already processed.`)
                 this.currentPacket = this.packetHeap.pop()
-                return this.processCurrentPacket()            
+                return this.processCurrentPacket()
             } else if (this.currentPacket.header.seqNr > request.socket.reader!.nextDataNr) {
                 if (this.getPacketCount(this.currentPacket.header.connectionId) < MAX_IN_FLIGHT_PACKETS) {
                     // Requeue packet.  Optimistically assume expected packet has arrived out of order.
@@ -156,7 +152,7 @@ export class RequestManager {
         this.removeRequestPackets(connectionId)
         delete this.requestMap[connectionId]
     }
-    
+
     closeAllRequests() {
         this.logger.extend('CLOSE_REQUEST')(`Closing all requests for peer ${this.peerId}`)
         for (const id of Object.keys(this.requestMap)) {

@@ -23,3 +23,8 @@ export interface INewRequest {
   requestCode: RequestCode
   contents?: Uint8Array
 }
+
+
+export const MAX_IN_FLIGHT_PACKETS = 3
+
+export type RequestId = number
