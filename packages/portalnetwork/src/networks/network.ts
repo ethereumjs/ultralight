@@ -253,6 +253,7 @@ export abstract class BaseNetwork extends EventEmitter {
       case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
         payload = ClientInfoAndCapabilities.serialize({
           ClientInfo: encodeClientInfo(this.portal.clientInfo),
+          DataRadius: this.nodeRadius,
           Capabilities: this.capabilities,
         })
         break
@@ -323,10 +324,11 @@ export abstract class BaseNetwork extends EventEmitter {
         )
         switch (type) {
           case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-            const { ClientInfo, Capabilities } = ClientInfoAndCapabilities.deserialize(payload)
+            const { ClientInfo, Capabilities, DataRadius } = ClientInfoAndCapabilities.deserialize(payload)
             this.logger.extend('PONG')(
               `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
             )
+            this.routingTable.updateRadius(enr.nodeId, DataRadius)
             break
           }
           case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
@@ -374,38 +376,42 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     const { type, payload } = CustomPayloadExtensionsFormat.deserialize(pingMessage.customPayload)
     let pongPayload: Uint8Array
-    switch (type) {
-      case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-        pongPayload = this.pingPongPayload(type)
-        break
-      }
-      case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
-        const { dataRadius } = BasicRadius.deserialize(payload)
-        this.routingTable.updateRadius(src.nodeId, dataRadius)
-        pongPayload = this.pingPongPayload(type)
-        break
-      }
-      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
-        if (this.networkId !== NetworkId.HistoryNetwork) {
-          pongPayload = ErrorPayload.serialize({
-            errorCode: 0,
-            message: hexToBytes(
-              fromAscii('HISTORY_RADIUS extension not supported on this network'),
-            ),
-          })
-        } else {
+    if (this.capabilities.includes(type)) {
+      switch (type) {
+        case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
+          const { DataRadius } = ClientInfoAndCapabilities.deserialize(payload)
+          this.routingTable.updateRadius(src.nodeId, DataRadius)
+          pongPayload = this.pingPongPayload(type)
+          break
+        }
+        case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
+          const { dataRadius } = BasicRadius.deserialize(payload)
+          this.routingTable.updateRadius(src.nodeId, dataRadius)
+          pongPayload = this.pingPongPayload(type)
+          break
+        }
+        case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
           const { dataRadius } = HistoryRadius.deserialize(payload)
           this.routingTable.updateRadius(src.nodeId, dataRadius)
           pongPayload = this.pingPongPayload(type)
+          break
         }
-        break
+        default: {
+          pongPayload = ErrorPayload.serialize({
+            errorCode: 0,
+            message: hexToBytes(
+              fromAscii(`${this.constructor.name} does not support PING extension type: ${type}`),
+            ),
+          })
+        }
       }
-      default: {
-        pongPayload = ErrorPayload.serialize({
-          errorCode: 0,
-          message: hexToBytes(fromAscii(`Unsupported PING extension type: ${type}`)),
-        })
-      }
+    } else {
+      pongPayload = ErrorPayload.serialize({
+        errorCode: 0,
+        message: hexToBytes(
+          fromAscii(`${this.constructor.name} does not support PING extension type: ${type}`),
+        ),
+      })
     }
     const customPayload = CustomPayloadExtensionsFormat.serialize({
       type,

@@ -91,8 +91,11 @@ export const MAX_CAPABILITIES_LENGTH = 400
 
 export const Capabilities = new ListBasicType(PingPongPayloadType, MAX_CAPABILITIES_LENGTH)
 
+export const DataRadius = new UintBigintType(32)
+
 export const ClientInfoAndCapabilities = new ContainerType({
     ClientInfo,
+    DataRadius,
     Capabilities
 })
 
