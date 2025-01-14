@@ -186,7 +186,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     this.clientInfo = {
       clientName: 'ultralight',
       clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
-      operatingSystemAndCpuArchitecture: `${process.platform}-${process.arch}`,
+      operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
       programmingLanguageAndVersion: `typescript${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
