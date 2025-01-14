@@ -16,15 +16,6 @@ export enum StateNetworkContentType {
   ContractTrieNode = 0x21,
   ContractByteCode = 0x22,
 }
-
-/* ----------------- Ping.custom_data & Pong.custom_data ----------- */
-/*
- * The custom_payload field of the Ping and Pong messages
- * is the serialization of an SSZ Container specified as custom_data:
- */
-export type TPingPongPayload = { dataRadius: bigint }
-export const PingPongPayload = new ContainerType({ dataRadius: new UintBigintType(32) })
-
 /* ----------------- Paths (Nibbles) ----------- */
 export const Nibble = {
   '0': 0,
