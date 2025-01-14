@@ -8,20 +8,44 @@ import {
   bytesToInt,
   bytesToUnprefixedHex,
   concatBytes,
+  fromAscii,
   hexToBytes,
   randomBytes,
 } from '@ethereumjs/util'
 
+import type {
+  AcceptMessage,
+  BaseNetworkConfig,
+  ContentLookupResponse,
+  ContentRequest,
+  FindContentMessage,
+  FindNodesMessage,
+  INewRequest,
+  INodeAddress,
+  NodesMessage,
+  OfferMessage,
+  PingMessage,
+  PongMessage,
+  PortalNetwork,
+} from '../index.js'
 import {
+  BasicRadius,
+  ClientInfoAndCapabilities,
   ContentMessageType,
+  CustomPayloadExtensionsFormat,
+  ErrorPayload,
+  HistoryRadius,
   MAX_PACKET_SIZE,
   MessageCodes,
+  NetworkId,
   NodeLookup,
-  PingPongCustomDataType,
+  PingPongPayloadExtensions,
   PortalNetworkRoutingTable,
   PortalWireMessageType,
   RequestCode,
   arrayByteLength,
+  decodeClientInfo,
+  encodeClientInfo,
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
   randUint16,
@@ -35,22 +59,6 @@ import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type * as PromClient from 'prom-client'
-import type {
-  AcceptMessage,
-  BaseNetworkConfig,
-  ContentLookupResponse,
-  ContentRequest,
-  FindContentMessage,
-  FindNodesMessage,
-  INewRequest,
-  INodeAddress,
-  NetworkId,
-  NodesMessage,
-  OfferMessage,
-  PingMessage,
-  PongMessage,
-  PortalNetwork,
-} from '../index.js'
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
@@ -235,6 +243,38 @@ export abstract class BaseNetwork extends EventEmitter {
         this.logger(`${messageType} message not expected in TALKREQ`)
     }
   }
+
+  public pingPongPayload(extensionType: number) {
+    let payload: Uint8Array
+    switch (extensionType) {
+      case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
+        payload = ClientInfoAndCapabilities.serialize({
+          ClientInfo: encodeClientInfo(this.portal.clientInfo),
+          Capabilities: this.capabilities,
+        })
+        break
+      }
+      case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
+        payload = BasicRadius.serialize({ dataRadius: BigInt(this.nodeRadius) })
+        break
+      }
+      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
+        if (this.networkId !== NetworkId.HistoryNetwork) {
+          throw new Error('HISTORY_RADIUS extension not supported on this network')
+        }
+        payload = HistoryRadius.serialize({
+          dataRadius: BigInt(this.nodeRadius),
+          ephemeralHeadersCount: this.ephemeralHeadersCount ?? 0,
+        })
+        break
+      }
+      default: {
+        throw new Error(`Unsupported PING extension type: ${extensionType}`)
+      }
+    }
+    return payload
+  }
+
   /**
    * Sends a Portal Network Wire Network PING message to a specified node
    * @param dstId the nodeId of the peer to send a ping to
