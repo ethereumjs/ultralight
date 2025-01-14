@@ -375,22 +375,22 @@ export abstract class BaseNetwork extends EventEmitter {
         break
       }
       case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
+        const { dataRadius } = BasicRadius.deserialize(payload)
+        this.routingTable.updateRadius(src.nodeId, dataRadius)
+        pongPayload = this.pingPongPayload(type)
+        break
+      }
+    case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
         if (this.networkId !== NetworkId.HistoryNetwork) {
           pongPayload = ErrorPayload.serialize({
             errorCode: 0,
-            message: hexToBytes(fromAscii('BASIC_RADIUS extension not supported on this network')),
+          message: hexToBytes(fromAscii('HISTORY_RADIUS extension not supported on this network')),
           })
         } else {
-          const { dataRadius } = BasicRadius.deserialize(payload)
-          this.routingTable.updateRadius(src.nodeId, dataRadius)
-          pongPayload = this.pingPongPayload(type)
-        }
-        break
-      }
-      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
         const { dataRadius } = HistoryRadius.deserialize(payload)
         this.routingTable.updateRadius(src.nodeId, dataRadius)
         pongPayload = this.pingPongPayload(type)
+      }
         break
       }
       default: {
