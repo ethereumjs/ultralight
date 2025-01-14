@@ -81,4 +81,14 @@ export const args: ClientOpts = yargs(hideBin(process.argv))
     number: true,
     optional: true,
   })
+  .option('arch', {
+    describe: 'operating system and CPU architecture',
+    string: true,
+    default: `${process.platform}-${process.arch}`,
+  })
+  .option('commit', {
+    describe: 'short commit hash of the build',
+    string: true,
+    optional: true,
+  })
   .strict().argv as ClientOpts
