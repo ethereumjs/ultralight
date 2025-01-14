@@ -2,13 +2,13 @@ import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import {
+  ClientInfoAndCapabilities,
   ContentLookup,
+  CustomPayloadExtensionsFormat,
   FoundContent,
   NetworkId,
   NodeLookup,
-  shortId,
-  CustomPayloadExtensionsFormat,
-  BasicRadius
+  shortId
 } from 'portalnetwork'
 
 import { CONTENT_NOT_FOUND, INVALID_PARAMS } from '../error-code.js'
@@ -557,14 +557,14 @@ export class portal {
     const [enr] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._history.sendPing(encodedENR, 1)
+    const pong = await this._history.sendPing(encodedENR, 0)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { dataRadius } = BasicRadius.deserialize(decoded.payload)
+      const { DataRadius } = ClientInfoAndCapabilities.deserialize(decoded.payload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(dataRadius),
+        dataRadius: bigIntToHex(DataRadius),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
@@ -579,10 +579,10 @@ export class portal {
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { dataRadius } = BasicRadius.deserialize(decoded.payload)
+      const { DataRadius } = ClientInfoAndCapabilities.deserialize(decoded.payload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(dataRadius),
+        dataRadius: bigIntToHex(DataRadius),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
@@ -597,10 +597,10 @@ export class portal {
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { dataRadius } = BasicRadius.deserialize(decoded.payload)
+      const { DataRadius } = ClientInfoAndCapabilities.deserialize(decoded.payload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(dataRadius),
+        dataRadius: bigIntToHex(DataRadius),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
