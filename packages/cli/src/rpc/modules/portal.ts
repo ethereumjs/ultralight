@@ -6,8 +6,9 @@ import {
   FoundContent,
   NetworkId,
   NodeLookup,
-  PingPongCustomDataType,
   shortId,
+  CustomPayloadExtensionsFormat,
+  BasicRadius
 } from 'portalnetwork'
 
 import { CONTENT_NOT_FOUND, INVALID_PARAMS } from '../error-code.js'
@@ -556,13 +557,14 @@ export class portal {
     const [enr] = params
     const encodedENR = ENR.decodeTxt(enr)
     this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._history.sendPing(encodedENR)
+    const pong = await this._history.sendPing(encodedENR, 1)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
+      const { dataRadius } = BasicRadius.deserialize(decoded.payload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(decoded.radius),
+        dataRadius: bigIntToHex(dataRadius),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
@@ -576,10 +578,11 @@ export class portal {
     const pong = await this._state.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
+      const { dataRadius } = BasicRadius.deserialize(decoded.payload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(decoded.radius),
+        dataRadius: bigIntToHex(dataRadius),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
@@ -593,10 +596,11 @@ export class portal {
     const pong = await this._beacon.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const decoded = PingPongCustomDataType.deserialize(pong.customPayload)
+      const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
+      const { dataRadius } = BasicRadius.deserialize(decoded.payload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(decoded.radius),
+        dataRadius: bigIntToHex(dataRadius),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
