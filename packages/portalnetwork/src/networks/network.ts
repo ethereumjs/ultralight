@@ -296,6 +296,9 @@ export abstract class BaseNetwork extends EventEmitter {
       this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
+    if (!this.routingTable.getWithPending(enr.nodeId)?.value && extensionType !== 0) {
+      throw new Error(`First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.`)
+    }
     const timeout = setTimeout(() => {
       return undefined
     }, 3000)
@@ -324,7 +327,8 @@ export abstract class BaseNetwork extends EventEmitter {
         )
         switch (type) {
           case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-            const { ClientInfo, Capabilities, DataRadius } = ClientInfoAndCapabilities.deserialize(payload)
+            const { ClientInfo, Capabilities, DataRadius } =
+              ClientInfoAndCapabilities.deserialize(payload)
             this.logger.extend('PONG')(
               `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
             )
@@ -367,14 +371,28 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
+    const { type, payload } = CustomPayloadExtensionsFormat.deserialize(pingMessage.customPayload)
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
+      if (type !== PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES) {
+        const customPayload = CustomPayloadExtensionsFormat.serialize({
+          type,
+          payload: ErrorPayload.serialize({
+            errorCode: 0,
+            message: hexToBytes(
+              fromAscii(
+                `First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.  Received type ${type}`,
+              ),
+            ),
+          }),
+        })
+        await this.sendPong(src, id, customPayload)
+      }
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
       if (enr !== undefined) {
         this.updateRoutingTable(enr)
       }
     }
-    const { type, payload } = CustomPayloadExtensionsFormat.deserialize(pingMessage.customPayload)
     let pongPayload: Uint8Array
     if (this.capabilities.includes(type)) {
       switch (type) {
