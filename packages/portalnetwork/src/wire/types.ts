@@ -12,11 +12,6 @@ import {
 
 import type { BitArray } from '@chainsafe/ssz'
 
-// Ping/Pong Custom Data type -- currently identical for State and History networks
-export const PingPongCustomDataType = new ContainerType({
-  radius: new UintBigintType(32),
-})
-
 export enum FoundContent {
   UTP = 0,
   CONTENT = 1,
