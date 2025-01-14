@@ -5,6 +5,7 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
+import PQueue from 'p-queue'
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import {
@@ -46,6 +47,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   ETH: ETH
 
   shouldRefresh: boolean = true
+  private messageQueue: PQueue
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
     const defaultConfig: IDiscv5CreateOptions = {
@@ -61,7 +63,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         requestTimeout: 3000,
         sessionEstablishTimeout: 3000,
         lookupTimeout: 3000,
-        sessionTimeout: 3000,
         requestRetries: 2,
       },
     }
@@ -258,6 +259,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     }
     // Should refresh by default but can be disabled (e.g. in tests)
     opts.shouldRefresh === false && (this.shouldRefresh = false)
+
+    this.messageQueue = new PQueue({ concurrency: 10 })
   }
 
   /**
@@ -434,25 +437,44 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
-    const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
-    const remote = enr instanceof ENR ? enr : this.discv5.findEnr(enr.nodeId) ?? fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp')
-    try {
-      this.metrics?.totalBytesSent.inc(payload.length)
-      const res = await this.discv5.sendTalkReq(
-        remote,
-        Buffer.from(payload),
-        hexToBytes(messageNetwork),
-      )
-      this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
-      return res
-    } catch (err: any) {
-      if (networkId === NetworkId.UTPNetwork || utpMessage === true) {
-        throw new Error(`Error sending uTP TALKREQ message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err.message}`)
-      } else {
-        const messageType = PortalWireMessageType.deserialize(payload).selector
-        throw new Error(`Error sending TALKREQ ${MessageCodes[messageType]} message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${enr instanceof ENR ? enr.getLocationMultiaddr('udp')?.toString() : enr.socketAddr.toString()}`)
+    // Queue requests with normal priority (0 is default)
+    return this.messageQueue.add(async () => {
+      const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
+      const remote =
+        enr instanceof ENR
+          ? enr
+          : (this.discv5.findEnr(enr.nodeId) ??
+            fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp'))
+      try {
+        this.metrics?.totalBytesSent.inc(payload.length)
+        const res = await this.discv5.sendTalkReq(
+          remote,
+          Buffer.from(payload),
+          hexToBytes(messageNetwork),
+        )
+        this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
+        return res
+      } catch (err: any) {
+        if (networkId === NetworkId.UTPNetwork || utpMessage === true) {
+          throw new Error(
+            `Error sending uTP TALKREQ message using ${
+              enr instanceof ENR ? 'ENR' : 'MultiAddr'
+            }: ${err.message}`,
+          )
+        } else {
+          const messageType = PortalWireMessageType.deserialize(payload).selector
+          throw new Error(
+            `Error sending TALKREQ ${MessageCodes[messageType]} message using ${
+              enr instanceof ENR ? 'ENR' : 'MultiAddr'
+            }: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${
+              enr instanceof ENR
+                ? enr.getLocationMultiaddr('udp')?.toString()
+                : enr.socketAddr.toString()
+            }`,
+          )
+        }
       }
-    }
+    }) as Promise<Uint8Array>
   }
 
   public sendPortalNetworkResponse = async (
@@ -460,12 +482,22 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     requestId: bigint,
     payload: Uint8Array,
   ) => {
-    this.eventLog &&
-      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
-    try {
-      await this.discv5.sendTalkResp(src, requestId, payload)
-    } catch (err: any) {
-      this.logger.extend('error')(`Error sending TALKRESP message: ${err}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
-    }
+    // Queue responses with higher priority (1)
+    return this.messageQueue.add(
+      async () => {
+        this.eventLog &&
+          this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
+        try {
+          await this.discv5.sendTalkResp(src, requestId, payload)
+        } catch (err: any) {
+          this.logger.extend('error')(
+            `Error sending TALKRESP message: ${err}.  SrcId: ${
+              src.nodeId
+            } MultiAddr: ${src.socketAddr.toString()}`,
+          )
+        }
+      },
+      { priority: 1 },
+    )
   }
 }
