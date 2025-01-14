@@ -39,6 +39,7 @@ export interface NetworkConfig {
 }
 
 export interface PortalNetworkOpts {
+  shortCommit?: string
   supportedNetworks?: NetworkConfig[]
   bootnodes?: string[]
   db?: AbstractLevel<string, string> | undefined
