@@ -6,7 +6,7 @@ import { keys } from '@libp2p/crypto'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
-import packageJson from '../../package.json'
+import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import {
