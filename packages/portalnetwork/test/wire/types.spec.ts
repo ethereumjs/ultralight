@@ -3,12 +3,13 @@ import { BitArray } from '@chainsafe/ssz'
 import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
+import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../src/wire/types.js'
+
 import {
-  ContentMessageType,
-  MessageCodes,
-  PingPongCustomDataType,
-  PortalWireMessageType,
-} from '../../src/wire/types.js'
+  BasicRadius,
+  CustomPayloadExtensionsFormat,
+  PingPongPayloadExtensions,
+} from '../../src/wire/index.js'
 
 describe('message encoding should match test vectors', () => {
   // Validate PING/PONG message encoding
@@ -21,11 +22,14 @@ describe('message encoding should match test vectors', () => {
       selector: MessageCodes.PING,
       value: {
         enrSeq,
-        customPayload: PingPongCustomDataType.serialize({ radius: dataRadius }),
+        customPayload: CustomPayloadExtensionsFormat.serialize({
+          type: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+          payload: BasicRadius.serialize({ dataRadius }),
+        }),
       },
     })
     testVector =
-      '0x0001000000000000000c000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+      '0x0001000000000000000c000000010006000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
     assert.equal(bytesToHex(payload), testVector, 'ping message encoded correctly')
   })
 
