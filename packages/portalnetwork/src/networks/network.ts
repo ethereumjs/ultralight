@@ -375,7 +375,7 @@ export abstract class BaseNetwork extends EventEmitter {
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
       if (type !== PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES) {
         const customPayload = CustomPayloadExtensionsFormat.serialize({
-          type,
+          type: PingPongPayloadExtensions.ERROR_RESPONSE,
           payload: ErrorPayload.serialize({
             errorCode: 0,
             message: hexToBytes(
