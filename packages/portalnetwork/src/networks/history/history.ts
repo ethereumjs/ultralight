@@ -31,7 +31,6 @@ import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import { RunStatusCode } from '@lodestar/light-client'
-import { computeSyncPeriodAtEpoch, computeSyncPeriodAtSlot } from '@lodestar/light-client/lib/utils.js'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
