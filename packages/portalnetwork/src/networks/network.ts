@@ -385,7 +385,7 @@ export abstract class BaseNetwork extends EventEmitter {
             ),
           }),
         })
-        await this.sendPong(src, id, customPayload)
+        return this.sendPong(src, id, customPayload)
       }
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
@@ -435,7 +435,7 @@ export abstract class BaseNetwork extends EventEmitter {
       type,
       payload: pongPayload,
     })
-    await this.sendPong(src, id, customPayload)
+    return this.sendPong(src, id, customPayload)
   }
 
   sendPong = async (src: INodeAddress, requestId: bigint, customPayload: Uint8Array) => {
@@ -449,6 +449,7 @@ export abstract class BaseNetwork extends EventEmitter {
     })
     this.logger.extend('PONG')(`Sent to ${shortId(src.nodeId, this.routingTable)}`)
     await this.sendResponse(src, requestId, pongMsg)
+    return pongMsg
   }
 
   /**
