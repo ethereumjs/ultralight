@@ -54,6 +54,7 @@ import type {
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
+  public capabilities: number[] = [0, 1, 65535]
   static MAX_CONCURRENT_UTP_STREAMS = 50
   public routingTable: PortalNetworkRoutingTable
   public nodeRadius: bigint
@@ -70,6 +71,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
+  public ephemeralHeadersCount: number = 0
 
   constructor({
     client,
