@@ -54,6 +54,7 @@ import type {
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
+  static MAX_CONCURRENT_UTP_STREAMS = 50
   public routingTable: PortalNetworkRoutingTable
   public nodeRadius: bigint
   public db: NetworkDB
@@ -489,8 +490,13 @@ export abstract class BaseNetwork extends EventEmitter {
         msg.contentKeys.length
       } pieces of content.`,
     )
+    const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
+    if (this.portal.uTP.openRequests() > BaseNetwork.MAX_CONCURRENT_UTP_STREAMS) {
+      this.logger.extend('OFFER')(`Too many open UTP streams - rejecting offer`)
+      return this.sendAccept(src, requestId, contentIds, [])
+
+    }
     try {
-      const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
       let offerAccepted = false
       try {
         for (let x = 0; x < msg.contentKeys.length; x++) {
@@ -671,7 +677,7 @@ export abstract class BaseNetwork extends EventEmitter {
       return enr.encode()
     })
     if (encodedEnrs.length > 0) {
-      this.logger(`Found ${encodedEnrs.length} closer to content than us`)
+      this.logger.extend('FINDCONTENT')(`Found ${encodedEnrs.length} closer to content`)
       // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
       while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > MAX_PACKET_SIZE) {
         // Remove ENRs until total ENRs less than 1200 bytes
@@ -691,7 +697,7 @@ export abstract class BaseNetwork extends EventEmitter {
         selector: FoundContent.ENRS,
         value: [],
       })
-      this.logger(`Found no ENRs closer to content than us`)
+      this.logger(`Found no ENRs closer to content`)
       await this.sendResponse(
         src,
         requestId,
@@ -712,7 +718,7 @@ export abstract class BaseNetwork extends EventEmitter {
       const nodeId = enr.nodeId
       // Only add node to the routing table if we have an ENR
       this.routingTable.getWithPending(enr.nodeId)?.value === undefined &&
-        this.logger(`adding ${nodeId} to ${this.networkName} routing table`)
+        this.logger.extend('RoutingTable')(`adding ${shortId(nodeId)}`)
       this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
       if (customPayload !== undefined) {
         const decodedPayload = PingPongCustomDataType.deserialize(Uint8Array.from(customPayload))

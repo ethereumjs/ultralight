@@ -84,13 +84,7 @@ export abstract class UtpSocket {
   async sendPacket<T extends PacketType>(packet: Packet<T>): Promise<Buffer> {
     const msg = packet.encode()
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
-      `|| pktId: ${packet.header.connectionId}`,
-    )
-    this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
-      `|| seqNr: ${packet.header.seqNr}`,
-    )
-    this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
-      `|| ackNr: ${packet.header.ackNr}`,
+      `pid: ${packet.header.connectionId} sNr: ${packet.header.seqNr} aNr: ${packet.header.ackNr}`,
     )
     try {
       await this.utp.send(this.remoteAddress, msg, this.networkId)
