@@ -39,14 +39,7 @@ export class UltralightProvider {
       ...DEFAULT_OPTS,
       ...opts,
     }
-    
-    if (!finalOpts.bindAddress) {
-      throw this.prototype.createError(
-        ERROR_CODES.INVALID_PARAMS,
-        'bindAddress is required for portal network initialization'
-      )
-    }
-
+ 
     const portal = await PortalNetwork.create(finalOpts)
     return new UltralightProvider(portal)
   }
