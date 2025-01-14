@@ -39,6 +39,7 @@ import {
   MessageCodes,
   NetworkId,
   NodeLookup,
+  PingPongErrorCodes,
   PingPongPayloadExtensions,
   PortalNetworkRoutingTable,
   PortalWireMessageType,
@@ -259,7 +260,7 @@ export abstract class BaseNetwork extends EventEmitter {
         break
       }
       case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
-        payload = BasicRadius.serialize({ dataRadius: BigInt(this.nodeRadius) })
+        payload = BasicRadius.serialize({ dataRadius: this.nodeRadius })
         break
       }
       case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
@@ -267,7 +268,7 @@ export abstract class BaseNetwork extends EventEmitter {
           throw new Error('HISTORY_RADIUS extension not supported on this network')
         }
         payload = HistoryRadius.serialize({
-          dataRadius: BigInt(this.nodeRadius),
+          dataRadius: this.nodeRadius,
           ephemeralHeadersCount: this.ephemeralHeadersCount ?? 0,
         })
         break
@@ -377,7 +378,7 @@ export abstract class BaseNetwork extends EventEmitter {
         const customPayload = CustomPayloadExtensionsFormat.serialize({
           type: PingPongPayloadExtensions.ERROR_RESPONSE,
           payload: ErrorPayload.serialize({
-            errorCode: 0,
+            errorCode: PingPongErrorCodes.EXTENSION_NOT_SUPPORTED,
             message: hexToBytes(
               fromAscii(
                 `First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.  Received type ${type}`,
@@ -425,11 +426,19 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     } else {
       pongPayload = ErrorPayload.serialize({
-        errorCode: 0,
+        errorCode: PingPongErrorCodes.EXTENSION_NOT_SUPPORTED,
         message: hexToBytes(
           fromAscii(`${this.constructor.name} does not support PING extension type: ${type}`),
         ),
       })
+      return this.sendPong(
+        src,
+        id,
+        CustomPayloadExtensionsFormat.serialize({
+          type: PingPongPayloadExtensions.ERROR_RESPONSE,
+          payload: pongPayload,
+        }),
+      )
     }
     const customPayload = CustomPayloadExtensionsFormat.serialize({
       type,
