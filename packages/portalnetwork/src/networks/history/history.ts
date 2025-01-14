@@ -38,6 +38,7 @@ export class HistoryNetwork extends BaseNetwork {
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
+    this.capabilities = [0, 1, 2, 65535]
     this.networkId = NetworkId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.routingTable.setLogger(this.logger)
