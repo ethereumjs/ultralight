@@ -1,4 +1,4 @@
-import { EntryStatus } from '@chainsafe/discv5'
+import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import {
@@ -34,6 +34,7 @@ const methods = [
   'portal_statePing',
   'portal_stateRoutingTableInfo',
   'portal_stateStore',
+  'portal_statePutContent',
   'portal_stateLocalContent',
   'portal_stateGossip',
   'portal_stateFindContent',
@@ -54,6 +55,7 @@ const methods = [
   'portal_historyGetContent',
   'portal_historyTraceGetContent',
   'portal_historyStore',
+  'portal_historyPutContent',
   'portal_historyLocalContent',
   'portal_historyGossip',
   'portal_historyAddEnr',
@@ -65,6 +67,7 @@ const methods = [
   'portal_beaconGetContent',
   'portal_beaconTraceGetContent',
   'portal_beaconStore',
+  'portal_beaconPutContent',
   'portal_beaconLocalContent',
   'portal_beaconAddEnr',
   'portal_beaconGetEnr',
@@ -184,6 +187,19 @@ export class portal {
       [validators.hex],
     ])
     this.beaconStore = middleware(this.beaconStore.bind(this), 2, [
+      [validators.hex],
+      [validators.hex],
+    ])
+    // portal_*PutContent
+    this.historyPutContent = middleware(this.historyPutContent.bind(this), 2, [
+      [validators.contentKey],
+      [validators.hex],
+    ])
+    this.statePutContent = middleware(this.statePutContent.bind(this), 2, [
+      [validators.hex],
+      [validators.hex],
+    ])
+    this.beaconPutContent = middleware(this.beaconPutContent.bind(this), 2, [
       [validators.hex],
       [validators.hex],
     ])
@@ -761,6 +777,68 @@ export class portal {
     } catch (e) {
       console.log(e)
       return false
+    }
+  }
+  // portal_*PutContent
+  async historyPutContent(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const contentId = this._history.contentKeyToId(contentKey)
+    const d = distance(contentId, this._client.discv5.enr.nodeId)
+    let storedLocally = false
+    try {
+      if (d <= this._history.nodeRadius) {
+        await this._history.store(contentKey, content)
+        storedLocally = true
+      }
+      const peerCount = await this._history.gossipContent(contentKey, content)
+      return {
+        peerCount,
+        storedLocally,
+      }
+    } catch {
+      return {
+        peerCount: 0,
+        storedLocally,
+      }
+    }
+  }
+  async statePutContent(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const contentId = this._history.contentKeyToId(contentKey)
+    const d = distance(contentId, this._client.discv5.enr.nodeId)
+    let storedLocally = false
+    try {
+      if (d <= this._history.nodeRadius) {
+        await this._history.store(contentKey, content)
+        storedLocally = true
+      }
+      const peerCount = await this._history.gossipContent(contentKey, content)
+      return {
+        peerCount,
+        storedLocally,
+      }
+    } catch {
+      return {
+        peerCount: 0,
+        storedLocally,
+      }
+    }
+  }
+  async beaconPutContent(params: [string, string]) {
+    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const contentId = this._history.contentKeyToId(contentKey)
+    const d = distance(contentId, this._client.discv5.enr.nodeId)
+    let storedLocally = false
+    try {
+      if (d <= this._history.nodeRadius) {
+        await this._history.store(contentKey, content)
+        storedLocally = true
+      }
+    } catch {
+      return {
+        peerCount: 0,
+        storedLocally,
+      }
     }
   }
 
